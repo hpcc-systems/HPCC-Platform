@@ -1,0 +1,1138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_OPTION">
+  <title>#OPTION</title>
+
+  <para><emphasis role="bold">#OPTION<indexterm>
+      <primary>#OPTION</primary>
+    </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="75.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>option</emphasis></entry>
+
+            <entry>A case sensitive string constant containing the name of the
+            option to set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The value to set the option to. This may be any type of
+            value, dependent on what the option expects to be.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#OPTION </emphasis>statement is typically a
+  compiler directive giving hints to the code generator as to how best to
+  generate the executable code for a workunit. This statement may be used
+  outside an XML scope and does not require a previous call to the LOADXML
+  function to instantiate an XML scope.</para>
+
+  <sect2 id="Definition_of_Terms">
+    <title>Definition of Terms</title>
+
+    <para>These definitions are "internal-only" terms used in the
+    <emphasis>option</emphasis> definitions that follow.</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="78.10pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>DFA</emphasis></entry>
+
+              <entry>Deterministic Finite-state Automaton.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Fold</emphasis></entry>
+
+              <entry>To turn a complex expression into a simpler equivalent
+              one. For example, the expression "1+1" can be replaced with "2"
+              without altering the result.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Spill</emphasis></entry>
+
+              <entry>Writing intermediate result sets to disk so that memory
+              is available for subsequent steps.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Funnel</emphasis></entry>
+
+              <entry>The + (append file) operator between datasets can be
+              visualized as pouring all the records into a funnel and getting
+              a single stream of records out of the bottom; hence the term
+              "funnel."</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>TopN</emphasis></entry>
+
+              <entry>An internally generated activity used in place of
+              CHOOSEN(SORT(xx), n) where n is small, as it can be computed
+              much more efficiently than sorting the entire record set then
+              discarding all but the first n.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Activity</emphasis></entry>
+
+              <entry>An ECL operator that takes one or more datasets as
+              inputs.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Graph</emphasis></entry>
+
+              <entry>All the Activities in a query.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Subgraph</emphasis></entry>
+
+              <entry>A collection of Activities that can all be active at the
+              same time in Thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>Peephole</emphasis></entry>
+
+              <entry>A method of code optimization that looks at a small
+              amount of the unoptimized code at a time, in order to combine
+              operations into more efficient ones.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="Available_options">
+    <title>Available options</title>
+
+    <para><emphasis role="bold">The following options are generally useful:
+    </emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt" />
+
+          <colspec colwidth="65.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>maxRunTime</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Sets the maximum number of seconds a job runs before it
+              times out</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>freezePersists</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, does not calculate/recalculate PERSISTed</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>check </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, check for potential overflows of
+              records.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>expandRepeatAnyAsDfa</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, expand ANY* in a DFA.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>forceFakeThor</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, force code to use hthor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>forceGenerate</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, force .SO to be generated even if it's not worth
+              it</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>globalFold</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, perform a global constant fold before
+              generating.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>globalOptimize</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, perform a global optimize.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>groupAllDistribute</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, GROUP,ALL generates a DISTRIBUTE instead of a
+              global SORT.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maximizeLexer</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, maximize the amount of work done in the
+              lexer.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>maxLength</emphasis></entry>
+
+              <entry>Default: 4096</entry>
+
+              <entry>Specify maximum length of a record.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>minimizeSpillSize</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, if a spill is filtered/deduped etc when read,
+              reduce spill file size by splitting, filtering and then
+              writing.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeGraph</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, optimize expressions in a graph before
+              generation</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>orderDiskFunnel</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, if all inputs to a funnel are disk reads, pull
+              in</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>parseDfaComplexity</emphasis></entry>
+
+              <entry>Default: 2000</entry>
+
+              <entry>Maximum complexity of expression to convert to a
+              DFA.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>pickBestEngine</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, use hthor if it is more efficient than
+              Thor</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>targetClusterType</emphasis></entry>
+
+              <entry>hthor|Thor|roxie</entry>
+
+              <entry>What supercomputer type are we generating code
+              for?</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>topnLimit</emphasis></entry>
+
+              <entry>Default: 10000</entry>
+
+              <entry>Maximum number of records to do topN on.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>outputLimit</emphasis></entry>
+
+              <entry>Default: 10</entry>
+
+              <entry>Sets maximum size (in Mb) of result stored in
+              workunit.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>sortIndexPayload</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>Specifies sorting (or not) payload fields during
+              a</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>workflow</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>Specifies enabling/disabling workflow services.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldStored</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Specifies all the stored variables are replaced with
+              their default values, or values overridden by #stored. This can
+              significantly reduce the size of the graph generated.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>skipFileFormatCrcCheck</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>Specifies the CRC check on indexes is produces a warning
+              and not an error.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowedClusters</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specifies the comma-delimited list of cluster names (as a
+              string constant) where the workunit may execute. This allows the
+              job to be switched between clusters, manually or automatically,
+              if the workunit is blocked on its assigned cluster and another
+              valid cluster is available for use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>AllowAutoSwitchQueue</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, specifies the workunit is automatically
+              re-assigned to execute on another available cluster listed in
+              allowedClusters when blocked on its assigned cluster.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>performWorkflowCse</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, specifies the code generator automatically
+              detects opportunities for Common Sub-expression Elimination that
+              may be "buried" within multiple PERSISTed attributes. If false,
+              notification of these opportunities are displayed to the
+              programmer as suggestions for the use of the INDEPENDENT
+              Workflow Service.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">The following options are all about generating
+    Logical graphs in a workunit. </emphasis></para>
+
+    <para>Logical graphs<indexterm>
+        <primary>Logical graphs</primary>
+      </indexterm> are stored in the workunit and viewed in ECL Watch. They
+    include information about which attribute/line number/column the symbols
+    are defined in. Exported attributes are represented by
+    &lt;module&gt;.&lt;attribute&gt; in the header of the activity.
+    Non-exported (local) attributes are represented as
+    &lt;module&gt;.&lt;exported-attribute&gt;::&lt;non-exported-name&gt;</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt" />
+
+          <colspec colwidth="65.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>generateLogicalGraph</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, generates a Logical graph in addition to all the
+              workunit graphs.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>generateLogicalGraphOnly</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, generates only the Logical graph for the
+              workunit.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphExpandPersist</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, generates expands PERSISTed attributes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphExpandStored</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, generates expands STORED attributes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphIncludeName</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, generates attribute names in the header of the
+              activity boxes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphIncludeModule</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, generates module.attribute names in the header
+              of the activity boxes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphDisplayJavadoc</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, generates the Javadoc-style comments embedded in
+              the ECL in place of the standard text that would be generated
+              (see http://java.sun.com/j2se/javadoc/writingdoccomments/).
+              Javadoc-style comments on RECORD structures or scalar attributes
+              will not generate, as they have no graph Activity box directly
+              associated.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>logicalGraphDisplayJavadocParameters</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, generates information about parameters in any
+              Javadoc-style comments.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
+
+              <entry>Default: 2</entry>
+
+              <entry>Filtered disk reads are spilled if will be duplicated
+              more than N times.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldConstantCast</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, (cast)value is folded at generate time.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldFilter</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, filters are constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldAssign</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, TRANSFORMs are constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldSQL</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, SQL is constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeDiskRead</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, include project and filter in the transform for
+              a disk read.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSQL</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, optimize SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeThorCounts</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, convert COUNT(diskfile) into optimized
+              version.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>peephole</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, peephole optimize memcpy/memsets, etc.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotCSE</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, look for common sub-expressions in
+              TRANSFORMs/filters.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+
+        <tgroup cols="1">
+          <colspec colwidth="441.90pt" />
+
+          <tbody>
+            <row>
+              <entry><emphasis></emphasis></entry>
+            </row>
+          </tbody>
+        </tgroup>
+
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt" />
+
+          <colspec colwidth="65.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>spotTopN</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, convert CHOOSEN(SORT()) into a topN
+              activity.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotLocalMerge</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, if local JOIN and both sides are sorted,
+              generate a light-weight merge.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>countIndex</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, optimize COUNT(index) into optimized version
+              (also requires optimizeThorCounts).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowThroughSpill</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, allow through spills.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeBoolReturn</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, improve code when returning BOOLEAN from a
+              function.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSubString</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, don't allocate memory when doing a
+              substring.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>thorKeys</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, allow INDEX operations in Thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>regexVersion</emphasis></entry>
+
+              <entry>Default: 0</entry>
+
+              <entry>If set to 1, specifies use of the previous regular
+              expression implementation, which may be faster but also may
+              exceed stack limits.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compileOptions</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specify override compiler options (such as /Zm1000 to
+              double the compiler heap size to workaround a heap overflow
+              error).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>linkOptions</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specify override linker options.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjects</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If false, disables automatic field
+              projection/distribution optimization.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>notifyOptimizedProjects</emphasis></entry>
+
+              <entry>Default: 0</entry>
+
+              <entry>If set to 1, reports optimizations to named attributes.
+              If set to 2, reports all optimizations.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjectsPreservePersists</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, disables automatic field projection/distribution
+              optimization around reading PERSISTed files. If a PERSISTed file
+              is read on a different size cluster than it was created on,
+              optimizing the projected fields can mean that the
+              distribution/sort order cannot be recreated.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>aggressiveOptimizeProjects</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, enables attempted minimization of network
+              traffic for sorts/distributes. This option doesn't usually
+              result in significant benefits, but may do so in some specific
+              cases.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>percolateConstants</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If false, disables attempted aggressive constant value
+              optimizations.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">The following </emphasis><emphasis
+    role="bold">options</emphasis><emphasis role="bold"> are useful for
+    debugging: </emphasis></para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt" />
+
+          <colspec colwidth="65.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>clusterSize</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Override the number of nodes in the cluster (for
+              testing)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>debugNlp</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, output debug information about the NLP
+              processing to the .cpp file.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxMemory</emphasis></entry>
+
+              <entry>Default: 400M</entry>
+
+              <entry>Maximum amount of memory a subgraph can use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxSockets</emphasis></entry>
+
+              <entry>Default: 2000</entry>
+
+              <entry>Maximum number of sockets a subgraph can use.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>resourceMaxActivities</emphasis></entry>
+
+              <entry>Default: 200</entry>
+
+              <entry>Maximum number of activities a subgraph can
+              contain.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>unlimitedResources</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, assume lots of resources when resourcing the
+              graphs.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>traceRowXML</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, turns on tracing in ECL Watch graphs. This
+              should only be used with small datasets for debugging
+              purposes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>_Probe</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, display all result rows from intermediate result
+              sets in the graph in ECL Watch when used in conjunction with the
+              traceRowXML option. This should only be used with small datasets
+              for debugging purposes.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>debugQuery</emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, compile query using debug settings.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeLevel</emphasis></entry>
+
+              <entry>Default: 3 for roxie, else -1</entry>
+
+              <entry>Set the optimization level (optimizing compiler can be a
+              lot slower...).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>checkAsserts</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, enables ASSERT checking.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold">The following </emphasis><emphasis
+    role="bold">options</emphasis><emphasis role="bold"> are for advanced code
+    generation use:</emphasis></para>
+
+    <para>These <emphasis>options</emphasis> should be left alone unless you
+    REALLY know what you are doing. Typically they are used internally by our
+    developers to enable/disable features that are still in development.
+    Occasionally the technical support staff will suggest that you change one
+    of these settings to work around a problem that you encounter, but
+    otherwise the default settings are recommended in all cases.</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="3">
+          <colspec colwidth="178.45pt" />
+
+          <colspec colwidth="65.60pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>filteredReadSpillThreshold</emphasis></entry>
+
+              <entry>Default: 2</entry>
+
+              <entry>Filtered disk reads are spilled if will be duplicated
+              more than N times.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldConstantCast </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, (cast)value is folded at generate time.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldFilter </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, filters are constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldAssign </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, TRANSFORMs are constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>foldSQL </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, SQL is constant folded.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeDiskRead </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, include project and filter in the transform for
+              a disk read.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSQL </emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, optimize SQL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeThorCounts </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, convert COUNT(diskfile) into optimized
+              version.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>peephole </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, peephole optimize memcpy/memsets, etc.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotCSE </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, look for common sub-expressions in
+              TRANSFORMs/filters.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotTopN </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, convert CHOOSEN(SORT()) into a topN
+              activity.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>spotLocalMerge </emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, if local JOIN and both sides are sorted,
+              generate a light-weight merge.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>countIndex </emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, optimize COUNT(index) into optimized version
+              (also requires optimizeThorCounts).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>allowThroughSpill </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, allow through spills.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeBoolReturn </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, improve code when returning BOOLEAN from a
+              function.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeSubString </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, don't allocate memory when doing a
+              substring.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>thorKeys </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, allow INDEX operations in thor.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>regexVersion </emphasis></entry>
+
+              <entry>Default: 0</entry>
+
+              <entry>If set to 1, specifies use of the previous regular
+              expression implementation, which may be faster but also may
+              exceed stack limits.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>compileOptions </emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specify override compiler options (such as /Zm1000 to
+              double the compiler heap size to workaround a heap overflow
+              error).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>linkOptions </emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specify override linker options.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjects </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If false, disables automatic field
+              projection/distribution optimization.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>notifyOptimizedProjects </emphasis></entry>
+
+              <entry>Default: 0</entry>
+
+              <entry>If set to 1, reports optimizations to named attributes.
+              If set to 2, reports all optimizations.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>optimizeProjectsPreservePersists
+              </emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, disables automatic field projection/distribution
+              optimization around reading PERSISTed files. If a PERSISTed file
+              is read on a different size cluster than it was created on,
+              optimizing the projected fields can mean that the
+              distribution/sort order cannot be recreated.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>aggressiveOptimizeProjects </emphasis></entry>
+
+              <entry>Default: false</entry>
+
+              <entry>If true, enables attempted minimization of network
+              traffic for sorts/distributes. This option doesn't usually
+              result in significant benefits, but may do so in some specific
+              cases.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>percolateConstants </emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If false, disables attempted aggressive constant value
+              optimizations.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para>Example:</para>
+
+    <programlisting>  #OPTION('traceRowXml', TRUE);
+  #OPTION('_Probe', TRUE);
+  
+  my_rec := RECORD
+    STRING20 lname;
+    STRING20 fname;
+    STRING2 age;
+  END;
+  
+  d := DATASET([{ 'PORTLY', 'STUART' , '39'},
+              { 'PORTLY', 'STACIE' , '36'},
+              { 'PORTLY', 'DARA' , ' 1'},
+              { 'PORTLY', 'GARRETT', ' 4'}], my_rec);
+  
+  OUTPUT(d(d.age &gt; ' 1'), {lname, fname, age} );
+  
+  //************************************
+  //This example demonstrates Logical Graphs and
+  // Javadoc-style comment blocks
+  #OPTION('generateLogicalGraphOnly',TRUE);
+  #OPTION('logicalGraphDisplayJavadocParameters',TRUE);
+  
+  /**
+  * Defines a record that contains information about a person
+  */
+  namesRecord :=
+       RECORD
+  string20    surname;
+  string10    forename;
+  integer2    age := 25;
+       END;
+  
+  /**
+  Defines a table that can be used to read the information from the file
+  and then do something with it.
+  */
+  namesTable := DATASET('x',namesRecord,FLAT);
+  
+  
+  /**
+       Allows the name table to be filtered.
+  
+       @param ages The ages that are allowed to be processed.
+            badForename Forname to avoid.
+  
+       @return the filtered dataset.
+  */
+  namesTable filtered(SET OF INTEGER2 ages, STRING badForename) :=
+       namesTable(age in ages, forename != badForename);
+  
+  OUTPUT(filtered([10,20,33], ''));
+</programlisting>
+  </sect2>
+</sect1>

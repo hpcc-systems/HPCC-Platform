@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitMessages">
+  <title><emphasis role="bold">WorkunitMessages</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitMessages    <indexterm>
+      <primary>STD.System.Workunit.WorkunitMessages</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WorkunitMessages</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WorkunitMessages</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WorkunitMessages</primary>
+    </indexterm>
+(</emphasis>
+  <emphasis> wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitMessages returns a DATASET value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitMessages </emphasis>function returns
+  a DATASET with this format:</para>
+
+  <programlisting>EXPORT WsMessage := RECORD
+  UNSIGNED4 severity;
+  INTEGER4 code;
+  STRING32 location;
+  UNSIGNED4 row;
+  UNSIGNED4 col;
+  STRING16 source;
+  STRING20 time;
+  STRING message{MAXLENGTH(1024)};
+END;</programlisting>
+
+  <para>Each record in the returned dataset specifies a message in the
+  workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitMessages('W20070308-164946'));</programlisting>
+</sect1>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FUNCTIONMACRO_Structure">
+  <title>FUNCTIONMACRO Structure<indexterm>
+      <primary>FUNCTIONMACRO Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := FUNCTIONMACRO<indexterm>
+      <primary>FUNCTIONMACRO</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold"> RETURN</emphasis>
+  <emphasis>retval</emphasis>;</para>
+
+  <para><emphasis role="bold">ENDMACRO;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The return value type of the function. If omitted, the type
+          is implicit from the <emphasis>retval</emphasis> expression.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>The ECL definition name of the
+          function/macro.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>A list of names (tokens) of the parameters that will be
+          passed to the function/macro. These names are used in the
+          <emphasis>code</emphasis> and <emphasis>retval</emphasis> to
+          indicate where the passed parameter values are substituted when the
+          function/macro is used. Value types for these parameters are not
+          allowed, but default values may be specified as string
+          constants.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>The local definitions that comprise the function. These may
+          not be EXPORT or SHARED, but may include actions (like
+          OUTPUT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">RETURN<indexterm>
+              <primary>RETURN</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Specifies the return value expression—the
+          <emphasis>retval</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>retval</emphasis></entry>
+
+          <entry>The value, expression, recordset, row (record), or action to
+          return.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FUNCTIONMACRO </emphasis>structure is a code
+  generation tool, like the MACRO structure, coupled with code encapsulation
+  benefits of the FUNCTION structure. This means that #UNIQUENAME is not
+  necessary to prevent definition name clashes -- the definitions in the
+  <emphasis>code</emphasis> are local within the FUNCTIONMACRO.</para>
+
+  <para>One additional advantage the FUNCTIONMACRO has over the MACRO
+  structure is that it may be called in an expression context, just like a
+  FUNCTION would be.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
+  c1 := COUNT(infile(infield=compareval));
+  c2 := COUNT(infile);
+  RETURN DATASET([{'Total Records',c2},
+                  {'Recs=' + #TEXT(compareval),c1},
+                  {'Population Pct',(INTEGER)(((c2-c1)/c2)* 100.0)}],
+                 {STRING15 valuetype,INTEGER val});
+ENDMACRO;
+
+ds1 := dataset([{'M'},{'M'},{'M'},{''},{''},{'M'},{''},{'M'},{'M'},{''}],{STRING1 Gender});
+ds2 := dataset([{''},{'M'},{'M'},{''},{''},{'M'},{''},{''},{'M'},{''}],{STRING1 Gender});
+
+OUTPUT(Field_Population(ds1,Gender,''));
+OUTPUT(Field_Population(ds2,Gender,''));        </programlisting>
+
+  <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="MACRO_Structure">MACRO Structure</link></para>
+</sect1>

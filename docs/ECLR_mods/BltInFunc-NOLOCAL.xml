@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NOLOCAL">
+  <title>NOLOCAL</title>
+
+  <para><emphasis role="bold">NOLOCAL<indexterm>
+      <primary>NOLOCAL</primary>
+    </indexterm><indexterm>
+      <primary>NOLOCAL function</primary>
+    </indexterm>(</emphasis><emphasis>data</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.80pt" />
+
+        <colspec colwidth="275.00pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>data</emphasis></entry>
+
+            <entry>The name of a DATASET or INDEX attribute.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>NOLOCAL returns a record set or index.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">NOLOCAL </emphasis>function specifies that
+  all subsequent operations on the <emphasis>data</emphasis> are performed on
+  all nodes. This is typically used within a THISNODE operation. <emphasis
+  role="bold">Available for use only in Roxie.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>ds := JOIN(SomeData,NOLOCAL(SomeIndex), LEFT.ID = RIGHT.ID);</programlisting>
+
+  <para>See Also: <link linkend="ALLNODES">ALLNODES</link>, <link linkend="THISNODE">THISNODE</link>, <link linkend="LOCAL">LOCAL</link></para>
+</sect1>

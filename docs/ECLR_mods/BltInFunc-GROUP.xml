@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GROUP_function">
+  <title>GROUP</title>
+
+  <para><emphasis role="bold">GROUP<indexterm>
+      <primary>Group</primary>
+    </indexterm><indexterm>
+      <primary>GROUP function</primary>
+    </indexterm>( </emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, breakcriteria </emphasis><emphasis
+  role="bold">[</emphasis>,<emphasis role="bold"> ALL<indexterm>
+      <primary>ALL</primary>
+    </indexterm> ] ] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm></emphasis><emphasis> </emphasis><emphasis role="bold">]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.30pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to fragment.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>breakcriteria</emphasis></entry>
+
+            <entry>Optional. A comma-delimited list of expressions or key
+            fields in the recordset that specifies how to fragment the
+            recordset. You may use the keyword RECORD to indicate all fields
+            in the recordset, and/or you may use the keyword EXCEPT to list
+            non-group fields in the structure. You may also use the keyword
+            ROW to indicate each record in the recordset is a separate group.
+            If omitted, the recordset is ungrouped from any previous
+            grouping.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ALL</emphasis></entry>
+
+            <entry>Optional. Indicates the <emphasis>breakcriteria</emphasis>
+            is applied without regard to any previous order. If omitted, GROUP
+            assumes the recordset is already sorted in
+            <emphasis>breakcriteria</emphasis> order.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>GROUP returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">GROUP </emphasis>function fragments a
+  <emphasis>recordset</emphasis> into a set of sets. This allows aggregations
+  and other operations (such as ITERATE, DEDUP, ROLLUP, SORT and others) to
+  occur within defined subsets of the data—the operation executes on each
+  subset, individually. This means that the boundary condition code written in
+  the TRANSFORM function for those functions that use them will be different
+  than it would be for a <emphasis>recordset</emphasis> that has simply been
+  SORTed.</para>
+
+  <para>The <emphasis>recordset</emphasis> must be sorted by the same elements
+  as the <emphasis>breakcriteria</emphasis> if the ALL option is not
+  specified. The maximum size allowed for any one subgroup is 64 Mb and
+  subgroups never span nodes; if the <emphasis>breakcriteria</emphasis>
+  results in a subgroup larger than 64 Mb, an error occurs.</para>
+
+  <para>The <emphasis>recordset</emphasis> gets ‘ungrouped’ by use in a TABLE
+  function, by the JOIN function in some circumstances (see JOIN), by UNGROUP,
+  or by another GROUP function with the second parameter omitted.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyRec := RECORD
+ STRING20 Last;
+ STRING20 First;
+END;
+SortedSet := SORT(Person,Person.last_name); //sort by last name
+GroupedSet := GROUP(SortedSet,last_name);  //then group them
+
+SecondSort := SORT(GroupedSet,Person.first_name);
+   //sorts by first name within each last name group
+   // this is a “sort within group”
+
+UnGroupedSet := GROUP(GroupedSet); //ungroup the dataset
+MyTable := TABLE(SecondSort,MyRec); //create table of sorted names
+</programlisting>
+
+  <para>See Also: <link linkend="REGROUP">REGROUP</link>, <link linkend="COMBINE">COMBINE</link>, <link linkend="UNGROUP">UNGROUP</link>, <link linkend="EXCEPT">EXCEPT</link></para>
+</sect1>

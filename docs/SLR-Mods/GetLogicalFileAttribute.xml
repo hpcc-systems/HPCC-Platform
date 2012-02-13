@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetLogicalFileAttribute">
+  <title><emphasis role="bold">GetLogicalFileAttribute</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.GetLogicalFileAttribute<indexterm>
+      <primary>STD.File.GetLogicalFileAttribute</primary>
+    </indexterm><indexterm>
+      <primary>File.GetLogicalFileAttribute</primary>
+    </indexterm><indexterm>
+      <primary>GetLogicalFileAttribute</primary>
+    </indexterm>(</emphasis> <emphasis> logicalfilename, attrname </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>logicalfilename</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the logical
+          file as it is known by the DFU.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>attrname</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the file
+          attribute to return.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>GetLogicalFileAttribute returns returns a VARSTRING
+          (null-terminated) value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">GetLogicalFileAttribute </emphasis>function
+  returns the value of the <emphasis>attrname</emphasis> for the specified
+  <emphasis>logicalfilename</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+file := '~class::bmf::join::halfkeyed';
+
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordSize'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'recordCount'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'size'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'clusterName'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'directory'));
+OUTPUT(STD.File.GetLogicalFileAttribute(file,'numparts'));
+</programlisting>
+</sect1>

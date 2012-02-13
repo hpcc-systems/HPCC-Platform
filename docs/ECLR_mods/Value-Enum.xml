@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ENUM">
+  <title>ENUM</title>
+
+  <para><emphasis role="bold">ENUM<indexterm>
+      <primary>ENUM</primary>
+    </indexterm><indexterm>
+      <primary>ENUM datatype</primary>
+    </indexterm>( [ </emphasis><emphasis>type ,</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> name</emphasis><emphasis role="bold">
+  [=</emphasis><emphasis>value</emphasis><emphasis role="bold">] [
+  </emphasis><emphasis>, name</emphasis><emphasis role="bold">
+  [=</emphasis><emphasis>value</emphasis><emphasis role="bold">] ... ]
+  )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>type</emphasis></entry>
+
+          <entry>The numeric value type of the <emphasis>values</emphasis>. If
+          omitted, defaults to UNSIGNED4.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>name</emphasis></entry>
+
+          <entry>The label of the enumerated
+          <emphasis>value</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>The numeric value to associate with the
+          <emphasis>name</emphasis>. If omitted, the
+          <emphasis>value</emphasis> is the previous
+          <emphasis>value</emphasis> plus one (1). If all
+          <emphasis>values</emphasis> are omitted, the enumeration starts with
+          one (1).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ENUM </emphasis>declaration specifies
+  constant values to make code more readable.</para>
+
+  <para>Example:</para>
+
+  <programlisting>GenderEnum := ENUM(UNSIGNED1,Male,Female,Either,Unknown);
+        //values are 1, 2, 3, 4
+      
+Pflg := ENUM(None=0,Dead=1,Foreign=2,Terrorist=4,Wanted=Terrorist*2);
+        //values are 0, 1, 2, 4, 8
+namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  GenderEnum gender;
+  INTEGER2 age := 25;
+END;
+       
+namesTable2 := DATASET([{'Foreman','George',GenderEnum.Male,Pflg.Foreign},
+                        {'Bin Laden','Osama',GenderEnum.Male,Pflg.Foreign+Pflg.Terrorist+Pflg.Wanted}
+                       ], namesRecord);
+OUTPUT(namesTable2);
+        
+myModule(UNSIGNED4 baseError, STRING x) := MODULE
+  EXPORT ErrCode := ENUM( ErrorBase = baseError,
+                          ErrNoActiveTable,
+                          ErrNoActiveSystem,
+                          ErrFatal,
+                          ErrLast);
+  EXPORT reportX := FAIL(ErrCode.ErrNoActiveTable,'No ActiveTable in ' + x);
+END;
+       
+myModule(100, 'Call1').reportX;
+myModule(300, 'Call2').reportX;</programlisting>
+</sect1>

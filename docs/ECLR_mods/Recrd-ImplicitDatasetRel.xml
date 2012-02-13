@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Implicit_Dataset_Relationality">
+  <title>Implicit Dataset<indexterm>
+      <primary>Implicit Dataset</primary>
+    </indexterm> Relationality<indexterm>
+      <primary>Relationality</primary>
+    </indexterm><indexterm>
+      <primary>Implicit Dataset Relationality</primary>
+    </indexterm></title>
+
+  <para>Nested child datasets<indexterm>
+      <primary>Nested child datasets</primary>
+    </indexterm> in a Data Refinery (Thor) or Rapid Data Delivery Engine
+  (Roxie) cluster are inherently relational, since all the parent-child data
+  is contained within a single physical record. The following rules apply to
+  all inherent relationships.</para>
+
+  <para>The scope level of a particular query is defined by the primary
+  dataset for the query. During the query, the assumption is that you are
+  working with a single record from that primary dataset.</para>
+
+  <para>Assuming that you have the following relational structure in your
+  database:</para>
+
+  <programlisting>     Household           Parent 
+        Person           Child of Household 
+          Accounts       Child of Person, Grandchild of Household</programlisting>
+
+  <para>This means that, at the primary scope level:</para>
+
+  <para>a) All fields from any file that has a 1:M relationship with the
+  primary file are available. That is, all fields in any parent (or
+  grandparent, etc.) record are available to the child. For example, if the
+  Person dataset is the primary scope, then all the fields in the Household
+  dataset are available.</para>
+
+  <para>b) All child datasets (or grandchildren, etc.) can be used in
+  sub-queries to filter the parent, as long as the sub-query uses an aggregate
+  function or operates at the level of the existence of a set of child records
+  that meet the filter criteria (see EXISTS).You can use specific fields from
+  within a child record at the scope level of the parent record by the use of
+  EVALUATE or subscripting ([]) to a specific child record. For example, if
+  the Person dataset is the primary scope, then you may filter the set of
+  related Accounts records and check to see if you've filtered out all the
+  related Accounts records.</para>
+
+  <para>c) If a dataset is used in a scope where it is not a child of the
+  primary dataset, it is evaluated in the enclosing scope. For example, the
+  expression:</para>
+
+  <para><programlisting>Household(Person(personage &gt; AVE(Person,personage))</programlisting></para>
+
+  <para>means “households containing people whose age is above the average age
+  for the household.” It does <emphasis role="underline">not</emphasis> mean
+  “households containing people whose age is above the average for all the
+  households.” This is because the primary dataset (Household) encloses the
+  child dataset (Person), making the evaluation of the AVE function operate at
+  the level of the persons within the household.</para>
+
+  <para>d) An attribute defined with the STORED() workflow service is
+  evaluated at the global level. It is an error if it cannot be evaluated
+  independently of other datasets. This can lead to some slightly strange
+  behaviour:</para>
+
+  <programlisting>AveAge := AVE(Person,personage);
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+
+  <para>means “households containing people whose age is above the average age
+  for the household.” However,</para>
+
+  <programlisting>AveAge := AVE(Person,personage) : STORED('AveAge');
+MyHouses := Household(Person(personage &gt; aveAge));</programlisting>
+
+  <para>Means “households containing people whose age is above the average for
+  all the households.” This is because the AveAge attribute is now evaluated
+  outside the enclosing Household scope.</para>
+</sect1>

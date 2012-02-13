@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SEQUENTIAL">
+  <title>SEQUENTIAL</title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
+  :=<emphasis role="bold"> ] SEQUENTIAL<indexterm>
+      <primary>SEQUENTIAL</primary>
+    </indexterm><indexterm>
+      <primary>SEQUENTIAL function</primary>
+    </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.95pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attributename</emphasis></entry>
+
+            <entry>Optional. The action name, which turns the action into an
+            attribute definition, therefore not executed until the
+            attributename is used as an action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>A comma-delimited list of the actions to execute in order.
+            These may be ECL actions or external actions.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SEQUENTIAL </emphasis>action executes the
+  items in the <emphasis>actionlist</emphasis> in the order in which they
+  appear in the <emphasis>actionlist</emphasis>. This is useful when a
+  subsequent action requires the output of a precedent action. By definition,
+  PERSIST on an attribute means the attribute is evaluated outside of any
+  given evaluation order. Therefore, SEQUENTIAL has no effect on PERSISTed
+  attributes.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Act1 :=
+        OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Act2 :=
+        OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
+Act2 := OUTPUT(Person,{Person.per_last_name})));
+//by naming these actions, they become inactive
+        attributes
+//that only execute when the attribute names are called as
+        actions
+SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
+//executes Act1 alone, and only when it's finished, // executes
+          Act2 and Act3 together
+</programlisting>
+
+  <para>See Also: <link linkend="PARALLEL_function">PARALLEL</link>, <link
+  linkend="PERSIST">PERSIST</link></para>
+</sect1>

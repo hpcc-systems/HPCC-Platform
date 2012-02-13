@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FETCH">
+  <title>FETCH</title>
+
+  <para><emphasis role="bold">FETCH<indexterm>
+      <primary>FETCH</primary>
+    </indexterm><indexterm>
+      <primary>FETCH function</primary>
+    </indexterm>(</emphasis><emphasis>basedataset, index, position
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, transform
+  </emphasis><emphasis role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>basedataset</emphasis></entry>
+
+            <entry>The base DATASET attribute to process. Filtering is not
+            allowed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>The INDEX attribute that provides keyed access into the
+            <emphasis>basedataset</emphasis>. This will typically have a
+            filter expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>position</emphasis></entry>
+
+            <entry>An expression that provides the means of locating the
+            correct record in the <emphasis>basedataset</emphasis> (usually
+            the field within the index containing the fileposition
+            value).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each record fetched from
+            the <emphasis>basedataset</emphasis>. If omitted, FETCH returns a
+            set containing all fields from both the
+            <emphasis>basedataset</emphasis> and index, with the second of any
+            duplicate named fields removed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>FETCH returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">FETCH </emphasis>function processes through
+  all records in the <emphasis>index </emphasis>in the order specified by the
+  <emphasis>index, </emphasis>fetching each related record from the
+  <emphasis>basedataset</emphasis> and performing the
+  <emphasis>transform</emphasis> function.</para>
+
+  <para>The <emphasis>index</emphasis> will typically have a filter expression
+  to specify the exact set of records to return from the
+  <emphasis>basedataset</emphasis>. If the filter expression defines a single
+  record in the <emphasis>basedataset</emphasis>, FETCH will return just that
+  one record. See KEYED/WILD for a discussion of INDEX filtering.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Fetch">
+    <title>FETCH TRANSFORM Function Requirements</title>
+
+    <para>The <emphasis>transform</emphasis> function<indexterm>
+        <primary>transform function</primary>
+      </indexterm> must take up to two parameters: a LEFT record that must be
+    of the same format as the <emphasis>basedataset</emphasis>, and an
+    optional RIGHT record that that must be of the same format as the
+    <emphasis>index</emphasis>. The optional second parameter is useful in
+    those instances where the index contains information not present in the
+    recordset.</para>
+
+    <para>Example:</para>
+
+    <programlisting>PtblRec := RECORD
+  STRING2  State := Person.per_st;
+  STRING20 City  := Person.per_full_city;
+  STRING25 Lname := Person.per_last_name;
+  STRING15 Fname := Person.per_first_name;
+END;
+
+PtblOut := OUTPUT(TABLE( Person,PtblRec),,'RTTEMP::TestFetch');
+Ptbl := DATASET('RTTEMP::TestFetch',
+      {PtblRec,UNSIGNED8 __fpos {virtual(fileposition)}},
+      FLAT);
+
+Bld := BUILD(Ptbl,
+   {state,city,lname,fname,__fpos},
+   'RTTEMPkey::TestFetch');
+
+AlphaInStateCity := INDEX(Ptbl,
+      {state,city,lname,fname,__fpos},
+      'RTTEMPkey::TestFetch');
+
+TYPEOF(Ptbl) copy(Ptbl l) := TRANSFORM
+ SELF := l;
+END;
+
+AlphaPeople := FETCH(Ptbl,
+      AlphaInStateCity(state='FL',
+        city ='BOCA RATON',
+        Lname='WIK',
+        Fname='PICHA'),
+      RIGHT.__fpos,
+      copy(LEFT));
+
+OutFile := OUTPUT(CHOOSEN(AlphaPeople,10));
+SEQUENTIAL(PtblOut,Bld,OutFile)
+
+//NOTE the use of a filter on the index file. This is an important
+// use of standard filtering technique in conjunction with indexing
+// to achieve optimal “random” access into the base record set
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="BUILD">BUILDINDEX</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, KEYED/WILD</para>
+  </sect2>
+</sect1>

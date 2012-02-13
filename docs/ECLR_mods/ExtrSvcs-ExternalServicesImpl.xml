@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="External_Service_Implementation">
+  <title>External Service Implementation</title>
+
+  <para><emphasis>ECL </emphasis>external system services<indexterm>
+      <primary>external system services</primary>
+    </indexterm><indexterm>
+      <primary>External Service</primary>
+    </indexterm> are implemented as exported functions in a .SO (Shared
+  Object)<indexterm>
+      <primary>.SO</primary>
+    </indexterm><indexterm>
+      <primary>Shared Object</primary>
+    </indexterm>. An ECL system service .SO can contain one or more services
+  and (possibly) a single .SO initialization routine.</para>
+
+  <para>All exported functions in the .SO (hereafter referred to as "entry
+  points") must adhere to certain calling and naming conventions. First, entry
+  points must use the "C" naming convention. That is, function name decoration
+  (like that used by C++) is not allowed.</para>
+
+  <para>Second, the storage class of __declspec(dllexport) and declaration
+  type _cdecl needs to be declared for Windows/Microsoft C++ applications.
+  Typically, SERVICE_CALL is defined as _declspec(dllexport) and SERVICE_API
+  is defined as _cdecl for Windows, and left as nulls for Linux. For
+  example:</para>
+
+  <programlisting>Extern "C" _declspec(dllexport) unsigned _cdecl Countchars(const unsigned len, const char *string)</programlisting>
+
+  <sect2 id="DLL_Initialization">
+    <title>.SO Initialization</title>
+
+    <para>The following is an example prototype for an ECL (.SO) system
+    service initialization routine:</para>
+
+    <programlisting>extern "C" void stdcall &lt;functionName&gt; (IEclWorkUnit *w);</programlisting>
+
+    <para>The IEclWorkUnit is transparent to the application, and can be
+    declared as Struct IEclWorkUnit; or simply referred to as a void *.</para>
+
+    <para>In addition, an initialization routine should retain a reference to
+    its "Work Unit." Typically, a global variable is used to retain this
+    value. For example:</para>
+
+    <programlisting>IEclWorkUnit *workUnit;
+     // global variable to hold the Work Unit reference
+  
+  extern "C" void SERVICE_API myInitFunction (IEclWorkUnit *w)
+  {
+       workUnit = w; // retain reference to "Work Unit"
+  }
+</programlisting>
+  </sect2>
+
+  <sect2 id="Entry_Points">
+    <title>Entry Points</title>
+
+    <para>Entry points have the same definition requirements as initialization
+    routines. However, unlike initialization routines, entry points can return
+    a value. Valid return types are listed below. The following is an example
+    of an entry point:</para>
+
+    <programlisting>extern "C" __int64 SERVICE_API PrnLog(unsigned long len, const char *val)
+  {
+  }
+</programlisting>
+  </sect2>
+
+  <sect2 id="SERVICE_Structure_external">
+    <title>SERVICE Structure - external<indexterm>
+        <primary>SERVICE Structure</primary>
+      </indexterm></title>
+
+    <para>For each system service defined, a corresponding ECL function
+    prototype must be declared (see <emphasis role="bold">SERVICE
+    Structure</emphasis>).</para>
+
+    <programlisting>  servicename := SERVICE
+    functionname(parameter list) [: keyword = value];
+    END;
+  
+  For example:
+  email := SERVICE
+    simpleSend(STRING address, STRING template, STRING subject)
+       : LIBRARY='ecl2cw', INITFUNCTION='initEcl2Cw';
+     END;
+</programlisting>
+  </sect2>
+
+  <sect2 id="Keywords">
+    <title>Keywords<indexterm>
+        <primary>Service Function Keywords</primary>
+      </indexterm></title>
+
+    <para>This is the list of valid keywords for use in service function
+    prototypes:</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="115.95pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>LIBRARY</emphasis></entry>
+
+              <entry>Indicates the name of the .SO module an entry point is
+              defined in.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>ENTRYPOINT</emphasis></entry>
+
+              <entry>Specifies a name for the entry point. By default, the
+              name of the entry point is the function name.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>INITFUNCTION</emphasis></entry>
+
+              <entry>Specifies the name of the initialization routine defined
+              in the module containing the entry point. Currently, the
+              initialization function is called once.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>INCLUDE</emphasis></entry>
+
+              <entry>Indicates the function prototype is in the specified
+              include file, so the generated CPP must #include that file. If
+              INCLUDE is not specified, the C++ prototype is generated from
+              the ECL function definition.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>C</emphasis></entry>
+
+              <entry>Indicates the generated C++ prototype is enclosed within
+              an extern "C" rather than just extern.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>PURE</emphasis></entry>
+
+              <entry>Indicates the function returns the same result every time
+              you call it with the same parameters and has no side effects.
+              This allows the optimizer to make more efficient calls to the
+              function in some cases.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>ONCE</emphasis></entry>
+
+              <entry>Indicates the function has no side effects and is
+              evaluated at query execution time, even if the parameters are
+              constant. This allows the optimizer to make more efficient calls
+              to the function in some cases.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>ACTION</emphasis></entry>
+
+              <entry>Indicates the function has side effects and requires the
+              optimizer to not remove calls to the function.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>CONTEXT</emphasis></entry>
+
+              <entry>Internal use, only. Indicates an extra internal context
+              parameter is passed to the function.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>GLOBALCONTEXT</emphasis></entry>
+
+              <entry>Internal use, only. Same as CONTEXT, but there are
+              restrictions on where the function can be used (for example, not
+              in a TRANSFORM).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>CTXMETHOD</emphasis></entry>
+
+              <entry>Internal use, only. Indicates the function is actually a
+              method of the internal code context.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="Data_Types">
+    <title>Data Types</title>
+
+    <para><emphasis role="bold">Please see the BEGINC++ documentation for data
+    type mapping.</emphasis></para>
+  </sect2>
+
+  <sect2 id="Passing_Set_Parameters_to_a_Service">
+    <title>Passing Set Parameters<indexterm>
+        <primary>Passing Set Parameters</primary>
+      </indexterm><indexterm>
+        <primary>Set Parameters</primary>
+      </indexterm> to a Service</title>
+
+    <para>Three types of set parameters are supported: INTEGER, REAL, and
+    STRING<emphasis>n</emphasis>.</para>
+
+    <para><emphasis role="bold">INTEGER<indexterm>
+        <primary>INTEGER</primary>
+      </indexterm></emphasis></para>
+
+    <para>If you want to sum up all the elements in a set of integers with an
+    external function, to declare the function in the SERVICE
+    structure:</para>
+
+    <programlisting>  SetFuncLib := SERVICE
+    INTEGER SumInt(SET OF INTEGER ss) :
+       holertl,library='dab',entrypoint='rtlSumInt';
+  END;
+  x:= 3+4.5;
+  SetFuncLib.SumInt([x, 11.79]); //passed two REAL numbers - it works
+</programlisting>
+
+    <para>To define the external function, in the header (.h) file:</para>
+
+    <programlisting>__int64 rtlSumInt(unsigned len, __int64 * a);</programlisting>
+
+    <para>In the source code (.cpp) file:</para>
+
+    <programlisting>  __int64 rtlSumInt(unsigned len, __int64 * a) {
+       __int64 sum = 0;
+       for(unsigned i = 0; i &lt; len; i++) {
+            sum += a[i];
+       }
+       return sum;
+    }
+</programlisting>
+
+    <para>The first parameter contains the length of the set, and the second
+    parameter is an int array that holds the elements of the set. <emphasis
+    role="bold">Note:</emphasis> In declaring the function in ECL, you can
+    also have sets of INTEGER4, INTEGER2 and INTEGER1, but you need to change
+    the type of the C function parameter, too. The relationship is:</para>
+
+    <programlisting>  INTEGER8 -- __int64
+  INTEGER4 -- int
+  INTEGER2 -- short
+  INTEGER1 -- char
+</programlisting>
+
+    <para><emphasis role="bold">REAL<indexterm>
+        <primary>REAL</primary>
+      </indexterm></emphasis></para>
+
+    <para>If you want to sum up all the elements in a set of real
+    numbers:</para>
+
+    <para>To declare the function in the SERVICE structure<indexterm>
+        <primary>SERVICE structure</primary>
+      </indexterm>:</para>
+
+    <programlisting>  SetFuncLib := SERVICE
+       REAL8 SumReal(SET OF REAL8 ss) :
+            holertl,library='dab',entrypoint='rtlSumReal';
+  END;
+  
+  INTEGER r1 := 10;
+  r2 := 20.345;
+  SetFuncLib.SumReal([r1, r2]);
+  // intentionally passed an integer to the real set, it works too.
+</programlisting>
+
+    <para>To define the external function, in the header (.h) file:</para>
+
+    <para>double rtlSumReal(unsigned len, double * a);</para>
+
+    <para>In the source code (.cpp) file:</para>
+
+    <programlisting>  double rtlSumReal(unsigned len, double * a) {
+    double sum = 0;
+    for(unsigned i = 0; i &lt; len; i++) {
+       sum += a[i];
+    }
+    return sum;
+  }
+</programlisting>
+
+    <para>The first parameter contains the length of the set, and the second
+    parameter is an array that holds the elements of the set.</para>
+
+    <para><emphasis role="bold">Note:</emphasis> You can also declare the
+    function in ECL as set of REAL4, but you need to change the parameter of
+    the C function to float.</para>
+
+    <para><emphasis role="bold">STRING</emphasis><emphasis
+    role="bold">n<indexterm>
+        <primary>STRINGn</primary>
+      </indexterm></emphasis></para>
+
+    <para>If you want to calculate the sum of the lengths of all the strings
+    in a set, with the trailing blanks trimmed off:</para>
+
+    <para>To declare the function in the SERVICE structure<indexterm>
+        <primary>SERVICE structure</primary>
+      </indexterm>:</para>
+
+    <programlisting>  SetFuncLib := SERVICE
+    INTEGER SumCharLen(SET OF STRING20 ss) :
+       holertl,library='dab',entrypoint='rtlSumCharLen';
+  END;
+  str1 := '1234567890'+'xxxx ';
+  str2 := 'abc';
+  SetFuncLib.SumCharLen([str1, str2]);
+</programlisting>
+
+    <para>To define the external function, in the header (.h) file:</para>
+
+    <programlisting>__int64 rtlSumCharLen(unsigned len, char a[ ][20]);</programlisting>
+
+    <para>In the source code (.cpp) file:</para>
+
+    <programlisting>__int64 rtlSumCharLen(unsigned len, char a[][20]) {
+    __int64 sumtrimedlen = 0;
+       for(unsigned i = 0; i &lt; len; i++) {
+          for(int j = 20-1; j &gt;= 0; j—) {
+            if(a[i][j] != ' ') {
+              break;
+            }
+            a[i][j] = 0;
+       }
+       sumtrimedlen += j + 1;
+    }
+    return sumtrimedlen;
+  } </programlisting>
+
+    <para><emphasis role="bold">Note:</emphasis> In declaring the C function,
+    we have two parameters for the set. The first parameter is the length of
+    the set, the second parameter is char[][n] where n is the SAME as that in
+    stringn. Eg., if the service is declared as "integer SumCharLen(set of
+    string20)", then in the C function the parameter type must be char
+    a[][20].</para>
+  </sect2>
+
+  <sect2 id="ECL_Plug-Ins">
+    <title>ECL Plug-Ins</title>
+
+    <para>In addition to external services, an ECL code module may be built as
+    an ECL plug-in. These need to be deployed to the ESP and ECL servers
+    through the ConfigEnv utility (see the <emphasis>Systems Operation
+    Manual</emphasis>). A plug-in is accessable to all users of the
+    environment, and appears in the ECL IDE in the same fashion as a service
+    library.</para>
+  </sect2>
+
+  <sect2 id="Plug-In_Requirements">
+    <title>Plug-In Requirements</title>
+
+    <para>Plug-ins require an exported function with the following signature
+    under Windows:</para>
+
+    <para>Extern "C" _declspec(dllexport) bool
+    getECLPluginDefinition(ECLPluginDefinitionBlock *pb)</para>
+
+    <para>The function must fill the passed structure with correct information
+    for the features of the plug-in. The structure is defined as
+    follows:</para>
+
+    <programlisting>Struct ECLPluginDefinitionBlock
+  {
+    Size_t size;
+       //size of passed structure - filled in by the calling function
+    Unsigned magicVersion ;
+       // Filled in by .SO - must be PLUGIN_VERSION (1) 
+    Const char *moduleName;
+       // Name of the module 
+    Const char *ECL;
+       // ECL Service definition for non-HOLE applications
+    Unsigned flags;
+       // Type of plug-in - for user plugin use 1
+    Const char *version ;
+       // Text describing version of plugin - used in debugging
+    Const char *description;
+       // Text describing plugin
+  } </programlisting>
+
+    <para>To initialize information in a plug-in, use a global variable or
+    class and it will be appropriately constructed/destructed when the plugin
+    is loaded and unloaded.</para>
+  </sect2>
+
+  <sect2 id="Deployment">
+    <title>Deployment</title>
+
+    <para>External .SOs must be deployed to each node of the target
+    environment as well as the ECL Server and ESP server used for the cluster.
+    PlugIns may be deployed via the ConfigEnv command (see Systems Operation
+    manual). If external data files are required, they should be either
+    manually deployed to each node, or referenced from a network node (the
+    latter requires hard-coding the address in the code for the .SO). Note
+    that manually deployed files are not backed up with the standard SDS
+    backup utilities. [I think].</para>
+  </sect2>
+
+  <sect2 id="Constraints">
+    <title>Constraints</title>
+
+    <para>The full set of data types is supported on the Data Refinery and
+    Data Delivery Engines (Thor/Roxie/Doxie).</para>
+  </sect2>
+
+  <sect2 id="An_Example_Service">
+    <title>An Example Service</title>
+
+    <para>The following code example depicts an ECL system service (.SO)
+    called examplelib that contains one entry point (<emphasis
+    role="bold">stringfind</emphasis>). This is a slightly modified version of
+    the Find function found in the Str standard library. This version is
+    designed to work in both the Data Refinery and Complex Analysis Engine
+    supercomputers.</para>
+  </sect2>
+
+  <sect2 id="ECL_definitions">
+    <title>ECL definitions</title>
+
+    <programlisting>  EXPORT ExampleLib := SERVICE
+    UNSIGNED4 StringFind(CONST STRING src,
+          CONST STRING tofind,
+          UNSIGNED4 instance )
+       : c, pure,entrypoint='elStringFind';
+  END; </programlisting>
+  </sect2>
+
+  <sect2 id="DLL_code_module">
+    <title>.SO code module:</title>
+
+    <programlisting>  //******************************************************
+  // hqlplugins.hpp : Defines standard values included
+              in
+  // the plugin header file.
+  //******************************************************
+  #ifndef __HQLPLUGIN_INCL
+  #define __HQLPLUGIN_INCL
+  
+  #define PLUGIN_VERSION 1
+  
+  #define PLUGIN_IMPLICIT_MODULE 1
+  #define PLUGIN_MODEL_MODULE 2
+  #define PLUGIN_.SO_MODULE 4
+  
+  struct ECLPluginDefinitionBlock
+  {
+    size_t size;
+    unsigned magicVersion;
+    const char *moduleName;
+    const char *ECL;
+    const char *Hole;
+    unsigned flags;
+    const char *version;
+    const char *description;
+  };
+  
+  typedef bool (*EclPluginDefinition) (ECLPluginDefinitionBlock *);
+  
+  #endif //__HQLPLUGIN_INCL
+  
+  //******************************************************
+  // examplelib.hpp : Defines standard values included in
+  // the plugin code file.
+  //******************************************************
+  #ifndef EXAMPLELIB_INCL
+  #define EXAMPLELIB_INCL
+  
+  #ifdef _WIN32
+    #define EXAMPLELIB_CALL __cdecl
+    #ifdef EXAMPLELIB_EXPORTS
+       #define EXAMPLELIB_API __declspec(dllexport)
+    #else
+       #define EXAMPLELIB_API __declspec(dllimport)
+    #endif
+  #else
+    #define EXAMPLELIB_CALL
+    #define EXAMPLELIB_API
+  #endif
+  
+  #include "hqlplugins.hpp"
+  
+  extern "C" {
+  EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
+  EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
+       const char * src, unsigned hitLen, const char * hit,
+       unsigned instance);
+  }
+  
+  #endif //EXAMPLELIB_INCL
+  
+  //******************************************************
+  // examplelib.cpp : Defines the plugin code.
+  //******************************************************
+  #include &lt;memory.h&gt;
+  #include "examplelib.hpp"
+  
+  static char buildVersion[] = "$Name$ $Id$";
+  
+  #define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
+  
+  const char * const HoleDefinition =
+    "SYSTEM\n"
+    "MODULE (SYSTEM)\n"
+    " FUNCTION StringFind(string src, string search,
+        unsigned4 instance),unsigned4,c,name('elStringFind')\n"
+    "END\n";
+  
+  const char * const EclDefinition =
+    "export ExampleLib := SERVICE\n"
+    " unsigned integer4 StringFind(const string src,
+        const string tofind, unsigned4 instance )
+            : c, pure,entrypoint='elStringFind'; \n"
+    "END;";
+  
+  EXAMPLELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+  {
+    if (pb-&gt;size != sizeof(ECLPluginDefinitionBlock))
+       return false;
+    pb-&gt;magicVersion = PLUGIN_VERSION;
+    pb-&gt;version = EXAMPLELIB_VERSION " $Name$ $Id$";
+    pb-&gt;moduleName = "lib_examplelib";
+    pb-&gt;ECL = EclDefinition;
+    pb-&gt;Hole = HoleDefinition;
+    pb-&gt;flags = PLUGIN_IMPLICIT_MODULE;
+    pb-&gt;description = "ExampleLib example services library";
+    return true;
+  }
+  
+  //----------------------------------------------------------------
+  EXAMPLELIB_API unsigned EXAMPLELIB_CALL elStringFind(unsigned srcLen,
+    const char * src, unsigned hitLen, const char * hit,
+    unsigned instance)
+  {
+    if ( srcLen &lt; hitLen )
+       return 0;
+    unsigned steps = srcLen-hitLen+1;
+    for ( unsigned i = 0; i &lt; steps; i++ )
+       if ( !memcmp((char *)src+i,hit,hitLen) )
+            if ( !--instance )
+                 return i+1;
+    return 0;
+  }
+</programlisting>
+  </sect2>
+</sect1>

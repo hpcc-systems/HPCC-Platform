@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SuperFileContents">
+  <title><emphasis role="bold">SuperFileContents</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.SuperFileContents<indexterm>
+      <primary>STD.File.SuperFileContents</primary>
+    </indexterm><indexterm>
+      <primary>File.SuperFileContents</primary>
+    </indexterm><indexterm>
+      <primary>SuperFileContents</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis role="bold">
+  </emphasis> <emphasis>filename </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, recurse</emphasis> <emphasis
+  role="bold"> ] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          SuperFile.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>recurse</emphasis></entry>
+
+          <entry>A boolean flag indicating whether to expand nested SuperFiles
+          withinthe filename so that only logical files are returned. If
+          omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>SuperFileContents returns a dataset in the following
+          format:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <programlisting>EXPORT FsLogicalFileNameRecord := RECORD 
+  STRING name; 
+END;</programlisting>
+
+  <para>The <emphasis role="bold">SuperFileContents </emphasis>function
+  returns a list of the logical filenames of all the sub-files in the
+  <emphasis>filename</emphasis>.</para>
+
+  <para>This function is not included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.SuperFileContents('~CLASS::RT::SF::Daily'));
+  //returns all files in the SuperFile</programlisting>
+</sect1>

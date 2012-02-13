@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GetExpandLogicalFileName">
+   <title>
+      <emphasis role="bold">GetExpandLogicalFileName</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">ThorLib.GetExpandLogicalFileName<indexterm>
+      <primary>STD.System.ThorLib.GetExpandLogicalFileName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.ThorLib.GetExpandLogicalFileName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>ThorLib.GetExpandLogicalFileName</primary>
+    </indexterm>
+    <indexterm>
+      <primary>GetExpandLogicalFileName</primary>
+    </indexterm>
+(
+        </emphasis>
+      <emphasis>filename </emphasis>
+      <emphasis role="bold">)</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+
+   
+
+   <entry>
+      <emphasis>filename</emphasis> </entry><entry>A null-terminated string
+        containing the logical name of the file.</entry>
+        </row>
+        <row>
+   <entry>Return:<emphasis> </emphasis></entry><entry>GetExpandLogicalFileName returns a
+        VARSTRING (null-terminated) value.</entry>
+
+
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">GetExpandLogicalFileName
+        </emphasis>function returns a string containing the expanded logical
+        filename (ncluding the default scope, if the filename does not contain
+        a leading tilde), all in lowercase. This is the same value as is used
+        internally by DATASET and OUTPUT.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">A := ThorLib.GetExpandLogicalFileName('Fred');</programlisting>
+</sect1>

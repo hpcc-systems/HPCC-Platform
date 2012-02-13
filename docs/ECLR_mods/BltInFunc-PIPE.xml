@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PIPE">
+  <title>PIPE</title>
+
+  <para><emphasis role="bold">PIPE<indexterm>
+      <primary>PIPE</primary>
+    </indexterm><indexterm>
+      <primary>PIPE function</primary>
+    </indexterm>(</emphasis><emphasis> command, recorddef </emphasis><emphasis
+  role="bold"> [, CSV<indexterm>
+      <primary>CSV</primary>
+    </indexterm> | XML<indexterm>
+      <primary>XML</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><emphasis role="bold">PIPE(</emphasis><emphasis> recordset, command
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, recorddef
+  </emphasis><emphasis role="bold">] [</emphasis>,<emphasis role="bold">
+  REPEAT<indexterm>
+      <primary>REPEAT</primary>
+    </indexterm>] [</emphasis>,<emphasis role="bold"> CSV | XML ]
+  [</emphasis>,<emphasis role="bold"> OUTPUT<indexterm>
+      <primary>OUTPUT</primary>
+    </indexterm>( CSV | XML ) ] [</emphasis>,<emphasis role="bold">
+  GROUP<indexterm>
+      <primary>GROUP</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.90pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>command</emphasis></entry>
+
+            <entry>The name of a program to execute. This must have already
+            been deployed on the HPCC cluster.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recorddef</emphasis></entry>
+
+            <entry>The RECORD structure format for output. If omitted, output
+            is the same as the input format.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CSV</emphasis></entry>
+
+            <entry>Optional. In form 1 (and as the parameter to the OUTPUT
+            option), specifies the output data format is CSV. In form 2,
+            specifies the input data format is CSV. If omitted, the format is
+            raw.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XML</emphasis></entry>
+
+            <entry>Optional. In form 1 (and as the parameter to the OUTPUT
+            option), specifies the output data format is XML. In form 2,
+            specifies the input data format is XML. If omitted, the format is
+            raw.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The input dataset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">REPEAT</emphasis></entry>
+
+            <entry>Optional. Specifies a new instance of the command program
+            is created for each row in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">OUTPUT</emphasis></entry>
+
+            <entry>Optional. Specifies CSV or XML result data format.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Optional. Specifies each result record is generated in a
+            separate GROUP (only if REPEAT is specified).</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PIPE returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PIPE </emphasis>function has two forms.
+  </para>
+
+  <para>Form 1 takes no input, executes the <emphasis>command</emphasis>, and
+  produces its output in the <emphasis>recorddef </emphasis>format. This is an
+  "input" pipe (like the PIPE option on a DATASET definition).</para>
+
+  <para>Form 2 takes the input <emphasis>recordset</emphasis>, executes the
+  <emphasis>command</emphasis>, producing output in the <emphasis>recorddef
+  </emphasis>format. This is a "through" pipe.</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRecord := RECORD
+  STRING10 forename;
+  STRING10 surname;
+  STRING2 nl := '\r\n';
+END;
+
+d := PIPE('pipeRead 200', namesRecord); //form 1 - input pipe
+
+t := PIPE(d, 'pipeThrough'); //form 2 - through pipe
+
+OUTPUT(t,,PIPE('pipeWrite \\thordata\\names.all')); //output pipe
+
+//Form 2 with XML input:
+namesRecord := RECORD
+  STRING10 Firstname{xpath('/Name/FName')};
+  STRING10 Lastname{xpath('/Name/LName')};
+END;
+
+p := PIPE('echo &lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;/Name&gt;', namesRecord, XML); 
+OUTPUT(p);
+</programlisting>
+
+  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="DATASET">DATASET</link></para>
+</sect1>

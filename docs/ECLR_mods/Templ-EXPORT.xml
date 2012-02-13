@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_EXPORT">
+  <title>#EXPORT</title>
+
+  <para><emphasis role="bold">#EXPORT( </emphasis><emphasis>symbol,
+  data</emphasis> <emphasis role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="76.35pt" />
+
+        <colspec colwidth="276.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>The name of a previously declared template
+            variable.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>data</emphasis></entry>
+
+            <entry>The name of a field, RECORD structure, or dataset.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#EXPORT </emphasis><indexterm>
+      <primary>#EXPORT</primary>
+    </indexterm>statement produces XML text from the specified
+  <emphasis>data</emphasis> and places it in the <emphasis>symbol</emphasis>.
+  This allows the LOADXML(symbol,name) form to instantiate an XML scope on the
+  information from the <emphasis>data</emphasis> to process.</para>
+
+  <para>The XML output is generated with the following format:</para>
+
+  <programlisting>  &lt;Data&gt;
+    &lt;Field label="&lt;label-of-field&gt;"
+           name="&lt;name-of-field&gt;"
+           position="&lt;n&gt;"
+           rawtype="&lt;n&gt;"
+           size="&lt;n&gt;"
+           type="&lt;ecl-type-without-size&gt;" /&gt;
+    ...
+  &lt;/Data&gt;
+</programlisting>
+
+  <para>IFBLOCKs are simply expanded out in the XML. Nested RECORD types have
+  an isRecord attribute that is set to 1, and are followed by the fields they
+  contain, and then a Field tag with no name and the isEnd attribute set to 1.
+  This representation is used rather than nested objects so it can be
+  processed by a #FOR statement. Child dataset types are also expanded out in
+  a similar way, and have an isDataset attribute set to 1 on the field.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  LOADXML('&lt;xml/&gt;'); //"dummy" just to open an XML scope
+  
+  NamesRecord := RECORD
+    STRING10 first;
+    STRING20 last;
+  END;
+  r := RECORD
+    UNSIGNED4 dg_parentid;
+    STRING10 dg_firstname;
+    STRING dg_lastname;
+    UNSIGNED1 dg_prange;
+    IFBLOCK(SELF.dg_prange % 2 = 0)
+      STRING20 extrafield;
+    END;
+    NamesRecord namerec;
+    DATASET(NamesRecord) childNames;
+  END;
+  
+  ds := DATASET('~RTTEST::OUT::ds', r, thor);
+  
+  #DECLARE(out);
+  #EXPORT(out, r);
+  OUTPUT(%'out'%);
+  /* produces this result:
+  &lt;Data&gt;
+    &lt;Field label="DG_ParentID"
+        name="DG_ParentID"
+        position="0"
+        rawtype="262401"
+        size="4"
+        type="unsigned integer"/&gt;
+    &lt;Field label="DG_firstname"
+        name="DG_firstname"
+        position="1"
+        rawtype="655364"
+        size="10"
+        type="string"/&gt;
+    &lt;Field label="DG_lastname"
+        name="DG_lastname"
+        position="2"
+        rawtype="-983036"
+        size="-15"
+        type="string"/&gt;
+    &lt;Field label="DG_Prange"
+        name="DG_Prange"
+        position="3"
+        rawtype="65793"
+        size="1"
+        type="unsigned integer"/&gt;
+    &lt;Field label="ExtraField"
+        name="ExtraField"
+        position="4"
+        rawtype="1310724"
+        size="20"
+        type="string"/&gt;
+    &lt;Field isRecord="1"
+        label="namerec"
+        name="namerec"
+        position="5"
+        rawtype="13"
+        size="30"
+        type="namesRecord"/&gt;
+    &lt;Field label="first"
+        name="first"
+        position="6"
+        rawtype="655364"
+        size="10"
+        type="string"/&gt;
+    &lt;Field label="last"
+        name="last"
+        position="7"
+        rawtype="1310724"
+        size="20"
+        type="string"/&gt;
+    &lt;Field isEnd="1" name="namerec"/&gt;
+    &lt;Field isDataset="1"
+        label="childNames"
+        name="childNames"
+        position="8"
+        rawtype="-983020"
+        size="30"
+        type="table of &amp;lt;unnamed&amp;gt;"/&gt;
+    &lt;Field label="first"
+        name="first"
+        position="9"
+        rawtype="655364"
+        size="10"
+        type="string"/&gt;
+    &lt;Field label="last"
+        name="last"
+        position="10"
+        rawtype="1310724"
+        size="20"
+        type="string"/&gt;
+    &lt;Field isEnd="1" name="childNames"/&gt;
+  &lt;/Data&gt;
+  */
+  
+  //which you can then process ;ike this:
+  LOADXML(%'out'%, 'Fred');
+  #FOR (Fred)
+   #FOR (Field)
+    #IF (%'{@isEnd}'% &lt;&gt; '')
+  OUTPUT('END');
+    #ELSE
+  OUTPUT(%'{@type}'%
+    #IF (%'{@size}'% &lt;&gt; '-15' AND
+         %'{@isRecord}'%='' AND
+         %'{@isDataset}'%='')
+  + %'{@size}'%
+     #END
+  + ' ' + %'{@label}'% + ';');
+    #END
+   #END
+  #END
+  OUTPUT('Done');
+</programlisting>
+
+  <para>See Also: <link linkend="LOADXML">LOADXML</link>, <link
+  linkend="_EXPORTXML">#EXPORTXML</link>, <link
+  linkend="_DECLARE">#DECLARE</link></para>
+</sect1>

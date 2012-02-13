@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WordCount">
+  <title><emphasis role="bold">WordCount</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.WordCount<indexterm>
+      <primary>STD.Str.WordCount</primary>
+    </indexterm><indexterm>
+      <primary>Str.WordCount</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis><emphasis role="bold">
+  )</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.WordCount<indexterm>
+      <primary>STD.Uni.WordCount</primary>
+    </indexterm><indexterm>
+      <primary>Uni.WordCount</primary>
+    </indexterm>(</emphasis> <emphasis>source </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, locale </emphasis><emphasis role="bold">
+  ] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the words to count. Words are delimited
+          by spaces.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>WordCount returns an integer value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WordCount </emphasis>function returns the
+  number of words in the <emphasis>source</emphasis> string.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+
+str1 := 'a word a day keeps the doctor away';
+
+output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
+                                 //finds eight words by removing spaces
+
+STD.STr.CountWords(str1);    //finds eight words based on space delimiter
+</programlisting>
+
+  <para></para>
+</sect1>

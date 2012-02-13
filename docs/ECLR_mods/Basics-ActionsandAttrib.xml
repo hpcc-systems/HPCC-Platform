@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Actions_and_Attributes">
+  <title>Actions and Attributes</title>
+
+  <para>There are several built-in Actions in ECL (such as OUTPUT), but there
+  are many more actions that you can execute as queries to the
+  supercomputer.</para>
+
+  <sect2 id="Functions_as_ActionsFunctions_as_Actions">
+    <title>Functions as Actions<indexterm>
+        <primary>Functions as Actions</primary>
+      </indexterm></title>
+
+    <para>Fundamentally, all the built-in functions that return single values
+    (such as COUNT) can be executed as Actions. For example,</para>
+
+    <programlisting>Attr1 := COUNT(Trades);
+Attr2 := MAX(Trades,trd_bal);
+Attr3 := IF (1 = 0, 'A', 'B');</programlisting>
+
+    <para>are all attribute definitions, but</para>
+
+    <programlisting>COUNT(Trades); //execute these Function calls as Actions
+MAX(Trades,trd_bal);
+IF (1 = 0, 'A', 'B');</programlisting>
+
+    <para>are also all valid actions, and as such, can directly generate
+    result values by simply submitting them as queries to the supercomputer.
+    Basically, any ECL expression that results in a scalar value can be used
+    as an Action to instigate a workunit.</para>
+  </sect2>
+
+  <sect2 id="Attributes_as_ActionsAttributes_as_Actions">
+    <title>Attributes as Actions<indexterm>
+        <primary>Attributes as Actions</primary>
+      </indexterm></title>
+
+    <para>Any Attribute that defines a single value of some sort (that is, it
+    does not define a record set) can be executed as an Action. These same
+    actions can be executed by submitting the names of the Attributes as
+    queries, like this:</para>
+
+    <programlisting>Attr1; //These all generate the same result values
+Attr2; // as the previous examples
+Attr3;</programlisting>
+  </sect2>
+
+  <sect2 id="Actions_as_Attributes">
+    <title>Actions as Attributes<indexterm>
+        <primary>Actions as Attributes</primary>
+      </indexterm></title>
+
+    <para>Conversely, by simply giving any Action an Attribute name you turn
+    it into an Attribute definition, therefore no longer a directly executable
+    action. For example,</para>
+
+    <programlisting>OUTPUT(Person);</programlisting>
+
+    <para>is an action, but</para>
+
+    <programlisting>Attr4 := OUTPUT(Person);</programlisting>
+
+    <para>is an attribute definition and does not immediately execute when
+    submitted as part of a query. To execute the action inherent in the
+    attribute, you must execute the Attribute name you've given to the Action,
+    like this:</para>
+
+    <programlisting>Attr4; // run the OUTPUT(Person) action</programlisting>
+  </sect2>
+
+  <sect2 id="Debugging_Uses">
+    <title>Debugging Uses</title>
+
+    <para>This technique of directly executing an attribute as an Action is
+    useful when debugging complex ECL code. You can send the attribute as a
+    query to determine if intermediate values are correctly calculated before
+    continuing on with more complex code.</para>
+  </sect2>
+</sect1>

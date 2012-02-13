@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Value_Types" role="nobrk">
+  <title>Value Types<indexterm>
+      <primary>Value Types</primary>
+    </indexterm></title>
+
+  <para>Value types declare an Attribute's type when placed left of the
+  Attribute name in the definition. They also declare a passed parameter's
+  type when placed left of the parameter name in the definition. Value types
+  also explicitly cast from type to another when placed in parentheses left of
+  the expression to cast.</para>
+
+  <sect2 id="BOOLEAN">
+    <title>BOOLEAN</title>
+
+    <para><emphasis role="bold">BOOLEAN<indexterm>
+        <primary>BOOLEAN</primary>
+      </indexterm><indexterm>
+        <primary>BOOLEAN value type</primary>
+      </indexterm></emphasis></para>
+
+    <para>A Boolean true/false value. <emphasis
+    role="bold">TRUE</emphasis><indexterm>
+        <primary>TRUE</primary>
+      </indexterm> and <emphasis role="bold">FALSE<indexterm>
+        <primary>FALSE</primary>
+      </indexterm></emphasis> are reserved ECL keywords; they are Boolean
+    constants that may be used to compare against a BOOLEAN type. When BOOLEAN
+    is used in a RECORD structure, a single-byte integer containing one (1) or
+    zero (0) is output.</para>
+
+    <para>Example:</para>
+
+    <programlisting>BOOLEAN MyBoolean := SomeAttribute &gt; 10;
+        // declares MyBoolean a BOOLEAN Attribute
+     
+BOOLEAN MyBoolean(INTEGER p) := p &gt; 10;
+        // MyBoolean takes an INTEGER parameter
+
+BOOLEAN Typtrd := trades.trd_type = 'R';
+        // Typtrd is a Boolean attribute, likely to be used as a filter</programlisting>
+
+    <para>See Also: <link linkend="TRUE_FALSE">TRUE/FALSE</link></para>
+  </sect2>
+</sect1>

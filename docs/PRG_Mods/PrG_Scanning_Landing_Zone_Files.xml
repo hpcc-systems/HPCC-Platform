@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Scanning_Landing_Zone_Files">
+  <title><emphasis>Scanning Landing Zone Files</emphasis></title>
+
+  <para>Here's the scenario—you've just received a data file from someone and
+  it has been put on your landing zone. Before you spray that file to your
+  Thor cluster and start to work with it, you want to have a quick look to see
+  exactly what kind of data it contains and whether the format of that data
+  matches the format that you were given by the supplier. There are a number
+  of ways to do this, including mapping a drive to your landing zone and using
+  a text/hex editor to open the file and look at the contents.</para>
+
+  <para>This article will show you how to accomplish this from within the ECL
+  IDE using ECL. Here's the code (contained in the DeclareData MODULE
+  attribute):</para>
+
+  <programlisting>EXPORT MAC_ScanFile(IP, infile, scansize) := MACRO
+  ds := DATASET(Std.File.ExternalLogicalFileName(IP, infile),{DATA1 S},THOR )[1..scansize];
+  OUTPUT(TABLE(ds,{hex := ds.s,txt := (STRING1)ds.s}),ALL);
+  Rec := RECORD
+    UNSIGNED2 C;
+    DATA S {MAXLENGTH(8*1024)};
+  END;
+  Rec XF1(ds L,INTEGER C) := TRANSFORM
+    SELF.C := C;
+    SELF.S := L.s;
+  END;
+
+  ds2 := PROJECT(ds,XF1(LEFT,COUNTER));
+  Rec XF2(Rec L,Rec R) := TRANSFORM
+    SELF.S := L.S[1 .. R.C-1] + R.S[1];
+    SELF := L;
+  END;
+  Rolled := ROLLUP(ds2,TRUE,XF2(LEFT,RIGHT));
+  OUTPUT(TRANSFER(Rolled[1].S,STRING));
+ENDMACRO;
+</programlisting>
+
+  <para>This is written as a MACRO because you could have multiple Landing
+  Zones, and you certainly are going to want to look into different files each
+  time. Therefore, a MACRO that generates the standard process code to scan
+  the file is precisely what's needed here.</para>
+
+  <para>This MACRO takes three parameters: the IP of the landing zone
+  containing the file the fully-qualified path to that file on the landing
+  zone the number of bytes to read (maximum 8K)</para>
+
+  <para>The initial DATASET declaration uses the
+  Std.File.ExternalLogicalFileName function to name the file. Defining the
+  RECORD structure as a single DATA1 field is necessary to ensure that both
+  text and binary fields can be read correctly. Specifying the DATASET as a
+  THOR file (no matter what type of file it actually is) makes it simple to
+  read as a fixed-length record file. The square brackets at the end of the
+  DATASET declaration automatically limit the number of 1-byte records read to
+  the first <emphasis>scansize</emphasis> number of bytes in the file.</para>
+
+  <para>The first OUTPUT action allows you to see the raw Hexadecimal data
+  from the file.</para>
+
+  <para>The TABLE function doubles up the input data, producing a DATA1
+  displaying the Hex value and a STRING1 that type casts each byte to a
+  STRING1 for display. Viewing the raw Hex value is necessary because most
+  binary fields will not contain text-displayable characters (and those that
+  do may mislead you as to the actual contents of the field). Non-displayable
+  binary characters show up as a square box in the text column display.</para>
+
+  <para>Next, we'll construct a more text-friendly view of the data. To do
+  that we'll start with the Rec RECORD structure, which defines a byte-counter
+  field (UNSIGNED2 C) and a variable-length field (DATA S {MAXLENGTH(8*1024)}
+  to contain the text representation of the data as a single horizontal line
+  of text.</para>
+
+  <para>The XF1 TRANSFORM and its associated PROJECT moves the data from the
+  input format into the format needed to roll up that data into a single text
+  string. Adding the byte-counter field is necessary to ensure that blank
+  spaces are not accidentally trimmed out of the final display.</para>
+
+  <para>The XF2 TRANSFORM and its associated ROLLUP function performs the
+  actual data append. The TRUE condition parameter ensures that only one
+  record will result containing all the input bytes rolled into a single
+  record.</para>
+
+  <para>The last OUTPUT action uses the TRANSFER function instead of type
+  casting to ensure that all the text characters in the original data are
+  accurately represented.</para>
+
+  <para>You call this MACRO like this:</para>
+
+  <programlisting>IMPORT ProgrammersGuide AS PG;
+PG.DeclareData.MAC_ScanFile( '10.173.9.4','C:\\training\\import\\BOCA.XML', 200);
+</programlisting>
+
+  <para>When viewing the result, the ECL IDE Result_1 tab displays a column of
+  hexadecimal values and the text character (if any) next to it in the second
+  column. This byte-by-byte view of the data is designed to allow you to see
+  the raw Hexadecimal values of each byte alongside its text representation.
+  This is the primary view to use when looking at the contents of files
+  containing binary data.</para>
+
+  <para>The ECL IDE Result_2 tab displays a single record with a single field.
+  You can click on that field to highlight it, right-click and select “Copy”
+  from the popup menu, then paste the text into any text editor to view.
+  Binary fields will appear as square blocks or “garbage” characters,
+  depending on their hex value. Once pasted into a text editor, you can easily
+  look for data patterns that indicate the start for fields or records and
+  validate that the data layout information provided by the data vendor is
+  accurate (or not).</para>
+</sect1>

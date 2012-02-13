@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TOUNICODE">
+  <title>TOUNICODE</title>
+
+  <para><emphasis role="bold">TOUNICODE<indexterm>
+      <primary>TOUNICODE</primary>
+    </indexterm><indexterm>
+      <primary>TOUNICODE Function</primary>
+    </indexterm>(</emphasis><emphasis> string, encoding </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.20pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>string</emphasis></entry>
+
+            <entry>The DATA string to translate.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>encoding</emphasis></entry>
+
+            <entry>The encoding codepage (supported by IBM's ICU) to use for
+            the translation.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TOUNICODE returns a single UNICODE value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TOUNICODE </emphasis>function returns the
+  <emphasis>string </emphasis>translated from the DATA value to the specified
+  unicode <emphasis>encoding</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>DATA5 x := FROMUNICODE(u'ABCDE','UTF-8');
+  //results in 4142434445
+y := TOUNICODE(x,'US-ASCII');</programlisting>
+
+  <para>See Also: <link linkend="FROMUNICODE">FROMUNICODE</link>, <link linkend="UNICODEORDER">UNICODEORDER</link></para>
+</sect1>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="StartsWith">
+  <title><emphasis role="bold">StartsWith</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.StartsWith<indexterm>
+      <primary>STD.Str.StartsWith</primary>
+    </indexterm><indexterm>
+      <primary>Str.StartsWith</primary>
+    </indexterm><indexterm>
+      <primary>StartsWith</primary>
+    </indexterm>(</emphasis> <emphasis>source, prefix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>The string to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>prefix</emphasis></entry>
+
+          <entry>The string to find.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>StartsWith returns a BOOLEAN value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">StartsWith</emphasis> function returns TRUE if
+  the <emphasis>source</emphasis> starts with the text in the
+  <emphasis>suffix</emphasis> parameter.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.STr.StartsWith('a word away','a word');   //returns TRUE
+STD.STr.StartsWith('a word away','aword');   //returns FALSE
+</programlisting>
+</sect1>

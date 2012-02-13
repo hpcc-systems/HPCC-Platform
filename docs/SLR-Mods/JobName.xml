@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1
+  PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Name">
+   <title>
+      <emphasis role="bold">Name</emphasis>
+   </title>
+   <para>
+      <emphasis role="bold">STD.System.Job.Name<indexterm>
+      <primary>STD.System.Job.Name</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Job.Name</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Job.Name</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Name</primary>
+    </indexterm>(</emphasis>
+      <emphasis>
+        </emphasis>
+      <emphasis role="bold">)</emphasis>
+   </para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          
+
+   <entry>Return:<emphasis> </emphasis></entry><entry>Name returns a VARSTRING
+        value.</entry>
+
+
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+   <para>The <emphasis role="bold">Name </emphasis>function returns
+        the name of the workunit.</para>
+   <para>Example:</para>
+   <programlisting format="linespecific">A := STD.System.Job.Name();</programlisting>
+</sect1>

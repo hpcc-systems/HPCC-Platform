@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect2 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveFileRelationship">
+  <title><emphasis role="bold">RemoveFileRelationship</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.RemoveFileRelationship<indexterm>
+      <primary>STD.File.RemoveFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>RemoveFileRelationship</primary>
+    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
+  <emphasis> </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
+  primaryfields </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
+  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, secondaryfields
+  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
+  <emphasis>relationship </emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>primary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the primary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the secondary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>primaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the primary
+          key field for the <emphasis>primary</emphasis> file. The value
+          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
+          an INDEX that must use FETCH to access non-keyed fields. If omitted,
+          the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the foreign
+          key field relating to the <emphasis>primary</emphasis> file. If
+          omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>relationship</emphasis></entry>
+
+          <entry>A null-terminated string containing either “link” or “view”
+          indicating the type of relationship between the
+          <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
+          files. If omitted, the default is “link.”</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RemoveFileRelationship</emphasis> function
+  removes a file relationshuip between the <emphasis>primary</emphasis> and
+  <emphasis>secondary</emphasis> files.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.RemoveFileRelationship('names', 'inquiries');
+</programlisting>
+
+  <para>See Also: <link linkend="AddFileRelationship">AddFileRelationship</link></para>
+</sect1>

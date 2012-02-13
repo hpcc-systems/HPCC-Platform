@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_the_GROUP_Function">
+  <title><emphasis role="bold">Using the GROUP Function</emphasis></title>
+
+  <para>The GROUP function provides important functionality when processing
+  very large datasets. The basic concept is that the GROUP function will break
+  the dataset up into a number of smaller subsets, but the GROUPed dataset is
+  still treated as a single entity in your ECL code.</para>
+
+  <para>Operations on a GROUPed dataset are automatically performed on each
+  subset, separately. Therefore, an operation on a GROUPed dataset will appear
+  in the ECL code as a single operation, but will in fact internally be
+  accomplished by serially performing the same operation against each subset
+  in turn. The advantage this approach has is that each individual operation
+  is much smaller, and more likely to be able to be accomplished without
+  spilling to disk, which means the total time to perform all the separate
+  operations will typically be less than performing the same operation against
+  the entire dataset (sometimes dramatically so).</para>
+
+  <sect2 id="GROUP_vs_SORT">
+    <title>GROUP vs. SORT</title>
+
+    <para>The GROUP function does not automatically sort the records it’s
+    operating on—it will GROUP based on the order of the records it is given.
+    Therefore, SORTing the records first by the field(s) on which you want to
+    GROUP is usually done (except in circumstances where the GROUP field(s)
+    are used only to break a single large operation up into a number of much
+    smaller operations).</para>
+
+    <para>For the set of operations that use TRANSFORM functions (such as
+    ITERATE, PROJECT, ROLLUP, etc), operating on a GROUPed dataset where the
+    operation is performed on each fragment (group) in the recordset,
+    independently, implies that testing for boundary conditions will be
+    different than if you were working with a SORTed dataset. For example, the
+    following code (contained in GROUPfunc.ECL) uses the GROUP function to
+    rank people's accounts, based on the open date and balance. The account
+    with the newest open date is ranked highest (if there are multiple
+    accounts opened the same day the one with the highest balance is used).
+    There is no boundary check needed in the TRANSFORM function because the
+    ITERATE starts over again with each person, so the L.Ranking field value
+    for each new person group is zero (0).</para>
+
+    <programlisting>IMPORT $;
+
+accounts := $.DeclareData.Accounts;
+
+rec := RECORD
+  accounts.PersonID;
+  accounts.Account;
+  accounts.opendate;
+  accounts.balance;
+  UNSIGNED1 Ranking := 0;
+END;
+
+tbl := TABLE(accounts,rec);
+
+rec RankGrpAccts(rec L, rec R) := TRANSFORM
+  SELF.Ranking := L.Ranking + 1;
+  SELF := R;
+END;
+GrpRecs  := SORT(GROUP(SORT(tbl,PersonID),PersonID),-Opendate,-Balance);
+i1 := ITERATE(GrpRecs,RankGrpAccts(LEFT,RIGHT));
+OUTPUT(i1);
+</programlisting>
+
+    <para>The following code just uses SORT to achieve the same record order
+    as in the previous code. Notice the boundary check code in the TRANSFORM
+    function. This is required, since the ITERATE will perform a single
+    operation against the entire dataset.:</para>
+
+    <programlisting>rec RankSrtAccts(rec L, rec R) := TRANSFORM
+  SELF.Ranking := IF(L.PersonID = R.PersonID,L.Ranking + 1, 1);
+  SELF := R;
+END;
+SortRecs := SORT(tbl,PersonID,-Opendate,-Balance);
+i2 := ITERATE(SortRecs,RankSrtAccts(LEFT,RIGHT));
+OUTPUT(i2);
+</programlisting>
+
+    <para>The different bounds checking in each is required by the fragmenting
+    created by the GROUP function. The ITERATE operates separately on each
+    fragment in the first example, and operates on the entire record set in
+    the second.</para>
+  </sect2>
+
+  <sect2 id="Performance_Considerations">
+    <title>Performance Considerations</title>
+
+    <para>There is also a major performance advantage to using the GROUP
+    function. For example, the SORT is an <emphasis>n log n</emphasis>
+    operation, so breaking large record sets up into smaller sets of sets can
+    dramatically improve the amount of time it takes to perform the sorting
+    operation.</para>
+
+    <para>Assuming that a dataset contains 1 billion 1,000-byte records
+    (1,000,000,000) and you're operating on a 100-node supercomputer. Assuming
+    also that the data is evenly distributed, then you have 10 million records
+    per node occupying 1 gigabyte of memory on each node. Suppose you need to
+    sort the data by three fields: by personID, opendate, and balance. You
+    could achieve the result three possible ways: a global SORT, a distributed
+    local SORT, or a GROUPed distributed local SORT.</para>
+
+    <para>Here's an example that demonstrates all three methods (contained in
+    GROUPfunc.ECL):</para>
+
+    <programlisting>bf := NORMALIZE(accounts,
+                CLUSTERSIZE * 2,
+                TRANSFORM(RECORDOF(ProgGuide.Accounts),
+                          SELF := LEFT));
+ds0 := DISTRIBUTE(bf,RANDOM()) : PERSIST('~PROGGUIDE::PERSIST::TestGroupSort');
+ds1 := DISTRIBUTE(ds,HASH32(personid));
+
+// do a global sort
+s1 := SORT(ds0,personid,opendate,-balance);
+a  := OUTPUT(s1,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort1',OVERWRITE);
+
+// do a distributed local sort
+s3  := SORT(ds1,personid,opendate,-balance,LOCAL);
+b   := OUTPUT(s3,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort2',OVERWRITE);
+
+// do a grouped local sort
+s4 := SORT(ds1,personid,LOCAL);
+g2 := GROUP(s4,personid,LOCAL);
+s5 := SORT(g2,opendate,-balance);
+c  := OUTPUT(s5,,'~PROGGUIDE::EXAMPLEDATA::TestGroupSort3',OVERWRITE);
+SEQUENTIAL(a,b,c);
+</programlisting>
+
+    <para>The result sets for all of these SORT operations are identical.
+    However, the time it takes to produce them is not. The above example
+    operates only on 10 million 46-byte records per node, not the one billion
+    1,000-byte records previously mentioned, but it certainly illustrates the
+    techniques.</para>
+
+    <para>For the hypothetical one billion record example, the performance of
+    the Global Sort is calculated by the formula: 1 billion times the log of 1
+    billion (9), resulting in a performance metric of 9 billion. The
+    performance of Distributed Local Sort is calculated by the formula: 10
+    million times the log of 10 million (7), resulting in a performance metric
+    of 70 million. Assuming the GROUP operation created 1,000 sub-groups on
+    each node, the performance of Grouped Local Sort is calculated by the
+    formula: 1,000 times (10,000 times the log of 10,000 (4)), resulting in a
+    performance metric of 40 million.</para>
+
+    <para>The performance metric numbers themselves are meaningless, but their
+    ratios do indicate the difference in performance you can expect to see
+    between SORT methods. This means that the distributed local SORT will be
+    roughly 128 times faster than the global SORT (9 billion / 70 million) and
+    the grouped SORT will be roughly 225 times faster than the global SORT (9
+    billion / 40 million) and the grouped SORT will be about 1.75 times faster
+    than the distributed local SORT (70 million / 40 million).</para>
+  </sect2>
+</sect1>

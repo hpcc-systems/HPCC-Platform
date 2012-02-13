@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="XMLDECODE">
+  <title>XMLDECODE</title>
+
+  <para><emphasis role="bold">XMLDECODE<indexterm>
+      <primary>XMLDECODE</primary>
+    </indexterm><indexterm>
+      <primary>XMLDECODE Function</primary>
+    </indexterm>(</emphasis><emphasis> unicode </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.05pt" />
+
+        <colspec colwidth="275.75pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>unicode</emphasis></entry>
+
+            <entry>The unicode text to decode.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>XMLDECODE returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">XMLDECODE</emphasis> function decodes
+  special characters into an XML string (for example, &amp;lt is converted to
+  &lt;) allowing you to use the CSV option on OUTPUT to produce more complex
+  XML files than are possible by using the XML option.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  d := XMLENCODE('&lt;xml version 1&gt;&lt;tag&gt;data&lt;/tag&gt;');
+  e := XMLDECODE(d);</programlisting>
+
+  <para>See Also: <link linkend="XMLENCODE">XMLENCODE</link></para>
+</sect1>

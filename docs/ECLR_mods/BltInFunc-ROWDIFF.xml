@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROWDIER">
+  <title>ROWDIFF</title>
+
+  <para><emphasis role="bold">ROWDIFF<indexterm>
+      <primary>ROWDIFF</primary>
+    </indexterm><indexterm>
+      <primary>ROWDIFF function</primary>
+    </indexterm>(</emphasis><emphasis>left, right </emphasis><emphasis
+  role="bold">[, COUNT<indexterm>
+      <primary>COUNT</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.45pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>left</emphasis></entry>
+
+            <entry>The left record, or a nested record structure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>right</emphasis></entry>
+
+            <entry>The right record, or a nested record structure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">COUNT</emphasis></entry>
+
+            <entry>Optional. Specifies returning a comma delimited set of
+            zeros and ones (0,1) indicating which fields matched (0) and which
+            did not (1). If omitted, a comma delimited set of the non-matching
+            field names.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROWDIER returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ROWDIFF </emphasis>function is valid for use
+  only within a TRANSFORM structure for a JOIN operation and is used as the
+  expression defining the output for a string field. Fields are matched by
+  name and only like-named fields are included in the output.</para>
+
+  <para>Example:</para>
+
+  <programlisting>FullName := RECORD
+STRING30 forename;
+STRING20 surname;
+IFBLOCK(SELF.surname &lt;&gt; 'Windsor')
+STRING20 middle;
+END;
+END;
+in1rec := {UNSIGNED1 id,FullName name,UNSIGNED1 age,STRING5 title};
+in2rec := {UNSIGNED1 id,FullName name,REAL4 age,BOOLEAN dead};
+in1 := DATASET([{1,'Kevin','Halligan','',33,'Mr'},
+{2,'Liz','Halligan','',33,'Dr'},
+{3,'Elizabeth','Windsor','x',99,'Queen'}], in1rec);
+in2 := DATASET([{1,'Kevin','Halligan','',33,false},
+{2,'Liz','','Jean',33,false},
+{3,'Elizabeth','Windsor','y',99.1,false}], in2rec);
+outrec := RECORD
+UNSIGNED1 id;
+STRING35 diff1;
+STRING35 diff2;
+STRING35 diff3;
+STRING35 diff4;
+END;
+outrec t1(in1 L, in2 R) := TRANSFORM
+SELF.id := L.id;
+SELF.diff1 := ROWDIFF(L,R);
+SELF.diff2 := ROWDIFF(L.name, R.name);
+SELF.diff3 := ROWDIFF(L, R, COUNT);
+SELF.diff4 := ROWDIFF(L.name, R.name, COUNT);
+END;
+OUTPUT(JOIN(in1, in2, LEFT.id = RIGHT.id, t1(LEFT,
+        RIGHT)));
+// The result set from this code is:
+//id diff1 diff2 diff3 diff4
+//1 0,0,0,0,0 0,0,0
+//2 name.surname,name.middle surname,middle 0,0,1,1,0 0,1,1
+//3 age 0,0,0,0,1 0,0,0
+</programlisting>
+
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="JOIN">JOIN</link></para>
+</sect1>

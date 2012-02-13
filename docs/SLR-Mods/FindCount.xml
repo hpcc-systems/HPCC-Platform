@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FindCount">
+  <title><emphasis role="bold">FindCount</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.FindCount<indexterm>
+      <primary>STD.Str.FindCount</primary>
+    </indexterm><indexterm>
+      <primary>Str.FindCount</primary>
+    </indexterm><indexterm>
+      <primary>FindCount</primary>
+    </indexterm>(</emphasis> <emphasis>source, target</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>A string containing the substring to search for.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>StringFindCount returns an INTEGER value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FindCount </emphasis>function returns the
+  number of non-overlapping instances of the <emphasis>target
+  </emphasis>string within the <emphasis>source</emphasis> string.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := IF(STD.Str.FindCount('ABCDE', 'BC') = 1,
+   'Success',
+   'Failure - 1');  //success
+    
+B := IF(STD.Str.FindCount('ABCDEABCDE', 'BC') = 2,
+   'Success',
+   'Failure - 2');  //failure
+</programlisting>
+</sect1>

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="COMBINE">
+  <title>COMBINE</title>
+
+  <para><emphasis role="bold">COMBINE<indexterm>
+      <primary>COMBINE function</primary>
+    </indexterm>(</emphasis><emphasis> leftrecset, rightrecset
+  </emphasis><emphasis role="bold">[</emphasis>,<emphasis> transform
+  </emphasis><emphasis role="bold">]</emphasis><emphasis
+  role="bold">[,LOCAL])</emphasis></para>
+
+  <para><emphasis role="bold">COMBINE<indexterm>
+      <primary>COMBINE</primary>
+    </indexterm>(</emphasis><emphasis> leftrecset, rightrecset,
+  </emphasis><emphasis role="bold">GROUP<indexterm>
+      <primary>GROUP</primary>
+    </indexterm> </emphasis>,<emphasis> transform </emphasis><emphasis
+  role="bold">[,LOCAL]<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>leftrecset</emphasis></entry>
+
+            <entry>The LEFT record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rightrecset</emphasis></entry>
+
+            <entry>The RIGHT record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function call. If omitted, COMBINE returns
+            all fields from both the <emphasis>leftrecset</emphasis> and
+            <emphasis>rightrecset</emphasis>, with the second of any duplicate
+            named fields removed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>The LOCAL option is required when COMBINE is used on Thor
+            (and implicit in hThor/Roxie).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Specifies the <emphasis>rightrecset</emphasis> has been
+            GROUPed. If this is not the case, an error occurs.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>COMBINE returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">COMBINE </emphasis>function combines
+  <emphasis>leftrecset</emphasis> and <emphasis>rightrecset</emphasis> on a
+  record-by-record basis in the order in which they appear in each.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements">
+    <title>COMBINE TRANSFORM Function Requirements</title>
+
+    <para>For form 1, the transform function must take at least two
+    parameters: a LEFT record which must be in the same format as the
+    <emphasis>leftrecset</emphasis> and a RIGHT record which must be in the
+    same format as the <emphasis>rightrecset</emphasis>. The format of the
+    resulting record set may be different from the inputs.</para>
+
+    <para>For form 2, the transform function must take at least three
+    parameters: a LEFT record which must be in the same format as the
+    <emphasis>leftrecset</emphasis>, a RIGHT record which must be in the same
+    format as the <emphasis>rightrecset,</emphasis> and a ROWS(RIGHT) whose
+    format must be a DATASET(RECORDOF(<emphasis>rightrecset</emphasis>))
+    parameter. The format of the resulting record set may be different from
+    the inputs.</para>
+  </sect2>
+
+  <sect2 id="COMBINE_Form_1">
+    <title>COMBINE Form 1</title>
+
+    <para>Form 1 of COMBINE produces its result by passing each record from
+    <emphasis>leftrecset</emphasis> along with the record in the same ordinal
+    position within <emphasis>rightrecset</emphasis> to the
+    <emphasis>transform</emphasis> to produce a single output record. Grouping
+    (if any) on the <emphasis>leftrecset</emphasis> is preserved. An error
+    occurs if <emphasis>leftrecset</emphasis> and
+    <emphasis>rightrecset</emphasis> contain a different number of
+    records.</para>
+
+    <para>Example:</para>
+
+    <programlisting>inrec := RECORD
+  UNSIGNED6 did;
+END;
+outrec := RECORD(inrec)
+  STRING20  name;
+  STRING10  ssn;
+  UNSIGNED8  dob;
+END;
+ds := DATASET([1,2,3,4,5,6], inrec);
+i1 := DATASET([{1, 'Kevin'}, {2, 'Richard'}, {5,'Nigel'}],
+    { UNSIGNED6 did, STRING10 name });
+i2 := DATASET([{3, '123462'}, {5, '1287234'}, {6,'007001002'}],
+    { UNSIGNED6 did, STRING10 ssn });
+i3 := DATASET([{1, 19700117}, {4, 19831212}, {6,20000101}],
+    { UNSIGNED6 did, UNSIGNED8 dob}); 
+j1 := JOIN(ds, i1, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+j2 := JOIN(ds, i2, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+j3 := JOIN(ds, i3, LEFT.did = RIGHT.did, LEFT OUTER, LOOKUP);
+combined1 := COMBINE(j1, 
+                     j2,   
+             TRANSFORM(outRec,
+      SELF := LEFT;
+      SELF := RIGHT;
+      SELF := []));
+combined2 := COMBINE(combined1,
+                   j3,
+             TRANSFORM(outRec,
+      SELF.dob := RIGHT.dob;
+      SELF := LEFT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="COMBINE_Form_2">
+    <title>COMBINE Form 2</title>
+
+    <para>Form 2 of COMBINE produces its result by passing each record from
+    <emphasis>leftrecset,</emphasis> the group in the same ordinal position
+    within <emphasis>rightrecset </emphasis>(along with the first record in
+    the group) to the <emphasis>transform</emphasis> to produce a single
+    output record. Grouping (if any) on the <emphasis>leftrecset</emphasis> is
+    preserved. An error occurs if the number of records in the
+    <emphasis>leftrecset</emphasis> differs from the number of groups in the
+    <emphasis>rightrecset</emphasis>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>inrec := {UNSIGNED6 did};
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+nameRec := RECORD
+  STRING20 name;
+END;
+ 
+resultRec := RECORD(inrec)
+  DATASET(nameRec) names;
+END;
+ds := DATASET([1,2,3,4,5,6], inrec);
+dsg := GROUP(ds, ROW);
+i1 := DATASET([ {1, 'Kevin', 10},
+   {2, 'Richard', 5},
+   {5,'Nigel', 2},
+   {0, '', 0} ], outrec);
+i2 := DATASET([ {1, 'Kevin Halligan', 12},
+   {2, 'Richard Chapman', 15},
+   {3, 'Jake Smith', 20},
+   {5,'Nigel Hicks', 100},
+   {0, '', 0} ], outrec);
+i3 := DATASET([ {1, 'Halligan', 8},
+   {2, 'Richard', 8},
+   {6, 'Pete', 4},
+   {6, 'Peter', 8},
+   {6, 'Petie', 1},
+   {0, '', 0} ], outrec);
+j1 := JOIN( dsg,
+  i1,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER, MANY LOOKUP);
+j2 := JOIN( dsg,
+  i2,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER,
+  MANY LOOKUP);
+j3 := JOIN( dsg,
+  i3,
+  LEFT.did = RIGHT.did,
+  TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+  LEFT OUTER,
+  MANY LOOKUP);
+combined := REGROUP(j1, j2, j3);
+resultRec t(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
+ self.names := PROJECT(r, TRANSFORM(nameRec, SELF := LEFT));
+ self := l;
+ END;
+res1 := COMBINE(dsg,combined,GROUP,t(LEFT, ROWS(RIGHT)(score != 0)));
+//A variation using rows in a child query.
+resultRec t2(inrec l, DATASET(RECORDOF(combined)) r) := TRANSFORM
+ SELF.names := PROJECT(SORT(r, -score),
+        TRANSFORM(nameRec, SELF := LEFT));
+ SELF := l;
+ END;
+res2 := COMBINE(dsg,combined,GROUP,t2(LEFT,ROWS(RIGHT)(score != 0)));
+</programlisting>
+
+    <para>See Also: <link linkend="GROUP">GROUP</link>, <link linkend="REGROUP">REGROUP</link></para>
+  </sect2>
+</sect1>

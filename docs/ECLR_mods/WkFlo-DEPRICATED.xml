@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DEPRECATED">
+  <title>DEPRECATED</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: DEPRECATED<indexterm>
+      <primary>DEPRECATED</primary>
+    </indexterm> [ ( </emphasis><emphasis> message </emphasis><emphasis
+  role="bold">) ] <indexterm>
+      <primary>DEPRECATED workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec colwidth="273.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>message</emphasis></entry>
+
+            <entry>Optional. The text to append to the warning if the
+            attribute is used.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DEPRECATED </emphasis>service displays a
+  warning when the <emphasis>attribute</emphasis> is used in code that
+  instantiates a workunit or during a syntax check. This is meant to be used
+  on attribute definitions that have been superseded.</para>
+
+  <para>When used on a structure attribute (RECORD, TRANSFORM, FUNCTION,
+  etc.), this must be placed between the keyword END and its terminating
+  semi-colon.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  OldSort := SORT(Person,Person.per_first_name) : DEPRECATED('Use NewSort instead.');
+  NewSort := SORT(Person,-Person.per_first_name);
+  
+  OUTPUT(OldSort); 
+  //produces this warning:
+  // Attribute OldSort is marked as deprecated. Use NewSort instead.
+  
+  //**********************************************
+  ds := DATASET(['A','B','C'],{STRING1 letter});
+  
+  R1 := RECORD
+    STRING1 letter;
+  END : DEPRECATED('Use R2 now.');
+  
+  R2 := RECORD
+    STRING1 letter;
+    INTEGER number;
+  END;
+  
+  R1 Xform1(ds L) := TRANSFORM
+    SELF.letter := Std.Str.ToLowerCase(L.letter);
+  END : DEPRECATED('Use Xform2 now.');
+  
+  R2 Xform2(ds L, integer C) := TRANSFORM
+    SELF.letter := Std.Str.ToLowerCase(L.letter);
+    SELF.number := C;
+  END;
+  
+  OUTPUT(PROJECT(ds,Xform1(LEFT))); //produces these warnings:
+  // Attribute r1 is marked as deprecated. Use R2 now.
+  // Attribute Xform1 is marked as deprecated. Use Xform2 now.
+</programlisting>
+</sect1>

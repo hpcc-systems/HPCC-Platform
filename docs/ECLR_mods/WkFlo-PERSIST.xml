@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PERSIST">
+  <title>PERSIST</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: PERSIST<indexterm>
+      <primary>PERSIST</primary>
+    </indexterm>(</emphasis><emphasis> filename </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, cluster</emphasis> <emphasis
+  role="bold">]</emphasis><emphasis role="bold"> [, CLUSTER<indexterm>
+      <primary>CLUSTER</primary>
+    </indexterm>(</emphasis><emphasis>target</emphasis><emphasis
+  role="bold">)] [, EXPIRE<indexterm>
+      <primary>EXPIRE</primary>
+    </indexterm>(</emphasis><emphasis>days</emphasis><emphasis role="bold">)]
+  ) <indexterm>
+      <primary>PERSIST workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute. This typically defines a
+            recordset (but it may be any expression).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>filename</emphasis></entry>
+
+            <entry>A string constant specifying the storage name of the
+            expression result. See <emphasis role="bold">Scope and Logical
+            Filenames</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>Optional. A string constant specifying the name of the Thor
+            cluster on which to re-build the <emphasis>attribute</emphasis>
+            if/when necessary. This makes it possible to use persisted
+            attributes on smaller clusters but have them rebuilt on larger,
+            making for more efficient resource utilization. If omitted, the
+            <emphasis>attribute</emphasis> is re-built on the currently
+            executing cluster.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">CLUSTER</emphasis></entry>
+
+            <entry>Optional. Specifies writing the
+            <emphasis>filename</emphasis> to the specified list of
+            <emphasis>target</emphasis> clusters. If omitted, the
+            <emphasis>filename</emphasis> is written to the cluster on which
+            the PERSIST executes (as specified by the
+            <emphasis>cluster</emphasis> parameter). The number of physical
+            file parts written to disk is always determined by the number of
+            nodes in the <emphasis>cluster</emphasis> on which the PERSIST
+            executes, regardless of the number of nodes on the
+            <emphasis>target(s)</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>A comma-delimited list of string constants containing the
+            names of the clusters to write the <emphasis>filename</emphasis>
+            to. The names must be listed as they appear on the ECL Watch
+            Activity page or returned by the Std.System.Thorlib.Group()
+            function, optionally with square brackets containing a
+            comma-delimited list of node-numbers (1-based) and/or ranges
+            (specified with a dash, as in n-m) to indicate the specific set of
+            nodes to write to.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+            <entry>Optional. Specifies the <emphasis>filename</emphasis> is a
+            temporary file that may be automatically deleted after the
+            specified number of days.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>days</emphasis></entry>
+
+            <entry>Optional. The number of days after which the file may be
+            automatically deleted. If omitted, the default is seven
+            (7).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PERSIST </emphasis>service stores the result
+  of the <emphasis>expression</emphasis> globally so it remains permanently
+  available for use (including the result of any DISTRIBUTE or GROUP operation
+  in the <emphasis>expression</emphasis>). This is particularly useful for
+  <emphasis>attributes</emphasis> based on large, expensive data manipulation
+  sequences. The <emphasis>attribute</emphasis> is re-calculated only when the
+  ECL code or underlying data that was used to create it have changed,
+  otherwise the <emphasis>attribute</emphasis> data is simply returned from
+  the stored <emphasis>name</emphasis> file on disk when referenced. This
+  service implicitly causes the <emphasis>attribute</emphasis> to be evaluated
+  at global scope instead of the enclosing scope.</para>
+
+  <para>PERSIST may be combined with the WHEN clause so that even though the
+  <emphasis>attribute </emphasis>may be used more than once, its execution is
+  based upon the WHEN clause (or the first use of the
+  <emphasis>attribute</emphasis>) and not upon the number of times the
+  <emphasis>attribute</emphasis> is used in the computation. This gives a kind
+  of "compute in anticipation" capability.</para>
+
+  <para>By definition, PERSIST on an attribute means the attribute is
+  evaluated outside of any given evaluation order. Therefore, SEQUENTIAL has
+  no effect on PERSISTed attributes.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  CountPeople := COUNT(Person) : PERSIST('PeopleCount');
+  //Makes CountPeople available for use in all subsequent work units
+  
+  sPeople := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson'),WHEN(Daily);
+  //Makes sPeople available for use in all subsequent work units
+  
+  s1 := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson1','OtherThor');
+      //run the code on the OtherThor cluster
+  s2 := SORT(Person,Person.per_first_name) :
+          PERSIST('SortPerson2',
+                  'OtherThor',
+                  CLUSTER('AnotherThor'));
+       //run the code on the OtherThor cluster
+       // and write the file to the AnotherThor cluster</programlisting>
+
+  <para>See Also: <link linkend="STORED">STORED</link>, <link linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link linkend="CHECKPOINT">CHECKPOINT</link></para>
+</sect1>

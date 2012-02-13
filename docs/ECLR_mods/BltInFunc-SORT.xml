@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SORT">
+  <title>SORT</title>
+
+  <para><emphasis role="bold">SORT<indexterm>
+      <primary>SORT</primary>
+    </indexterm><indexterm>
+      <primary>SORT function</primary>
+    </indexterm>(</emphasis><emphasis>recordset,value </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">JOINED<indexterm>
+      <primary>JOINED</primary>
+    </indexterm>(</emphasis><emphasis> joinedset </emphasis><emphasis
+  role="bold">)][</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis> limit </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,target</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">)]</emphasis><emphasis role="bold"> [</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">THRESHOLD<indexterm>
+      <primary>THRESHOLD</primary>
+    </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
+  )]</emphasis><emphasis role="bold">[</emphasis><emphasis>,
+  </emphasis><emphasis role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm>]</emphasis><emphasis role="bold"> [, STABLE<indexterm>
+      <primary>STABLE</primary>
+    </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
+  role="bold"> )] | UNSTABLE<indexterm>
+      <primary>UNSTABLE</primary>
+    </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
+  role="bold"> )] ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="89.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions or key fields in the
+            recordset on which to sort, with the leftmost being the most
+            significant sort criteria. A leading minus sign (-) indicates a
+            descending-order sort on that element. You may have multiple value
+            parameters to indicate sorts within sorts. You may use the keyword
+            RECORD (or WHOLE RECORD) to indicate an ascending sort on all
+            fields, and/or you may use the keyword EXCEPT to list non-sort
+            fields in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">JOINED</emphasis></entry>
+
+            <entry>Optional. Indicates this sort will use the same
+            radix-points as already used by the <emphasis>joinedset</emphasis>
+            so that matching records between the recordset and
+            <emphasis>joinedset</emphasis> end up on the same supercomputer
+            nodes. Used to optimize supercomputer joins where the
+            <emphasis>joinedset</emphasis> is very large and the recordset is
+            small.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>joinedset</emphasis></entry>
+
+            <entry>A set of records that has been previously sorted by the
+            same value parameters as the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Optional. Indicates that you know the data is not spread
+            evenly across nodes (is skewed) and you choose to override the
+            default by specifying your own limit value to allow the job to
+            continue despite the skewing.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>limit</emphasis></entry>
+
+            <entry>A value between zero (0) and one (1.0 = 100%) indicating
+            the maximum percentage of skew to allow before the job fails (the
+            default is 0.1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Optional. A value between zero (0) and one (1.0 = 100%)
+            indicating the desired maximum percentage of skew to allow (the
+            default is 0.1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+            <entry>Optional. Indicates the minimum size for a single part of
+            the recordset before the SKEW limit is enforced.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>size</emphasis></entry>
+
+            <entry>An integer value indicating the minimum number of bytes for
+            a single part.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE. An error occurs if the
+            recordset has been GROUPed.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. Specifies that few records will be sorted. This
+            prevents spilling the SORT to disk if another resource-intensive
+            activity is executing concurrently.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">STABLE</emphasis></entry>
+
+            <entry>Optional. Specifies a stable sort—duplicates output in the
+            same order they were in the input. This is the default if neither
+            STABLE nor UNSTABLE sorting is specified. Ignored if not supported
+            by the target platform.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>algorithm</emphasis></entry>
+
+            <entry>Optional. A string constant that specifies the sorting
+            algorithm to use (see the list of valid values below). If omitted,
+            the default algorithm depends on which platform is targeted by the
+            query.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSTABLE</emphasis></entry>
+
+            <entry>Optional. Specifies an unstable sort—duplicates may output
+            in any order. Ignored if not supported by the target
+            platform.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SORT returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SORT </emphasis>function sorts the
+  <emphasis>recordset</emphasis> according to the <emphasis>values</emphasis>
+  specified. SORT is usually used to produce the record sets operated on by
+  the DEDUP, GROUP, and ROLLUP function<indexterm>
+      <primary>ROLLUP function</primary>
+    </indexterm>s, so that those functions may operate optimally. Sorting
+  final output is, of course, another common use.</para>
+
+  <sect2 id="Sorting_Algorithms">
+    <title>Sorting Algorithms</title>
+
+    <para>There are three sort algorithms<indexterm>
+        <primary>sort algorithms</primary>
+      </indexterm> available: quicksort<indexterm>
+        <primary>quicksort</primary>
+      </indexterm>, insertionsort<indexterm>
+        <primary>insertionsort</primary>
+      </indexterm>, and heapsort<indexterm>
+        <primary>heapsort</primary>
+      </indexterm>. They are not all available on all platforms. Specifying an
+    invalid algorithm for the targeted platform will be ignored and the
+    default algorithm for that platform will be implemented.</para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="84.55pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Thor<indexterm>
+                  <primary>Thor</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Supports stable and unstable quicksort—the sort will
+              spill to disk, if necessary. Parallel sorting happens
+              automatically on clusters with multiple-CPU or multi-CPU-core
+              nodes.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">hthor<indexterm>
+                  <primary>hthor</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Supports stable and unstable quicksort, stable and
+              unstable insertionsort, and stable heapsort—the sort will spill
+              to disk, if necessary. Stable heapsort is the default if both
+              STABLE and UNSTABLE are omitted or if STABLE is present without
+              an algorithm parameter.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Unstable quicksort is the default if UNSTABLE is present
+              without an algorithm parameter.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Roxie<indexterm>
+                  <primary>Roxie</primary>
+                </indexterm></emphasis></entry>
+
+              <entry>Supports unstable quicksort, stable insertionsort, and
+              stable heapsort—the sort does not spill to disk.</entry>
+            </row>
+
+            <row>
+              <entry></entry>
+
+              <entry>Stable heapsort is the default if both STABLE and
+              UNSTABLE are omitted or if STABLE is present without an
+              algorithm parameter. The insertionsort implements blocking and
+              heapmerging when there are more than 1024 rows.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2 id="Quick_Sort">
+    <title>Quick Sort</title>
+
+    <para>A quick sort does nothing until it receives the last row of its
+    input, and it produces no output until the sort is complete, so the time
+    required to perform the sort cannot overlap with either the time to
+    process its input or to produce its output. Under normal circumstances,
+    this type of sort is expected to take the least CPU time. There are rare
+    exceptional cases where it can perform badly (the famous "median-of-three
+    killer" is an example) but you are very unlikely to hit these by
+    chance.</para>
+
+    <para>On a Thor cluster where each node has multiple CPUs or CPU cores, it
+    is possible to split up the quick sort problem and run sections of the
+    work in parallel. This happens automatically if the hardware supports it.
+    Doing this does not improve the amount of actual CPU time used (in fact,
+    it fractionally increases it because of the overhead of splitting the
+    task) but the overall time required to perform the sort operation is
+    significantly reduced. On a cluster with dual CPU/core nodes it should
+    only take about half the time, only about a quarter of the time on a
+    cluster with quad-processor nodes, etc.</para>
+  </sect2>
+
+  <sect2 id="Insertion_Sort">
+    <title>Insertion Sort</title>
+
+    <para>An insertion sort does all its work while it is receiving its input.
+    Note that the algorithm used performs a binary search for insertion
+    (unlike the classic insertion sort). Under normal circumstances, this sort
+    is expected to produce the worst CPU time. In the case where the input
+    source is slow but not CPU-bound (for example, a slow remote data read or
+    input from a slow SOAPCALL), the time required to perform the sort is
+    entirely overlapped with the input.</para>
+  </sect2>
+
+  <sect2 id="Heap_Sort">
+    <title>Heap Sort</title>
+
+    <para>A heap sort does about half its work while receiving input, and the
+    other half while producing output. Under normal circumstances, it is
+    expected to take more CPU time than a quick sort, but less than an
+    insertion sort. Therefore, in queries where the input source is slow but
+    not CPU-bound, half of the time taken to perform the sort is overlapped
+    with the input. Similarly, in queries where the output processing is slow
+    but not CPU-bound, the other half of the time taken to perform the sort is
+    overlapped with the output. Also, if the sort processing terminates
+    without consuming all of its input, then some of the work can be avoided
+    entirely (about half in the limiting case where no output is consumed),
+    saving both CPU and total time.</para>
+
+    <para>In some cases, such as when a SORT is quickly followed by a CHOOSEN,
+    the compiler will be able to spot that only a part of the sort's output
+    will be required and replace it with a more efficient implementation. This
+    will not be true in the general case.</para>
+  </sect2>
+
+  <sect2 id="Stable_vs_Unstable">
+    <title>Stable vs. Unstable</title>
+
+    <para>A stable sort is required when the input might contain duplicates
+    (that is, records that have the same values for all the sort fields) and
+    you need the duplicates to appear in the result in the same order as they
+    appeared in the input. When the input contains no duplicates, or when you
+    do not mind what order the duplicates appear in the result, an unstable
+    sort will do.</para>
+
+    <para>An unstable sort will normally be slightly faster than the stable
+    version of the same algorithm. However, where the ideal sort algorithm is
+    only available in a stable version, it may often be better than the
+    unstable version of a different algorithm.</para>
+  </sect2>
+
+  <sect2 id="Performance_Considerations">
+    <title>Performance Considerations</title>
+
+    <para>The following discussion applies principally to local sorts, since
+    Thor is the only platform that performs global sorts, and Thor does not
+    provide a choice of algorithms.</para>
+
+    <sect3 id="CPU_time_vs_Total_time">
+      <title>CPU time vs. Total time</title>
+
+      <para>In some situations a query might take the least CPU time using a
+      quick sort, but it might take the most total time because the sort time
+      cannot be overlapped with the time taken by an I/O-heavy task before or
+      after it. On a system where only one subgraph or query is being run at
+      once (Thor or hthor), this might make quick sort a poor choice since the
+      extra time is simply wasted. On a system where many subgraphs or queries
+      are running concurrently (such as a busy Roxie) there is a trade-off,
+      because minimizing total time will minimize the latency for the
+      particular query, but minimizing CPU time will maximize the throughput
+      of the whole system.</para>
+
+      <para>When considering the parallel quick sort, we can see that it
+      should significantly reduce the latency for this query; but that if the
+      other CPUs/cores were in use for other jobs (such as when dual Thors are
+      running on the same dual CPU/core machines) it will not increase (and
+      will slightly decrease) the throughput for the machines.</para>
+    </sect3>
+
+    <sect3 id="Spilling_to_disk">
+      <title>Spilling to disk</title>
+
+      <para>Normally, records are sorted in memory. When there is not enough
+      memory, spilling to disk may occur. This means that blocks of records
+      are sorted in memory and written to disk, and the sorted blocks are then
+      merged from disk on completion. This significantly slows the sort. It
+      also means that the processing time for the heap sort will be longer, as
+      it is no longer able to overlap with its output.</para>
+
+      <para><emphasis role="bold">When there is not enough memory to hold all
+      the records and spilling to disk is not available (like on the Roxie
+      platform), the query will fail.</emphasis></para>
+    </sect3>
+
+    <sect3 id="How_sorting_affects_JOINs">
+      <title>How sorting affects JOINs</title>
+
+      <para>A normal JOIN operation requires that both its inputs be sorted by
+      the fields used in the equality portion of the match condition. The
+      supercomputer automatically performs these sorts "under the covers"
+      unless it knows that an input is already sorted correctly. Therefore,
+      some of the considerations that apply to the consideration of the
+      algorithm for a SORT can also apply to a JOIN. To take advantage of
+      these alternate sorting algorithms in a JOIN context you need to SORT
+      the input dataset(s) the way you want, then specify the NOSORT option on
+      the JOIN.</para>
+
+      <para>Note well that no sorting is required for JOIN operations using
+      the KEYED (or half-keyed), LOOKUP, or ALL options. Under some
+      circumstances (usually in Roxie queries or in those cases where the
+      optimizer thinks there are few records in the right input dataset) the
+      supercomputer's optimizer will automatically perform a LOOKUP or ALL
+      join instead of a regular join. This means that, if you have done your
+      own SORT and specified the NOSORT option on the JOIN, that you will be
+      defeating this possible optimization.</para>
+
+      <para>Example:</para>
+
+      <programlisting>MySet1 := SORT(Person,-last_name, first_name);
+// descending last name, ascending first name
+
+MySet2 := SORT(Person,RECORD,EXCEPT per_sex,per_marital_status);
+// sort by all fields except sex and marital status
+
+MySet3 := SORT(Person,last_name, first_name,STABLE('quicksort'));
+// stable quick sort, not supported by Roxie
+
+MySet4 := SORT(Person,last_name, first_name,UNSTABLE('heapsort'));
+// unstable heap sort,
+// not supported by any platform,
+// therefore ignored
+
+MySet5 := SORT(Person,last_name,first_name,STABLE('insertionsort'));
+// stable insertion sort, not supported by Thor
+</programlisting>
+
+      <para>See Also: <link linkend="SORTED">SORTED</link>, <link
+      linkend="RANK">RANK</link>, <link linkend="RANKED">RANKED</link>, <link
+      linkend="EXCEPT">EXCEPT</link></para>
+    </sect3>
+  </sect2>
+</sect1>

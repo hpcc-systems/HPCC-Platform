@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Job_Failure">
+  <title><emphasis role="bold">Job “Failure”</emphasis></title>
+
+  <para>Sometimes jobs fail. And sometimes that behavior is by design.</para>
+
+  <para>For example, attempting to send an entire output result back to the
+  ECL IDE program when that result contains more than 10 megabytes of data
+  will cause the job to "fail" with the error “Dataset too large to output to
+  workunit (limit 10 megabytes).” This job “failure” is deliberate on the part
+  of the system (and you can reset this particular limit on a per-workunit
+  basis using #OPTION), because any time you are writing that amount of data
+  out you should be writing it to a file to de-spray. Otherwise, you will
+  rapidly fill your system data store.</para>
+
+  <para>Other examples of this type of deliberate system "failure" is
+  exceeding skew limits or exceeding any other runtime limit. For some of
+  these limits there are ways to reset the limit itself (which is usually NOT
+  the best solution). Otherwise, the deliberate “failure” is a signal that
+  there is something inherently wrong with the job and perhaps the approach
+  you are using needs to be re-thought.</para>
+
+  <para>Contact Technical Support whenever such an issue arises and we will
+  help you formulate a strategy to accomplish what you need to without
+  incurring these deliberate system "failures."</para>
+</sect1>

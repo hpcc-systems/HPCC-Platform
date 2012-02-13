@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Creating_Example_Data">
+  <title><emphasis role="bold">Creating Example Data</emphasis></title>
+
+  <para>The code that generates the example data used by all the
+  <emphasis>Programmer's Guide</emphasis> articles is contained in a file
+  named Gendata.ECL, which was installed by the ECL IDE installation program.
+  You simply need to open that file in the ECL IDE (select <emphasis
+  role="bold">File &gt; Open</emphasis> from the menu, select the Gendata.ECL
+  file, and it will open in a Builder window) then press the <emphasis
+  role="bold">Go</emphasis> button to generate the data files. The process
+  takes a couple of minutes to run. Here is the code, fully explained.</para>
+
+  <sect2 id="Some_Constants">
+    <title>Some Constants</title>
+
+    <programlisting>IMPORT std;
+
+P_Mult1 := 1000;
+P_Mult2 := 1000;
+TotalParents := P_Mult1 * P_Mult2;
+TotalChildren := 5000000;</programlisting>
+
+    <para>These constants define the numbers used to generate 1,000,000 parent
+    records and 5,000,000 child records. By defining these once as attributes
+    the code could be easily made to generate a smaller number of parent
+    records (such as 10,000 by changing both multipliers from 1000 to 100).
+    However, the code as written is designed for a maximum of 1,000,000 parent
+    records and would have to be changed in several places to accommodate
+    generating more. The number of child records can be changed either
+    direction without any other changes to the code (although if pushed too
+    far upward you may encounter runtime errors regarding the maximum variable
+    record length for the nested child dataset). For the purposes of
+    demonstrating the techniques in these <emphasis>Programmer's
+    Guide</emphasis> articles, 1,000,000 parent and 5,000,000 child records
+    are more than sufficient.</para>
+  </sect2>
+
+  <sect2 id="The_RECORD_Structures">
+    <title>The RECORD Structures</title>
+
+    <programlisting>Layout_Person := RECORD
+  UNSIGNED3 PersonID;
+  STRING15  FirstName;
+  STRING25  LastName;
+  STRING1   MiddleInitial;
+  STRING1   Gender;
+  STRING42  Street;
+  STRING20  City;
+  STRING2   State;
+  STRING5   Zip;
+END;
+
+Layout_Accounts := RECORD
+  STRING20  Account;
+  STRING8   OpenDate;
+  STRING2   IndustryCode;
+  STRING1   AcctType;
+  STRING1   AcctRate;
+  UNSIGNED1 Code1;
+  UNSIGNED1 Code2;
+  UNSIGNED4 HighCredit;
+  UNSIGNED4 Balance;
+END;
+
+Layout_Accounts_Link := RECORD
+  UNSIGNED3 PersonID;
+  Layout_Accounts;
+END;
+
+Layout_Combined := RECORD,MAXLENGTH(1000)
+  Layout_Person;
+  DATASET(Layout_Accounts) Accounts;
+END;
+</programlisting>
+
+    <para>These RECORD structures define the field layouts for three datasets:
+    a parent file (Layout_Person), a child file (Layout_Accounts_Link), and a
+    parent with nested child dataset (Layout_Combined). These are used to
+    generate three separate data files. The Layout_Accounts_Link and
+    Layout_Accounts structures are separate because the child records in the
+    nested structure will not contain the linking field to the parent, whereas
+    the separate child file must contain the link.</para>
+  </sect2>
+
+  <sect2 id="Starting_Point_Data">
+    <title>Starting Point Data</title>
+
+    <programlisting>//define data for record generation:
+             //100 possible middle initials, 52 letters and 48 blanks
+SetMiddleInitials := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ' +
+                     'ABCDEFGHIJKLMNOPQRSTUVWXYZ                  ';
+
+             //1000 First names
+SET OF STRING14     SetFnames := [
+  'TIMTOHY       ','ALCIAN        ','CHAMENE       ',
+  ... ];
+
+            //1000 Last names
+SET OF STRING16 SetLnames := [
+  'BIALES          ','COOLING         ','CROTHALL        ',      
+  ... ];
+</programlisting>
+
+    <para>These sets define the data that will be used to generate the
+    records. By providing 1,000 first and last names, this code can generate
+    1,000,000 unique names.</para>
+
+    <para><programlisting>          //2400 street addresses to choose from
+SET OF STRING31    SetStreets := [
+     '1 SANDHURST DR                 ','1 SPENCER LN              ',
+     ... ];
+
+         //Matched sets of 9540 City,State, Zips
+SET OF STRING15 SetCity := [
+     'ABBEVILLE      ','ABBOTTSTOWN    ','ABELL          ',
+     ... ];
+
+SET OF STRING2 SetStates := [
+     'LA','PA','MD','NC','MD','TX','TX','IL','MA','LA','WI','NJ',
+     ... ];
+
+SET OF STRING5 SetZips := [
+     '70510','17301','20606','28315','21005','79311','79604',
+     ... ];
+</programlisting>Having 2400 street addresses and 9540 (valid) city, state,
+    zip combinations provides plenty of opportunity to generate a reasonable
+    mix of addresses.</para>
+  </sect2>
+
+  <sect2 id="Generating_Parent_Records">
+    <title>Generating Parent Records</title>
+
+    <programlisting>BlankSet := DATASET([{0,'','','','','','','','',[]}],
+                   Layout_Combined);
+CountCSZ := 9540;</programlisting>
+
+    <para>Here is the beginning of the data generation code. The BlankSet is a
+    single empty “seed” record, used to start the process. The CountCSZ
+    attribute simply defines the maximum number of city, state, zip
+    combinations that are available for use in subsequent calculations that
+    will determine which to use in a given record.</para>
+
+    <programlisting>Layout_Combined CreateRecs(Layout_Combined L,
+                           INTEGER C,
+                           INTEGER W) := TRANSFORM
+  SELF.FirstName := IF(W=1,SetFnames[C],L.FirstName);
+  SELF.LastName  := IF(W=2,SetLnames[C],L.LastName);
+  SELF := L;
+END;
+
+base_fn  := NORMALIZE(BlankSet,P_Mult1,CreateRecs(LEFT,COUNTER,1));
+
+base_fln := NORMALIZE(base_fn ,P_Mult2,CreateRecs(LEFT,COUNTER,2));
+</programlisting>
+
+    <para>The purpose of this code is to generate 1,000,000 unique first/last
+    name records as a starting point. The NORMALIZE operation is unique in
+    that its second parameter defines the number of times to call the
+    TRANSFORM function for each input record. This makes it uniquely suited to
+    generating the kind of “bogus” data we need.</para>
+
+    <para>We're doing two NORMALIZE operations here. The first generates 1,000
+    records with unique first names from the single blank record in the
+    BlankSet inline DATASET. Then the second takes the 1,000 records from the
+    first NORMALIZE and creates 1,000 new records with unique last names for
+    each input record, resulting in 1,000,000 unique first/last name
+    records.</para>
+
+    <para>One interesting “trick” here is the use of a single TRANSFORM
+    function for both of the NORMALIZE operations. Defining the TRANSFORM to
+    receive one “extra” (third) parameter than it normally takes is what
+    allows this. This parameter simply flags which NORMALIZE pass the
+    TRANSFORM is doing.</para>
+
+    <programlisting>Layout_Combined PopulateRecs(Layout_Combined L, 
+          Layout_Combined R,
+          INTEGER HashVal) := TRANSFORM
+  CSZ_Rec            := (HashVal % CountCSZ) + 1;
+  SELF.PersonID      := IF(L.PersonID = 0,
+                           Thorlib.Node() + 1,
+                           L.PersonID + CLUSTERSIZE);
+  SELF.MiddleInitial := SetMiddleInitials[(HashVal % 100) + 1 ];
+  SELF.Gender        := CHOOSE((HashVal % 2) + 1,'F','M');
+  SELF.Street        := SetStreets[(HashVal % 2400) + 1 ];
+  SELF.City          := SetCity[CSZ_Rec];
+  SELF.State         := SetStates[CSZ_Rec];
+  SELF.Zip           := SetZips[CSZ_Rec];
+  SELF               := R;
+END;
+
+base_fln_dist := DISTRIBUTE(base_fln,HASH32(FirstName,LastName));
+
+base_people   := ITERATE(base_fln_dist,
+                         PopulateRecs(LEFT,
+                         RIGHT,
+                         HASHCRC(RIGHT.FirstName,RIGHT.LastName)),
+                         LOCAL);
+
+base_people_dist := DISTRIBUTE(base_people,HASH32(PersonID));
+</programlisting>
+
+    <para>Once the two NORMALIZE operations have done their work, the next
+    task is to populate the rest of the fields. Since one of those fields is
+    the PersonID, which is the unique identifier field for the record, the
+    fastest way to populate it is with ITERATE using the LOCAL option. Using
+    the Thorlib.Node() function and CLUSTERSIZE compiler directive, you can
+    uniquely number each record in parallel on each node with ITERATE. You may
+    end up with a few holes in the numbering towards the end, but since the
+    only requirement here is uniqueness and not contiguity, those holes are
+    irrelevant. Since the first two NORMALIZE operations took place on a
+    single node (look at the data skews shown in the ECL Watch graph), the
+    first thing to do is DISTRIBUTE the records so each node has a
+    proportional chunk of the data to work with. Then the ITERATE can do its
+    work on each chunk of records in parallel.</para>
+
+    <para>To introduce an element of randomity to the data choices, the
+    ITERATE passes a hash value to the TRANSFORM function as an “extra” third
+    parameter. This is the same technique used previously, but passing
+    calculated values instead of constants.</para>
+
+    <para>The CSZ_Rec attribute definition illustrates the use of local
+    attribute definitions inside TRANSFORM functions. Defining the expression
+    once, then using it multiple times as needed to produce a valid city,
+    state, zip combination. The rest of the fields are populated by data
+    selected using the passed in hash value in their expressions. The modulus
+    division operator (%—produces the remainder of the division) is used to
+    ensure that a value is calculated that is in the valid range of the number
+    of elements for the given set of data from which the field is
+    populated.</para>
+  </sect2>
+
+  <sect2 id="Generating_Child_Records">
+    <title>Generating Child Records</title>
+
+    <programlisting>BlankKids := DATASET([{0,'','','','','',0,0,0,0}],
+          Layout_Accounts_Link);
+
+SetLinks  := SET(base_people,PersonID);
+
+SetIndustryCodes := ['BB','DC','ON','FM','FP','FF','FC','FA','FZ',
+                     'CG','FS','OC','ZZ','HZ','UT','HF','CS','DM',
+                     'JA','FY','HT','UE','DZ','AT'];
+
+SetAcctRates := ['1','0','9','*','Z','5','B','2',
+                 '3','4','A','7','8','E','C'];
+
+SetDateYears := ['1987','1988','1989','1990','1991','1992','1993',
+                 '1994','1995','1996','1997','1998','1999','2000',
+                 '2001','2002','2003','2004','2005','2006'];
+
+SetMonthDays := [31,28,31,30,31,30,31,31,30,31,30,31];
+
+SetNarrs     := [229,158,2,0,66,233,123,214,169,248,67,127,168,
+                 65,208,114,73,218,238,57,125,113,88,
+                 247,244,121,54,220,98,97];
+</programlisting>
+
+    <para>Once again, we start by defining a “seed” record for the process as
+    an inline DATASET and several sets of appropriate data for the specific
+    fields. The SET function builds a set of valid PersonID values to use to
+    create the links between the parent and child records.</para>
+
+    <programlisting>Layout_Accounts_Link CreateKids(Layout_Accounts_Link L,
+                                INTEGER C) := TRANSFORM
+  CSZ_IDX       := C % CountCSZ + 1;
+  HashVal       := HASH32(SetCity[CSZ_IDX],SetStates[CSZ_IDX],SetZips[CSZ_IDX]);
+  DateMonth     := HashVal % 12 + 1;
+  SELF.PersonID := CHOOSE(TRUNCATE(C / TotalParents ) + 1,
+                          IF(C % 2 = 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents - (C % TotalParents )]),
+                          IF(C % 3 &lt;&gt; 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          IF(C % 5 = 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          IF(C % 7 &lt;&gt; 0,
+                             SetLinks[C % TotalParents  + 1],
+                             SetLinks[TotalParents  - (C % TotalParents )]),
+                          SetLinks[C % TotalParents  + 1]);
+ SELF.Account      := (STRING)HashVal;
+ SELF.OpenDate     := SetDateYears[DateMonth] + INTFORMAT(DateMonth,2,1) + 
+                          INTFORMAT(HashVal % SetMonthDays[DateMonth]+1,2,1);
+ SELF.IndustryCode := SetIndustrycodes[HashVal % 24 + 1];
+ SELF.AcctType     := CHOOSE(HashVal%5+1,'O','R','I','9',' ');
+ SELF.AcctRate     := SetAcctRates[HashVal % 15 + 1];
+ SELF.Code1        := SetNarrs[HashVal % 15 + 1];
+ SELF.Code2        := SetNarrs[HashVal % 15 + 16];
+ SELF.HighCredit   := HashVal % 50000;
+ SELF.Balance      := TRUNCATE((HashVal % 50000) * ((HashVal % 100 + 1) / 100));
+END;
+
+base_kids := NORMALIZE( BlankKids,
+                        TotalChildren,
+                        CreateKids(LEFT,COUNTER));
+base_kids_dist := DISTRIBUTE(base_kids,HASH32(PersonID));
+</programlisting>
+
+    <para>This process is similar to the one used for the parent records. This
+    time, instead of passing in a hash value, a local attribute does that work
+    inside the TRANSFORM. Just as before, the hash value is used to select the
+    actual data to go in each field of the record.</para>
+
+    <para>The interesting bit here is the expression to determine the PersonID
+    field value. Since we're generating 5,000,000 child records it would be
+    very simple to just give each parent five children. However, real-world
+    data rarely looks like that. Therefore, the CHOOSE function is used to
+    select a different method for each set of a million child records. The
+    first million uses the first IF expression, and the second million uses
+    the second, and so on... This creates a varying number of children for
+    each parent, ranging from one to nine.</para>
+  </sect2>
+
+  <sect2 id="Create_the_Nested_Child-Dataset_Records">
+    <title>Create the Nested Child Dataset Records</title>
+
+    <programlisting>Layout_Combined AddKids(Layout_Combined L, base_kids R) := TRANSFORM
+  SELF.Accounts := L.Accounts + 
+     ROW({R.Account,R.OpenDate,R.IndustryCode,
+     R.AcctType,R.AcctRate,R.Code1,
+     R.Code2,R.HighCredit,R.Balance},
+         Layout_Accounts);
+  SELF := L;
+END;
+base_combined := DENORMALIZE( base_people_dist, 
+    base_kids_dist, 
+    LEFT.PersonID = RIGHT.PersonID,
+    AddKids(LEFT, RIGHT));
+</programlisting>
+
+    <para>Now that we have separate recordsets of parent and child records,
+    the next step is to combine them into a single dataset with each parent's
+    child data nested within the same physical record as the parent. The
+    reason for nesting the child data this way is to allow easy parent-child
+    queries in the Data Refinery and Rapid data Delivery Engine without
+    requiring the use of separate JOIN steps to make the links between the
+    parent and child records.</para>
+
+    <para>To build the nested child dataset requires the DENORMALIZE
+    operation. This operation finds the links between the parent records and
+    their associated children, calling the TRANSFORM function as many times as
+    there are child records for each parent. The interesting technique here is
+    the use of the ROW function to construct each additional nested child
+    record. This is done to eliminate the linking field (PersonID) from each
+    child record stored in the combined dataset, since it is the same value as
+    contained in the parent record's PersonID field.</para>
+  </sect2>
+
+  <sect2 id="Write_Files_to_Disk">
+    <title>Write Files to Disk</title>
+
+    <programlisting>O1 := OUTPUT(PROJECT(base_people_dist,Layout_Person),,'~PROGGUIDE::EXAMPLEDATA::People',OVERWRITE);
+
+O2 := OUTPUT(base_kids_dist,,'~PROGGUIDE::EXAMPLEDATA::Accounts',OVERWRITE);
+
+O3 := OUTPUT(base_combined,,'~PROGGUIDE::EXAMPLEDATA::PeopleAccts',OVERWRITE);
+
+P1 := PARALLEL(O1,O2,O3);
+</programlisting>
+
+    <para>These OUTPUT attribute definitions will write the datasets to disk.
+    They are written as attribute definitions because they will be used in a
+    SEQUENTIAL action. The PARALLEL action attribute simply indicates that all
+    these disk writes can occur “simultaneously” if the optimizer decides it
+    can do that.</para>
+
+    <para>The first OUTPUT uses a PROJECT to produce the parent records as a
+    separate file because the data was originally generated into a RECORD
+    structure that contains the nested child DATASET field (Accounts) in
+    preparation for creating the third file. The PROJECT eliminates that empty
+    Accounts field from the output for this dataset.</para>
+
+    <programlisting>D1 := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+              {Layout_Person,UNSIGNED8 RecPos{virtual(fileposition)}}, THOR);
+
+D2 := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+              {Layout_Accounts_Link,UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+
+D3 := DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+              {,MAXLENGTH(1000) Layout_Combined,UNSIGNED8 RecPos{virtual(fileposition)}},THOR);
+</programlisting>
+
+    <para>These DATASET declarations are needed to be able to build indexes.
+    The UNSIGNED8 RecPos fields are the virtual fields (they only exist at
+    runtime and not on disk) that are the internal record pointers. They're
+    declared here to be able to reference them in the subsequent INDEX
+    declarations.</para>
+
+    <programlisting>I1 := INDEX(D1,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+
+I2 := INDEX(D2,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+I3 := INDEX(D3,{PersonID,RecPos},'~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+B1 := BUILD(I1,OVERWRITE);
+B2 := BUILD(I2,OVERWRITE);
+B3 := BUILD(I3,OVERWRITE);
+
+P2 := PARALLEL(B1,B2,B3);
+</programlisting>
+
+    <para>These INDEX declarations allow the BUILD actions to use the
+    single-parameter form. Once again, the PARALLEL action attribute indicates
+    the index build may be done all at the same time.</para>
+
+    <programlisting>SEQUENTIAL(P1,P2);</programlisting>
+
+    <para>This SEQUENTIAL action simply says, “write all the data files to
+    disk, and then build the indexes.”</para>
+  </sect2>
+
+  <sect2 id="Adding_the_Files-to_the_Repository">
+    <title>Defining the Files</title>
+
+    <para>Once the datasets and indexes have been written to disk you must
+    declare the files in order to use them in the example ECL code in the rest
+    of the articles. These declarations are contained in the DeclareData.ECL
+    file. To make them available to the rest of the example code you simply
+    need to IMPORT it. Therefore, at the beginning of each example you will
+    find this line of code:</para>
+
+    <programlisting>IMPORT $;</programlisting>
+
+    <para>This IMPORTs all the files in the ProgrammersGuide folder (including
+    the DeclareData MODULE structure definition). Referencing anything from
+    DeclareData is done by prepending $.DeclareData to the name of the EXPORT
+    definition you need to use, like this:</para>
+
+    <programlisting>MyFile := $.DeclareData.Person.File;  //rename $DeclareData.Person.File to MyFile to make 
+                                      //subsequent code simpler</programlisting>
+
+    <para>Here is some of the code contained in the DeclareData.ECL
+    file:</para>
+
+    <programlisting>EXPORT DeclareData := MODULE
+
+  EXPORT Layout_Person := RECORD
+    UNSIGNED3 PersonID;
+    STRING15  FirstName;
+    STRING25  LastName;
+    STRING1   MiddleInitial;
+    STRING1   Gender;
+    STRING42  Street;
+    STRING20  City;
+    STRING2   State;
+    STRING5   Zip;
+  END;
+
+  EXPORT Layout_Accounts := RECORD
+    STRING20   Account;
+    STRING8    OpenDate;
+    STRING2    IndustryCode;
+    STRING1    AcctType;
+    STRING1    AcctRate;
+    UNSIGNED1  Code1;
+    UNSIGNED1  Code2;
+    UNSIGNED4  HighCredit;
+    UNSIGNED4  Balance;
+  END;
+
+  EXPORT Layout_Accounts_Link := RECORD
+    UNSIGNED3 PersonID;
+    Layout_Accounts;
+  END;
+
+  SHARED Layout_Combined := RECORD,MAXLENGTH(1000)
+    Layout_Person;
+    DATASET(Layout_Accounts) Accounts;
+  END;
+
+  EXPORT Person := MODULE
+    EXPORT File     := DATASET('~PROGGUIDE::EXAMPLEDATA::People',Layout_Person, THOR);
+    EXPORT FilePlus := DATASET('~PROGGUIDE::EXAMPLEDATA::People',
+                               {Layout_Person,UNSIGNED8 RecPos{virtual(fileposition)}}, THOR);
+  END;                                        
+  EXPORT Accounts := DATASET('~PROGGUIDE::EXAMPLEDATA::Accounts',
+                             {Layout_Accounts_Link,
+                              UNSIGNED8 RecPos{virtual(fileposition)}}, 
+                             THOR);
+  EXPORT PersonAccounts:=   DATASET('~PROGGUIDE::EXAMPLEDATA::PeopleAccts',
+                                    {Layout_Combined,
+                                     UNSIGNED8 RecPos{virtual(fileposition)}}, 
+                                     THOR);
+
+  EXPORT IDX_Person_PersonID := 
+  INDEX(Person,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::People.PersonID');
+
+  EXPORT IDX_Accounts_PersonID := 
+  INDEX(Accounts,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::Accounts.PersonID');
+
+  EXPORT IDX_PersonAccounts_PersonID := 
+  INDEX(PersonAccounts,
+        {PersonID,RecPos},
+        '~PROGGUIDE::EXAMPLEDATA::KEYS::PeopleAccts.PersonID');
+
+END;
+</programlisting>
+
+    <para>By using a MODULE structure as a container, all the DATASET and
+    INDEX declarations are in a single attribute editor window. This makes
+    maintenance and update simple while allowing complete access to them
+    all.</para>
+  </sect2>
+</sect1>

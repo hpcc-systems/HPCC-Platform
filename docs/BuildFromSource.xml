@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Building from source</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+   <xi:include href="Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+
+   <xi:include href="Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+   <xi:include href="Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Buildin-HPCC-from-Source">
+    <title>Building HPCC from source</title>
+
+    <sect1>
+      <title id="Introduction">Introduction</title>
+
+      <para>The LexisNexis HPCC technology is designed to effectively process,
+      analyze, and find links and associations within high volumes of complex
+      data. The LexisNexis HPCC technology can detect non-obvious
+      relationships, scale to support petabytes of data, and is significantly
+      faster than competing technologies while requiring less hardware and
+      resources.</para>
+
+      <para>This translates into better quality answers in less time so that
+      organizations can cope with massive data and turn information into
+      knowledge.</para>
+
+      <para>This document will show you how to obtain and build an HPCC system
+      using the open source model.</para>
+
+      <para>OUTLINE DRAFT: </para>
+
+      <para>Description: </para>
+
+      <para>------------ </para>
+
+      <para>This file is the top level handling for cmake based compilation
+      and build process. </para>
+
+      <para>To build for Linux: </para>
+
+      <para>1. Check out sources (for example, to directory ~/hpcc) </para>
+
+      <para>2. Create a build directory - either as a child of hpcc or
+      elsewhere </para>
+
+      <para>3. cd to the build directory </para>
+
+      <para>4a.To create makefiles to build native release version for local
+      machine, run cmake ~/hpcc </para>
+
+      <para>4b.To create makefiles to build native debug version, run cmake
+      -DCMAKE_BUILD_TYPE=Debug ~/hpcc </para>
+
+      <para>4c.To create makefiles to build 32-bit version from 64-bit host,
+      run cmake -DCMAKE_C_FLAGS:STRING="-m32 -march=i386"
+      -DCMAKE_CXX_FLAGS:STRING="-m32 -march=i386" ~/hpcc </para>
+
+      <para>5. To build the makefiles just created above, run make </para>
+
+      <para>6. Executables will be created in ./&lt;releasemode&gt;/bin and
+      ./&lt;releasemode&gt;/libs </para>
+
+      <para></para>
+
+      <para>To build for Windows: </para>
+
+      <para>1. Check out sources (for example, to directory c:\hpcc) </para>
+
+      <para>2. Create a build directory - either as a child of hpcc or
+      elsewhere </para>
+
+      <para>3. cd to the build directory </para>
+
+      <para>4. To create a Visual Studio project, run cmake c:\hpcc -G "Visual
+      Studio 9 2008" The sln file hpccsystems-platform.sln will be created in
+      the current directory, and will support debug and release targets
+      </para>
+
+      <para>5. To build the project, load the solution into the visual studio
+      IDE and build in the usual way. 6. Executables will be created in (for
+      example) c:\hpcc\bin\&lt;release_mode&gt; </para>
+
+      <para></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Hardware-and-Software-Requirements">
+    <title>Hardware and Software Requirements</title>
+
+    <para>The following section describes the various hardware and software
+    required in order to run the HPCC.</para>
+
+    <sect1 id="Switch">
+      <title>Switch</title>
+
+      <para>A significant component of HPCC is the infrastructure it runs on,
+      specifically the switch.</para>
+
+      <sect2 id="Switch-Requirements">
+        <title>Switch requirements</title>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Sufficient number of ports to allow all nodes to be
+            connected directly to it;</para>
+          </listitem>
+
+          <listitem>
+            <para>IGMP v.2 support</para>
+          </listitem>
+
+          <listitem>
+            <para>IGMP snooping support</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Switch-additional-recommend">
+        <title>Switch additional recommended features</title>
+
+        <para><itemizedlist mark="square">
+            <listitem>
+              <para>Non-blocking backplane</para>
+            </listitem>
+
+            <listitem>
+              <para>Low latency (under 35usec)</para>
+            </listitem>
+
+            <listitem>
+              <para>Layer 3 switching</para>
+            </listitem>
+
+            <listitem>
+              <para>Managed and monitored (SNMP is a plus)</para>
+            </listitem>
+
+            <listitem>
+              <para>Port channel (port bundling) support</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Hardware">
+      <title>Nodes-Hardware</title>
+
+      <para>The HPCC can run as a single node system or a multi node
+      system.</para>
+
+      <sect2 id="Node-Mandatory-requirements">
+        <title>Node mandatory requirements</title>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Pentium 4 or newer CPU</para>
+          </listitem>
+
+          <listitem>
+            <para>64 bit</para>
+          </listitem>
+
+          <listitem>
+            <para>4GB RAM</para>
+          </listitem>
+
+          <listitem>
+            <para>one or two Hard Drives</para>
+          </listitem>
+
+          <listitem>
+            <para>1 GigE network interface</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Node-recommended-specifications">
+        <title>Node recommended specifications</title>
+
+        <para><itemizedlist mark="square">
+            <listitem>
+              <para>Nehalem Core i7 CPU</para>
+            </listitem>
+
+            <listitem>
+              <para>64 bit</para>
+            </listitem>
+
+            <listitem>
+              <para>12GB RAM</para>
+            </listitem>
+
+            <listitem>
+              <para>Two 15K RPM SAS Hard Drives (Roxie)</para>
+            </listitem>
+
+            <listitem>
+              <para>Two 7200K RPM SATA Hard Drives (Thor)</para>
+            </listitem>
+
+            <listitem>
+              <para>1 GigE network interface</para>
+            </listitem>
+
+            <listitem>
+              <para>PXE boot support in BIOS</para>
+            </listitem>
+
+            <listitem>
+              <para>Optionally 3 or more hard drives can be configured in a
+              RAID 5 container for increased performance</para>
+            </listitem>
+
+            <listitem>
+              <para>Optionally IPMI and KVM over IP support</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Software">
+      <title>Nodes-Software</title>
+
+      <para>We recommend all nodes have identical operating systems and
+      packages installed. This significantly reduces variables when
+      troubleshooting.</para>
+
+      <sect2 id="Operating-System-Requirements">
+        <title>Operating System Requirements</title>
+
+        <para><itemizedlist mark="square">
+            <listitem>
+              <para>64 bit LINUX CentOS 5.4 or later</para>
+
+              <para>Or</para>
+
+              <para>LINUX Ubuntu 9.10 or later and Debian x.xx</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+
+      <sect2 id="configuration-manager">
+        <title>Dependencies and packages</title>
+
+        <para>Running HPCC depends on having these required component packages
+        listed below installed on the system. For details of the commands
+        recommended for obtaining these packages, see Specific OS Software
+        Installation commands section in appendix of the GettingStarted
+        document.</para>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>OpenLDAP 2.3.43 (base for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>OpenLDAP-devel 2.3.43 (base for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>libicu 3.6 (for CentOS 5.5)</para>
+
+            <para>libicu-3.6-5.11.4.i386.rpm</para>
+          </listitem>
+
+          <listitem>
+            <para>libicu-devel 3.6 (for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>m4 1.4.5 (for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>libtool 1.5.22 (for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>binutils-devel 2.17.50.0.6 (for CentOS 5.5)</para>
+          </listitem>
+
+          <listitem>
+            <para>bison 2.4.1 (source)</para>
+          </listitem>
+
+          <listitem>
+            <para>flex 2.5.35 (source)</para>
+          </listitem>
+
+          <listitem>
+            <para>The GNU Compiler Collection (GCC) with G++ support (required
+            only on the ECL Server node)</para>
+          </listitem>
+
+          <listitem>
+            <para>boost 1.44 (source)</para>
+          </listitem>
+
+          <listitem>
+            <para>boost-devel 1.44 (source)</para>
+          </listitem>
+
+          <listitem>
+            <para>Xalan-c 1.10.0 (rpm - fedora epel repository or via
+            source)</para>
+          </listitem>
+
+          <listitem>
+            <para>Xalan-c-devel 1.10.0 (rpm - fedora epel repository or via
+            source)</para>
+          </listitem>
+
+          <listitem>
+            <para>Xerces-c 2.7.0 (rpm - fedora epel repository or via
+            source)</para>
+          </listitem>
+
+          <listitem>
+            <para>Xerces-c-devel 2.7.0 (rpm - fedora epel repository or via
+            source)</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="workstation-requirements">
+      <title>Workstation Requirements</title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Running HPCC requires communicating with the system from your
+          workstation with a browser</para>
+
+          <para>You will need to use one of the supported web browsers with
+          Javascript enabled.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Internet Explorer 7</para>
+            </listitem>
+
+            <listitem>
+              <para>Mozilla Firefox 3.5 or later</para>
+
+              <!--*** Add additional browsers when approved-->
+            </listitem>
+          </itemizedlist>
+
+          <para>If browser security is set to <emphasis
+          role="bold">High</emphasis>, you should add ECLWatch as a Trusted
+          Site to allow Javascript execution.</para>
+        </listitem>
+
+        <listitem>
+          <para>HPCC Client Tools (ECL IDE). See the ECLWatch web page to
+          download the Windows install set.</para>
+
+          <graphic fileref="images/GS_DownloadTools.png" />
+
+          <para></para>
+
+          <para>The Client tools were designed to run on Windows machines. See
+          the appendix for instructions on running them on Linux workstations
+          using Wine.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter id="Getting_the_Source">
+    <title>Getting and Installing the Source</title>
+
+    <para>This part of the document will discuss ways to get the source code
+    and install it.</para>
+
+    <sect1>
+      <title>Sources of Source</title>
+
+      <para>The source code can be found on the LexisNexis Portal at ***link
+      to portal***. Register with the NIM*** site to be able to download the
+      source package.</para>
+
+      <para>The source package is in the form of a source tarfile. (.stgz)
+      download the file from the site to the machine where you wish to install
+      the HPCC.</para>
+
+      <para></para>
+    </sect1>
+
+    <sect1>
+      <title>Installing the Source files</title>
+
+      <para>Extract the source files into a working directory. You may want to
+      create a directory for the source files. You would also want to have a
+      directory for the binaries.</para>
+
+      <para>For instance, if we wanted to extract to /users/home/hpcc9 we
+      could issue the command:</para>
+
+      <para><programlisting>tar -xzvf hpcc.tar.gz –C /usr/home/hpcc9/
+</programlisting>This will be the directory of the source, here we would
+      create a directory for the binaries.</para>
+
+      <para><programlisting>mkdir cmake_build9
+</programlisting>Then from the new cmake_build9 directory, you can issue the
+      command:</para>
+
+      <para><programlisting>cmake /usr/home/hpcc9</programlisting>This will
+      give lots of messages and status as the process runs.</para>
+
+      <para>Once this process successfully completes, you can then issue the
+      command:<programlisting>make 
+</programlisting>Make will now build all the source files, this process is
+      automated to detect the platform you are running on. If its a red hat or
+      CentOS platform, it will create a .rpm file to install. If you are on
+      Ubuntu/Debian package it will generate a apt-get package.</para>
+
+      <para><!--*** The following section is just conjecture at this point, 
+because I do not fully understand what these commands do or what their purpose is... 
+*** sorry if this does not quite make sense.-->Another step in the process is
+      to make the install...</para>
+
+      <para><programlisting>make install
+</programlisting>This will make the installation file ***</para>
+
+      <para><!--*** See comments above!-->Another step in the process is to
+      make the package...</para>
+
+      <para><programlisting>make package
+</programlisting>This will package up the installation files ready to
+      redeploy***</para>
+
+      <para></para>
+
+      <para>Next steps: Get the GettingStarted document, and the Using Config
+      Manager document to configure your HPCC system.</para>
+    </sect1>
+  </chapter>
+</book>

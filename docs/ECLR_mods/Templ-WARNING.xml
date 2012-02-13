@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_WARNING">
+  <title>#WARNING</title>
+
+  <para><emphasis role="bold">#WARNING<indexterm>
+      <primary>#WARNING</primary>
+    </indexterm>( </emphasis><emphasis>message</emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.10pt" />
+
+        <colspec colwidth="275.70pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>message</emphasis></entry>
+
+            <entry>A string expression containing the warning message to
+            display.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#WARNING </emphasis>statement displays the
+  <emphasis>message </emphasis>in the workunit and/or syntax check. This
+  statement may be used outside an XML scope and does not require a previous
+  LOADXML to instantiate an XML scope.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #IF(TRUE)
+    #ERROR('broken');
+    OUTPUT('broken');
+  #ELSE
+    #WARNING('maybe broken');
+    OUTPUT('maybe broken');
+  #END;
+</programlisting>
+
+  <para>See Also: <link linkend="_ERROR">#ERROR</link></para>
+</sect1>

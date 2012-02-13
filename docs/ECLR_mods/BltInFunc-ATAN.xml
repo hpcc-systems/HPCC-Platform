@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ATAN">
+  <title>ATAN</title>
+
+  <para><emphasis role="bold">ATAN<indexterm>
+      <primary>ATAN</primary>
+    </indexterm><indexterm>
+      <primary>ATAN function</primary>
+    </indexterm>(</emphasis><emphasis>tangent</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.20pt" />
+
+        <colspec colwidth="309.60pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>tangent</emphasis></entry>
+
+            <entry>The REAL tangent value for which to find the
+            arctangent.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ATAN returns a single REAL value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ATAN </emphasis>function returns the
+  arctangent (inverse) of the <emphasis>tangent</emphasis>, in radians.</para>
+
+  <para>Example:</para>
+
+  <programlisting>ArcTangent := ATAN(TangentAngle); </programlisting>
+
+  <para>See Also: <link linkend="ATAN2">ATAN2</link>, <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+</sect1>

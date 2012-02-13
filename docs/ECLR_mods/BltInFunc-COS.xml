@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="COS">
+  <title>COS</title>
+
+  <para><emphasis role="bold">COS<indexterm>
+      <primary>COS</primary>
+    </indexterm><indexterm>
+      <primary>COS function</primary>
+    </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.70pt" />
+
+        <colspec colwidth="309.10pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>angle</emphasis></entry>
+
+            <entry>The REAL radian value for which to find the cosine.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>COS returns a single REAL value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">COS </emphasis>function returns the cosine
+  of the <emphasis>angle</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+
+Deg2Rad := 0.0174532925199; //number of radians in a degree
+
+Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
+
+Cosine45 := COS(Angle45);   //get cosine of the 45 degree angle
+</programlisting>
+
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
+  linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link
+  linkend="ASIN">ASIN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
+</sect1>

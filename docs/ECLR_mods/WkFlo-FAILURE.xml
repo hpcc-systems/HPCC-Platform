@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FAILURE">
+  <title>FAILURE</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: FAILURE<indexterm>
+      <primary>FAILURE</primary>
+    </indexterm>(</emphasis><emphasis>handler</emphasis><emphasis
+  role="bold">) <indexterm>
+      <primary>FAILURE workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>handler</emphasis></entry>
+
+            <entry>The action to run if the expression fails.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">FAILURE </emphasis>service executes the
+  <emphasis>handler</emphasis> Attribute when the
+  <emphasis>expression</emphasis> fails. FAILURE notionally executes in
+  parallel with the failed return of the result. This service implicitly
+  causes the <emphasis>attribute</emphasis> to be evaluated at global scope
+  instead of the enclosing scope. Only available if workflow services are
+  turned on (see #OPTION(workflow)).</para>
+
+  <para>Example:</para>
+
+  <programlisting>  sPeople  := SORT(Person,Person.per_first_name);
+  nUniques := COUNT(DEDUP(sPeople,Person.per_first_name AND
+                    Person.address))
+           : FAILURE(Email.simpleSend(SystemsPersonel,
+                    SystemsPersonel.email,'ouch.htm'));
+</programlisting>
+
+  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link linkend="RECOVERY">RECOVERY</link></para>
+</sect1>

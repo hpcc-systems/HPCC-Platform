@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Automated_ECL">
+  <title><emphasis role="bold">Automated ECL</emphasis></title>
+
+  <para>Once you have established standard ECL processes that you know you
+  need to perform regularly, you can begin to make those processes automated.
+  Doing this eliminates the need to remember the order of processes, or their
+  periodicity.</para>
+
+  <para>One form of automation typically involves launching MACROs with the
+  ECLPlus application. By using MACROs, you can have standard processes that
+  operate on different input each time, but produce the same result. Since
+  ECLPlus is a command-line application, its use can be automatically launched
+  in many different ways — DOS Batch files, from within another application,
+  or ...</para>
+
+  <para>Here's an example. This MACRO (contained in DeclareData.ECL) takes two
+  parameters: the name of a file, and the name of a field in that file to
+  produce a count of the unique values in that field and a crosstab report of
+  the number of instances of each value.</para>
+
+  <programlisting>EXPORT MAC_CountFieldValues(infile,infield) := MACRO
+  // Create the count of unique values in the infield
+  COUNT(DEDUP(TABLE(infile,{infile.infield}),infield,ALL));
+
+  // Create the crosstab report
+  #UNIQUENAME(r_macro)
+  %r_macro% := RECORD
+    infile.infield;
+    INTEGER cnt := COUNT(GROUP);
+  END;
+  #UNIQUENAME(y_macro)
+  %y_macro% := TABLE(infile,%r_macro%,infield,FEW);
+  OUTPUT(CHOOSEN(%y_macro%,50000));
+ENDMACRO;
+</programlisting>
+
+  <para>By using #UNIQUENAME to generate all the attribute names, this MACRO
+  can be used multiple times in the same workunit. You can test the MACRO
+  through the ECL IDE program by executing a query like this in the ECL
+  Builder window:</para>
+
+  <programlisting>IMPORT ProgrammersGuide AS PG;
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
+</programlisting>
+
+  <para>Once you've throughly tested the MACRO and are certain it works
+  correctly, you can automate the process by using ECLplus.</para>
+
+  <para>Install the ECLplus program in its own directory on the same PC that
+  runs the ECL IDE, and create an ECLPLUS.INI file with the correct settings
+  to access your cluster (see the <emphasis>Command Line ECL</emphasis>
+  section of the <emphasis>Client Tools </emphasis>PDF). Then you can open a
+  Command Prompt window and run the same query from the command line like
+  this:</para>
+
+  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues(ProgrammersGuide.DeclareData.Person.File,gender)</programlisting>
+
+  <para>Notice that you're using the <emphasis>ecl=</emphasis> command line
+  option and not the <emphasis>$Module.Attribute</emphasis> option. This is
+  the “proper” way to make a MACRO expand and execute through ECLplus. The
+  <emphasis>$Module.Attribute</emphasis> option is only used to execute ECL
+  Builder window queries that have been saved as attributes in the repository
+  (Builder Window Runnable—BWR code) and won't work with MACROs.</para>
+
+  <para>When the MACRO expands and executes, you get a result that looks like
+  this in your Command Prompt window:</para>
+
+  <programlisting>Workunit W20070118-145647 submitted
+[Result 1]
+Result_1
+2
+[Result_2]
+gender     cnt
+ F        500000
+ M        500000
+</programlisting>
+
+  <para>You can re-direct this output to a file by using the
+  <emphasis>output=”filename”</emphasis> option on the command line, like
+  this:</para>
+
+  <programlisting>C:\eclplus&gt;eclplus ecl=$ProgGuide.MAC_CountFieldValues( ProgrammersGuide.DeclareData.Person.File, gender) 
+              output="MyFile.txt"</programlisting>
+
+  <para>This will send the output to the “MyFile.txt” file on your local PC.
+  For larger output files, you'll want to have the OUTPUT action in your ECL
+  code write the result set to disk in the supercomputer then de-spray it to
+  your landing zone (you can use the FileServices.Despray function to do this
+  from within your ECL code).</para>
+
+  <sect2 id="Using_Text_Files">
+    <title>Using Text Files</title>
+
+    <para>Another automation option is to generate a text file containing the
+    ECL code to execute, then execute that code from the command line.</para>
+
+    <para>For example, you could create a file containing this:</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.Person.file,gender);
+PG.DeclareData.MAC_CountFieldValues(PG.DeclareData.person.File,state)</programlisting>
+
+    <para>These two MACRO calls will generate the field ordinality count and
+    crosstab report for two fields in the same file. You could then execute
+    them like this (where “test.ECL” is the name of the file you
+    created):</para>
+
+    <programlisting>C:\eclplus&gt;eclplus @test.ecl</programlisting>
+
+    <para>This will generate similar results to that above.</para>
+
+    <para>The advantage this method has is the ability to include any
+    necessary “setup” ECL code in the file before the MACRO calls, like this
+    (contained in RunText.ECL):</para>
+
+    <programlisting>IMPORT ProgrammersGuide AS PG;
+MyRec := RECORD
+  STRING1 value1;
+  STRING1 value2;
+END;
+D := DATASET([{'A','B'},
+              {'B','C'},
+              {'A','D'},
+              {'B','B'},
+              {'A','C'},
+              {'B','D'},
+              {'A','B'},
+              {'C','C'},
+              {'C','D'},
+              {'A','A'}],MyRec);
+
+PG.DeclareData.MAC_CountFieldValues(D,Value1)
+PG.DeclareData.MAC_CountFieldValues(D,Value2)
+</programlisting>
+
+    <para>So that you get a result like this:</para>
+
+    <programlisting>C:\eclplus&gt;eclplus @test.ecl
+Workunit W20070118-145647 submitted
+[Result 1]
+result_1
+3
+[Result 2]
+value1  cnt
+C        2
+A        5
+B        3
+[Result 3]
+result_3
+4
+[Result 4]
+value2  cnt
+D        3
+C        3
+A        1
+B        3
+</programlisting>
+
+    <para>How you create this text file is up to you. To fully automate the
+    process you may want to write a daemon application that watches a
+    directory (such as your HPCC environment's landing zone) to detect new
+    files dropped in (by whatever means) and generate the appropriate ECL code
+    file to process that new file in some standard fashion (typically using
+    MACRO calls), then execute it from ECLplus command line as described
+    above. The realm of possibilities is endless.</para>
+  </sect2>
+</sect1>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WHICH">
+  <title>WHICH</title>
+
+  <para><emphasis role="bold">WHICH<indexterm>
+      <primary>WHICH</primary>
+    </indexterm><indexterm>
+      <primary>WHICH Function</primary>
+    </indexterm>(</emphasis><emphasis>condition,…,condition</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.20pt" />
+
+        <colspec colwidth="274.60pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>A conditional expression to evaluate.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>WHICH returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">WHICH </emphasis>function evaluates which of
+  the list of <emphasis>conditions</emphasis> returned true and returns its
+  ordinal position in the list of <emphasis>conditions</emphasis>. Returns
+  zero (0) if none return true. This is the opposite of the REJECTED
+  function<indexterm>
+      <primary>REJECTED function</primary>
+    </indexterm>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  Accept := WHICH(Person.per_first_name = 'Fred',
+  Person.per_first_name = 'Sue');
+  //Accept is 0 for everyone but those named Fred or Sue
+</programlisting>
+
+  <para>See Also: <link linkend="REJECTED">REJECTED</link>, <link linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link linkend="CASE">CASE</link></para>
+</sect1>

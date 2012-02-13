@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ENTH">
+  <title>ENTH<indexterm>
+      <primary>ENTH function</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ENTH<indexterm>
+      <primary>ENTH</primary>
+    </indexterm>(</emphasis><emphasis>recordset, numerator
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, denominator
+  </emphasis><emphasis role="bold">[</emphasis><emphasis>, which
+  </emphasis><emphasis role="bold">] ] [</emphasis>,<emphasis role="bold">
+  LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.95pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to sample. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>numerator</emphasis></entry>
+
+            <entry>The number of records to return. The chosen records are
+            evenly spaced from throughout the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>denominator</emphasis></entry>
+
+            <entry>Optional. The size of each set from which to return
+            numerator number of records. If omitted, the denominator value is
+            the total number of records in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>which</emphasis></entry>
+
+            <entry>Optional. An integer specifying the ordinal number of the
+            sample set to return. This is used to obtain multiple
+            non-overlapping samples from the same recordset. If the numerator
+            is not 1, then some records may overlap.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies that the sample is extracted on each
+            supercomputer node without regard to the number of records on
+            other nodes, significantly improving performance if exact results
+            are not required.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ENTH returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ENTH </emphasis>function returns a sample
+  set of records from the nominated <emphasis>recordset</emphasis>. ENTH
+  returns <emphasis>numerator</emphasis> number of records out of each
+  <emphasis>denominator</emphasis> set of records in the
+  <emphasis>recordset</emphasis>. Unless LOCAL is specified, records are
+  picked at exact intervals across all nodes of the supercomputer.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySample1 := ENTH(Person,1,10,1); // 10% (1 out of every 10)
+MySample2 := ENTH(Person,15,100,1); // 15% (15 out of every 100)
+MySample3 := ENTH(Person,3,4,1); // 75% (3 out of every 4)
+
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                     {'F'},{'G'},{'H'},{'I'},{'J'},
+                     {'K'},{'L'},{'M'},{'N'},{'O'},
+                     {'P'},{'Q'},{'R'},{'S'},{'T'},
+                     {'U'},{'V'},{'W'},{'X'},{'Y'}],
+     {STRING1 Letter});
+Set1 := ENTH(SomeFile,2,10,1); // returns E, J, O, T, Y
+</programlisting>
+
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link
+  linkend="SAMPLE">SAMPLE</link></para>
+</sect1>

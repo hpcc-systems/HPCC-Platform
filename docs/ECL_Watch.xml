@@ -1,0 +1,1958 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Using ECL Watch</title>
+
+  <bookinfo>
+    <title> Using ECL Watch</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
+
+    <xi:include href="Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <copyright>
+      <year>2011 HPCC Systems. All rights reserved</year>
+    </copyright>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>ECL Watch provides an interface to the HPCC system and allows you to
+    view information and interrogate nodes to confirm all expected processes
+    are running. This provides a simple centric view into the system and a
+    means to perform Work Unit and data files maintenance.***</para>
+  </chapter>
+
+  <chapter>
+    <title>Clusters</title>
+
+    <para>Displays activity on all clusters in an environment. From this list,
+    you can select one and perform Preflight activities.***</para>
+
+    <para>You also have hyperlink access to the current log files.***</para>
+
+    <sect1>
+      <title>Activity</title>
+
+      <para>The Activity menu provides access to THOR Job Queue Administration
+      tasks.*** It displays activity on all clusters in the environment. From
+      this view, you can see the progress of jobs and set the priority of
+      queued jobs.***</para>
+
+      <sect2>
+        <title>Activity on Servers***</title>
+
+        <para>Click on the <emphasis role="bold">Activity</emphasis> hyperlink
+        below <emphasis role="bold">Clusters</emphasis> in the menu on the
+        left. This will take you to the Existing Activity on Servers
+        Page.***</para>
+
+        <para>Clicking on the icon next to a cluster (or rt-clicking on the
+        appropriate link next to the specific cluster) provides the following
+        menu options***</para>
+
+        <sect3>
+          <title>Pause</title>
+
+          <para>Pauses the cluster’s job queue. The currently running job will
+          complete, but no other jobs will execute until the queue is
+          resumed.***</para>
+        </sect3>
+
+        <sect3>
+          <title>Resume</title>
+
+          <para>Resumes the cluster’s job queue. Jobs will resume execution in
+          order.***</para>
+        </sect3>
+
+        <sect3>
+          <title>Clear</title>
+
+          <para>Removes all workunits from the job queue. The state of removed
+          workunits is set to aborted. Any workunits that were waiting in the
+          queue can be resubmitted manually later.***</para>
+        </sect3>
+
+        <sect3>
+          <title>Usage</title>
+
+          <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed
+          do eiusmod tempor incididunt ut labore et dolore magna
+          aliqua.</para>
+
+          <para></para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Workunit options***</title>
+
+        <para>Clicking on the icon next to a running Workunit (or rt-clicking
+        on the hyperlink) provides this menu option***</para>
+
+        <sect3>
+          <title>Abort</title>
+
+          <para>Attempts to abort the Workunit.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Queued Workunit options***</title>
+
+        <para>Clicking on the icon next to a queued (blocked) Workunit (or
+        rt-clicking on the hyperlink) provides the following menu
+        options***</para>
+
+        <sect3>
+          <title>Move Up</title>
+
+          <para>Moves the job (Workunit) up one position in the queue.</para>
+        </sect3>
+
+        <sect3>
+          <title>Move Down</title>
+
+          <para>Moves the job (Workunit) down one position in the
+          queue.</para>
+        </sect3>
+
+        <sect3>
+          <title>Move Top</title>
+
+          <para>Moves the job (Workunit) to the top position in the
+          queue.</para>
+        </sect3>
+
+        <sect3>
+          <title>Move Bottom</title>
+
+          <para>Moves the job (Workunit) to the last position in the
+          queue.</para>
+        </sect3>
+
+        <sect3>
+          <title>Remove</title>
+
+          <para>Removes the Workunit from the queue and sets it state to
+          aborted. The Workunit can be resubmitted manually later.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Scheduler</title>
+
+      <para>Provides an interface to the ECL Event Scheduler. Displays
+      scheduled workunits and allows you to post an event.***</para>
+
+      <sect2>
+        <title>Push Event</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>Search</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>Deschedule</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>ECL Workunits</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Search</title>
+
+      <para>Allows you to search for workunits by WUID, Username, Cluster,
+      State, ECL text, Job Name, Logical File, or date. You can also specify
+      whether to search active or archived workunits.***</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bold">Search</emphasis>
+            hyperlink below <emphasis role="bold">ECL Workunits</emphasis>in
+            the menu on the left.</para>
+
+            <para>The ECL Search Workunits page appears:</para>
+
+            <para><figure>
+                <title>ECL Workunits Search</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/ECLW004.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para></para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect2>
+        <title>Open WUID</title>
+
+        <para>Provide the WUID and press the Open button. ***</para>
+
+        <para>The Workunit Information page displays (if the WU is
+        found)***</para>
+      </sect2>
+
+      <sect2>
+        <title>Search Workunits</title>
+
+        <para>Provide the search criteria, then press the Find
+        button.***</para>
+
+        <para>The list of workunits meeting that search criteria then
+        displays.***</para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Browse</title>
+
+      <para>Displays all active workunits. From this view, you can also filter
+      by Owner, state, or cluster.***</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bold">Browse</emphasis>
+            hyperlink below <emphasis role="bold">ECL Workunits</emphasis>in
+            the menu on the left.</para>
+
+            <para>The ECL Workunits page appears:</para>
+
+            <para><figure>
+                <title>Browse ECL Workunits</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/ECLW005.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>To filter by an Owner, click on a hyperlink of the Owner
+            whose workunits you wish to see. To filter by a Cluster, click on
+            a hyperlink of the Cluster whose workunits you wish to see. To
+            filter by a State, click on a hyperlink of the State of workunits
+            you wish to see.***</para>
+
+            <para>This page also allows you to select workunits (using the
+            checkboxes to the left) and using the buttons at the bottom of the
+            page, perform one of the following actions to all selected
+            workunits: Delete, Protect, Unprotect, Reschedule, Deschedule, or
+            Set to Failed. ***</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="52.60pt" />
+
+                  <colspec colwidth="384.80pt" />
+
+                  <tbody>
+                    <row>
+                      <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                      <entry>If a workunit is Protected, the delete action is
+                      not available.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect2 role="brk">
+        <title>Open WUID</title>
+
+        <para>Click on a Workunit’s hyperlink to display the Workunit
+        information page.***</para>
+
+        <para>The resulting web page provides detail about the Work
+        Unit.***</para>
+
+        <para>Click on a <inlinegraphic fileref="images/ECLW005d.jpg" />
+        button to expand a section. Click on a <inlinegraphic
+        fileref="images/ECLW005u.jpg" /> button to collapse a section.</para>
+
+        <para><informaltable frame="all">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="125.50pt" />
+
+              <tbody>
+                <row>
+                  <entry><para>WUID</para></entry>
+
+                  <entry><para>This link provides a view of the actual xml
+                  representation of the query/workunits.*** </para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Action</para></entry>
+
+                  <entry><para>Displays the Action to be performed***
+                  </para></entry>
+                </row>
+
+                <row>
+                  <entry><para>State</para></entry>
+
+                  <entry><para>Displays the current WU State</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Owner</para></entry>
+
+                  <entry><para>Displays the job’s owner.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Scope</para></entry>
+
+                  <entry><para>Displays the job’s scope. You can add or change
+                  a job scope using this field.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para></para></entry>
+
+                  <entry><para></para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Jobname</para></entry>
+
+                  <entry><para>Displays the Job Name. You can add or change a
+                  job name using this field.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Description </para></entry>
+
+                  <entry><para>Displays the Job Description. You can add or
+                  change it using this field.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Protected</para></entry>
+
+                  <entry><para>When checked, protects the Workunit from
+                  deletion.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Cluster</para></entry>
+
+                  <entry><para>Displays the cluster used</para></entry>
+                </row>
+
+                <row>
+                  <entry><para></para></entry>
+
+                  <entry><para></para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Warnings</para></entry>
+
+                  <entry><para>Displays compiler warnings.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Info</para></entry>
+
+                  <entry><para>Displays any relevant Workunit
+                  info***</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Results</para></entry>
+
+                  <entry><para>Displays links to the job’s
+                  result(s).</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Files</para></entry>
+
+                  <entry><para>Displays files used by the
+                  query.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Graphs</para></entry>
+
+                  <entry><para>Selecting this link provides a graphical
+                  representation of work unit’s execution graphs and their
+                  progress.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Timings</para></entry>
+
+                  <entry><para>Displays timings for portions of the job’s
+                  execution.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Query</para></entry>
+
+                  <entry><para>Displays the ECL code submitted.</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>Helpers</para></entry>
+
+                  <entry><para>Provides links to the CPP file or DLL file.
+                  </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>The buttons at the bottom of the page allow you
+        Save, Reset, Abort, Delete, Resubmit, or Recompile the Workunit. If a
+        workunit is archived, a Restore button displays allowing you to
+        restore it to the active workunit store.***</para>
+
+        <sect3>
+          <title>Workunit Details</title>
+
+          <para>Page provides specific information about the
+          Workunit***</para>
+
+          <sect4>
+            <title>Details</title>
+
+            <para>Page provides specific information about the
+            Workunit***</para>
+          </sect4>
+
+          <sect4>
+            <title>Results</title>
+
+            <para>Displays links to the job’s result(s)***</para>
+          </sect4>
+
+          <sect4>
+            <title>Timings</title>
+
+            <para>Displays timings for portions of the job’s
+            execution.***</para>
+          </sect4>
+
+          <sect4>
+            <title>Query</title>
+
+            <para>Displays the ECL code submitted.***</para>
+          </sect4>
+
+          <sect4>
+            <title>Workflows</title>
+
+            <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+            sed do eiusmod tempor incididunt ut labore et dolore magna
+            aliqua.</para>
+          </sect4>
+
+          <sect4>
+            <title>Helpers</title>
+
+            <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+            sed do eiusmod tempor incididunt ut labore et dolore magna
+            aliqua.</para>
+          </sect4>
+
+          <sect4>
+            <title>Publish</title>
+
+            <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+            sed do eiusmod tempor incididunt ut labore et dolore magna
+            aliqua.</para>
+          </sect4>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Query Sets</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Browse</title>
+
+      <para>The <emphasis role="bold">Browse</emphasis> hyperlink below
+      <emphasis role="bold">Query Sets</emphasis> menu on the left hand side,
+      provides access to the Querysets page. The Querysets page allows Queries
+      to the Cluster Processes***</para>
+
+      <sect2>
+        <title>thor Queryset***</title>
+
+        <para>Clicking on the thor link from the QuerySets page displays the
+        thor Queryset page. From this page you can get more information about
+        the specific thor queries. ***</para>
+
+        <para><figure>
+            <title>thor Queryset</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLW006.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>Click on the link name of the query set to select it, and
+        from the buttons on the page you can Delete or Toggle Suspend the
+        queryset.***</para>
+
+        <para>Click on the Aliases tab to get Alias information about the
+        queryset.***</para>
+      </sect2>
+
+      <sect2>
+        <title>myroxie Queryset***</title>
+
+        <para>Clicking on the myroxie link from the QuerySets page displays
+        the myroxie Queryset page. From this page you can get more information
+        about the specific roxie queries. ***</para>
+
+        <para>Click on the link name of the query set to select it, and from
+        the buttons on the page you can Delete or Toggle Suspend the
+        queryset.***</para>
+
+        <para>Click on the Aliases tab to get Alias information about the
+        queryset.***</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Topology</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Target Clusters</title>
+
+      <para>Displays all clusters in an environment. From this list, you can
+      select one and perform Preflight activities. You also have hyperlink
+      access to the current log files.*** <figure>
+          <title>Target Clusters</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW007.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </sect1>
+
+    <sect1>
+      <title>Cluster Processes</title>
+
+      <para>Displays all clusters in an environment. From this list, you can
+      select one and perform Preflight activities. You also have hyperlink
+      access to the current log files.***<figure>
+          <title>Clusters</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW008.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </sect1>
+
+    <sect1>
+      <title>System Servers</title>
+
+      <para>Displays all supporting servers in an environment. From this list,
+      you can select one or more and perform Preflight activities. You also
+      have hyperlink access to the current log files.***</para>
+
+      <figure>
+        <title>System Servers</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLW009.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The System Server page provides useful infomation on the system’s
+      configuration including Queue names, Server name, IP Address and Port,
+      and installation directory. In addition, clicking on the icon next to a
+      component's directory, displays that component's configuration file.
+      This file can be useful in troubleshooting deployment settings.</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>DFU Workunits</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Search</title>
+
+      <para>Allows you to search for DFU workunits by Wuid, Username, Cluster,
+      State, ECL text, Job Name, Logical File, or date. You can also specify
+      whether to search active or archived DFU workunits.***</para>
+    </sect1>
+
+    <sect1>
+      <title>Browse</title>
+
+      <para>Displays all active DFU workunits. From this view, you can also
+      filter by Owner, state, or cluster.***</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>DFU FIles</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Upload/download File</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+
+    <sect1>
+      <title>View Data File</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+
+    <sect1>
+      <title>Search File Relationships</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+
+    <sect1>
+      <title>Browse Space Usage</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+
+    <sect1>
+      <title>Search Logical Files</title>
+
+      <para>Allows you to search for Logical Files by Filename, Owner, or
+      filename pattern***</para>
+    </sect1>
+
+    <sect1>
+      <title>Browse Logical Files</title>
+
+      <para>Displays all active Logical files. From this view, you can also
+      filter by Owner, or cluster.***</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bold">Browse Logical
+            Files</emphasis> hyperlink below <emphasis role="bold">DFU Files
+            </emphasis>in the menu on the left.</para>
+
+            <para>The Logical Files page displays showing all files with
+            logical entries in the Dali Server’s Distributed File
+            System.</para>
+
+            <para><graphic fileref="images/DHMan-3.jpg" scalefit="1" /></para>
+
+            <para>From this page, you can despray or copy any file.</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect2>
+        <title>Details</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>View Data File</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>Replicate</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>Copy</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+
+      <sect2>
+        <title>DeSpray</title>
+
+        <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+        eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Browse Files by Scope</title>
+
+      <para>Displays all active Logical files for a selected scope.***</para>
+    </sect1>
+
+    <sect1>
+      <title>Spray Fixed</title>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Spray Fixed</emphasis>
+            hyperlink below <emphasis role="bold">DFU</emphasis> in the menu
+            on the left.</para>
+
+            <para>The <emphasis role="bold">Spray Fixed</emphasis> page
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in <emphasis role="bold">Source </emphasis>information
+            (<emphasis role="bold">Machine, IP, File Path, and record
+            length)</emphasis> and the <emphasis
+            role="bold">Destination</emphasis> information (<emphasis
+            role="bold">Group</emphasis>and <emphasis role="bold">Label
+            ).</emphasis></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt" />
+
+                  <colspec colwidth="333.00pt" />
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Source:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Machine</emphasis></entry>
+
+                      <entry>Use the drop-list to select the machine where the
+                      source file is located.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">IP</emphasis></entry>
+
+                      <entry>IP address of machine from which to spray. This
+                      is automatically completed when you select the <emphasis
+                      role="bold">Source Machine.</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Local
+                      Path</emphasis></entry>
+
+                      <entry>The file path of source file to spray.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Record
+                      Length</emphasis></entry>
+
+                      <entry>The size of each record.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destination:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Group</emphasis></entry>
+
+                      <entry>Select the name of THOR cluster to spray
+                      to.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Label</emphasis></entry>
+
+                      <entry>The logical name that you choose for the
+                      file.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Options:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis
+                      role="bold">Overwrite</emphasis></entry>
+
+                      <entry>Check this box to overwrite files of the same
+                      name.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis
+                      role="bold">Replicate</emphasis></entry>
+
+                      <entry>Check this box to create backup copies of all
+                      file parts exist in the backup directory (by convention
+                      on the secondary drive of the node following in the
+                      cluster).</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                      <entry>Check this box to compress the files.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Submit</emphasis>
+            button.</para>
+
+            <para>The <emphasis role="bold">DFU Workunit</emphasis>
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Refresh</emphasis>button
+            periodically until the status of your request indicates it is
+            <emphasis role="bold">Finished </emphasis>or click on the
+            <emphasis role="bold">View Progress</emphasis> hyperlink to see a
+            progress indicator.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="52.60pt" />
+
+                  <colspec colwidth="384.80pt" />
+
+                  <tbody>
+                    <row>
+                      <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                      <entry>You can use the Choose File button to look up
+                      files on the selected source machine.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+        </itemizedlist></para>
+    </sect1>
+
+    <sect1>
+      <title>Spray CSV</title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Spray CSV</emphasis>
+          hyperlink below <emphasis role="bold">DFU </emphasis>in the menu on
+          the left.</para>
+
+          <para>The <emphasis role="bold">Spray CSV</emphasis> page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in <emphasis role="bold">Source </emphasis>information
+          (<emphasis role="bold">Machine, IP, File Path, and record
+          information)</emphasis> and the <emphasis
+          role="bold">Destination</emphasis> information (<emphasis
+          role="bold">Group</emphasis> and <emphasis
+          role="bold">Label</emphasis>).</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Source:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Machine</emphasis></entry>
+
+                    <entry>Use the drop-list to select the machine where the
+                    source file is located.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">IP</emphasis></entry>
+
+                    <entry>IP address of machine from which to spray. This is
+                    automatically completed when you select the <emphasis
+                    role="bold">Source Machine.</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Local Path</emphasis></entry>
+
+                    <entry>The file path of source file to spray.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Separator</emphasis></entry>
+
+                    <entry>The character used as a separator in the source
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Line
+                    Terminator</emphasis></entry>
+
+                    <entry>The character used as a line terminator in the
+                    source file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Quote</emphasis></entry>
+
+                    <entry>The character used as a quote in the source
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Destination:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of THOR cluster to spray
+                    to.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Label</emphasis></entry>
+
+                    <entry>The logical name that you choose for the
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry>Check this box to create backup copies of all file
+                    parts exist in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit</emphasis>
+          button.</para>
+
+          <para>The <emphasis role="bold">DFU Workunit</emphasis>
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Press the <emphasis role="bold">Refresh</emphasis> button
+          periodically until the status of your request indicates it is
+          <emphasis role="bold">Finished</emphasis>or click on the <emphasis
+          role="bold">View Progress</emphasis> hyperlink to see a progress
+          indicator.<informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="52.60pt" />
+
+                <colspec colwidth="384.80pt" />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                    <entry>You can use the Choose File button to look up files
+                    on the selected source machine.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Spray XML</title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Spray
+          XML</emphasis>hyperlink below <emphasis role="bold">DFU</emphasis>in
+          the menu on the left.</para>
+
+          <para>The <emphasis role="bold">Spray XML</emphasis> page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in <emphasis role="bold">Source </emphasis>information
+          (<emphasis role="bold">Machine, IP, File Path, and record
+          information)</emphasis>and the <emphasis
+          role="bold">Destination</emphasis> information (<emphasis
+          role="bold">Group</emphasis> and <emphasis role="bold">Label
+          ).</emphasis></para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Source:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Machine</emphasis></entry>
+
+                    <entry>Use the drop-list to select the machine where the
+                    source file is located.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">IP</emphasis></entry>
+
+                    <entry>IP address of machine from which to spray. This is
+                    automatically completed when you select the <emphasis
+                    role="bold">Source Machine.</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Local Path</emphasis></entry>
+
+                    <entry>The file path of source file to spray.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Format</emphasis></entry>
+
+                    <entry>Select the file format from the drop-list.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Max Record
+                    Length</emphasis></entry>
+
+                    <entry>The length of longest record in the file.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Row Tag</emphasis></entry>
+
+                    <entry>The record separator tag in the XML file</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Destination:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Group</emphasis></entry>
+
+                    <entry>Select the name of THOR cluster to spray
+                    to.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Label</emphasis></entry>
+
+                    <entry>The logical name that you choose for the
+                    file.</entry>
+                  </row>
+
+                  <row>
+                    <entry align="right"><emphasis
+                    role="bold">Options:</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite files of the same
+                    name.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                    <entry>Check this box to create backup copies of all file
+                    parts exist in the backup directory (by convention on the
+                    d: drive of the node following in the cluster).</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                    <entry>Check this box to compress the files.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit
+          </emphasis>button.</para>
+
+          <para>The <emphasis role="bold">DFU Workunit</emphasis>
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Refresh </emphasis>button
+          periodically until the status of your request indicates it is
+          <emphasis role="bold">Finished </emphasis>or click on the <emphasis
+          role="bold">View Progress</emphasis> hyperlink to see a progress
+          indicator.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="52.60pt" />
+
+                <colspec colwidth="384.80pt" />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                    <entry>You can use the Choose File button to look up files
+                    on the selected source machine.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Remote Copy</title>
+
+      <para>Remote Copy allows you to copy data from a Thor cluster outside
+      your environment to the one in your environment.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on the <emphasis role="bold">Remote Copy
+          </emphasis>hyperlink below <emphasis role="bold">DFU </emphasis>in
+          the menu on the left.</para>
+
+          <para>The <emphasis role="bold">Copy File </emphasis>page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in <emphasis role="bold">Source, Destination,</emphasis>
+          and <emphasis role="bold">Options </emphasis>information.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="122.40pt" />
+
+              <colspec colwidth="333.00pt" />
+
+              <tbody>
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Source:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Logical File</emphasis></entry>
+
+                  <entry>The logical file name in the remote
+                  environment.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Source Dali</emphasis></entry>
+
+                  <entry>The Dali Server in the remote environment</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Source
+                  Username</emphasis></entry>
+
+                  <entry>A valid user in the remote environment</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Source
+                  Password</emphasis></entry>
+
+                  <entry>The password for the user in the remote
+                  environment</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Destination:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Group</emphasis></entry>
+
+                  <entry>Select the name of THOR cluster to copy to.</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Note</emphasis></entry>
+
+                  <entry>You can only choose from THOR clusters within the
+                  current environment.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Logical Name</emphasis></entry>
+
+                  <entry>The logical name for the copied file.</entry>
+                </row>
+
+                <row>
+                  <entry align="right"><emphasis
+                  role="bold">Options:</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Replicate</emphasis></entry>
+
+                  <entry>Check this box to create backup copies of all file
+                  parts exist in the backup directory (by convention on the d:
+                  drive of the node following in the cluster).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Wrap</emphasis></entry>
+
+                  <entry>Check this box to keep the number of parts the same
+                  and wrap if the target cluster is smaller that the
+                  original.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                  <entry>Check this box to overwrite files of the same
+                  name.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                  <entry>Check this box to compress the files.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Retain Superfile
+                  Structure</emphasis></entry>
+
+                  <entry>Check this box to retain the superfile
+                  structure.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit
+          </emphasis>button.</para>
+
+          <para>The <emphasis role="bold">DFU Workunit
+          </emphasis>displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Refresh </emphasis>button
+          periodically until the status of your request indicates it is
+          <emphasis role="bold">Finished </emphasis>or click on the <emphasis
+          role="bold">View Progress</emphasis> hyperlink to see a progress
+          indicator.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>XRef</title>
+
+      <para>The XREF utility provides the ability to find “orphaned” and “lost
+      and found” files. These “orphan” are files which are found on the nodes
+      but not registered in the Distributed File System.</para>
+
+      <para><figure>
+          <title>XRef Clusters</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW003.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="122.40pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis role="bold">Found File</emphasis></entry>
+
+                <entry>A found file has partial file parts on disk that are
+                not referenced in the Dali server. All the file parts are
+                accounted for so they can be added back to the Dali server.
+                They can also be deleted from the cluster, if
+                required.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Orphan File</emphasis></entry>
+
+                <entry>An orphan file has partial file parts on disk. However,
+                a full set of parts is not available to construct a complete
+                logical file. These partial file parts, therefore, do not have
+                a reference in the Dali server.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Lost File</emphasis></entry>
+
+                <entry>A logical file that is missing at least one file part
+                on both the primary and replicated locations in storage. The
+                logical file is still referenced in the Dali server. Deleting
+                the file removes the reference from the Dali server and any
+                remaining parts on disk.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>To generate a list:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>&gt;&gt;Press the Generate button.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="52.60pt" />
+
+                  <colspec colwidth="384.80pt" />
+
+                  <tbody>
+                    <row>
+                      <entry><graphic fileref="images/tip.jpg" /></entry>
+
+                      <entry>Sasha Server typically runs Xref at the times
+                      scheduled when deployed.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+        </itemizedlist>To view results:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Click on one of the hyperlinks (Found Files, Orphan Files,
+            Lost Files, Directories, or Errors/Warnings).</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect2 role="brk">
+        <title>Working with XREF results:</title>
+
+        <para>Orphan and Lost files are difficult to recover, unless you have
+        copies of missing parts needed to reconstruct the file (for example,
+        if a missing part is on a hard drive that was replaced.) Typically,
+        these files are deleted.</para>
+
+        <para>Check the boxes next to files you want to delete, then press the
+        Delete button.</para>
+
+        <figure>
+          <title>XRef files</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="???" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Found files can and usually are reattached.</para>
+
+        <para>Check he boxes next to files you want to reattach, then press
+        the Attach button.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Roxie Queries</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Search Roxie Queries</title>
+
+      <para>Allows you to search Roxie Queries on any cluster in the
+      environment.***</para>
+    </sect1>
+
+    <sect1>
+      <title>Search Roxie Files</title>
+
+      <para>Allows you to search Roxie Files on any cluster in the
+      environment.***</para>
+    </sect1>
+
+    <sect1>
+      <title>View Roxie Files</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Resources</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Browse</title>
+
+      <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+      eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>My Account</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <sect1>
+      <title>Change Password</title>
+
+      <para>Allows you to change your password***</para>
+    </sect1>
+
+    <sect1>
+      <title>Relogin</title>
+
+      <para>Allows you to login as a different user.***</para>
+    </sect1>
+
+    <sect1>
+      <title>Who Am I</title>
+
+      <para>Displays the logged in User ID.***</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Users/Permissions</title>
+
+    <para>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
+    eiusmod tempor incididunt ut labore et dolore magna aliqua.</para>
+
+    <para>Users/Permission options only available in the Enterprise
+    Edition.***</para>
+
+    <sect1>
+      <title>Users</title>
+
+      <para>ECL Watch provides access to User Administration in the Enterprise
+      Edition.***</para>
+
+      <para>Click on the Users hyperlink below Users/Permissions in the menu
+      on the left side.</para>
+
+      <para>The Users page displays.</para>
+
+      <para><figure>
+          <title>Users Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW010b.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>Click on the Edit hyperlink next to a name to edit any user
+      information.</para>
+
+      <para>Click on the Password hyperlink next to a name to change a
+      password.</para>
+
+      <para>Press the Add button at the bottom of the page to create a new
+      user.</para>
+
+      <para>Select one or more users to enable the export button. Pressing the
+      export button will export the selected users to an excel
+      spreadsheet.</para>
+    </sect1>
+
+    <sect1>
+      <title>Groups</title>
+
+      <para>Click on the Groups hyperlink below Users/Permissions in the menu
+      on the left side. Available on the Enterprise Edition.***</para>
+
+      <para>The Groups page displays.</para>
+
+      <para><figure>
+          <title>Groups Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW011.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Click on the members hyperlink next to a group to see the members
+      of that group.</para>
+
+      <para>Click on the Permissions hyperlink next to a group to see the
+      permissions associated with that group.</para>
+
+      <para>Select one or more groups to enable the export button. Pressing
+      the export button will export the selected groups to an excel
+      spreadsheet.</para>
+    </sect1>
+
+    <sect1>
+      <title>Permissions</title>
+
+      <para>Editing Permissions using ECL Watch. Available in the Enterprise
+      Edition.***</para>
+
+      <para>Open the ECL Watch home page in Internet Explorer.</para>
+
+      <para>The URL is the IP address of your ESP Server plus the port to
+      which the WS-SMC Service is bound. For example:</para>
+
+      <para>http://10.150.51.27:8010/</para>
+
+      <para>The ECL Watch home page displays.</para>
+
+      <para>Click on the Permissions hyperlink below Users/Permissions in the
+      menu on the left side.</para>
+
+      <para>The Permissions page displays.</para>
+
+      <para><figure>
+          <title>Permissions Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLW012.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Click on the Edit hyperlink for access to edit permissions.</para>
+
+      <para>A page listing items for the selected feature displays.</para>
+
+      <para>Click on the Permissions hyperlink to set permissions for users or
+      groups.</para>
+
+      <sect2>
+        <title>Feature Permission</title>
+
+        <para>This section describes access control to features of the HPCC
+        system. In this area you control access to functionality within ECL
+        Watch.</para>
+
+        <para><informaltable frame="all">
+            <tgroup cols="3">
+              <colspec colwidth="145.50pt" />
+
+              <colspec />
+
+              <colspec colwidth="55pt" />
+
+              <thead>
+                <row>
+                  <entry>LDAP Path</entry>
+
+                  <entry>Description</entry>
+
+                  <entry>Access</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry><para>.</para></entry>
+
+                  <entry><para>.. </para></entry>
+
+                  <entry>.</entry>
+                </row>
+
+                <row>
+                  <entry><para>ClusterTopologyAccess</para></entry>
+
+                  <entry><para>Access to Cluster Topology</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>ClusterTopologyAccess</para></entry>
+
+                  <entry><para>Set Machine Status</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>ClusterTopologyAccess</para></entry>
+
+                  <entry><para>Swap Node</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuAccess</para></entry>
+
+                  <entry><para>Access to DFU Logical Files</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuAccess</para></entry>
+
+                  <entry><para>Delete Files</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuExceptions</para></entry>
+
+                  <entry><para>Access to DFU Exceptions</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to View DFU Workunits </para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to Create, Delete, Update, Submit, and
+                  Abort DFU Wus</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuXrefAccess</para></entry>
+
+                  <entry><para>Access to DFU XREF</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>DfuXrefAccess</para></entry>
+
+                  <entry><para>Make changes and generate XREF
+                  Reports</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>ExecuteAccess</para></entry>
+
+                  <entry><para>Access to Remote Execution in ECL
+                  Watch</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>FileDesprayAccess</para></entry>
+
+                  <entry><para>Access to De-Spraying Files</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>FileSprayAccess</para></entry>
+
+                  <entry><para>Access to Spraying and Copying
+                  files</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>FileIO</para></entry>
+
+                  <entry><para>Access to read files in Drop
+                  zone</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>FileIO</para></entry>
+
+                  <entry><para>Access to write to files in Drop
+                  zone</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>MachineInfoAccess</para></entry>
+
+                  <entry><para>Access to machine/Preflight
+                  Information</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>MetricsAccess</para></entry>
+
+                  <entry><para>Access to SNMP Metrics Information (Roxie
+                  Metrics) </para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OtherWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to View Other User's
+                  Workunits</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OtherWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to Modify or Resubmit User's
+                  Workunits</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OtherWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to Delete Other User's
+                  Workunits</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OwnWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to View Own Workunit</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OwnWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to Create or Modify Own
+                  Workunit</para></entry>
+
+                  <entry><para>Write</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>OwnWorkunitsAccess</para></entry>
+
+                  <entry><para>Access to Delete Own Workunits</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>RoxieQueryAccess</para></entry>
+
+                  <entry><para>Access to Roxie Queries</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>SmcAccess</para></entry>
+
+                  <entry><para>Root Access to SMC Service</para></entry>
+
+                  <entry><para>Read</para></entry>
+                </row>
+
+                <row>
+                  <entry><para>ThorQueueAccess</para></entry>
+
+                  <entry><para>Access to Thor Job Queue Control</para></entry>
+
+                  <entry><para>Full</para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

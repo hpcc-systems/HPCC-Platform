@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Documentation_Structure" role="nobrk">
+  <title>Documentation Structure</title>
+
+  <para>This manual documents the Enterprise Control Language (ECL). ECL has
+  been designed specifically for working with huge sets of data. This book is
+  designed to be both a learning tool and a reference work and is divided into
+  the following sections:</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">ECL Basics</emphasis></entry>
+
+          <entry>Addresses the fundamental concepts of ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Expressions and
+          Operators</emphasis></entry>
+
+          <entry>Defines available operators and their expression evaluation
+          precedence.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Value
+          Types</emphasis></emphasis></entry>
+
+          <entry>Introduces data types and type casting.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">Record Structures and
+          Files</emphasis></entry>
+
+          <entry>Introduces the RECORD structure, DATASET, and INDEX.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Alien Data
+          Types</emphasis></emphasis></entry>
+
+          <entry>Defines the TYPE structure and the functions it may
+          use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Natural Language Parsing
+          Support</emphasis></emphasis></emphasis></entry>
+
+          <entry>Defines the patterns and functions the PARSE function may
+          use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">Reserved
+          Keywords</emphasis></emphasis></entry>
+
+          <entry>Defines special-use ECL keywords not elsewhere
+          defined.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Special
+          Structures</emphasis></emphasis></emphasis></entry>
+
+          <entry>Defines the TRANSFORM, MACRO, and other structures and their
+          use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Built-In Functions and
+          Actions</emphasis></emphasis></emphasis></entry>
+
+          <entry>Defines the functions and actions available as part of the
+          language.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Workflow
+          Services</emphasis></emphasis></emphasis></entry>
+
+          <entry>Defines the job execution/process control aspects of
+          ECL.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold"><emphasis
+          role="bold">Templates</emphasis></emphasis></emphasis></entry>
+
+          <entry>Defines the ECL Template commands.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold"><emphasis role="bold">External
+          Services</emphasis></emphasis></entry>
+
+          <entry>Defines the SERVICE structure and its use.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+</sect1>

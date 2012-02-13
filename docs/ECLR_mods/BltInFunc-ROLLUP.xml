@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROLLUP">
+  <title>ROLLUP</title>
+
+  <para><emphasis role="bold">ROLLUP<indexterm>
+      <primary>ROLLUP</primary>
+    </indexterm><indexterm>
+      <primary>ROLLUP function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, condition, transform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] )</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL]
+  )</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
+  </emphasis><emphasis role="bold">GROUP</emphasis><emphasis><indexterm>
+      <primary>GROUP</primary>
+    </indexterm>, transform </emphasis><emphasis role="bold">
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process, typically sorted in the same
+            order that the condition or <emphasis>fieldlist</emphasis> will
+            test.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>condition</emphasis></entry>
+
+            <entry>An expression that defines "duplicate" records. The
+            keywords LEFT and RIGHT may be used as dataset qualifiers for
+            fields in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each pair of duplicate
+            records in the recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>fieldlist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions or fields in the
+            recordset that defines "duplicate" records. You may use the
+            keyword WHOLE RECORD (or just RECORD) to indicate all fields in
+            that structure, and/or you may use the keyword EXCEPT to list
+            fields in the structure to exclude.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">GROUP</emphasis></entry>
+
+            <entry>Specifies the recordset is GROUPed and the ROLLUP operation
+            will produce a single output record for each group. If this is not
+            the case, an error occurs.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROLLUP returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ROLLUP </emphasis>function is similar to the
+  DEDUP function<indexterm>
+      <primary>DEDUP function</primary>
+    </indexterm> with the addition of the call to the
+  <emphasis>transform</emphasis> function to process each duplicate record
+  pair. This allows you to retrieve valuable information from the "duplicate"
+  record before it's thrown away. Depending on how you code the
+  <emphasis>transform </emphasis>function, ROLLUP can keep the LEFT or RIGHT
+  record, or any mixture of data from both.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Rollup">
+    <title>TRANSFORM Function Requirements - ROLLUP</title>
+
+    <para>For forms 1 and 2 of ROLLUP, the <emphasis>transform</emphasis>
+    function must take at least two parameters: a LEFT record and a RIGHT
+    record, which must both be in the same format as the
+    <emphasis>recordset</emphasis>. The format of the resulting record set
+    must also be the same as the inputs.</para>
+
+    <para>For form 3 of ROLLUP, the <emphasis>transform</emphasis> function
+    must take at least two parameters: a LEFT record which must be in the same
+    format as the <emphasis>recordset, </emphasis>and a ROWS(LEFT) whose
+    format must be a DATASET(RECORDOF(<emphasis>recordset</emphasis>))
+    parameter. The format of the resulting record set may be different from
+    the inputs.</para>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_1">
+    <title>ROLLUP Form 1</title>
+
+    <para>Form 1 processes through all records in the <emphasis>recordset
+    </emphasis>performing the <emphasis>transform</emphasis> function only on
+    those pairs of adjacent records where the match
+    <emphasis>condition</emphasis> is met (indicating duplicate records) and
+    passing through all other records directly to the output.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//a crosstab table of last names and the number of times they occur
+MyRec := RECORD
+  Person.per_last_name;
+  INTEGER4 PersonCount := 1;
+END;
+LnameTable := TABLE(Person,MyRec); //create dataset to work with
+SortedTable := SORT(LnameTable,per_las_name); //sort it first
+
+MyRec Xform(MyRec L,MyRec R) := TRANSFORM
+  SELF.PersonCount := L.PersonCount + 1;
+  SELF := L; //keeping the L rec makes it KEEP(1),LEFT
+// SELF := R; //keeping the R rec would make it KEEP(1),RIGHT
+END;
+XtabOut := ROLLUP(SortedTable,
+                  LEFT.per_last_name=RIGHT.per_last_name,
+                  Xform(LEFT,RIGHT));
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_2">
+    <title>ROLLUP Form 2</title>
+
+    <para>Form 2 processes through all records in the <emphasis>recordset
+    </emphasis>performing the <emphasis>transform</emphasis> function only on
+    those pairs of adjacent records where all the expressions in the
+    <emphasis>fieldlist</emphasis> match (indicating duplicate records) and
+    passing through all other records to the output. This form allows you to
+    use the same kind of EXCEPT field exclusion logic available to
+    DEDUP.</para>
+
+    <para>Example:</para>
+
+    <programlisting>rec := {STRING1 str1,STRING1 str2,STRING1 str3};
+ds := DATASET([{'a', 'b', 'c'},{'a', 'b', 'c'},
+               {'a', 'c', 'c'},{'a', 'c', 'd'}], rec);
+rec tr(rec L, rec R) := TRANSFORM
+  SELF := L;
+END;
+Cat(STRING1 L, STRING1 R) := L + R;
+r1 := ROLLUP(ds, tr(LEFT, RIGHT), str1, str2);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r2 := ROLLUP(ds, tr(LEFT, RIGHT), WHOLE RECORD, EXCEPT str3);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r3 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD, EXCEPT str3); 
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2
+r4 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD, EXCEPT str2,str3);
+  //equivalent to LEFT.str1 = RIGHT.str1
+r5 := ROLLUP(ds, tr(LEFT, RIGHT), RECORD);
+  //equivalent to LEFT.str1 = RIGHT.str1 AND
+  // LEFT.str2 = RIGHT.str2 AND
+  // LEFT.str3 = RIGHT.str3
+r6 := ROLLUP(ds, tr(LEFT, RIGHT), str1 + str2);
+  //equivalent to LEFT.str1+LEFT.str2 = RIGHT.str1+RIGHT.str2
+r7 := ROLLUP(ds, tr(LEFT, RIGHT), Cat(str1,str2));
+  //equivalent to Cat(LEFT.str1,LEFT.str2) =
+  // Cat(RIGHT.str1,RIGHT.str2 )
+</programlisting>
+  </sect2>
+
+  <sect2 id="ROLLUP_Form_3">
+    <title>ROLLUP Form 3</title>
+
+    <para>Form 3 is a special form of ROLLUP where the second parameter passed
+    to the <emphasis>transform</emphasis> is a GROUP and the first parameter
+    is the first record in that GROUP. It processes through all groups in the
+    <emphasis>recordset</emphasis>, producing one result record for each
+    group. Aggregate functions can be used inside the
+    <emphasis>transform</emphasis> (such as TOPN or CHOOSEN) on the second
+    parameter. The result record set is not grouped. This form is implicitly
+    LOCAL in nature, due to the grouping.</para>
+
+    <para>Example:</para>
+
+    <programlisting>inrec := RECORD
+  UNSIGNED6 did;
+END;
+
+outrec := RECORD(inrec)
+  STRING20 name;
+  UNSIGNED score;
+END;
+
+nameRec := RECORD
+  STRING20 name;
+END;
+
+finalRec := RECORD(inrec)
+  DATASET(nameRec) names;
+  STRING20 secondName;
+END;
+
+ds := DATASET([1,2,3,4,5,6], inrec);
+
+dsg := GROUP(ds, ROW);
+
+i1 := DATASET([ {1, 'Kevin', 10},
+                {2, 'Richard', 5},
+                {5,'Nigel', 2},
+                {0, '', 0}], outrec);
+
+i2 := DATASET([ {1, 'Kevin Halligan', 12},
+                {2, 'Richard Charles', 15},
+                {3, 'Blake Smith', 20},
+                {5,'Nigel Hicks', 100},
+                {0, '', 0}], outrec);
+
+i3 := DATASET([ {1, 'Halligan', 8},
+                {2, 'Richard', 8},
+                {6, 'Pete', 4},
+                {6, 'Peter', 8},
+                {6, 'Petie', 1},
+                {0, '', 0}], outrec);
+j1 := JOIN( dsg,
+            i1,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER, MANY LOOKUP);
+j2 := JOIN( dsg,
+            i2,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER,
+            MANY LOOKUP);
+
+j3 := JOIN( dsg,
+            i3,
+            LEFT.did = RIGHT.did,
+            TRANSFORM(outrec, SELF := LEFT; SELF := RIGHT),
+            LEFT OUTER,
+            MANY LOOKUP);
+
+combined := REGROUP(j1, j2, j3);
+
+finalRec doRollup(outRec l, DATASET(outRec) allRows) :=
+          TRANSFORM
+  SELF.did := l.did;
+  SELF.names := PROJECT(allRows(score != 0),
+                        TRANSFORM(nameRec, SELF := LEFT));
+  SELF.secondName := allRows(score != 0)[2].name;
+END;
+
+results := ROLLUP(combined, GROUP, doRollup(LEFT,ROWS(LEFT)));
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+    Structure</link>, <link linkend="RECORD_Structure">RECORD
+    Structure</link>, <link linkend="DEDUP">DEDUP</link>, <link
+    linkend="EXCEPT">EXCEPT</link>, <link linkend="GROUP">GROUP</link></para>
+  </sect2>
+</sect1>

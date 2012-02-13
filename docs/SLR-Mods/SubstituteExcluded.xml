@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SubstituteExcluded">
+  <title><emphasis role="bold">SubstituteExcluded</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.SubstituteExcluded<indexterm>
+      <primary>STD.Str.SubstituteExcluded</primary>
+    </indexterm><indexterm>
+      <primary>Str.SubstituteExcluded</primary>
+    </indexterm><indexterm>
+      <primary>SubstituteExcluded</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.SubstituteExcluded<indexterm>
+      <primary>STD.Uni.SubstituteExcluded</primary>
+    </indexterm><indexterm>
+      <primary>Uni.SubstituteExcluded</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>A string containing the characters to search for.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>A string containing the replacement character as its first
+          character.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>SubstituteExcluded returns a STRING or UNICODE value, as
+          appropriate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SubstituteExcluded </emphasis>functions
+  return the <emphasis>source</emphasis> string with the
+  <emphasis>replacement</emphasis> character substituted for all characters
+  except those in the <emphasis>target </emphasis>string. If the
+  <emphasis>target</emphasis> string is not in the <emphasis>source</emphasis>
+  string, it returns the <emphasis>source</emphasis> string with all
+  characters replaced by the <emphasis>replacement</emphasis>
+  character.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.Uni.SubstituteExcluded(u'abcdeabcdec', u'cd', u'x');
+  //A contains u'xxcdxxxcdxc';
+</programlisting>
+</sect1>

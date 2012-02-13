@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="AddFileRelationship">
+  <title><emphasis role="bold">AddFileRelationship</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.AddFileRelationship<indexterm>
+      <primary>STD.File.AddFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>File.AddFileRelationship</primary>
+    </indexterm><indexterm>
+      <primary>AddFileRelationship</primary>
+    </indexterm>(</emphasis> <emphasis> primary, secondary,</emphasis>
+  <emphasis> primaryfields, secondaryfields, </emphasis> <emphasis
+  role="bold"> [ </emphasis> <emphasis>relationship </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis>, cardinality, payload </emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>, description </emphasis>
+  <emphasis role="bold">] );</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>primary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the primary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the secondary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>primaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the primary
+          key field for the <emphasis>primary</emphasis> file. The value
+          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
+          an INDEX that must use FETCH to access non-keyed fields.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the foreign
+          key field relating to the <emphasis>primary</emphasis> file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>relationship</emphasis></entry>
+
+          <entry>A null-terminated string containing either “link” or “view”
+          indicating the type of relationship between the
+          <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
+          files. If omitted, the default is “link.”</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cardinality</emphasis></entry>
+
+          <entry>A null-terminated string containing the kind of relationship
+          between the <emphasis>primary</emphasis> and
+          <emphasis>secondary</emphasis> files. The format is X:Y where X
+          indicates the <emphasis>primary</emphasis> and Y indicates the
+          <emphasis>secondary</emphasis>. Valid values for X and Y are “1” or
+          ‘M’.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>payload</emphasis></entry>
+
+          <entry>A BOOLEAN value indicating whether the
+          <emphasis>primary</emphasis> or <emphasis>secondary</emphasis> are
+          payload INDEXes.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>description</emphasis></entry>
+
+          <entry>A null-terminated string containing the relationship
+          description.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">AddFileRelationship</emphasis> function
+  defines the relationship between two files. These may be DATASETs or
+  INDEXes. Each record in the <emphasis>primary</emphasis> file should be
+  uniquely defined by the <emphasis>primaryfields</emphasis> (ideally),
+  preferably efficiently.</para>
+
+  <para>The <emphasis>primaryfields</emphasis> and
+  <emphasis>secondaryfields</emphasis> parameters can have the same format as
+  the column mappings for a file (see the SetColumnMappings function
+  documentation) , although they will often be just a list of fields.</para>
+
+  <para>They are currently used in two different ways:</para>
+
+  <para>First, the roxie browser needs a way of determining which indexes are
+  built from which files. A “view” relationship should be added each time an
+  index is built from a file, like this:</para>
+
+  <programlisting>STD.File.AddFileRelationship(DG_FlatFileName, DG_IndexFileName,
+                             '', '', 'view', '1:1', false);</programlisting>
+
+  <para>To implement the roxie browser there is no need to define the
+  <emphasis>primaryfields</emphasis> or <emphasis>secondaryfields</emphasis>,
+  so passing blank strings is recommended.</para>
+
+  <para>Second, the browser needs a way of finding all the original
+  information from the file from an index.</para>
+
+  <para>This stage depends on the nature of the index:</para>
+
+  <para>a) If the index contains all the relevant data from the original file
+  you don't need to do anything.</para>
+
+  <para>b) If the index uses a fileposition field to FETCH extra data from the
+  original file then add a relationship between the original file and the
+  index, using a special value of __fileposition__ to indicate the record is
+  retrieved using a FETCH.</para>
+
+  <programlisting>STD.File.AddFileRelationship('fetch_file', 
+                             'new_index',
+                             '__fileposition__',
+                             'index_filepos_field', 
+                             'link',
+                             '1:1', 
+                             true);</programlisting>
+
+  <para>The original file is the primary, since the rows are uniquely
+  identified by the fileposition (also true of the index), and the retrieval
+  is efficient.</para>
+
+  <para>c) If the index uses a payload field which needs to be looked up in
+  another index to provide the information, then you need to define a
+  relationship between the new index and the index that provides the extra
+  information. The index providing the extra information is the
+  primary.</para>
+
+  <programlisting>STD.File.AddFileRelationship('related_index', 
+                             'new_index',
+                             'related_key_fields',
+                             'index_filepos_field', 
+                             'link',
+                             '1:M', 
+                             true);</programlisting>
+
+  <para>The <emphasis>payload </emphasis>flag is there so that the roxie
+  browser can distinguish this link from a more general relationship between
+  two files.</para>
+
+  <para>You should ensure any super-file names are expanded if the relation is
+  defined between the particular sub-files.</para>
+
+  <para>While going through all the attributes it may be worth examining
+  whether it makes sense to add relationships for any other combinations of
+  files. It won’t have any immediate beneficial effect, but would once we add
+  an ER diagram to the system. A couple of examples may help illustrate the
+  syntax.</para>
+
+  <para>For a typical example, datasets with a household and person file, the
+  following defines a relationship linking by house hold id (hhid):</para>
+
+  <programlisting>STD.File.AddFileRelationship('HHFile','PersonFile', 'hhid','hhid', 'link', '1:M', false);</programlisting>
+
+  <para>Here's a more hypothetical example—a file query with firstname,
+  lastname related to an index with phonetic names you might have:</para>
+
+  <programlisting>STD.File.AddFileRelationship('names', 'inquiries','plastname{set(phonetic)},
+                             pfirstname{set(phonetic)}',
+                             'lastname{set(fail)},firstname{set(fail)}','link', '1:M', false);</programlisting>
+
+  <para>Note, the fail mapping indicates that you can use the phonetic mapping
+  from inquiries to names, but there is no way of mapping from names to
+  inquiries. There could equally be get(fail) attributes on the index
+  fields.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">Maps := STD.File.GetColumnMapping('Thor::in::SomeFile');
+</programlisting>
+</sect1>

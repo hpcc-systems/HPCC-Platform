@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_GETDATATYPE">
+  <title>#GETDATATYPE</title>
+
+  <para><emphasis role="bold">#GETDATATYPE<indexterm>
+      <primary>#GETDATATYPE</primary>
+    </indexterm>( </emphasis><emphasis>field </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="74.15pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>field</emphasis></entry>
+
+            <entry>A previously defined user-defined symbol containing the
+            name of a field in a dataset..</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#GETDATATYPE </emphasis>function returns the
+  value type of the <emphasis>field</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE(fieldtype);
+  #DECLARE(field);
+  
+  #SET(field, 'person.per_cid');
+  
+  #SET(fieldtype, #GETDATATYPE(%field%));
+  
+  export res := %'fieldtype'%;
+  res; // Output: res = 'data9'
+</programlisting>
+
+  <para>See Also: <link linkend="Value_Types">Value Types</link></para>
+</sect1>

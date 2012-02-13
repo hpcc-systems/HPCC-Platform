@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="KEYPATCH">
+  <title>KEYPATCH</title>
+
+  <para><emphasis>[ </emphasis><emphasis>attrname</emphasis><emphasis
+  role="bold"> </emphasis><emphasis role="bold">:= ] KEYPATCH<indexterm>
+      <primary>KEYPATCH</primary>
+    </indexterm><indexterm>
+      <primary>KEYPATCH function</primary>
+    </indexterm>(</emphasis><emphasis> index, patchfile, newfile
+  </emphasis><emphasis role="bold"> [, OVERWRITE<indexterm>
+      <primary>OVERWRITE</primary>
+    </indexterm> ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
+  EXPIRE<indexterm>
+      <primary>EXPIRE</primary>
+    </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
+  role="bold">] ) ] );</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="88.80pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>attrname</emphasis></entry>
+
+          <entry>Optional. The action name, which turns the action into an
+          attribute definition, therefore not executed until the attrname is
+          used as an action.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>index</emphasis></entry>
+
+          <entry>The INDEX attribute to apply the changes to.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>patchfile</emphasis></entry>
+
+          <entry>A string constant specifying the logical name of the file
+          containing the changes to implement (created by KEYDIFF).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>newfile</emphasis></entry>
+
+          <entry>A string constant specifying the logical name of the file to
+          write the new index to.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">OVERWRITE</emphasis></entry>
+
+          <entry>Optional. Specifies overwriting the
+          <emphasis>newfile</emphasis> if it already exists.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">EXPIRE</emphasis></entry>
+
+          <entry>Optional. Specifies the <emphasis>newfile</emphasis> is a
+          temporary file that may be automatically deleted after the specified
+          number of days.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>days</emphasis></entry>
+
+          <entry>Optional. The number of days after which the file may be
+          automatically deleted. If omitted, the default is seven (7).</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">KEYPATCH </emphasis>action uses the
+  <emphasis>index</emphasis> and <emphasis>patchfile</emphasis> to write a new
+  index to the specified <emphasis>newfile</emphasis> containing all the
+  original index data updated by the information from the
+  <emphasis>patchfile</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Vehicles := DATASET('vehicles',
+     {STRING2 st,
+      STRING20 city,
+      STRING20 lname,
+      UNSIGNED8 filepos{virtual(fileposition)}},
+     FLAT);
+i1 := INDEX(Vehicles,
+  {st,city,lname,filepos},
+  'vkey::20041201::st.city.lname');
+i2 := INDEX(Vehicles,
+  {st,city,lname,filepos},
+  'vkey::20050101::st.city.lname');
+a := KEYDIFF(i1,i2,'KEY::DIFF::20050101::i1i2',OVERWRITE);
+b := KEYPATCH(i1,
+    'KEY::DIFF::20050101::i1i2',
+    'vkey::st.city.lname'OVERWRITE);    
+SEQUENTIAL(a,b);
+</programlisting>
+
+  <para>See Also: <link linkend="KEYDIFF">KEYDIFF</link>, <link
+  linkend="INDEX_record_structure">INDEX</link></para>
+</sect1>

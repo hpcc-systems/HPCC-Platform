@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CompareFiles">
+  <title><emphasis role="bold">CompareFiles</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.CompareFiles<indexterm>
+      <primary>STD.File.CompareFiles</primary>
+    </indexterm><indexterm>
+      <primary>File.CompareFiles</primary>
+    </indexterm><indexterm>
+      <primary>CompareFiles</primary>
+    </indexterm>(</emphasis> <emphasis> file1, file2 </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, logicalonly </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">[</emphasis> <emphasis>, usecrcs </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>file1</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          first file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>file2</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          second file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>logicalonly</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE flag that, when TRUE, does not
+          compare physical information from disk but only the logical
+          information in the system datastore (Dali). If omitted, the default
+          is TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>usecrcs</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE/FALSE flag indicating that, when
+          TRUE, compares physical CRCs of all the parts on disk. This may be
+          slow on large files. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>CompareFiles returns returns an INTEGER4 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CompareFiles </emphasis>function compares
+  <emphasis>file1</emphasis> against <emphasis>file2</emphasis> and returns
+  the following values:</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>0</entry>
+
+          <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
+          match exactly</entry>
+        </row>
+
+        <row>
+          <entry>1</entry>
+
+          <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
+          contents match, but <emphasis>file1</emphasis> is newer than
+          <emphasis>file2</emphasis></entry>
+        </row>
+
+        <row>
+          <entry>-1</entry>
+
+          <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
+          contents match, but <emphasis>file2</emphasis> is newer than
+          <emphasis>file1</emphasis></entry>
+        </row>
+
+        <row>
+          <entry>2</entry>
+
+          <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
+          contents do not match and <emphasis>file1</emphasis> is newer than
+          <emphasis>file2</emphasis></entry>
+        </row>
+
+        <row>
+          <entry>-2</entry>
+
+          <entry><emphasis>file1</emphasis> and <emphasis>file2</emphasis>
+          contents do not match and <emphasis>file2</emphasis> is newer than
+          <emphasis>file1</emphasis></entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.File.CompareFiles('Fred1', 'Fred2');
+</programlisting>
+</sect1>
