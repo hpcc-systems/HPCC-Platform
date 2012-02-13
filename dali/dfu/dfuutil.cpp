@@ -708,40 +708,26 @@ public:
 
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user);
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        transaction->start();
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction);
         bool newfile = false;
         if (!superfile) {
-            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user));
+            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
             newfile = true;
         }
-        try {
-            if (numtoadd) {
-                unsigned i;
-                for (i=0;i<numtoadd;i++)
-                    if (superfile->querySubFileNamed(subfiles[i]))
-                        throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
-                Owned<IDistributedFileTransaction> transaction;
-                if (numtoadd>1) {
-                    transaction.setown(createDistributedFileTransaction(user));
-                    transaction->start();
-                }
-                //StringBuffer before;
-                for (i=0;i<numtoadd;i++) {
-                    if (before&&*before)
-                        superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
-                    else
-                        superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
-                }
-                if (transaction.get()) {
-                    superfile.clear(); // superfile must not be active when transactiion committed
-                    transaction->commit();
-                }
+        if (numtoadd) {
+            unsigned i;
+            for (i=0;i<numtoadd;i++)
+                if (superfile->querySubFileNamed(subfiles[i]))
+                    throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
+            for (i=0;i<numtoadd;i++) {
+                if (before&&*before)
+                    superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
+                else
+                    superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
             }
-        } catch (IException *) {
-            // TODO: DFS transaction could take care of it
-            if (newfile)
-                queryDistributedFileDirectory().removeEntry(superfname,user);
-            throw;
+            transaction->commit();
         }
     }
 
