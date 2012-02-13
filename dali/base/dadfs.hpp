@@ -213,7 +213,7 @@ interface IDistributedFile: extends IInterface
 
     virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) = 0;
 
-    virtual void rename(const char *logicalname,IDistributedFileTransaction *transaction=NULL,IUserDescriptor *user=NULL) = 0;                          // simple rename (no file copy)
+    virtual void rename(const char *logicalname,IUserDescriptor *user=NULL) = 0;// simple rename (no file copy)
 
     virtual IFileDescriptor *getFileDescriptor(const char *clustername=NULL) = 0;   // get file descriptor used for file system access
                                                                                 // if clustername specified makes filedesc for only that cluster
@@ -221,8 +221,8 @@ interface IDistributedFile: extends IInterface
     virtual const char *queryDefaultDir() = 0;                                  // default directory (note primary dir)
     virtual const char *queryPartMask() = 0;                                    // default part name mask
 
-    virtual void attach(const char *logicalname,IDistributedFileTransaction *transaction=NULL,IUserDescriptor *user=NULL) = 0;                          // attach to name in DFS
-    virtual void detach(IDistributedFileTransaction *transaction=NULL) = 0;                                                 // no longer attached to name in DFS
+    virtual void attach(const char *logicalname,IUserDescriptor *user=NULL) = 0;// attach to name in DFS
+    virtual void detach() = 0;                                                  // no longer attached to name in DFS
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
