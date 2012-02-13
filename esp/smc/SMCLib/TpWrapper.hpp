@@ -150,13 +150,15 @@ public:
     void getGroupList(IArrayOf<IEspTpGroup> &Groups);
     void getCluster(const char* ClusterType,IPropertyTree& returnRoot);
     void getClusterMachineList(const char* ClusterType,const char* ClusterPath, const char* ClusterDirectory, 
-                                        IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess);
+                                        IArrayOf<IEspTpMachine> &MachineList, bool& hasThorSpareProcess, const char* ClusterName = NULL);
     void getMachineList( const char* MachineType,
                         const char* MachinePath,
                         const char* Status,
                                 const char* Directory,
                         IArrayOf<IEspTpMachine> &MachineList, 
                         set<string>* pMachineNames=NULL);
+    void getMachineList(const char* clusterName, const char* MachineType, const char* ParentPath, const char* Status,
+                                const char* Directory, bool& multiSlaves, IArrayOf<IEspTpMachine> &MachineList);
     void getDropZoneList(const char* MachineType, const char* MachinePath, const char* Directory, IArrayOf<IEspTpMachine> &MachineList);
     void setMachineInfo(const char* name,const char* type,IEspTpMachine& machine);
     void resolveGroupInfo(const char* groupName,StringBuffer& Cluster, StringBuffer& ClusterPrefix);
