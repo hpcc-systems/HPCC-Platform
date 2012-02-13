@@ -11985,11 +11985,19 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
     }
 }
 
-void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge)
 {
+    if (expr->getOperator() == no_aggregate)
+    {
+        OwnedHqlExpr mergeTransform = getUserAggregateMergeTransform(expr, requiresOrderedMerge);
+        doBuildUserMergeAggregateFunc(ctx, expr, mergeTransform);
+        return;
+    }
+
     IHqlExpression * tgtRecord = expr->queryChild(1);
     IHqlExpression * transform = expr->queryChild(2);
 
+    requiresOrderedMerge = false;
     OwnedHqlExpr selSeq = createDummySelectorSequence();
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * _right)");
@@ -12643,15 +12651,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     StringBuffer flags;
+    bool requiresOrderedMerge = false;
     if (specialOp == no_none)
     {
         doBuildAggregateClearFunc(instance->startctx, expr);
         if (op == no_aggregate)
         {
-            bool requiresOrderedMerge = false;
             doBuildUserAggregateFuncs(instance->startctx, expr, requiresOrderedMerge);
-            if (requiresOrderedMerge)
-                flags.append("|TAForderedmerge");
         }
         else        
         {
@@ -12659,10 +12665,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
             doBuildAggregateNextFunc(instance->startctx, expr);
 
             if (targetThor() && !isGrouped(dataset) && !expr->hasProperty(localAtom))
-                doBuildAggregateMergeFunc(instance->startctx, expr);
+                doBuildAggregateMergeFunc(instance->startctx, expr, requiresOrderedMerge);
         }
     }
 
+    if (requiresOrderedMerge)
+        flags.append("|TAForderedmerge");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getAggregateFlags", flags.str()+1);
 
