@@ -416,6 +416,10 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
 
+    const char *name = cfg->queryProp("Software/EspProcess/@name");
+    getConfigurationDirectory(cfg->queryPropTree("Software/Directories"), "query", "esp", name ? name : "esp", queryDirectory);
+    recursiveCreateDirectory(queryDirectory.str());
+
     dataCache.setown(new DataCache(DATA_SIZE));
     archivedWuCache.setown(new ArchivedWuCache(AWUS_CACHE_SIZE));
 
@@ -2234,12 +2238,27 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
         DBGLOG("CWsWorkunitsEx::onWUFile WUID=%s",req.getWuid());
 
         ensureWsWorkunitAccess(context, req.getWuid(), SecAccess_Read);
+        StringAttr wuid(req.getWuid());
+        if (wuid.isEmpty() && notEmpty(req.getQuerySet()) && notEmpty(req.getQuery()))
+        {
+            Owned<IPropertyTree> registry = getQueryRegistry(req.getQuerySet(), false);
+            if (!registry)
+                throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySet());
+            Owned<IPropertyTree> query = resolveQueryAlias(registry, req.getQuery());
+            if (!query)
+                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s not found", req.getQuery());
+            resp.setQuerySet(req.getQuerySet());
+            resp.setQueryName(query->queryProp("@name"));
+            resp.setQueryId(query->queryProp("@id"));
+            wuid.set(query->queryProp("@wuid"));
+        }
 
         int opt = req.getOption();
-        if (notEmpty(req.getWuid()))
+        if (!wuid.isEmpty())
         {
+            resp.setWuid(wuid.get());
             MemoryBuffer mb;
-            WsWuInfo winfo(context, req.getWuid());
+            WsWuInfo winfo(context, wuid);
             if (strieq(File_ArchiveQuery, req.getType()))
             {
                 winfo.getWorkunitArchiveQuery(mb);
@@ -2252,7 +2271,9 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_DLL,req.getType()))
             {
-                winfo.getWorkunitDll(mb);
+                StringBuffer name;
+                winfo.getWorkunitDll(name, mb);
+                resp.setFileName(name.str());
                 openSaveFile(context, opt, req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
             }
             else if (strieq(File_Res,req.getType()))
@@ -3295,7 +3316,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 
 StringBuffer &sharedObjectFileName(StringBuffer &filename, const char *name, const char *ext, unsigned copy)
 {
-    filename.append(name);
+    filename.append((name && *name) ? name : "workunit");
     if (copy)
         filename.append('-').append(copy);
     if (notEmpty(ext))
@@ -3303,24 +3324,76 @@ StringBuffer &sharedObjectFileName(StringBuffer &filename, const char *name, con
     return filename;
 }
 
-void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, StringBuffer &dllpath, StringBuffer &dllname)
+inline StringBuffer &buildFullDllPath(StringBuffer &dllpath, StringBuffer &dllname, const char *dir, const char *name, const char *ext, unsigned copy)
+{
+    return addPathSepChar(dllpath.set(dir)).append(sharedObjectFileName(dllname, name, ext, copy));
+}
+
+void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char *dir, StringBuffer &dllpath, StringBuffer &dllname)
 {
     StringBuffer name, ext;
-    splitFilename(srcpath, NULL, NULL, &name, &ext);
+    if (srcpath && *srcpath)
+        splitFilename(srcpath, NULL, NULL, &name, &ext);
 
     unsigned copy=0;
-    dllpath.clear().append(ESP_WORKUNIT_DIR).append(sharedObjectFileName(dllname.clear(), name.str(), ext.str(), copy++));
-    while(checkFileExists(dllpath.str()))
-    {
-        dllpath.clear().append(ESP_WORKUNIT_DIR).append(sharedObjectFileName(dllname.clear(), name.str(), ext.str(), copy++));
-    }
+    buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), copy);
+    while (checkFileExists(dllpath.str()))
+        buildFullDllPath(dllpath.clear(), dllname.clear(), dir, name.str(), ext.str(), ++copy);
 
+    DBGLOG("Writing workunit dll: %s", dllpath.str());
     Owned<IFile> f = createIFile(dllpath.str());
     Owned<IFileIO> io = f->open(IFOcreate);
     io->write(0, obj.length(), obj.toByteArray());
 }
 
-void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
+{
+    StringBuffer dllpath, dllname;
+    StringBuffer srcname(filename);
+    if (!srcname.length())
+        srcname.append(name).append(SharedObjectExtension);
+    writeSharedObject(srcname.str(), obj, dir, dllpath, dllname);
+
+    NewWsWorkunit wu(context);
+
+    StringBufferAdaptor isvWuid(wuid);
+    wu->getWuid(isvWuid);
+    wu->setClusterName(cluster);
+    wu->commit();
+
+    StringBuffer dllXML;
+    if (getWorkunitXMLFromFile(dllpath.str(), dllXML))
+    {
+        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
+        embeddedWU->loadXML(dllXML.str());
+        queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
+    }
+
+    wu.associateDll(dllpath.str(), dllname.str());
+
+    if (name && *name)
+        wu->setJobName(name);
+
+    //clean slate, copy only select items from processed workunit xml
+    if (xml && *xml)
+    {
+        Owned<IPropertyTree> srcxml = createPTreeFromXMLString(xml);
+        if (srcxml->hasProp("@jobName"))
+            wu->setJobName(srcxml->queryProp("@jobName"));
+        if (srcxml->hasProp("@token"))
+            wu->setSecurityToken(srcxml->queryProp("@token"));
+        if (srcxml->hasProp("Query/Text"))
+            wu.setQueryText(srcxml->queryProp("Query/Text"));
+    }
+
+    wu->setState(WUStateCompiled);
+    wu->commit();
+    wu.clear();
+
+    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
+}
+
+void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL)
 {
     if (isEmpty(req.getFileName()))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "File name required when deploying a shared object.");
@@ -3328,32 +3401,8 @@ void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     if (isEmpty(req.getCluster()))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cluster name required when deploying a shared object.");
 
-    const MemoryBuffer &obj = req.getObject();
-    StringBuffer dllpath, dllname;
-    writeSharedObject(req.getFileName(), obj, dllpath, dllname);
-
-    NewWsWorkunit wu(context);
-
-    SCMStringBuffer wuid;
-    wu->getWuid(wuid);
-    wu->setClusterName(req.getCluster());
-    wu->commit();
-
-    StringBuffer wuXML;
-    if (getWorkunitXMLFromFile(dllpath.str(), wuXML))
-    {
-        Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
-        embeddedWU->loadXML(wuXML);
-        queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
-    }
-
-    wu.associateDll(dllpath.str(), dllname.str());
-
-    if (notEmpty(req.getName()))
-        wu->setJobName(req.getName());
-    wu->setState(WUStateCompiled);
-    wu->commit();
-    wu.clear();
+    StringBuffer wuid;
+    deploySharedObject(context, wuid, req.getFileName(), req.getCluster(), req.getName(), req.getObject(), dir, xml);
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
@@ -3373,7 +3422,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         if (strieq(type, "archive")|| strieq(type, "ecl_text"))
             deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))
-            deploySharedObject(context, req, resp);
+            deploySharedObject(context, req, resp, queryDirectory.str());
         else
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unkown object type.", type);
     }

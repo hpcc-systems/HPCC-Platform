@@ -600,11 +600,18 @@ ESPrequest WULogFileRequest
     [min_ver("1.10")] string SlaveIP;
     [min_ver("1.32")] string IPAddress;
     [min_ver("1.32")] string Description;
+    [min_ver("1.36")] string QuerySet;
+    [min_ver("1.36")] string Query;
     string PlainText;
 };
 
 ESPresponse [exceptions_inline] WULogFileResponse
 {
+    [min_ver("1.36")] string Wuid;
+    [min_ver("1.36")] string QuerySet;
+    [min_ver("1.36")] string QueryName;
+    [min_ver("1.36")] string QueryId;
+    [min_ver("1.36")] string FileName;
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -1209,8 +1216,22 @@ ESPresponse [exceptions_inline] WUQuerySetAliasActionResponse
     ESParray<ESPstruct QuerySetAliasActionResult, Result> Results;
 };
 
+ESPrequest WUQuerySetCopyQueryRequest
+{
+    string Source;
+    string Target;
+    string Cluster;
+    int Activate;
+    int Wait(10000);
+};
+
+ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
+{
+    string QueryId;
+};
+
 ESPservice [
-    version("1.35"), default_client_version("1.35"),
+    version("1.36"), default_client_version("1.36"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1273,6 +1294,7 @@ ESPservice [
     ESPmethod WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
+    ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
 };
 
