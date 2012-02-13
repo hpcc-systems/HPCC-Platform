@@ -8895,6 +8895,32 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool 
     return conn->getRoot();
 }
 
+extern WORKUNIT_API StringArray &getQuerySetTargetClusters(const char *queryset, StringArray &clusters)
+{
+    //this should change as soon as there is a better way of determining this relationship
+    //currently follows the common assumption that queryset = roxie process or target cluster name
+    if (!queryset || !*queryset)
+        return clusters;
+
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return clusters;
+    StringBuffer xpath;
+    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", queryset);
+    Owned<IPropertyTree> targetCluster = conn->queryRoot()->getPropTree(xpath.str());
+    if (targetCluster && !targetCluster->hasProp("RoxieCluster"))
+        clusters.append(queryset);
+    else
+    {
+        Owned<IStringIterator> it = getTargetClusters("RoxieCluster", queryset);
+        ForEach(*it)
+        {
+            SCMStringBuffer s;
+            clusters.append(it->str(s).str());
+        }
+    }
+    return clusters;
+}
 
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)
 {
@@ -8952,7 +8978,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
-void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
+void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
 {
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
@@ -8990,7 +9016,8 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str());
     newQueryId.append(newEntry->queryProp("@id"));
 
-    workunit->setDebugValue("queryId", newQueryId.str(), true);
+    //A single workunit could be published as multiple queries
+    //workunit->setDebugValue("queryId", newQueryId.str(), true);
 
     if (activateOption == ACTIVATE_SUSPEND_PREVIOUS|| activateOption == ACTIVATE_DELETE_PREVIOUS)
     {

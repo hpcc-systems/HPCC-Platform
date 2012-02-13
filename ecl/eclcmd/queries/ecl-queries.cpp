@@ -235,12 +235,111 @@ private:
     unsigned flags;
 };
 
+class EclCmdQueriesCopy : public EclCmdCommon
+{
+public:
+    EclCmdQueriesCopy() : optActivate(false), optMsToWait(10000)
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optSourceQueryPath.isEmpty())
+                    optSourceQueryPath.set(arg);
+                else if (optTargetQuerySet.isEmpty())
+                    optTargetQuerySet.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+                continue;
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optSourceQueryPath.isEmpty() || optTargetQuerySet.isEmpty())
+        {
+            fputs("source and target must both be specified.\n\n", stderr);
+            return false;
+        }
+        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optCluster.isEmpty())
+        {
+            fputs("cluster must be specified for remote copies.\n\n", stderr);
+            return false;
+        }
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+
+        Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
+        req->setSource(optSourceQueryPath.get());
+        req->setTarget(optTargetQuerySet.get());
+        req->setCluster(optCluster.get());
+        req->setActivate(optActivate);
+        req->setWait(optMsToWait);
+
+        Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        if (resp->getQueryId() && *resp->getQueryId())
+            fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.sget(), resp->getQueryId());
+        return 0;
+    }
+    virtual void usage()
+    {
+        fprintf(stdout,"\nUsage:\n\n"
+            "ecl queries copy <from querypath> <to queryset> [--activate]\n\n"
+            " Options:\n"
+            "   <from querypath>       path of query to copy\n"
+            "                          format: [//ip:port/]queryset/query\n"
+            "   <to queryset>          name of queryset to copy the query into\n"
+            "   -cl, --cluster         Local cluster to associate with remote workunit\n"
+            "   -A, --activate         Activate the new query\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n"
+            " Common Options:\n"
+        );
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optSourceQueryPath;
+    StringAttr optTargetQuerySet;
+    StringAttr optCluster;
+    unsigned optMsToWait;
+    bool optActivate;
+};
+
 IEclCommand *createEclQueriesCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
         return NULL;
     if (strieq(cmdname, "list"))
         return new EclCmdQueriesList();
+    if (strieq(cmdname, "copy"))
+        return new EclCmdQueriesCopy();
     return NULL;
 }
 
@@ -260,6 +359,7 @@ public:
             "ecl queries <command> [command options]\n\n"
             "   Queries Commands:\n"
             "      list         list queries in queryset(s)\n"
+            "      copy         copy a query from one queryset to another\n"
         );
     }
 };

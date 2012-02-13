@@ -169,7 +169,7 @@ public:
     void getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf);
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(MemoryBuffer& buf);
-    void getWorkunitDll(MemoryBuffer& buf);
+    void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf);
     void getEventScheduleFlag(IEspECLWorkunit &info);
