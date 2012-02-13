@@ -4289,7 +4289,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     if (useImplementationClass)
         instance->setImplementationClass(newLocalResultReadArgAtom);
     if (expr->hasProperty(_loop_Atom))
-        instance->graphLabel.set("Begin Loop");
+    {
+        if (isCurrentActiveGraph(ctx, graphId))
+            instance->graphLabel.set("Begin Loop");
+        else
+            instance->graphLabel.set("Outer Loop Input");
+    }
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -4298,8 +4303,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     else
         instance->addConstructorParameter(resultNum);
 
-    if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
     buildInstanceSuffix(instance);
 
     queryAddResultDependancy(*instance->queryBoundActivity(), graphId, resultNum);
@@ -4439,8 +4443,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphLoopResult(BuildCtx & 
 
     buildInstancePrefix(instance);
     doBuildUnsignedFunction(instance->startctx, "querySequence", resultNum);
-    if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
     buildInstanceSuffix(instance);
 
     return instance->getBoundActivity();
