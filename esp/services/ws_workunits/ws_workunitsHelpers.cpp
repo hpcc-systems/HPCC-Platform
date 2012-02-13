@@ -1595,14 +1595,14 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
     buf.append(queryText.length(), queryText.str());
 }
 
-void WsWuInfo::getWorkunitDll(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitDll(StringBuffer &dllname, MemoryBuffer& buf)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
     if(!query)
         throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
 
-    SCMStringBuffer dllname;
-    query->getQueryDllName(dllname);
+    StringBufferAdaptor isvName(dllname);
+    query->getQueryDllName(isvName);
     queryDllServer().getDll(dllname.str(), buf);
 }
 
