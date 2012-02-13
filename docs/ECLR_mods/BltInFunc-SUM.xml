@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SUM">
+  <title>SUM</title>
+
+  <para><emphasis role="bold">SUM<indexterm>
+      <primary>SUM</primary>
+    </indexterm><indexterm>
+      <primary>SUM function</primary>
+    </indexterm>(</emphasis><emphasis> recordset, value </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">SUM(</emphasis><emphasis> valuelist
+  </emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set. This also may be
+            the keyword GROUP to indicate finding the sum of values of the
+            field in a group, when used in a RECORD structure to generate
+            crosstab statistics.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The expression to sum.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions to find the sum of.
+            This may also be a SET of values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SUM returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SUM </emphasis>function returns the additive
+  sum of the <emphasis>value</emphasis> in each record of the
+  <emphasis>recordset </emphasis>or <emphasis>valuelist</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySum := SUM(Person,Person.Salary); // total all salaries
+
+SumVal2 := SUM(4,8,16,2,1); //returns 31
+SetVals := [4,8,16,2,1];
+SumVal3 := SUM(SetVals); //returns 31
+</programlisting>
+
+  <para>See Also: <link linkend="COUNT">COUNT</link>, <link
+  linkend="AVE">AVE</link>, <link linkend="MIN">MIN</link>, <link
+  linkend="MAX">MAX</link></para>
+</sect1>

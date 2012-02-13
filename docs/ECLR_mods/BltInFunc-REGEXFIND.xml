@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGEXFIND">
+  <title>REGEXFIND</title>
+
+  <para><emphasis role="bold">REGEXFIND<indexterm>
+      <primary>REGEXFIND</primary>
+    </indexterm><indexterm>
+      <primary>REGEXFIND function</primary>
+    </indexterm>(</emphasis><emphasis>regex, text </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, flag </emphasis><emphasis role="bold">]
+  [, NOCASE<indexterm>
+      <primary>NOCASE</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.35pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>regex</emphasis></entry>
+
+            <entry>A standard Perl regular expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>The text to parse.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flag</emphasis></entry>
+
+            <entry>Optional. Specifies the text to return. If omitted,
+            REGEXFIND returns TRUE or FALSE as to whether the regex was found
+            within the text. If 0, the portion of the text the
+            <emphasis>regex</emphasis> was matched is returned. If &gt;= 1,
+            the text matched by the nth group in the
+            <emphasis>regex</emphasis> is returned.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+
+            <entry>Optional. Specifies a case insensitive search.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGEXFIND returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">REGEXFIND </emphasis>function uses the
+  <emphasis>regex<indexterm>
+      <primary>regex</primary>
+    </indexterm></emphasis> to parse through the <emphasis>text</emphasis> and
+  find matches. The <emphasis>regex</emphasis> must be a standard Perl regular
+  expression<indexterm>
+      <primary>Perl regular expression</primary>
+    </indexterm>. We use third-party libraries to support this, so for
+  non-unicode <emphasis>text</emphasis>, see boost docs at <emphasis
+  role="underline">http://www.boost.org/doc/libs/1_39_0/libs/regex/doc/html/index.html</emphasis>.
+  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
+  ‘Regular Expression Metacharacters' and ‘Regular Expression Operators' at
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
+  and the links from there, in particular the section ‘UnicodeSet patterns' at
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
+  We use version 2.6 which should support all listed features.</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRecord := RECORD
+STRING20 surname;
+STRING10 forename;
+STRING10 userdate;
+END;
+namesTbl := DATASET([ {'Halligan','Kevin','10/14/1998'},
+{'Halligan','Liz','12/01/1998'},
+{'Halligan','Jason','01/01/2000'},
+{'MacPherson','Jimmy','03/14/2003'} ],
+namesRecord);
+searchpattern := '^(.*)/(.*)/(.*)$';
+search := '10/14/1998';
+
+filtered := namesTbl(REGEXFIND('^(Mc|Mac)', surname));
+
+OUTPUT(filtered); //1 record -- MacPherson
+OUTPUT(namesTbl,{(string30)REGEXFIND(searchpattern,userdate,0),
+(string30)REGEXFIND(searchpattern,userdate,1),
+(string30)REGEXFIND(searchpattern,userdate,2),
+(string30)REGEXFIND(searchpattern,userdate,3)});
+
+REGEXFIND(searchpattern, search, 0); //returns
+        '10/14/1998'
+REGEXFIND(searchpattern, search, 1); //returns '10'
+REGEXFIND(searchpattern, search, 2); //returns '14'
+REGEXFIND(searchpattern, search, 3); //returns '1998'
+</programlisting>
+
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="REGEXREPLACE">REGEXREPLACE</link></para>
+</sect1>

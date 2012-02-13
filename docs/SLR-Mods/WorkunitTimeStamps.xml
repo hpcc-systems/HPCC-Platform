@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitTimeStamps">
+  <title><emphasis role="bold">WorkunitTimeStamps</emphasis></title>
+
+  <para><emphasis
+  role="bold">STD.System.Workunit.WorkunitTimeStamps    <indexterm>
+      <primary>STD.System.Workunit.WorkunitTimeStamps</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WorkunitTimeStamps</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WorkunitTimeStamps</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WorkunitTimeStamps</primary>
+    </indexterm>
+(</emphasis> <emphasis>
+  wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitTimeStamps returns a DATASET value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitTimeStamps </emphasis>function
+  returns a DATASET with this format:</para>
+
+  <programlisting>EXPORT WsTimeStamp := RECORD
+  STRING32 application;
+  STRING16 id;
+  STRING20 time;
+  STRING16 instance;
+END;</programlisting>
+
+  <para>Each record in the returned dataset specifies a step in the workunit's
+  execution process (creation, compilation, etc.).</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitTimeStamps('W20070308-164946'));
+/* produces output like this:
+'workunit     ','Created ','2008-02-13T18:28:20Z','              '
+'workunit     ','Modified','2008-02-13T18:32:47Z','              '
+'EclServer    ','Compiled','2008-02-13T18:28:20Z','10.173.9.2:0  '
+'EclAgent     ','Started ','2008-02-13T18:32:35Z','training009003'
+'Thor - graph1','Finished','2008-02-13T18:32:47Z','training009004'
+'Thor - graph1','Started ','2008-02-13T18:32:13Z','training009004'
+'EclAgent     ','Finished','2008-02-13T18:33:09Z','training009003'
+*/</programlisting>
+</sect1>

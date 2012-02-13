@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ExtractMultiple">
+  <title><emphasis role="bold">ExtractMultiple</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.ExtractMultiple<indexterm>
+      <primary>STD.Str.Extract</primary>
+    </indexterm><indexterm>
+      <primary>Str.Extract</primary>
+    </indexterm><indexterm>
+      <primary>Extract</primary>
+    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Extract<indexterm>
+      <primary>STD.Uni.Extract</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Extract</primary>
+    </indexterm>(</emphasis> <emphasis>source, instance</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing a comma-delimited list of data.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>instance </emphasis></entry>
+
+          <entry>An integer specifying the ordinal position of the data item
+          within the <emphasis>source</emphasis> to return.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Extract returns either a STRING or UNICODE value, as
+          appropriate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Extract </emphasis>function returns the data
+  at the ordinal position specified by the <emphasis>instance
+  </emphasis>within the comma-delimited <emphasis>source</emphasis>
+  string.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">//all these examples result in 'Success'
+   
+A := IF(STD.Str.Extract('AB,CD,,G,E',0) = '',
+   'Success',
+   'Failure -1');
+    
+B := IF(STD.Str.Extract('AB,CD,,G,E',1) = 'AB',
+   'Success',
+   'Failure -2');
+    
+C := IF(STD.Str.Extract('AB,CD,,G,E',2) = 'CD',
+   'Success',
+   'Failure -3');
+
+D := IF(STD.Str.Extract('AB,CD,,G,E',3) = '',
+   'Success',
+   'Failure -4');
+    
+E := IF(STD.Str.Extract('AB,CD,,G,E',4) = 'G',
+   'Success',
+   'Failure -5');
+
+F := IF(STD.Str.Extract('AB,CD,,G,E',5) = 'E',
+   'Success',
+   'Failure -6');
+    
+G := IF(STD.Str.Extract('AB,CD,,G,E',6) = '',
+   'Success',
+   'Failure -7');
+</programlisting>
+</sect1>

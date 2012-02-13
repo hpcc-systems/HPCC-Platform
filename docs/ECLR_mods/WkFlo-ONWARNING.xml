@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ONWARNING">
+  <title>ONWARNING</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: ONWARNING<indexterm>
+      <primary>ONWARNING</primary>
+    </indexterm>(</emphasis><emphasis>code, action</emphasis><emphasis
+  role="bold">) <indexterm>
+      <primary>ONWARNING workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>code</emphasis></entry>
+
+            <entry>The number displayed in the "Code" column of the ECL IDE's
+            Syntax Errors toolbox.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>One of these actions: ignore, error, or warning.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ONWARNING </emphasis>service allows you to
+  specify how to handle specific warnings for a given attribute. You may have
+  it treated as a warning, promote it to an error, or ignore it. Useful
+  warnings can get lost in a sea of less-useful ones. This feature allows you
+  to get rid of the "clutter."</para>
+
+  <para>This service overrides any global warning handling specified by
+  #ONWARNING.</para>
+
+  <para>Example:</para>
+
+  <programlisting>rec := { STRING x } : ONWARNING(1041, ignore);
+     //ignore "Record doesn't have an explicit maximum record size" warning
+</programlisting>
+
+  <para>See Also: <link linkend="_ONWARNING">#ONWARNING</link></para>
+</sect1>

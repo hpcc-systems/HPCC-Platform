@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PROCESS">
+  <title>PROCESS</title>
+
+  <para><emphasis role="bold">PROCESS<indexterm>
+      <primary>PROCESS</primary>
+    </indexterm><indexterm>
+      <primary>PROCESS function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, datarow,</emphasis><emphasis
+  role="bold"> </emphasis><emphasis>datasettransform, rowtransform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="85.75pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datarow</emphasis></entry>
+
+            <entry>The initial RIGHT record to process, typically expressed by
+            the ROW function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>datasettransform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call for each record in the
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>rowtransform</emphasis></entry>
+
+            <entry>The TRANSFORM function to call to produce the next RIGHT
+            record for the <emphasis>datasettransform</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>PROCESS returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PROCESS </emphasis>function operates in a
+  similar manner to ITERATE in that it processes through all records in the
+  <emphasis>recordset</emphasis> one pair of records at a time, performing the
+  <emphasis>datasettransform</emphasis> function on each pair of records in
+  turn. The first record in the recordset is passed to the
+  <emphasis>datasettransform</emphasis> as the first left record, paired with
+  the <emphasis>datarow</emphasis> as the right record. The
+  <emphasis>rowtransform</emphasis> is used to construct the right record for
+  the next pair. If either the <emphasis>datasettransform</emphasis> or the
+  <emphasis>rowtransform</emphasis> contains a SKIP, then no record is
+  produced by the <emphasis>datasettransform</emphasis> for the skipped
+  record.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Process">
+    <title>TRANSFORM Function<indexterm>
+        <primary>TRANSFORM Function</primary>
+      </indexterm> Requirements - PROCESS<indexterm>
+        <primary>TRANSFORM Function Requirements</primary>
+      </indexterm><indexterm>
+        <primary>Transform Requirements</primary>
+      </indexterm><indexterm>
+        <primary>Transform Requirement Process</primary>
+      </indexterm></title>
+
+    <para>The <emphasis>datasettransform</emphasis> and
+    <emphasis>rowtransform</emphasis> functions both must take at least two
+    parameters: a LEFT record of the same format as the <emphasis>recordset
+    </emphasis>and a RIGHT record of the same format as the
+    <emphasis>datarow</emphasis>. The format of the resulting record set for
+    the <emphasis>datasettransform</emphasis> both must be the same as the
+    input <emphasis>recordset</emphasis>. The format of the resulting record
+    set for the <emphasis>rowtransform</emphasis> both must be the same as the
+    initial <emphasis>datarow</emphasis>. Optionally, the
+    <emphasis>datsettransform</emphasis> may take a third parameter: an
+    integer COUNTER specifying the number of times the transform has been
+    called for the <emphasis>recordset </emphasis>or the current group in the
+    <emphasis>recordset</emphasis> (see the GROUP function).</para>
+
+    <para>Example:</para>
+
+    <programlisting>DSrec := RECORD
+  STRING4 Letter;
+  STRING4 LeftRecIn := '';
+  STRING4 RightRecIn := '';
+END;
+StateRec := RECORD
+  STRING2 Letter;
+END;
+ds := DATASET([{'AA'},{'BB'},{'CC'},{'DD'},{'EE'}],DSrec);
+
+DSrec DSxform(DSrec L,StateRec R) := TRANSFORM
+  SELF.Letter := L.Letter[1..2] + R.Letter;
+  SELF.LeftRecIn := L.Letter;
+  SELF.RightRecIn := R.Letter;
+END;
+StateRec ROWxform(DSrec L,StateRec R) := TRANSFORM
+  SELF.Letter := L.Letter[1] + R.Letter[1];
+END;
+
+p := PROCESS(ds,
+             ROW({'ZZ'},StateRec),
+             DSxform(LEFT,RIGHT),
+             ROWxform(LEFT,RIGHT));
+OUTPUT(p);
+/* Result:
+AAZZ AA ZZ
+BBAZ BB AZ
+CCBA CC BA
+DDCB DD CB
+EEDC EE DC */
+
+//******************************************************************
+// This examples uses different information for state tracking
+// (the point of the PROCESS function) through the input record set.
+  
+w1 := RECORD
+  STRING v{MAXLENGTH(100)};
+END;
+
+s1 := RECORD
+  BOOLEAN priorA;
+END;
+
+ds := DATASET([{'B'},{'A'}, {'C'}, {'D'}], w1);
+
+s1 doState(w1 l, s1 r) := TRANSFORM
+  SELF.priorA := l.v = 'A';
+END;
+
+w1 doRecords(w1 l, s1 r) := TRANSFORM
+  SELF.v := l.v + IF(r.priorA, '***', '');
+END;
+
+initState := ROW({TRUE}, s1);
+
+rs := PROCESS(ds,
+              initState,
+              doRecords(LEFT,RIGHT),
+              doState(LEFT,RIGHT));
+
+OUTPUT(rs);
+/* Result:
+B***
+A
+C***
+D
+*/
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROW">ROW</link>, <link linkend="ITERATE">ITERATE</link></para>
+  </sect2>
+</sect1>

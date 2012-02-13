@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Indexing_into_SuperFiles">
+  <title><emphasis role="bold">Indexing into SuperFiles</emphasis></title>
+
+  <sect2 id="SuperFiles_vs_SuperKeys">
+    <title>SuperFiles vs. SuperKeys</title>
+
+    <para>A SuperFile may contain INDEX files instead of DATASET files, making
+    it a SuperKey. All the same creation and maintenance processes and
+    principles apply as described previously in the <emphasis>Creating and
+    Maintaining SuperFiles</emphasis> article.</para>
+
+    <para>However, <emphasis role="bold">a SuperKey may not contain INDEX
+    sub-files that directly reference the sub-files of a SuperFile using the
+    {virtual(fileposition)} “record pointer” mechanism </emphasis>(used by
+    FETCH and full-keyed JOIN operations). This is because the
+    {virtual(fileposition)} field is a virtual (exists only when the file is
+    read from disk) field containing the relative byte position of each record
+    within the single logical entity.</para>
+
+    <para>The following attribute definitions used by the code examples in
+    this article are declared in the DeclareData MODULE structure
+    attribute:</para>
+
+    <programlisting>EXPORT i1name := '~PROGGUIDE::SUPERKEY::IDX1';
+EXPORT i2name := '~PROGGUIDE::SUPERKEY::IDX2';
+EXPORT i3name := '~PROGGUIDE::SUPERKEY::IDX3';
+EXPORT SFname := '~PROGGUIDE::SUPERKEY::SF1';
+EXPORT SKname := '~PROGGUIDE::SUPERKEY::SK1';
+EXPORT ds1 := DATASET(SubFile1,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT ds2 := DATASET(SubFile2,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT i1 := INDEX(ds1,{personid,RecPos},i1name);
+EXPORT i2 := INDEX(ds2,{personid,RecPos},i2name);
+EXPORT sf1 := DATASET(SFname,{Layout_Person,UNSIGNED8 RecPos {VIRTUAL(fileposition)}},THOR);
+EXPORT sk1 := INDEX(sf1,{personid,RecPos},SKname);
+EXPORT sk2 := INDEX(sf1,{personid,RecPos},i3name );
+</programlisting>
+  </sect2>
+
+  <sect2 id="There_is_a_Problem">
+    <title>There is a Problem</title>
+
+    <para>The easiest way to illustrate the problem is to run the following
+    code (this code is contained in IndexSuperFile1.ECL) that uses two of the
+    sub-files from the <emphasis>Creating and Maintaining
+    SuperFiles</emphasis> article.</para>
+
+    <programlisting>IMPORT $;
+
+OUTPUT($.DeclareData.ds1);
+OUTPUT($.DeclareData.ds2);
+</programlisting>
+
+    <para>You will notice that the RecPos values returned for both of these
+    datasets are exactly the same (0, 89, 178 ... ), which is to be expected
+    since they both have the same fixed-length RECORD structure. The problem
+    lies in using that field when building separate INDEXes for the two
+    datasets. It works perfectly as separate INDEXes into separate
+    DATASETs.</para>
+
+    <para>For example, you can use this code to build and test the separate
+    INDEXes (contained in IndexSuperFile2.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+Bld := PARALLEL(BUILDINDEX($.DeclareData.i1,OVERWRITE),BUILDINDEX($.DeclareData.i2,OVERWRITE));
+
+F1 := FETCH($.DeclareData.ds1,
+            $.DeclareData.i1(personid=$.DeclareData.ds1[1].personid),
+            RIGHT.RecPos);
+F2 := FETCH($.DeclareData.ds2,
+            $.DeclareData.i2(personid=$.DeclareData.ds2[1].personid),
+            RIGHT.RecPos);
+
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+SEQUENTIAL(Bld,Get);
+</programlisting>
+
+    <para>As you can see, two different records are returned by the two FETCH
+    operations. However, when you create a SuperFile and a SuperKey and then
+    try using them to do the same two FETCHes again, they both return the same
+    record, as shown by this code (contained in IndexSuperFile3.ECL):</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+BldSF := SEQUENTIAL(
+  Std.File.CreateSuperFile($.DeclareData.SFname),
+  Std.File.CreateSuperFile($.DeclareData.SKname),
+  Std.File.StartSuperFileTransaction(),
+  Std.File.AddSuperFile($.DeclareData.SFname,$.DeclareData.SubFile1),
+  Std.File.AddSuperFile($.DeclareData.SFname,$.DeclareData.SubFile2),
+  Std.File.AddSuperFile($.DeclareData.SKname,$.DeclareData.i1name),
+  Std.File.AddSuperFile($.DeclareData.SKname,$.DeclareData.i2name),
+  Std.File.FinishSuperFileTransaction());
+
+F1  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk1(personid=$.DeclareData.ds1[1].personid),
+             RIGHT.RecPos);
+F2  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk1(personid=$.DeclareData.ds2[1].personid),
+             RIGHT.RecPos);
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+SEQUENTIAL(BldSF,Get);
+</programlisting>
+
+    <para>Once you combine the DATASETS into a SuperFile and combine the
+    INDEXes into a SuperKey, you then have multiple entries in the SuperKey,
+    with different key field values, that all point to the same physical
+    record in the SuperFile, because the record pointer values are the
+    same.</para>
+  </sect2>
+
+  <sect2 id="And_the_Solution_Is">
+    <title>And the Solution Is ...</title>
+
+    <para>The way around this problem is to create a single INDEX into the
+    SuperFile, as shown by this code (contained in
+    IndexSuperFile4.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+F1  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk2(personid=$.DeclareData.ds1[1].personid),
+             RIGHT.RecPos);
+F2  := FETCH($.DeclareData.sf1,
+             $.DeclareData.sk2(personid=$.DeclareData.ds2[1].personid),
+             RIGHT.RecPos);
+Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
+
+SEQUENTIAL(BUILDINDEX($.DeclareData.sk2,OVERWRITE),Get);
+</programlisting>
+
+    <para>When you use a single INDEX instead of a SuperKey, the FETCH
+    operations once again retrieve the correct records.</para>
+  </sect2>
+</sect1>

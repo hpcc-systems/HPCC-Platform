@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Smart_Stepping">
+  <title><emphasis role="bold">Smart Stepping</emphasis></title>
+
+  <sect2 id="Overview">
+    <title>Overview</title>
+
+    <para>Smart Stepping is a set of indexing techniques that, taken together,
+    comprise a method of doing <emphasis>n</emphasis>-ary join/merge-join
+    operations, where <emphasis>n</emphasis> is defined as two or more
+    datasets. Smart Stepping enables the supercomputer to efficiently join
+    records from multiple filtered data sources, including subsets of the same
+    dataset. It is particularly efficient when the matches are sparse and
+    uncorrelated. Smart Stepping also supports matching records from M-of-N
+    datasets.</para>
+
+    <para>Before the advent of Smart Stepping, finding the intersection of
+    records from multiple datasets was performed by extracting the potential
+    matches from one dataset, and then joining that candidate set to each of
+    the other datasets in turn. The joins would use various mechanisms
+    including index lookups, or reading the potential matches from a dataset,
+    and then joining them. This means that the only way to join multiple
+    datasets required that at least one dataset be read in its entirety and
+    then joined to the others. This could be very inefficient if the
+    programmer didn't take care to select the most efficient order in which to
+    read the datasets. Unfortunately, it is often impossible to know
+    beforehand which order would be the best. It is also often impossible to
+    order the joins so that the two least frequent terms are joined. It was
+    also particularly difficult to efficiently implement the M-of-N join
+    varieties.</para>
+
+    <para>With Smart Stepping technology, these multiple dataset joins become
+    a single efficient operation instead of a series of multiple operations.
+    Smart Stepping can only be used in the context where the join condition is
+    primarily an equality test between columns in the input datasets and the
+    input datasets must have output sorted by those columns.</para>
+
+    <para>Smart Stepping also provides an efficient way of streaming
+    information from a dataset, sorted by any trailing sort order. Previously
+    if you had a sorted dataset (often an index) which was required to be
+    filtered by some leading components, and then have the resulting rows
+    sorted by the trailing components, you would have had to achieve it by
+    reading the entire filtered result, and then post sorting that
+    result.</para>
+
+    <para>Smart Stepping can use significant amounts of temporary storage if
+    used inappropriately. Therefore, care should be taken to use it
+    properly.</para>
+  </sect2>
+
+  <sect2 id="Trailing_Field_Sorts">
+    <title>Trailing Field Sorts</title>
+
+    <para>The STEPPED function provides the ability to sort by trailing key
+    component fields in a much more efficient manner than sorting after
+    filtering (the only previous method of accomplishing this). The stepped
+    trailing key fields allows the sorted rows to be returned without reading
+    the entire dataset.</para>
+
+    <para>Prior to the advent of Smart Stepping, a sorted dataset or index
+    could efficiently produce filtered rows, or rows sorted in the same order
+    as the original sort order, but it could not efficiently produce rows
+    sorted by a trailing sort order of the index (whether filtered or not).
+    The filtering then post-sorting method required that all rows be read from
+    the dataset before any sorted rows could be retrieved. Smart Stepping
+    allows the sorted data to be read immediately (and therefore
+    partially).</para>
+
+    <para>The easiest way to see the effect is with this example (contained in
+    SmartStepping1.ECL—this code must be run in hthor or Roxie, not
+    Thor):</para>
+
+    <programlisting>IMPORT $; 
+IDX := $.DeclareData.IDX__Person_State_City_Zip_LastName_FirstName_Payload;
+Filter := IDX.State = 'LA' AND IDX.City = 'ABBEVILLE';
+ //filter by the leading index elements
+ //and sort the output by a trailing element
+OUTPUT(SORT(IDX(Filter),FirstName),ALL);  //the old way
+OUTPUT(STEPPED(IDX(Filter),FirstName),ALL); //Smart Stepping </programlisting>
+
+    <para>The previous method of accomplishing this meant producing the
+    filtered result set, then using SORT to achieve the desired sort order.
+    The new method looks very similar, using STEPPED instead of SORT, and both
+    OUTPUTs produce the same result, but the efficiency of the methods by
+    which those results are achieved is very different.</para>
+
+    <para>Once you've successfully run this code and gotten your result, take
+    a look at the Graphs page:</para>
+
+    <para>Notice that the first OUTPUT's sub-graph contains three activities:
+    the index read, the sort, and the output. But the second OUTPUT's
+    sub-graph only contains two activities: the index read and the output. All
+    of the Smart Stepping work to produce the result is done by the index
+    read. If you then go to the ECL Watch page for the workunit and look at
+    the timings you should see that the second OUTPUT's graph1-1 time is
+    significantly less than the first's graph1-2:</para>
+
+    <para>Thus demonstrating the type of performance advantage Smart Stepping
+    can have over previous methods. Of course, the real performance advantage
+    shows up when you ask for only the first <emphasis>n</emphasis> records,
+    as in this example (contained in SmartStepping1a.ECL):</para>
+
+    <programlisting>IMPORT $; 
+IDX := $.DeclareData.IDX__Person_State_City_Zip_LastName_FirstName_Payload;
+Filter := IDX.State = 'LA' AND IDX.City = 'ABBEVILLE';
+OUTPUT(CHOOSEN(SORT(IDX(Filter),FirstName),5));     //the old way
+OUTPUT(CHOOSEN(STEPPED(IDX(Filter),FirstName),5));  //Smart Stepping </programlisting>
+
+    <para>After running this code, check the timings on the ECL watch page.
+    You should again see quite a performance difference between the two
+    methods, even with this little amount of data.</para>
+  </sect2>
+
+  <sect2 id="N-ary_JOINs">
+    <title>N-ary JOINs</title>
+
+    <para>The primary purpose of Smart Stepping is to enable
+    <emphasis>n</emphasis>-ary merge/join operations to be accomplished as
+    efficiently as possible. To that end the concept of a set of datasets (or
+    indexes) has been added to the language. This allows JOIN to be extended
+    to operate on multiple datasets, not just two.</para>
+
+    <para>For example, given this data (contained in the SmartStepping2.ECL
+    file)</para>
+
+    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+  STRING1 Letter;
+  UNSIGNED1 DS;
+  UNSIGNED1 Matches := 1;
+  UNSIGNED1 LastMatch := 1;
+  SET OF UNSIGNED1 MatchDSs := [1];
+END;
+     
+ds1 := DATASET([{'A',1},{'B',1},{'C',1},{'D',1},{'E',1}],Rec);
+ds2 := DATASET([{'A',2},{'B',2},{'H',2},{'I',2},{'J',2}],Rec);
+ds3 := DATASET([{'B',3},{'C',3},{'M',3},{'N',3},{'O',3}],Rec);
+ds4 := DATASET([{'A',4},{'B',4},{'R',4},{'S',4},{'T',4}],Rec);
+ds5 := DATASET([{'B',5},{'V',5},{'W',5},{'X',5},{'Y',5}],Rec); </programlisting>
+
+    <para>To do an inner join on all five datasets using Smart Stepping the
+    code is this (also contained in the SmartStepping2.ECL file):</para>
+
+    <programlisting>SetDS := [ds1,ds2,ds3,ds4,ds5];
+
+Rec XF(Rec L,DATASET(Rec) Matches) := TRANSFORM
+  SELF.Matches := COUNT(Matches);
+  SELF.LastMatch := MAX(Matches,DS);
+  SELF.MatchDSs := SET(Matches,DS);
+  SELF := L;
+END;
+j1 := JOIN( SetDS,STEPPED(LEFT.Letter=RIGHT.Letter),XF(LEFT,ROWS(LEFT)),SORTED(Letter));
+
+O1 := OUTPUT(j1);
+</programlisting>
+
+    <para>Without using Smart Stepping the code is this (also contained in the
+    SmartStepping2.ECL file):</para>
+
+    <programlisting>Rec XF1(Rec L,Rec R,integer MatchSet) := TRANSFORM
+  SELF.Matches := L.Matches + 1;
+  SELF.LastMatch := MatchSet;
+  SELF.MatchDSs := L.MatchDSs + [MatchSet];
+  SELF := L;
+END;
+j2 := JOIN( ds1,ds2,LEFT.Letter=RIGHT.Letter,XF1(LEFT,RIGHT,2));
+j3 := JOIN( j2,ds3, LEFT.Letter=RIGHT.Letter,XF1(LEFT,RIGHT,3));
+j4 := JOIN( j3,ds4, LEFT.Letter=RIGHT.Letter,XF1(LEFT,RIGHT,4));
+j5 := JOIN( j4,ds5, LEFT.Letter=RIGHT.Letter,XF1(LEFT,RIGHT,5));
+O2 := OUTPUT(SORT(j5,Letter));
+</programlisting>
+
+    <para>Both of these examples produce the same one-record output, but
+    without Smart Stepping you need four separate JOINs to accomplish the
+    goal, and in “real world” code you might need a separate TRANSFORM for
+    each, depending on what result you were trying to produce.</para>
+
+    <para>In addition to the standard inner join between all the datasets, the
+    Smart Stepping form of JOIN also supports the same type of LEFT OUTER and
+    LEFT ONLY joins as the standard JOIN operation. However, this form also
+    supports <emphasis>M</emphasis> of <emphasis>N</emphasis> joins (MOFN),
+    where matching records must appear in a specified minimum number of the
+    datasets, and may optionally specify a maximum in which they appear, as in
+    these examples (also contained in the SmartStepping2.ECL file):</para>
+
+    <programlisting>j6 := JOIN( SetDS,
+            STEPPED(LEFT.Letter=RIGHT.Letter),
+            XF(LEFT,ROWS(LEFT)),
+            SORTED(Letter),
+            LEFT OUTER);
+j7 := JOIN( SetDS,
+            STEPPED(LEFT.Letter=RIGHT.Letter),
+            XF(LEFT,ROWS(LEFT)),
+            SORTED(Letter),
+            LEFT ONLY);
+j8 := JOIN( SetDS,
+            STEPPED(LEFT.Letter=RIGHT.Letter),
+            XF(LEFT,ROWS(LEFT)),
+            SORTED(Letter),
+            MOFN(3));
+j9 := JOIN( SetDS,
+            STEPPED(LEFT.Letter=RIGHT.Letter),
+            XF(LEFT,ROWS(LEFT)),
+            SORTED(Letter),
+            MOFN(3,4));
+O3 := OUTPUT(j6);
+O4 := OUTPUT(j7);
+O5 := OUTPUT(j8);
+O6 := OUTPUT(j9);
+</programlisting>
+
+    <para>The RANGE function is also available to limit which datasets in the
+    set of datasets will be processed, as in this example (also contained in
+    the SmartStepping2.ECL file):</para>
+
+    <programlisting>j10 := JOIN( RANGE(SetDS,[1,3,5]),
+             STEPPED(LEFT.Letter=RIGHT.Letter),
+             XF(LEFT,ROWS(LEFT)),
+             SORTED(Letter));
+O7 := OUTPUT(j10);
+
+SEQUENTIAL(O1,O2,O3,O4,O5,O6,O7);</programlisting>
+
+    <para>This feature can be useful in situations where you may not have all
+    the information to select from all the datasets in the set.</para>
+
+    <para>This next example demonstrates the most probable use for this
+    technology in the real world—finding the set of parent records where
+    related child records exist that fit a specified set of filter criteria.
+    That's exactly what this example (contained in the SmartStepping3.ECL
+    file) does:</para>
+
+    <programlisting>LinkRec := RECORD
+ UNSIGNED1 Link;
+END;
+DS_Rec := RECORD(LinkRec)
+  STRING10 Name;
+  STRING10 Address;
+END;
+Child1_Rec := RECORD(LinkRec)
+  UNSIGNED1 Nbr;
+END;
+Child2_Rec := RECORD(LinkRec)
+  STRING10 Car;
+END;
+Child3_Rec := RECORD(LinkRec)
+  UNSIGNED4 Salary;
+END;
+Child4_Rec := RECORD(LinkRec)
+  STRING10 Domicile;
+END;</programlisting>
+
+    <para>Using this form of RECORD structure inheritance makes it very simple
+    to define the linkage between the parent and child files. Note also that
+    all these files have different formats.</para>
+
+    <programlisting>ds := DATASET([{1,'Fred','123 Main'},{2,'George','456 High'},
+               {3,'Charlie','789 Bank'},{4,'Danielle','246 Front'},
+               {5,'Emily','613 Boca'},{6,'Oscar','942 Frank'},
+               {7,'Felix','777 John'},{8,'Adele','543 Bank'},
+               {9,'Johan','123 Front'},{10,'Ludwig','212 Front'}],
+              DS_Rec);
+     
+Child1 := DATASET([{1,5},{2,8},{3,11},{4,14},{5,17},
+                   {6,20},{7,23},{8,26},{9,29},{10,32}],Child1_Rec);
+
+Child2 := DATASET([{1,'Ford'},{2,'Ford'},{3,'Chevy'},
+                   {4,'Lexus'},{5,'Lexus'},{6,'Kia'},
+                   {7,'Mercury'},{8,'Jeep'},{9,'Lexus'},
+                   {9,'Ferrari'},{10,'Ford'}],
+                  Child2_Rec);
+     
+
+Child3 := DATASET([{1,10000},{2,20000},{3,155000},{4,800000},
+                   {5,250000},{6,75000},{7,200000},{8,15000},
+                   {9,80000},{10,25000}],
+                  Child3_Rec);
+     
+Child4 := DATASET([{1,'House'},{2,'House'},{3,'House'},{4,'Apt'},
+                   {5,'Apt'},{6,'Apt'},{7,'Apt'},{8,'House'},
+                   {9,'Apt'},{10,'House'}],
+                  Child4_Rec);
+     
+TblRec := RECORD(LinkRec),MAXLENGTH(4096)
+  UNSIGNED1 DS;
+  UNSIGNED1 Matches := 0;
+  UNSIGNED1 LastMatch := 0;
+  SET OF UNSIGNED1 MatchDSs := [];
+END;
+     
+Filter1 := Child1.Nbr % 2 = 0;
+Filter2 := Child2.Car IN ['Ford','Chevy','Jeep'];
+Filter3 := Child3.Salary &lt; 100000;
+Filter4 := Child4.Domicile = 'House';
+     
+t1 := PROJECT(Child1(Filter1),TRANSFORM(TblRec,SELF.DS:=1,SELF:=LEFT));
+t2 := PROJECT(Child2(Filter2),TRANSFORM(TblRec,SELF.DS:=2,SELF:=LEFT));
+t3 := PROJECT(Child3(Filter3),TRANSFORM(TblRec,SELF.DS:=3,SELF:=LEFT));
+t4 := PROJECT(Child4(Filter4),TRANSFORM(TblRec,SELF.DS:=4,SELF:=LEFT));</programlisting>
+
+    <para>The PROJECT operation is a simple way to transform the results for
+    all these different format files into a single standard layout that can be
+    used by the Smart Stepping JOIN operation.</para>
+
+    <programlisting>SetDS := [t1,t2,t3,t4];
+     
+TblRec XF(TblRec L,DATASET(TblRec) Matches) := TRANSFORM
+  SELF.Matches := COUNT(Matches);
+  SELF.LastMatch := MAX(Matches,DS);
+  SELF.MatchDSs := SET(Matches,DS);
+  SELF := L;
+END;
+
+j1 := JOIN( SetDS,STEPPED(LEFT.Link=RIGHT.Link),XF(LEFT,ROWS(LEFT)),SORTED(Link));     
+
+OUTPUT(j1);
+     
+OUTPUT(ds(link IN SET(j1,link)));</programlisting>
+
+    <para>The first OUTPUT simply displays the same kind of result as the
+    previous example. The second OUTPUT produces the “real-world” result set
+    of the base dataset records that match the filter criteria for each of the
+    child datasets.</para>
+  </sect2>
+</sect1>

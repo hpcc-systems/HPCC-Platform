@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveSuffix">
+  <title><emphasis role="bold">RemoveSuffix</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.RemoveSuffix<indexterm>
+      <primary>STD.Str.RemoveSuffix</primary>
+    </indexterm><indexterm>
+      <primary>Str.RemoveSuffix</primary>
+    </indexterm><indexterm>
+      <primary>RemoveSuffix</primary>
+    </indexterm>(</emphasis> <emphasis>source, suffix</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>The string to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>suffix</emphasis></entry>
+
+          <entry>The ending string to remove.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>RemoveSuffix returns a string value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RemoveSuffix</emphasis> function returns 
+  the <emphasis>source</emphasis> string with the ending text in the
+  <emphasis>suffix</emphasis> parameter removed. If the <emphasis>source</emphasis> string 
+  does not end with the <emphasis>suffix</emphasis>, then the <emphasis>source</emphasis> string 
+  is returned unchanged.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+STD.STr.RemoveSuffix('a word away','away');   //returns 'a word'
+STD.STr.RemoveSuffix('a word a way','away');  //returns 'a word a way'
+</programlisting>
+</sect1>

@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SOAPCALL">
+  <title>SOAPCALL<indexterm>
+      <primary>SOAPCALL</primary>
+    </indexterm></title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> :=
+  SOAPCALL<indexterm>
+      <primary>SOAPCALL Function</primary>
+    </indexterm>( [ </emphasis><emphasis>recset, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> url, service, instructure,
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>transform,
+  </emphasis><emphasis role="bold">]</emphasis><emphasis role="bold">
+  DATASET<indexterm>
+      <primary>DATASET</primary>
+    </indexterm>(</emphasis><emphasis>outstructure</emphasis><emphasis
+  role="bold">) </emphasis><emphasis>| outstructure </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, options </emphasis><emphasis
+  role="bold">]);</emphasis><emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">SOAPCALL( [ </emphasis><emphasis>recset,
+  </emphasis><emphasis role="bold">]</emphasis><emphasis> url, service,
+  instructure, </emphasis><emphasis role="bold">[
+  </emphasis><emphasis>transform, </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis> options </emphasis><emphasis
+  role="bold">]</emphasis><emphasis> </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>The attribute name for the resulting recordset or single
+            record.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>Optional. The input recordset. If omitted, the single input
+            record must be defined by default values for each field in the
+            <emphasis>instructure</emphasis> parameter.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>url</emphasis></entry>
+
+            <entry>A string containing a pipe-delimited ( | ) list of URLs
+            that host the service to invoke (may append repository module
+            names). This is intended to provide a means for the client to
+            conduct a Federated search where the request is sent to each of
+            the target systems in the list. These URLs may contain standard
+            form usernames and passwords, if required. The default
+            username/password are those contained in the workunit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>service</emphasis></entry>
+
+            <entry>A string expression containing the name of the service to
+            invoke. This may be in the form module.attribute if the service is
+            on a Roxie platform.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>instructure</emphasis></entry>
+
+            <entry>A RECORD structure containing the input field definitions
+            from which the XML input to the SOAP service is constructed. The
+            name of the tags in the XML are derived from the names of the
+            fields in the input record; this can be overridden by placing an
+            xpath on the field ( {xpath('tagname')} — see the XPATH Support
+            section of the RECORD Structure discussion). If the
+            <emphasis>recset</emphasis> parameter is not present, each field
+            definition must contain a default value that will constitute the
+            single input record. If the <emphasis>recset</emphasis> parameter
+            is present, each field definition must contain a default value
+            unless a transform is also specified to supply that data
+            values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Optional. The TRANSFORM function to call to process the
+            <emphasis>instructure</emphasis> data. This eliminates the need to
+            define default values for all fields in the
+            <emphasis>instructure</emphasis> RECORD structure. The transform
+            function must take at least one parameter: a LEFT record of the
+            same format as the input <emphasis>recset</emphasis>. The
+            resulting record set format must be the same as the input
+            <emphasis>instructure</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DATASET</emphasis>
+            (<emphasis>outstructure</emphasis>)</entry>
+
+            <entry>Specifies recordset <emphasis>result</emphasis> in the
+            <emphasis>outstructure</emphasis> format.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outstructure</emphasis></entry>
+
+            <entry>A RECORD structure containing the output field definitions.
+            If not used as a parameter to the DATASET keyword, this specifies
+            a single record result. Each field definition in the RECORD
+            structure must use an xpath attribute ( {xpath('tagname')} ) to
+            eliminate case sensitivity issues.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>A comma-delimited list of optional specifications from the
+            list below.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SOAPCALL returns either a set of records, a single record,
+            or nothing.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">SOAPCALL<indexterm>
+      <primary>SOAPCALL Options</primary>
+    </indexterm> </emphasis>is a function or action that calls a SOAP (Simple
+  Object Access Protocol) service.</para>
+
+  <para>Valid <emphasis>options</emphasis> are:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
+                <primary>RETRY</primary>
+              </indexterm>(<emphasis>count</emphasis>)</entry>
+
+            <entry>Specifies re-attempting the call count number of times if
+            non-fatal errors occur. If omitted, the default is three
+            (3).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+                <primary>TIMEOUT</primary>
+              </indexterm>(<emphasis>seconds</emphasis>)</entry>
+
+            <entry>Specifies the number of seconds to attempt the read before
+            failing. Setting to zero (0) indicates waiting forever . If
+            omitted, the default is three hundred (300).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">HEADING<indexterm>
+                <primary>HEADING</primary>
+              </indexterm></emphasis>(<emphasis>prefix,suffix</emphasis>)</entry>
+
+            <entry>Specifies tags to wrap around the XML input fields. If
+            omitted, the default is: HEADING('','').</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XPATH<indexterm>
+                <primary>XPATH</primary>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
+
+            <entry>Specifies the path used to access rows in the output. If
+            omitted, the default is:
+            'serviceResponse/Results/Result/Dataset/Row'.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE<indexterm>
+                <primary>MERGE</primary>
+              </indexterm></emphasis>(<emphasis>n</emphasis>)</entry>
+
+            <entry>Specifies processing n records per batch (the blocking). If
+            omitted, the default is 1 (values other than 1 may be incompatible
+            with non-Roxie services). Valid for use only if the
+            <emphasis>recset</emphasis> parameter is also present.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PARALLEL</emphasis><indexterm>
+                <primary>PARALLEL</primary>
+              </indexterm>(<emphasis>n</emphasis>)</entry>
+
+            <entry>Specifies the number of concurrent threads to have
+            processing Data Delivery Engine queries, to a maximum of 50 (the
+            default is 2). This is intended to limit the number of concurrent
+            sessions.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Specifies either the transform function to call if the
+            service fails for a particular record, or the keyword SKIP. The
+            TRANSFORM function must produce a <emphasis>resultype</emphasis>
+            the same as the <emphasis>outstructure</emphasis> and may use
+            FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> to provide details of the failure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TRIM<indexterm>
+                <primary>TRIM</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies all trailing spaces are removed from strings
+            before output.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NAMESPACE<indexterm>
+                <primary>NAMESPACE</primary>
+              </indexterm> </emphasis>(<emphasis>namespace</emphasis>)</entry>
+
+            <entry>Specifies the top level <emphasis>namespace</emphasis> for
+            the SOAP request.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LITERAL<indexterm>
+                <primary>LITERAL</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies the service is not necessarily implemented in
+            ESP.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <sect2 id="SOAPCALL_Function">
+    <title>SOAPCALL<indexterm>
+        <primary>SOAPCALL Function</primary>
+      </indexterm> Function</title>
+
+    <para>This form of SOAPCALL<indexterm>
+        <primary>SOAPCALL</primary>
+      </indexterm>, the function, may take as input either a single record or
+    a recordset, and both types of input can result in either a single record
+    or a recordset.</para>
+
+    <para>The <emphasis>outstructure </emphasis>output record definition may
+    contain an integer field with an XPATH of "_call_latency" to receive the
+    time, in seconds, for the call which generated the row (from creating the
+    socket to receiving the response). The latency is placed in every row the
+    call returned, so if a call took 90 seconds and returned 11 rows then you
+    will see 11 rows with 90 in the _call_latency field.</para>
+
+    <para>Example:</para>
+
+    <programlisting>OutRec1 := RECORD
+  STRING500 OutData{XPATH('OutData')};
+  UNSIGNED4 Latency{XPATH('_call_latency')};
+END;
+ip := 'http://127.0.0.1:8022/';
+ips := 'https://127.0.0.1:8022/';
+ipspw := 'https://username:password@127.0.0.1:8022/';
+svc := 'MyModule.SomeService';
+
+//1 rec in, 1 rec out
+OneRec1 := SOAPCALL(ips,svc,{STRING500 InData := 'Some Input Data'},OutRec1);
+
+//1 rec in, recordset out
+ManyRec1 := SOAPCALL(ip,svc,{STRING500 InData := 'Some Input Data'},DATASET(OutRec1));
+
+//recordset in, 1 rec out
+OneRec2 := SOAPCALL(InputDataset,ip,svc,{STRING500 InData},OutRec1);
+
+//recordset in, recordset out
+ManyRec2 := SOAPCALL(InputDataset,ipspw,svc,{STRING500 InData := 'Some Input Data'},DATASET(OutRec1));
+
+//TRANSFORM function usage example
+namesRecord := RECORD
+  STRING20 surname;
+  STRING10 forename;
+  INTEGER2 age := 25;
+END;
+ds := DATASET('x',namesRecord,FLAT);
+
+inRecord := RECORD
+  STRING name{xpath('Name')};
+  UNSIGNED6 id{XPATH('ADL')};
+END;
+outRecord := RECORD
+  STRING name{xpath('Name')};
+  UNSIGNED6 id{XPATH('ADL')};
+  REAL8 score;
+END;
+inRecord t(namesRecord l) := TRANSFORM
+  SELF.name := l.surname;
+  SELF.id := l.age;
+END;
+outRecord genDefault1() := TRANSFORM
+  SELF.name := FAILMESSAGE;
+  SELF.id := FAILCODE;
+  SELF.score := (REAL8)FAILMESSAGE('ip');
+END;
+outRecord genDefault2(namesRecord l) := TRANSFORM
+  SELF.name := l.surname;
+  SELF.id := l.age;
+  SELF.score := 0;
+END;
+
+ip := 'http://127.0.0.1:8022/';
+svc:= 'MyModule.SomeService';
+OUTPUT(SOAPCALL(ip, svc,{ STRING20 surname := 'Halligan',STRING20 forename := 'Kevin';},
+DATASET(outRecord), ONFAIL(genDefault1())));
+
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(genDefault2(LEFT))));
+
+OUTPUT(SOAPCALL(ds, ip, svc, inRecord, t(LEFT),DATASET(outRecord), ONFAIL(SKIP)));
+</programlisting>
+  </sect2>
+
+  <sect2 id="SOAPCALL_Action">
+    <title>SOAPCALL<indexterm>
+        <primary>SOAPCALL Action</primary>
+      </indexterm> Action</title>
+
+    <para>The second form of SOAPCALL, the action, may take as input either a
+    single record or a recordset. Neither type of input produces any returned
+    result—it simply launches the specified SOAP service, providing it input
+    data.</para>
+
+    <para>Example:</para>
+
+    <programlisting>//1 rec in, no result
+SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData := 'Some Input Data'});
+
+//recordset in, no result
+SOAPCALL( InputDataset,'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData});
+</programlisting>
+
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  </sect2>
+</sect1>

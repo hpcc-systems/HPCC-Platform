@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="STEPPED">
+  <title>STEPPED</title>
+
+  <para><emphasis role="bold">STEPPED<indexterm>
+      <primary>STEPPED</primary>
+    </indexterm><indexterm>
+      <primary>STEPPED function</primary>
+    </indexterm>( </emphasis><emphasis>index, fields </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="75.30pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>index</emphasis></entry>
+
+            <entry>The INDEX to sort. This can be filtered or the result of a
+            PROJECT on an INDEX.</entry>
+          </row>
+
+          <row>
+            <entry>fields</entry>
+
+            <entry>A comma-delimited list of fields by which to sort the
+            result, typically trailing elements in the key.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">STEPPED </emphasis>function sorts the
+  <emphasis>index</emphasis> by the specified <emphasis>fields</emphasis>.
+  This function is used in those cases where the SORTED(index) function will
+  not suffice.</para>
+
+  <para>There are some restrictions in its use:</para>
+
+  <para>The key fields before ordered <emphasis>fields</emphasis> should be
+  reasonably well filtered, otherwise the sorting could become very memory
+  intensive.</para>
+
+  <para>Roxie only supports sorting by trailing components on indexes that are
+  read locally (single part indexes or superkeys containing single part
+  indexes), or NOROOT indexes read within ALLNODES.</para>
+
+  <para>Thor does not support STEPPED.</para>
+
+  <para>Example:</para>
+
+  <programlisting>DataFile := '~RTTEST::TestStepped';
+KeyFile := '~RTTEST::TestSteppedKey';
+Rec := RECORD
+STRING2 state;
+STRING20 city;
+STRING25 lname;
+STRING15 fname;
+END;
+ds := DATASET(DataFile,
+{Rec,UNSIGNED8 RecPos {virtual(fileposition)}},
+THOR);
+IDX := INDEX(ds,{state,city,lname,fname,RecPos},KeyFile);
+
+OUTPUT(IDX(state IN ['FL','PA']));
+/* where this OUTPUT produces this result:
+FL BOCA RATON WIK PICHA
+FL DELAND WIKER OKE
+FL GAINESVILLE WIK MACHOUSTON
+PA NEW STANTON WIKER DESSIE */
+
+OUTPUT(STEPPED(IDX(state IN ['FL','PA']),fname));
+/* this STEPPED OUTPUT produces this result:
+PA NEW STANTON WIKER DESSIE
+FL GAINESVILLE WIK MACHOUSTON
+FL DELAND WIKER OKE
+FL BOCA RATON WIK PICHA */
+</programlisting>
+
+  <para>See Also: <link linkend="INDEX_record_structure">INDEX</link>, <link
+  linkend="SORTED">SORTED</link>, <link
+  linkend="ALLNODES">ALLNODES</link></para>
+</sect1>

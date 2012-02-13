@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CRON">
+  <title>CRON</title>
+
+  <para><emphasis role="bold">CRON<indexterm>
+      <primary>CRON</primary>
+    </indexterm><indexterm>
+      <primary>CRON function</primary>
+    </indexterm>(</emphasis><emphasis> time </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.25pt" />
+
+        <colspec colwidth="309.55pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>time</emphasis></entry>
+
+            <entry>A string expression containing a unix-standard cron
+            time.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CRON defines a single timer event.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CRON</emphasis> function defines a timer
+  event for use within the WHEN workflow service<indexterm>
+      <primary>WHEN workflow service</primary>
+    </indexterm> or WAIT function. This is synonymous with EVENT(‘CRON’,
+  <emphasis>time</emphasis>).</para>
+
+  <para>The <emphasis>time </emphasis>parameter is unix-standard cron time,
+  expressed in UTC (aka Greenwich Mean Time) as a string containing the
+  following, space-delimited components:</para>
+
+  <para><emphasis>minute hour dom month dow</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>minute</emphasis></entry>
+
+            <entry>An integer value for the minute of the hour. Valid values
+            are from 0 to 59.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>hour</emphasis></entry>
+
+            <entry>An integer value for the hour. Valid values are from 0 to
+            23 (using the 24 hour clock).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dom</emphasis></entry>
+
+            <entry>An integer value for the day of the month. Valid values are
+            from 0 to 31.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>month</emphasis></entry>
+
+            <entry>An integer value for the month. Valid values are from 0 to
+            12.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>dow</emphasis></entry>
+
+            <entry>An integer value for the day of the week. Valid values are
+            from 0 to 7 (where both 0 and 7 represent Sunday).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Any <emphasis>time</emphasis> component that you do not want to pass
+  is replaced by an asterisk (*). You may define ranges of times using a dash
+  (-), lists using a comma (,), and ‘once every n’ using a slash (/). For
+  example, 6-18/3 in the hour field will fire the timer every three hours
+  between 6am and 6pm, and 0-6/3,18-23/3 will fire the timer every three hours
+  between 6pm and 6am.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EXPORT events := MODULE
+  EXPORT dailyAtMidnight := CRON('0 0 * * *');
+  EXPORT dailyAt( INTEGER hour,
+   INTEGER minute=0) :=
+  EVENT('CRON',
+   (STRING)minute + ' ' + (STRING)hour + ' * * *');
+  EXPORT dailyAtMidday := dailyAt(12, 0);
+  EXPORT EveryThreeHours :=  CRON('0 0-23/3 * * *');
+END;
+
+BUILD(teenagers) : WHEN(events.dailyAtMidnight);
+BUILD(oldies)    : WHEN(events.dailyAt(6));
+BUILD(NewStuff)    : WHEN(events.EveryThreeHours);
+</programlisting>
+
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
+</sect1>

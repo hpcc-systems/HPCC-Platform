@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ABS">
+  <title>ABS</title>
+
+  <para><emphasis role="bold">ABS<indexterm>
+      <primary>ABS</primary>
+    </indexterm><indexterm>
+      <primary>ABS function</primary>
+    </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.75pt" />
+
+        <colspec colwidth="309.05pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The value (REAL or INTEGER) for which to return the
+            absolute value.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ABS returns a single value of the same type as the
+            expression.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ABS </emphasis>function returns the absolute
+  value of the <emphasis>expression</emphasis> (always a non-negative
+  number).</para>
+
+  <para>Example:</para>
+
+  <programlisting>AbsVal1 := ABS(1); // returns 1
+AbsVal2 := ABS(-1); // returns 1
+</programlisting>
+</sect1>

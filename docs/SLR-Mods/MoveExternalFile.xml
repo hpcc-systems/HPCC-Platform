@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MoveExternalFile">
+  <title><emphasis role="bold">MoveExternalFile</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.MoveExternalFile<indexterm>
+      <primary>STD.File.MoveExternalFile</primary>
+    </indexterm><indexterm>
+      <primary>File.MoveExternalFile</primary>
+    </indexterm><indexterm>
+      <primary>MoveExternalFile</primary>
+    </indexterm>(</emphasis> <emphasis> location, frompath, topath </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>location</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          remote machine.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>frompath</emphasis></entry>
+
+          <entry>A null-terminated string containing the path/name of the file
+          to move.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>topath</emphasis></entry>
+
+          <entry>A null-terminated string containing the path/name of the
+          target file.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MoveExternalFile </emphasis>function moves
+  the single physical file specified by the <emphasis>frompath</emphasis> to
+  the <emphasis>topath</emphasis>. Both <emphasis>frompath</emphasis> and
+  <emphasis>topath</emphasis> are on the same remote machine, identified by
+  the <emphasis>location</emphasis>. The dafileserv utility program must be
+  running on the <emphasis>location</emphasis> machine.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IP      := '10.150.254.6';
+infile  := '/c$/training/import/AdvancedECL/people';
+outfile := '/c$/training/import/DFUtest/people';
+STD.File.MoveExternalFile(IP,infile,outfile);</programlisting>
+</sect1>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TOPN">
+  <title>TOPN</title>
+
+  <para><emphasis role="bold">TOPN<indexterm>
+      <primary>TOPN</primary>
+    </indexterm><indexterm>
+      <primary>TOPN Function</primary>
+    </indexterm>(</emphasis><emphasis> recordset, count, sorts
+  </emphasis><emphasis role="bold">[, BEST<indexterm>
+      <primary>BEST</primary>
+    </indexterm>( </emphasis><emphasis>bestvalues</emphasis><emphasis
+  role="bold"> ) ] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>count</emphasis></entry>
+
+            <entry>An integer expression defining the number of records to
+            return.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sorts</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions or key fields in the
+            recordset on which to sort, with the leftmost being the most
+            significant sort criteria. A leading minus sign (-) indicates a
+            descending-order sort on that element. You may use the keyword
+            RECORD to indicate an ascending sort on all fields, and/or you may
+            use the keyword EXCEPT to list non-sort fields in the
+            recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">BEST</emphasis></entry>
+
+            <entry>Optional. Allows early termination of the operation if
+            there are count number of records and the values contained in the
+            last record match the <emphasis>bestvalues</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>bestvalues</emphasis></entry>
+
+            <entry>A comma delimited list, matching the list of sorts, of
+            maximum (or minimum if the corresponding sort is descending)
+            values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TOPN returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TOPN </emphasis>function returns the first
+  <emphasis>count</emphasis> number of records in the
+  <emphasis>sorts</emphasis> order from the <emphasis>recordset</emphasis>.
+  This is roughly equivalent to
+  CHOOSEN(SORT(<emphasis>recordset</emphasis>,<emphasis>sorts</emphasis>),<emphasis>count</emphasis>)
+  but with simpler syntax that will also work for grouped
+  <emphasis>recordsets</emphasis> and local operations.</para>
+
+  <para>Example:</para>
+
+  <programlisting>y := TOPN(Person,1000,state,sex);
+  //first 1000 recs in state, sex order
+z := TOPN(Person,1000,sex,BEST('F')); //first 1000
+          females
+</programlisting>
+
+  <para>See Also: <link linkend="CHOOSEN">CHOOSEN</link>, <link linkend="SORT">SORT</link></para>
+</sect1>

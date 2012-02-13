@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GROUP">
+  <title>GROUP keyword<indexterm>
+      <primary>GROUP keyword</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">GROUP<indexterm>
+      <primary>GROUP</primary>
+    </indexterm></emphasis></para>
+
+  <para>The <emphasis role="bold">GROUP </emphasis>keyword is used within
+  output <emphasis>format</emphasis> parameter (RECORD Structure) of a TABLE
+  definition where optional group by <emphasis>expressions</emphasis> are also
+  present. GROUP replaces the <emphasis>recordset</emphasis> parameter of any
+  aggregate built-in function used in the output to indicate the operation is
+  performed for each group of the <emphasis>expression</emphasis>. This is
+  similar to an SQL “GROUP BY” clause. The most common usage is to output a
+  table as a crosstab report.</para>
+
+  <para>There is also a GROUP built-in function which provides a similar
+  functionality.</para>
+
+  <para>Example:</para>
+
+  <programlisting>A := TABLE(Person,{per_st,per_sex,COUNT(GROUP)},per_st,per_sex);
+             // create a crosstab report of each sex in each state</programlisting>
+
+  <para>See Also: <link linkend="TABLE">TABLE</link>, <link linkend="COUNT">COUNT</link>, <link linkend="AVE">AVE</link>, <link linkend="MAX">MAX</link>, <link linkend="MIN">MIN</link>, <link linkend="SUM">SUM</link>, <link linkend="VARIANCE">VARIANCE</link>, <link linkend="COVARIANCE">COVARIANCE</link>,
+  <link linkend="CORRELATION">CORRELATION</link>, <link linkend="COMBINE">COMBINE</link></para>
+</sect1>

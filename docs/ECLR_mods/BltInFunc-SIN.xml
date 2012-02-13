@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SIN">
+  <title>SIN</title>
+
+  <para><emphasis role="bold">SIN<indexterm>
+      <primary>SIN</primary>
+    </indexterm><indexterm>
+      <primary>SIN function</primary>
+    </indexterm>(</emphasis><emphasis>angle</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.65pt" />
+
+        <colspec colwidth="274.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>angle</emphasis></entry>
+
+            <entry>The REAL radian value for which to find the sine.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>SIN returns a single REAL value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SIN </emphasis>function returns the sine of
+  the <emphasis>angle</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Rad2Deg := 57.295779513082; //number of degrees in a radian
+
+Deg2Rad := 0.0174532925199; //number of radians in a degree
+
+Angle45 := 45 * Deg2Rad;    //translate 45 degrees into radians
+
+Sine45  := SIN(Angle45);    //get sine of the 45 degree angle
+</programlisting>
+
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link
+  linkend="COS">COS</link>, <link linkend="ASIN">ASIN</link>, <link
+  linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link
+  linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link
+  linkend="TANH">TANH</link></para>
+</sect1>

@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PARSE_Pattern_Value_Types">
+  <title>PARSE Pattern Value Types</title>
+
+  <para><emphasis>There are three value types specifically designed and
+  required to define parsing pattern attributes:</emphasis></para>
+
+  <para><emphasis role="bold">PATTERN </emphasis><indexterm>
+      <primary>PATTERN</primary>
+    </indexterm><emphasis>patternid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>patternid</emphasis></entry>
+
+          <entry>The attribute name of the pattern.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parsepattern</emphasis></entry>
+
+          <entry>The pattern, very similar to regular expressions. This may
+          contain other previously defined PATTERN attributes. See <emphasis
+          role="bold">ParsePattern Definitions</emphasis> below.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">PATTERN </emphasis>value type defines a
+  parsing expression very similar to regular expression<indexterm>
+      <primary>regular expression</primary>
+    </indexterm> patterns.</para>
+
+  <para><emphasis role="bold">TOKEN </emphasis><indexterm>
+      <primary>TOKEN</primary>
+    </indexterm><emphasis>tokenid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>tokenid</emphasis></entry>
+
+          <entry>The attribute name of the token.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parsepattern</emphasis></entry>
+
+          <entry>The token pattern, very similar to regular expressions. This
+          may contain PATTERN attributes but no TOKEN or RULE attributes. See
+          <emphasis role="bold">ParsePattern Definitions</emphasis>
+          below.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">TOKEN </emphasis>value type defines a
+  parsing expression very similar to a PATTERN, but once matched, the parser
+  doesn’t backtrack to find alternative matches as it would with
+  PATTERN.</para>
+
+  <para><emphasis role="bold">RULE </emphasis><indexterm>
+      <primary>RULE</primary>
+    </indexterm><emphasis> </emphasis><emphasis role="bold">[
+  (</emphasis><emphasis> recstruct </emphasis><emphasis role="bold">)
+  ]</emphasis><emphasis> ruleid </emphasis><emphasis role="bold">:=
+  </emphasis><emphasis>parsepattern</emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recstruct</emphasis></entry>
+
+          <entry>Optional. The attribute name of a RECORD structure attribute
+          (valid only when the PARSE option is used on the PARSE
+          function).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>ruleid</emphasis></entry>
+
+          <entry>The attribute name of the rule.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parsepattern</emphasis></entry>
+
+          <entry>The token pattern, very similar to regular expressions. This
+          may contain PATTERN attributes but no TOKEN or RULE attributes. See
+          <emphasis role="bold">ParsePattern Definitions</emphasis>
+          below.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RULE </emphasis>value type defines a parsing
+  expression containing combinations of TOKENs. If a RULE definition contains
+  a PATTERN it is implicitly converted to a TOKEN. Like PATTERN, once matched,
+  the parser backtracks to find alternative RULE matches.</para>
+
+  <para>If the PARSE option is present on the PARSE function (thereby
+  implementing tomita parsing for the operation), each alternative RULE
+  <emphasis>parsepattern</emphasis> may have an associated TRANSFORM function.
+  The different input patterns can be referred to using $1, $2 etc. If the
+  pattern has an associated <emphasis>recstruct</emphasis> then $1 is a row,
+  otherwise it is a string. Default TRANSFORM functions are created in two
+  circumstances:</para>
+
+  <blockquote>
+    <para>1. If there are no patterns, the default transform clears the row.
+    For example:</para>
+
+    <programlisting>RULE(myRecord) := ; //empty expression = cleared row</programlisting>
+
+    <para>2. If there is only a single pattern with an associated record, and
+    that record matches the type of the rule being defined. For
+    example:</para>
+
+    <programlisting>RULE(myRecord) e0 := '(' USE(myRecord, 'expression') ')';</programlisting>
+  </blockquote>
+
+  <sect2 id="ParsePattern_Definitions">
+    <title>ParsePattern Definitions</title>
+
+    <para>A <emphasis>parsepattern </emphasis>may contain any combination of
+    the following elements:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>pattern-name</emphasis></entry>
+
+            <entry>The name of any previously defined PATTERN
+            attribute.</entry>
+          </row>
+
+          <row>
+            <entry>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Parentheses may be used for grouping.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1 pattern2</emphasis></entry>
+
+            <entry><emphasis>Pattern1</emphasis> followed by
+            <emphasis>pattern2</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry>'<emphasis>string</emphasis>'</entry>
+
+            <entry>A fixed text <emphasis>string, </emphasis>which may contain
+            escaped octal string control characters (for example, CtrlZ is
+            ‘\032’).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FIRST</emphasis></entry>
+
+            <entry>Matches the start of the string to search. This is similar
+            to the regular expression ^ token, which is <emphasis
+            role="underline">not</emphasis> supported.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LAST</emphasis></entry>
+
+            <entry>Matches the end of the string to search. This is similar to
+            the regular expression $ token, which is <emphasis
+            role="underline">not</emphasis> supported.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ANY</emphasis></entry>
+
+            <entry>Matches any character.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Repeat the <emphasis>pattern</emphasis> any number of
+            times. The regular expression syntax <emphasis>pattern</emphasis>*
+            is supported as a shorthand for
+            REPEAT(<emphasis>pattern</emphasis>).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            expression</emphasis>)</entry>
+
+            <entry>Repeat the <emphasis>pattern expression</emphasis> times.
+            The regular expression syntax
+            <emphasis>pattern</emphasis>*&lt;count&gt; is supported as a
+            shorthand for
+            REPEAT(<emphasis>pattern</emphasis>,<emphasis>expression</emphasis>),
+            but the regular expression bounded repeats syntax
+            <emphasis>pattern</emphasis>{<emphasis>expression</emphasis>} is
+            <emphasis role="underline">not</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            low</emphasis>, ANY [,MIN])</entry>
+
+            <entry>Repeat the <emphasis>pattern</emphasis>
+            <emphasis>low</emphasis> or more times (with the MIN option making
+            it a minimal match). The regular expression syntax
+            <emphasis>pattern</emphasis>+ is supported as a shorthand for
+            REPEAT(<emphasis>pattern</emphasis>,<emphasis>low</emphasis>,ANY),
+            but the regular expression bounded repeats syntax
+            <emphasis>pattern</emphasis>{<emphasis>expression ,</emphasis>} is
+            <emphasis role="underline">not</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">REPEAT</emphasis>(<emphasis>pattern</emphasis>,<emphasis>
+            low</emphasis>,<emphasis> high</emphasis>)</entry>
+
+            <entry>Repeat the <emphasis>pattern</emphasis> from <emphasis>low
+            </emphasis>to <emphasis>high </emphasis>times. The regular
+            expression bounded repeats syntax
+            <emphasis>pattern</emphasis>{<emphasis>low</emphasis>,<emphasis>high</emphasis>}
+            is <emphasis role="underline">not</emphasis> supported.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">OPT</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>An optional <emphasis>pattern</emphasis>. The regular
+            expression syntax <emphasis>pattern</emphasis>? is supported as a
+            shorthand for OPT(<emphasis>pattern</emphasis>).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis
+            role="bold">OR</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Either <emphasis>pattern1</emphasis> or
+            <emphasis>pattern2</emphasis>. The regular expression syntax
+            <emphasis>pattern1</emphasis> | <emphasis>pattern2</emphasis> is
+            supported as a shorthand for OR.</entry>
+          </row>
+
+          <row>
+            <entry>[<emphasis>list-of-patterns</emphasis>]</entry>
+
+            <entry>A comma-delimited list of alternative
+            <emphasis>patterns</emphasis>, useful for string sets. This is the
+            same as OR.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            IN</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Does the text matched with <emphasis>pattern1</emphasis>
+            also match <emphasis>pattern2</emphasis>?
+            <emphasis>Pattern1</emphasis> [NOT] =
+            <emphasis>pattern2</emphasis> and <emphasis>pattern1</emphasis> !=
+            <emphasis>pattern2 </emphasis>are the same as using IN, but may
+            make more sense in some situations.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            BEFORE</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Check if the given <emphasis>pattern2</emphasis> does [not]
+            follow <emphasis>pattern1</emphasis>.
+            <emphasis>Pattern2</emphasis> is not consumed from the
+            input.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern1</emphasis> <emphasis role="bold">[NOT]
+            AFTER</emphasis> <emphasis>pattern2</emphasis></entry>
+
+            <entry>Check if the given <emphasis>pattern2</emphasis> does [not]
+            precede <emphasis>pattern1</emphasis>.
+            <emphasis>Pattern2</emphasis> does not consume any input. It must
+            also be a fixed length.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis> <emphasis
+            role="bold">LENGTH</emphasis>(<emphasis>range</emphasis>)</entry>
+
+            <entry>Check whether the length of a <emphasis>pattern</emphasis>
+            is in the <emphasis>range</emphasis>. <emphasis>Range
+            </emphasis>can have the form
+            &lt;value&gt;,&lt;min&gt;..&lt;max&gt;,&lt;min&gt;.. or
+            ..&lt;max&gt; So “digit*3 NOT BEFORE digit” could be represented
+            as “digit* LENGTH(3).” This is more efficient, and digit* can be
+            defined as a token. “digit* LENGTH(4..6)” matches 4,5 and 6 digit
+            sequences.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
+            <emphasis>isValidExpression</emphasis>)</entry>
+
+            <entry>Evaluate <emphasis>isValidExpression </emphasis>to check if
+            the <emphasis>pattern</emphasis> is valid or not.
+            <emphasis>isValidExpression </emphasis>should use MATCHTEXT or
+            MATCHUNICODE to refer to the text that matched the
+            <emphasis>pattern</emphasis>. For example, VALIDATE(alpha*,
+            MATCHTEXT[4]=’Q’) is equivalent to alpha* = ANY*3 ‘Q’ ANY* or more
+            usefully: VALIDATE(alpha*,isSurnameService(MATCHTEXT));</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">VALIDATE</emphasis>(<emphasis>pattern</emphasis>,
+            <emphasis>isValidAsciiExpression</emphasis>,
+            <emphasis>isValidUnicodeExpression</emphasis>)</entry>
+
+            <entry>A two parameter variant. Use the first
+            <emphasis>isValidAsciiExpression</emphasis> if the string being
+            searched is ASCII; use the second if it is Unicode.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">NOCASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Matches the <emphasis>pattern</emphasis> case
+            insensitively, overriding the CASE option on the PARSE function.
+            This may be nested within a CASE pattern.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">CASE</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Matches the <emphasis>pattern</emphasis> case sensitively,
+            overriding the NOCASE option on the PARSE function. This may be
+            nested within a NOCASE pattern.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>pattern</emphasis> <emphasis
+            role="bold">PENALTY</emphasis>(<emphasis>cost</emphasis>)</entry>
+
+            <entry>Associate a penalty <emphasis>cost</emphasis> with this
+            match of the <emphasis>pattern</emphasis>. This can be used to
+            recover from grammars with unknown words. This requires use of the
+            BEST option on the PARSE operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis
+            role="bold">TOKEN</emphasis>(<emphasis>pattern</emphasis>)</entry>
+
+            <entry>Treat the <emphasis>pattern </emphasis>as a token.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
+            expression</emphasis>')</entry>
+
+            <entry><programlisting role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from the following 
+supported syntax elements: 
+ (x)                        Grouping (not used for matching) 
+ x|y                        Alteratives x or y 
+ xy                         Concatenation of x and y. 
+ x* x*?                     Zero or more. Greedy and minimal versions. 
+ x+ x+?                     One or more. Greedy and minimal versions. 
+ x? x??                     Zero or one. Greedy and minimal versions. 
+ x{m} x{m,} x{m,n}          Bounded repeats, also minimal versions 
+ [0-9abcdef]                A set of characters (may use ^ for exclusion list) 
+ (?=…) (?!...)             Look ahead assertion 
+ (?&lt;=…) (?&lt;!...)           Look behind assertion</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><programlisting role="tab">The following character class expressions are supported (inside sets): 
+[:alnum:]     [:cntrl:]     [:lower:]     [:upper:]     [:space:] 
+[:alpha:]     [:digit:]     [:print:]     [:blank:]     [:graph:] 
+[:punct:]     [:xdigit:]</programlisting></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><programlisting role="tab"><emphasis>Regular expressions</emphasis> do <emphasis
+                  role="underline">not</emphasis> support:
+    ^ $ to mark the beginning/end of the string 
+    Collating symbols      [.ch.] 
+    Equivalence<indexterm>
+                  <primary>Equivalence</primary>
+                </indexterm> class      [=e=]</programlisting></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">USE</emphasis>(<emphasis>
+            </emphasis><emphasis role="bold">[</emphasis><emphasis> recstruct
+            , </emphasis><emphasis role="bold">]
+            </emphasis>'<emphasis>symbolname</emphasis>' )</entry>
+
+            <entry>Specifies using a pattern defined later with the
+            DEFINE(<emphasis role="bold">
+            </emphasis>'<emphasis>symbolname</emphasis>') function. This
+            creates a forward reference<indexterm>
+                <primary>forward reference</primary>
+              </indexterm>, practical only on RULE patterns for tomita parsing
+            (the PARSE option is present on the PARSE function).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SELF </emphasis></entry>
+
+            <entry>References the pattern being defined (recursive). This is
+            practical only in RULE patterns for tomita parsing (the PARSE
+            option is present on the PARSE function).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Examples:</para>
+
+    <programlisting>rs := RECORD
+STRING100 line;
+END;
+ds := DATASET([{'the fox; and the hen'}], rs);
+
+
+PATTERN ws := PATTERN('[ \t\r\n]');
+PATTERN Alpha := PATTERN('[A-Za-z]');
+PATTERN Word := Alpha+;
+PATTERN Article := ['the', 'A'];
+PATTERN JustAWord := Word PENALTY(1);
+PATTERN notHen := VALIDATE(Word, MATCHTEXT != 'hen');
+PATTERN NoHenWord := notHen PENALTY(1);
+RULE NounPhraseComponent1 := JustAWord | Article ws Word;
+RULE NounPhraseComponent2 := NoHenWord | Article ws Word;
+ps1 := RECORD
+          out1 := MATCHTEXT(NounPhraseComponent1);
+END;
+
+ps2 := RECORD
+          out2 := MATCHTEXT(NounPhraseComponent2);
+END;
+
+p1 := PARSE(ds, line, NounPhraseComponent1, ps1, BEST, MANY, NOCASE);
+p2 := PARSE(ds, line, NounPhraseComponent2, ps2, BEST, MANY, NOCASE);
+OUTPUT(p1);
+OUTPUT(p2);</programlisting>
+
+    <para>See Also: <link linkend="PARSE">PARSE</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
+    linkend="DATASET">DATASET</link></para>
+  </sect2>
+</sect1>

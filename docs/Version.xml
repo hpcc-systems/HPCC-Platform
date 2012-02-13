@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <chapterinfo>
+    <date id="DateVer">February 2012 Version 3.6.0</date>
+
+    <releaseinfo id="FooterInfo">© 2012 HPCC Systems. All rights
+    reserved</releaseinfo>
+
+    <copyright id="Copyright">
+      <year>2012 HPCC Systems. All rights reserved</year>
+    </copyright>
+  </chapterinfo>
+
+  <title>Version</title>
+
+  <section>
+    <title>Version Section</title>
+
+    <para id="bpara">This document contains absolutely no actual content,
+    information, or other interesting material. In fact it is only here to
+    serve one purpose and that is to store the chapterinfo in the blue box
+    above that is being used by several other documents.</para>
+
+    <para>The following line is the code to be put into the document you wish
+    to include the above version info in:</para>
+
+    <para></para>
+
+    <para><programlisting>&lt;xi:include href="Version.xml" xpointer="DateVer" xmlns:xi="http://www.w3.org/2001/XInclude" /&gt; </programlisting></para>
+
+    <para>DateVer is the <emphasis role="bold">id</emphasis> we provided to be
+    able to reference it.</para>
+
+    <para>All content herein is but a placeholder to maintain a valid document
+    that we can use it's bookinfo/date element for our other purposes.</para>
+
+    <para>Think of this document like a government bureaucracy, a whole lot of
+    overhead to do essentially nothing!</para>
+
+    <para>☺</para>
+  </section>
+</chapter>

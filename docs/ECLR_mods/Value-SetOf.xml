@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SET_OF">
+  <title>SET OF</title>
+
+  <para><emphasis role="bold">SET<indexterm>
+      <primary>SET OF</primary>
+    </indexterm> [ OF </emphasis><emphasis>type
+  </emphasis><emphasis role="bold">]</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>type</emphasis></entry>
+
+          <entry>The value type of the data in the set. Valid
+  value types are: INTEGER, REAL, BOOLEAN, STRING, UNICODE, DATA, or
+  DATASET(<emphasis>recstruct</emphasis>). If omitted, the
+  <emphasis>type</emphasis> is INTEGER.</entry>
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+  
+
+  <para>The <emphasis role="bold">SET OF</emphasis> value type<indexterm>
+      <primary><emphasis role="bold">SET OF</emphasis> value type</primary>
+    </indexterm> defines Attributes that are a set of data elements. All
+  elements of the set must be of the same value <emphasis>type</emphasis>. The
+  default value for SET OF when used to define a passed parameter may be a
+  defined set, the keyword ALL to indicate all possible values for that type
+  of set, or empty square brackets<indexterm>
+      <primary>square brackets</primary>
+    </indexterm> ([ ]) to indicate no possible value for that type of
+  set.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SET OF INTEGER1 SetIntOnes := [1,2,3,4,5];
+SET OF STRING1 SetStrOnes := ['1','2','3','4','5'];
+SET OF STRING1 SetStrOne1 := (SET OF STRING1)SetIntOnes;
+        //type casting sets is allowed
+r := {STRING F1, STRING2 F2};
+SET OF DATASET(r) SetDS := [ds1, ds2, ds3];
+        
+StringSetFunc(SET OF STRING passedset) := AstringValue IN passedset;
+        //a set of string constants will be passed to this function
+HasNarCode(SET s) := Trades.trd_narr1 IN s OR Trades.trd_narr2 IN s;
+        // HasNarCode takes a parameter that specifies the set of valid
+        // Narrative Code values (all INTEGERs)
+SET OF INTEGER1 SetClsdNar := [65,66,90,114,115,123];
+NarCodeTrades := Trades(HasNarCode(SetClsdNar));
+        // Using HasNarCode(SetClsdNar) is equivalent to:
+        // Trades.trd_narr1 IN [65,66,90,114,115,123] OR
+        // Trades.trd_narr2 IN [65,66,90,114,115,123]</programlisting>
+
+  <para>See Also: <link linkend="Function_Attributes__Parameter_Passing">Functions (Parameter Passing</link>), <link linkend="Set_Ordering_and_Indexing">Set Ordering and Indexing</link></para>
+</sect1>

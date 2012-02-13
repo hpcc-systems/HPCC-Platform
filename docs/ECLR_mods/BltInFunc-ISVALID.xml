@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ISVALID">
+  <title>ISVALID</title>
+
+  <para><emphasis role="bold">ISVALID<indexterm>
+      <primary>ISVALID</primary>
+    </indexterm><indexterm>
+      <primary>ISVALID function</primary>
+    </indexterm>(</emphasis><emphasis> field </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.05pt" />
+
+        <colspec colwidth="309.75pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>field</emphasis></entry>
+
+            <entry>The name of a DECIMAL, REAL, or alien data TYPE
+            field.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ISVALID returns a single Boolean value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ISVALID </emphasis>function validates that
+  the <emphasis>field</emphasis> contains a legal value. If the contents are
+  not valid for the declared value type of the <emphasis>field</emphasis>
+  (such as hexadecimal values greater than 9 in a DECIMAL), ISVALID returns
+  FALSE, otherwise it returns TRUE.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyVal := IF(ISVALID(Infile.DecimalField),Infile.DecimalField,0);
+//ISVALID returns TRUE if the value is legal</programlisting>
+
+  <para>See Also: <link linkend="TYPE_Structure">TYPE Structure</link>, <link linkend="DECIMAL">DECIMAL</link>, <link linkend="REAL">REAL</link></para>
+</sect1>

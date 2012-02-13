@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitFilesRead">
+  <title><emphasis role="bold">WorkunitFilesRead</emphasis></title>
+
+  <para><emphasis
+  role="bold">STD.System.Workunit.WorkunitFilesRead    <indexterm>
+      <primary>STD.System.Workunit.WorkunitFilesRead</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WorkunitFilesRead</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WorkunitFilesRead</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WorkunitFilesRead</primary>
+    </indexterm>
+(</emphasis> <emphasis>
+  wuid </emphasis> <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>wuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the WorkUnit
+          IDentifier.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitFilesRead returns a DATASET value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitFilesRead </emphasis>function
+  returns a DATASET with this format:</para>
+
+  <programlisting>EXPORT WsFileRead := RECORD
+  STRING name{MAXLENGTH(256)};
+  STRING cluster{MAXLENGTH(64)};
+  BOOLEAN isSuper;
+  UNSIGNED4 usage;
+END;</programlisting>
+
+  <para>Each record in the returned dataset specifies a file read by the
+  workunit.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitFilesRead('W20070308-164946'));
+/* produces results that look like this
+'rttest::difftest::superfile','thor','true','1'
+'rttest::difftest::base1','thor','false','1'
+*/</programlisting>
+</sect1>

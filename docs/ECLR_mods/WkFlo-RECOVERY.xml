@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RECOVERY">
+  <title>RECOVERY</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: RECOVERY<indexterm>
+      <primary>RECOVERY</primary>
+    </indexterm>(</emphasis><emphasis>handler </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, attempts</emphasis><emphasis
+  role="bold">]) </emphasis><indexterm>
+      <primary>RECOVERY workflow service</primary>
+    </indexterm>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec colwidth="273.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>handler</emphasis></entry>
+
+            <entry>The action to run if the expression fails.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>attempts</emphasis></entry>
+
+            <entry>Optional. The number of times to try before giving
+            up.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">RECOVERY </emphasis>service executes the
+  <emphasis>handler</emphasis> Attribute when the
+  <emphasis>expression</emphasis> fails then re-runs the
+  <emphasis>attribute</emphasis>. If the <emphasis>attribute</emphasis> still
+  fails after the specified number of <emphasis>attempts</emphasis>, any
+  present FAILURE clause will execute. RECOVERY notionally executes in
+  parallel with the failed return result. This service implicitly causes the
+  <emphasis>attribute</emphasis> to be evaluated at global scope instead of
+  the enclosing scope. Only available if workflow services are turned on (see
+  #OPTION(workflow)).</para>
+
+  <para>Example:</para>
+
+  <programlisting>  DoSomethingToFixIt := TRUE; //some action to repair the input
+  
+  SPeople := SORT(Person,Person.per_first_name);
+  
+  nUniques := DEDUP(sPeople,Person.per_first_name AND Person.address)
+           :RECOVERY(DoSomethingToFixIt,2),
+            FAILURE(Email.simpleSend(SystemsPersonel,
+                    SystemsPersonel.email,
+                    'ouch.htm'));
+</programlisting>
+
+  <para>See Also: <link linkend="SUCCESS">SUCCESS</link>, <link linkend="FAILURE">FAILURE</link></para>
+</sect1>

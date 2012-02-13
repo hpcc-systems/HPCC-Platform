@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Hex_String_to_Decimal_String">
+  <title>Hex String to Decimal String</title>
+
+  <para>An email request came to me to suggest a way to convert a string
+  containing Hexadecimal values to a string containing the decimal equivalent
+  of that value. The problem was that this code needed to run in Roxie and the
+  StringLib.String2Data plug-in library function was not available for use in
+  Roxie queries at that time. Therefore, an all-ECL solution was
+  needed.</para>
+
+  <para>This example function (contained in the Hex2Decimal.ECL file) provides
+  that functionality, while at the same time demonstrating practical usage of
+  BIG ENDIAN integers and type transfer.</para>
+
+  <programlisting>HexStr2Decimal(STRING HexIn) := FUNCTION
+
+  //type re-definitions to make code more readable below
+  BE1 := BIG_ENDIAN UNSIGNED1;
+  BE2 := BIG_ENDIAN UNSIGNED2;
+  BE3 := BIG_ENDIAN UNSIGNED3;
+  BE4 := BIG_ENDIAN UNSIGNED4;
+  BE5 := BIG_ENDIAN UNSIGNED5;
+  BE6 := BIG_ENDIAN UNSIGNED6;
+  BE7 := BIG_ENDIAN UNSIGNED7;
+  BE8 := BIG_ENDIAN UNSIGNED8;
+
+  TrimHex := TRIM(HexIn,ALL);
+  HexLen := LENGTH(TrimHex);
+  UseHex := IF(HexLen % 2 = 1,'0','') + TrimHex;
+
+  //a sub-function to translate two hex chars to a packed hex format
+  STRING1 Str2Data(STRING2 Hex) := FUNCTION
+    UNSIGNED1 N1 :=
+        CASE( Hex[1],
+            '0'=&gt;00x,'1'=&gt;10x,'2'=&gt;20x,'3'=&gt;30x,
+            '4'=&gt;40x,'5'=&gt;50x,'6'=&gt;60x,'7'=&gt;70x,
+            '8'=&gt;80x,'9'=&gt;90x,'A'=&gt;0A0x,'B'=&gt;0B0x,
+            'C'=&gt;0C0x,'D'=&gt;0D0x,'E'=&gt;0E0x,'F'=&gt;0F0x,00x);
+     UNSIGNED1 N2 :=
+        CASE( Hex[2],
+            '0'=&gt;00x,'1'=&gt;01x,'2'=&gt;02x,'3'=&gt;03x,
+            '4'=&gt;04x,'5'=&gt;05x,'6'=&gt;06x,'7'=&gt;07x,
+            '8'=&gt;08x,'9'=&gt;09x,'A'=&gt;0Ax,'B'=&gt;0Bx,
+            'C'=&gt;0Cx,'D'=&gt;0Dx,'E'=&gt;0Ex,'F'=&gt;0Fx,00x);
+     RETURN (&gt;STRING1&lt;)(N1 | N2);
+  END;
+
+  UseHexLen := LENGTH(TRIM(UseHex));
+  InHex2 := Str2Data(UseHex[1..2]);
+  InHex4 := InHex2 + Str2Data(UseHex[3..4]);
+  InHex6 := InHex4 + Str2Data(UseHex[5..6]);
+  InHex8 := InHex6 + Str2Data(UseHex[7..8]);
+  InHex10 := InHex8 + Str2Data(UseHex[9..10]);;
+  InHex12 := InHex10 + Str2Data(UseHex[11..12]);
+  InHex14 := InHex12 + Str2Data(UseHex[13..14]);
+  InHex16 := InHex14 + Str2Data(UseHex[15..16]);
+  RETURN CASE(UseHexLen,
+          2 =&gt; (STRING)(&gt;BE1&lt;)InHex2,
+          4 =&gt; (STRING)(&gt;BE2&lt;)InHex4,
+          6 =&gt; (STRING)(&gt;BE3&lt;)InHex6,
+          8 =&gt; (STRING)(&gt;BE4&lt;)InHex8,
+          10 =&gt; (STRING)(&gt;BE5&lt;)InHex10,
+          12 =&gt; (STRING)(&gt;BE6&lt;)InHex12,
+          14 =&gt; (STRING)(&gt;BE7&lt;)InHex14,
+          16 =&gt; (STRING)(&gt;BE8&lt;)InHex16,
+          'ERROR');
+END;
+</programlisting>
+
+  <para>This HexStr2Decimal FUNCTION takes a variable-length STRING parameter
+  containing the hexadecimal value to evaluate. It begins by re-defining the
+  eight possible sizes of unsigned BIG ENDIAN integers. This re-definition is
+  purely for cosmetic purposes—to make the subsequent code more
+  readable.</para>
+
+  <para>The next three attributes detect whether an even or odd number of
+  hexadecimal characters has been passed. If an odd number is passed, then a
+  “0” character is prepended to the passed value to ensure the hex values are
+  placed in the correct nibbles.</para>
+
+  <para>The Str2Data FUNCTION takes a two-character STRING parameter and
+  translates each character into the appropriate hexadecimal value for each
+  nibble of the resulting 1-character STRING that it returns. The first
+  character defines the first nibble and the second defines the second. These
+  two values are ORed together (using the bitwise | operator) then the result
+  is type transferred to a one-character string, using the shorthand syntax—
+  (&gt;STRING1&lt;) —so that the bit pattern remains untouched. The RETURN
+  result from this FUNCTION is a STRING1 because each succeeding two-character
+  portion of the HexStr2Decimal FUNCTION's input parameter will pass through
+  the Str2Data FUNCTION and be concatenated with all the preceding
+  results.</para>
+
+  <para>The UseHexLen attribute determines the appropriate size of BIG ENDIAN
+  integer to use to translate the hex into decimal, while the InHex2 through
+  InHex16 attributes define the final packed-hexadecimal value to evaluate.
+  The CASE function then uses that UseHexLen to determine which InHex
+  attribute to use for the number of bytes of hex value passed in. Only even
+  numbers of hex characters are allowed (meaning the call to the function
+  would need to add a leading zero to any odd-numbered hex values to
+  translate) and the maximum number of characters allowed is sixteen
+  (representing an eight-byte packed hexadecimal value to translate).</para>
+
+  <para>In all cases, the result from the InHex attribute is type-transferred
+  to the appropriately sized BIG ENDIAN integer. The standard type cast to
+  STRING then performs the actual value translation from the hexadecimal to
+  decimal.</para>
+
+  <para>The following calls return the indicated results:</para>
+
+  <programlisting>OUTPUT(HexStr2Decimal('0101'));               // 257
+OUTPUT(HexStr2Decimal('FF'));                 // 255
+OUTPUT(HexStr2Decimal('FFFF'));               // 65535
+OUTPUT(HexStr2Decimal('FFFFFF'));             // 16777215
+OUTPUT(HexStr2Decimal('FFFFFFFF'));           // 4294967295
+OUTPUT(HexStr2Decimal('FFFFFFFFFF'));         // 1099511627775
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFF'));       // 281474976710655
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFF'));     // 72057594037927935
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFF'));   // 18446744073709551615
+OUTPUT(HexStr2Decimal('FFFFFFFFFFFFFFFFFF')); // ERROR
+</programlisting>
+</sect1>

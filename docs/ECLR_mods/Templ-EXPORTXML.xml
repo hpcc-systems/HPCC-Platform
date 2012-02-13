@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_EXPORTXML">
+  <title>#EXPORTXML</title>
+
+  <para><emphasis role="bold">#EXPORTXML<indexterm>
+      <primary>#EXPORTXML</primary>
+    </indexterm>( </emphasis><emphasis>symbol, data</emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="76.35pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>The name of a template variable that has not been
+            previously declared.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>data</emphasis></entry>
+
+            <entry>The name of a field, RECORD structure, or dataset.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#EXPORTXML </emphasis>statement produces the
+  same XML as #EXPORT from the specified <emphasis>data</emphasis> and places
+  it in the <emphasis>symbol</emphasis>, then does a LOADXML(<emphasis>symbol,
+  </emphasis>‘label') on the data.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  LOADXML('&lt;xml/&gt;');
+  
+  NamesRecord := RECORD
+    STRING10 first;
+    STRING20 last;
+  END;
+  
+  r := RECORD
+    UNSIGNED4 dg_parentid;
+    STRING10 dg_firstname;
+    STRING dg_lastname;
+    UNSIGNED1 dg_prange;
+    IFBLOCK(SELF.dg_prange % 2 = 0)
+      STRING20 extrafield;
+    END;
+    NamesRecord namerec;
+    DATASET(NamesRecord) childNames;
+  END;
+  
+  ds := DATASET('~RTTEST::OUT::ds', r, THOR);
+  
+  //This example produces the same result as the example for #EXPORT.
+  //Notice the lack of #DECLARE and LOADXML in this version:
+  #EXPORTXML(Fred,r);
+  
+  #FOR (Fred)
+   #FOR (Field) 
+    #IF (%'{@isEnd}'% &lt;&gt; '')
+  OUTPUT('END');
+    #ELSE
+  OUTPUT(%'{@type}'%
+     #IF (%'{@size}'% &lt;&gt; '-15' AND
+          %'{@isRecord}'%='' AND
+          %'{@isDataset}'%='')
+  + %'{@size}'%
+     #END
+  + ' ' + %'{@label}'% + ';');
+    #END
+   #END
+  #END
+  OUTPUT('Done');
+  //**********************************************************
+  //These examples show some other possible uses of #EXPORTXML:
+  
+  //This could be greatly simplified as
+  // (%'{IsAStringMetaInfo/Field[1]/@type}'%='string')
+  isAString(inputField) := MACRO
+  #EXPORTXML(IsAStringMetaInfo, inputField);
+  #IF (%'IsAString'%='')
+   #DECLARE(IsAString);
+  #END;
+  #SET(IsAString, false);
+  #FOR (IsAStringMetaInfo)
+   #FOR (Field)
+    #IF (%'{@type}'% = 'string')
+     #SET (IsAString, true);
+    #END
+    #BREAK
+   #END
+  #END
+  %IsAString%
+  ENDMACRO;
+  
+  getFieldName(inputField) := MACRO
+    #EXPORTXML(GetFieldNameMetaInfo, inputField);
+    %'{GetFieldNameMetaInfo/Field[1]/@name}'%
+  ENDMACRO;
+  displayIsAString(inputField) := MACRO
+    OUTPUT(getFieldName(inputField)
+        + TRIM(IF(isAString(inputField), ' is', ' is not'))
+        + ' a string.')
+  ENDMACRO;
+  
+  SIZEOF(r.dg_firstname);
+  isAString(r.dg_firstname);
+  getFieldName(r.dg_firstname);
+  OUTPUT('ds.dg_firstname isAString? '
+        + (STRING)isAString(ds.dg_firstname));
+  isAString(ds.namerec);
+  
+  displayIsAString(ds.namerec);
+  displayIsAString(r.dg_firstname);
+</programlisting>
+
+  <para>See Also: <link linkend="LOADXML">LOADXML</link>, <link
+  linkend="_EXPORT">#EXPORT</link></para>
+</sect1>

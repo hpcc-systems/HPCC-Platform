@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Node">
+  <title><emphasis role="bold">Node</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Thorlib.Node<indexterm>
+      <primary>STD.System.Thorlib.Node</primary>
+    </indexterm><indexterm>
+      <primary>System.Thorlib.Node</primary>
+    </indexterm><indexterm>
+      <primary>Thorlib.Node</primary>
+    </indexterm><indexterm>
+      <primary>Node</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Node returns an UNSIGNED INTEGER4 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Node </emphasis>function returns the
+  (zero-based) number of the Data Refinery (THOR) or Rapid Data Delivery
+  Engine (ROXIE) node.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.System.Thorlib.Node();</programlisting>
+</sect1>

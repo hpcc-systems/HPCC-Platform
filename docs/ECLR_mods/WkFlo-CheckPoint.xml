@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHECKPOINT">
+  <title>CHECKPOINT</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: CHECKPOINT<indexterm>
+      <primary>CHECKPOINT</primary>
+    </indexterm>(</emphasis><emphasis> name </emphasis><emphasis role="bold">)
+  <indexterm>
+      <primary>CHECKPOINT workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.60pt" />
+
+        <colspec colwidth="273.20pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>A string constant specifying the storage name of the
+            value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CHECKPOINT </emphasis>service stores the
+  result of the <emphasis>expression</emphasis> in the workunit so it remains
+  available if the workunit fails to complete, and is automatically deleted
+  when the job completes successfully. This is particularly useful for
+  <emphasis>attributes</emphasis> based on large, expensive data manipulation
+  sequences. This service implicitly causes the <emphasis>attribute</emphasis>
+  to be evaluated at global scope instead of any enclosing scope.</para>
+
+  <para>However, CHECKPOINT is only useful when the unsuccessful workunit is
+  resubmitted through ECL Watch; if a new workunit is instantiated, CHECKPOINT
+  has no effect. The PERSIST service is more generally useful.</para>
+
+  <para>Example:</para>
+
+  <programlisting>CountPeople := COUNT(Person) : CHECKPOINT('PeopleCount');
+       //Makes CountPeople available for reuse if
+       // the job does not complete
+</programlisting>
+
+  <para>See Also: <link linkend="PERSIST">PERSIST</link></para>
+</sect1>

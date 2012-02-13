@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PARALLEL_function">
+  <title>PARALLEL<indexterm>
+      <primary>PARALLEL function</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
+  :=<emphasis role="bold"> ] PARALLEL<indexterm>
+      <primary>PARALLEL</primary>
+    </indexterm>(</emphasis><emphasis> actionlist </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="82.55pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attributename</emphasis></entry>
+
+            <entry>Optional. The action name, which turns the action into an
+            attribute definition, therefore not executed until the
+            <emphasis>attributename</emphasis> is used as an action.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>actionlist</emphasis></entry>
+
+            <entry>A comma-delimited list of the actions to execute
+            simultaneously. These may be ECL actions or external
+            actions.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">PARALLEL </emphasis>action executes the
+  items in the <emphasis>actionlist</emphasis> simultaneously. This is already
+  the default operative mode, so PARALLEL is only useful within the action
+  list of a SEQUENTIAL set of actions.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Act1 :=
+OUTPUT(A_People,OutputFormat1,'//hold01/fred.out');
+Act2 :=
+OUTPUT(Person,{Person.per_first_name,Person.per_last_name})
+
+Act2 := OUTPUT(Person,{Person.per_last_name})));
+
+//by naming these actions, they become inactive attributes
+//that only execute when the attribute names are called as actions
+
+SEQUENTIAL(Act1,PARALLEL(Act2,Act3));
+
+//executes Act1 alone, and only when it's finished, 
+// executes Act2 and Act3 together
+</programlisting>
+
+  <para>See Also: <link linkend="SEQUENTIAL">SEQUENTIAL</link></para>
+</sect1>

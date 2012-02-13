@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="StartSuperFileTransaction">
+  <title>StartSuperFileTransaction</title>
+
+  <para><emphasis role="bold">STD.File.StartSuperFileTransaction<indexterm>
+      <primary>STD.File.StartSuperFileTransaction</primary>
+    </indexterm><indexterm>
+      <primary>File.StartSuperFileTransaction</primary>
+    </indexterm><indexterm>
+      <primary>StartSuperFileTransaction</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para>Return:<emphasis> </emphasis>Null.</para>
+
+  <para>The <emphasis role="bold">StartSuperFileTransaction
+  </emphasis>function begins a transaction frame for superfile maintenance.
+  The transaction frame is terminated by calling the
+  FinishSuperFileTransaction function. Within the transaction frame, multiple
+  superfiles may be maintained by adding, removing, clearing, swapping, and
+  replacing sub-files.</para>
+
+  <para>The FinishSuperFileTransaction function does an automatic rollback of
+  the transaction if any error or failure occurs during the transaction frame.
+  If no error occurs, then the commit or rollback of the transaction is
+  controlled by the <emphasis>rollback</emphasis> parameter to the
+  FinishSuperFileTransaction function.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">STD.File.StartSuperFileTransaction();</programlisting>
+</sect1>

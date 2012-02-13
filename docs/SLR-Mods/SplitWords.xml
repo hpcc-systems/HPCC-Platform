@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SplitWords">
+  <title><emphasis role="bold">SplitWords</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.SplitWords<indexterm>
+      <primary>STD.Str.SplitWords</primary>
+    </indexterm><indexterm>
+      <primary>Str.SplitWords</primary>
+    </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the words to extract.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>separator</emphasis></entry>
+
+          <entry>A string containing the word delimiter to use.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>SplitWords returns a SET OF STRING values.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SplitWords</emphasis> function returns the
+  list of words in the <emphasis>source</emphasis> string split out by the
+  specified <emphasis>separator</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+
+str1 := 'a word a day keeps the doctor away';
+str2 := 'a|word|a|day|keeps|the|doctor|away';
+
+STD.STr.SplitWords(str1,' ');
+    //returns ['a', 'word', 'a', 'day', 'keeps', 'the', 'doctor', 'away']
+
+STD.STr.SplitWords(str2,'|');
+    //returns ['a', 'word', 'a', 'day', 'keeps', 'the', 'doctor', 'away']
+</programlisting>
+
+  <para></para>
+</sect1>

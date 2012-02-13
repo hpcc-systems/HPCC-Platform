@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EXISTS">
+  <title>EXISTS<indexterm>
+      <primary>EXISTS</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">EXISTS<indexterm>
+      <primary>EXISTS function</primary>
+    </indexterm>(</emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">[, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ])</emphasis></para>
+
+  <para><emphasis
+  role="bold">EXISTS(</emphasis><emphasis>valuelist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.70pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of an
+            index, a dataset, or a record set derived from some filter
+            condition, or any expression that results in a derived record
+            set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>valuelist</emphasis></entry>
+
+            <entry>A comma-delimited list of expressions. This may also be a
+            SET of values.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EXISTS returns a single BOOLEAN value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">EXISTS</emphasis> function returns true if
+  the number of records in the specified <emphasis>recordset</emphasis> is
+  &gt; 0, or the <emphasis>valuelist</emphasis> is populated. This is most
+  commonly used to detect whether a filter has filtered out all the
+  records.</para>
+
+  <para>When checking for an empty recordset, use the
+  EXISTS(<emphasis>recordset</emphasis>) function instead of the expression:
+  COUNT(<emphasis>recordset</emphasis>) &gt; 0. Using EXISTS results in more
+  efficient processing and better performance under those
+  circumstances.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyBoolean := EXISTS(Publics(pub_type = 'B'));
+TradesExistPersons := Person(EXISTS(Trades));
+NoTradesPerson := Person(NOT EXISTS(Trades));
+
+MinVal2 := EXISTS(4,8,16,2,1); //returns TRUE
+SetVals := [4,8,16,2,1];
+MinVal3 := EXISTS(SetVals);  //returns TRUE
+NullSet := [];
+MinVal3 := EXISTS(NullSet);  //returns FALSE
+</programlisting>
+
+  <para>See Also: <link linkend="DEDUP">DEDUP</link>, <link
+  linkend="Recordset_Filtering">Record Filters</link></para>
+</sect1>

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="XML_Parsing_RECORD_and_TRANSFORM_Functions">
+  <title>XML Parsing RECORD and TRANSFORM Functions</title>
+
+  <para><emphasis>The following functions are valid for use only in field
+  definition expressions within a RECORD structure<indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> or TRANSFORM function that is used to define the result set
+  from the PARSE function, or the input RECORD structure for a DATASET
+  containing XML data.</emphasis></para>
+
+  <para><emphasis
+  role="bold">XMLTEXT(</emphasis><emphasis>xmltag</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLTEXT</emphasis> returns the ASCII text from
+  the <emphasis>xmltag</emphasis>.</para>
+
+  <para><emphasis
+  role="bold">XMLUNICODE(</emphasis><emphasis>xmltag</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLUNICODE</emphasis> returns the Unicode text
+  from the <emphasis>xmltag</emphasis>.</para>
+
+  <para><emphasis role="bold">XMLPROJECT(</emphasis><emphasis>xmltag,
+  transform</emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">XMLPROJECT</emphasis> returns the text from the
+  <emphasis>xmltag </emphasis>as a child dataset.</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>xmltag</emphasis></entry>
+
+          <entry>A string constant naming the XPATH to the tag containing the
+          data (see the <emphasis role="bold">XPATH Support</emphasis> section
+          under the RECORD structure discussion). This may contain an instance
+          number (such as <emphasis>tagname</emphasis>[1]).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>The TRANSFORM function that produces the child
+          dataset.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>Example:</para>
+
+  <programlisting>d := DATASET([{'&lt;library&gt;&lt;book isbn="123456789X"&gt;' +
+  '&lt;author&gt;Bayliss&lt;/author&gt;&lt;title&gt;A Way Too Far&lt;/title&gt;&lt;/book&gt;' +
+  '&lt;book isbn="1234567801"&gt;' +
+  '&lt;author&gt;Smith&lt;/author&gt;&lt;title&gt;A Way Too Short&lt;/title&gt;&lt;/book&gt;' +
+  '&lt;/library&gt;'}],
+  {STRING line });
+
+rform := RECORD
+  STRING author := XMLTEXT('author');
+  STRING title := XMLTEXT('title');
+END;
+
+books := PARSE(d,line,rform,XML('library/book'));
+
+OUTPUT(books)
+
+//*******************************************
+/* The following XML can be parsed using XMLPROJECT
+&lt;XML&gt;
+&lt;Field name='surname' distinct=2&gt;
+&lt;Value count=3&gt;Halliday&lt;/Value&gt;
+&lt;Value count=2&gt;Chapman&lt;/Value&gt;
+&lt;/Field&gt;
+&lt;XML&gt;
+ */
+
+extractedValueRec := RECORD
+  STRING value;
+  UNSIGNED cnt;
+END;
+
+extractedRec := RECORD
+ STRING name;
+ UNSIGNED cnt;
+ DATASET(extractedValueRec) values;
+END;
+
+extractedRec t1 := TRANSFORM
+        SELF.name := XMLTEXT('@name');
+        SELF.cnt := (UNSIGNED)XMLTEXT('@distinct');
+        SELF.values := XMLPROJECT('Value',
+                      TRANSFORM(extractedValueRec,
+                         SELF.value := XMLTEXT(''),
+                         SELF.cnt :=
+                     (UNSIGNED)XMLTEXT('@count')))(cnt &gt; 1);
+END;
+
+p := PARSE(x, line, t1, XML('/XML/Field'));
+
+OUTPUT(p);</programlisting>
+
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="DATASET">DATASET</link></para>
+</sect1>

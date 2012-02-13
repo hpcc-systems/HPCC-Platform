@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DATA">
+  <title>DATA<indexterm>
+      <primary>DATA</primary>
+    </indexterm><indexterm>
+      <primary>DATA value type</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DATA[</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>A "packed hexadecimal<indexterm>
+      <primary>packed hexadecimal</primary>
+    </indexterm>" data block of <emphasis>n</emphasis> bytes, zero padded (not
+  space-padded). If <emphasis>n </emphasis>is omitted, the DATA is variable
+  length to the size needed to contain the result of the cast or passed
+  parameter. Type casting is allowed but only to a STRING or UNICODE of the
+  same number of bytes.</para>
+
+  <para>This type is particularly useful for containing BLOB (Binary Large
+  OBject) data. See the Programmer's Guide article <emphasis
+  role="bold">Working with BLOBs</emphasis> for more information on this
+  subject.</para>
+
+  <para>Example:</para>
+
+  <programlisting>DATA8 MyHexString := x'1234567890ABCDEF'; 
+        // an 8-byte data block - hex values 12 34 56 78 90 AB CD EF</programlisting>
+</sect1>

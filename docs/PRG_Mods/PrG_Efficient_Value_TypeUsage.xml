@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Efficient_Value_Type_Usage">
+  <title>Efficient Value Type Usage</title>
+
+  <para>Architecting data structures is an art that can make a big difference
+  in ultimate performance and data storage requirements. Despite the extensive
+  resources available in the clusters, saving a byte here and a couple of
+  bytes there can be important -- even in a Big Data massively parallel
+  processing system, resources are not infinite.</para>
+
+  <sect2 id="Numeric_Data_Type_Selection">
+    <title>Numeric Data Type Selection</title>
+
+    <para>Selecting the right type to use for numeric data depends on whether
+    the values are integers or contain fractional portions (floating point
+    data).</para>
+
+    <sect3>
+      <title><emphasis role="bold">Integer Data</emphasis></title>
+
+      <para>When working with integer data, you should always specify the
+      exact size of INTEGERn or UNSIGNEDn that is required to hold the largest
+      number possible for that particular field. This will improve execution
+      performance and compiler efficiency because the default integer data
+      type is INTEGER8 (also the default for Attributes with integer
+      expressions).</para>
+
+      <para>The following table defines the largest values for each given
+      type:</para>
+
+      <programlisting><emphasis role="bold">Type       Signed                      Unsigned</emphasis> 
+INTEGER1   -128 to 127                 0 to 255
+INTEGER2   -32,768 to 32,767           0 to 65,535
+INTEGER3   -8,388,608 to 8,388,607     0 to 16,777,215
+INTEGER4   -2,147,483,648              0 to 4,294,967,295
+             to 2,147,483,647
+INTEGER5   -549,755,813,888            0 to 1,099,511,627,775
+             to 549,755,813,887
+INTEGER6   -140,737,488,355,328        0 to 281,474,976,710,655
+             to 140,737,488,355,327
+INTEGER7   36,028,797,018,963,968      0 to 72,057,594,037,927,935
+             to 36,028,797,018,963,967
+INTEGER8   -9,223,372,036,854,775,808  0 to 18,446,744,073,709,551,615
+             to 9,223,372,036,854,775,807
+</programlisting>
+
+      <para>For example, if you have data coming in from the “outside world”
+      where a 4-byte integer field contains values that range from zero (0) to
+      ninety-nine (99), then it makes sense to move that data into an
+      UNSIGNED1 field. This saves three bytes per record, which, if the
+      dataset is fairly large one (say, 10 billion records), can translate
+      into considerable savings on disk storage requirements.</para>
+
+      <para>One advantage ECL has over other languages is the richness of its
+      integer types. By allowing you to select the exact number of bytes (in
+      the range of one to eight), you can tailor your storage requirements to
+      the exact range of values you need to store, without wasting extra
+      bytes.</para>
+
+      <para>Note that the use of the BIG_ENDIAN forms of all the integer types
+      is limited to defining data as it comes in and goes back out to the
+      “outside world”—all integer data used internally must be in
+      LITTLE_ENDIAN format. The BIG_ENDIAN format is specifically designed for
+      interfacing with external data sources, only.</para>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">Floating Point Data</emphasis></title>
+
+      <para>When using floating point types, you should always specify the
+      exact size of the REALn required to hold the largest (and/or smallest)
+      number possible for that particular field. This will improve execution
+      performance and compiler efficiency because REAL defaults to REAL8
+      (eight bytes) unless otherwise specified. REAL values are stored
+      internally in IEEE signed floating point format; REAL4 is the 32-bit
+      format and REAL8 is the 64-bit format.</para>
+
+      <para>The following table defines the number of significant digits of
+      precision and the largest and smallest values that can be represented as
+      REAL (floating point) values:</para>
+
+      <programlisting><emphasis role="bold">Type</emphasis><emphasis
+          role="bold">    </emphasis><emphasis role="bold">Significant Digits     Largest Value</emphasis><emphasis
+          role="bold"> </emphasis><emphasis role="bold">    Smallest Value
+</emphasis>REAL4      7 (9999999)         3.402823e+038      1.175494e-038
+REAL8   15 (999999999999999)   1.797693e+308      2.225074e-308</programlisting>
+
+      <para>If you need more than fifteen significant digits in your
+      calculations, then you should consider using the DECIMAL type. If all
+      components of an expression are DECIMAL types then the result is
+      calculated using BCD math libraries (performing base-10 math instead of
+      floating point's base-2 math). This gives you the capability of
+      achieving up to thirty-two digits of precision, if needed. By using
+      base-10 math, you also eliminate the rounding issues that are common to
+      floating point math.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 id="String_Data_Type_Selection">
+    <title>String Data Type Selection</title>
+
+    <para>Deciding which of the various string data types to use can be a
+    complex process, since there are several choices: STRING, QSTRING,
+    VARSTRING, UNICODE, and VARUNICODE. The obvious choices are between the
+    various STRING types and UNICODE. You need to use UNICODE and/or
+    VARUNICODE only if you are actually dealing with Unicode data. If that is
+    the case, then the selection is simple. However, deciding exactly which
+    type of string type to use can be more challenging.</para>
+
+    <sect3>
+      <title><emphasis role="bold">STRING vs. VARSTRING</emphasis></title>
+
+      <para>Data that comes in from or goes out to the “outside world” may
+      contain null-terminated strings. If that is the case, then you need to
+      use VARSTRING to define those fields in the ingest/output data file.
+      However, the temptation of programmers with a lot of C/C++ programming
+      experience is to use VARSTRING for everything, in the belief that it
+      will be more efficient—but that belief is mistaken.</para>
+
+      <para>There is no inherent advantage to using VARSTRING instead of
+      STRING within the system. STRING is the base internal string data type,
+      and so is the more efficient type to use. The VARSTRING type is
+      specifically designed for interfacing with external data sources,
+      although it may be used within the system, also.</para>
+
+      <para>This applies equally to making the choice between using UNICODE
+      versus VARUNICODE.</para>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">STRING vs. QSTRING</emphasis></title>
+
+      <para>Depending on what use you need to make of your data, you may or
+      may not care about retaining the original case of the characters.
+      Therefore, if you DO NOT care about the case, then storing your string
+      data in all uppercase is perfectly appropriate and QSTRING is your
+      logical choice instead of the STRING type. If, however, you DO need to
+      maintain case sensitive data, then STRING is the only choice to
+      make.</para>
+
+      <para>The advantage that QSTRING has over STRING is an “instant” 25%
+      data compression rate, since QSTRING data characters are represented by
+      six bits each instead of eight. It achieves this by storing the data in
+      uppercase and only allowing alphanumeric characters and a small set of
+      special characters (! " # $ % &amp; ' ( ) * + , - . / ; &lt; = &gt; ? @
+      [ \ ] ^ _ ).</para>
+
+      <para>For strings smaller than four bytes there is no advantage to using
+      QSTRING over STRING, since fields must still be aligned on byte
+      boundaries. Therefore, the smallest QSTRING that makes any sense to use
+      is a QSTRING4 (four characters stored in three bytes instead of
+      four).</para>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">Fixed Length vs. Variable Length
+      Strings</emphasis></title>
+
+      <para>A string field or parameter may be defined at a specific length,
+      by appending the number of characters to the type name (such as,
+      STRING20 for a 20-character string). They may also be defined as
+      variable-length by simply not defining the length (such as, STRING for a
+      variable-length string).</para>
+
+      <para>String fields or parameters that are known to always be a specific
+      size should be declared to the exact size needed. This will improve
+      efficiency and performance by allowing the compiler to optimize for that
+      specific size string and not incur the overhead of dynamically
+      calculating the variable length at runtime. The variable-length value
+      type (STRING, QSTRING, or UNICODE) should only be used when the string
+      length is variable or unknown.</para>
+
+      <para>You can use the LENGTH function to determine the length of a
+      variable length string passed as a parameter to a function. A string
+      passed to a function in which the parameter has been declared as a
+      STRING20 will always have a length of 20, regardless of its content. For
+      example, a STRING20 which contains ‘ABC’ will have a length of 20, not 3
+      (unless, of course, you include the TRIM function in the expression). A
+      string that has been declared as a variable-length STRING and contains
+      ‘ABC’ will have a length of 3.</para>
+
+      <programlisting>STRING20 CityName := 'Orlando';  // LENGTH(CityName) is 20
+STRING   CityName := 'Orlando';  // LENGTH(CityName) is 7</programlisting>
+    </sect3>
+  </sect2>
+
+  <sect2 id="User-Defined_Data_Types">
+    <title>User-Defined Data Types</title>
+
+    <para>There are several ways you may define your own data types in ECL.
+    The RECORD and TYPE structures are the most common.</para>
+
+    <sect3>
+      <title><emphasis role="bold">RECORD Structure</emphasis></title>
+
+      <para>The RECORD structure can be likened to a
+      <emphasis>struct</emphasis> in the C/C++ languages. It defines a related
+      set of fields that are the fields of a recordset, whether that recordset
+      is a dataset on disk, or a temporary TABLE, or the result of any
+      operation using a TRANSFORM function.</para>
+
+      <para>The RECORD structure is a user-defined data type because, once
+      defined as an attribute you may use that attribute as:</para>
+
+      <blockquote>
+        <para>* the data type for parameters passed to TRANSFORM
+        functions</para>
+
+        <para>* the data type for a “field” in another RECORD structure
+        (nested structures)</para>
+
+        <para>* the structure of a nested child DATASET field in another
+        RECORD structure</para>
+      </blockquote>
+
+      <para>Here's an example that shows all three uses (contained in the
+      RecStruct.ECL file) :</para>
+
+      <programlisting>IMPORT ProgrammersGuide.DeclareData AS ProgGuide;
+
+Layout_Person := RECORD
+  UNSIGNED1 PersonID;
+  STRING15  FirstName;
+  STRING25  LastName;
+END;
+Person := DATASET([{1,'Fred','Smith'},
+                   {2,'Joe','Blow'},                                
+                   {3,'Jane','Smith'}],Layout_Person);
+
+Layout_Accounts := RECORD
+  STRING10  Account;
+  UNSIGNED4 Balance;
+END;
+Layout_Accounts_Link := RECORD
+  UNSIGNED1 PersonID;
+  Layout_Accounts;                //nested RECORD structure
+END;
+
+Accounts := DATASET([{1,'45621234',452},
+                     {1,'55621234',5000},                                
+                     {2,'45629876',4215},
+                     {3,'45628734',8525}],Layout_Accounts_Link);
+
+Layout_Combined := RECORD
+  Layout_Person;
+  DATASET(Layout_Accounts) Accounts;    //nested child DATASET 
+END;
+
+P_recs := PROJECT(Person, TRANSFORM(Layout_Combined,SELF := LEFT; SELF := []));
+
+Layout_Combined CombineRecs(Layout_Combined L,
+                            Layout_Accounts_Link R) := TRANSFORM
+  SELF.Accounts := L.Accounts + ROW({R.Account,R.Balance}, Layout_Accounts);
+  SELF := L;
+END;                             //input and output types
+
+NestedPeopleAccts := DENORMALIZE(P_recs,
+                                 Accounts,
+                                 LEFT.personid=RIGHT.personid,
+                                 CombineRecs(LEFT,RIGHT));
+
+OUTPUT(NestedPeopleAccts);
+</programlisting>
+
+      <para>The Layout_Accounts_Link contains Layout_Accounts. There is no
+      field name given to it, which means that it simply inherits all the
+      fields in that structure, as they are defined, and those inherited
+      fields are referenced as if they were explicitly declared in the
+      Layout_Accounts_Link RECORD structure, like this:</para>
+
+      <programlisting>x := Accounts.Balance;</programlisting>
+
+      <para>However, if a name had been given to it, then it would define a
+      nested structure and the fields in that nested structure would have to
+      be referenced using the nested structure's name as part of the
+      qualifier, like this:</para>
+
+      <programlisting>//Assuming the definition was this:
+Layout_Accounts_Link := RECORD
+  UNSIGNED1          PersonID;
+  Layout_Accounts    AcctStruct;      //nested RECORD with name
+END;
+  //then the field reference would have to be this:
+x := Accounts.AcctStruct.Balance;
+</programlisting>
+
+      <para>The Layout_Accounts RECORD structure attribute defines the
+      structure of the child DATASET field in Layout_Combined. The
+      Layout_Combined RECORD structure is then used as the LEFT input and
+      output for the CombineRecs TRANSFORM function.</para>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">TYPE Structure</emphasis></title>
+
+      <para>The TYPE structure is an obvious user-defined type because you are
+      defining a data type that is not already supported in the ECL language.
+      Its purpose is to allow you to import data in whatever format you
+      receive it, work with it in one of the internal formats, then re-write
+      the data in its original format back to disk.</para>
+
+      <para>It works by defining specific callback functions inside the TYPE
+      structure (LOAD, STORE, etc.) that the system will use to read and write
+      the data from and to disk. The LOAD callback function reads the data
+      from disk and defines the internal type the data will be as you work
+      with it as the return data type from the LOAD function you write.</para>
+
+      <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
+xstring(UNSIGNED len) := TYPE
+  EXPORT INTEGER PHYSICALLENGTH(DATA x) := GetXLen(x,len) + len;
+  EXPORT STRING LOAD(DATA x) := (STRING)x[(len+1)..GetXLen(x,len) + len];
+  EXPORT DATA STORE(STRING x):= TRANSFER(LENGTH(x),DATA4)[1..len] + (DATA)x;
+END;
+
+pstr    := xstring(1);    // typedef for user defined type
+pppstr  := xstring(3);        
+nameStr := STRING20;     // typedef of a system type
+
+namesRecord := RECORD
+  pstr    surname; 
+  nameStr forename;
+  pppStr  addr;
+END;
+
+ds := DATASET([{'TAYLOR','RICHARD','123 MAIN'},
+               {'HALLIDAY','GAVIN','456 HIGH ST'}],
+               {nameStr sur,nameStr fore, nameStr addr});
+ 
+namesRecord  MoveData(ds L) := TRANSFORM
+  SELF.surname  := L.sur;
+  SELF.forename := L.fore;
+  SELF.addr     := L.addr;
+END;
+
+out := PROJECT(ds,MoveData(LEFT));
+OUTPUT(out);
+</programlisting>
+
+      <para>This example defines a “Pascal string” data type with the leading
+      length stored as one to four bytes prepended to the data.</para>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">TypeDef Attributes</emphasis></title>
+
+      <para>The TypeDef attribute is another obvious user-defined type because
+      you are defining a specific instance of a data type that is already
+      supported in the ECL language as a new name, either for convenience of
+      maintenance or code readability purposes. The above example also
+      demonstrates the use of TypeDef attributes.</para>
+    </sect3>
+  </sect2>
+</sect1>

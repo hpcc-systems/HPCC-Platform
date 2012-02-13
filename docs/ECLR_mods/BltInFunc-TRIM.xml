@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRIM">
+  <title>TRIM</title>
+
+  <para><emphasis role="bold">TRIM<indexterm>
+      <primary>TRIM</primary>
+    </indexterm><indexterm>
+      <primary>TRIM Function</primary>
+    </indexterm>(</emphasis><emphasis>string_value </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,flag</emphasis><emphasis role="bold"> ]
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="81.25pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>string_value</emphasis></entry>
+
+            <entry>The string from which to remove spaces.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>flag</emphasis></entry>
+
+            <entry>Optional. Specify which spaces to remove. Valid flag values
+            are: RIGHT (remove trailing spaces—this is the default), LEFT
+            (remove leading spaces), LEFT, RIGHT (remove leading and trailing
+            spaces), and ALL (remove all spaces, even those within the
+            string_value).</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TRIM returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TRIM </emphasis>function returns the
+  <emphasis>string_value </emphasis>with all trailing and/or leading spaces
+  removed.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  STRING20 SomeStringValue := 'ABC';
+  //contains 17 trailing spaces
+  
+  VARSTRING MyVal := TRIM(SomeStringValue);
+  // MyVal is "ABC" with no trailing spaces
+  
+  STRING20 SomeStringValue := ' ABC DEF';
+  //contains 2 leading and 11 trailing spaces
+  
+  VARSTRING MyVal := TRIM(SomeStringValue,LEFT,RIGHT);
+  // MyVal is "ABC DEF" with no trailing spaces
+</programlisting>
+
+  <para>See Also: <link linkend="STRING">STRING</link>, <link linkend="VARSTRING">VARSTRING</link></para>
+</sect1>

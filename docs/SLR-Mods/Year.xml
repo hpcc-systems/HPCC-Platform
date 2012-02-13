@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Year">
+  <title><emphasis role="bold">Year</emphasis></title>
+
+  <para><emphasis role="bold">STD.Date.Year<indexterm>
+      <primary>STD.Date.Year</primary>
+    </indexterm><indexterm>
+      <primary>Date.Year</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>A date value in the Date_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>Year returns an INTEGER value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Year</emphasis> function returns the Year
+  number from the <emphasis>date</emphasis> value.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+UNSIGNED4 MyDate := 20120101;   //January 1, 2012
+  
+Y := STD.Date.Year(MyDate);
+    //Y contains 2012
+</programlisting>
+
+  <para></para>
+</sect1>

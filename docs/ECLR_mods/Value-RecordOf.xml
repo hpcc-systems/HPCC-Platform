@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RECORDOF">
+  <title>RECORDOF</title>
+
+  <para><emphasis role="bold">RECORDOF<indexterm>
+      <primary>RECORDOF</primary>
+    </indexterm><indexterm>
+      <primary>RECORDOF datatype</primary>
+    </indexterm>(</emphasis><emphasis> recordset </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>The set of data records whose RECORD structure to use. This
+          may be a DATASET or any derived recordset.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RECORDOF </emphasis>declaration specifies
+  use of just the record layout of the <emphasis>recordset</emphasis> in those
+  situations where you need to inherit the structure of the fields but not
+  their default values, such as child DATASET declarations inside RECORD
+  structures.</para>
+
+  <para>This function allows you to keep RECORD structures local to the
+  DATASET whose layout they define and still be able to reference the
+  structure (only, without default values) where needed.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Layout_People_Slim := RECORD
+   STD_People.RecID;
+   STD_People.ID;
+   STD_People.FirstName;
+   STD_People.LastName;
+   STD_People.MiddleName;
+   STD_People.NameSuffix;
+   STD_People.FileDate;
+   STD_People.BureauCode;
+   STD_People.Gender;
+   STD_People.BirthDate;
+   STD_People.StreetAddress;
+   UNSIGNED8 CSZ_ID;
+END;
+       
+STD_Accounts := TABLE(UID_Accounts,Layout_STD_AcctsFile);
+      
+CombinedRec := RECORD,MAXLENGTH(100000)
+  Layout_People_Slim;
+  UNSIGNED1 ChildCount;
+  DATASET(RECORDOF(STD_Accounts)) ChildAccts;
+END;
+        //This ChildAccts definition is equivalent to:
+        // DATASET(Layout_STD_AcctsFile) ChildAccts;
+        //but doesn’t require Layout_STD_AcctsFile to be visible (SHARED or
+        // EXPORT)</programlisting>
+
+  <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+  linkend="RECORD_Structure">RECORD Structure</link></para>
+</sect1>

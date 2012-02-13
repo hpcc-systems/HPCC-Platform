@@ -1,0 +1,615 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1>
+  <title><emphasis role="bold">User Security Maintenance</emphasis></title>
+
+  <para>Configuring an HPCC System to use LDAP security will give you greater
+  control over users and security of your HPCC system.</para>
+
+  <sect2>
+    <title>Introduction</title>
+
+    <para>HPCC systems are designed to maintain security in a number of ways.
+    A secure set of users are created and maintained and access is controlled
+    using LDAP (Lightweight Directory Access Protocol) authentication.
+    Security rights are stored in the LDAP database and maintained by
+    Microsoft’s Active Directory on a Windows system or OpenLDAP on Linux
+    systems.</para>
+
+    <para>Using the Permissions interface in ECL Watch, administrators can
+    control access to features in Query Builder, ECL Watch, ECL Plus, DFU
+    Plus, and the ECL modules within the Attribute Repository. Dali server
+    also enforces access to data file folders and workunits.</para>
+
+    <para>Permissions are established by group or by user and are defined as
+    one associates those groups or users to a particular secure item. Only one
+    set of permissions can be defined for each unique combination of group and
+    secure item.</para>
+
+    <para>Premissions are separated into the following
+    categories:<informaltable frame="all">
+        <tgroup cols="2" colsep="1">
+          <colspec colwidth="185q" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis role="bold">Esp Features for
+              EclDirectAccess</emphasis></entry>
+
+              <entry>Controls access to the ECLDirect web service</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Esp Features for
+              SMC</emphasis></entry>
+
+              <entry>Controls access to features in ECLWatch and similar
+              features accessed from QueryBuilder.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Esp Features for
+              WsEclAccess</emphasis></entry>
+
+              <entry>Controls access to the WS-ECL web service</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Repository
+              Modules</emphasis></entry>
+
+              <entry>Controls access to the Attribute Repository and Modules
+              in the repository</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">File Scopes</emphasis></entry>
+
+              <entry>Controls access to data files by applying permissions to
+              File scopes</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
+
+              <entry>Controls access to Workunits by applying permissions to
+              Workunit scopes</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para><emphasis role="bold"> </emphasis></para>
+  </sect2>
+
+  <sect2>
+    <title>User Administration using ECL Watch</title>
+
+    <para>ECL Watch provides an interface to the LDAP server.</para>
+
+    <para>Access to this feature in ECL Watch is typically only granted to
+    administrators (members of the Administrators group).</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>Open ECL Watch in your browser using the following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+        Server’s IP Address and pppp is the port. The default port is
+        8010)</emphasis></para>
+
+        <para>For example: http://10.150.51.27:8010/</para>
+
+        <para>The ECL Watch page displays.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Users</emphasis> hyperlink
+        below <emphasis role="bold">Users/Permissions</emphasis> in the menu
+        on the left side.</para>
+
+        <para>The <emphasis role="bold">Users</emphasis> page displays.</para>
+
+        <figure>
+          <title>Users Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/US001b.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>(Names and user IDs intentionally blurred)</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Edit</emphasis> hyperlink
+        next to a name to edit any user information.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Member of</emphasis>
+        hyperlink next to a name to see the groups that user is a member or to
+        add the user to a group.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Password</emphasis> hyperlink
+        next to a name to change a password.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Permissions</emphasis>
+        hyperlink next to a name to edit permissions (see Editing Permissions
+        using ECL Watch).</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Add</emphasis> button at the
+        bottom of the page to create a new user.</para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2>
+    <title>Editing Permissions using ECL Watch</title>
+
+    <itemizedlist>
+      <listitem>
+        <para>Click on the <emphasis role="bold">Permissions</emphasis>
+        hyperlink below <emphasis role="bold">Users/Permissions</emphasis>in
+        the menu on the left side.</para>
+
+        <para>The Permissions page displays.</para>
+
+        <para><figure>
+            <title>Permissions Page</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/US002.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Edit </emphasis>hyperlink to
+        access items in the group</para>
+
+        <para>A page listing items for the selected feature displays.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Permissions</emphasis>
+        hyperlink to set permissions for users or groups.</para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2 role="brk">
+    <title>Ecl Watch Feature Permissions</title>
+
+    <para>This section describes access control to features of the HPCC
+    system. In this area you control access to functionality within ECL
+    Watch.</para>
+
+    <para><informaltable>
+        <tgroup cols="3">
+          <colspec colwidth="155q" />
+
+          <colspec />
+
+          <colspec colwidth="85q" />
+
+          <thead>
+            <row>
+              <entry>LDAP Path</entry>
+
+              <entry>Description</entry>
+
+              <entry>Access</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>ClusterTopologyAccess</entry>
+
+              <entry>Access to Cluster Topology</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>ClusterTopologyAccess</entry>
+
+              <entry>Set Machine Status</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>ClusterTopologyAccess</entry>
+
+              <entry>Swap Node</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>DfuAccess</entry>
+
+              <entry>Access to DFU Logical Files</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>DfuAccess</entry>
+
+              <entry>Delete Files, add to superfiles</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>DfuExceptions</entry>
+
+              <entry>Access to DFU Exceptions</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>DfuWorkunitsAccess</entry>
+
+              <entry>Access to View DFU Workunits</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>DfuWorkunitsAccess</entry>
+
+              <entry>Access to Create, Delete, Update, Submit, and Abort DFU
+              Workunits</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>DfuXrefAccess</entry>
+
+              <entry>Access to DFU XREF</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>DfuXrefAccess</entry>
+
+              <entry>Clean directory</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>DfuXrefAccess</entry>
+
+              <entry>Make changes and generate XREF Reports</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>ExecuteAccess</entry>
+
+              <entry>Access to Remote Execution in ECL Watch</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>FileDesprayAccess</entry>
+
+              <entry>Access to De-Spraying Files</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>FileSprayAccess</entry>
+
+              <entry>Access to Spraying and Copying</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>FileSprayAccess</entry>
+
+              <entry>Rename files</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>FileSprayAccess</entry>
+
+              <entry>Delete from Drop zone</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>FileIO</entry>
+
+              <entry>Access to read files in Drop zone</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>FileIO</entry>
+
+              <entry>Access to write to files in Drop zone</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>MachineInfoAccess</entry>
+
+              <entry>Access to machine/Preflight Information</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>MetricsAccess</entry>
+
+              <entry>Access to SNMP Metrics Information (Roxie
+              Metrics)</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>OtherWorkunitsAccess</entry>
+
+              <entry>Access to View Other User's Workunits</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>OtherWorkunitsAccess</entry>
+
+              <entry>Access to Modify or Resubmit User's Workunits</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>OtherWorkunitsAccess</entry>
+
+              <entry>Access to Delete Other User's Workunits</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>OwnWorkunitsAccess</entry>
+
+              <entry>Access to View Own Workunit</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>OwnWorkunitsAccess</entry>
+
+              <entry>Access to Create or Modify Own Workunit</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>OwnWorkunitsAccess</entry>
+
+              <entry>Access to Delete Own Workunits</entry>
+
+              <entry>Full</entry>
+            </row>
+
+            <row>
+              <entry>RoxieQueryAccess</entry>
+
+              <entry>Access to Roxie Queries</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>SmcAccess</entry>
+
+              <entry>Root Access to SMC Service</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>ThorQueueAccess</entry>
+
+              <entry>Access to Thor Job Queue Control</entry>
+
+              <entry>Full</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+
+    <para></para>
+  </sect2>
+
+  <sect2>
+    <title><emphasis role="bold">File Access Control</emphasis></title>
+
+    <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
+    technology provides means to set secure access permissions to data file
+    folders (file scope). This is controlled by organizational units (OUs) in
+    LDAP.</para>
+
+    <para>An OU named <emphasis role="bold">Files</emphasis> is created when
+    the Dali server starts. To secure data folders, create OUs for each folder
+    level and apply rights to each folder’s OU.</para>
+
+    <para><figure>
+        <title>File Scopes Page</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/US003.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>In the graphic above, The OU named <emphasis role="bold">Files
+    </emphasis>(not shown) is the top level for file scope security in the
+    Dali Server. Below it is an OU named <emphasis role="bold">le
+    </emphasis>representing the cluster named <emphasis
+    role="bold">le</emphasis>. Below that is an OU named <emphasis
+    role="bold">specialdata</emphasis> which contains two OUs: <emphasis
+    role="bold">public</emphasis> and <emphasis role="bold">secure.
+    </emphasis>In this example, the <emphasis role="bold">public
+    </emphasis>folder has rights granted to a large group of users and the
+    <emphasis role="bold">secure </emphasis>folder has limited access granted.
+    This allows you to prevent unauthorized users from any access to files in
+    that folder.</para>
+
+    <para>The structure in LDAP corresponds to this logical structure in
+    DFU:</para>
+
+    <para><emphasis role="bold">le::specialdata::secure </emphasis></para>
+
+    <para>This corresponds to this physical structure:</para>
+
+    <para><emphasis role="bold">c:\thordata\le\specialdata\secure
+    </emphasis></para>
+
+    <para>All HPCC components and tools respect LDAP file access security,
+    except Remote Execution in ECL Watch, network file access using UNCs or
+    Terminal Services, or administrative utilities such as TreeView. These
+    functions are assumed to be system level or for administrative users.
+    Attempting to access a file in a folder for which access is not granted
+    will result in one of the following errors:</para>
+
+    <para></para>
+
+    <para>DFS Exception: 4 Create access denied for scope
+    &lt;filepath&gt;</para>
+
+    <para></para>
+
+    <para>DFS Exception: 3 Lookup access denied for scope
+    &lt;filepath&gt;</para>
+
+    <para></para>
+
+    <para>(where &lt;filepath&gt; is the full logical file scope path)</para>
+
+    <para></para>
+
+    <para><emphasis role="bold">LDAP permissions and their meanings for File
+    scope OUs</emphasis></para>
+
+    <para><emphasis>Read</emphasis> allows you to read files in that
+    scope</para>
+
+    <para><emphasis>Write</emphasis> allows you to create or modify a file in
+    that scope</para>
+
+    <para><emphasis>Full</emphasis> allows you to delete a file in that
+    scope</para>
+  </sect2>
+
+  <sect2>
+    <title>Workunit Access Control</title>
+
+    <para>There are 2 aspects of Workunit security: <emphasis>Feature
+    Authentication </emphasis>and <emphasis>Workunit Scope
+    </emphasis>security</para>
+
+    <para>Feature Authentication for workunits provides a means set
+    permissions to control whether users and view their own WUs and/or other
+    users’ WUs. Workunit Scope security provides the ability to set
+    permissions WU scopes. All new workunits now have a scope value.</para>
+
+    <para>By default, a submitted WU has a scope of the user’s ID. For
+    example, a WU JohnDoe submits has scope=”johndoe” in the WU. This value in
+    a WU allows ESP and its services to use LDAP to check for permissions and
+    enforce those permissions.</para>
+
+    <para>You can override the default scope using ECL Code:</para>
+
+    <para><programlisting>#workunit(‘scope’,’MyScopeValue’);</programlisting></para>
+
+    <para>In addition, the scope of a workunit can be changed in ECL Watch by
+    opening the WU, editing the scope field and pressing the <emphasis
+    role="bold">Save</emphasis> button.</para>
+
+    <para><emphasis role="bold">Securing Workuint Scopes</emphasis></para>
+
+    <para>ESP (on startup) automatically creates an LDAP OU called “Workunits”
+    (unless it already exists). If this OU is automatically created, the OU is
+    made with full permissions granted to all authenticated users. All WU
+    scopes are below the <emphasis>workunits</emphasis> OU either implicitly
+    or explicitly.</para>
+
+    <para>If a specific scope OU does not exist in LDAP (e.g., the scope
+    johndoe used in earlier example), then the parent OU’s permissions are
+    used. In other words, the scope of <emphasis>johndoe</emphasis> is
+    implicitly under the <emphasis>workunits</emphasis> OU even though it
+    might not be explicitly listed in the LDAP structure and therefore it
+    would use the permissions granted for the parent: <emphasis>workunits
+    </emphasis>.</para>
+
+    <para><emphasis role="bold">LDAP permissions and their meanings for WU
+    scope OUs</emphasis></para>
+
+    <para><emphasis>Read</emphasis> allows you to view WUs in that
+    scope</para>
+
+    <para><emphasis>Write</emphasis> allows you to create or modify a WU in
+    that scope</para>
+
+    <para><emphasis>Full</emphasis> allows you to delete a WU in that
+    scope</para>
+
+    <para><emphasis role="bold">Additional details</emphasis></para>
+
+    <para>There are two ways to restrict WU access (feature authentication and
+    WU Scope). Both methods are valid to use (either separately or together),
+    so the strictest restriction always wins.</para>
+
+    <para>In other words, if someone is granted permission to see WUs in the
+    scope <emphasis>johndoe </emphasis>but is denied permission to see other
+    users’ WUs in the Feature Authentication permissions, then he could not
+    see one of John Doe’s WUs.</para>
+
+    <para>Conversely, if he is allowed access to see other people’s WUs but is
+    denied access to the <emphasis>johndoe </emphasis>WU<emphasis>
+    </emphasis>scope, he should not be able to see WUs in that scope.</para>
+
+    <para>If you do not have access to a WU, you will never be able to view it
+    or even know of its existence.</para>
+
+    <para></para>
+  </sect2>
+</sect1>

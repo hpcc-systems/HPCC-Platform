@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TYPEOF">
+  <title>TYPEOF</title>
+
+  <para><emphasis role="bold">TYPEOF<indexterm>
+      <primary>TYPEOF</primary>
+    </indexterm><indexterm>
+      <primary>TYPEOF data type</primary>
+    </indexterm>( </emphasis><emphasis>expression</emphasis><emphasis
+  role="bold"> )</emphasis></para>
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>expression</emphasis></entry>
+
+          <entry>An expression defining the value type.
+  This may be the name of a data field, passed parameter, function, or
+  Attribute providing the value type (including RECORD structures). This must
+  be a legal expression for the current scope but is not evaluated for its
+  value.</entry>
+        </row>
+
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+
+  <para>The <emphasis role="bold">TYPEOF</emphasis> declaration allows you to
+  define an Attribute or parameter whose value type is “just like” the
+  <emphasis>expression</emphasis>. It is valid for use anywhere an explicit
+  value type is valid.</para>
+
+  <para>Its most typical use would be to specify the return type of a
+  TRANSFORM function as “just like” a dataset or recordset structure.</para>
+
+  <para>Example:</para>
+
+  <programlisting>STRING3 Fred := 'ABC'; //declare Fred as a 3-byte string
+TYPEOF(Fred) Sue := Fred; //declare Sue as “just like” Fred</programlisting>
+
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+</sect1>

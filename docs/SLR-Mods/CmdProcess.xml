@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CmdProcess">
+  <title><emphasis role="bold">CmdProcess</emphasis></title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.System.Util.CmdProcess<indexterm>
+      <primary>STD.System.Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>System.Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>Util.CmdProcess</primary>
+    </indexterm> <indexterm>
+      <primary>CmdProcess</primary>
+    </indexterm>(</emphasis> <emphasis> program, input </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>program</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the program
+          to execute. This may include command-line parameters.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>input</emphasis></entry>
+
+          <entry>A string containing the text to pipe into the
+          <emphasis>program</emphasis> through stdin.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>CmdProcess returns returns a STRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">CmdProcess </emphasis>function pipes the
+  <emphasis>input</emphasis> text to the specified
+  <emphasis>program</emphasis>. This is similar to the PIPE built-in function,
+  but limited to simple text input and output.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+   
+OUTPUT(STD.System.Util.CmdProcess('echo','George Jetson'));
+</programlisting>
+</sect1>

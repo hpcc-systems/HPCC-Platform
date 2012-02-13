@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Cartesian_Product_of_Two_Datasets" role="nobrk">
+  <title>Cartesian Product of Two Datasets</title>
+
+  <para>A Cartesian Product is the product of two non-empty sets in terms of
+  ordered pairs. As an example, if we take the set of values, A, B and C, and
+  a second set of values, 1, 2, and 3, the Cartesian Product of these two sets
+  would be the set of ordered pairs, A1, A2, A3, B1, B2, B3, C1, C2,
+  C3.</para>
+
+  <para>The ECL code to produce this kind of result from any two input
+  datasets would look like this (contained in Cartesian.ECL):</para>
+
+  <programlisting>OutFile1 := '~PROGGUIDE::OUT::CP1';
+
+rec := RECORD
+  STRING1 Letter;
+END;
+Inds1 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                  {'F'},{'G'},{'H'},{'I'},{'J'},
+                  {'K'},{'L'},{'M'},{'N'},{'O'},
+                  {'P'},{'Q'},{'R'},{'S'},{'T'},
+                  {'U'},{'V'},{'W'},{'X'},{'Y'}],
+                 rec);
+
+Inds2 := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                  {'F'},{'G'},{'H'},{'I'},{'J'},
+                  {'K'},{'L'},{'M'},{'N'},{'O'},
+                  {'P'},{'Q'},{'R'},{'S'},{'T'},
+                  {'U'},{'V'},{'W'},{'X'},{'Y'}],
+                 rec);
+
+CntInDS2 := COUNT(Inds2);
+SetInDS2 := SET(inds2,letter);
+outrec := RECORD
+  STRING1 LeftLetter;
+  STRING1 RightLetter;
+END;
+
+outrec CartProd(rec L, INTEGER C) := TRANSFORM
+  SELF.LeftLetter := L.Letter;
+  SELF.RightLetter := SetInDS2[C];
+END;
+
+//Run the small datasets
+CP1 := NORMALIZE(Inds1,CntInDS2,CartProd(LEFT,COUNTER));
+OUTPUT(CP1,,OutFile1,OVERWRITE);
+</programlisting>
+
+  <para>The core structure of this code is the NORMALIZE that will produce the
+  Cartesian Product. The two input datasets each have twenty-five records, so
+  the number of result records will be six hundred twenty-five (twenty-five
+  squared).</para>
+
+  <para>Each record in the LEFT input dataset to the NORMALIZE will execute
+  the TRANSFORM once for each entry in the SET of values. Making the values a
+  SET is the key to allowing NORMALIZE to perform this operation, otherwise
+  you would need to do a JOIN where the join condition is the keyword TRUE to
+  accomplish this task. However, in testing this with sizable datasets (as in
+  the next instance of this code below), the NORMALIZE version was about 25%
+  faster than using JOIN. If there is more than one field, then multiple SETs
+  may be defined and the process stays the same.</para>
+
+  <para>This next example does the same operation as above, but first
+  generates two sizeable datasets to work with (also contained in
+  Cartesian.ECL):</para>
+
+  <programlisting>InFile1 := '~PROGGUIDE::IN::CP1';
+InFile2 := '~PROGGUIDE::IN::CP2';
+OutFile2 := '~PROGGUIDE::OUT::CP2';
+
+//generate data files
+rec BuildFile(rec L, INTEGER C) := TRANSFORM
+  SELF.Letter := Inds2[C].Letter;
+END;
+
+GenCP1 := NORMALIZE(InDS1,CntInDS2,BuildFile(LEFT,COUNTER));
+GenCP2 := NORMALIZE(GenCP1,CntInDS2,BuildFile(LEFT,COUNTER));
+GenCP3 := NORMALIZE(GenCP2,CntInDS2,BuildFile(LEFT,COUNTER));
+
+Out1 := OUTPUT(DISTRIBUTE(GenCP3,RANDOM()),,InFile1,OVERWRITE);
+Out2 := OUTPUT(DISTRIBUTE(GenCP2,RANDOM()),,InFile2,OVERWRITE);
+
+// Use the generated datasets in a cartesian join:
+
+ds1 := DATASET(InFile1,rec,thor);
+ds2 := DATASET(InFile2,rec,thor);
+
+CntDS2 := COUNT(ds2);
+SetDS2 := SET(ds2,letter);
+
+CP2  := NORMALIZE(ds1,CntDS2,CartProd(LEFT,COUNTER));
+Out3 := OUTPUT(CP2,,OutFile2,OVERWRITE);
+SEQUENTIAL(Out1,Out2,Out3) </programlisting>
+
+  <para>Using NORMALIZE in this case to generate the datasets is the same type
+  of usage previously described in the Creating Example Data article. After
+  that, the process to achieve the Cartesian Product is exactly the same as
+  the previous example.</para>
+
+  <para>Here's an example of how this same operation can be done using JOIN
+  (also contained in Cartesian.ECL):</para>
+
+  <programlisting>// outrec joinEm(rec L, rec R) := TRANSFORM
+    // SELF.LeftLetter := L.Letter;
+    // SELF.RightLetter := R.Letter;
+// END;
+
+// ds4 := JOIN(ds1, ds2, TRUE, joinEM(LEFT, RIGHT), ALL);
+// OUTPUT(ds4);
+</programlisting>
+</sect1>

@@ -1,0 +1,342 @@
+body {
+    font-family: serif;
+    font-size: 10pt;
+    color: black;
+    background-color: white;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #394986;
+    font-height: bold;
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+}
+
+h1 {
+    font-family: sans-serif;
+    font-size: 1.8em;
+    color: #A91919;
+}
+
+h2 {
+    font-family: sans-serif;
+    font-size: 1.6em;
+    text-decoration: underline;
+    color: #A91919;
+}
+
+h3 {
+    font-family: sans-serif;
+    font-size: 1.4em;
+    color: #A91919;
+}
+
+h4 {
+    font-family: sans-serif;
+    font-size: 1.2em;
+    color: #A91919;
+}
+
+h5,
+h6 {
+    font-family: san-serif;
+    font-size: 1em;
+    color: #A91919;
+}
+
+table {
+    border-spacing: 0;
+    font-size: 1em;
+}
+
+thead,
+tfoot {
+    background-color: #EEEEEE;
+}
+
+th,
+td {
+    padding: 0 0.5ex;
+    vertical-align: top; 
+}
+
+blockquote {
+    margin-top: 1.33ex 4ex;
+    margin-left: 4em;
+
+}
+
+p,
+th,
+td,
+li,
+dt,
+dd {
+    font-size: 1em;
+}
+
+p,
+pre,
+ol,
+dl,
+ul,
+table {
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+}
+
+code,
+kbd,
+tt,
+pre {
+    font-family: monospace;
+    font-size: 90%;
+}
+
+pre {
+    white-space: pre;
+    background-color: #EEEEEE;
+    border: 1px solid #C0C0C0;
+    padding: 1ex;
+}
+
+li {
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+}
+
+*[compact] > li {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+dt {
+    margin-top: 1.33ex;
+    margin-bottom: 0;
+}
+
+dd {
+    margin-top: 0;
+    margin-bottom: 1.33ex;
+}
+
+*[compact] > dt {
+    margin-top: 0;
+}
+
+*[compact] > dd {
+    margin-bottom: 0;
+}
+
+div.toc,
+div.index,
+div.list-of-figures,
+div.list-of-tables,
+div.list-of-examples,
+div.list-of-equations,
+div.list-of-procedures {
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+    font-family: sans-serif;
+}
+
+div.toc dl,
+div.index dl,
+div.list-of-figures dl,
+div.list-of-tables dl,
+div.list-of-examples dl,
+div.list-of-equations dl,
+div.list-of-procedures dl {
+    margin-top: 0;
+    margin-bottom: 0;
+    
+}
+
+div.toc dt,
+div.index dt,
+div.list-of-figures dt,
+div.list-of-tables dt,
+div.list-of-examples dt,
+div.list-of-equations dt,
+div.list-of-procedures dt {
+    margin-top: 0.25ex;
+    margin-bottom: 0.25ex;
+    
+}
+
+div.toc dd,
+div.index dd,
+div.list-of-figures dd,
+div.list-of-tables dd,
+div.list-of-examples dd,
+div.list-of-equations dd,
+div.list-of-procedures dd {
+    margin-top: 0;
+    margin-bottom: 0;
+    
+}
+
+div.toc span.part,
+div.toc span.chapter,
+div.toc span.appendix {
+    font-weight: bold;
+    
+}
+
+div.attribution {
+    text-align: right;
+}
+
+div.sidebar {
+    background-color: #EEEEFF;
+    border: 1px solid #C0C0DD;
+    padding: 1ex;
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+}
+
+div.sidebar > p.title {
+    margin-top: 0.33ex;
+}
+
+div.example > p.title,
+div.figure > p.title,
+div.table > p.title,
+div.procedure > p.title,
+div.equation > p.title {
+    color: #394986;
+    font-weight: bold;
+}
+
+div.orderedlist,
+div.calloutlist {
+    margin-top: 1.33ex;
+    margin-bottom: 1.33ex;
+}
+
+div.orderedlist > table,
+div.calloutlist > table {
+    margin: 0;
+}
+
+div.orderedlist > table td,
+div.calloutlist > table td {
+    vertical-align: baseline;
+}
+
+div.footnote {
+    font-size: 0.9em;
+}
+
+a:link {
+    text-decoration: none;
+    color: #004668;
+}
+
+a:hover,
+a:visited:hover {
+    text-decoration: underline;
+    color: #004668;
+}
+
+a:visited {
+    text-decoration: none;
+    color: #135678;
+}
+
+span.term {
+    font-weight: bold;
+}
+
+abbr,
+acronym {
+    font-weight: bold;
+}
+
+span.bluebold {
+    font-weight: bold;
+    color: #00008B;
+}
+span.blueital {
+    font-style:italic;
+    color: #00008B;
+}
+span.blue {
+    color: #00008B;
+}
+
+span.redbold {
+    font-weight: bold;
+    color: #FF0000;
+}
+span.redital {
+    font-style:italic;
+    color: #FF0000;
+}
+span.red {
+    color: #FF0000;
+}
+span.greenbold {
+    font-weight: bold;
+    color: #008000;
+}
+span.greenital {
+    font-style:italic;
+    color: #008000;
+}
+span.green {
+    color: #008000;
+}
+span.whitebold {
+    font-weight: bold;
+    color: #FFFFFF;
+}
+span.whiteital {
+    font-style:italic;
+    color: #FFFFFF;
+}
+span.white {
+    color: #FFFFFF;
+}
+span.keycap,
+span.keycode,
+span.keysym,
+span.mousebutton {
+    font-family: monospace;
+    font-size: 90%;
+    background-color: #EEEEEE;
+    padding: 0.2ex;
+}
+
+span.guimenu,
+span.guisubmenu,
+span.guimenuitem,
+span.guibutton,
+span.guiicon,
+span.interface,
+span.guilabel {
+    font-weight: bold;
+}
+
+pre.programlisting {
+  margin-left: 3.25em;
+}
+
+pre.pl-tab {
+    border: 0;
+    font-family: serif;
+    font-size: 10pt;
+    color: black;
+    background-color: white;
+}
+img { 
+  margin-left: 3.25em;
+} 
+img.noin { 
+  margin-left: 0em;
+} 

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>IncluderStuff</title>
+
+  <sect1>
+    <title>Section1 container</title>
+
+    <para>This is filler</para>
+
+    <sect2 id="Find_AWS_Keys">
+      <title>Find your Amazon Access Key ID and Secret Access Key</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Go to <emphasis role="bold">aws.amazon.com</emphasis> and
+            login, if needed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">Account</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">Security
+            Credentials</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>On the page, look for the section called <emphasis
+            role="bold">Access Credentials</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Note your <emphasis role="bold">Access Key ID</emphasis> and
+            your <emphasis role="bold">Secret Access Key.</emphasis></para>
+
+            <para><figure>
+                <title>Credentials</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_Accesskey.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <para>Portions of this image are intentionally blurred</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <tgroup cols="2">
+            <colspec colwidth="126.00pt" />
+
+            <colspec colwidth="189.00pt" />
+
+            <tbody>
+              <row>
+                <entry>Access Key ID</entry>
+
+                <entry></entry>
+              </row>
+
+              <row>
+                <entry>Secret Access Key</entry>
+
+                <entry></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect2>
+  </sect1>
+</chapter>

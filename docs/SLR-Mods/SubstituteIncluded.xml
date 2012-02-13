@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="SubstituteIncluded">
+  <title><emphasis role="bold">SubstituteIncluded</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.SubstituteIncluded<indexterm>
+      <primary>STD.Str.SubstituteIncluded</primary>
+    </indexterm><indexterm>
+      <primary>Str.SubstituteIncluded</primary>
+    </indexterm><indexterm>
+      <primary>SubstituteIncluded</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.SubstituteIncluded<indexterm>
+      <primary>STD.Uni.SubstituteIncluded</primary>
+    </indexterm><indexterm>
+      <primary>Uni.SubstituteIncluded</primary>
+    </indexterm>(</emphasis> <emphasis>source, target, replacement</emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to search.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>target </emphasis></entry>
+
+          <entry>A string containing the characters to search for.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>replacement </emphasis></entry>
+
+          <entry>A string containing the replacement character as its first
+          character.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>SubstituteIncluded returns a STRING or UNICODE value, as
+          appropriate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">SubstituteIncluded </emphasis>functions
+  return the <emphasis>source</emphasis> string with the
+  <emphasis>replacement</emphasis> character substituted for all characters
+  that exist in both the <emphasis>source</emphasis> and the <emphasis>target
+  </emphasis>string. If no <emphasis>target</emphasis> string characters are
+  in the <emphasis>source</emphasis> string, it returns the
+  <emphasis>source</emphasis> string unaltered.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+A := STD.Uni.SubstituteIncluded(u'abcde', u'cd', u'x');
+   //A contains u'abxxe';
+B := STD.Str.SubstituteIncluded('abcabc','ac','yz');
+   //B contains 'ybyyby'
+</programlisting>
+</sect1>

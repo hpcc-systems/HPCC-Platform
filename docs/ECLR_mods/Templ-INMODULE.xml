@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_INMODULE">
+  <title>#INMODULE</title>
+
+  <para><emphasis role="bold">#INMODULE<indexterm>
+      <primary>#INMODULE</primary>
+    </indexterm>( </emphasis><emphasis> module, attribute </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.90pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>module</emphasis></entry>
+
+            <entry>A previously defined user-defined symbol containing the
+            name of an ECL source module.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>A previously defined user-defined symbol containing the
+            name of an Attribute that may or may not be in the module.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#INMODULE </emphasis>statement returns a
+  Boolean TRUE or FALSE as to whether the <emphasis>attribute</emphasis>
+  exists in the specified <emphasis>module</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE (mod)
+  #DECLARE (attr)
+  #DECLARE (stg)
+  
+  #SET(mod, 'default')
+  #SET(attr, 'YearOf')
+  
+  #IF( #INMODULE(%mod%, %attr%) )
+     #SET(stg, %'attr'% + ' Exists In Module ' + %'mod'%);
+  #ELSE
+     #SET(stg, %'attr'% + ' Does Not Exist In Module ' + %'mod'%);
+  #END
+  
+  export res := %'stg'%;
+  res;
+  
+  // Output: (For 'default.YearOf')
+  // stg = 'YearOf Exists In Module default'
+  //
+  // Output: (For 'default.Fred')
+  // stg = 'Fred Does Not Exist In Module default'
+</programlisting>
+</sect1>
