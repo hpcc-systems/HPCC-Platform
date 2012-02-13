@@ -130,6 +130,8 @@ protected:
 
     IHqlExpression * getNoHoistAttr();
 
+    inline bool isAlwaysLocal() const { return (options & HOOalwayslocal) != 0; }
+
 protected:
     typedef OPTTRANSFORMBASE PARENT;
     unsigned options;

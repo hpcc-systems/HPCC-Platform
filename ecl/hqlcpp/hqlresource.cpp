@@ -141,6 +141,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         if (!isGrouped && !isLocal)
         {
             resources.set(RESslavememory, MEM_Const_Minimal+DEDUP_SMART_BUFFER_SIZE);
+            //MORE: Is this still correct?
             resources.setManyToMasterSockets(1);
         }
         break;
@@ -148,6 +149,12 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_keyeddistribute:
         resources.setLightweight();
         setHashResources(expr, resources, options);
+        break;
+    case no_shuffle:
+        if (expr->hasProperty(manyAtom))
+            resources.setHeavyweight();
+        else
+            resources.setLightweight();
         break;
     case no_sort:
         if (isGrouped)

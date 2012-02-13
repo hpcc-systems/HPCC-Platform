@@ -701,6 +701,14 @@ struct HqlCppOptions
     bool                createImplicitAliases;
     bool                combineSiblingGraphs;
     bool                optimizeSharedGraphInputs;
+    bool                supportsShuffleActivity;  // Does the target engine support SHUFFLE?
+    bool                implicitShuffle;  // convert sort when partially sortted to shuffle (group,sort,ungroup)
+    bool                implicitBuildIndexShuffle;  // use shuffle when building indexes?
+    bool                implicitJoinShuffle;  // use shuffle for paritially sorted join inputs when possible
+    bool                implicitGroupShuffle;  // use shuffle if some sort conditions match when grouping
+    bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
+    bool                implicitGroupHashDedup;
+    bool                shuffleLocalJoinConditions;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1485,6 +1493,7 @@ public:
     void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
     void doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * alreadyDoneExpr);
 
+    void doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * sortlist);
 
     void processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, SharedHqlExpr & firstTransform, SharedHqlExpr & nextTransform);
     void doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);

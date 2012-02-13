@@ -2049,10 +2049,10 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
         }
     }
 
-    OwnedHqlExpr leftList = createValue(no_sortlist, makeSortListType(NULL), optimizedLeft);
+    OwnedHqlExpr leftList = createSortList(optimizedLeft);
     DatasetReference datasetRight(aggregate, no_activetable, NULL);
     OwnedHqlExpr selSeq = createDummySelectorSequence();
-    OwnedHqlExpr rightList = createValue(no_sortlist, makeSortListType(NULL), optimizedRight);
+    OwnedHqlExpr rightList = createSortList(optimizedRight);
     OwnedHqlExpr rightSelect = datasetRight.getSelector(no_right, selSeq);
     OwnedHqlExpr rightResolved = datasetRight.mapCompound(rightList, rightSelect);
 

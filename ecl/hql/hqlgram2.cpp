@@ -5488,7 +5488,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         }
     }
     if (items.ordinality())
-        return createValue(no_sortlist, makeSortListType(NULL), items);
+        return createSortList(items);
     if (op == no_list)
         return createValue(no_sortlist, makeSortListType(NULL), items);
     return NULL;
@@ -10084,6 +10084,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HTTPHEADER: msg.append("HTTPHEADER"); break;
     case PROXYADDRESS: msg.append("PROXYADDRESS"); break;
     case HTTPCALL: msg.append("HTTPCALL"); break;
+    case SHUFFLE: msg.append("SHUFFLE"); break;
     case SOAPCALL: msg.append("SOAPCALL"); break;
     case SORT: msg.append("SORT"); break;
     case SORTED: msg.append("SORTED"); break;
@@ -10277,7 +10278,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SHUFFLE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

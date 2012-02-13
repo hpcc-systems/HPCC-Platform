@@ -39,7 +39,6 @@
 #include "hqlmeta.hpp"
 
 //#define OPTIMIZATION2
-//#define OPTIMIZE_SORT_WITH_GROUP
 
 static IHqlExpression * cacheGroupedElement;
 static IHqlExpression * cacheUnknownAttribute;
@@ -293,7 +292,7 @@ IHqlExpression * createSubSortlist(IHqlExpression * sortlist, unsigned from, uns
     unwindChildren(components, sortlist, from, to);
     if (subsetAttr)
         components.append(*LINK(subsetAttr));
-    return createValue(no_sortlist, makeSortListType(NULL), components);
+    return createSortList(components);
 }
 
 void removeDuplicates(HqlExprArray & components)
@@ -407,7 +406,7 @@ static IHqlExpression * normalizeSortlist(IHqlExpression * sortlist)
     unwindNormalizeSortlist(components, sortlist, false);
     removeDuplicates(components);
     //This never returns NULL if the input was non-null
-    return createValue(no_sortlist, makeSortListType(NULL), components);
+    return createSortList(components);
 }
 
 inline IHqlExpression * normalizeSortlist(IHqlExpression * sortlist, IHqlExpression * dataset)
@@ -505,7 +504,7 @@ IHqlExpression * getLocalSortOrder(ITypeInfo * type)
     if (components.ordinality())
     {
         removeDuplicates(components);
-        return createValue(no_sortlist, makeSortListType(NULL), components);
+        return createSortList(components);
     }
     return NULL;
 }
@@ -1033,7 +1032,7 @@ bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isL
 }
 
 
-IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal)
+IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal, bool allowShuffle)
 {
     if (isSortedForGroup(table, sortList, isLocal||alwaysLocal))
         return LINK(table);
@@ -1221,30 +1220,10 @@ bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLo
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
-    OwnedHqlExpr normalizedOrder = createValue(no_sortlist, makeSortListType(NULL), components);
+    OwnedHqlExpr normalizedOrder = createSortList(components);
     return normalizedIsAlreadySorted(dataset, normalizedOrder, isLocal, ignoreGrouping);
 }
 
-
-IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
-{
-    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
-        return LINK(dataset);
-
-    if (isLocal || alwaysLocal)
-    {
-        unsigned partialSorted = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
-        if (partialSorted != 0)
-        {
-            OwnedHqlExpr shuffled = ensureShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal, partialSorted);
-            if (shuffled)
-                return shuffled.getClear();
-        }
-    }
-
-    IHqlExpression * attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    return createDatasetF(no_sort, LINK(dataset), LINK(order), attr, NULL);
-}
 
 //--------------------------------------------------------------------------------------------------------------------
 
@@ -1277,7 +1256,7 @@ static unsigned normalizedNumSortedElements(IHqlExpression * dataset, IHqlExpres
     return numCompatibleSortElements(existingOrder, normalizedOrder);
 }
 
-unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping)
+static unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping)
 {
 #ifdef OPTIMIZATION2
     if (hasNoMoreRowsThan(dataset, 1))
@@ -1288,29 +1267,55 @@ unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpression * ord
     return normalizedNumSortedElements(dataset, normalizedOrder, isLocal, ignoreGrouping);
 }
 
-
 //Elements in the exprarray have already been mapped;
-unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+static unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
-    OwnedHqlExpr normalizedOrder = createValue(no_sortlist, makeSortListType(NULL), components);
+    OwnedHqlExpr normalizedOrder = createSortList(components);
     return normalizedNumSortedElements(dataset, normalizedOrder, isLocal, ignoreGrouping);
 }
 
-IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, unsigned sortedElements)
+bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping)
 {
-#ifndef OPTIMIZE_SORT_WITH_GROUP
-    return NULL;
-#endif
-    if (sortedElements == (unsigned)-1)
-        sortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+    //MORE: Should this look at the cardinality of the already-sorted fields, and not transform if below a certain threshold?
+    return numElementsAlreadySorted(dataset, order, isLocal, ignoreGrouping) != 0;
+}
 
-#ifdef _DEBUG
-    assertex(numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping) >= sortedElements);
-#endif
+bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+{
+    //MORE: Should this look at the cardinality of the already-sorted fields, and not transform if below a certain threshold?
+    return numElementsAlreadySorted(dataset, newSort, isLocal, ignoreGrouping) != 0;
+}
 
-    if ((sortedElements == 0) || isGrouped(dataset))
+//--------------------------------------------------------------------------------------------------------------------
+
+//Convert SHUFFLE(ds, <sort>, <grouping>, ?LOCAL, options) to
+//g := GROUP(ds, grouping, ?LOCAL); s := SORT(g, <sort>, options); GROUP(s);
+IHqlExpression * convertShuffleToGroupedSort(IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * newOrder = expr->queryChild(1);
+    IHqlExpression * grouping = expr->queryChild(2);
+
+    assertex(!isGrouped(dataset) || expr->hasProperty(globalAtom));
+    OwnedHqlExpr attr = isLocalActivity(expr) ? createLocalAttribute() : NULL;
+    OwnedHqlExpr grouped = createDatasetF(no_group, LINK(dataset), LINK(grouping), LINK(attr), NULL);
+
+    HqlExprArray args;
+    args.append(*grouped.getClear());
+    args.append(*LINK(newOrder));
+    unwindChildren(args, expr, 3);
+    removeProperty(args, localAtom);
+    OwnedHqlExpr sorted = createDataset(no_sort, args);
+    return createDataset(no_group, LINK(sorted));
+}
+
+static IHqlExpression * createShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+{
+    bool isGroupedShuffle = !ignoreGrouping && isGrouped(dataset);
+    unsigned sortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
+    if ((sortedElements == 0) || isGroupedShuffle)
         return NULL;
 
     HqlExprArray components;
@@ -1323,13 +1328,15 @@ IHqlExpression * ensureShuffled(IHqlExpression * dataset, IHqlExpression * order
     OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
 
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    OwnedHqlExpr group = createDatasetF(no_group, LINK(dataset), LINK(alreadySorted), LINK(attr), NULL);
-    OwnedHqlExpr sorted = createDataset(no_sort, LINK(group), LINK(newOrder));
-    OwnedHqlExpr ungrouped = createDataset(no_group, LINK(sorted));
-    if (!isAlreadySorted(ungrouped, order, isLocal||alwaysLocal, ignoreGrouping))
-        dbglogExpr(ungrouped);
-    assertex(isAlreadySorted(ungrouped, order, isLocal||alwaysLocal, ignoreGrouping));
-    return ungrouped.getClear();
+    OwnedHqlExpr shuffle = createDatasetF(no_shuffle, LINK(dataset), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
+    //Grouped shuffles never generated, global shuffles (if generated) get converted to a global group
+    if (!isLocal && !alwaysLocal)
+        shuffle.setown(convertShuffleToGroupedSort(shuffle));
+
+    if (!isAlreadySorted(shuffle, order, isLocal||alwaysLocal, ignoreGrouping))
+        dbglogExpr(shuffle);
+    assertex(isAlreadySorted(shuffle, order, isLocal||alwaysLocal, ignoreGrouping));
+    return shuffle.getClear();
 }
 
 IHqlExpression * getShuffleSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
@@ -1337,12 +1344,9 @@ IHqlExpression * getShuffleSort(IHqlExpression * dataset, HqlExprArray & order, 
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
 
-    unsigned numSortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
-    if (numSortedElements == 0)
-        return NULL;
     OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), order);
     OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, queryActiveTableSelector(), dataset);
-    return ensureShuffled(dataset, mappedSortlist, isLocal, ignoreGrouping, alwaysLocal, numSortedElements);
+    return createShuffled(dataset, mappedSortlist, isLocal, ignoreGrouping, alwaysLocal);
 }
 
 IHqlExpression * getShuffleSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
@@ -1350,10 +1354,28 @@ IHqlExpression * getShuffleSort(IHqlExpression * dataset, IHqlExpression * order
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
 
-    unsigned numSortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
-    if (numSortedElements == 0)
-        return NULL;
-    return ensureShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal, numSortedElements);
+    return createShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowShuffle)
+{
+    if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+        return LINK(dataset);
+
+    if (allowShuffle && (isLocal || alwaysLocal))
+    {
+        if (isWorthShuffling(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
+        {
+            OwnedHqlExpr shuffled = createShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
+            if (shuffled)
+                return shuffled.getClear();
+        }
+    }
+
+    IHqlExpression * attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
+    return createDatasetF(no_sort, LINK(dataset), LINK(order), attr, NULL);
 }
 
 //-------------------------------

@@ -343,7 +343,7 @@ enum _node_operator {
         no_crc,
         no_return_stmt,
         no_update,    
-    no_unused17,
+        no_shuffle,
     no_unused18,
         no_alias,
     no_unused19,
@@ -1580,6 +1580,7 @@ extern HQL_API IHqlScope * closeScope(IHqlScope * scope);
 extern HQL_API _ATOM queryPatternName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * closeAndLink(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record);
+extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements);
 
 // Same as expr->queryChild() except it doesn't return attributes.
 inline IHqlExpression * queryRealChild(IHqlExpression * expr, unsigned i)
