@@ -2470,7 +2470,7 @@ ParentExtract * ActivityInstance::createNestedExtract()
 {
     if (!nestedExtract)
     {
-        nestedExtract.setown(new ParentExtract(translator, PETnested, GraphCoLocal, evalContext));
+        nestedExtract.setown(new ParentExtract(translator, PETnested, NULL, GraphCoLocal, evalContext));
         nestedExtract->beginNestedExtract(startctx);
     }
     return LINK(nestedExtract);
@@ -6054,7 +6054,15 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 //Use the get graph result activity if we are generating the correct level graph.
                 //otherwise it needs to be serialized from the parent activity
                 {
-                    if (isCurrentActiveGraph(ctx, expr->queryChild(1)))
+                    IHqlExpression * graphId = expr->queryChild(1);
+                    bool canAccessResultDirectly = isCurrentActiveGraph(ctx, graphId);
+                    if (getTargetClusterType() == ThorLCRCluster)
+                    {
+                        ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
+                        if (extract)
+                            canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
+                    }
+                    if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
                     else
                         result = doBuildActivityChildDataset(ctx, expr);
