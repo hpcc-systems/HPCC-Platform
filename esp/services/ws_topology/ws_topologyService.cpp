@@ -1428,7 +1428,7 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         }
         else
         {
-            m_TpWrapper.getClusterMachineList(type, path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(type, path, directory, MachineList, hasThorSpareProcess, req.getCluster());
         }
         resp.setTpMachines(MachineList);
         resp.setType( req.getType() );
