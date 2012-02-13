@@ -1480,7 +1480,7 @@ public:
     void doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateFirstFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateNextFunc(BuildCtx & ctx, IHqlExpression * expr);
-    void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr);
+    void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
     void doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * alreadyDoneExpr);
 
 

@@ -2189,15 +2189,7 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) = 0;      //only call if transform called at least once on src.
-    if (op == no_newaggregate)
-    {
-        translator.doBuildAggregateMergeFunc(instance->startctx, aggregate);
-    }
-    else
-    {
-        OwnedHqlExpr mergeTransform = translator.getUserAggregateMergeTransform(aggregate, requiresOrderedMerge);
-        translator.doBuildUserMergeAggregateFunc(instance->startctx, aggregate, mergeTransform);
-    }
+    translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
 
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
@@ -2278,7 +2270,7 @@ void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) = 0;      //only call if transform called at least once on src.
     if (needMerge)
-        translator.doBuildAggregateMergeFunc(instance->startctx, aggregate);
+        translator.doBuildAggregateMergeFunc(instance->startctx, aggregate, requiresOrderedMerge);
 }
 
 
