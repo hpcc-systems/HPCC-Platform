@@ -49,7 +49,7 @@ RUN_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^runtime=" | 
 INSTANCE_DIR=$RUN_DIR/$1
 
 if [ ! -e $INSTANCE_DIR ] ; then
-  # perhaps they gave a full path? 
+  # perhaps they gave a full path?
   if [ ! -e $1 ] ; then
     echo Usage: $0 thor_cluster_name
     exit 1
@@ -82,8 +82,8 @@ mkdir -p $BACKUPNODE_DATA
 rm -f $BACKUPNODE_DATA/*.ERR
 rm -f $BACKUPNODE_DATA/*.DAT
 
-echo Using backupnode directory $BACKUPNODE_DATA 
-echo Reading slaves file $INSTANCE_DIR/slaves 
+echo Using backupnode directory $BACKUPNODE_DATA
+echo Reading slaves file $INSTANCE_DIR/slaves
 echo Scanning files from dali ...
 
 NODEGROUP=$THORPRIMARY
@@ -103,7 +103,8 @@ if [ $? -ne 0 ]; then
 fi
 
 frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
-frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA $INSTANCE_DIR/slaves %n $2 > $LOGPATH/${LOGDATE}_node%n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+echo frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
 
 echo ------------------------------
 sleep 5
