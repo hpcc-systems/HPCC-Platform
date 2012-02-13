@@ -1616,6 +1616,11 @@ void CTpWrapper::getMachineList(const char* clusterName,
                     machineInfo.setDomain(pDomain->getName(sName).str());
                 }
             }
+            else
+            {
+                machineInfo.setName("external");
+                machineInfo.setOS(MachineOsUnknown);
+            }
 
             MachineList.append(machineInfo);
         }
