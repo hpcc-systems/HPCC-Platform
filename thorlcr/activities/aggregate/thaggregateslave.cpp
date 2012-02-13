@@ -32,6 +32,9 @@
 
 class AggregateSlaveBase : public CSlaveActivity, public CThorDataLink
 {
+protected:
+    bool hadElement;
+    IThorDataLink *input;
 public:
     AggregateSlaveBase(CGraphElementBase *_container) 
         : CSlaveActivity(_container), CThorDataLink(this)
@@ -111,14 +114,14 @@ public:
         if (!container.queryLocal())
             mpTag = container.queryJob().deserializeMPTag(data);
     }
+    void start()
+    {
+        hadElement = false;
+    }
     virtual void doStopInput()
     {
         stopInput(input);
     }
-
-protected:
-    bool hadElement;
-    IThorDataLink *input;
 };
 
 //
@@ -149,6 +152,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        AggregateSlaveBase::start();
         eof = false;
         inputStopped = false;
         dataLinkStart("AGGREGATE", container.queryId());
