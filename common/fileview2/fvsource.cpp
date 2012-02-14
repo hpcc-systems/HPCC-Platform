@@ -451,18 +451,44 @@ const char *DataSourceMetaData::queryXmlTag() const
     return (tagname.get()) ? tagname.get() : "Row";
 }
 
+void DataSourceMetaData::gatherNestedAttributes(DataSourceMetaItem &rec, aindex_t &idx)
+{
+    aindex_t numItems = fields.ordinality();
+    while (++idx < numItems)
+    {
+        DataSourceMetaItem &item = fields.item(idx);
+        if (item.flags==FVFFendrecord)
+            return;
+        else if (item.flags==FVFFbeginrecord)
+            gatherNestedAttributes(item, idx);
+        else if (item.isXmlAttribute())
+            rec.nestedAttributes.append(idx);
+    }
+}
+
+void DataSourceMetaData::gatherAttributes()
+{
+    aindex_t numItems = fields.ordinality();
+    for (aindex_t idx = 0; idx < numItems; ++idx)
+    {
+        DataSourceMetaItem &item = fields.item(idx);
+        if (item.flags==FVFFbeginrecord)
+            gatherNestedAttributes(item, idx);
+        else if (item.isXmlAttribute())
+            attributes.append(idx);
+    }
+    gatheredAttributes=true;
+}
+
+const IntArray &DataSourceMetaData::queryAttrList(unsigned column)
+{
+    return fields.item(column).nestedAttributes;
+}
+
 const IntArray &DataSourceMetaData::queryAttrList()
 {
     if (!gatheredAttributes)
-    {
-        ForEachItemIn(idx, fields)
-        {
-            DataSourceMetaItem &item = fields.item(idx);
-            if (item.isXmlAttribute())
-                attributes.append(idx);
-        }
-        gatheredAttributes=true;
-    }
+        gatherAttributes();
     return attributes;
 }
 

@@ -52,6 +52,7 @@ interface IFvDataSourceMetaData : extends IInterface
     virtual const char *queryXmlTag(unsigned column) const = 0;
     virtual const char *queryXmlTag() const = 0;
     virtual const IntArray &queryAttrList() = 0;
+    virtual const IntArray &queryAttrList(unsigned column) = 0;
 };
 
 IFvDataSourceMetaData * deserializeDataSourceMeta(MemoryBuffer & in);

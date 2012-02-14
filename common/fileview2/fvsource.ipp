@@ -81,6 +81,7 @@ public:
     StringAttr  name;
     StringAttr  xpath;
     StringAttr tagname;
+    IntArray nestedAttributes;
     OwnedITypeInfo type;
     byte           flags;
 };
@@ -106,6 +107,8 @@ public:
     virtual const char *queryXmlTag(unsigned column) const;
     virtual const char *queryXmlTag() const;
     virtual const IntArray &queryAttrList();
+    virtual const IntArray &queryAttrList(unsigned column);
+
 
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
     virtual IFvDataSource * createChildDataSource(unsigned column, unsigned len, const void * data);
@@ -134,6 +137,8 @@ protected:
     void addSimpleField(const char * name, const char * xpath, ITypeInfo * type);
     void gatherFields(IHqlExpression * expr, bool isConditional);
     void gatherChildFields(IHqlExpression * expr, bool isConditional);
+    void gatherAttributes();
+    void gatherNestedAttributes(DataSourceMetaItem &rec, aindex_t &idx);
     void init();
 
 protected:
