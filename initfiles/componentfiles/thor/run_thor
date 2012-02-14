@@ -34,11 +34,21 @@ echo $$ > run_thor.lck
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
-    export logpth="$logdir/$logpthtail"
+    daliadmin $DALISERVER dfsgroup ${groupName} > slaves
+    errcode=$?
+    if [ 0 != ${errcode} ]; then
+    echo 'failed to lookup dali group for $groupName'
+        exit 1
+    fi
+    ## multislaves for bkwd compat. with old environments
+    if [ ${slavespernode} -gt 1 ] || [ "$localthor" = "true" ] || [ "$multislaves" = "true" ]; then
+        $deploydir/makethorgroup
+    fi
+
     $deploydir/start_slaves
 
-    echo thormaster cmd : $instancedir/thormaster_$THORMASTERPORT MASTER=$THORMASTER:$THORMASTERPORT logDir=$logpth SOCACHE_DIR=$instancedir/socache 
-    nohup $instancedir/thormaster_$THORMASTERPORT MASTER=$THORMASTER:$THORMASTERPORT logDir=$logpth SOCACHE_DIR=$instancedir/socache 2> /dev/null 1>/dev/null &
+    echo thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT
+    nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
 
     thorpid=$!
     if [ "$thorpid" -ne "0" ]; then 
@@ -78,5 +88,4 @@ while [ 1 ]; do
         echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi
-    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"
 done
