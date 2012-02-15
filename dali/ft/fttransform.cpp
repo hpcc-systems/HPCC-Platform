@@ -580,7 +580,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         StringBuffer host, expected;
         queryHostIP().getIpText(host);
         ep.getIpText(expected);
-        throwError2(DFTERR_OutputOffsetMismatch, expected.str(), host.str());
+        throwError2(DFTERR_WrongComputer, expected.str(), host.str());
     }
 
     srcFormat.deserialize(msg);
