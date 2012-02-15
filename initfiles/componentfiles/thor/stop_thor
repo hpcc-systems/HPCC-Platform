@@ -44,26 +44,28 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-while [ "`${PIDOF} thormaster_$THORMASTERPORT`" != "" ]
+masterproc="thormaster_$THORNAME"
+while [ "`${PIDOF} $masterproc`" != "" ]
 do
   echo --------------------------
   echo stopping thormaster $THORMASTER 
-  killall thormaster_$THORMASTERPORT
+  killall $masterproc
   sleep 8
-  killall -9 thormaster_$THORMASTERPORT
+  killall -9 $masterproc
   sleep 1
 done
 
 echo --------------------------
 echo stopping thor slaves 
 
+slaveproc="thorslave_$THORNAME"
 if [ "$localthor" = "true" ]; then
-    killall -9 thorslave_$THORSLAVEPORT
+    killall -9 $slaveproc
 else
     # use 20 threads
     # timeout of 60 seconds (in case slave busy)
     # hard kill (called after master down anyway so going to stall)
-    $deploydir/frunssh $instancedir/slaves "/bin/sh -c 'killall -9 thorslave_$THORSLAVEPORT'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
+    $deploydir/frunssh $instancedir/slaves "/bin/sh -c 'killall -9 $slaveproc'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
 
