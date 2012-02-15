@@ -2466,7 +2466,7 @@ ParentExtract * ActivityInstance::createNestedExtract()
 {
     if (!nestedExtract)
     {
-        nestedExtract.setown(new ParentExtract(translator, PETnested, GraphCoLocal, evalContext));
+        nestedExtract.setown(new ParentExtract(translator, PETnested, NULL, GraphCoLocal, evalContext));
         nestedExtract->beginNestedExtract(startctx);
     }
     return LINK(nestedExtract);
@@ -6050,7 +6050,23 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 //Use the get graph result activity if we are generating the correct level graph.
                 //otherwise it needs to be serialized from the parent activity
                 {
-                    if (isCurrentActiveGraph(ctx, expr->queryChild(1)))
+                    IHqlExpression * graphId = expr->queryChild(1);
+                    bool canAccessResultDirectly = isCurrentActiveGraph(ctx, graphId);
+                    if (!canAccessResultDirectly)
+                    {
+                        //Sometimes results for the parent graph can be accessed from a child graph (e.g., loops).
+                        //The test for Thor is temporary - roxie and hthor should both allow access to outer results
+                        //from inside a loop.
+                        //In fact roxie/hthor could access parent results directly from a child query if the parent
+                        //activity is always on the master.  (Thor could if it knew to access the entire result.)
+                        if (getTargetClusterType() == ThorLCRCluster)
+                        {
+                            ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
+                            if (extract)
+                                canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
+                        }
+                    }
+                    if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
                     else
                         result = doBuildActivityChildDataset(ctx, expr);
