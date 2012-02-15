@@ -65,11 +65,19 @@ if [ -z "$BACKUPNODE_DATA" ]; then
     echo cannot determine backupnode directory 
     exit 1
 fi
-if [ ! -r $INSTANCE_DIR/slaves ]; then
-    echo cannot read $INSTANCE_DIR/slaves 
+. $INSTANCE_DIR/setvars
+
+if [ ! -z ${THORPRIMARY} ]; then
+    groupName=${THORPRIMARY}
+else
+    groupName=${THORNAME}
+fi
+daliadmin $DALISERVER dfsgroup ${groupName} > $INSTANCE_DIR/slaves
+errcode=$?
+if [ 0 != ${errcode} ]; then
+    echo 'failed to lookup dali group for $groupName'
     exit 1
 fi
-. $INSTANCE_DIR/setvars
 
 BACKUPNODE_DATA=$BACKUPNODE_DATA/last_backup
 if [ "$localthor" == "true" ]; then
