@@ -366,6 +366,7 @@ typedef int socklen_t;
 #define memicmp j_memicmp
 
 #define I64F          "ll"
+#define I64_CAST      (long long int)
 
 #ifndef stricmp
 #define stricmp   strcasecmp
