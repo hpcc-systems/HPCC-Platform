@@ -52,26 +52,11 @@ if [ `ulimit -n` -lt 8192 ]; then
 fi
 
 if [ ! -z ${THORPRIMARY} ]; then
-    groupName=${THORPRIMARY}
+    export groupName=${THORPRIMARY}
 else
-    groupName=${THORNAME}
+    export groupName=${THORNAME}
 fi
-daliadmin $DALISERVER dfsgroup ${groupName} > slaves
-errcode=$?
-if [ 0 != ${errcode} ]; then
-    echo 'failed to lookup dali group for $groupName'
-    exit 1
-fi
-
-ln -s -f $deploydir/thormaster${LCR} thormaster_$THORMASTERPORT
-
-if [ "$localthor" = "true" ]; then
-    ln -s -f $deploydir/thorslave${LCR} thorslave_$THORSLAVEPORT
-fi
-## multislaves for bkwd compat. with old environments
-if [ ${slavespernode} -gt 1 ] || [ "$localthor" = "true" ] || [ "$multislaves" = "true" ]; then
-    . $deploydir/makethorgroup
-fi
+ln -s -f $deploydir/thormaster${LCR} thormaster_$THORNAME
 
 ENV_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^configs=" | sed -e 's/^configs=//'`
 export logdir=`updtdalienv $ENV_DIR/environment.xml -d log thor $THORNAME`

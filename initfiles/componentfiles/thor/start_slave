@@ -39,12 +39,9 @@ fi
 
 mkdir -p $instancedir
 mkdir -p `dirname $logredirect`
-exec >$logredirect 2>&1
+exec >>$logredirect 2>&1
 
 cd $instancedir
-
-logpth=${logpth}_${slaveport}
-
 
 echo "slave init `date`"
 
@@ -69,7 +66,7 @@ echo $$ > $lckfile
 ulimit -c unlimited
 ulimit -n 8192
 
-slaveproc="thorslave_$slaveport"
+slaveproc="thorslave_${hpcc_compname}"
 ln -s -f `which $prog` $slaveproc
 
 echo "slave starting `date`"
