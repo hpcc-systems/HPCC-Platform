@@ -482,6 +482,8 @@ void DataSourceMetaData::gatherAttributes()
 
 const IntArray &DataSourceMetaData::queryAttrList(unsigned column)
 {
+    if (!gatheredAttributes)
+        gatherAttributes();
     return fields.item(column).nestedAttributes;
 }
 
