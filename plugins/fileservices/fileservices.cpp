@@ -1469,7 +1469,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(size32_t & __lenResult
     SocketEndpoint ep(machine);
     if (ep.isNull()){
         if (machine)
-            throw MakeStringException(-1, "GetFileDescription: Could not resolve %s", machine);
+            throw MakeStringException(-1, "RemoteDirectory: Could not resolve host '%s'", machine);
         ep.setLocalHost(0);
     }
 
