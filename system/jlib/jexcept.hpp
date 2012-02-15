@@ -98,7 +98,8 @@ IException jlib_decl *MakeStringExceptionDirect(int code,const char *why);
 IException jlib_decl *MakeStringException(MessageAudience aud,int code,const char *why, ...) __attribute__((format(printf, 3, 4)));
 IException jlib_decl *MakeStringExceptionVA(MessageAudience aud,int code,const char *why, va_list args);
 IException jlib_decl *MakeStringExceptionDirect(MessageAudience aud,int code,const char *why);
-void jlib_decl ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 2, 3)));
+
+void jlib_decl ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 2, 0)));
 
 interface jlib_thrown_decl IOSException: extends IException{};
 IOSException jlib_decl *MakeOsException(int code);
