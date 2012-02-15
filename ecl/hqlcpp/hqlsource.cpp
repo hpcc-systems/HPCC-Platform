@@ -2357,7 +2357,7 @@ void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IH
     Owned<ParentExtract> extractBuilder;
     if (useExtract || (aggregate != mappedAggregate))
     {
-        extractBuilder.setown(translator.createExtractBuilder(transformCtx, PETcallback, GraphCoLocal, true));
+        extractBuilder.setown(translator.createExtractBuilder(transformCtx, PETcallback, NULL, GraphCoLocal, true));
         if (!translator.queryOptions().serializeRowsetInExtract)
             extractBuilder->setAllowDestructor();
         translator.beginExtract(transformCtx, extractBuilder);
