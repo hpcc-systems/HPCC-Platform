@@ -2670,7 +2670,7 @@ private:
 
             Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
             publishFile->setAccessedTime(modifiedTime);
-            publishFile->attach(dFile->queryLogicalName(), NULL, activity ? activity->queryUserDescriptor() : NULL);
+            publishFile->attach(dFile->queryLogicalName(), activity ? activity->queryUserDescriptor() : NULL);
             // MORE should probably write to the roxielocalstate too in case Dali is down next time I look...
         }
     }

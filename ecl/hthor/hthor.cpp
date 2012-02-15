@@ -673,7 +673,7 @@ void CHThorDiskWriteActivity::publish()
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
         if((helper.getFlags() & TDWpersist) && file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
-        file->attach(logicalName.get(), NULL, agent.queryCodeContext()->queryUserDescriptor());
+        file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED");
     }
 }
@@ -1177,7 +1177,7 @@ void CHThorIndexWriteActivity::execute()
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
         expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
-        dfile->attach(lfn.str(),NULL, agent.queryCodeContext()->queryUserDescriptor());
+        dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
     else
