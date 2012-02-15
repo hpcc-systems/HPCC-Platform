@@ -65,6 +65,19 @@ else
     # use 20 threads
     # timeout of 60 seconds (in case slave busy)
     # hard kill (called after master down anyway so going to stall)
+    if [ ! -r $instancedir/slaves ]; then
+        if [ ! -z ${THORPRIMARY} ]; then
+            groupName=${THORPRIMARY}
+        else
+            groupName=${THORNAME}
+        fi
+        daliadmin $DALISERVER dfsgroup ${groupName} > $instancedir/slaves
+        errcode=$?
+        if [ 0 != ${errcode} ]; then
+            echo 'failed to lookup dali group for $groupName'
+            exit 1
+        fi
+    fi
     $deploydir/frunssh $instancedir/slaves "/bin/sh -c 'killall -9 $slaveproc'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
