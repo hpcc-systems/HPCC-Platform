@@ -988,8 +988,8 @@ public:
     IHqlExpression * createRowSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind);
 
     AliasKind buildExprInCorrectContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, bool evaluateLocally);
-    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * expr, bool doDeclare);
-    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, GraphLocalisation localisation, bool doDeclare);
+    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare);
+    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, GraphLocalisation localisation, bool doDeclare);
         
     void buildDefaultRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
     void buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);

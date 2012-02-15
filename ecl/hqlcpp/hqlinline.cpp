@@ -730,8 +730,8 @@ bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
 //============================================================================
 
 
-ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, GraphLocalisation _localisation, EvalContext * _container)
-: HqlExprAssociation(parentExtractMarkerExpr), translator(_translator), type(_type)
+ParentExtract::ParentExtract(HqlCppTranslator & _translator, PEtype _type, IHqlExpression * _graphId, GraphLocalisation _localisation, EvalContext * _container)
+: HqlExprAssociation(parentExtractMarkerExpr), translator(_translator), type(_type), graphId(_graphId)
 {
     localisation = _localisation;
     container = _container;
@@ -944,6 +944,20 @@ bool ParentExtract::insideChildQuery() const
     }
     return container->insideChildQuery();
 }
+
+bool ParentExtract::areGraphResultsAccessible(IHqlExpression * searchGraphId) const
+{
+    if (graphId == searchGraphId)
+        return true;
+
+    switch (type)
+    {
+    case PETloop:
+        return container->areGraphResultsAccessible(searchGraphId);
+    }
+    return false;
+}
+
 
 void ParentExtract::endCreateExtract(CHqlBoundExpr & boundExtract)
 {
@@ -1174,14 +1188,14 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
 
 //----------------------------------------------------------------------------
 
-ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, GraphLocalisation localisation, bool doDeclare)
+ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, GraphLocalisation localisation, bool doDeclare)
 {
     ParentExtract * extractor = NULL;
 //  if (localisation == GraphCoLocal)
 //      extract = checkForPreexistingExtract - find a bound association before a row association is found;
     if (!extractor)
     {
-        extractor = new ParentExtract(*this, type, localisation, queryEvalContext(ctx));
+        extractor = new ParentExtract(*this, type, graphId, localisation, queryEvalContext(ctx));
         extractor->beginCreateExtract(ctx, doDeclare);
     }
     else
@@ -1190,12 +1204,12 @@ ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype ty
 }
 
 
-ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * expr, bool doDeclare)
+ParentExtract * HqlCppTranslator::createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare)
 {
     if (isAlwaysCoLocal())
-        return createExtractBuilder(ctx, type, GraphCoLocal, true);
+        return createExtractBuilder(ctx, type, graphId, GraphCoLocal, true);
     bool isInsideChildQuery = (type == PETchild) || insideChildQuery(ctx);
-    return createExtractBuilder(ctx, type, getGraphLocalisation(expr, isInsideChildQuery), true);
+    return createExtractBuilder(ctx, type, graphId, getGraphLocalisation(expr, isInsideChildQuery), true);
 }
 
 
@@ -1353,6 +1367,17 @@ ActivityInstance * EvalContext::queryActivity()
         return parent->queryActivity();
     return NULL;
 }
+
+
+bool EvalContext::areGraphResultsAccessible(IHqlExpression * searchGraphId) const
+{
+    if (parentExtract)
+        return parentExtract->areGraphResultsAccessible(searchGraphId);
+    if (parent)
+        return parent->areGraphResultsAccessible(searchGraphId);
+    return false;
+}
+
 
 
 IHqlExpression * HqlCppTranslator::doCreateGraphLookup(BuildCtx & declarectx, BuildCtx & resolvectx, unique_id_t id, const char * activity, bool isChild)
