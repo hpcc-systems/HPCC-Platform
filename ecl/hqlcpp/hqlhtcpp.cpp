@@ -6056,11 +6056,19 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 {
                     IHqlExpression * graphId = expr->queryChild(1);
                     bool canAccessResultDirectly = isCurrentActiveGraph(ctx, graphId);
-                    if (getTargetClusterType() == ThorLCRCluster)
+                    if (!canAccessResultDirectly)
                     {
-                        ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
-                        if (extract)
-                            canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
+                        //Sometimes results for the parent graph can be accessed from a child graph (e.g., loops).
+                        //The test for Thor is temporary - roxie and hthor should both allow access to outer results
+                        //from inside a loop.
+                        //In fact roxie/hthor could access parent results directly from a child query if the parent
+                        //activity is always on the master.  (Thor could if it knew to access the entire result.)
+                        if (getTargetClusterType() == ThorLCRCluster)
+                        {
+                            ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
+                            if (extract)
+                                canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
+                        }
                     }
                     if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
