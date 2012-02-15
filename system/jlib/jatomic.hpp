@@ -38,6 +38,8 @@ extern "C"
 #define InterlockedIncrement _InterlockedIncrement
 #pragma intrinsic (_InterlockedDecrement)
 #define InterlockedDecrement _InterlockedDecrement
+#pragma intrinsic (_InterlockedExchangeAdd)
+#define InterlockedExchangeAdd _InterlockedExchangeAdd
 
 typedef volatile long atomic_t;
 #define ATOMIC_INIT(i)                  (i)
@@ -49,7 +51,7 @@ typedef volatile long atomic_t;
 #define atomic_read(v)                  (*v)
 #define atomic_set(v,i)                 ((*v) = (i))
 #define atomic_xchg(i, v)               InterlockedExchange(v, i)
-#define atomic_add(v,i)                 InterlockedAdd(v,i)
+#define atomic_add(v,i)                 InterlockedExchangeAdd(v,i)
 #define atomic_add_exchange(v, i)       InterlockedExchangeAdd(v,i)
 #define atomic_xchg_ptr(p, v)           InterlockedExchangePointer(v,p)
 #if defined (_MSC_VER) && (_MSC_VER <= 1200)

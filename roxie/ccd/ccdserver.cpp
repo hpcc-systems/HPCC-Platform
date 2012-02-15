@@ -28119,7 +28119,18 @@ public:
                 return;
             }
         }
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Give an error, but don't throw an exception!
+        }
         allocator->queryOutputMeta()->destruct((byte *) row);
+    }
+    virtual void checkValid(unsigned cacheId, void *row) const
+    {
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Throw an exception?
+        }
     }
 
     virtual IWorkUnit *updateWorkUnit() const
@@ -32314,7 +32325,7 @@ protected:
             ASSERT(in.state == TestInput::STATEreset);
             ASSERT(!input2 || in2.state == TestInput::STATEreset);
             ctx->queryRowManager().reportLeaks();
-            ASSERT(ctx->queryRowManager().pages() == 0);
+            ASSERT(ctx->queryRowManager().numPagesAfterCleanup() == 0);
         }
     }
 

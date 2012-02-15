@@ -32,6 +32,18 @@
 #include "roxiemem.hpp"
 #include "eclhelper.hpp"
 
+#define ALLOCATORID_CHECK_MASK  0x00300000
+
 extern ROXIEHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
+
+extern ROXIEHELPER_API bool isRowCheckValid(unsigned allocatorId, const void * row);
+
+//Inline call which avoids the call if now row checking is enabled.
+inline bool RoxieRowCheckValid(unsigned allocatorId, const void * row)
+{
+    if (allocatorId & ALLOCATORID_CHECK_MASK)
+        return isRowCheckValid(allocatorId, row);
+    return true;
+}
 
 #endif

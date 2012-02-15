@@ -659,7 +659,10 @@ public:
         }
         allocator->queryOutputMeta()->destruct((byte *) row);
     }
-    
+    virtual void checkValid(unsigned cacheId, void *row) const
+    {
+        //MORE
+    }
     virtual const char *queryAllowedPipePrograms()
     {
         return allowedPipeProgs.get();

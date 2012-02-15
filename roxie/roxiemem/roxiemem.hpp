@@ -33,6 +33,13 @@
  #define roxiemem_decl
 #endif
 
+//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+#ifdef _DEBUG
+#define dbgassertex(x) assertex(x)
+#else
+#define dbgassertex(x)
+#endif
+
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
 #else
@@ -57,6 +64,13 @@ interface IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const = 0;
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const = 0;
     virtual void onDestroy(unsigned cacheId, void *row) const = 0;
+    virtual void checkValid(unsigned cacheId, void *row) const = 0;
+};
+
+interface IBufferedRowCallback
+{
+    virtual unsigned getPriority() const = 0; // lower values get freed up first.
+    virtual bool freeBufferedRows(bool critical) = 0; // return true if managed to free something.
 };
 
 struct roxiemem_decl HeapletBase
@@ -78,6 +92,8 @@ protected:
     virtual bool _isShared(const void *ptr) const = 0;
     virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
+    virtual bool _hasDestructor(const void *ptr) const = 0;
+    virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
 
     inline static HeapletBase *findBase(const void *ptr)
@@ -125,11 +141,24 @@ public:
 
     static void setDestructorFlag(const void *ptr)
     {
-        if (ptr)
-        {
-            HeapletBase *h = findBase(ptr);
-            h->_setDestructorFlag(ptr);
-        }
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        h->_setDestructorFlag(ptr);
+    }
+
+    static bool hasDestructor(const void *ptr)
+    {
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        return h->_hasDestructor(ptr);
+    }
+
+    static unsigned getAllocatorId(const void *ptr)
+    {
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        unsigned id = h->_rawAllocatorId(ptr);
+        return (id & ACTIVITY_MASK);
     }
 
     static void releaseClear(const void *&ptr)
@@ -217,6 +246,8 @@ private:
     virtual void released();
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
+    virtual bool _hasDestructor(const void *ptr) const { return false; }
+    virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
 protected:
     DataBuffer()
     {
@@ -247,6 +278,8 @@ private:
     virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
+    virtual bool _hasDestructor(const void *ptr) const { return false; }
+    virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
 
 public:
@@ -255,10 +288,15 @@ public:
     void addToFreeChain(DataBufferBase * buffer);
 };
 
+//Actions applied to roxie rows
 #define ReleaseRoxieRow(row) roxiemem::HeapletBase::release(row)
 #define ReleaseClearRoxieRow(row) roxiemem::HeapletBase::releaseClear(row)
 #define LinkRoxieRow(row) roxiemem::HeapletBase::link(row)
+
+//Functions to determine information about roxie rows
 #define RoxieRowCapacity(row)  roxiemem::HeapletBase::capacity(row)
+#define RoxieRowHasDestructor(row)  roxiemem::HeapletBase::hasDestructor(row)
+#define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
@@ -333,6 +371,35 @@ private:
 };
 
 
+class roxiemem_decl RoxieRowArray
+{
+public:
+    inline ~RoxieRowArray() { kill(); }
+    inline void add(const void * row, unsigned i) { rows.add(row, i); }
+    inline void append(const void * row) { rows.append(row); }
+    inline const void * get(unsigned i) const { return rows.item(i); }
+    inline const void * getClear(unsigned i) { const void * row = rows.item(i); rows.replace(NULL, i); return row; }
+    inline const void * item(unsigned i) const { return rows.item(i); }
+    inline const void * link(unsigned i) const { const void * row = rows.item(i); if (row) LinkRoxieRow(row); return row; }
+           void set(const void * row, unsigned i);
+    inline void kill()
+    {
+        ForEachItemIn(idx, rows)
+            ReleaseRoxieRow(rows.item(idx));
+        rows.kill();
+    }
+    inline void killClear()
+    {
+        ForEachItemIn(idx, rows)
+            ReleaseRoxieRow(getClear(idx));
+        rows.kill();
+    }
+    inline unsigned ordinality() const { return rows.ordinality(); }
+
+private:
+    ConstPointerArray rows;
+};
+
 
 interface IFixedRowHeap : extends IInterface
 {
@@ -362,9 +429,9 @@ interface IRowManager : extends IInterface
     virtual void *allocate(size32_t size, unsigned activityId) = 0;
     virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity) = 0;
     virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize, unsigned activityId) = 0;
-    virtual void setMemoryLimit(memsize_t size) = 0;
+    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
-    virtual unsigned pages() = 0;
+    virtual unsigned numPagesAfterCleanup() = 0; // ensures any empty pages are freed back to the heap
     virtual unsigned getMemoryUsage() = 0;
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
@@ -373,6 +440,8 @@ interface IRowManager : extends IInterface
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
+    virtual void addRowBuffer(IBufferedRowCallback * callback);
+    virtual void removeRowBuffer(IBufferedRowCallback * callback);
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);

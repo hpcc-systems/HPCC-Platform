@@ -20,6 +20,98 @@
 #include "roxierow.hpp"
 #include "thorcommon.ipp"
 
+//Classes can be used to configure the allocator, and add extra data to the end.
+//The checking needs to be done by setting a bit in the allocatorid
+class NoCheckingHelper
+{
+public:
+    enum {
+        extraSize = 0,
+        allocatorCheckFlag = 0x00000000
+    };
+    static inline void setCheck(size32_t size, void * ptr) {}
+    static inline bool isValid(const void * ptr) { return true; }
+};
+
+//NOTE: If a row requires checking then the row will also have the bit set to indicate it requires a destructor
+//so that rows are checked on destructon.
+//Therefore checking if the destructor is set for a row in isValid() to protect us from uninitialised crcs.
+class Crc16CheckingHelper
+{
+public:
+    enum {
+        extraSize = sizeof(unsigned short),
+        allocatorCheckFlag = 0x00100000|ACTIVITY_FLAG_NEEDSDESTRUCTOR
+    };
+    static inline void setCheck(size32_t size, void * _ptr)
+    {
+        byte * ptr = static_cast<byte *>(_ptr);
+        size32_t capacity = RoxieRowCapacity(ptr);
+        memset(ptr+size, 0, capacity - size - extraSize);
+        unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
+        *check = crc16(ptr, capacity-extraSize, 0);
+    }
+    static inline bool isValid(const void * _ptr)
+    {
+        if (RoxieRowHasDestructor(_ptr))
+        {
+            const byte * ptr = static_cast<const byte *>(_ptr);
+            size32_t capacity = RoxieRowCapacity(ptr);
+            const unsigned short * check = reinterpret_cast<const unsigned short *>(ptr + capacity - extraSize);
+            return *check == crc16(ptr, capacity-extraSize, 0);
+        }
+        return true;
+    }
+};
+
+class Sum16CheckingHelper
+{
+public:
+    enum {
+        extraSize = sizeof(unsigned short),
+        allocatorCheckFlag = 0x00200000|ACTIVITY_FLAG_NEEDSDESTRUCTOR
+    };
+    static inline void setCheck(size32_t size, void * _ptr)
+    {
+        byte * ptr = static_cast<byte *>(_ptr);
+        size32_t capacity = RoxieRowCapacity(ptr);
+        memset(ptr+size, 0, capacity - size - extraSize);
+        unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
+        *check = chksum16(ptr, capacity-extraSize);
+    }
+    static inline bool isValid(const void * _ptr)
+    {
+        if (RoxieRowHasDestructor(_ptr))
+        {
+            const byte * ptr = static_cast<const byte *>(_ptr);
+            size32_t capacity = RoxieRowCapacity(ptr);
+            const unsigned short * check = reinterpret_cast<const unsigned short *>(ptr + capacity - extraSize);
+            return chksum16(ptr, capacity-extraSize) == *check;
+        }
+        return true;
+    }
+};
+
+bool isRowCheckValid(unsigned allocatorId, const void * row)
+{
+    switch (allocatorId & ALLOCATORID_CHECK_MASK)
+    {
+    case NoCheckingHelper::allocatorCheckFlag:
+        return true;
+    case Crc16CheckingHelper::allocatorCheckFlag:
+        return Crc16CheckingHelper::isValid(row);
+    case Sum16CheckingHelper::allocatorCheckFlag:
+        return Sum16CheckingHelper::isValid(row);
+    default:
+        UNIMPLEMENTED;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+//More: Function to calculate the total size of a row - requires access to a rowallocator.
+
+//--------------------------------------------------------------------------------------------------------------------
 class RoxieEngineRowAllocatorBase : public CInterface, implements IEngineRowAllocator
 {
 public:
@@ -116,43 +208,7 @@ protected:
     unsigned allocatorId;
 };
 
-//General purpose row allocator here for reference - should be removed once spcialised versions are created
-class RoxieEngineRowAllocator : public RoxieEngineRowAllocatorBase
-{
-public:
-    RoxieEngineRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
-        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
-    {
-    }
-
-    virtual void * createRow()
-    {
-        size32_t allocSize = meta.getInitialSize();
-        return rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-    }
-
-    virtual void * createRow(size32_t & allocatedSize)
-    {
-        const size32_t allocSize = meta.getInitialSize();
-        void *ret = rowManager.allocate(allocSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-        //more: allocate could return the allocated size, but that would penalise the fixed row case
-        allocatedSize = RoxieRowCapacity(ret);
-        return ret;
-    }
-
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
-    {
-        return rowManager.resizeRow(row, size, newSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, size);
-    }
-
-    virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
-    {
-        unsigned id = allocatorId | ACTIVITY_FLAG_ISREGISTERED;
-        if (meta.needsDestruct()) id |= ACTIVITY_FLAG_NEEDSDESTRUCTOR;
-        return rowManager.finalizeRow(row, oldSize, finalSize, id);
-    }
-};
-
+template <class CHECKER>
 class RoxieEngineFixedRowAllocator : public RoxieEngineRowAllocatorBase
 {
 public:
@@ -160,9 +216,9 @@ public:
         : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
     {
         unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
-        if (meta.needsDestruct())
+        if (meta.needsDestruct() || CHECKER::allocatorCheckFlag)
             flags |= roxiemem::RHFhasdestructor;
-        heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize(), allocatorId | ACTIVITY_FLAG_ISREGISTERED, (roxiemem::RoxieHeapFlags)flags));
+        heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize(), allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
     }
 
     virtual void * createRow()
@@ -184,8 +240,9 @@ public:
 
     virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
     {
-        if (!meta.needsDestruct())
+        if (!meta.needsDestruct() && !CHECKER::allocatorCheckFlag)
             return row;
+        CHECKER::setCheck(finalSize, row);
         return heap->finalizeRow(row);
     }
 
@@ -193,58 +250,63 @@ protected:
     Owned<roxiemem::IFixedRowHeap> heap;
 };
 
+template <class CHECKER>
 class RoxieEngineVariableRowAllocator : public RoxieEngineRowAllocatorBase
 {
 public:
-    RoxieEngineVariableRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool _packed)
-        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId), packed(_packed)
+    RoxieEngineVariableRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed)
+        : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
     {
         unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
-        if (meta.needsDestruct())
+        if (meta.needsDestruct() || CHECKER::allocatorCheckFlag)
             flags |= roxiemem::RHFhasdestructor;
-        heap.setown(rowManager.createVariableRowHeap(allocatorId | ACTIVITY_FLAG_ISREGISTERED, (roxiemem::RoxieHeapFlags)flags));
+        heap.setown(rowManager.createVariableRowHeap(allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
     }
 
     virtual void * createRow()
     {
         size32_t allocSize = meta.getInitialSize();
         size32_t capacity;
-        return heap->allocate(allocSize, capacity);
+        return heap->allocate(allocSize+CHECKER::extraSize, capacity);
     }
 
     virtual void * createRow(size32_t & allocatedSize)
     {
         const size32_t allocSize = meta.getInitialSize();
-        return heap->allocate(allocSize, allocatedSize);
+        return heap->allocate(allocSize+CHECKER::extraSize, allocatedSize);
     }
 
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
     {
-        return heap->resizeRow(row, size, newSize, size);
+        return heap->resizeRow(row, size, newSize+CHECKER::extraSize, size);
     }
 
     virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
     {
-        if (!meta.needsDestruct() && !packed)
+        if (!meta.needsDestruct() && !CHECKER::allocatorCheckFlag)
             return row;
-        return heap->finalizeRow(row, oldSize, finalSize);
+        void * newrow = heap->finalizeRow(row, oldSize, finalSize+CHECKER::extraSize);
+        CHECKER::setCheck(finalSize, newrow);
+        return newrow;
     }
 
 protected:
     Owned<roxiemem::IVariableRowHeap> heap;
-    bool packed;    // may not be needed - depends on implementation
 };
 
 
 IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed)
 {
-#if 0
-    //old code
-    return new RoxieEngineRowAllocator(rowManager, meta, activityId, allocatorId);
-#else
     if (meta->getFixedSize() != 0)
-        return new RoxieEngineFixedRowAllocator(rowManager, meta, activityId, allocatorId, packed);
+        return new RoxieEngineFixedRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
     else
-        return new RoxieEngineVariableRowAllocator(rowManager, meta, activityId, allocatorId, packed);
-#endif
+        return new RoxieEngineVariableRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+}
+
+IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed)
+{
+    if (meta->getFixedSize() != 0)
+        return new RoxieEngineFixedRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+    else
+        return new RoxieEngineVariableRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
 }
