@@ -550,7 +550,7 @@ public:
         __int64 fs = file->getFileSize(false,false);
         if (fs!=-1)
             file->queryAttributes().setPropInt64("@size",fs);
-        file->attach(scopedName.str(), NULL, job.queryUserDescriptor());
+        file->attach(scopedName.str(), job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)
         {

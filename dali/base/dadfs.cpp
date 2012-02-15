@@ -3145,7 +3145,7 @@ public:
         return new CDistributedFilePartIterator(queryParts(),filter);
     }
 
-    void rename(const char *_logicalname,IDistributedFileTransaction *transaction,IUserDescriptor *user)
+    void rename(const char *_logicalname,IUserDescriptor *user)
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -3160,9 +3160,9 @@ public:
                 EXCLOG(e,"CDistributedFileDirectory::rename");
                 e->Release();
             }
-            detach(transaction);
+            detach();
         }
-        attach(_logicalname,transaction,user);
+        attach(_logicalname,user);
         if (prevname.length()) {
             DistributedFilePropertyLock lock(this);
             IPropertyTree &pt = queryAttributes();
@@ -3199,9 +3199,8 @@ public:
         return (!logicalName.isSet());
     }
 
-    void attach(const char *_logicalname,IDistributedFileTransaction *transaction,IUserDescriptor *user)
+    void attach(const char *_logicalname,IUserDescriptor *user)
     {
-        assertex(!transaction); 
         CriticalBlock block (sect);
         assertex(isAnon()); // already attached!
         logicalName.set(_logicalname);
@@ -3228,9 +3227,8 @@ public:
 #endif
     }
 
-    void detach(IDistributedFileTransaction *transaction)
+    void detach()
     {
-        assertex(!transaction); 
         assert(proplockcount == 0 && "CDistributedFile detach: Some properties are still locked");
         CriticalBlock block (sect);
         assertex(!isAnon()); // not attached!
@@ -4615,7 +4613,7 @@ public:
         return ret;
     }
 
-    void rename(const char *_logicalname,IDistributedFileTransaction *transaction,IUserDescriptor *user)
+    void rename(const char *_logicalname,IUserDescriptor *user)
     {
         StringBuffer prevname;
         Owned<IFileRelationshipIterator> reliter;
@@ -4630,9 +4628,9 @@ public:
                 EXCLOG(e,"CDistributedFileDirectory::rename");
                 e->Release();
             }
-            detach(transaction);
+            detach();
         }
-        attach(_logicalname,transaction,user);
+        attach(_logicalname,user);
         if (reliter.get()) {
             // add back any relationships with new name
             parent->renameFileRelationships(prevname.str(),_logicalname,reliter);
@@ -4679,11 +4677,10 @@ public:
 
 
 
-    void attach(const char *_logicalname,IDistributedFileTransaction *transaction,IUserDescriptor *user)
+    void attach(const char *_logicalname,IUserDescriptor *user)
     {
         // I don't think this ever gets called on superfiles
         WARNLOG("attach called on superfile! (%s)",_logicalname);
-        assertex(!transaction); 
         CriticalBlock block (sect);
         assertex(isAnon()); // already attached!
         StringBuffer tail;
@@ -4697,7 +4694,7 @@ public:
         root.setown(conn->getRoot());
     }
 
-    void detach(IDistributedFileTransaction *transaction)
+    void detach()
     {   
         // will need more thought but this gives limited support for anon
         CriticalBlock block (sect);
@@ -7012,7 +7009,7 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
         fixDates(newfile,port);
     }
     else
-        file->rename(newname,NULL,user);
+        file->rename(newname,user);
     return true;
 }
 

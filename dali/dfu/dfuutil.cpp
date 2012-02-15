@@ -459,7 +459,7 @@ class CFileCloner
         }
 
         Owned<IDistributedFile> dstfile = fdir->createNew(dstfdesc);
-        dstfile->attach(destfilename,NULL,userdesc);
+        dstfile->attach(destfilename,userdesc);
 
 
 
@@ -847,7 +847,7 @@ public:
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc,true);
         if (file)
-            file->attach(lfn,NULL,user);
+            file->attach(lfn,user);
     }
 
     void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser=NULL,IUserDescriptor *user=NULL)
@@ -863,7 +863,7 @@ public:
         }
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
         if (file)
-            file->attach(lfn,NULL,user);
+            file->attach(lfn,user);
     }
 
 
