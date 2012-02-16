@@ -66,6 +66,11 @@ void usage()
   puts("          init time. Currently, directories for any drop zones ");
   puts("          with the same ip as the -ip option are returned. Format is ");
   puts("          one directory per line.");
+  puts("   -listdropzones: Lists out all the dropzones defined in the environment ");
+  puts("          Does not require an ip. Does not generate any output files.");
+  puts("          Output is written to stdout. Format is as follows,");
+  puts("          one entry per line");
+  puts("          dropzone node ip,dropzone directory");
   puts("   -listcommondirs: Lists out all directories that are listed under ");
   puts("          Software/Directories section in the following format. ");
   puts("          <CategoryName>=<DirectoryValue>");
@@ -189,7 +194,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                    const char* compName, const char* compType, const char* in_filename, 
                    const char* out_filename, bool generateOutput, const char* ipAddr, 
                    bool listComps, bool verbose, bool listallComps, bool listdirs, 
-                   bool listcommondirs, bool listMachines, bool validateOnly) 
+                   bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly)
 {
   Owned<IPropertyTree> pEnv = createPTreeFromXMLFile(in_cfgname);
   short nodeIndex = 1;
@@ -242,13 +247,13 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       throw e;
     }
   }
-  else if (!listComps && !listallComps && !listdirs && !listcommondirs && !listMachines)
+  else if (!listComps && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines)
   {
     Owned<IEnvDeploymentEngine> m_configGenMgr;
     m_configGenMgr.setown(createConfigGenMgr(*m_pConstEnvironment, callback, NULL, in_dirname?in_dirname:"", out_dirname?out_dirname:"", compName, compType, ipAddr));
     m_configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
   }
-  else if (listdirs)
+  else if (listdirs || listdropzones)
   {
     StringBuffer out;
     xPath.clear().appendf("Software/%s", XML_TAG_DROPZONE);
@@ -262,7 +267,10 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       if (pComputer)
       {
         const char* netAddr = pComputer->queryProp("@netAddress");
-        if (matchDeployAddress(ipAddr, netAddr))
+
+        if (listdropzones)
+          out.appendf("%s,%s\n", netAddr, pDropZone->queryProp(XML_ATTR_DIRECTORY));
+        else if (matchDeployAddress(ipAddr, netAddr))
           out.appendf("%s\n", pDropZone->queryProp(XML_ATTR_DIRECTORY)); 
       }
     }
@@ -418,6 +426,7 @@ int main(int argc, char** argv)
   bool verbose = false;
   bool listallComps = false;
   bool listdirs = false;
+  bool listdropzones = false;
   bool listcommondirs = false;
   bool listMachines = false;
   bool validateOnly = false;
@@ -488,6 +497,11 @@ int main(int argc, char** argv)
       i++;
       listdirs = true;
     }
+    else if (stricmp(argv[i], "-listdropzones") == 0)
+    {
+      i++;
+      listdropzones = true;
+    }
     else if (stricmp(argv[i], "-listcommondirs") == 0)
     {
       i++;
@@ -532,7 +546,7 @@ int main(int argc, char** argv)
   {
     processRequest(in_cfgname, out_dirname, in_dirname, compName, 
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
-      listComps, verbose, listallComps, listdirs, listcommondirs, listMachines, validateOnly);
+      listComps, verbose, listallComps, listdirs, listdropzones, listcommondirs, listMachines, validateOnly);
   }
   catch(IException *excpt)
   {
