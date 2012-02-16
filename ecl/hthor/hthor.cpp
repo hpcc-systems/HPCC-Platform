@@ -3673,7 +3673,15 @@ void CHThorGroupSortActivity::createSorter()
         else
             sorter.setown(new CInsertionSorter(helper.queryCompare()));
     else
-        throw MakeStringException(0, "Requested sort algorithm %s which is not provided by hthor", algoname);
+    {
+        StringBuffer sb;
+        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname);
+        agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
+        if((flags & TAFunstable) != 0)
+            sorter.setown(new CQuickSorter(helper.queryCompare()));
+        else
+            sorter.setown(new CHeapSorter(helper.queryCompare()));
+    }
 }
 
 void CHThorGroupSortActivity::getSorted()
