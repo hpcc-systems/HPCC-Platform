@@ -125,8 +125,11 @@ public:
                 StringBuffer path;
                 if(!isAbsolutePath((const char *)buf.toByteArray()))
                 {
-                    char baseurl[1025];
-                    GetCurrentDirectory(1024, baseurl);
+                    char baseurl[1024];
+                    if (!GetCurrentDirectory(1024, baseurl)) {
+                        ERRLOG("MemSourceResolver::resolveEntity: Current directory path too big, bailing out");
+                        assertex(false);
+                    }
                     path.append(URLPREFIX).append(baseurl).append(PATHSEPSTR);
                 }
                 path.append(buf.length(), buf.toByteArray());
