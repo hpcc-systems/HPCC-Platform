@@ -1807,11 +1807,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     }
 
 
-#ifdef MPHASHDISTRIBUTE 
-    options.useMpForDistribute = true;
-#else
-    options.useMpForDistribute = false;
-#endif
+    options.useMpForDistribute = (targetClusterType == ThorLCRCluster);
     
     if (_translatorOptions.hasResourceUseMpForDistribute)
         options.useMpForDistribute = _translatorOptions.resourceUseMpForDistribute;
