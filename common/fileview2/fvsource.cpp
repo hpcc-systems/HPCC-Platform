@@ -172,6 +172,7 @@ DataSourceMetaData::DataSourceMetaData(IHqlExpression * _record, byte _numFields
         addSimpleField("__groupfollows__", NULL, type);
         maxRecordSize++;
     }
+    gatherAttributes();
 
     if (isStoredFixedWidth)
         assertex(storedFixedSize == maxRecordSize);
@@ -207,12 +208,10 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
-    gatheredAttributes = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
 {
-    gatheredAttributes = false;
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
@@ -236,6 +235,7 @@ DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
         if (flags == FVFFvirtual)
             ++numVirtualFields;
     }
+    gatherAttributes();
 }
 
 
@@ -460,7 +460,7 @@ void DataSourceMetaData::gatherNestedAttributes(DataSourceMetaItem &rec, aindex_
         if (item.flags==FVFFendrecord)
             return;
         else if (item.flags==FVFFbeginrecord)
-            gatherNestedAttributes(item, idx);
+            gatherNestedAttributes((!item.tagname.get() || *item.tagname.get()) ? item : rec, idx);
         else if (item.isXmlAttribute())
             rec.nestedAttributes.append(idx);
     }
@@ -473,24 +473,22 @@ void DataSourceMetaData::gatherAttributes()
     {
         DataSourceMetaItem &item = fields.item(idx);
         if (item.flags==FVFFbeginrecord)
-            gatherNestedAttributes(item, idx);
+        {
+            if (!item.tagname.get() || *item.tagname.get())
+                gatherNestedAttributes(item, idx);
+        }
         else if (item.isXmlAttribute())
             attributes.append(idx);
     }
-    gatheredAttributes=true;
 }
 
 const IntArray &DataSourceMetaData::queryAttrList(unsigned column)
 {
-    if (!gatheredAttributes)
-        gatherAttributes();
     return fields.item(column).nestedAttributes;
 }
 
 const IntArray &DataSourceMetaData::queryAttrList()
 {
-    if (!gatheredAttributes)
-        gatherAttributes();
     return attributes;
 }
 

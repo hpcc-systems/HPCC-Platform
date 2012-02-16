@@ -152,7 +152,6 @@ protected:
     bool isStoredFixedWidth;
     bool randomIsOk;
     byte numFieldsToIgnore;
-    bool gatheredAttributes;
     StringAttr tagname;
 };
 
