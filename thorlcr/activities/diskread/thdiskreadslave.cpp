@@ -262,7 +262,7 @@ public:
                                 if (!activity.grouped)
                                     break;
                                 if (!firstInGroup) {
-                                    firstInGroup = false;
+                                    firstInGroup = true;
                                     return NULL;
                                 }
                                 row = CDiskRecordPartHandler::prefetchRow();
@@ -288,7 +288,7 @@ public:
                                 if (!activity.grouped)
                                     break;
                                 if (!firstInGroup) {
-                                    firstInGroup = false;
+                                    firstInGroup = true;
                                     return NULL;
                                 }
                                 row.setown(CDiskRecordPartHandler::nextRow());
