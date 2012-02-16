@@ -5288,9 +5288,8 @@ IConstWUResult* CLocalWorkUnit::getGlobalByName(const char *qname) const
     CriticalBlock block(crit);
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return getVariableByName(qname);
-    Owned <IConstWorkUnit> global = factory->openWorkUnit(GLOBAL_WORKUNIT, false);
-    if (!global)
-        global.setown(factory->createWorkUnit(NULL, NULL, NULL));
+
+    Owned <IWorkUnit> global = factory->ensureNamedWorkUnit(GLOBAL_WORKUNIT);
     return global->getVariableByName(qname);
 }
 
