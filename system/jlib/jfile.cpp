@@ -2961,7 +2961,7 @@ StringBuffer &createUNCFilename(const char * filename, StringBuffer &UNC, bool u
         {
             if (!GetCurrentDirectory(sizeof(buf), buf)) {
                 ERRLOG("createUNCFilename: Current directory path too big, bailing out");
-                assertex(false);
+                throwUnexpected();
             }
             UNC.append(buf).append("/");
         }
@@ -4310,7 +4310,7 @@ void RemoteFilename::setPath(const SocketEndpoint & _ep, const char * _filename)
             char dir[_MAX_PATH];
             if (!GetCurrentDirectory(sizeof(dir), dir)) {
                 ERRLOG("RemoteFilename::setPath: Current directory path too big, bailing out");
-                assertex(false);
+                throwUnexpected();
             }
             if (*filename==PATHSEPCHAR) {
 #ifdef _WIN32

@@ -128,7 +128,7 @@ public:
                     char baseurl[1024];
                     if (!GetCurrentDirectory(1024, baseurl)) {
                         ERRLOG("MemSourceResolver::resolveEntity: Current directory path too big, bailing out");
-                        assertex(false);
+                        throwUnexpected();
                     }
                     path.append(URLPREFIX).append(baseurl).append(PATHSEPSTR);
                 }
