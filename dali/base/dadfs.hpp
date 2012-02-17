@@ -182,7 +182,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual void autoCommit()=0; // if transaction not active, commit straight away
     virtual void rollback()=0;
     virtual bool active()=0;
-    virtual bool setActive(bool on)=0; // returns old value (used internally)
+    virtual bool setCache(bool on)=0; // turns caching on/off, regardless of transaction's state
     virtual IDistributedFile *lookupFile(const char *lfn,unsigned timeout=INFINITE)=0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,bool fixmissing=false,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;

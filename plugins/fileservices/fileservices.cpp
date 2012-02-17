@@ -986,24 +986,9 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
             throw MakeStringException(0, "Foreign superfile not allowed: %s", lsfn.str());
     }
     if (cacheFiles)
-    {
-        struct CTempActiveTransaction
-        {
-            CTempActiveTransaction(IDistributedFileTransaction *_transaction, bool onOff) : transaction(_transaction)
-            {
-                prev = transaction->setActive(onOff);
-            }
-            ~CTempActiveTransaction()
-            {
-                transaction->setActive(prev);
-            }
-            IDistributedFileTransaction *transaction;
-            bool prev;
-        } temp(transaction, true);
-        file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
-    }
-    else
-        file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
+        cacheFiles = transaction->setCache(true); // save old cache state
+    file.setown(transaction->lookupSuperFile(lsfn.str(),fixmissing));
+    transaction->setCache(cacheFiles); // revert to old cache state
     if (file.get())
         return true;
     if (throwerr)
@@ -1053,14 +1038,13 @@ FILESERVICES_API bool FILESERVICES_CALL fsSuperFileExists(ICodeContext *ctx, con
 
 FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, const char *lsuperfn,bool deletesub)
 {
-    // Note because deleting a superfile, not within transaction (currently)
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     bool found = lookupSuperFile(ctx, lsuperfn, file, false, lsfn, true, false);
     if (found) {
-        CheckNotInTransaction(ctx,"DeleteSuperFile");
+        IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
         if (deletesub)
-            file->removeSubFile(NULL,true,true,false);
+            file->removeSubFile(NULL,true,true,false,transaction);
         file->detach();
     }
     StringBuffer s("DeleteSuperFile ('");
