@@ -261,7 +261,7 @@ private:
     void determineRequredProcesses(CMachineInfoThreadParam* pParam, const char* pszProcessType, 
                                              bool bMonitorDaliFileServer, const StringArray& additionalProcesses, 
                                              set<string>& requiredProcesses);
-    void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path);
+    void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path, unsigned& processNumber);
     int lookupSnmpComponentIndex(const StringBuffer& sProcessType);
     const char* GetDisplayProcessName(const char* processName, char* buf);
 
