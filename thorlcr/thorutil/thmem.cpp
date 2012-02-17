@@ -101,7 +101,7 @@ public:
     unsigned getActivityId(unsigned cacheId) const;
     StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const;
     void onDestroy(unsigned cacheId, void *row) const;
-    virtual void checkValid(unsigned cacheId, void *row) const;
+    virtual void checkValid(unsigned cacheId, const void *row) const;
 
     void reset();  // resets allocators
     void clear();
@@ -1205,7 +1205,7 @@ void CThorRowAllocatorCache::onDestroy(unsigned cacheId, void *row) const
 {
     item(cacheId).queryOutputMeta()->destruct((byte *) row); 
 }
-void CThorRowAllocatorCache::checkValid(unsigned cacheId, void *row) const
+void CThorRowAllocatorCache::checkValid(unsigned cacheId, const void *row) const
 {
 }
 

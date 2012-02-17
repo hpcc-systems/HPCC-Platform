@@ -797,6 +797,9 @@ public:
             {
                 //MORE: Potential race: could be freed while the pointer is being checked
                 checkPtr(block+chunkHeaderSize, "Check");
+                unsigned id = header->allocatorId;
+                if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+                    allocatorCache->checkValid(id & MAX_ACTIVITY_ID, block + chunkHeaderSize);
             }
             base += chunkSize;
         }
@@ -925,6 +928,22 @@ public:
 
     virtual void checkHeap() const
     {
+        //This function may not give 100% accurate results if called if there are concurrent allocations/releases
+        unsigned base = 0;
+        unsigned limit = atomic_read(&freeBase);
+        while (base < limit)
+        {
+            const char *block = data + base;
+            ChunkHeader * header = (ChunkHeader *)block;
+            unsigned rowCount = atomic_read(&header->count);
+            if (ROWCOUNT(rowCount) != 0)
+            {
+                //MORE: Potential race: could be freed while the pointer is being checked
+                if (rowCount & ROWCOUNT_DESTRUCTOR_FLAG)
+                    allocatorCache->checkValid(sharedAllocatorId & MAX_ACTIVITY_ID, block + chunkHeaderSize);
+            }
+            base += chunkSize;
+        }
     }
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
@@ -1497,7 +1516,7 @@ class BufferedRowCallbackManager
     };
 
 public:
-    BufferedRowCallbackManager()
+    BufferedRowCallbackManager(IRowManager * _owner) : owner(_owner)
     {
         atomic_set(&releasingBuffers, 0);
         atomic_set(&releaseSeq, 0);
@@ -1508,6 +1527,8 @@ public:
         stopReleaseBufferThread();
     }
 
+    //If this sequence number has changed then it is likely that some rows have been freed up, so worth
+    //trying to allocate again.
     inline unsigned getReleaseSeq() { return atomic_read(&releaseSeq); }
 
     void addRowBuffer(IBufferedRowCallback * callback)
@@ -1536,71 +1557,77 @@ public:
 
     void updateCallbackInfo()
     {
-        nextToCheck = 0;
-        const unsigned numCallbacks = rowBufferCallbacks.ordinality();
-        if (numCallbacks > 0)
+        //Possibly over the top, but calculate information so we can do a round robin at various
+        //different levels of priority
+        callbackRanges.kill();
+        nextCallbacks.kill();
+        nextCallbacks.append(0);
+        unsigned prevPriority = 0;
+        ForEachItemIn(i, rowBufferCallbacks)
         {
-            lowestPriority = rowBufferCallbacks.item(0)->getPriority();
-            unsigned i = 1;
-            for (; i < numCallbacks; i++)
+            unsigned priority = rowBufferCallbacks.item(i)->getPriority();
+            if (i && (priority != prevPriority))
             {
-                if (rowBufferCallbacks.item(i)->getPriority() != lowestPriority)
-                    break;
+                callbackRanges.append(i);
+                nextCallbacks.append(i);
             }
-            numLowestPriority = i;
+            prevPriority = priority;
         }
-        else
-        {
-            numLowestPriority = 0;
-        }
+        callbackRanges.append(rowBufferCallbacks.ordinality());
     }
 
-    bool releaseBuffers(const bool critical, const unsigned minSuccess)
+    bool doReleaseBuffers(const bool critical, const unsigned minSuccess)
     {
-        unsigned numSuccess = 0;
-
-        CriticalBlock block(callbackCrit);
         const unsigned numCallbacks = rowBufferCallbacks.ordinality();
         if (numCallbacks == 0)
             return false;
 
-        //First perform a round robin on the lowest priority elements
-        unsigned i = nextToCheck;
-        loop
+        unsigned first = 0;
+        unsigned numSuccess = 0;
+        //Loop through each set of different priorities
+        ForEachItemIn(level, callbackRanges)
         {
-            IBufferedRowCallback * curCallback = rowBufferCallbacks.item(i);
-            unsigned next = i+1;
-            if (next == numLowestPriority)
-                next = 0;
-
-            if (curCallback->freeBufferedRows(critical))
+            unsigned last = callbackRanges.item(level);
+            unsigned start = nextCallbacks.item(level);
+            unsigned active = start;
+            assertex(active >= first && active < last);
+            //First perform a round robin on the elements with the same priority
+            loop
             {
-                if (++numSuccess >= minSuccess)
+                IBufferedRowCallback * curCallback = rowBufferCallbacks.item(active);
+                unsigned next = active+1;
+                if (next == last)
+                    next = first;
+
+                if (curCallback->freeBufferedRows(critical))
                 {
-                    nextToCheck = next;
-                    atomic_inc(&releaseSeq);
-                    return true;
+                    if (++numSuccess >= minSuccess)
+                    {
+                        nextCallbacks.replace(next, level);
+                        return true;
+                    }
                 }
-            }
 
-            i = next;
-            if (i == nextToCheck)
-                break;
-        }
-
-        //Should this also perform some kind of round robin?  It would require next items for each priority.
-        nextToCheck = 0;
-        for (i = numLowestPriority; i < rowBufferCallbacks.ordinality(); i++)
-        {
-            IBufferedRowCallback * curCallback = rowBufferCallbacks.item(i);
-            if (curCallback->freeBufferedRows(critical))
-            {
-                if (++numSuccess >= minSuccess)
+                active = next;
+                if (active == start)
                     break;
             }
+            first = last;
         }
-        if (numSuccess != 0)
+        return (numSuccess != 0);
+    }
+
+    //Release buffers will ensure that the rows are attmpted to be cleaned up before returning
+    bool releaseBuffers(const bool critical, const unsigned minSuccess)
+    {
+        CriticalBlock block(callbackCrit);
+        if (doReleaseBuffers(critical, minSuccess))
         {
+            //Increment first so that any called knows some rows may have been freed
+            atomic_inc(&releaseSeq);
+            owner->releaseEmptyPages();
+            //incremented again because some rows may now have been freed.  A difference may give a
+            //false positive, but better than a false negative.
             atomic_inc(&releaseSeq);
             return true;
         }
@@ -1615,7 +1642,6 @@ public:
             if (abortBufferThread)
                 break;
             releaseBuffers(false, 1);
-//            owner->releaseEmptyPages();
             atomic_set(&releasingBuffers, 0);
         }
     }
@@ -1655,11 +1681,11 @@ protected:
     Semaphore releaseBuffersSem;
     PointerArrayOf<IBufferedRowCallback> rowBufferCallbacks;
     Owned<ReleaseBufferThread> releaseBuffersThread;
-    atomic_t releasingBuffers;
+    UnsignedArray callbackRanges;  // the maximum index of the callbacks for the nth priority
+    UnsignedArray nextCallbacks;  // the next call back to try and free for the nth priority
+    IRowManager * owner;
+    atomic_t releasingBuffers;  // boolean if pre-emptive releasing thread is active
     atomic_t releaseSeq;
-    unsigned nextToCheck;
-    unsigned lowestPriority;
-    unsigned numLowestPriority;
     volatile bool abortBufferThread;
 };
 
@@ -1672,7 +1698,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CFixedChunkingHeap;
 
     SpinLock crit;
-    SpinLock fixedCrit;
+    SpinLock fixedCrit;  // Should possibly be a ReadWriteLock - better with high contention, worse with low
     CIArrayOf<CFixedChunkingHeap> normalHeaps;
     CHugeChunkingHeap hugeHeap;
     ITimeLimiter *timeLimit;
@@ -1695,7 +1721,6 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     bool ignoreLeaks;
     bool trackMemoryByActivity;
 
-
     inline unsigned getActivityId(unsigned rawId) const
     {
         return getRealActivityId(rawId, allocatorCache);
@@ -1705,7 +1730,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CChunkingRowManager (unsigned _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
-        : logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
+        : callbacks(this), logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
         //Use roundup() to calculate the sizes of the different heaps, and double check that the heap mapping
@@ -1846,7 +1871,7 @@ public:
                 i++;
         }
     }
-    void releaseEmptyPages()
+    virtual void releaseEmptyPages()
     {
         unsigned total = 0;
         ForEachItemIn(iNormal, normalHeaps)
@@ -1863,14 +1888,14 @@ public:
                 //if this heap has no pages, and no external references then it can be removed
                 if (fixedHeap.isEmpty() && !fixedHeap.IsShared())
                     hadUnusedHeap = true;
-                i++;
             }
         }
 
         if (hadUnusedHeap)
             removeUnusedHeaps();
 
-        atomic_add(&totalHeapPages, -(int)total);
+        if (total)
+            atomic_add(&totalHeapPages, -(int)total);
     }
 
     virtual void getPeakActivityUsage()
@@ -2105,10 +2130,17 @@ public:
             unsigned numHeapPages = atomic_read(&totalHeapPages);
             unsigned pageCount = dataBuffPages + numHeapPages;
             totalPages = pageCount + numRequested;
-            if (!pageLimit || totalPages <= pageLimit)
+            if (totalPages <= pageLimit)
             {
+                //Use atomic_cas so that only one thread can increase the number of pages at a time.
+                //(Don't use atomic_add because we need to check the limit hasn't been exceeded.)
                 if (!atomic_cas(&totalHeapPages, numHeapPages + numRequested, numHeapPages))
                     continue;
+                break;
+            }
+            else if (!pageLimit)
+            {
+                atomic_add(&totalHeapPages, numRequested);
                 break;
             }
 
@@ -2120,11 +2152,16 @@ public:
                 //which is incremented each time releaseBuffers is successful.
                 if (lastReleaseSeq == callbacks.getReleaseSeq())
                 {
-                    logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
-                    throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+                    //very unusual: another thread may have just released a lot of memory (e.g., it has finished), but
+                    //the empty pages haven't been cleaned up
+                    releaseEmptyPages();
+                    if (numHeapPages == atomic_read(&totalHeapPages))
+                    {
+                        logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %d, requested %d, limit %d", pageCount, numRequested, pageLimit);
+                        throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+                    }
                 }
             }
-            releaseEmptyPages();
         }
 
         if (spillPageLimit && (totalPages > spillPageLimit))
@@ -2712,18 +2749,12 @@ class SimpleRowBuffer : implements IBufferedRowCallback
 public:
     SimpleRowBuffer(unsigned _priority) : priority(_priority), locked(false)
     {
-        numFree = 0;
-        numCriticalFree = 0;
     }
-    ~SimpleRowBuffer() { if (numFree) DBGLOG("Free: %u Critical: %u", numFree, numCriticalFree); };
 
 //interface IBufferedRowCallback
     virtual unsigned getPriority() const { return priority; }
     virtual bool freeBufferedRows(bool critical)
     {
-        numFree++;
-        if (critical)
-            numCriticalFree++;
         CriticalBlock block(cs);
         if (locked || (rows.ordinality() == 0))
             return false;
@@ -2758,8 +2789,6 @@ protected:
     RoxieRowArray rows;
     CriticalSection cs;
     unsigned priority;
-    unsigned numCriticalFree;
-    unsigned numFree;
     bool locked;
 };
 
@@ -2836,7 +2865,6 @@ public:
 class RoxieMemTests : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
-        CPPUNIT_TEST(testCallbacks);/*
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
         CPPUNIT_TEST(testHuge);
@@ -2844,7 +2872,8 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testAll);
         CPPUNIT_TEST(testDatamanager);
         CPPUNIT_TEST(testBitmap);
-        CPPUNIT_TEST(testDatamanagerThreading);*/
+        CPPUNIT_TEST(testDatamanagerThreading);
+        CPPUNIT_TEST(testCallbacks);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
@@ -3439,7 +3468,7 @@ protected:
         virtual unsigned getActivityId(unsigned cacheId) const { return 0; }
         virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const { return out.append(cacheId); }
         virtual void onDestroy(unsigned cacheId, void *row) const { atomic_inc(&counter); }
-        virtual void checkValid(unsigned cacheId, void *row) const { }
+        virtual void checkValid(unsigned cacheId, const void *row) const { }
 
         mutable atomic_t counter;
     };
@@ -3447,10 +3476,7 @@ protected:
     class CasAllocatorThread : public Thread
     {
     public:
-        CasAllocatorThread(Semaphore & _sem) : Thread("AllocatorThread"), sem(_sem)
-        {
-        }
-        ~CasAllocatorThread()
+        CasAllocatorThread(Semaphore & _sem) : Thread("AllocatorThread"), sem(_sem), rm(NULL), priority(0)
         {
         }
 
@@ -3728,32 +3754,36 @@ protected:
         testGeneralCas();
     }
 
-    void testCallback(unsigned pages, unsigned spillPages, double scale)
+    void testCallback(unsigned numPerPage, unsigned pages, unsigned spillPages, double scale, unsigned flags)
     {
         CountingRowAllocatorCache rowCache;
-        Owned<IFixedRowHeap> rowHeap;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
         rowManager->setMemoryLimit(pages * numCasThreads * HEAP_ALIGNMENT_SIZE, spillPages * numCasThreads * HEAP_ALIGNMENT_SIZE);
-        //For this test the row heap is assign to a variable that will be destroyed after the manager, to ensure that works.
-        rowHeap.setown(rowManager->createFixedRowHeap(0x10000-64, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor));
+
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
+        size32_t allocSize = (0x100000 - 0x200) / numPerPage;
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
         {
+            Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(allocSize, ACTIVITY_FLAG_ISREGISTERED|0, RHFhasdestructor|flags);
             FixedCasAllocatorThread * cur = new FixedCasAllocatorThread(rowHeap, sem);
             cur->setPriority(rowManager, (unsigned)(i1*scale)+1);
             threads[i1] = cur;
         }
-        runCasTest("hard callback allocator", sem, threads);
+        VStringBuffer title("callback(%u,%u,%u,%f,%x)", numPerPage,pages, spillPages, scale, flags);
+        runCasTest(title.str(), sem, threads);
         ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
     }
     void testCallbacks()
     {
-        testCallback(2, 0, 0);
-        testCallback(2, 1, 1);
-        testCallback(10, 5, 1); // 1 at each priority level - can cause exhaustion since rows tend to get left in highest priority.
-        testCallback(10, 5, 0.25);  // 4 at each priority level
-        testCallback(10, 5, 0); // all at the same priority level
+        testCallback(16, 2, 0, 0, 0);
+        testCallback(16, 2, 1, 1, 0);
+        testCallback(16, 10, 5, 1, 0); // 1 at each priority level - can cause exhaustion since rows tend to get left in highest priority.
+        testCallback(16, 10, 5, 0, 0); // all at the same priority level
+        testCallback(16, 10, 5, 0.25, 0);  // 4 at each priority level
+        testCallback(16, 10, 5, 0.25, RHFunique);  // 4 at each priority level
+        testCallback(128, 10, 5, 0.25, RHFunique);  // 4 at each priority level
+        testCallback(1024, 10, 5, 0.25, RHFunique);  // 4 at each priority level
     }
 };
 
