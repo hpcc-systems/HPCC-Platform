@@ -1422,13 +1422,13 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         const char* type = req.getType();
         if (!type || !*type || (strcmp(eqAllNodes,type) == 0))
         {
-            m_TpWrapper.getClusterMachineList(eqTHORMACHINES, path, directory, MachineList, hasThorSpareProcess);
-            m_TpWrapper.getClusterMachineList(eqHOLEMACHINES, path, directory, MachineList, hasThorSpareProcess);
-            m_TpWrapper.getClusterMachineList(eqROXIEMACHINES,path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, eqTHORMACHINES, path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, eqHOLEMACHINES, path, directory, MachineList, hasThorSpareProcess);
+            m_TpWrapper.getClusterMachineList(version, eqROXIEMACHINES,path, directory, MachineList, hasThorSpareProcess);
         }
         else
         {
-            m_TpWrapper.getClusterMachineList(type, path, directory, MachineList, hasThorSpareProcess, req.getCluster());
+            m_TpWrapper.getClusterMachineList(version, type, path, directory, MachineList, hasThorSpareProcess, req.getCluster());
         }
         resp.setTpMachines(MachineList);
         resp.setType( req.getType() );
