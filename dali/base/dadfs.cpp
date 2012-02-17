@@ -914,8 +914,6 @@ public:
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,bool fixmissing=false,unsigned timeout=INFINITE);
 
-    void linkSuperOwner(IDistributedFile &subfile,const char *superfile,bool link,IDistributedFileTransaction *transaction);
-
     int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
     int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
     int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user=NULL,unsigned auditflags=0);
@@ -2536,30 +2534,16 @@ public:
                     queryLogicalName(), superRepO);
     }
 
-    void linkSuperOwner(const char *superfile,bool link,IDistributedFileTransaction *transaction)
+    void linkSuperOwner(const char *superfile,bool link)
     {
         if (!superfile||!*superfile)
             return;
         if (conn) {
             Owned<IPropertyTree> t = getNamedPropTree(root,"SuperOwner","@name",superfile,false);
-            if (t) {
-                if (!link) {
-                    root->removeTree(t);
-                    if (!transaction)
-                    {
-                        conn->commit();
-                        dfCheckRoot("linkSuperOwner",root,conn);
-                    }
-                }
-            }
-            else if (link) {
+            if (t && !link)
+                root->removeTree(t);
+            else if (link)
                 t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
-                if (!transaction)
-                {
-                    conn->commit();
-                    dfCheckRoot("linkSuperOwner.2",root,conn);
-                }
-            }
         }
         else 
             ERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
@@ -4354,14 +4338,26 @@ protected:
         }
     }
 
-    void linkSubFile(unsigned pos,IDistributedFileTransaction *transaction)
+    void linkSubFile(unsigned pos,IDistributedFileTransaction *transaction,bool link=true)
     {
-        parent->linkSuperOwner(subfiles.item(pos),queryLogicalName(),true,transaction);
+        IDistributedFile *subfile = &subfiles.item(pos);
+        DistributedFilePropertyLock lock(subfile);
+        IDistributedSuperFile *ssub = subfile->querySuperFile();
+        if (ssub) {
+            CDistributedSuperFile *cdsuper = QUERYINTERFACE(ssub,CDistributedSuperFile);
+            cdsuper->linkSuperOwner(queryLogicalName(),link);
+        }
+        else {
+            CDistributedFile *cdfile = QUERYINTERFACE(subfile,CDistributedFile);
+            cdfile->linkSuperOwner(queryLogicalName(),link);
+        }
+        if (!transaction || !transaction->active())
+            lock.commit();
     }
 
     void unlinkSubFile(unsigned pos,IDistributedFileTransaction *transaction)
     {
-        parent->linkSuperOwner(subfiles.item(pos),queryLogicalName(),false,transaction);
+        linkSubFile(pos, transaction, false);
     }
 
     void checkSubFormatAttr(IDistributedFile *sub, const char* exprefix="")
@@ -8836,20 +8832,6 @@ void CDistributedFileDirectory::resolveForeignFiles(IPropertyTree *tree,const IN
     ForEach(*pe) 
         addForeignName(pe->query(),foreigndali,"@name");
     // do origname?
-}
-
-void CDistributedFileDirectory::linkSuperOwner(IDistributedFile &subfile,const char *superfile,bool link,IDistributedFileTransaction *transaction)
-{
-    DistributedFilePropertyLock lock(&subfile);
-    IDistributedSuperFile *ssub = subfile.querySuperFile();
-    if (ssub) {
-        CDistributedSuperFile *cdsuper = QUERYINTERFACE(ssub,CDistributedSuperFile);
-        cdsuper->linkSuperOwner(superfile,link,transaction);
-    }
-    else {
-        CDistributedFile *cdfile = QUERYINTERFACE(&subfile,CDistributedFile);
-        cdfile->linkSuperOwner(superfile,link,transaction);
-    }
 }
 
 int CDistributedFileDirectory::getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags)

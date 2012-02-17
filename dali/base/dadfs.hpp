@@ -376,12 +376,17 @@ public:
         if (!unlocked)
             unlock();
     }
-    // MORE: Implement commit/rollback/retry as necessary
     void unlock()
     {
         file->unlockProperties(TAS_NONE);
         unlocked = true;
     }
+    void commit()
+    {
+        file->unlockProperties(TAS_SUCCESS);
+        unlocked = true;
+    }
+    // MORE: Implement rollback when necessary
     IPropertyTree &queryAttributes()
     {
         return file->queryAttributes();
