@@ -71,16 +71,6 @@ bool endsWithDotDotDot(const StringBuffer & s)
     return (memcmp(s.str() + s.length() -3, "...", 3) == 0);
 }
 
-class StringBufferItem : public CInterface, public StringBuffer
-{
-public:
-    StringBufferItem()                                  : StringBuffer() {}
-    StringBufferItem(const char *value)                 : StringBuffer(value) {}
-    StringBufferItem(unsigned len, const char *value)   : StringBuffer(len, value) {}
-    StringBufferItem(const StringBuffer & value)        : StringBuffer(value) {}
-};
-
-typedef CIArrayOf<StringBufferItem> StringBufferArray;
 MAKEPointerArray(HqlExprArray, HqlExprArrayArray);
 
 class HqltHql
