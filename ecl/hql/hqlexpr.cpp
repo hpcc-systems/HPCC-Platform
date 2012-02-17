@@ -12672,9 +12672,12 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
     case no_counter:
         return (expr == counter);
     case no_select:
-        if (expr->hasProperty(newAtom))
-            return exprContainsCounter(checker, expr->queryChild(0), counter);
-        return false;
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            if (expr->hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()) || (ds->getOperator() == no_selectnth))
+                return exprContainsCounter(checker, ds, counter);
+            return false;
+        }
     }
     ForEachChild(idx, expr)
         if (exprContainsCounter(checker, expr->queryChild(idx), counter))
