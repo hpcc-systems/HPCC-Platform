@@ -51,8 +51,8 @@ interface IFvDataSourceMetaData : extends IInterface
     inline bool isVirtual(unsigned column) const { return queryFieldFlags(column) == FVFFvirtual; }
     virtual const char *queryXmlTag(unsigned column) const = 0;
     virtual const char *queryXmlTag() const = 0;
-    virtual const IntArray &queryAttrList() = 0;
-    virtual const IntArray &queryAttrList(unsigned column) = 0;
+    virtual const IntArray &queryAttrList() const = 0;
+    virtual const IntArray &queryAttrList(unsigned column) const = 0;
 };
 
 IFvDataSourceMetaData * deserializeDataSourceMeta(MemoryBuffer & in);

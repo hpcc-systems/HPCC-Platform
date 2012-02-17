@@ -482,12 +482,12 @@ void DataSourceMetaData::gatherAttributes()
     }
 }
 
-const IntArray &DataSourceMetaData::queryAttrList(unsigned column)
+const IntArray &DataSourceMetaData::queryAttrList(unsigned column) const
 {
     return fields.item(column).nestedAttributes;
 }
 
-const IntArray &DataSourceMetaData::queryAttrList()
+const IntArray &DataSourceMetaData::queryAttrList() const
 {
     return attributes;
 }

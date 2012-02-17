@@ -106,8 +106,8 @@ public:
     virtual unsigned queryFieldFlags(unsigned column) const;
     virtual const char *queryXmlTag(unsigned column) const;
     virtual const char *queryXmlTag() const;
-    virtual const IntArray &queryAttrList();
-    virtual const IntArray &queryAttrList(unsigned column);
+    virtual const IntArray &queryAttrList() const;
+    virtual const IntArray &queryAttrList(unsigned column) const;
 
 
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
