@@ -417,7 +417,7 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
-            "   --wait=<ms>            maximum time to wait for cluster finish updating\n",
+            "   --wait=<ms>            maximum time to wait for cluster to finish updating\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
