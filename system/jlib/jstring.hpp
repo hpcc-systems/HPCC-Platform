@@ -318,6 +318,15 @@ private:
 #define StringBufferAdaptor GccStringBufferAdaptor
 #endif
 
+class jlib_decl StringBufferItem : public CInterface, public StringBuffer
+{
+public:
+    StringBufferItem()                                  : StringBuffer() {}
+    StringBufferItem(const char *value)                 : StringBuffer(value) {}
+    StringBufferItem(unsigned len, const char *value)   : StringBuffer(len, value) {}
+    StringBufferItem(const StringBuffer & value)        : StringBuffer(value) {}
+};
+
 class jlib_decl StringAttrItem : public CInterface
 {
 public:
