@@ -310,12 +310,12 @@
                 <xsl:if test="$ShowPreflightInfo">
                     <xsl:choose>
                         <xsl:when test="not($SwapNode)">
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this, event)">
+                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)">
                                 <xsl:attribute name="checked">true</xsl:attribute>
                             </input>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this, event)"/>
+                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
