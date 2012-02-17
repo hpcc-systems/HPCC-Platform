@@ -31,6 +31,7 @@ ESPStruct TpMachine
     int    OS;
     string Path;
     int    Port;
+    [min_ver("1.18")] int    ProcessNumber;
 };
 //  ===========================================================================
 ESPStruct TpCluster
@@ -543,7 +544,7 @@ ESPresponse [exceptions_inline,encode(0)] TpThorStatusResponse
     int AutoRefresh;
 };
 
-ESPservice [noforms, version("1.17"), default_client_version("1.17"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
