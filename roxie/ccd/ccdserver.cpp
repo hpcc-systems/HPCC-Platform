@@ -7840,7 +7840,13 @@ public:
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sorter = new CQuickSortAlgorithm(compare);
+                        else
+                            sorter = new CHeapSortAlgorithm(compare);
+                    }
                 }
                 else
                     sorter = new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
@@ -7896,7 +7902,13 @@ public:
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sortAlgorithm = insertionSort;
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sortAlgorithm = quickSort;
+                        else
+                            sortAlgorithm = heapSort;
+                    }
                 }
             }
         }
