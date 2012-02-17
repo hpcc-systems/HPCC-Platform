@@ -172,6 +172,7 @@ DataSourceMetaData::DataSourceMetaData(IHqlExpression * _record, byte _numFields
         addSimpleField("__groupfollows__", NULL, type);
         maxRecordSize++;
     }
+    gatherAttributes();
 
     if (isStoredFixedWidth)
         assertex(storedFixedSize == maxRecordSize);
@@ -207,12 +208,10 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
-    gatheredAttributes = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
 {
-    gatheredAttributes = false;
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
@@ -236,6 +235,7 @@ DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
         if (flags == FVFFvirtual)
             ++numVirtualFields;
     }
+    gatherAttributes();
 }
 
 
@@ -451,18 +451,44 @@ const char *DataSourceMetaData::queryXmlTag() const
     return (tagname.get()) ? tagname.get() : "Row";
 }
 
-const IntArray &DataSourceMetaData::queryAttrList()
+void DataSourceMetaData::gatherNestedAttributes(DataSourceMetaItem &rec, aindex_t &idx)
 {
-    if (!gatheredAttributes)
+    aindex_t numItems = fields.ordinality();
+    while (++idx < numItems)
     {
-        ForEachItemIn(idx, fields)
-        {
-            DataSourceMetaItem &item = fields.item(idx);
-            if (item.isXmlAttribute())
-                attributes.append(idx);
-        }
-        gatheredAttributes=true;
+        DataSourceMetaItem &item = fields.item(idx);
+        if (item.flags==FVFFendrecord)
+            return;
+        else if (item.flags==FVFFbeginrecord)
+            gatherNestedAttributes((!item.tagname.get() || *item.tagname.get()) ? item : rec, idx);
+        else if (item.isXmlAttribute())
+            rec.nestedAttributes.append(idx);
     }
+}
+
+void DataSourceMetaData::gatherAttributes()
+{
+    aindex_t numItems = fields.ordinality();
+    for (aindex_t idx = 0; idx < numItems; ++idx)
+    {
+        DataSourceMetaItem &item = fields.item(idx);
+        if (item.flags==FVFFbeginrecord)
+        {
+            if (!item.tagname.get() || *item.tagname.get())
+                gatherNestedAttributes(item, idx);
+        }
+        else if (item.isXmlAttribute())
+            attributes.append(idx);
+    }
+}
+
+const IntArray &DataSourceMetaData::queryAttrList(unsigned column) const
+{
+    return fields.item(column).nestedAttributes;
+}
+
+const IntArray &DataSourceMetaData::queryAttrList() const
+{
     return attributes;
 }
 
