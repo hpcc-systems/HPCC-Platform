@@ -3561,7 +3561,8 @@ class CSocketSelectThread: public Thread
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
         CriticalBlock block(sect);
         char c = 0;
-        write(dummysock[1], &c, 1);
+        if(write(dummysock[1], &c, 1) != 1)
+            throwUnexpected();
 #else
         closedummy();
 #endif

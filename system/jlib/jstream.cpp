@@ -219,12 +219,14 @@ CFileOutputStream::CFileOutputStream(int _handle)
 
 void CFileOutputStream::writeByte(byte b)
 {
-    _write(handle, &b, 1);
+    if (_write(handle, &b, 1) != 1)
+        throwUnexpected();
 }
 
 void CFileOutputStream::writeBytes(const void *b, int len)
 {
-    _write(handle, b, len);
+    if (_write(handle, b, len) != len)
+        throwUnexpected();
 }
 
 extern jlib_decl IByteOutputStream *createOutputStream(int handle)
