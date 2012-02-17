@@ -1849,11 +1849,12 @@ public:
 #else
         FILE* procfp;
         procfp = fopen("/proc/uptime", "r");
+        int matched = 0;
         if (procfp) {
-            fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
+            matched = fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
             fclose(procfp);
         }
-        else
+        if (!procfp || matched == 0 || matched == EOF)
             OldSystemTime = 0;
         primaryfs.append("/");
 #endif

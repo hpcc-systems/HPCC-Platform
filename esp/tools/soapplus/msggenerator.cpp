@@ -546,7 +546,10 @@ StringBuffer& MessageGenerator::generateMessage(const char* method, const char* 
                 WaitForSingleObject(pinfo.hProcess, INFINITE);
 #else
                 cmdline.appendf("vi %s", tmpfname.str());
-                system(cmdline.str());
+                if (system(cmdline.str()) == -1) {
+                    ERRLOG("MessageGenerator::generateMessage: could not execute command %s", cmdline.str());
+                    throwUnexpected();
+                }
 #endif
                 message.clear().loadFile(tmpfname.str(), true);
             }

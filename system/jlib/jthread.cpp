@@ -1784,8 +1784,10 @@ public:
 
             unsigned argc;
             char **argv=splitargs(prog,argc);
-            if (dir.get())
-                chdir(dir);
+            if (dir.get() && chdir(dir) == -1) {
+                ERRLOG("CLinuxPipeProcess::run: could not change dir to %s", dir.get());
+                throwUnexpected();
+            }
             execvp(argv[0],argv);
             _exit(START_FAILURE);    // must be _exit!!     
         }
