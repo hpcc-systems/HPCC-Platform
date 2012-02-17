@@ -22,6 +22,7 @@
 #include "jmisc.hpp"
 #include "jutil.hpp"
 #include "thirdparty.h"
+#include "dadfs.hpp"
 #include "ws_topology.hpp"
 
 #include "rmtfile.hpp"
@@ -2153,8 +2154,73 @@ int Cws_machineEx::checkProcess(const char* type, const char* name, StringArray&
     return pos;
 }
 
+void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTree* cluster, const char* machineName, const char* machineType, 
+                                   const char* directory, StringArray& processAddresses)
+{
+    if (!constEnv || !cluster)
+        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+    StringBuffer groupName;
+    if (strieq(machineType, eqThorSlaveProcess))
+        getClusterGroupName(*cluster, groupName);
+    else if (strieq(machineType, eqThorSpareProcess))
+        getClusterSpareGroupName(*cluster, groupName);
+
+    if (groupName.length() < 1)
+        return;
+
+    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
+    if (!nodeGroup || (nodeGroup->ordinality() == 0))
+        return;
+
+    Owned<INodeIterator> gi = nodeGroup->getIterator();
+    ForEach(*gi)
+    {
+        StringBuffer addressRead;
+        gi->query().endpoint().getIpText(addressRead);
+        if (addressRead.length() == 0)
+        {
+            WARNLOG("Net address not found for a node in node group %s", groupName.str());
+            continue;
+        }
+
+        StringBuffer netAddress;
+        const char* ip = addressRead.str();
+        if (!streq(ip, "."))
+        {
+            netAddress.append(ip);
+        }
+        else
+        {
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(netAddress);
+        }
+
+        if (netAddress.length() == 0)
+        {
+            WARNLOG("Net address not found for a node in node group %s", groupName.str());
+            continue;
+        }
+
+        Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(addressRead.str());
+        if (pMachineInfo.get())
+        {
+            StringBuffer os, processAddress;
+            os.append(pMachineInfo->getOS());
+            processAddress.appendf("%s|%s:%s:%s:%s:%s", netAddress.str(), addressRead.str(), machineType, machineName, os.str(), directory);
+            processAddresses.append(processAddress);
+        }
+        else
+        {
+            WARNLOG("Machine not found for a node in node group %s", groupName.str());
+        }
+    }
+
+    return;
+}
+
 void Cws_machineEx::getMachineList(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* machineName,
-                                              const char* machineType, const char* status, const char* directory,
+                                              const char* machineType, const char* directory,
                                 StringArray& processAddresses,
                                 set<string>* pMachineNames/*=NULL*/)
 {
@@ -2432,9 +2498,18 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         {
                             if (dirStr.length() < 1)
                                 dirStr.append(pClusterProcess->queryProp("@directory"));
-                            getMachineList(constEnv, pClusterProcess, process, eqThorMasterProcess, "", dirStr.str(), processAddresses);
-                            getMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, "", dirStr.str(), processAddresses);
-                            getMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, "", dirStr.str(), processAddresses);
+
+                            getMachineList(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), processAddresses);
+                            if (pClusterProcess->getPropBool("@multiSlaves"))
+                            {
+                                getMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
+                                getMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
+                            }
+                            else
+                            {
+                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
+                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
+                            }
                         }
                     }
                 }
@@ -2473,8 +2548,8 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                             if (dirStr.length() < 1)
                                 dirStr.append(pClusterProcess->queryProp("@directory"));
                             set<string> machineNames; //used for checking duplicates
-                            getMachineList(constEnv, pClusterProcess, process, "RoxieServerProcess", "", dirStr.str(), processAddresses, &machineNames);
-                            getMachineList(constEnv, pClusterProcess, process, "RoxieSlaveProcess", "", dirStr.str(), processAddresses, &machineNames);
+                            getMachineList(constEnv, pClusterProcess, process, "RoxieServerProcess", dirStr.str(), processAddresses, &machineNames);
+                            getMachineList(constEnv, pClusterProcess, process, "RoxieSlaveProcess", dirStr.str(), processAddresses, &machineNames);
                         }
                     }
                 }
@@ -2506,7 +2581,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclCCServerProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclCCServer, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclCCServer, dirStr.str(), processAddresses);
                 }
             }
         }
@@ -2536,7 +2611,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclAgentProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclAgent, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclAgent, dirStr.str(), processAddresses);
                 }
             }
         }
@@ -2566,7 +2641,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclSchedulerProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclScheduler, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclScheduler, dirStr.str(), processAddresses);
                 }
             }
         }
