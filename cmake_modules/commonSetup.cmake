@@ -354,4 +354,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   endif(USE_MYSQL)
 
   ###########################################################################
+  ###
+  ## The following sets the install directories and names.
+  ###
+  set ( OSSDIR "${DIR_NAME}" )
+  set ( CPACK_INSTALL_PREFIX "${PREFIX}" )
+  set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}" )
+  set ( CMAKE_INSTALL_PREFIX "${PREFIX}" )
+  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
+  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 endif ("${COMMONSETUP_DONE}" STREQUAL "")
