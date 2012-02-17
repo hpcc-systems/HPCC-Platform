@@ -391,7 +391,7 @@
                <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:when>
             <xsl:otherwise>
-              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
+              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:otherwise>
            </xsl:choose>
          </td>
