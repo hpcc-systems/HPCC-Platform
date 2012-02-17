@@ -734,10 +734,12 @@ public:
 
     void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,NULL,true);
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction,true);
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
         StringAttrArray toremove;
+        // Delete All
         if (numtodelete == 0) {
             if (delsub) {
                 Owned<IDistributedFileIterator> iter=superfile->getSubFileIterator();
@@ -748,6 +750,8 @@ public:
                 }
             }
         }
+        // Delete Some / Wildcard
+        // MORE - shouldn't we allow wildcard to delete all matching, without the need to specify numtodelete?
         else {
             for (unsigned i1=0;i1<numtodelete;i1++)
                 if (strchr(subfiles[i1],'?')||strchr(subfiles[i1],'*')) {
@@ -765,39 +769,20 @@ public:
                     else
                         throwError1(DFUERR_DSuperFileDoesntContainSub, subfiles[i1]);
         }
+        // Do we have something to delete?
         if (toremove.ordinality()) {
-            Owned<IDistributedFileTransaction> transaction;
-            if (!delsub) {
-                if (toremove.ordinality()>1) {
-                    transaction.setown(createDistributedFileTransaction(user));
-                    transaction->start();
-                }
-            }
-            ForEachItemIn(i2,toremove) {
-                try {
-                    superfile->removeSubFile(toremove.item(i2).text.get(),delsub,delsub,false,transaction);
-                }
-                catch (IException *e) {
-                    StringBuffer s("Warning: ");
-                    s.append(toremove.item(i2).text).append(" could not be removed");
-                    EXCLOG(e, s.str());
-                    e->Release();
-                }
-            }
-            if (transaction.get()) {
-                superfile.clear(); // superfile must not be active when transaction committed
-                transaction->commit();
-            }
+            transaction->start();
+            ForEachItemIn(i2,toremove)
+                superfile->removeSubFile(toremove.item(i2).text.get(),delsub,delsub,false,transaction);
+            transaction->commit();
         }
-        if (numtodelete == 0) {
-            superfile.setown(queryDistributedFileDirectory().lookupSuperFile(superfname,user,NULL,true));
-            if (superfile.get()) {
-                if (superfile->numSubFiles()!=0) {
-                    throwError1(DFUERR_DSuperFileNotEmpty, superfname);
-                }
-                superfile.clear();
-                queryDistributedFileDirectory().removeEntry(superfname);
-            }
+        // Delete superfile if empty
+        if (superfile->numSubFiles() != 0) {
+            if (numtodelete == 0)
+                throwError1(DFUERR_DSuperFileNotEmpty, superfname);
+            superfile.clear();
+            // MORE - add file deletion to transaction
+            queryDistributedFileDirectory().removeEntry(superfname);
         }
     }
 
