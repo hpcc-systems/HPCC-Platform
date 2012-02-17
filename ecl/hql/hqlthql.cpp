@@ -2589,6 +2589,16 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             else
                 defaultToECL(expr, s, inType);
             break;
+        case no_assert_ds:
+            if (xgmmlGraphText)
+            {
+                pushScope(child0);
+                childrenToECL(expr, s, inType, false, 1);
+                popScope();
+            }
+            else
+                defaultToECL(expr, s, inType);
+            break;
         //case no_table:
         //case no_count:
         //case no_if:
