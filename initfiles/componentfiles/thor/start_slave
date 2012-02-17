@@ -16,24 +16,21 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-prog=$1
-master=$2
-logpth=$3
-instancedir=$4
-slaveport=$5
-hpcc_compname=$6
-hpcc_setenv=$7
-logredirect=$8
+slavenum=$1
+prog=$2
+master=$3
+logpth=$4
+instancedir=$5
+slaveport=$6
+hpcc_compname=$7
+hpcc_setenv=$8
+logredirect=$9
 
 source ${hpcc_setenv}
-PID_NAME="$PID/${hpcc_compname}_slave.pid"
+PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
 
-INSTALL_DIR=`dirname ${hpcc_setenv}`/..
-source  ${INSTALL_DIR}/etc/init.d/hpcc_common
-which_pidof
-
-if [ $# -lt 8 ]; then
-  echo usage: prog master logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
+if [ $# -lt 9 ]; then
+  echo usage: slavenum prog master logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
   exit 1
 fi
 
