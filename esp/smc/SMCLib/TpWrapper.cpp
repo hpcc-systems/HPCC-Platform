@@ -85,7 +85,8 @@ bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
     return bLCR;
 }
 
-void CTpWrapper::getClusterMachineList(const char* ClusterType,
+void CTpWrapper::getClusterMachineList(double clientVersion,
+                                       const char* ClusterType,
                                        const char* ClusterPath,
                                        const char* ClusterDirectory,
                                        IArrayOf<IEspTpMachine> &MachineList,
@@ -102,9 +103,9 @@ void CTpWrapper::getClusterMachineList(const char* ClusterType,
         {
             bool multiSlaves = false;
             getMachineList(eqThorMasterProcess,path.str(),"", ClusterDirectory, MachineList);
-            getMachineList(ClusterName, eqThorSlaveProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getMachineList(clientVersion, ClusterName, eqThorSlaveProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
             unsigned count = MachineList.length();
-            getMachineList(ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getMachineList(clientVersion, ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
 
             //The multiSlaves is for legacy multiSlaves environment.
             //count < MachineList.length(): There is some node for eqThorSpareProcess being added to the MachineList.
@@ -140,13 +141,13 @@ void CTpWrapper::getClusterMachineList(const char* ClusterType,
         else if (strcmp("STANDBYNNODE",ClusterType) == 0)
         {
             bool multiSlaves = false;
-            getMachineList(ClusterName,eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getMachineList(clientVersion, ClusterName,eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
             getMachineList(eqHoleStandbyProcess,path.str(),"", ClusterDirectory, MachineList);
         }
         else if (strcmp("THORSPARENODES",ClusterType) == 0)
         {
             bool multiSlaves = false;
-            getMachineList(ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
+            getMachineList(clientVersion, ClusterName, eqThorSpareProcess,path.str(),"", ClusterDirectory, multiSlaves, MachineList);
         }
         else if (strcmp("HOLESTANDBYNODES",ClusterType) == 0)
       {
@@ -1002,7 +1003,7 @@ void CTpWrapper::queryTargetClusterProcess(double version, const char* processNa
     {
         bool hasThorSpareProcess = false;
         IArrayOf<IEspTpMachine> machineList;
-        getClusterMachineList(clusterType0, tmpPath.str(), dirStr.str(), machineList, hasThorSpareProcess, processName);
+        getClusterMachineList(version, clusterType0, tmpPath.str(), dirStr.str(), machineList, hasThorSpareProcess, processName);
         if (machineList.length() > 0)
             clusterInfo->setTpMachines(machineList);
         if (version > 1.14)
@@ -1530,7 +1531,8 @@ void CTpWrapper::getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machin
     machineInfo.setPath(tmpPath.str());
 }
 
-void CTpWrapper::getMachineList(const char* clusterName,
+void CTpWrapper::getMachineList(double clientVersion,
+                                const char* clusterName,
                                 const char* MachineType,
                                 const char* ParentPath,
                                 const char* Status,
@@ -1572,6 +1574,7 @@ void CTpWrapper::getMachineList(const char* clusterName,
         if (!nodeGroup || (nodeGroup->ordinality() == 0))
             return;
 
+        StringArray netAddresses;
         INodeIterator &gi = *nodeGroup->getIterator();
         ForEach(gi)
         {
@@ -1614,6 +1617,18 @@ void CTpWrapper::getMachineList(const char* clusterName,
                 {
                     SCMStringBuffer sName;
                     machineInfo.setDomain(pDomain->getName(sName).str());
+                }
+
+                if (clientVersion > 1.17)
+                {
+                    unsigned countSameAddress = 1;
+                    ForEachItemIn(i, netAddresses)
+                    {
+                        if (streq(netAddresses.item(i), netAddress.str()))
+                            countSameAddress++;
+                    }
+                    netAddresses.append(netAddress.str());
+                    machineInfo.setProcessNumber(countSameAddress);
                 }
             }
             else
