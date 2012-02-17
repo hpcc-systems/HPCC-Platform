@@ -7292,46 +7292,110 @@ IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactor
 
 //=================================================================================
 
-interface ISortAlgorithm
+interface ISortAlgorithmBase : implements IInterface
 {
-    virtual void prepare(IRoxieInput *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
 };
 
-class CQuickSortAlgorithm : implements ISortAlgorithm
+interface ISortAlgorithm : extends ISortAlgorithmBase
+{
+    virtual void prepare(IRoxieInput *input) = 0;
+};
+
+interface ISpillingSortAlgorithm : extends ISortAlgorithmBase
+{
+    virtual void addRow(const void * next) = 0;
+    virtual void performSort() = 0;
+    virtual void spillSortedToDisk(IDiskMerger * merger) = 0;
+};
+
+class CSorterBase : public CInterface
+{
+protected:
+    ConstPointerArray rows;
+    aindex_t finger;
+    ICompare *compare;
+public:
+    CSorterBase(ICompare *_compare) : compare(_compare), finger(0) {}
+    virtual void kill()
+    {
+        rows.kill();
+        finger = 0;
+    }
+};
+
+class CSpillingSorterBase : extends CSorterBase, implements ISpillingSortAlgorithm
+{
+public:
+    CSpillingSorterBase(ICompare *_compare) : CSorterBase(_compare) {}
+
+    inline virtual void addRow(const void * next) { rows.append(next); }
+    virtual void spillSortedToDisk(IDiskMerger * merger)
+    {
+        Owned<IRowWriter> out = merger->createWriteBlock();
+        loop
+        {
+            const void *row = next();
+            if (!row)
+                break;
+            out->putRow(row);//releases row
+        }
+        kill();
+    }
+
+    virtual const void * next()
+    {
+        if (finger < rows.ordinality())
+            return rows.item(finger++);
+        else
+            return NULL;
+    }
+
+};
+
+class CQuickSortAlgorithm : extends CSorterBase, implements ISortAlgorithm
 {
     unsigned curIndex;
-    ConstPointerArray sorted;
-    ICompare *compare;
-
 public:
-    CQuickSortAlgorithm(ICompare *_compare) : compare(_compare) 
-    {
-        curIndex = 0;
-    }
+    CQuickSortAlgorithm(ICompare *_compare) :  CSorterBase(_compare) { curIndex = 0; }
+    IMPLEMENT_IINTERFACE;
 
     virtual void prepare(IRoxieInput *input)
     {
         curIndex = 0;
-        if (input->nextGroup(sorted))
-            qsortvec(const_cast<void * *>(sorted.getArray()), sorted.ordinality(), *compare);
+        if (input->nextGroup(rows))
+            parqsortvec(const_cast<void * *>(rows.getArray()), rows.ordinality(), *compare, getAffinityCpus());
     }
 
     virtual const void *next()
     {
-        if (sorted.isItem(curIndex))
-            return sorted.item(curIndex++);
+        if (rows.isItem(curIndex))
+            return rows.item(curIndex++);
         return NULL;
     }
 
     virtual void reset()
     {
-        while (sorted.isItem(curIndex))
-            ReleaseRoxieRow(sorted.item(curIndex++));
+        while (rows.isItem(curIndex))
+            ReleaseRoxieRow(rows.item(curIndex++));
         curIndex = 0;
-        sorted.kill();
+        kill();
     }
+};
+
+class CSpillingQuickSortAlgorithm : extends CSpillingSorterBase
+{
+public:
+    CSpillingQuickSortAlgorithm(ICompare *_compare) : CSpillingSorterBase(_compare) {}
+    IMPLEMENT_IINTERFACE;
+
+    virtual void performSort()
+    {
+        parqsortvec(const_cast<void * *>(rows.getArray()), rows.ordinality(), *compare, getAffinityCpus());
+        finger = 0;
+    }
+    virtual void reset() { kill(); }
 };
 
 #define INSERTION_SORT_BLOCKSIZE 1024
@@ -7354,7 +7418,7 @@ public:
         pos = 0;
     }
 
-    ~SortedBlock()
+    virtual ~SortedBlock()
     {
         while (pos < length)
             ReleaseRoxieRow(rows[pos++]);
@@ -7422,14 +7486,15 @@ public:
     }
 };
 
-class CInsertionSortAlgorithm : implements ISortAlgorithm
+class CInsertionSortAlgorithmBase
 {
+protected:
     SortedBlock *curBlock;
     unsigned blockNo;
     IArrayOf<SortedBlock> blocks;
     unsigned activityId;
     IRowManager *rowManager;
-    ICompare *compare;
+    ICompare *comparer;
 
     void newBlock()
     {
@@ -7459,7 +7524,7 @@ class CInsertionSortAlgorithm : implements ISortAlgorithm
             while (c > 0) 
             {
                 int p = (c-1)/2; /* parent */
-                if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 ) 
+                if ( doCompare( blocks.item(c), blocks.item(p), comparer ) >= 0 )
                     break;
                 s[c] = s[p];
                 s[p] = r;
@@ -7482,9 +7547,9 @@ class CInsertionSortAlgorithm : implements ISortAlgorithm
             if ( c >= n ) 
                 break;
             /* Select smaller child */
-            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), compare ) < 0 ) c += 1;
+            if ( c+1 < n && doCompare( blocks.item(c+1), blocks.item(c), comparer ) < 0 ) c += 1;
             /* If child is greater or equal than parent then we are done */
-            if ( doCompare( blocks.item(c), blocks.item(p), compare ) >= 0 ) 
+            if ( doCompare( blocks.item(c), blocks.item(p), comparer ) >= 0 )
                 break;
             /* Swap parent and child */
             SortedBlock *r = s[c];
@@ -7495,14 +7560,24 @@ class CInsertionSortAlgorithm : implements ISortAlgorithm
         }
     }
 
-public:
-    CInsertionSortAlgorithm(ICompare *_compare, IRowManager *_rowManager, unsigned _activityId) 
-        : compare(_compare)
+    virtual const void * next()
     {
-        rowManager = _rowManager;
-        activityId = _activityId;
-        curBlock = NULL;
-        blockNo = 0;
+        const void *ret;
+        if (blockNo==1) // single block case..
+        {
+            ret = curBlock->next();
+        }
+        else if (blocks.length())
+        {
+            SortedBlock &top = blocks.item(0);
+            ret = top.next();
+            if (top.eof())
+                blocks.replace(blocks.popGet(), 0);
+            remakeHeap();
+        }
+        else
+            ret = NULL;
+        return ret;
     }
 
     virtual void reset()
@@ -7512,6 +7587,24 @@ public:
         curBlock = NULL;
         blockNo = 0;
     }
+
+public:
+    CInsertionSortAlgorithmBase(ICompare *_compare, IRowManager *_rowManager, unsigned _activityId)
+    {
+        comparer = _compare;
+        rowManager = _rowManager;
+        activityId = _activityId;
+        curBlock = NULL;
+        blockNo = 0;
+    }
+};
+
+class CInsertionSortAlgorithm : extends CSorterBase, extends CInsertionSortAlgorithmBase, implements ISortAlgorithm
+{
+public:
+    CInsertionSortAlgorithm(ICompare *_compare, IRowManager *_rowManager, unsigned _activityId)
+        : CInsertionSortAlgorithmBase(_compare, _rowManager, _activityId), CSorterBase(_compare) {}
+    IMPLEMENT_IINTERFACE;
 
     virtual void prepare(IRoxieInput *input)
     {
@@ -7536,35 +7629,19 @@ public:
         }
     }
 
-    virtual const void * next()
-    {
-        const void *ret;
-        if (blockNo==1) // single block case..
-        {
-            ret = curBlock->next();
-        }
-        else if (blocks.length())
-        {
-            SortedBlock &top = blocks.item(0);
-            ret = top.next();
-            if (top.eof())
-                blocks.replace(blocks.popGet(), 0);
-            remakeHeap();
-        }
-        else
-            ret = NULL;
-        return ret;
-    }
+    virtual const void * next() { return CInsertionSortAlgorithmBase::next(); }
+    virtual void reset() { CInsertionSortAlgorithmBase::reset(); }
 };
 
-class CHeapSortAlgorithm : implements ISortAlgorithm
+class CHeapSortAlgorithmBase
 {
+protected:
     unsigned curIndex;
     ConstPointerArray sorted;
     bool inputAlreadySorted;
     IntArray sequences;
     bool eof;
-    ICompare *compare;
+    ICompare *comparer;
 
 #ifdef _CHECK_HEAPSORT
     void checkHeap() const
@@ -7606,7 +7683,7 @@ class CHeapSortAlgorithm : implements ISortAlgorithm
             const void *ret = sorted.item(0);
             if (n > 1 && ret)
             {
-                ICompare *_compare = compare;
+                ICompare *_compare = comparer;
                 const void **s = sorted.getArray();
                 int *sq = sequences.getArray();
                 unsigned v = 0; // vacancy
@@ -7666,7 +7743,7 @@ class CHeapSortAlgorithm : implements ISortAlgorithm
         sequences.append(n);
         if (!n)
             return;
-        ICompare *_compare = compare;
+        ICompare *_compare = comparer;
         const void **s = sorted.getArray();
         if (inputAlreadySorted)
         {
@@ -7694,30 +7771,46 @@ class CHeapSortAlgorithm : implements ISortAlgorithm
         }
     }
 
-public:
-    CHeapSortAlgorithm(ICompare *_compare) : compare(_compare)
+    virtual const void * next()
     {
-        inputAlreadySorted = true;
-        curIndex = 0;
-        eof = false;
+        if (inputAlreadySorted)
+        {
+            if (sorted.isItem(curIndex))
+            {
+                return sorted.item(curIndex++);
+            }
+            else
+                return NULL;
+        }
+        else
+            return removeHeap();
     }
 
     virtual void reset()
     {
         eof = false;
-        if (inputAlreadySorted)
-        {
-            while (sorted.isItem(curIndex))
-                ReleaseRoxieRow(sorted.item(curIndex++));
-            sorted.kill();
-        }
-        else
-        {
+        if (!inputAlreadySorted)
             ReleaseRoxieRowSet(sorted);
-        }
+        sorted.kill();
         inputAlreadySorted = true;
+        curIndex = 0;
         sequences.kill();
     }
+
+public:
+    CHeapSortAlgorithmBase(ICompare *_compare) : comparer(_compare)
+    {
+        inputAlreadySorted = true;
+        curIndex = 0;
+        eof = false;
+    }
+};
+
+class CHeapSortAlgorithm : implements CInterface, extends CHeapSortAlgorithmBase, implements ISortAlgorithm
+{
+public:
+    CHeapSortAlgorithm(ICompare *_compare) : CHeapSortAlgorithmBase(_compare) {}
+    IMPLEMENT_IINTERFACE;
 
     virtual void prepare(IRoxieInput *input)
     {
@@ -7741,71 +7834,112 @@ public:
         checkHeap();
     }
 
-    virtual const void * next()
-    {
-        if (inputAlreadySorted)
-        {
-            if (sorted.isItem(curIndex))
-            {
-                return sorted.item(curIndex++);
-            }
-            else
-                return NULL;
-        }
-        else
-            return removeHeap();
-    }
+    virtual const void * next() { return CHeapSortAlgorithmBase::next(); }
+    virtual void reset() { CHeapSortAlgorithmBase::reset(); }
 };
 
-typedef enum {heapSort, insertionSort, quickSort, unknownSort } RoxieSortAlgorithm;
+class CSpillingHeapSortAlgorithm : extends CHeapSortAlgorithmBase, extends CSpillingSorterBase
+{
+public:
+    CSpillingHeapSortAlgorithm(ICompare *_compare) : CHeapSortAlgorithmBase(_compare), CSpillingSorterBase(_compare) {}
+    IMPLEMENT_IINTERFACE;
 
-class CRoxieServerSortActivity : public CRoxieServerActivity
+    virtual void addRow(const void * next) { insertHeap(next); }
+    virtual void performSort() {}
+    virtual void spillSortedToDisk(IDiskMerger * merger)
+    {
+        CSpillingSorterBase::spillSortedToDisk(merger);
+        reset();
+    }
+    virtual const void * next() { return CHeapSortAlgorithmBase::next(); }
+    virtual void reset() { CHeapSortAlgorithmBase::reset(); }
+};
+
+
+typedef enum {heapSort, insertionSort, quickSort, spillingQuickSort, spillingHeapSort, unknownSort } RoxieSortAlgorithm;
+
+class CRoxieServerSortActivityBase : public CRoxieServerActivity
 {
 protected:
     IHThorSortArg &helper;
     ICompare *compare;
-    ISortAlgorithm *sorter;
     bool readInput;
     RoxieSortAlgorithm sortAlgorithm;
     unsigned sortFlags;
 
+    ISortAlgorithmBase * selectSorter()
+    {
+        switch (sortAlgorithm)
+        {
+        case heapSort:
+            return new CHeapSortAlgorithm(compare);
+        case insertionSort:
+            return new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
+        case quickSort:
+            return new CQuickSortAlgorithm(compare);
+        case spillingQuickSort:
+            return new CSpillingQuickSortAlgorithm(compare);
+        case spillingHeapSort:
+            return new CSpillingHeapSortAlgorithm(compare);
+        case unknownSort:
+            {
+                IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
+                const char *useAlgorithm = sortMethod->queryAlgorithm();
+                if (useAlgorithm)
+                {
+                    if (stricmp(useAlgorithm, "quicksort")==0)
+                    {
+                        if (sortFlags & TAFstable)
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                        return new CQuickSortAlgorithm(compare);
+                    }
+                    else if (stricmp(useAlgorithm, "heapsort")==0)
+                        return new CHeapSortAlgorithm(compare);
+                    else if (stricmp(useAlgorithm, "insertionsort")==0)
+                        return new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
+                    else if (stricmp(useAlgorithm, "spilling")==0)
+                    {
+                        if (sortFlags & TAFstable)
+                            return new CSpillingHeapSortAlgorithm(compare);
+                        else
+                            return new CSpillingQuickSortAlgorithm(compare);
+                    }
+                    else
+                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                }
+                else
+                    return new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
+            }
+        default:
+            throwUnexpected();
+        }
+    }
+
 public:
-    CRoxieServerSortActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
+    CRoxieServerSortActivityBase(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorSortArg &)basehelper), sortAlgorithm(_sortAlgorithm), sortFlags(_sortFlags)
     {
         compare = helper.queryCompare();
         readInput = false;
-        sorter = NULL;
-        switch (sortAlgorithm)
-        {
-        case heapSort:
-            sorter = new CHeapSortAlgorithm(compare);
-            break;
-        case insertionSort:
-            sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
-            break;
-        case quickSort:
-            sorter = new CQuickSortAlgorithm(compare);
-            break;
-        case unknownSort:
-            sorter = NULL; // create it later....
-            break;
-        default:
-            throwUnexpected();
-            break;
-        }
     }
+};
 
-    ~CRoxieServerSortActivity()
+class CRoxieServerSortActivity : public CRoxieServerSortActivityBase
+{
+private:
+    Owned<ISortAlgorithm> sorter;
+
+public:
+    CRoxieServerSortActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
+        : CRoxieServerSortActivityBase(_factory, _probeManager, _sortAlgorithm, _sortFlags)
     {
-        delete sorter;
     }
-
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         assertex(!readInput);
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        sorter.setown(dynamic_cast<ISortAlgorithm*>(selectSorter()));//delay sorter selection since "ctx" not available during ctor
     }
 
     virtual void reset()
@@ -7821,33 +7955,10 @@ public:
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
         if (!readInput)
         {
-            if (sortAlgorithm == unknownSort)
-            {
-                delete sorter;
-                sorter = NULL;
-                IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-                const char *useAlgorithm = sortMethod->queryAlgorithm();
-                if (useAlgorithm)
-                {
-                    if (stricmp(useAlgorithm, "quicksort")==0)
-                    {
-                        if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
-                        sorter = new CQuickSortAlgorithm(compare);
-                    }
-                    else if (stricmp(useAlgorithm, "heapsort")==0)
-                        sorter = new CHeapSortAlgorithm(compare);
-                    else if (stricmp(useAlgorithm, "insertionsort")==0)
-                        sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
-                    else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
-                }
-                else
-                    sorter = new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
-            }
             sorter->prepare(input);
             readInput = true;
         }
+
         const void *ret = sorter->next();
         if (ret)
             processed++;
@@ -7857,6 +7968,147 @@ public:
             readInput = false; // ready for next group
         }
         return ret;
+    }
+};
+
+class CRoxieServerSpillingSortActivity : public CRoxieServerSortActivityBase
+{
+protected:
+    memsize_t spillThreshold;
+    Owned<IDiskMerger> diskMerger;
+    Owned<IRowStream> diskReader;
+    Owned<ISpillingSortAlgorithm> sorter;
+    bool eof;
+
+    void getSorted()
+    {
+        memsize_t grpSize = 0;
+        const void * next;
+        while((next = input->nextInGroup()) != NULL)
+        {
+            size32_t nextSize = input->queryOutputMeta()->getRecordSize(next);
+            if((grpSize+nextSize) > spillThreshold) //Spill ??
+            {
+                if(!diskMerger)
+                {
+                    StringBuffer fbase;
+                    queryTempfilePath(fbase, "roxie", NULL);
+                    SCMStringBuffer wuid;
+                    {
+                        IConstWorkUnit *workUnit = ctx->queryWorkUnit();
+                        if (workUnit)
+                            workUnit->getWuid(wuid);
+                    }
+                    fbase.append(PATHSEPCHAR).appendf("roxie-%s.spill_sort-%p",wuid.str(),this);
+                    PROGLOG("SORT: spilling to disk, file %s", fbase.str());
+                    class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+                    {
+                    public:
+                        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+                        virtual void releaseRow(const void *row)
+                        {
+                            ReleaseRoxieRow(row);
+                        }
+                        virtual void linkRow(const void *row)
+                        {
+                            LinkRoxieRow(row);
+                        }
+                    };
+                    Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
+                    Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, ctx->queryCodeContext());
+                    diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
+                }
+                sorter->performSort();
+                sorter->spillSortedToDisk(diskMerger);
+                grpSize = 0;
+            }
+            sorter->addRow(next);
+            eof = false;
+            grpSize += nextSize;
+        }
+
+        if(diskMerger)
+        {
+            sorter->performSort();
+            sorter->spillSortedToDisk(diskMerger);
+            ICompare *compare = helper.queryCompare();
+            assertex(compare);
+            diskReader.setown(diskMerger->merge(compare));
+        }
+        else if(grpSize)
+        {
+            sorter->performSort();
+        }
+        readInput = true;
+    }
+
+public:
+    CRoxieServerSpillingSortActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, RoxieSortAlgorithm _sortAlgorithm, unsigned _sortFlags)
+        : CRoxieServerSortActivityBase(_factory, _probeManager, _sortAlgorithm, _sortFlags)
+    {
+        //Determine disk spill threshold
+        spillThreshold = (roxiemem::getTotalMemoryLimit() / 3) * HEAP_ALIGNMENT_SIZE;//  1/3 of available memory
+        spillThreshold = (memsize_t)factory->queryQueryFactory().getDebugValueInt("roxieSpillThreshold", spillThreshold);
+#ifndef __64BIT__
+        if (spillThreshold > (4096*1024*1024-1))
+            throw MakeStringException(ROXIE_MEMORY_ERROR, "Roxie specified memory limit greater than allowed 32 bit limit (4096 MB)");
+#endif
+        compare = helper.queryCompare();
+        readInput = false;
+        eof = false;
+    }
+
+    ~CRoxieServerSpillingSortActivity()
+    {
+        diskMerger.clear();
+        diskReader.clear();
+        sorter.clear();
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        assertex(!readInput);
+        CRoxieServerSortActivityBase::start(parentExtractSize, parentExtract, paused);
+        sorter.setown(dynamic_cast<ISpillingSortAlgorithm*>(selectSorter()));//delay sorter selection since "ctx" not available during ctor
+    }
+
+    virtual void reset()
+    {
+        if (sorter)
+            sorter->reset();
+        readInput = false;
+        CRoxieServerActivity::reset();
+    }
+
+    virtual const void * nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        if (!readInput)
+            getSorted();//Read in all records, possibly spilling to disk
+
+        if (!eof)
+        {
+            if(diskReader)
+            {
+                const void *row = diskReader->nextRow();
+                if (row)
+                    return row;
+                eof = true;
+                diskReader.clear();
+            }
+            else
+            {
+                const void * ret = sorter->next();
+                if(ret)
+                {
+                    processed++;
+                    return ret;
+                }
+                else
+                    eof = true;
+            }
+        }
+        return NULL;
     }
 };
 
@@ -7895,6 +8147,14 @@ public:
                         sortAlgorithm = heapSort; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sortAlgorithm = insertionSort;
+                    else if (stricmp(useAlgorithm, "spilling")==0)
+                    {
+                        assertex(sortFlags & (TAFstable | TAFunstable));
+                        if (sortFlags & TAFstable)
+                            sortAlgorithm = spillingHeapSort;
+                        else
+                            sortAlgorithm = spillingQuickSort;
+                    }
                     else
                         throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
                 }
@@ -7904,7 +8164,10 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerSortActivity(this, _probeManager, sortAlgorithm, sortFlags);
+        if ((sortAlgorithm != spillingHeapSort) && (sortAlgorithm != spillingQuickSort))
+            return new CRoxieServerSortActivity(this, _probeManager, sortAlgorithm, sortFlags);
+        else
+            return new CRoxieServerSpillingSortActivity(this, _probeManager, sortAlgorithm, sortFlags);
     }
 };
 

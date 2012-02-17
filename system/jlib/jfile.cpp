@@ -37,6 +37,7 @@
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
+#include <stdlib.h>
 #endif
 
 #include "time.h"
@@ -6378,4 +6379,29 @@ jlib_decl StringBuffer & appendCurrentDirectory(StringBuffer & target, bool blan
         throw MakeStringException(JLIBERR_InternalError, "getcwd failed (%d)", errno);
     }
     return target.append(temp);
+}
+
+jlib_decl StringBuffer &queryTempfilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+{
+    StringBuffer dir;
+    if (pTree)
+        getConfigurationDirectory(pTree->queryPropTree("Directories"),"temp",component,pTree->queryProp("@name"),dir);
+    if (!dir.length())
+    {
+#ifdef _WIN32
+        char path[_MAX_PATH+1];
+        if(GetTempPath(sizeof(path),path))
+            dir.append(path);
+        else
+            dir.append("c:\\");
+        dir.append("\\HPCCSystems\\").append(component);
+#else
+        dir.append(getenv("TMPDIR"));
+        if (!dir.length())
+            dir.append("/tmp/HPCCSystems");
+        dir.append(PATHSEPSTR).append(component);
+#endif
+    }
+    recursiveCreateDirectory(dir.str());
+    return target.set(dir);
 }
