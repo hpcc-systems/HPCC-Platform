@@ -1498,8 +1498,11 @@ class CExtendedStats  // Disk network and cpu stats
         if (!netfp)
             return false;
         char ln[512];
-        fgets(ln, sizeof(ln), netfp);   
-        fgets(ln, sizeof(ln), netfp);
+        // Read two lines
+        if (!fgets(ln, sizeof(ln), netfp) || !fgets(ln, sizeof(ln), netfp)) {
+            fclose(netfp);
+            return false;
+        }
         unsigned txskip = 2;
         bool hasbyt = false;
         if (strstr(ln,"compressed")) {

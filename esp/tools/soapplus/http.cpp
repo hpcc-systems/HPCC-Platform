@@ -640,10 +640,11 @@ void HttpClient::start()
             if(!(m_globals && m_globals->getPropBool("useDefault")))
             {
                 fprintf(stderr, "Pick one method, or just press enter to generate a request for each method:\n");
-                fgets(seqbuf, 19, stdin);
-                while(ind < 19 && seqbuf[ind] != '\0' && isdigit(seqbuf[ind]))
-                    ind++;
-                seqbuf[ind] = 0;
+                if (fgets(seqbuf, 19, stdin)) {
+                    while(ind < 19 && seqbuf[ind] != '\0' && isdigit(seqbuf[ind]))
+                        ind++;
+                    seqbuf[ind] = 0;
+                }
             }
             if(ind > 0)
             {

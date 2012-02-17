@@ -26,8 +26,7 @@
 
 char *myfgets(char *s, int size, FILE *stream)
 {
-    fgets(s, size, stream);
-    int len = strlen(s);
+    int len = strlen(fgets(s, size, stream));
     if(len > 0)
         s[len - 1] = '\0';
 
