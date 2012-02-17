@@ -1522,7 +1522,16 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
     case FVFFendif:
         return;
     case FVFFbeginrecord:
-        appendXMLOpenTag(out, name);
+        {
+            if (name && *name)
+            {
+                out.append('<').append(name);
+                const IntArray &attributes = meta.meta->queryAttrList(columnIndex);
+                ForEachItemIn(ac, attributes)
+                    getXmlAttrText(out, attributes.item(ac));
+                out.append('>');
+            }
+        }
         return;
     case FVFFendrecord:
         appendXMLCloseTag(out, name);
