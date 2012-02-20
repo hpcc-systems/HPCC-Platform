@@ -29,6 +29,7 @@ private:
     IHThorTempTableArg * helper;
     bool eof;
     unsigned currentRow;
+    unsigned numRows;
     size32_t maxrecsize;
     bool isLocal;
 public:
@@ -49,6 +50,7 @@ public:
         currentRow = 0;
         isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
         eof = isLocal ? false : !firstNode();
+        numRows = helper->numRows();
     }
     void stop()
     {
@@ -57,7 +59,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (eof || abortSoon)
+        if (eof || abortSoon || currentRow >= numRows)
             return NULL;
         RtlDynamicRowBuilder row(queryRowAllocator());
         size32_t sizeGot = helper->getRow(row, currentRow++);

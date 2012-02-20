@@ -15982,8 +15982,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
     associateCounter(funcctx, counter, "row");
-    // FIXME: this should be fixed in the engine
-    funcctx.addQuoted("if (row == numRows()) return 0;");
     buildTransformBody(funcctx, transform, NULL, NULL, instance->dataset, self);
 
     // unsigned numRows() - count is guaranteed by lexer

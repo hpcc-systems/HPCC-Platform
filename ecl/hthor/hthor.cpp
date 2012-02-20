@@ -5842,12 +5842,13 @@ void CHThorTempTableActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     curRow = 0;
+    numRows = helper.numRows();
 }
 
 
 const void *CHThorTempTableActivity::nextInGroup()
 {
-    if (!eof)
+    if (!eof && curRow < numRows)
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         size32_t size = helper.getRow(rowBuilder, curRow++);

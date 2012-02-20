@@ -1495,6 +1495,7 @@ class CHThorTempTableActivity : public CHThorSimpleActivityBase
 {
     IHThorTempTableArg &helper;
     unsigned curRow;
+    unsigned numRows;
     bool eof;
 
 public:
