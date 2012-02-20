@@ -1802,7 +1802,7 @@ void HqlLex::doMangle(YYSTYPE & returnToken, bool de)
         value->Release();
 
         StringBuffer mangled;
-        mangle(yyParser->errorHandler,str,mangled,false);
+        mangle(yyParser->errorHandler,str,mangled,de);
         pushText(mangled.str());
     }
     else
