@@ -11123,6 +11123,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     }
     extendConditionOwn(match, no_and, fuzzy.getClear());
 
+    LinkedHqlExpr rhs = dataset2;
     if (isAllJoin)
     {
         if (leftSorts.ordinality() && allowAllToLookupConvert)
@@ -11137,6 +11138,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     {
         if (expr->hasProperty(_conditionFolded_Atom))
         {
+            //LIMIT on an ALL join is equivalent to applying a limit to the rhs of the join (since all will hard match).
+            //This could be transformed early, but uncommon enough to not be too concerned.
+            if (rowlimit)
+            {
+                HqlExprArray args;
+                args.append(*LINK(rhs));
+                unwindChildren(args, rowlimit);
+                rhs.setown(createDataset(no_limit, args));
+            }
             isAllJoin = true;
             WARNING(HQLWRN_JoinConditionFoldedNowAll);
         }
@@ -11152,7 +11162,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     Owned<ABoundActivity> boundDataset1 = buildCachedActivity(ctx, dataset1);
     Owned<ABoundActivity> boundDataset2;
     if (!joinToSelf)
-        boundDataset2.setown(buildCachedActivity(ctx, dataset2));
+        boundDataset2.setown(buildCachedActivity(ctx, rhs));
 
     const char * argName;
     ThorActivityKind kind;
