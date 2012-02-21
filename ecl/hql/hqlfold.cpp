@@ -3584,6 +3584,27 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return removeParentNode(expr);
             break;
         }
+    case no_assert_ds:
+        {
+            if (isNull(child))
+                return removeParentNode(expr);
+
+            bool hasAssert = false;
+            ForEachChildFrom(i, expr, 1)
+            {
+                IHqlExpression * cur = queryRealChild(expr, i);
+                if (cur && (cur->getOperator() != no_null))
+                {
+                    hasAssert = true;
+                    break;
+                }
+            }
+            //All asserts have constant folded away...
+            if (!hasAssert)
+                return removeParentNode(expr);
+            break;
+        }
+
     case no_choosen:
         {
             if (isNull(child) || isFail(child))
@@ -4582,6 +4603,10 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             }
             break;
         }
+    case no_assert:
+        if (getBoolValue(expr->queryChild(0), false))
+            return createValue(no_null, makeVoidType());
+        break;
     }
 
     return LINK(expr);

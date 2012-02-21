@@ -14519,6 +14519,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAssert(BuildCtx & ctx, IHqlExp
 
     //MORE: Change this when ThroughApply activities are supported in engines.
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKfilter, expr,"Filter");
+    instance->graphLabel.set("Assert");
 
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
