@@ -2251,7 +2251,7 @@ function refreshNavTree(paramds, paramdt, selRec) {
 
 function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex, callback) {
   var caller = this;
-
+  this.focus();
   var handleCancel = function() {
     this.hide();
     caller.promptPwdPanel.cfg.queueProperty("keylisteners", null);
