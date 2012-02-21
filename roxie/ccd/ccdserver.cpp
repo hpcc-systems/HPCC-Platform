@@ -5295,6 +5295,7 @@ class CRoxieServerTempTableActivity : public CRoxieServerActivity
     IHThorTempTableArg &helper;
     bool eof;
     unsigned curRow;
+    unsigned numRows;
 
 public:
     CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -5309,13 +5310,14 @@ public:
         eof = false;
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
     }
 
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        if (!eof)
+        if (!eof && curRow < numRows)
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned outSize = helper.getRow(rowBuilder, curRow++);
