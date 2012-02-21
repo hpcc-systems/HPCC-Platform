@@ -11521,6 +11521,40 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 return getDebugValueExpr(translator.wu(), expr);
             break;
         }
+    case no_loop:
+        {
+            OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+            IHqlExpression * loopCond = queryRealChild(transformed, 3);
+            if (loopCond)
+            {
+                //Create a firstCond attribute so that the condition for whether to execute the loop
+                //the first time will be efficiently optimized.
+                IHqlExpression * dataset = transformed->queryChild(0);
+                IHqlExpression * filter = queryRealChild(transformed, 2);
+                IHqlExpression * rowsid = transformed->queryProperty(_rowsid_Atom);
+                IHqlExpression * selSeq = querySelSeq(transformed);
+                IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+                OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
+                OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
+                OwnedHqlExpr initialLoopDataset = LINK(dataset);
+                if (filter)
+                {
+                    //If there is a loop filter then the global condition is applied to dataset filtered by that.
+                    OwnedHqlExpr mappedFilter = replaceSelector(filter, left, dataset);
+                    initialLoopDataset.setown(createDataset(no_filter, initialLoopDataset.getClear(), LINK(mappedFilter)));
+                }
+                OwnedHqlExpr firstCond = replaceExpression(loopCond, rowsExpr, initialLoopDataset);
+                if (counter)
+                {
+                    //Whether to evaluate the 1st time round the loop requires COUNTER=1
+                    OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
+                    firstCond.setown(replaceExpression(firstCond, counter, one));
+                }
+                return appendOwnedOperand(transformed, createExprAttribute(_loopFirst_Atom, firstCond.getClear()));
+            }
+            return transformed.getClear();
+        }
+        break;
     }
 
     unsigned max = expr->numChildren();

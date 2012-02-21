@@ -2879,7 +2879,7 @@ IHqlExpression * convertRecordToTransform(IHqlExpression * record, bool canOmit)
 }
 
 
-IHqlExpression * createTranformForField(IHqlExpression * field, IHqlExpression * value)
+IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value)
 {
     OwnedHqlExpr record = createRecord(field);
     OwnedHqlExpr self = getSelf(record);
@@ -2888,6 +2888,16 @@ IHqlExpression * createTranformForField(IHqlExpression * field, IHqlExpression *
     return createValue(no_transform, makeTransformType(record->getType()), assign.getClear());
 }
 
+IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType)
+{
+    if (!fieldType)
+        fieldType = value->queryType();
+
+    OwnedHqlExpr field = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr record = createRecord(field);
+    OwnedHqlExpr transform = createTransformForField(field, value);
+    return createRow(no_createrow, LINK(transform));
+}
 
 inline bool isScheduleAction(IHqlExpression * expr)
 {
@@ -4346,7 +4356,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
     case 2:
         {
             OwnedHqlExpr field = createField(unnamedAtom, value->getType(), NULL);
-            OwnedHqlExpr transform = createTranformForField(field, value);
+            OwnedHqlExpr transform = createTransformForField(field, value);
             OwnedHqlExpr combine = createDatasetF(no_combine, LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq), NULL);
             OwnedHqlExpr first = createRowF(no_selectnth, LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom), NULL);
             dataset.setown(createDatasetFromRow(first.getClear()));

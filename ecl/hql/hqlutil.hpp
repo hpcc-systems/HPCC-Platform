@@ -169,6 +169,9 @@ extern HQL_API bool isSimpleTransformToMergeWith(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
 
+extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value);
+extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
+
 
 inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)
 {

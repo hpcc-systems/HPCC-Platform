@@ -2401,6 +2401,7 @@ struct IHThorLoopArg : public IHThorArg
         LFparallel = 1,
         LFcounter = 2,
         LFfiltered = 4,
+        LFnewloopagain = 8,
     };
     virtual unsigned getFlags() = 0;
     virtual bool sendToLoop(unsigned counter, const void * in) = 0;         // does the input row go to output or round the loop?
@@ -2409,6 +2410,9 @@ struct IHThorLoopArg : public IHThorArg
     virtual void createParentExtract(rtlRowBuilder & builder) = 0;
     virtual unsigned defaultParallelIterations() = 0;
     virtual void numParallelIterations(size32_t & retSize, void * & retData) = 0;
+    //If new loop again is set the following should be used instead of loopAgain
+    virtual bool loopFirstTime() = 0;
+    virtual unsigned loopAgainResult() = 0;  // which result contains the indication of whether to loop again?
 };
 
 

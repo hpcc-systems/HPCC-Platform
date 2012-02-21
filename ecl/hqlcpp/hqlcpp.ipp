@@ -1204,7 +1204,6 @@ public:
     void doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality);
     void buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
 
-    unique_id_t buildLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset, unique_id_t containerId);
         
@@ -1903,12 +1902,12 @@ public:
     IHqlExpression * addDataset(IHqlExpression * expr);
     void buildStmt(BuildCtx & ctx, IHqlExpression * expr);
     unique_id_t buildGraphLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
-    unique_id_t buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
+    unique_id_t buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildRemoteGraph(BuildCtx & ctx, IHqlExpression * ds, unique_id_t containerId);
     void generateGraph(BuildCtx & ctx);
     void generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr, OwnedHqlExpr * retResultsExpr);
     bool isDatasetPresent(IHqlExpression * expr);
-    
+    unsigned queryLoopConditionResult() const { return loopAgainResult; }
 protected:
     void createBuilderAlias(BuildCtx & ctx, ParentExtract * extractBuilder);
 
@@ -1920,6 +1919,7 @@ protected:
     OwnedHqlExpr instanceExpr;
     OwnedHqlExpr resultInstanceExpr;
     OwnedHqlExpr represents;
+    unsigned loopAgainResult;
     HqlExprArray results;
     unsigned numResults;
 };
