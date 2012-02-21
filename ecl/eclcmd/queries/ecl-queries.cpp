@@ -214,7 +214,13 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries list' command displays a list of the queries in one or more\n"
+            "querysets. If a cluster is provided the querysets associated with that\n"
+            "cluster will be shown. If no queryset or cluster is specified all querysets\n"
+            "are shown.\n"
+            "\n"
             "ecl queries list [<queryset>][--cluster=<cluster>][--show=<flags>]\n\n"
             " Options:\n"
             "   <queryset>             name of queryset to get list of queries for\n"
@@ -225,8 +231,8 @@ public:
             "   S                      query is suspended in queryset\n"
 //not yet   "   X                      query is suspended on selected cluster\n"
             "   U                      query with no flags set\n"
-            " Common Options:\n"
-        );
+            " Common Options:\n",
+            stdout);
         EclCmdCommon::usage();
     }
 private:
@@ -311,17 +317,29 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
-            "ecl queries copy <from querypath> <to queryset> [--activate]\n\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries copy' command copies a query from one queryset to another.\n"
+            "\n"
+            "A query can be copied from one HPCC environment to another by using a path\n"
+            "which begins with '//' followed by the IP and Port of the source EclWatch\n"
+            "and then followed by the source queryset and query.\n"
+            "\n"
+            "ecl queries copy <source_query_path> <target_queryset> [--activate]\n"
+            "\n"
+            "ecl queries copy //IP:Port/queryset/query <target_queryset> [--activate]\n"
+            "ecl queries copy queryset/query <target_queryset> [--activate]\n"
+            "\n"
             " Options:\n"
-            "   <from querypath>       path of query to copy\n"
-            "                          format: [//ip:port/]queryset/query\n"
-            "   <to queryset>          name of queryset to copy the query into\n"
-            "   -cl, --cluster         Local cluster to associate with remote workunit\n"
+            "   <source_query_path>    path of query to copy\n"
+            "                          in the form: //ip:port/queryset/query\n"
+            "                          or: queryset/query\n"
+            "   <target_queryset>      name of queryset to copy the query into\n"
+            "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
-            " Common Options:\n"
-        );
+            " Common Options:\n",
+            stdout);
         EclCmdCommon::usage();
     }
 private:
