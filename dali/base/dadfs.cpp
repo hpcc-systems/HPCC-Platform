@@ -979,9 +979,11 @@ protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
     DFTransactionState state;
-    void addFile(IDistributedFile& file) {
+    void addFileLock(IDistributedFile* file) {
         // derived's prepare must call this before locking
-        lockedFiles.append(file);
+        lockedFiles.append(*LINK(file));
+        // Make sure this is in transaction's cache
+        transaction->addFile(file);
     }
     bool lock() {
         // Files most have been acquired already by derived's class prepare
@@ -1196,7 +1198,7 @@ public:
     {
         actions.append(*action);
     }
-    void addSuperFile(IDistributedSuperFile *sfile)
+    void addFile(IDistributedFile *sfile)
     {
         if (!findFile(sfile->queryLogicalName()))
             dflist.append(*LINK(sfile));
@@ -2461,8 +2463,16 @@ public:
             Owned<IPropertyTree> t = getNamedPropTree(root,"SuperOwner","@name",superfile,false);
             if (t && !link)
                 root->removeTree(t);
-            else if (link)
-                t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
+            else if (link) {
+                if (t) {
+                    // Linking to same super-file it already belongs is OK
+                    StringBuffer buf;
+                    t->getProp("@name", buf);
+                    assertex(strcmp(buf.str(), superfile) == 0);
+                }
+                else
+                    t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
+            }
         }
         else 
             ERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
@@ -3868,13 +3878,10 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         StringAttr subfile;
         bool before;
         StringAttr other;
-        bool addcontents;
     public:
-        cAddSubFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_subfile,bool _before,const char *_other,bool _addcontents)
-            : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile), other(_other)
+        cAddSubFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_subfile,bool _before,const char *_other)
+            : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile), before(_before), other(_other)
         {
-            before = _before;
-            addcontents = _addcontents;
         }
         virtual ~cAddSubFileAction() {}
         bool prepare()
@@ -3900,8 +3907,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
 //                  throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
             // Try to lock all files
-            lockedFiles.append(*LINK(parent));
-            lockedFiles.append(*LINK(sub));
+            addFileLock(parent);
+            addFileLock(sub);
             if (lock())
                 return true;
             else
@@ -3938,10 +3945,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         bool remphys;
     public:
         cRemoveSubFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_subfile,bool _remsub, bool _remphys)
-            : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile)
+            : CDFAction(_transaction), parentlname(_parentlname), subfile(_subfile), remsub(_remsub), remphys(_remphys)
         {
-            remsub = _remsub;
-            remphys = _remphys;
         }
         virtual ~cRemoveSubFileAction() {}
         bool prepare()
@@ -3962,9 +3967,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
             // Try to lock all files
-            lockedFiles.append(*LINK(parent));
+            addFileLock(parent);
             if (sub)
-                lockedFiles.append(*LINK(sub));
+                addFileLock(sub);
             if (lock())
                 return true;
             else
@@ -4005,8 +4010,12 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
             }
             // Try to lock all files
-            lockedFiles.append(*LINK(parent));
-            lockedFiles.append(*LINK(file));
+            addFileLock(parent);
+            for (unsigned i=0; i<parent->numSubFiles(); i++)
+                addFileLock(&parent->querySubFile(i));
+            addFileLock(file);
+            for (unsigned i=0; i<file->numSubFiles(); i++)
+                addFileLock(&file->querySubFile(i));
             if (lock())
                 return true;
             else
@@ -5069,72 +5078,40 @@ private:
         return true;
     }
 
-    // FIXME: Refactor this method to use transactions. This will remove the necessity
-    // of perverting the lockProperties order via DistributedFilePropertyLock
     bool doSwapSuperFile(IDistributedSuperFile *_file,
-                                 IDistributedFileTransaction *transaction)
+                         IDistributedFileTransaction *transaction)
     {
+        assertex(transaction);
         CDistributedSuperFile *file = QUERYINTERFACE(_file,CDistributedSuperFile);
         if (!file)
             return false;
-        StringBuffer subname;
-        StringArray subnames1; // will be built reversed
-        StringArray subnames2; // will be built reversed
-        unsigned pos = subfiles.ordinality();
-        // We cannot control the property locking here with objects because
-        // the context of the subfiles spawns across lexical blocks, and
-        // creating a list of lock objects might be more confusing than it is.
-        lockProperties(defaultTimeout);
-        if (pos) {
-            do {
-                pos--;
-                subfiles.item(pos).lockProperties(defaultTimeout);
-                unlinkSubFile(pos,transaction);
-                removeItem(pos,subname.clear());
-                subnames1.append(subname.str());
-            } while (pos);
+        // Cache names (so we can delete without problems)
+        StringArray subnames1;
+        StringArray subnames2;
+        for (unsigned i=0; i<this->numSubFiles(false); i++)
+                subnames1.append(querySubFile(i, false).queryLogicalName());
+        for (unsigned i=0; i<file->numSubFiles(false); i++)
+                subnames2.append(file->querySubFile(i, false).queryLogicalName());
+        // Delete all files
+        ForEachItemIn(d1,subnames1) {
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(d1));
+            if (!doRemoveSubFile(sub->queryLogicalName(), false, false, transaction, false))
+                return false;
         }
-        file->lockProperties(defaultTimeout);
-        pos = file->subfiles.ordinality();
-        if (pos) {
-            do {
-                pos--;
-                file->subfiles.item(pos).lockProperties(defaultTimeout);
-                file->unlinkSubFile(pos,transaction);
-                file->removeItem(pos,subname.clear());
-                subnames2.append(subname.str());
-            } while (pos);
+        ForEachItemIn(d2,subnames2) {
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(d2));
+            if (!file->doRemoveSubFile(sub->queryLogicalName(), false, false, transaction, false))
+                return false;
         }
-        ForEachItemInRev(i1,subnames1) {
-            Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subnames1.item(i1)) : parent->lookup(subnames1.item(i1),udesc,false,NULL,defaultTimeout);
+        // Add files swapped
+        ForEachItemIn(a1,subnames1) {
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames1.item(a1));
             file->doAddSubFile(LINK(sub), false, NULL, transaction);
         }
-        ForEachItemInRev(i2,subnames2) {
-            Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subnames2.item(i2)) : parent->lookup(subnames2.item(i2),udesc,false,NULL,defaultTimeout);
+        ForEachItemIn(a2,subnames2) {
+            Owned<IDistributedFile> sub = transaction->lookupFile(subnames2.item(a2));
             doAddSubFile(LINK(sub), false, NULL, transaction);
         }
-        pos = subfiles.ordinality();
-        if (pos) {
-            do {
-                pos--;
-                subfiles.item(pos).unlockProperties();
-            } while(pos);
-        }
-        pos = file->subfiles.ordinality();
-        if (pos) {
-            do {
-                pos--;
-                file->subfiles.item(pos).unlockProperties();
-            } while(pos);
-        }
-        file->setModified();
-        file->updateFileAttrs();
-        file->unlockProperties();
-        file->updateParentFileAttrs(transaction);
-        setModified();
-        updateFileAttrs();
-        unlockProperties();
-        updateParentFileAttrs(transaction);
         return true;
     }
 
@@ -5167,7 +5144,7 @@ public:
             local = true;
             localtrans->start();
         }
-        localtrans->addSuperFile(this);
+        localtrans->addFile(this);
 
         if (addcontents) {
             StringArray subs;
@@ -5183,7 +5160,7 @@ public:
             }
         } else {
             // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-            cAddSubFileAction *action = new cAddSubFileAction(localtrans,queryLogicalName(),subfile,before,other,addcontents);
+            cAddSubFileAction *action = new cAddSubFileAction(localtrans,queryLogicalName(),subfile,before,other);
         }
 
         if (local)
@@ -5222,7 +5199,7 @@ public:
             local = true;
         }
         // Make sure this file is in cache (reuse below)
-        localtrans->addSuperFile(this);
+        localtrans->addFile(this);
 
         if (remcontents) {
             CDfsLogicalFileName logicalname;
@@ -5267,17 +5244,27 @@ public:
             return false;
         checkModify("swapSuperFile");
         partscache.kill();
-        if (transaction&&transaction->active()) {
-            cSwapFileAction *action = new cSwapFileAction(transaction,queryLogicalName(),_file->queryLogicalName());
-            // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-            return true;
+
+        // Create a local transaction that will be destroyed (but never touch the external transaction)
+        Linked<IDistributedFileTransaction> localtrans;
+        if (transaction) {
+            // Recurring calls will always have an active transaction, so commit will happen at the end
+            localtrans.set(transaction);
+        } else {
+            // TODO: Make it explicit in the API that a transaction is required
+            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans->start();
         }
+        // Make sure this file is in cache
+        localtrans->addFile(this);
 
-        return doSwapSuperFile(_file, transaction);
+        // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
+        cSwapFileAction *action = new cSwapFileAction(localtrans,queryLogicalName(),_file->queryLogicalName());
+
+        localtrans->autoCommit();
+
+        return true;
     }
-
-
-
 
     void savePartsAttr(bool force)
     {
@@ -6540,7 +6527,7 @@ class cCreateSuperFileAction: public CDFAction
 {
     CDfsLogicalFileName logicalname;
     CDistributedFileDirectory *parent;
-    Owned<IDistributedSuperFile> super;
+    Linked<IDistributedSuperFile> super;
     IUserDescriptor *user;
     IPropertyTree *root;
     bool created;
@@ -6564,7 +6551,7 @@ public:
             super.setown(new CDistributedSuperFile(parent, root, logicalname, user));
             created = true;
         }
-        transaction->addSuperFile(super);
+        transaction->addFile(super);
     }
     virtual ~cCreateSuperFileAction() {}
     bool prepare()
@@ -6607,7 +6594,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
         if (ifdoesnotexist) {
             // Cache, since we're going to use it
             if (transaction && transaction->active())
-                transaction->addSuperFile(sfile);
+                transaction->addFile(sfile);
             return sfile;
         } else
             throw MakeStringException(-1,"createSuperFile: SuperFile %s already exists",logicalname.get());
@@ -9386,27 +9373,6 @@ class CLightWeightSuperFileConn: public CInterface, implements ISimpleSuperFileE
         return path.append("SubFile[@num=\"").append(idx+1).append("\"]");
     }
 
-
-    IRemoteConnection *connectChild(const char *cname)
-    {
-        CDfsLogicalFileName lfn;
-        if (!lfn.setValidate(cname))  
-            throw MakeStringException(-1,"CLightWeightSuperFileConn::connectChild invalid subfile name '%s'",cname);
-        StringBuffer query;
-        lfn.makeFullnameQuery(query,DXB_File,true);
-        // no lock here should be ok as parent locked
-        IRemoteConnection *conn = conn = querySDS().connect(query.str(),myProcessSession(),0,defaultTimeout);
-        if (!conn) {
-            lfn.makeFullnameQuery(query.clear(),DXB_SuperFile,true);
-            conn = conn = querySDS().connect(query.str(),myProcessSession(),0,defaultTimeout);
-            if (!conn) 
-                throw MakeStringException(-1,"CLightWeightSuperFileConn::connectChild could not find subfile '%s'",cname);
-        }
-        children.append(*conn);
-        return conn;
-
-    }
-
     void migrateProp(const char *name, unsigned num,IPropertyTree *from,IPropertyTree *to,IPropertyTree *newt, bool allowunchanged)
     {
         StringBuffer aname("Attr/");
@@ -9517,115 +9483,6 @@ public:
         return true;
     }
 
-    bool commonChildren(CLightWeightSuperFileConn &other)
-    {
-        StringBuffer supername1;
-        StringBuffer supername2;
-        lock.queryRoot()->getProp("@name",supername1);
-        other.lock.queryRoot()->getProp("@name",supername2);
-        Owned<IPropertyTreeIterator> iter1 = lock.queryRoot()->getElements("SubFile");
-        Owned<IPropertyTreeIterator> iter2 = other.lock.queryRoot()->getElements("SubFile");
-        StringBuffer name1;
-        StringBuffer name2;
-        ForEach(*iter1) {
-            if (iter1->query().getProp("@name",name1.clear())) {
-                if (strcmp(name1.str(),supername2.str())==0)        // super is child of other
-                    return true;
-                ForEach(*iter2) {
-                    if (iter2->query().getProp("@name",name2.clear())) {
-                        if (strcmp(name1.str(),name2.str())==0)
-                            return true;
-                        if (strcmp(name2.str(),supername1.str())==0)        // super is child of other
-                            return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    void unlinkChildren(StringArray &toremove,bool checksingleparent)
-    {
-        IPropertyTree * root = lock.queryRoot();
-        loop {
-            IPropertyTree *tree = root->queryPropTree("SubFile[1]");
-            if (!tree)
-                break;
-            toremove.append(tree->queryProp("@name"));
-            root->removeTree(tree);
-        }
-        root->setPropInt("@numsubfiles",0);
-        root->setPropTree("Attr",getEmptyAttr());
-        const char *supername = root->queryProp("OrigName");
-        StringBuffer xpath;
-        ForEachItemIn(i,toremove) {
-            IRemoteConnection *cc = connectChild(toremove.item(i));
-            xpath.clear().appendf("SuperOwner[@name=\"%s\"]",supername);
-            cc->queryRoot()->removeProp(xpath.str());
-        }
-    }
-
-    void linkChildren(StringArray &toadd)
-    {
-        IPropertyTree * root = lock.queryRoot();
-        if (root->getPropInt("@numsubfiles")!=0)
-            throw MakeStringException(-1,"CLightWeightSuperFileConn::linkChildren: Destination superfile add (%s) not empty!",root->queryProp("OrigName"));
-        root->setPropInt("@numsubfiles",toadd.ordinality());
-        const char *supername = root->queryProp("OrigName");
-        ForEachItemIn(i,toadd) {
-            IPropertyTree *t = root->addPropTree("SubFile",createPTree("SubFile"));
-            const char *sname = toadd.item(i);
-            t->setProp("@name",sname);
-            t->setPropInt("@num",i+1);
-            IRemoteConnection *cc = connectChild(sname);
-            t = cc->queryRoot()->addPropTree("SuperOwner",createPTree("SuperOwner"));
-            t->setProp("@name",supername);
-        }
-        migrateAttr((children.ordinality()==1)?children.item(0).queryRoot():NULL,root);
-    }
-
-    void moveChildren(CLightWeightSuperFileConn &dst)
-    {
-        // first move subfiles
-        IPropertyTree * srcroot = lock.queryRoot();
-        IPropertyTree * dstroot = dst.lock.queryRoot();
-        if (dstroot->getPropInt("@numsubfiles")!=0)
-            throw MakeStringException(-1,"CLightWeightSuperFileConn::moveChildren: Destination of superfile move (%s) not empty!",dstroot->queryProp("OrigName"));
-        const char *srcsupername = srcroot->queryProp("OrigName");
-        const char *dstsupername = dstroot->queryProp("OrigName");
-        StringBuffer xpath;
-        IPropertyTree *newt;
-        StringBuffer subpath;
-        unsigned n=0;
-        for (unsigned sni=0;;sni++) {
-            getSubPath(subpath.clear(),sni); // correct order
-            IPropertyTree *tree = srcroot->queryPropTree(subpath.str());
-            if (!tree)
-                break;
-            newt = createPTreeFromIPT(tree);
-            srcroot->removeTree(tree);
-            newt = dstroot->addPropTree("SubFile",newt);
-            IRemoteConnection *cc = dst.connectChild(newt->queryProp("@name"));
-            xpath.clear().appendf("SuperOwner[@name=\"%s\"]",srcsupername);
-            tree = cc->queryRoot()->queryPropTree(xpath.str());
-            if (tree)
-                tree->setProp("@name",dstsupername);
-            n++;
-        }
-        srcroot->setPropInt("@numsubfiles",0);
-        dstroot->setPropInt("@numsubfiles",n);
-        // replace Attr
-        IPropertyTree *attr = srcroot->queryPropTree("Attr[1]");  
-        if (attr) {
-            newt = createPTreeFromIPT(attr);
-            srcroot->removeTree(attr);
-        }
-        else
-            newt = getEmptyAttr();
-        srcroot->setPropTree("Attr",getEmptyAttr());
-        dstroot->setPropTree("Attr",newt);
-    }
-
     void disconnect(bool commit)
     {
         if (lock.conn()&&!readonly) {
@@ -9702,93 +9559,94 @@ public:
 #define PROMOTE_CONN_TIMEOUT (60*1000) // how long to wait for a single superfile
 #define PROMOTE_DELAY   (30*1000)   
 
+// Check files don't share subfiles (MORE - make this part of swap files action?)
+static int hasCommonSubChildren(IDistributedSuperFile *orig, IDistributedSuperFile *dest)
+{
+    unsigned origSubs = orig->numSubFiles();
+    unsigned destSubs = dest->numSubFiles();
+    if (origSubs == 0)
+        return NotFound;
+    for (unsigned j=0; j<origSubs; j++) {
+        for (unsigned k=0; k<destSubs; k++) {
+            if (strcmp(orig->querySubFile(j).queryLogicalName(), dest->querySubFile(k).queryLogicalName())==0)
+                return j;
+        }
+    }
+    return NotFound;
+}
+
+// MORE - use string arrays, rather than char* arrays or comma-separated strings
 void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user,unsigned timeout,StringArray &outunlinked)
 {
     if (!numsf) 
         return;
-    // first lock all files
-    struct cSF
-    {
-        CIArrayOf <CLightWeightSuperFileConn> conn;
-        bool rollback;
-        cSF(unsigned n,unsigned _defaultTimeout) 
-        { 
-            rollback = true; // if any faults rollback
-            while (n--)
-                conn.append(* new CLightWeightSuperFileConn(_defaultTimeout));
-        }
-        ~cSF() 
-        { 
-            if (rollback) {
-                ForEachItemInRev(i,conn) {
-                    conn.item(i).disconnect(false);
-                }
+
+    // Create a local transaction that will be destroyed
+    Owned<IDistributedFileTransaction> transaction = new CDistributedFileTransaction(user);
+    transaction->start();
+
+    // Lookup all files (keep them in transaction's cache)
+    bool created = false;
+    unsigned files = numsf;
+    for (unsigned i=0; i<numsf; i++) {
+        Owned<IDistributedSuperFile> super = transaction->lookupSuperFile(sfnames[i]);
+        if (!super.get()) {
+            if (created && createonlyonesuperfile) {
+                files = i;
+                break;
             }
-        }
-    } superfiles(numsf,defaultTimeout);
-    unsigned start = msTick();
-    loop {
-        unsigned i;
-        for (i=0;i<numsf;i++) {
-            try {
-                bool autocreate;
-                if (!superfiles.conn.item(i).connect(this,"promoteSuperFile",sfnames[i],false,&autocreate,PROMOTE_CONN_TIMEOUT)) {
-                    PROGLOG("promoteSuperFile: Cannot connect to %s",sfnames[i]);
-                    throw MakeStringException(-1,"promoteSuperFile: Cannot connect to %s",sfnames[i]);
-                }
-                if (autocreate&&createonlyonesuperfile) {
-                    while (numsf>i+1) {
-                        numsf--;
-                        superfiles.conn.remove(numsf);
-                    }
-                }
-            }
-            catch (IDFS_Exception *e) {
-                // catch timeout here
-                if ((e->errorCode()!=DFSERR_LookupConnectionTimout)||(msTick()-start>((timeout==INFINITE)?SDS_CONNECT_TIMEOUT:timeout)))
-                    throw;
-                EXCLOG(e,"promoteSuperFiles");
-                e->Release();
-            }
-        }
-        if (i==numsf) 
-            break;
-        while (i--)
-            superfiles.conn.item(i).disconnect(false);
-        PROGLOG("promoteSuperFiles contention, connection pausing");
-        Sleep(getRandom()%PROMOTE_DELAY); // let one get in
-    }
-    // all locked now
-    // check all children different
-    ForEachItemIn(i1,superfiles.conn) {
-        for (unsigned j=0;j<i1;j++) {
-            if (superfiles.conn.item(j).commonChildren(superfiles.conn.item(i1)))
-                throw MakeStringException(-1,"Superfiles %s and %s have common subfiles or are related",sfnames[i1],sfnames[j]);
+            createSuperFile(sfnames[i],false,false,user,transaction);
+            created = true;
         }
     }
-    superfiles.conn.item(numsf-1).unlinkChildren(outunlinked,delsub);
-    for (unsigned i=numsf-1;i;i--)
-        superfiles.conn.item(i-1).moveChildren(superfiles.conn.item(i)); // NB moveChildren assumes target empty
+
+    // If last file had sub-files, clean and fill outlinked
+    Owned<IDistributedSuperFile> last = transaction->lookupSuperFile(sfnames[files-1]);
+    assertex(last.get());
+    unsigned lastSubs = last->numSubFiles();
+    if (files == numsf && lastSubs > 0) {
+        for (unsigned i=0; i<lastSubs; i++) {
+            outunlinked.append(last->querySubFile(i).queryLogicalName());
+        }
+        last->removeSubFile(NULL,false,true,false,transaction,true);
+    }
+    last.clear();
+
+    // Move up, starting from last
+    for (unsigned i=files-1; i; i--) {
+        Owned<IDistributedSuperFile> orig = transaction->lookupSuperFile(sfnames[i-1]);
+        Owned<IDistributedSuperFile> dest = transaction->lookupSuperFile(sfnames[i]);
+        assertex(orig.get());
+        assertex(dest.get());
+        int common = hasCommonSubChildren(orig, dest);
+        if (common != NotFound) {
+            transaction->rollback();
+            throw MakeStringException(-1,"promoteSuperFiles: superfiles %s and %s share same subfile %s",
+                    orig->queryLogicalName(), dest->queryLogicalName(), orig->querySubFile(common).queryLogicalName());
+        }
+        orig->swapSuperFile(dest, transaction);
+    }
+
+    // Move new subs to first super, if any
+    Owned<IDistributedSuperFile> first = transaction->lookupSuperFile(sfnames[0]);
+    assertex(first.get());
     StringArray toadd;
-    CslToStringArray(addsubnames, toadd, true); 
-    ForEachItemIn(i2,toadd) {  // NB names are not normalized so do so
+    CslToStringArray(addsubnames, toadd, true);
+    ForEachItemIn(i,toadd) {
         CDfsLogicalFileName lfn;
-        if (!lfn.setValidate(toadd.item(i2)))
-            throw MakeStringException(-1,"promoteSuperFiles: invalid logical name to add: %s",toadd.item(i2));
-        toadd.replace(lfn.get(),i2);
+        if (!lfn.setValidate(toadd.item(i)))
+            throw MakeStringException(-1,"promoteSuperFiles: invalid logical name to add: %s",toadd.item(i));
+        first->addSubFile(toadd.item(i),false,NULL,false,transaction);
     }
-    superfiles.conn.item(0).linkChildren(toadd);
-    superfiles.rollback = false; 
-    // commit changes
-    ForEachItemIn(i3,superfiles.conn) {
-        superfiles.conn.item(i3).disconnect(true);
-    }
+    first.clear();
+
+    transaction->commit();
+
+    // MORE - once deletion of logic files are also in transaction we can move this up (and allow promote within transactions)
     if (delsub) {
         ForEachItemIn(j,outunlinked) 
             removePhysical(outunlinked.item(j),0,NULL,NULL,user);
     }
-
-
 }
 
 
