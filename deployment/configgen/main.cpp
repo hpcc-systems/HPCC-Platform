@@ -302,12 +302,64 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     {
       IPropertyTree* pComputer = &computers->query();
       const char *netAddress = pComputer->queryProp("@netAddress");
-      out.appendf("%s,", netAddress  ? netAddress : ""); 
       StringBuffer xpath;
+      const char* name = pComputer->queryProp(XML_ATTR_NAME);
+      bool isHPCCNode = false, isSql = false, isLdap = false;
+
+      xpath.clear().appendf(XML_TAG_SOFTWARE"/LDAPServerProcess/"XML_TAG_INSTANCE"/["XML_ATTR_COMPUTER"='%s']", name);
+      Owned<IPropertyTreeIterator> itLdap = pEnv->getElements(xpath.str());
+
+      if (itLdap->first())
+        isLdap = true;
+
+      xpath.clear().appendf(XML_TAG_SOFTWARE"//*/["XML_ATTR_COMPUTER"='%s']", name);
+      Owned<IPropertyTreeIterator> it = pEnv->getElements(xpath.str());
+
+      ForEach(*it)
+      {
+        IPropertyTree* pComponent = &it->query();
+        const char* buildset = pComponent->queryProp(XML_ATTR_BUILDSET);
+
+        if (buildset)
+        {
+          if (!strcmp(buildset, "mysqlserver"))
+            isSql = true;
+          else
+            isHPCCNode = true;
+        }
+        else
+        {
+          if (isLdap)
+          {
+            bool flag = false;
+
+            ForEach(*itLdap)
+            {
+              IPropertyTree* pLdapComponent = &itLdap->query();
+
+              if (pLdapComponent == pComponent)
+              {
+                flag = true;
+                break;
+              }
+            }
+
+            isHPCCNode = !flag;
+          }
+          else
+            isHPCCNode = true;
+        }
+      }
+
+      if ((isSql || isLdap ) && !isHPCCNode)
+        continue;
+
+      out.appendf("%s,", netAddress  ? netAddress : "");
       const char *computerType = pComputer->queryProp("@computerType");
+
       if (computerType)
       {
-        xpath.appendf("Hardware/ComputerType[@name='%s']", computerType);
+        xpath.clear().appendf("Hardware/ComputerType[@name='%s']", computerType);
         IPropertyTree *pType = pEnv->queryPropTree(xpath.str());
         out.appendf("%s", pType->queryProp("@opSys"));
       }
