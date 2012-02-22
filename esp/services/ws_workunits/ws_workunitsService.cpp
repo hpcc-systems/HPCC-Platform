@@ -44,6 +44,8 @@
 #include "zcrypt.hpp"
 #endif
 
+#include "fileview.hpp"
+
 #define ESP_WORKUNIT_DIR "workunits/"
 
 class NewWsWorkunit : public Owned<IWorkUnit>
@@ -3430,5 +3432,99 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
+    return true;
+}
+
+bool CWsWorkunitsEx::onRunEcl(IEspContext &context, IEspRunEclRequest &req, IEspRunEclResponse &resp)
+{
+    bool sec_access = (context.querySecManager()!=NULL);
+    Owned <IWorkUnitFactory> factory;
+    if (sec_access)
+        factory.setown(getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser()));
+    else
+        factory.setown(getWorkUnitFactory());
+
+    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "ECL-Direct", "user");
+    Owned<IWUQuery> query = workunit->updateQuery();
+    query->setQueryText(req.getEclText());
+    query.clear();
+
+    StringBuffer user;
+    context.getUserID(user);
+    
+    StringBuffer pw;
+    context.getPassword(pw);
+
+    workunit->setUser((user.length()) ? user.str() : "user");
+
+    workunit->setClusterName(req.getCluster());
+
+	// Limit it
+    workunit->setResultLimit(1000);
+
+    // Execute it
+    SCMStringBuffer wuid;
+    
+    workunit->getWuid(wuid);
+    workunit->setAction(WUActionRun);
+    workunit->setState(WUStateSubmitted);
+    workunit.clear();
+
+    if (sec_access)
+        secSubmitWorkUnit(wuid.str(), *context.querySecManager(), *context.queryUser());
+    else
+        submitWorkUnit(wuid.str(), user.str(), pw.str());
+
+    if (waitForWorkUnitToComplete(wuid.str()))
+    {
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+
+		//  WUID
+		resp.setWuid(wuid.str());
+
+		//  Errors
+        WsWUExceptions errors(*cw);
+        resp.setErrors(errors);
+    
+		//  Results
+		if (req.getIncludeResults())
+		{
+			SCMStringBuffer resultXML;
+			getFullWorkUnitResultsXML(user.str(), pw.str(), cw.get(), resultXML, false);
+			resp.setResults(resultXML.str());
+		}
+
+		//  Graphs
+		if (req.getIncludeGraphs())
+		{
+			StringBuffer allXGMML("<Graphs>");
+			Owned<IConstWUGraphIterator> it = &cw->getGraphs(GraphTypeAny);
+			ForEach(*it)
+			{
+				IConstWUGraph &graph = it->query();
+				Owned<IPropertyTree> xgmml = graph.getXGMMLTree(true);
+				StringBuffer xml;
+				toXML(xgmml, xml);
+				allXGMML.append(xml);
+			}
+			allXGMML.append("</Graphs>");
+			StringBuffer encodedXGMML;
+			encodeUtf8XML(allXGMML, encodedXGMML);
+			resp.setGraphsXGMML(encodedXGMML);
+		}
+
+        cw.clear();
+    }
+    else
+    {
+        // Don't delete these ones...
+        DBGLOG("WorkUnit %s timed out", wuid.str());
+        
+        StringBuffer result;
+        result.appendf("<Exception><Source>ESP</Source><Message>Timed out waiting for job to complete: %s</Message></Exception>", wuid.str());
+        resp.setResults(result.str());
+    }
+
+    DBGLOG("EclDirect Request served");
     return true;
 }
