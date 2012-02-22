@@ -60,11 +60,16 @@ void AccessFailure(IEspContext& context, char const * msg,...)
 
 struct QueueWrapper
 {
-    QueueWrapper(const char* targetName, const char* queueName)
+    QueueWrapper(const char* targetName, const char* queueExt)
     {
         StringBuffer name;
-        name<<targetName<<"."<<queueName;
+        name.append(targetName).append('.').append(queueExt);
         queue.setown(createJobQueue(name.str()));
+    }
+
+    QueueWrapper(const char* queueName)
+    {
+        queue.setown(createJobQueue(queueName));
     }
 
     operator IJobQueue*() { return queue.get(); }
@@ -546,21 +551,18 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             if (!serverName || !*serverName)
                 continue;
 
-            SCMStringBuffer queueName;
-            getEclCCServerQueueNames(queueName, serverName);
-            if (queueName.length() < 1)
-                continue;
-
             Owned <IStringIterator> targetClusters = getTargetClusters(eqEclCCServer, serverName);
             if (!targetClusters->first())
                 continue;
-            
+
             ForEach (*targetClusters)
             {
                 SCMStringBuffer targetCluster;
                 targetClusters->str(targetCluster);
 
-                QueueWrapper queue(targetCluster.str(), queueName.str());
+                StringBuffer queueName;
+                getClusterEclCCServerQueueName(queueName, targetCluster.str());
+                QueueWrapper queue(queueName.str());
                 CJobQueueContents contents;
                 queue->copyItems(contents);
                 unsigned count=0;
