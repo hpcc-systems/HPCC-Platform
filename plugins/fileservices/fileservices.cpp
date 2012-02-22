@@ -1155,7 +1155,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     if (!lookupSuperFile(ctx, lsuperfn, file, strict, lsfn, false, false, addcontents)) {
         // auto create
         fsCreateSuperFile(ctx,lsuperfn,false,false);
-        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, false);
+        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, false, addcontents);
     }
     // Never add super file to itself
     StringBuffer lfn;
