@@ -549,7 +549,7 @@
                     <xsl:when test="count(//ThorClusters/ThorCluster) &gt; 0">
                         <xsl:for-each select="RoxieClusters/RoxieCluster">
                              <xsl:call-template name="show-queue">
-                                  <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='Roxie' and QueueName=current()/QueueName]"/>
+                                  <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='RoxieServer' and QueueName=current()/QueueName]"/>
                                   <xsl:with-param name="cluster" select="ClusterName"/>
                                   <xsl:with-param name="queue" select="QueueName"/>
                                   <xsl:with-param name="status" select="QueueStatus"/>
@@ -563,7 +563,7 @@
                     <xsl:otherwise>
                         <xsl:for-each select="RoxieClusters/RoxieCluster">
                              <xsl:call-template name="show-queue">
-                                  <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='Roxie' and QueueName=current()/QueueName]"/>
+                                  <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='RoxieServer' and QueueName=current()/QueueName]"/>
                                   <xsl:with-param name="cluster" select="ClusterName"/>
                                   <xsl:with-param name="queue" select="QueueName"/>
                                   <xsl:with-param name="status" select="QueueStatus"/>
