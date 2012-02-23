@@ -1235,7 +1235,7 @@ public:
                 ForEachItemIn(idx, dependencies)
                 {
                     if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
+                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx), aborting);
                 }
                 if (input)
                     input->stop(aborting);
@@ -1312,7 +1312,7 @@ public:
         throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink");
     }
 
-    virtual void stopSink(unsigned idx)
+    virtual void stopSink(unsigned idx, bool abort)
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
     }
@@ -2170,7 +2170,7 @@ public:
         return NULL;
     }
 
-    virtual void stopSink(unsigned outputIdx)
+    virtual void stopSink(unsigned outputIdx, bool abort)
     {
         if (!stopped[outputIdx])
         {
@@ -2178,7 +2178,7 @@ public:
             for (unsigned s = 0; s < numOutputs; s++)
                 if (!stopped[s])
                     return;
-            stop(false); // all outputs stopped - stop parent.
+            stop(abort); // all outputs stopped - stop parent.
         }
     }
 
