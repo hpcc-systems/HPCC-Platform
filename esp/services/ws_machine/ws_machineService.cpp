@@ -2141,7 +2141,7 @@ int Cws_machineEx::checkProcess(const char* type, const char* name, StringArray&
     return pos;
 }
 
-void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTree* cluster, const char* machineName, const char* machineType, 
+void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTree* cluster, const char* machineName, const char* machineType,
                                    const char* directory, StringArray& processAddresses)
 {
     if (!constEnv || !cluster)
