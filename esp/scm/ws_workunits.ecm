@@ -490,6 +490,7 @@ ESPrequest WURunRequest
     string Cluster;
     int Wait(-1);
     [rows(15)] string Input;
+    bool NoRootTag(0);
 };
 
 ESPresponse [exceptions_inline] WURunResponse

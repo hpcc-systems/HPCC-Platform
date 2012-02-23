@@ -432,7 +432,7 @@ private:
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1)
+    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -455,6 +455,8 @@ public:
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
+                continue;
+            if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -506,6 +508,7 @@ public:
 
         Owned<IClientWURunRequest> req = client->createWURunRequest();
         req->setCloneWorkunit(true);
+        req->setNoRootTag(optNoRoot);
 
         StringBuffer wuid;
         StringBuffer queryset;
@@ -588,6 +591,7 @@ private:
     StringAttr optName;
     StringAttr optInput;
     unsigned optWaitTime;
+    bool optNoRoot;
 };
 
 class EclCmdActivate : public EclCmdWithQueryTarget
