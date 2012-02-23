@@ -302,12 +302,33 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     {
       IPropertyTree* pComputer = &computers->query();
       const char *netAddress = pComputer->queryProp("@netAddress");
-      out.appendf("%s,", netAddress  ? netAddress : ""); 
       StringBuffer xpath;
+      const char* name = pComputer->queryProp(XML_ATTR_NAME);
+      bool isHPCCNode = false, isSqlOrLdap = false;
+
+      xpath.clear().appendf(XML_TAG_SOFTWARE"/*[//"XML_ATTR_COMPUTER"='%s']", name);
+      Owned<IPropertyTreeIterator> it = pEnv->getElements(xpath.str());
+
+      ForEach(*it)
+      {
+        IPropertyTree* pComponent = &it->query();
+
+        if (!strcmp(pComponent->queryName(), "MySQLProcess") ||
+            !strcmp(pComponent->queryName(), "LDAPServerProcess"))
+          isSqlOrLdap = true;
+        else
+          isHPCCNode = true;
+      }
+
+      if (isSqlOrLdap && !isHPCCNode)
+        continue;
+
+      out.appendf("%s,", netAddress  ? netAddress : "");
       const char *computerType = pComputer->queryProp("@computerType");
+
       if (computerType)
       {
-        xpath.appendf("Hardware/ComputerType[@name='%s']", computerType);
+        xpath.clear().appendf("Hardware/ComputerType[@name='%s']", computerType);
         IPropertyTree *pType = pEnv->queryPropTree(xpath.str());
         out.appendf("%s", pType->queryProp("@opSys"));
       }
