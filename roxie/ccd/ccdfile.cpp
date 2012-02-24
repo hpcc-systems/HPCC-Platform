@@ -1021,7 +1021,7 @@ public:
                 CriticalBlock b(crit);
                 if ( (todo.ordinality()== 0) && (fileCopiedCount)) // finished last copy
                 {
-                    DBGLOG("No more data files to copy!!!!!");
+                    DBGLOG("No more data files to copy");
                     fileCopiedCount = 0;
                 }
             }
