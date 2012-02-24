@@ -2267,8 +2267,6 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
 
         destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
 
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file and sub file name
-
         if(compressed)
             destination->setCompressed(true);
 
@@ -2300,7 +2298,6 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         destination->setLogicalName(dstName);
         destination->setFileMask(fileMask);
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file name
 
         destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
 
