@@ -220,13 +220,16 @@ CFileOutputStream::CFileOutputStream(int _handle)
 void CFileOutputStream::writeByte(byte b)
 {
     if (_write(handle, &b, 1) != 1)
-        throwUnexpected();
+        throw MakeStringException(-1, "Error while writing byte 0x%x\n", (unsigned)b);
 }
 
 void CFileOutputStream::writeBytes(const void *b, int len)
 {
-    if (_write(handle, b, len) != len)
-        throwUnexpected();
+    ssize_t written = _write(handle, b, len);
+    if (written < 0)
+        throw MakeStringException(-1, "Error while writing %d bytes\n", len);
+    if (written != len)
+        throw MakeStringException(-1, "Truncated (%d) while writing %d bytes\n", written, len);
 }
 
 extern jlib_decl IByteOutputStream *createOutputStream(int handle)
