@@ -21099,8 +21099,7 @@ public:
                     else
                         nextSeek = (byte *) seeks->querySeek(i)+seekGEOffset;
                     int diff = memcmp(nextSeek, lastSeek, seekLen);
-                    assertex(diff >= 0);
-                    if (diff)
+                    if (diff > 0)
                     {
                         serialized++;
                         out.append(seekLen, nextSeek);
