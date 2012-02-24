@@ -3269,7 +3269,7 @@ void CHqlExpression::updateFlagsAfterOperands()
             infoFlags = (infoFlags &~HEFthrowds)|HEFthrowscalar;
         break;
     case no_select:
-        if (!hasProperty(newAtom))
+        if (!isNewSelector(this))
         {
             IHqlExpression * left = queryChild(0);
             node_operator lOp = left->getOperator();

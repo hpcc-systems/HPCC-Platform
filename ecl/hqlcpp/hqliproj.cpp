@@ -1544,7 +1544,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         if (expr->isDataset())
             return PassThroughActivity;
         if (expr->isDatarow())
-            return ComplexNonActivity;
+            return PassThroughActivity;
         return NonActivity;
     case no_addfiles:
     case no_merge:
