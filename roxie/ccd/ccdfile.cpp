@@ -887,7 +887,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         else
         {
             if (displayFirstFileMessage)
-                DBGLOG("Received files to copy!!!!!");
+                DBGLOG("Received files to copy");
 
             const char *targetFilename = f->queryTarget()->queryFilename();
             StringBuffer tempFile(targetFilename);
@@ -897,6 +897,10 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 recursiveCreateDirectory(destPath.str());
             else
                 destPath.append('.');
+            if (!checkDirExists(destPath.str())) {
+                ERRLOG("Dest directory %s does not exist", destPath.str());
+                return false;
+            }
             
             const char *baseIndexFilename = f->queryBaseIndexFileName();
             ILazyFileIO* patchFile = f->queryPatchFile();
