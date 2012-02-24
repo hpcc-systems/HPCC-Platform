@@ -3361,7 +3361,7 @@ extern "C" FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSet
 
     text.append("<Dataset");
     if (name)
-        text.append(" name=\"").append(name).append("\" ");
+        text.append(" name='").append(name).append('\'');
     if (schemaName) 
         text.append(" xmlSchema=\"").append(schemaName).append("\" ");
     text.append(">").newline();
