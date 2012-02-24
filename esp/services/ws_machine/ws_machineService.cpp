@@ -2160,7 +2160,7 @@ void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTre
     if (!nodeGroup || (nodeGroup->ordinality() == 0))
         return;
 
-    StringArray netAddresses;
+    unsigned processNumber = 0;
     Owned<INodeIterator> gi = nodeGroup->getIterator();
     ForEach(*gi)
     {
@@ -2171,6 +2171,8 @@ void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTre
             WARNLOG("Net address not found for a node in node group %s", groupName.str());
             continue;
         }
+
+        processNumber++;
 
         StringBuffer netAddress;
         const char* ip = addressRead.str();
@@ -2190,20 +2192,12 @@ void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTre
             continue;
         }
 
-        unsigned countSameAddress = 1;
-        ForEachItemIn(i, netAddresses)
-        {
-            if (streq(netAddresses.item(i), netAddress.str()))
-                countSameAddress++;
-        }
-        netAddresses.append(netAddress.str());
-
         Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(addressRead.str());
         if (pMachineInfo.get())
         {
             StringBuffer os, processAddress;
             os.append(pMachineInfo->getOS());
-            processAddress.appendf("%s|%s:%s:%s:%s:%s:%d", netAddress.str(), addressRead.str(), machineType, machineName, os.str(), directory, countSameAddress);
+            processAddress.appendf("%s|%s:%s:%s:%s:%s:%d", netAddress.str(), addressRead.str(), machineType, machineName, os.str(), directory, processNumber);
             processAddresses.append(processAddress);
         }
         else
