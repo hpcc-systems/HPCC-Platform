@@ -3561,8 +3561,10 @@ class CSocketSelectThread: public Thread
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
         CriticalBlock block(sect);
         char c = 0;
-        if(write(dummysock[1], &c, 1) != 1)
-            throwUnexpected();
+        if(write(dummysock[1], &c, 1) != 1) {
+            int err = ERRNO();
+            LOGERR(err,1,"Socket closed during trigger select");
+        }
 #else
         closedummy();
 #endif
