@@ -37,7 +37,10 @@ enum ResourceType {
 class CResourceOptions
 {
 public:
+    CResourceOptions() { state.updateSequence = 0; }
+
     IHqlExpression * createSpillName(bool isGraphResult);
+    void noteGraphsChanged() { state.updateSequence++; }
 
 public:
     unsigned filteredSpillThreshold;
@@ -71,6 +74,12 @@ public:
     unsigned clusterSize;
     StringAttr filenameMangler;
     ClusterType targetClusterType;
+
+    //Used
+    struct
+    {
+        unsigned updateSequence;
+    } state;
 
     inline bool canSplit() const            { return targetClusterType != HThorCluster; }
     inline bool checkResources() const      { return isThorCluster(targetClusterType) && !isChildQuery; }
@@ -159,7 +168,6 @@ public:
     bool mergeInSibling(ResourceGraphInfo & other, const CResources & limit);
     bool mergeInSource(ResourceGraphInfo & other, const CResources & limit, bool isConditionalLink);
     void removeResources(const CResources & value);
-    void replaceReferences(ResourceGraphInfo * oldGraph, ResourceGraphInfo * newGraph);
 
     bool isSharedInput(IHqlExpression * expr);
     void addSharedInput(IHqlExpression * expr, IHqlExpression * mapped);
@@ -167,9 +175,8 @@ public:
 
 protected:
     void display();
-    void expandDependants(ResourceGraphArray & indirectSources);
-    void gatherDependants(bool recalculate);
     void mergeGraph(ResourceGraphInfo & other, bool isConditionalLink, bool mergeConditions);
+    bool evalDependentOn(ResourceGraphInfo & other, bool ignoreSources);
 
 public:
     OwnedHqlExpr createdGraph;
@@ -177,21 +184,27 @@ public:
     GraphLinkArray dependsOn;           // NB: These do no link....
     GraphLinkArray sources;
     GraphLinkArray sinks;
-    ResourceGraphArray indirectSources;
     HqlExprArray conditions;
     HqlExprArray sharedInputs;
     HqlExprArray unbalancedExternalSources;
     HqlExprArray balancedExternalSources;
     CResources resources;
     unsigned depth;
+    unsigned depthSequence;
     bool beenResourced;
     bool isUnconditional;
     bool mergedConditionSource;
     bool hasConditionSource;
     bool isDead;
-    bool gatheredDependants;
     bool startedGeneratingResourced;
     bool inheritedExpandedDependencies;
+    struct
+    {
+        ResourceGraphInfo * other;
+        unsigned updateSequence;
+        bool ignoreSources;
+        bool value;
+    } cachedDependent;
 };
 
 
