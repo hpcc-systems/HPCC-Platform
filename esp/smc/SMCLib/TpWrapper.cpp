@@ -1574,7 +1574,7 @@ void CTpWrapper::getMachineList(double clientVersion,
         if (!nodeGroup || (nodeGroup->ordinality() == 0))
             return;
 
-        StringArray netAddresses;
+        unsigned processNumber = 0;
         INodeIterator &gi = *nodeGroup->getIterator();
         ForEach(gi)
         {
@@ -1585,6 +1585,8 @@ void CTpWrapper::getMachineList(double clientVersion,
                 WARNLOG("Net address not found for a node in node group %s", groupName.str());
                 continue;
             }
+
+            processNumber++;
 
             IEspTpMachine & machineInfo = *(createTpMachine("",""));
             machineInfo.setType(MachineType);
@@ -1621,14 +1623,7 @@ void CTpWrapper::getMachineList(double clientVersion,
 
                 if (clientVersion > 1.17)
                 {
-                    unsigned countSameAddress = 1;
-                    ForEachItemIn(i, netAddresses)
-                    {
-                        if (streq(netAddresses.item(i), netAddress.str()))
-                            countSameAddress++;
-                    }
-                    netAddresses.append(netAddress.str());
-                    machineInfo.setProcessNumber(countSameAddress);
+                    machineInfo.setProcessNumber(processNumber);
                 }
             }
             else
