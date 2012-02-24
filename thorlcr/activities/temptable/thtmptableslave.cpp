@@ -27,7 +27,7 @@ class CTempTableSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 private:
     IHThorTempTableArg * helper;
-    bool eof;
+    bool empty;
     unsigned currentRow;
     unsigned numRows;
     size32_t maxrecsize;
@@ -49,7 +49,7 @@ public:
         dataLinkStart("TEMPTABLE", container.queryId());
         currentRow = 0;
         isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
-        eof = isLocal ? false : !firstNode();
+        empty = isLocal ? false : !firstNode();
         numRows = helper->numRows();
     }
     void stop()
@@ -59,16 +59,18 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (eof || abortSoon || currentRow >= numRows)
+        if (empty || abortSoon)
             return NULL;
-        RtlDynamicRowBuilder row(queryRowAllocator());
-        size32_t sizeGot = helper->getRow(row, currentRow++);
-        if (sizeGot)
-        {
-            dataLinkIncrement();
-            return row.finalizeRowClear(sizeGot);
-        }   
-        eof = true;
+        // Filtering empty rows, returns the next valid row
+        while (currentRow < numRows) {
+            RtlDynamicRowBuilder row(queryRowAllocator());
+            size32_t sizeGot = helper->getRow(row, currentRow++);
+            if (sizeGot)
+            {
+                dataLinkIncrement();
+                return row.finalizeRowClear(sizeGot);
+            }
+        }
         return NULL;
     }
     void getMetaInfo(ThorDataLinkMetaInfo &info)

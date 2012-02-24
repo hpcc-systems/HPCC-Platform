@@ -5840,7 +5840,6 @@ CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned
 void CHThorTempTableActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    eof = false;
     curRow = 0;
     numRows = helper.numRows();
 }
@@ -5848,7 +5847,8 @@ void CHThorTempTableActivity::ready()
 
 const void *CHThorTempTableActivity::nextInGroup()
 {
-    if (!eof && curRow < numRows)
+    // Filtering empty rows, returns the next valid row
+    while (curRow < numRows)
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         size32_t size = helper.getRow(rowBuilder, curRow++);
@@ -5858,7 +5858,6 @@ const void *CHThorTempTableActivity::nextInGroup()
             return rowBuilder.finalizeRowClear(size);
         }
     }
-    eof = true;
     return NULL;
 }
 

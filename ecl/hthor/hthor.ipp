@@ -1496,7 +1496,6 @@ class CHThorTempTableActivity : public CHThorSimpleActivityBase
     IHThorTempTableArg &helper;
     unsigned curRow;
     unsigned numRows;
-    bool eof;
 
 public:
     CHThorTempTableActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind);
