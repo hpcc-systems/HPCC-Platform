@@ -100,6 +100,8 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
                     ptype.set("xsd:real");
                     break;
                 case TypeSet:
+                    ptype.set("tns:EspStringArray");
+                    break;
                 case TypeDataset:
                 case TypeData:
                     ptype.set("tns:XmlDataSet");
