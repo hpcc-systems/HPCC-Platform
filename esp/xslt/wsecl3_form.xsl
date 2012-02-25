@@ -21,6 +21,7 @@
     <xsl:param name="includeSoapTest" select="1"/>
     <xsl:param name="schemaRoot" select="/FormInfo/xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
+    <xsl:param name="useTextareaForStringArray" select="0"/>
 
     <xsl:variable name="queryPath" select="/FormInfo/QuerySet"/>
     <xsl:variable name="methodName" select="/FormInfo/QueryName"/>
@@ -39,7 +40,6 @@
     <xsl:variable name="set_ctrl_value" select="0"/>
     <xsl:variable name="verbose" select="0"/>
     <!-- config -->
-    <xsl:variable name="useTextareaForStringArray" select="0"/>
     <xsl:variable name="useTableBorder" select="1"/>
     <!-- ================================================================================
    The main template: produce the html (and call GenerateRequestForm for request input)
@@ -600,8 +600,8 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         <xsl:when test="$formNode/@formCols">
                             <xsl:value-of select="$formNode/@formCols"/>
                         </xsl:when>
-                        <xsl:when test="$xsdType='string'">50</xsl:when>
-                        <xsl:otherwise>10</xsl:otherwise>
+                        <xsl:when test="$xsdType='string'">75</xsl:when>
+                        <xsl:otherwise>75</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
                 <xsl:variable name="inputRows">
@@ -609,7 +609,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                         <xsl:when test="$formNode/@formRows">
                             <xsl:value-of select="$formNode/@formRows"/>
                         </xsl:when>
-                        <xsl:otherwise>5</xsl:otherwise>
+                        <xsl:otherwise>20</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
                 <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>
@@ -659,8 +659,8 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                                             <xsl:when test="$formNode/@formCols">
                                                 <xsl:value-of select="$formNode/@formCols"/>
                                             </xsl:when>
-                                            <xsl:when test="$xsdType='string'">50</xsl:when>
-                                            <xsl:otherwise>10</xsl:otherwise>
+                                            <xsl:when test="$xsdType='string'">75</xsl:when>
+                                            <xsl:otherwise>75</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:variable>
                                     <xsl:variable name="inputRows">
@@ -668,7 +668,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                                             <xsl:when test="$formNode/@formRows">
                                                 <xsl:value-of select="$formNode/@formRows"/>
                                             </xsl:when>
-                                            <xsl:otherwise>5</xsl:otherwise>
+                                            <xsl:otherwise>20</xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:variable>
                                     <xsl:text disable-output-escaping="yes"><![CDATA[<textarea name=']]></xsl:text>

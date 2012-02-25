@@ -552,11 +552,23 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
                         buildReqXml(parent,itemType,out,itemName, itemtree, flags & ~REQXML_ROOT);
                 }
             }
-            else
+            else if (parmtree->hasProp(itemName))
             {
                 Owned<IPropertyTreeIterator> items = parmtree->getElements(itemName);
                 ForEach(*items)
                     buildReqXml(parent,itemType,out,itemName, &items->query(), flags & ~REQXML_ROOT);
+            }
+            else
+            {
+                const char *s = parmtree->queryProp(NULL);
+                if (s && *s)
+                {
+                    StringArray items;
+                    DelimToStringArray(s, items, "\n", false);
+                    ForEachItemIn(i, items)
+                        appendXMLTag(out, itemName, items.item(i));
+                }
+
             }
         }
         else
@@ -1188,7 +1200,17 @@ void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, S
                     type.append(translateXsdType(part.queryProp("@type")));
             }
 
-            schema.appendf("<xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"%s\"/>", name, type.str());
+            schema.appendf("<xsd:element minOccurs=\"0\" maxOccurs=\"1\" name=\"%s\" type=\"%s\"", name, type.str());
+            if (strieq(type.str(), "tns:XmlDataSet"))
+            {
+                schema.append(">"
+                        "<xsd:annotation><xsd:appinfo>"
+                            "<form formRows=\"25\" formCols=\"60\"/>"
+                        "</xsd:appinfo></xsd:annotation>"
+                    "</xsd:element>");
+            }
+            else
+                schema.append("/>");
         }
     }
     schema.append("</xsd:all>");
@@ -1399,6 +1421,7 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     xform->setStringParameter("queryParams", params.str());
     xform->setParameter("formOptionsAccess", "1");
     xform->setParameter("includeSoapTest", "1");
+    xform->setParameter("useTextareaForStringArray", "1");
 
     // set the prop noDefaultValue param
     IProperties* props = context.queryRequestParameters();
