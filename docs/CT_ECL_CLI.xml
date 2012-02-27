@@ -24,18 +24,104 @@
     <sect1 id="The_ECL_Command_Syntax" role="nobrk">
       <title>The ECL Command Syntax</title>
 
-      <sect2>
-        <title></title>
+      <sect2 id="ecl_command_syntax">
+        <title><emphasis role="bold">ecl [</emphasis>--version<emphasis
+        role="bold">]</emphasis> &lt;command&gt; <emphasis
+        role="bold">[</emphasis>&lt;options&gt;<emphasis
+        role="bold">]</emphasis></title>
 
-        <sect3 id="ecl_command_syntax">
-          <title><emphasis role="bold">ecl [</emphasis>--version<emphasis
-          role="bold">]</emphasis> &lt;command&gt; <emphasis
-          role="bold">[</emphasis>&lt;args&gt;<emphasis
-          role="bold">]</emphasis></title>
+        <para></para>
 
-          <para></para>
+        <informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
 
-          <informaltable colsep="0" frame="none" rowsep="0">
+            <colspec colwidth="384.85pt" />
+
+            <tbody>
+              <row>
+                <entry><emphasis>--version=</emphasis></entry>
+
+                <entry>displays version info.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis role="bold">Arguments</emphasis></entry>
+
+                <entry>deploy</entry>
+              </row>
+
+              <row>
+                <entry>deploy</entry>
+
+                <entry>Create a workunit from an ecl file, archive, or
+                dll</entry>
+              </row>
+
+              <row>
+                <entry>publish</entry>
+
+                <entry>Add a workunit to a query set</entry>
+              </row>
+
+              <row>
+                <entry>unpublish</entry>
+
+                <entry>Remove a query from a query set </entry>
+              </row>
+
+              <row>
+                <entry>run</entry>
+
+                <entry>Run the given ecl file, archive, dll, wuid, or
+                query</entry>
+              </row>
+
+              <row>
+                <entry>activate</entry>
+
+                <entry>Activate a published query</entry>
+              </row>
+
+              <row>
+                <entry>deactivate</entry>
+
+                <entry>Deactivate the given query alias name </entry>
+              </row>
+
+              <row>
+                <entry>queries </entry>
+
+                <entry>List or manipulate queries and querysets</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl deploy</title>
+
+        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        --name=&lt;value&gt; &lt;ecl_file | - &gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        --name=&lt;value&gt; &lt;archive | - &gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl deploy [--cluster=&lt;value&gt;]
+        [--name=&lt;value&gt;] &lt;so | dll | - &gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl deploy --cluster=roxie --name=FindPersonService findperson.ecl
+ecl deploy --cluster=roxie --name=FindPersonService ArchiveQuery.xml
+ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
+</programlisting>
+
+        <para>A hyphen (-) specifies that the object should be read from
+        stdin. </para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
               <colspec align="left" colwidth="125.55pt" />
 
@@ -43,179 +129,962 @@
 
               <tbody>
                 <row>
-                  <entry><emphasis>--version=</emphasis></entry>
+                  <entry>ecl deploy</entry>
 
-                  <entry>displays version info.</entry>
+                  <entry>executes the supplied ecl deploy command</entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>valid &lt;command&gt;
-                  options</emphasis></entry>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>ecl_file</entry>
+
+                  <entry>The ECL text file to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>TheECL archive to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>The workunit dynamic linked library or shared object
+                  to deploy</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-cl, --cluster</entry>
+
+                  <entry>The cluster to associate workunit with</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>The workunit query name</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ecl text to hpcc without generating
+                  archive</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
 
                   <entry></entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>deploy=</emphasis></entry>
+                  <entry>-Ipath</entry>
 
-                  <entry>executes the deploy command</entry>
+                  <entry>Add path to locations to search for ecl imports
+                  </entry>
                 </row>
 
                 <row>
-                  <entry><emphasis>publish=</emphasis></entry>
+                  <entry>-Lpath</entry>
 
-                  <entry>executes the publish command</entry>
+                  <entry>Add path to locations to search for system libraries
+                  </entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to manifest file</entry>
                 </row>
               </tbody>
             </tgroup>
-          </informaltable>
-        </sect3>
+          </informaltable></para>
+      </sect2>
 
-        <sect3>
-          <title>ecl deploy</title>
+      <sect2 role="brk">
+        <title>ecl publish</title>
 
-          <para>For example:</para>
+        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        [--name=&lt;val&gt;] [--activate] &lt;wuid&gt; </emphasis></para>
 
-          <programlisting>ecl deploy</programlisting>
+        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        [--name=&lt;val&gt;] [--activate] &lt;so | dll | - &gt;</emphasis>
+        </para>
 
-          <para>Provides usage options for ecl deploy command.</para>
+        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        --name=&lt;val&gt; [--activate] &lt;archive | - &gt;
+        </emphasis></para>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
-              <tgroup cols="2">
-                <colspec align="left" colwidth="125.55pt" />
+        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        --name=&lt;val&gt; [--activate] &lt;ecl_file | -
+        &gt;</emphasis></para>
 
-                <colspec colwidth="384.85pt" />
+        <para>Examples:</para>
 
-                <tbody>
-                  <row>
-                    <entry>ecl deploy</entry>
+        <programlisting>ecl publish --cluster=roxie --name=FindPersonService -A W20120224-125557
+ecl publish --cluster=roxie --name=FindPersonService -A libW20120224-125557.so
+ecl publish --cluster=roxie --name=FindPersonService -A ArchiveQuery.xml
+ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
+</programlisting>
 
-                    <entry>executes the supplied ecl deploy command</entry>
-                  </row>
+        <para>A hyphen (-) specifies that the object should be read from
+        stdin. </para>
 
-                  <row>
-                    <entry></entry>
-                  </row>
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
 
-                  <row>
-                    <entry>--cluster=&lt;cluster&gt;</entry>
+              <colspec colwidth="384.85pt" />
 
-                    <entry>cluster to associate workunit with</entry>
-                  </row>
+              <tbody>
+                <row>
+                  <entry>ecl publish</entry>
 
-                  <row>
-                    <entry>--name=&lt;name&gt;</entry>
+                  <entry>executes the supplied ecl publish command</entry>
+                </row>
 
-                    <entry>workunit job name</entry>
-                  </row>
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
 
-                  <row>
-                    <entry>--server=&lt;ip&gt;</entry>
+                <row>
+                  <entry>wuid</entry>
 
-                    <entry>ip of server running ecl services
-                    (eclwatch)</entry>
-                  </row>
+                  <entry>The workunit id to publish</entry>
+                </row>
 
-                  <row>
-                    <entry>--port=&lt;port&gt;</entry>
+                <row>
+                  <entry>ecl_file</entry>
 
-                    <entry>ecl services port</entry>
-                  </row>
+                  <entry>The ECL text file to deploy</entry>
+                </row>
 
-                  <row>
-                    <entry>--username=&lt;name&gt;</entry>
+                <row>
+                  <entry>archive</entry>
 
-                    <entry>username for accessing ecl services</entry>
-                  </row>
+                  <entry>TheECL archive to deploy</entry>
+                </row>
 
-                  <row>
-                    <entry>--password=&lt;pw&gt;</entry>
+                <row>
+                  <entry>so | dll</entry>
 
-                    <entry>password for accessing ecl services</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-        </sect3>
+                  <entry>The workunit dynamic linked library or shared object
+                  to deploy</entry>
+                </row>
 
-        <sect3>
-          <title>ecl publish</title>
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
 
-          <para>For example:</para>
+                <row>
+                  <entry>-cl, --cluster</entry>
 
-          <programlisting>ecl publish</programlisting>
+                  <entry>The cluster to associate workunit with</entry>
+                </row>
 
-          <para>Provides usage options for ecl publish command.</para>
+                <row>
+                  <entry>-n, --name</entry>
 
-          <para><informaltable colsep="0" frame="none" rowsep="0">
-              <tgroup cols="2">
-                <colspec align="left" colwidth="125.55pt" />
+                  <entry>The workunit job name</entry>
+                </row>
 
-                <colspec colwidth="384.85pt" />
+                <row>
+                  <entry>-A, --activate</entry>
 
-                <tbody>
-                  <row>
-                    <entry>ecl publish</entry>
+                  <entry>Activates query when published</entry>
+                </row>
 
-                    <entry>executes the supplied ecl publish command</entry>
-                  </row>
+                <row>
+                  <entry>--wait</entry>
 
-                  <row>
-                    <entry></entry>
-                  </row>
+                  <entry>Maximum time to wait for cluster finish
+                  updating</entry>
+                </row>
 
-                  <row>
-                    <entry>--cluster=&lt;cluster&gt;</entry>
+                <row>
+                  <entry>-v, --verbose</entry>
 
-                    <entry>cluster to associate workunit with</entry>
-                  </row>
+                  <entry>Output additional tracing information</entry>
+                </row>
 
-                  <row>
-                    <entry>--name=&lt;name&gt;</entry>
+                <row>
+                  <entry>-s, --server</entry>
 
-                    <entry>workunit job name</entry>
-                  </row>
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
 
-                  <row>
-                    <entry>--wuid=&lt;wuid&gt;</entry>
+                <row>
+                  <entry>--port</entry>
 
-                    <entry>workunit id to publish</entry>
-                  </row>
+                  <entry>The eclwatch services port</entry>
+                </row>
 
-                  <row>
-                    <entry>--activate</entry>
+                <row>
+                  <entry>-u, --username</entry>
 
-                    <entry>activates query when published</entry>
-                  </row>
+                  <entry>The username (if necessary)</entry>
+                </row>
 
-                  <row>
-                    <entry>--server=&lt;ip&gt;</entry>
+                <row>
+                  <entry>-pw, --password</entry>
 
-                    <entry>ip of server running ecl services
-                    (eclwatch)</entry>
-                  </row>
+                  <entry>The password (if necessary)</entry>
+                </row>
 
-                  <row>
-                    <entry>--port=&lt;port&gt;</entry>
+                <row>
+                  <entry>--main</entry>
 
-                    <entry>ecl services port</entry>
-                  </row>
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
+                </row>
 
-                  <row>
-                    <entry>--username=&lt;name&gt;</entry>
+                <row>
+                  <entry>--ecl-only</entry>
 
-                    <entry>username for accessing ecl services</entry>
-                  </row>
+                  <entry>Send ecl text to hpcc without generating
+                  archive</entry>
+                </row>
 
-                  <row>
-                    <entry>--password=&lt;pw&gt;</entry>
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
 
-                    <entry>password for accessing ecl services</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable></para>
-        </sect3>
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to manifest file</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl unpublish</title>
+
+        <para><emphasis role="bold">ecl unpublish &lt;queryset&gt;
+        &lt;query&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl unpublish Roxie FindpersonService.1</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl unpublish</entry>
+
+                  <entry>executes the supplied ecl unpublish command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing query to
+                  unpublish</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>The query to remove from query set</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl run</title>
+
+        <para><emphasis role="bold">ecl run
+        [--cluster=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        &lt;wuid&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run
+        [--cluster=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        &lt;queryset&gt; &lt;query&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run
+        [--cluster=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;dll|-&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;archive|-&gt; </emphasis></para>
+
+        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        &lt;eclfile|-&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Examples</emphasis>:</para>
+
+        <programlisting>ecl run --cluster=thor --input=data.xml --wait=1000 W20120224-125557
+ecl run --cluster=thor --input=data.xml --wait=1000 thor findpersonservice
+ecl run --cluster=thor --input=data.xml --wait=1000 ArchiveQuery.xml
+ecl run --cluster=thor --input=data.xml --wait=1000 findperson.ecl
+ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
+</programlisting>
+
+        <para>A hyphen (-) specifies that the object should be read from
+        stdin. </para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl run</entry>
+
+                  <entry>executes the supplied ecl run command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>wuid</entry>
+
+                  <entry>The workunit id to publish</entry>
+                </row>
+
+                <row>
+                  <entry>ecl_file</entry>
+
+                  <entry>The ECL text file to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>archive</entry>
+
+                  <entry>TheECL archive to deploy</entry>
+                </row>
+
+                <row>
+                  <entry>so | dll</entry>
+
+                  <entry>The workunit dynamic linked library or shared object
+                  to deploy</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-cl, --cluster</entry>
+
+                  <entry>The cluster to associate workunit with</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --name</entry>
+
+                  <entry>The workunit job name</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--wait</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>--main</entry>
+
+                  <entry>The definition to use from legacy ECL
+                  repository</entry>
+                </row>
+
+                <row>
+                  <entry>--ecl-only</entry>
+
+                  <entry>Send ecl text to hpcc without generating
+                  archive</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">eclcc
+                  Options</emphasis></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry>-Ipath</entry>
+
+                  <entry>Add path to locations to search for ecl
+                  imports</entry>
+                </row>
+
+                <row>
+                  <entry>-Lpath</entry>
+
+                  <entry>Add path to locations to search for system
+                  libraries</entry>
+                </row>
+
+                <row>
+                  <entry>--manifest</entry>
+
+                  <entry>Specify path to manifest file</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl activate</title>
+
+        <para><emphasis role="bold">ecl activate &lt;queryset&gt;
+        &lt;query&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl activate Roxie FindpersonService.4</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl activate</entry>
+
+                  <entry>Activates a published query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing query to
+                  activate</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>The query to activate</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl deactivate</title>
+
+        <para><emphasis role="bold">ecl deactivate &lt;queryset&gt;
+        &lt;query&gt;</emphasis></para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <programlisting>ecl deactivate Roxie FindpersonService</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl deactivate</entry>
+
+                  <entry>Deactivates a published query</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset containing query to
+                  deactivate</entry>
+                </row>
+
+                <row>
+                  <entry>query</entry>
+
+                  <entry>The query to deactivate</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title id="eclquerieslist">ecl queries list</title>
+
+        <para><emphasis role="bold">ecl queries list
+        [&lt;queryset&gt;][--cluster=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
+
+        <para><emphasis role="bold"></emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries list roxie
+ecl queries list roxie myroxie --show=A </programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries list</entry>
+
+                  <entry>Calls the queries list command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>list</entry>
+
+                  <entry>List queries in queryset(s)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>queryset</entry>
+
+                  <entry>The name of queryset from which to list queries
+                  </entry>
+                </row>
+
+                <row>
+                  <entry>-cl, --cluster</entry>
+
+                  <entry>The cluster associated with the queries to
+                  list</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--show=&lt;flags&gt;</entry>
+
+                  <entry>Show only queries with matching flags</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Flags</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>A</entry>
+
+                  <entry>Active </entry>
+                </row>
+
+                <row>
+                  <entry>S</entry>
+
+                  <entry>Suspended</entry>
+                </row>
+
+                <row>
+                  <entry>U</entry>
+
+                  <entry>No Flags</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriescopy" role="brk">
+        <title>ecl queries copy</title>
+
+        <para><emphasis role="bold">ecl queries copy &lt;from querypath&gt;
+        &lt;to queryset&gt; [--activate]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries copy thor/findperson thor2 --activate
+ecl queries copy //192.168.1.10:8010/thor/findperson thor
+</programlisting>
+
+        <para>Provides usage options for ecl queries command.</para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy</entry>
+
+                  <entry>Calls the queries copy command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy</entry>
+
+                  <entry>Copy a query from one queryset to another </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>from querypath</entry>
+
+                  <entry>The path of the query to copy using the format:
+                  [//ip:port/]queryset/query</entry>
+                </row>
+
+                <row>
+                  <entry>to queryset</entry>
+
+                  <entry>The name of the queryset to which the query should be
+                  copied</entry>
+                </row>
+
+                <row>
+                  <entry>-cl, --cluster</entry>
+
+                  <entry>The cluster to associate with the remote
+                  workunit</entry>
+                </row>
+
+                <row>
+                  <entry>--wait</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
       </sect2>
     </sect1>
   </chapter>
