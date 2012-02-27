@@ -240,7 +240,6 @@ public:
         }
         return next();
     }
-    inline bool hasRecordPending() { return pending != NULL; }
     inline void resetInputEOF() { input->resetEOF(); }
 
 private:
@@ -258,8 +257,8 @@ protected:
 
 private:
     Linked<ISteppedInput> input;
-    LinkedRowQueue seekRows;                    // rows that have been read from the input to provide as seek pointers for the next term
-    LinkedRowQueue readAheadRows;               // previous seek rows, that have been read past, but still required to return as results.
+    LinkedRowQueue readAheadRows;               // rows that have been read from the input to provide as seek pointers for the next term
+    LinkedRowQueue seekRows;                    // rows that have been read ahead previous seek rows, that have been read past, but still required to return as results.
 
 protected:
     IRangeCompare * compare;

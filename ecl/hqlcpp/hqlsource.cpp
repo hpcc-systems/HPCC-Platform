@@ -1228,8 +1228,10 @@ void SourceBuilder::associateTargetCursor(BuildCtx & subctx, BuildCtx & ctx, Bou
 
 void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr, bool ignoreFilters)
 {
-    if (expr != instance->dataset)
+    //This function can be called again for the unfiltered tranform.  Don't process annotations again.
+    if ((expr != instance->dataset) && !ignoreFilters)
         instance->processAnnotations(expr);
+
     expr = expr->queryBody();
     node_operator op = expr->getOperator();
 

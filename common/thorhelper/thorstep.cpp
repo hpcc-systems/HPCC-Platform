@@ -156,8 +156,6 @@ const void * CSteppedInputLookahead::nextInputRow()
 {
     if (readAheadRows.ordinality())
         return readAheadRows.dequeue();
-    if (seekRows.ordinality())
-        return seekRows.dequeue();
     return input->nextInputRow();
 }
     
@@ -172,22 +170,13 @@ const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned 
             return (void *)next.getClear();
         }
     }
-    while (seekRows.ordinality())
-    {
-        OwnedLCRow next = seekRows.dequeue();
-        if (compare->docompare(next, seek, numFields) >= 0)
-        {
-            assertex(wasCompleteMatch);
-            return (void *)next.getClear();
-        }
-    }
     return input->nextInputRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 }
 
 void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields, unsigned maxcount)
 {
-    //Transfer any rows with fields before the seek position to a list of pending rows, so we don't waste
-    //time sending seek rows that can't match..
+    const void * lastSeekRow = NULL;
+    //Remove any rows from the seek list that occur before the new seek row
     while (seekRows.ordinality())
     {
         const void * next = seekRows.head();
@@ -195,9 +184,18 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         {
             //update the seek pointer to the best value - so that lowestInputProvider can skip its seekRows if necessary
             seek = seekRows.tail();
+            lastSeekRow = seek;
             break;
         }
-        readAheadRows.enqueue(seekRows.dequeue());
+        rowAllocator->releaseRow(seekRows.dequeue());
+    }
+
+    //Could the current readahead row be part of the seek set.
+    if (pending && compare->docompare(pending, seek, numFields) >= 0)
+    {
+        //Check not already added - could conceivably happen after rows are read directly beyond the matching seeks.
+        if (!lastSeekRow || compare->docompare(pending, lastSeekRow, numFields) > 0)
+            seekRows.enqueue(rowAllocator->linkRow(pending));
     }
 
     //Return mismatches is selected because we don't want it to seek exact matches beyond the last seek position
@@ -214,7 +212,13 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         //but if so the next read request will do another blocked read, so just ignore this one.
         if (wasCompleteMatch)
         {
-            seekRows.enqueue(next);
+            readAheadRows.enqueue(next);
+            if (!lastSeekRow || compare->docompare(next, lastSeekRow, numFields) > 0)
+            {
+                //Only record unique seek positions in the seek rows
+                seekRows.enqueue(rowAllocator->linkRow(next));
+                lastSeekRow = next;
+            }
             //update the seek pointer to the best value.  
             seek = next;
         }
@@ -225,21 +229,11 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
 
 unsigned CSteppedInputLookahead::ordinality() const
 {
-    //pending <= readAheadRows.head(), so if there are any items in readAheadRows, then don't include pending
-    if ((readAheadRows.ordinality() == 0) && pending)
-        return seekRows.ordinality() + 1;
     return seekRows.ordinality();
 }
 
 const void * CSteppedInputLookahead::querySeek(unsigned i) const
 {
-    //pending <= readAheadRows.head(), so if there are any items in readAheadRows, then don't include pending
-    if ((readAheadRows.ordinality() == 0) && pending)
-    {
-        if (i == 0)
-            return pending;
-        i--;
-    }
     return seekRows.item(i);
 }
 

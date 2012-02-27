@@ -1368,6 +1368,15 @@ IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx)
     return NULL;
 }
 
+void unwindHintAttrs(HqlExprArray & args, IHqlExpression * expr)
+{
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if ((cur->queryName() == hintAtom) && cur->isAttribute())
+            args.append(*LINK(cur));
+    }
+}
 
 //---------------------------------------------------------------------------
 
