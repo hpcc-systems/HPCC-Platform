@@ -185,7 +185,58 @@
 
               <para>Enter the appropriate values as indicated.</para>
 
-              <para><graphic fileref="images/GS_ConfigMgrWiz003.jpg" /></para>
+              <para><graphic fileref="images/GS_CMWiz003.jpg" /></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Number of support nodes: </term>
+
+                  <listitem>
+                    <para>Specify the number of nodes to use for support
+                    components. The default is 1. </para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of nodes for Roxie cluster:</term>
+
+                  <listitem>
+                    <para>Specify the number of nodes to use for your Roxie
+                    cluster. Enter zero (0) if you do not want a Roxie
+                    cluster. </para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of slave nodes for Thor cluster</term>
+
+                  <listitem>
+                    <para>Specify the number of slave nodes to use in your
+                    Thor cluster. A Thor master node will be added
+                    automatically. </para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of Thor slaves per node (default 1)</term>
+
+                  <listitem>
+                    <para>Specify the number of Thor slave processes to
+                    instantiate on each slave node. Enter zero (0) if you do
+                    not want a Thor cluster.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Enable Roxie on demand </term>
+
+                  <listitem>
+                    <para>Specify whether or not to allow queries to be run
+                    immediately on Roxie. This must be enabled to run the
+                    debugger. (Default is true)</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
             </listitem>
           </itemizedlist>
 
@@ -2850,7 +2901,7 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>SSHtimeout</emphasis></entry>
 
-                      <entry>Timeout </entry>
+                      <entry>Timeout</entry>
                     </row>
 
                     <row>
