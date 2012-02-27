@@ -790,7 +790,11 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         addNonEmptyPathSepChar(queryDirectory);
 
-        baseDataDirectory.append(topology->queryProp("@baseDataDir"));
+        // if no Dali, files are local
+        if (fileNameServiceDali.length() == 0)
+            baseDataDirectory.append("./"); // Path separator will be replaced, if necessary
+        else
+            baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
 
 #ifdef _WIN32
