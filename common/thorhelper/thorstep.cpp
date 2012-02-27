@@ -195,7 +195,11 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
     {
         //Check not already added - could conceivably happen after rows are read directly beyond the matching seeks.
         if (!lastSeekRow || compare->docompare(readAheadRow, lastSeekRow, numFields) > 0)
+        {
             seekRows.enqueue(rowAllocator->linkRow(readAheadRow));
+            lastSeekRow = readAheadRow;
+            seek = readAheadRow;
+        }
     }
 
     //Return mismatches is selected because we don't want it to seek exact matches beyond the last seek position
