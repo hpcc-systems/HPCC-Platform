@@ -1177,6 +1177,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
     CIArrayOf<CDFAction> actions;
     IArrayOf<IDistributedFile> dflist; // owning list of files
     bool isactive;
+    bool cache;
     Linked<IUserDescriptor> udesc;
     CIArrayOf<CDelayedDelete> delayeddelete;
 public:
@@ -1321,7 +1322,7 @@ public:
         ret = queryDistributedFileDirectory().lookup(name,udesc,false,this,timeout);
         if (!ret)
             return NULL;
-        if (isactive) {
+        if (isactive || cache) {
             ret->Link();
             dflist.append(*ret);
         }
@@ -1340,7 +1341,7 @@ public:
         ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,fixmissing,timeout);
         if (!ret)
             return NULL;
-        if (isactive) {
+        if (isactive || cache) {
             ret->Link();
             dflist.append(*ret);
         }
@@ -1352,10 +1353,10 @@ public:
         return isactive;
     }
 
-    bool setActive(bool on)
+    bool setCache(bool on)
     {
-        bool old = isactive;
-        isactive = on;
+        bool old = cache;
+        cache = on;
         return old;
     }
 
@@ -1392,6 +1393,7 @@ class CWrappedTransaction: public CInterface, implements IDistributedFileTransac
     IDistributedFile *owner;
     Linked<IUserDescriptor> udesc;
     bool isactive;
+    bool cache;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1406,7 +1408,7 @@ public:
     void autoCommit() { if (chain) chain->autoCommit(); }
     void rollback() { if (chain) chain->rollback(); }
     bool active()  { if (chain) return chain->active(); return isactive; }
-    bool setActive(bool on) { if (chain) return chain->setActive(on); bool ret = isactive; isactive = on; return ret; }
+    bool setCache(bool on) { if (chain) return chain->setCache(on); bool ret = cache; cache = on; return ret; }
     void addSuperFile(IDistributedSuperFile *sfile)
     {
         if (chain)
@@ -3222,6 +3224,7 @@ public:
         LOGPTREE("CDistributedFile::detach root.1",root);
 #endif
         root->serialize(mb);
+        conn->close(true);
         conn.clear();
         root.setown(createPTree(mb));
         StringAttr lname(logicalName.get());
