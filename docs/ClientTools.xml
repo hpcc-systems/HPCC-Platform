@@ -52,23 +52,19 @@
 
   <xi:include href="CT_Overview.xml" xpointer="CT_Overview"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-              
+
   <xi:include href="CT_ECL_IDE.xml" xpointer="The_ECL_Ide"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-              
+
   <xi:include href="CT_Comm_Line_ECL.xml" xpointer="Command_Line_ECL"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-             
+
   <xi:include href="CT_ECL_CLI.xml" xpointer="ECL_CLI"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
+
   <xi:include href="ECLCC.xml" xpointer="ECL_Compiler"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-                       
+
   <xi:include href="CT_Comm_Line_DFU.xml" xpointer="Command_Line_DFU"
-               xmlns:xi="http://www.w3.org/2001/XInclude" />
-  
-  <xi:include href="CT_Comm_Line_Roxie.xml" xpointer="Command_Line_Interface_RoxieConfig"
-               xmlns:xi="http://www.w3.org/2001/XInclude" />
-   
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>
