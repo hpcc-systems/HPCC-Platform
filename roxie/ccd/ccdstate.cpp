@@ -552,9 +552,10 @@ public:
             resolved->remove();
             resolved.clear();
         }
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, !daliHelper->connected(), false, true); // MORE - is onlyDFS right?
+        bool local = !daliHelper->connected();
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, local, false, true); // MORE - is onlyDFS right?
         if (!ldFile)
-            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, invalid filename", fileName.str());
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (local?"local":"DFS"));
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
