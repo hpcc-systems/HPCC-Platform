@@ -129,12 +129,12 @@ CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSte
 : input(_input), compare(_compare)
 {
     maxFields = compare ? compare->maxFields() : 0;
-    pending = NULL;
-    pendingMatches = true;
+    readAheadRow = NULL;
+    readAheadRowIsExactMatch = true;
     stepFlagsMask = 0;
     stepFlagsValue = 0;
     paranoid = _paranoid;
-    previousPending = NULL;
+    previousReadAheadRow = NULL;
     rowAllocator.set(_rowAllocator);
     inputStepping = _inputStepping;
     numStepableFields = inputStepping ? inputStepping->getNumFields() : 0;
@@ -145,10 +145,10 @@ CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSte
 
 CSteppedInputLookahead::~CSteppedInputLookahead()
 {
-    if (previousPending)
-        rowAllocator->releaseRow(previousPending);
-    if (pending)
-        rowAllocator->releaseRow(pending);
+    if (previousReadAheadRow)
+        rowAllocator->releaseRow(previousReadAheadRow);
+    if (readAheadRow)
+        rowAllocator->releaseRow(readAheadRow);
 }
 
 
@@ -191,11 +191,11 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
     }
 
     //Could the current readahead row be part of the seek set.
-    if (pending && compare->docompare(pending, seek, numFields) >= 0)
+    if (readAheadRow && compare->docompare(readAheadRow, seek, numFields) >= 0)
     {
         //Check not already added - could conceivably happen after rows are read directly beyond the matching seeks.
-        if (!lastSeekRow || compare->docompare(pending, lastSeekRow, numFields) > 0)
-            seekRows.enqueue(rowAllocator->linkRow(pending));
+        if (!lastSeekRow || compare->docompare(readAheadRow, lastSeekRow, numFields) > 0)
+            seekRows.enqueue(rowAllocator->linkRow(readAheadRow));
     }
 
     //Return mismatches is selected because we don't want it to seek exact matches beyond the last seek position
@@ -239,21 +239,21 @@ const void * CSteppedInputLookahead::querySeek(unsigned i) const
 
 const void * CSteppedInputLookahead::consume()
 {
-    if (!pending)
+    if (!readAheadRow)
         fill();
-    if (!includeInOutput(pending))
+    if (!includeInOutput(readAheadRow))
         return NULL;
 
-    if (paranoid && pending)
+    if (paranoid && readAheadRow)
     {
-        if (previousPending)
-            rowAllocator->releaseRow(previousPending);
-        previousPending = rowAllocator->linkRow(pending);
+        if (previousReadAheadRow)
+            rowAllocator->releaseRow(previousReadAheadRow);
+        previousReadAheadRow = rowAllocator->linkRow(readAheadRow);
     }
 
-    const void * ret = pending;
-    pending = NULL;
-    pendingMatches = true;
+    const void * ret = readAheadRow;
+    readAheadRow = NULL;
+    readAheadRowIsExactMatch = true;
     return ret;
 }
 
@@ -269,7 +269,7 @@ void CSteppedInputLookahead::createMultipleSeekWrapper(IMultipleStepSeekInfo * w
 
 void CSteppedInputLookahead::fill()
 {
-    pendingMatches = true;
+    readAheadRowIsExactMatch = true;
     if (restrictValue && numStepableFields)
     {
         //note - this will either return a valid value to be included in the range,
@@ -280,14 +280,14 @@ void CSteppedInputLookahead::fill()
         //Default to returning mismatches, but could be overidden from outside
         unsigned flags = (SSEFreturnMismatches & ~stepFlagsMask) | stepFlagsValue;
         SmartStepExtra inputStepExtra(flags, lowestFrequencyInput);
-        pending = nextInputRowGE(restrictValue, numFields, pendingMatches, inputStepExtra);
+        readAheadRow = nextInputRowGE(restrictValue, numFields, readAheadRowIsExactMatch, inputStepExtra);
 
-        if (paranoid && pending)
+        if (paranoid && readAheadRow)
         {
-            int c = compare->docompare(pending, restrictValue, numFields);
+            int c = compare->docompare(readAheadRow, restrictValue, numFields);
             if (c < 0)
                 throw MakeStringException(1001, "Input to stepped join preceeds seek point");
-            if ((c == 0) && !pendingMatches)
+            if ((c == 0) && !readAheadRowIsExactMatch)
                 throw MakeStringException(1001, "Input to stepped join returned mismatch that matched equality fields");
         }
     }
@@ -295,51 +295,51 @@ void CSteppedInputLookahead::fill()
     {
         //Unusual.  Normally we will step the input but this branch can occur for some unusual joins - e.g. a LEFT ONLY stepped join.
         //Likely to cause problems if it occurs on anything other than the lowest frequency input if the index is remote
-        pending = nextInputRow();
+        readAheadRow = nextInputRow();
     }
 
-    if (paranoid && pending && previousPending && compare)
+    if (paranoid && readAheadRow && previousReadAheadRow && compare)
     {
-        if (compare->docompare(previousPending, pending, maxFields) > 0)
+        if (compare->docompare(previousReadAheadRow, readAheadRow, maxFields) > 0)
             throw MakeStringException(1001, "Input to stepped join isn't sorted as expected");
     }
 }
 
 const void * CSteppedInputLookahead::next()
 {
-    if (!pendingMatches)
+    if (!readAheadRowIsExactMatch)
     {
-        if (includeInOutput(pending))
+        if (includeInOutput(readAheadRow))
             skip();
         else
             return NULL;
     }
 
-    if (!pending)
+    if (!readAheadRow)
         fill();
 
-    if (!includeInOutput(pending))
+    if (!includeInOutput(readAheadRow))
         return NULL;
 
-    return pending;
+    return readAheadRow;
 }
 
 const void * CSteppedInputLookahead::nextGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
 {
-    if (pending)
+    if (readAheadRow)
     {
-        int c = compare->docompare(pending, seek, numFields);
+        int c = compare->docompare(readAheadRow, seek, numFields);
         if (c >= 0)
         {
-            if (!includeInOutput(pending))
+            if (!includeInOutput(readAheadRow))
                 return NULL;
-            if (pendingMatches)
-                return pending;
-            //pending Row is beyond seek point => ok to return an incomplete match
+            if (readAheadRowIsExactMatch)
+                return readAheadRow;
+            //readAheadRow is beyond seek point => ok to return an incomplete match
             if (stepExtra.returnMismatches() && (c != 0))
             {
-                wasCompleteMatch = pendingMatches;
-                return pending;
+                wasCompleteMatch = readAheadRowIsExactMatch;
+                return readAheadRow;
             }
         }
         skip();
@@ -353,39 +353,39 @@ const void * CSteppedInputLookahead::nextGE(const void * seek, unsigned numField
         unsigned stepFields = (numFields <= numStepableFields) ? numFields : numStepableFields;
         loop
         {
-            pendingMatches = true;
-            pending = nextInputRowGE(seek, stepFields, pendingMatches, inputStepExtra);
+            readAheadRowIsExactMatch = true;
+            readAheadRow = nextInputRowGE(seek, stepFields, readAheadRowIsExactMatch, inputStepExtra);
 
-            if (paranoid && pending)
+            if (paranoid && readAheadRow)
             {
-                int c = compare->docompare(pending, seek, stepFields);
+                int c = compare->docompare(readAheadRow, seek, stepFields);
                 if (c < 0)
                     throw MakeStringException(1001, "Input to stepped join preceeds seek point");
-                if ((c == 0) && !pendingMatches)
+                if ((c == 0) && !readAheadRowIsExactMatch)
                     throw MakeStringException(1001, "Input to stepped join returned mismatch that matched equality fields");
             }
 
-            if (!pending || !includeInOutput(pending))
+            if (!readAheadRow || !includeInOutput(readAheadRow))
                 return NULL;
 
             if (numFields <= numStepableFields)
             {
-                wasCompleteMatch = pendingMatches;
-                return pending;
+                wasCompleteMatch = readAheadRowIsExactMatch;
+                return readAheadRow;
             }
 
-            //if !pendingMatches then isCompleteMatch must have been provided => ok to return a mismatch
+            //if !readAheadRowIsExactMatch then isCompleteMatch must have been provided => ok to return a mismatch
             //if mismatch on stepFields, then must have mismatch on numFields (since stepFields <= numFields) => can return now
-            if (!pendingMatches)            
+            if (!readAheadRowIsExactMatch)
             {
-                wasCompleteMatch = pendingMatches;
-                return pending;
+                wasCompleteMatch = readAheadRowIsExactMatch;
+                return readAheadRow;
             }
 
-            if (compare->docompare(pending, seek, numFields) >= 0)
+            if (compare->docompare(readAheadRow, seek, numFields) >= 0)
             {
-                wasCompleteMatch = pendingMatches;
-                return pending;
+                wasCompleteMatch = readAheadRowIsExactMatch;
+                return readAheadRow;
             }
 
             skip();
@@ -442,19 +442,19 @@ void CSteppedInputLookahead::skip()
 {
     if (paranoid)
     {
-        if (previousPending)
-            rowAllocator->releaseRow(previousPending);
-        previousPending = pending;
+        if (previousReadAheadRow)
+            rowAllocator->releaseRow(previousReadAheadRow);
+        previousReadAheadRow = readAheadRow;
     }
     else
     {
-        if (pending)
-            rowAllocator->releaseRow(pending);
+        if (readAheadRow)
+            rowAllocator->releaseRow(readAheadRow);
     }
 
     //NB: Don't read ahead until we have to...
-    pending = NULL;
-    pendingMatches = true;
+    readAheadRow = NULL;
+    readAheadRowIsExactMatch = true;
 }
 
 const void * CSteppedInputLookahead::skipnext()

@@ -215,7 +215,7 @@ public:
     virtual const void * querySeek(unsigned i) const;
     
 //inline helper functions
-    inline void clearPending() { if (pending) skip(); }
+    inline void clearPending() { if (readAheadRow) skip(); }
     inline bool gatherConjunctions(ISteppedConjunctionCollector & collector) { return input->gatherConjunctions(collector); }
     inline unsigned getStepFlags() { return inputStepping ? inputStepping->getSteppedFlags() : 0; }
     inline double getPriority() { return inputStepping ? inputStepping->getPriority() : 0.0; }
@@ -262,19 +262,19 @@ private:
 
 protected:
     IRangeCompare * compare;
-    const void * pending;
+    const void * readAheadRow;
     IInputSteppingMeta * inputStepping;
     IMultipleStepSeekInfo * lowestFrequencyInput;
     Linked<IEngineRowAllocator> rowAllocator;
     const void * restrictValue;
-    const void * previousPending;
+    const void * previousReadAheadRow;
     unsigned maxFields;
     unsigned numStepableFields;
     unsigned numRestrictFields;
     unsigned stepFlagsMask;
     unsigned stepFlagsValue;
     bool paranoid;
-    bool pendingMatches;
+    bool readAheadRowIsExactMatch;
     bool isPostFiltered;
 };
 
