@@ -44,7 +44,7 @@
         <row>
           <entry><emphasis role="bold">ECL Compiler</emphasis></entry>
 
-          <entry>Command line ECL Compiler </entry>
+          <entry>Command line ECL Compiler</entry>
         </row>
 
         <row>
@@ -53,13 +53,6 @@
           <entry>Command line Distributed File Utility management tool,
           facilitate automation of data file spray, despray, and other common
           file handling tasks.</entry>
-        </row>
-
-        <row>
-          <entry><emphasis role="bold">RoxieConfig</emphasis></entry>
-
-          <entry>Command line query management tool to facilitate automation
-          of Roxie Query management.</entry>
         </row>
       </tbody>
     </tgroup>

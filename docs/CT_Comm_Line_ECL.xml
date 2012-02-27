@@ -19,7 +19,7 @@
   </bookinfo>
 
   <chapter id="Command_Line_ECL">
-    <title><emphasis role="bold">Command Line ECL</emphasis></title>
+    <title><emphasis role="bold">ECL Plus</emphasis></title>
 
     <sect1 id="Command_Line_Interface" role="nobrk">
       <title>Command Line Interface</title>
@@ -33,13 +33,12 @@
         _applicationparam1=</emphasis><emphasis>
         /variablename1=</emphasis></para>
 
-        <para>
-      
-         <informaltable colsep="0" frame="none" rowsep="0">
-								            <tgroup cols="2">
-								              <colspec align="left" colwidth="125.55pt" />
-								
-				              <colspec colwidth="384.85pt" />
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
               <tbody>
                 <row>
                   <entry><emphasis>action=</emphasis></entry>
@@ -50,7 +49,7 @@
                 </row>
 
                 <row>
-                  <entry><emphasis>owner=</emphasis> </entry>
+                  <entry><emphasis>owner=</emphasis></entry>
 
                   <entry>Either the userid or a workunit identifier (in the
                   form: wuid=&lt;wuid&gt;).</entry>
@@ -59,96 +58,104 @@
                 <row>
                   <entry><emphasis>password=</emphasis></entry>
 
-                  <entry>The password authorizing access
-                   for the owner.</entry>
+                  <entry>The password authorizing access for the
+                  owner.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis>cluster=</emphasis></entry>
 
-                  <entry>The name of the cluster to
-        use.</entry>
+                  <entry>The name of the cluster to use.</entry>
                 </row>
-                                <row>
-								                  <entry><emphasis>server=</emphasis></entry>
-								
-								                  <entry>The URL or IP address of the ECL
-        Watch server.</entry>
-                </row>                
-                <row>
-                  <entry><emphasis>queue=</emphasis> </entry>
 
-                  <entry>The name of the ECL server
-        queue.</entry>
-                </row>                
                 <row>
-                  <entry><emphasis>timeout=</emphasis> </entry>
+                  <entry><emphasis>server=</emphasis></entry>
+
+                  <entry>The URL or IP address of the ECL Watch
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>queue=</emphasis></entry>
+
+                  <entry>The name of the ECL server queue.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>timeout=</emphasis></entry>
 
                   <entry>Query timeout in seconds (0 for
-        asynchronous).</entry>
-                </row>                
-                <row>
-                  <entry><emphasis>ecl=</emphasis> </entry>
+                  asynchronous).</entry>
+                </row>
 
-                  <entry>The ECL code to execute. Optionally,
-        this may be replaced by the name of an input file containing the ECL
-        to execute (in the form: @inputfile), or the name of a stored ECL file
-        to execute (in the form: $folder.eclfile).</entry>
-                </row>                
                 <row>
-                  <entry><emphasis>file=</emphasis> </entry>
+                  <entry><emphasis>ecl=</emphasis></entry>
 
-                  <entry>The logical name of the file, or the
-        logical name with the starting and ending rows specified (in the form:
-        !logicalName[startrow,endrow]).</entry>
-                </row>                
-                <row>
-                  <entry><emphasis>format=</emphasis> </entry>
+                  <entry>The ECL code to execute. Optionally, this may be
+                  replaced by the name of an input file containing the ECL to
+                  execute (in the form: @inputfile), or the name of a stored
+                  ECL file to execute (in the form: $folder.eclfile).</entry>
+                </row>
 
-                  <entry>One of the following options:
-        default | csv | csvh | xml | runecl | bin(ary)</entry>
-                </row>                
                 <row>
-                  <entry><emphasis>output=</emphasis> </entry>
+                  <entry><emphasis>file=</emphasis></entry>
 
-                  <entry>The name of the file to
-        output.</entry>
-                </row>                
+                  <entry>The logical name of the file, or the logical name
+                  with the starting and ending rows specified (in the form:
+                  !logicalName[startrow,endrow]).</entry>
+                </row>
+
                 <row>
-                  <entry><emphasis>jobname=</emphasis> </entry>
+                  <entry><emphasis>format=</emphasis></entry>
+
+                  <entry>One of the following options: default | csv | csvh |
+                  xml | runecl | bin(ary)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>output=</emphasis></entry>
+
+                  <entry>The name of the file to output.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>jobname=</emphasis></entry>
 
                   <entry>The name to give the job.</entry>
-                </row>                
-                <row>
-                  <entry><emphasis>pagesize=</emphasis> </entry>
+                </row>
 
-                  <entry>The number of rows per page. If
-        omitted, the default is 500.</entry>
-                </row>                
                 <row>
-                  <entry><emphasis>-debugparam=</emphasis> </entry>
+                  <entry><emphasis>pagesize=</emphasis></entry>
 
-                  <entry>Debug parameters to pass on
-        the command line, in the form: -debugparam=debugvalue</entry>
-                </row>                
+                  <entry>The number of rows per page. If omitted, the default
+                  is 500.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>-debugparam=</emphasis></entry>
+
+                  <entry>Debug parameters to pass on the command line, in the
+                  form: -debugparam=debugvalue</entry>
+                </row>
+
                 <row>
                   <entry><emphasis>_applicationparam=</emphasis></entry>
 
-                  <entry>Parameters to pass on the
-        command line, in the form: _applicationparam=applicationvalue</entry>
-                </row>                
+                  <entry>Parameters to pass on the command line, in the form:
+                  _applicationparam=applicationvalue</entry>
+                </row>
+
                 <row>
                   <entry><emphasis>/variablename= </emphasis></entry>
 
-                  <entry>Variables to pass on the
-        command line, in the form: /variablename=[(int)|(bool)] valueThe
-        default value type is string unless int or bool is specified (in
-        parentheses preceding the value). The
-        <emphasis>variablename</emphasis> is the STORED name of an EXL file in
-        your ECL code. <emphasis role="bold">Not yet
-        implemented.</emphasis></entry>
-                </row>                
-                
+                  <entry>Variables to pass on the command line, in the form:
+                  /variablename=[(int)|(bool)] valueThe default value type is
+                  string unless int or bool is specified (in parentheses
+                  preceding the value). The <emphasis>variablename</emphasis>
+                  is the STORED name of an EXL file in your ECL code.
+                  <emphasis role="bold">Not yet
+                  implemented.</emphasis></entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>
