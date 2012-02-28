@@ -888,6 +888,8 @@ public:
     mptag_t allocateMPTag();
     void freeMPTag(mptag_t tag);
     mptag_t deserializeMPTag(MemoryBuffer &mb);
+    unsigned getOptInt(const char *opt, unsigned dft=0);
+    __int64 getOptInt64(const char *opt, __int64 dft=0);
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
