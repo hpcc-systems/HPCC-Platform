@@ -351,8 +351,7 @@ protected:
     {
         if (node && node->getPropBool("@localFiles"))
         {
-            UNIMPLEMENTED;
-            Owned <IResolvedFileCreator> result;
+            Owned <IResolvedFileCreator> result = createResolvedFile(fileName);
             return result.getClear();
         }
         return NULL;
@@ -444,6 +443,8 @@ public:
         hash = rtlHash64Data(xml.length(), xml.str(), 9994410);
         compulsory = false;
         daliHelper.setown(connectToDali()); // MORE - should make this conditional
+        if (!daliHelper.get() || !daliHelper->connected())
+            node->setPropBool("@localFiles", true);
     }
 
     ~CRoxiePackage()
@@ -541,6 +542,22 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
+        // Dali filenames used locally
+        bool resolveFilesLocally = !daliHelper->connected();
+        if (resolveFilesLocally && *_fileName != '~')
+        {
+            StringBuffer name;
+            if (strstr(fileName,"::"))
+            {
+                bool wasDFS;
+                makeSinglePhysicalPartName(fileName, name, true, wasDFS, baseDataDirectory.str());
+            }
+            else
+            {
+                makeAbsolutePath(fileName.str(), name);
+            }
+            fileName.clear().append(name);
+        }
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, true);
         if (resolved)
         {
@@ -552,10 +569,9 @@ public:
             resolved->remove();
             resolved.clear();
         }
-        bool local = !daliHelper->connected();
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, local, false, true); // MORE - is onlyDFS right?
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, resolveFilesLocally, false, true); // MORE - is onlyDFS right?
         if (!ldFile)
-            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (local?"local":"DFS"));
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (resolveFilesLocally?"local":"DFS"));
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }

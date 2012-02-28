@@ -2187,7 +2187,16 @@ public:
         }
         else
         {
-            throwUnexpected();
+            try
+            {
+                Owned<IFile> file = createIFile(lfn.get());
+                file->remove();
+            }
+            catch (IException *e)
+            {
+                ERRLOG(-1, "Error removing file %s",lfn.get());
+                e->Release();
+            }
         }
     }
 };
