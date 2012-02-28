@@ -140,7 +140,7 @@ compDafilesrv=''
 #Forming the component list from the configgen 
 
 for i in ${compArray[@]}; do
-    compName=`echo $i | awk -F"_" '{print $2}'`
+    compName=${i#*_}
     comp.getByName ${compName}
     componentType=`echo ${comp_return} | awk -F" " '{print $1}' | awk -F"=" '{print $2}'`
     if [ -z ${compName} ];
