@@ -347,7 +347,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional" default="2048">
+      <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Memory (in MB) to use for Link Counted Rows</tooltip>
@@ -512,7 +512,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional" default="1400">
+      <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Memory available to thor for heavyweith operations (MB)</tooltip>
