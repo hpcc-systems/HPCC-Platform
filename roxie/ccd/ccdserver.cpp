@@ -1306,11 +1306,6 @@ public:
         throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink");
     }
 
-    virtual void stopSink(unsigned idx, bool abort)
-    {
-        throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
-    }
-
     virtual __int64 evaluate() 
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: evaluate() requires a function");
@@ -2162,18 +2157,6 @@ public:
     virtual IRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
-    }
-
-    virtual void stopSink(unsigned outputIdx, bool abort)
-    {
-        if (!stopped[outputIdx])
-        {
-            stopped[outputIdx] = true;
-            for (unsigned s = 0; s < numOutputs; s++)
-                if (!stopped[s])
-                    return;
-            stop(abort); // all outputs stopped - stop parent.
-        }
     }
 
     virtual const void *nextInGroup()
