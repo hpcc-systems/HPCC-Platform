@@ -1231,12 +1231,6 @@ public:
                     }
                 }
 #endif
-                // MORE - not absolutely sure that this is needed since dependency gets started and stopped by the execute
-                ForEachItemIn(idx, dependencies)
-                {
-                    if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx), aborting);
-                }
                 if (input)
                     input->stop(aborting);
             }
