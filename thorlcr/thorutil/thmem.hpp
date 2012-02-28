@@ -211,6 +211,8 @@ interface IThorRowArrayException: extends IException
 extern graph_decl void checkMultiThorMemoryThreshold(bool inc);
 extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNotify *notify);
 
+extern graph_decl memsize_t setLargeMemSize(unsigned limit);
+
 class graph_decl CThorRowArray
 {
     MemoryBuffer ptrbuf;
@@ -227,23 +229,7 @@ class graph_decl CThorRowArray
 
 
 public:
-    CThorRowArray()
-    {
-        numelem = 0;
-        totalsize = 0;
-        overhead = 0;
-        sizing = false;
-        raiseexceptions = false;
-        memsize_t tmp = ((unsigned __int64)ThorRowMemoryAvailable())*7/8;   // don't fill up completely
-
-        if (tmp>0xffffffff)
-            maxtotal = 0xffffffff;
-        else
-            maxtotal = (unsigned)tmp;
-        if (maxtotal<0x100000)
-            maxtotal = 0x100000;
-    }
-
+    CThorRowArray();
 
     ~CThorRowArray()
     {
@@ -302,7 +288,7 @@ public:
             return NULL;
         byte ** rp = ((byte **)ptrbuf.toByteArray())+idx;
         const byte *ret = *rp;
-        if (sizing) 
+        if (sizing)
             adjSize(ret,false);
         *rp = NULL;
         return ret;

@@ -2338,6 +2338,21 @@ void CJobBase::init()
     maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", globals->getPropInt("@maxActivityCores", 0)); // NB: 0 means system decides
     pausing = false;
     resumed = false;
+
+    unsigned gmemSize = getOptInt("@globalMemorySize"); // in MB
+    // NB: gmemSize is permitted to be unset, meaning unbound
+    initThorMemoryManager(gmemSize, getOptInt("@memTraceLevel", 1), getOptInt("@memoryStatsInterval", 60));
+
+    unsigned defaultMemMB = gmemSize;
+    if (!defaultMemMB)
+        defaultMemMB = 2048; // JCSMORE - should really be based on physical ram and take into account slavesPerNode.
+    defaultMemMB = defaultMemMB*3/4;
+    unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
+    if (gmemSize && largeMemSize >= gmemSize)
+        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
+    PROGLOG("Global memory size = %d MB, large mem size = %d MB", gmemSize, largeMemSize);
+    setLargeMemSize(largeMemSize);
+
     setLCRrowCRCchecking(0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", 
 #ifdef _DEBUG
         true
@@ -2537,6 +2552,18 @@ mptag_t CJobBase::deserializeMPTag(MemoryBuffer &mb)
         jobComm->flush(tag);
     }
     return tag;
+}
+
+unsigned CJobBase::getOptInt(const char *opt, unsigned dft)
+{
+    const char *wOpt = (opt&&(*opt)=='@') ? opt+1 : opt; // strip @ for options in workunit
+    return (unsigned)getWorkUnitValueInt(wOpt, globals->getPropInt(opt, dft));
+}
+
+__int64 CJobBase::getOptInt64(const char *opt, __int64 dft)
+{
+    const char *wOpt = (opt&&(*opt)=='@') ? opt+1 : opt; // strip @ for options in workunit
+    return getWorkUnitValueInt(opt, globals->getPropInt64(opt, dft));
 }
 
 // IGraphCallback

@@ -688,15 +688,6 @@ int main( int argc, char *argv[]  )
         Owned<CRegistryServer> registry = new CRegistryServer();
         StringBuffer thorEpStr;
         LOG(MCdebugProgress, thorJob, "ThorMaster version %d.%d, Started on %s", THOR_VERSION_MAJOR,THOR_VERSION_MINOR,thorEp.getUrlStr(thorEpStr).toCharArray());
-
-        unsigned gmemsize = globals->getPropInt("@masterGlobalMemorySize"); // in MB
-        if (gmemsize==0) {
-            gmemsize = globals->getPropInt("@globalMemorySize"); // in MB
-            if (gmemsize==0)
-                gmemsize = 2048;
-        }
-        initThorMemoryManager(gmemsize,globals->getPropInt("@memTraceLevel", 1),globals->getPropInt("@memoryStatsInterval", 60));
-
         LOG(MCdebugProgress, thorJob, "Thor name = %s, queue = %s, nodeGroup = %s",thorname,queueName.str(),nodeGroup.str());
 
         serverStatus.queryProperties()->setProp("@thorname", thorname);

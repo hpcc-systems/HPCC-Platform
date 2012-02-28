@@ -147,7 +147,38 @@ extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNoti
 }
 
 
+static memsize_t largeMemSize = 0;
+memsize_t setLargeMemSize(unsigned limitMB)
+{
+    memsize_t prevLargeMemSize = largeMemSize;
+    largeMemSize = 1024*1024*(memsize_t)limitMB;
+    return prevLargeMemSize;
+}
 
+memsize_t queryLargeMemSize()
+{
+    if (0 == largeMemSize)
+        throwUnexpected();
+    return largeMemSize;
+}
+
+
+CThorRowArray::CThorRowArray()
+{
+    numelem = 0;
+    totalsize = 0;
+    overhead = 0;
+    sizing = false;
+    raiseexceptions = false;
+    memsize_t tmp = queryLargeMemSize();
+
+    if (tmp>0xffffffff)
+        maxtotal = 0xffffffff;
+    else
+        maxtotal = (unsigned)tmp;
+    if (maxtotal<0x100000)
+        maxtotal = 0x100000;
+}
 
 void CThorRowArray::adjSize(const void *row, bool inc)
 {
@@ -721,7 +752,7 @@ void resetThorMemoryManager()
     ThorAllocatorCache.reset(); // clears cached rows
     if (ThorMemoryManager) {
         ThorMemoryManager->Release();
-        ThorMemoryManager = createThorRowManager(ThorMemoryManagerMaxSize, &ThorAllocatorCache, false);
+        ThorMemoryManager = NULL;
     }
     ThorAllocatorCache.clear(); // do after so that act ids still around
 }
