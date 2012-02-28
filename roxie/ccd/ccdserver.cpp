@@ -5293,29 +5293,29 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 class CRoxieServerTempTableActivity : public CRoxieServerActivity
 {
     IHThorTempTableArg &helper;
-    bool eof;
     unsigned curRow;
+    unsigned numRows;
 
 public:
     CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
     {
-        eof = false;
         curRow = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        eof = false;
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
     }
 
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        if (!eof)
+        // Filtering empty rows, returns the next valid row
+        while (curRow < numRows)
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned outSize = helper.getRow(rowBuilder, curRow++);
@@ -5325,7 +5325,6 @@ public:
                 return rowBuilder.finalizeRowClear(outSize);
             }
         }
-        eof = true;
         return NULL;
     }
 
