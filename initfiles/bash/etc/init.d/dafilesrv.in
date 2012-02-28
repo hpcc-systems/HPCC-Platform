@@ -86,7 +86,7 @@ COMPS=`${configgen_path}/configgen -env ${envfile} -ip "127.0.0.1" -list`
 
 comp.parser ${COMPS}
 for i in ${compArray[@]}; do
-    compName=`echo $i | awk -F"_" '{print $2}'`
+    compName=${i#*_}
     comp.getByName ${compName}
     compType=`echo $comp_return | cut -d ' ' -f 1 | cut -d '=' -f 2 `
     if strstr ${compType} "dafilesrv" ;
