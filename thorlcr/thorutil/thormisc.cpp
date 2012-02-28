@@ -812,20 +812,6 @@ void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExcepti
     }
 } 
 
-static memsize_t largeMemSize = 0;
-memsize_t queryLargeMemSize()
-{
-    if (!largeMemSize)
-    {
-        if (globals->hasProp("largeMemSize"))
-            largeMemSize = globals->getPropInt("@largeMemSize") * 0x100000;
-        else
-            largeMemSize = DEFAULT_LARGEMEM_BUFFER_SIZE;
-        PROGLOG("Setting largemem to %"I64F"d", (unsigned __int64) largeMemSize);
-    }
-    return largeMemSize;
-}
-
 StringBuffer &getCompoundQueryName(StringBuffer &compoundName, const char *queryName, unsigned version)
 {
     return compoundName.append('V').append(version).append('_').append(queryName);
