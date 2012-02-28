@@ -2892,9 +2892,18 @@ IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldTyp
 {
     if (!fieldType)
         fieldType = value->queryType();
-
     OwnedHqlExpr field = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr record = createRecord(field);
+
+    OwnedHqlExpr dataset;
+    OwnedHqlExpr attribute;
+    if (splitResultValue(dataset, attribute, value))
+    {
+        OwnedHqlExpr transform = createTransformForField(field, attribute);
+        OwnedHqlExpr ds = createDataset(no_newusertable, LINK(dataset), createComma(LINK(record), LINK(transform)));
+        return createRow(no_selectnth, LINK(ds), getSizetConstant(1));
+    }
+
     OwnedHqlExpr transform = createTransformForField(field, value);
     return createRow(no_createrow, LINK(transform));
 }
@@ -4466,7 +4475,7 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
 }
 
 
-static bool splitSetResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value)
+bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value)
 {
     if (value->isDataset())
         return false;
@@ -4490,7 +4499,7 @@ IHqlExpression * createSetResult(HqlExprArray & args)
     HqlExprAttr dataset, attribute;
     IHqlExpression * value = &args.item(0);
     assertex(value->getOperator() != no_param);
-    if (splitSetResultValue(dataset, attribute, value))
+    if (splitResultValue(dataset, attribute, value))
     {
         args.replace(*dataset.getClear(), 0);
         args.add(*attribute.getClear(), 1);
@@ -4505,7 +4514,7 @@ IHqlExpression * createSetResult(HqlExprArray & args)
 IHqlExpression * convertSetResultToExtract(IHqlExpression * setResult)
 {
     HqlExprAttr dataset, attribute;
-    if (splitSetResultValue(dataset, attribute, setResult->queryChild(0)))
+    if (splitResultValue(dataset, attribute, setResult->queryChild(0)))
     {
         HqlExprArray args;
         args.append(*dataset.getClear());
