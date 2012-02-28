@@ -20,7 +20,6 @@
 #define __THBUFDEF__
 
 
-#define DEFAULT_LARGEMEM_BUFFER_SIZE                    (0x58000000)            // ~ 1.4GB  
 #define SMALL_SMART_BUFFER_SIZE                 (0x100000)              // 1MB
 #define PULL_SMART_BUFFER_SIZE                  (0x100000*8*3)          // 24MB
 #define CHOOSESETS_SMART_BUFFER_SIZE            (0x100000*8*3)          // 12MB

@@ -1440,7 +1440,7 @@ public:
         HeadOsBlockList.Prev = &HeadOsBlockList;
         HeadOsBlockList.Size = 0;
         OsTotal = 0;
-        OsMax = maxtotal;
+        OsMax = maxtotal ? maxtotal : ((memsize_t)-1); // unbound if not set
         OsMin = mintotal;
         if (_maxsubrecsize)
             suballocator.setown(new CSubAllocator(*this,_maxsubrecsize));
