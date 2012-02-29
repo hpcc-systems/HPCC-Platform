@@ -4856,7 +4856,8 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out)
 #else
     char path[PATH_MAX+1];
     path[0] = 0;
-    realpath(relpath,path);
+    if (!realpath(relpath,path))
+        throw MakeStringException(-1, "makeAbsolutePath: could not get absolute path of %s", relpath);
 #endif
     return out.append(path);
 }

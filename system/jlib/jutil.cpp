@@ -1361,9 +1361,12 @@ int make_daemon(bool printpid)
         exit(EXIT_SUCCESS);
     }
 
-    freopen("/dev/null", "r", stdin);
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
+    if (!freopen("/dev/null", "r", stdin) ||
+        !freopen("/dev/null", "w", stdout) ||
+        !freopen("/dev/null", "w", stderr)) {
+        PrintLog("reopen std in/out/err failed\n");
+        return(EXIT_FAILURE);
+    }
 
     return(EXIT_SUCCESS);
 #else
