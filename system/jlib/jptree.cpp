@@ -2415,7 +2415,16 @@ unsigned PTree::numChildren()
 {
     if (!checkChildren()) return 0;
     return children->numChildren();
-}   
+}
+
+unsigned PTree::getCount(const char *xpath)
+{
+    unsigned c=0;
+    Owned<IPropertyTreeIterator> iter = getElements(xpath);
+    ForEach(*iter)
+        ++c;
+    return c;
+}
 
 void getXPathMatchTree(IPropertyTree &parentContext, const char *xpath, IPropertyTree *&matchContainer)
 {
