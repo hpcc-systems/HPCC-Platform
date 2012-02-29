@@ -7709,15 +7709,12 @@ class CInitGroups
         return true;
     }
 
-
-    void loadEndpoints(IPropertyTree& cluster,SocketEndpointArray &eps,bool roxie,bool roxiefarm,const char *processname)
+    enum GroupType { grp_thor, grp_roxie, grp_roxiefarm };
+    void loadEndpoints(IPropertyTree& cluster,SocketEndpointArray &eps,GroupType groupType,const char *processname)
     {
         SocketEndpoint nullep;
-        unsigned n=roxie?0:cluster.getPropInt("@slaves");
         Owned<IPropertyTreeIterator> nodes;
         nodes.setown(cluster.getElements(processname));
-        StringArray roxiedirs; // kludge - use roxie dir name to order group
-        unsigned i = 0;
         ForEach(*nodes) {
             IPropertyTree &node = nodes->query();
             const char *computer = node.queryProp("@computer");
@@ -7727,43 +7724,48 @@ class CInitGroups
                 return;
             }
             SocketEndpoint ep = (*m)->ep;
-            if (roxiefarm) {
-                unsigned k;
-                for (k=0;k<eps.ordinality();k++)
-                    if (eps.item(k).equals(ep))
-                        break;
-                if (k==eps.ordinality())
-                    eps.append(ep); // just add (don't care about order and no duplicates)
-            }
-            else if (roxie) {
-                Owned<IPropertyTreeIterator> channels;
-                channels.setown(node.getElements("RoxieChannel"));
-                unsigned j = 0;
-                unsigned mindrive = (unsigned)-1;
-                ForEach(*channels) {
-                    unsigned k = channels->query().getPropInt("@number");
-                    const char * dir = channels->query().queryProp("@dataDirectory");
-                    unsigned d = dir?getPathDrive(dir):0;
-                    if (d<mindrive) {
-                        j = k;
-                        mindrive = d;
+            switch (groupType)
+            {
+                case grp_roxiefarm:
+                {
+                    unsigned k;
+                    for (k=0;k<eps.ordinality();k++)
+                        if (eps.item(k).equals(ep))
+                            break;
+                    if (k==eps.ordinality())
+                        eps.append(ep); // just add (don't care about order and no duplicates)
+                    break;
+                }
+                case grp_roxie:
+                {
+                    Owned<IPropertyTreeIterator> channels;
+                    channels.setown(node.getElements("RoxieChannel"));
+                    unsigned j = 0;
+                    unsigned mindrive = (unsigned)-1;
+                    ForEach(*channels) {
+                        unsigned k = channels->query().getPropInt("@number");
+                        const char * dir = channels->query().queryProp("@dataDirectory");
+                        unsigned d = dir?getPathDrive(dir):0;
+                        if (d<mindrive) {
+                            j = k;
+                            mindrive = d;
+                        }
                     }
+                    if (j==0) {
+                        ERRLOG("Cannot construct roxie cluster %s, no channel for node",cluster.queryProp("@name"));
+                        return;
+                    }
+                    while (eps.ordinality()<j)
+                        eps.append(nullep);
+                    eps.item(j-1) = ep;
+                    break;
                 }
-                if (j==0) {
-                    ERRLOG("Cannot construct roxie cluster %s, no channel for node",cluster.queryProp("@name"));
-                    return;
-                }
-                while (eps.ordinality()<j)
-                    eps.append(nullep);
-                eps.item(j-1) = ep;
+                case grp_thor:
+                    eps.append(ep);
+                    break;
+                default:
+                    throwUnexpected();
             }
-            else if (i<n) 
-                eps.append(ep);
-            else {
-                ERRLOG("Cannot construct %s, Too many slaves defined [@slaves = %d, found slave %d]",cluster.queryProp("@name"),n,i+1);
-                return;
-            }
-            i++;
         }
     }
 
@@ -7788,13 +7790,13 @@ class CInitGroups
     }
 
 
-    bool constructGroup(IPropertyTree& cluster,bool roxie,const char *processname, const char* defdir,bool force,StringBuffer &messages)
+    bool constructGroup(IPropertyTree& cluster, GroupType groupType, const char *processname, const char *defdir,bool force, StringBuffer &messages)
     {
         const char *groupname = cluster.queryProp("@name");
         const char *nodegroupname = cluster.queryProp("@nodeGroup");
         bool realcluster = !nodegroupname||!*nodegroupname||(strcmp(nodegroupname,groupname)==0);
         SocketEndpointArray eps;
-        loadEndpoints(cluster,eps,roxie,false,processname);
+        loadEndpoints(cluster,eps,groupType,processname);
         bool ret = true;
         if (eps.ordinality()) {
             Owned<IGroup> grp;
@@ -7811,10 +7813,20 @@ class CInitGroups
             }
             else
                 grp.setown(createIGroup(eps));
-            if (!addClusterGroup(groupname,grp,roxie?"Roxie":"Thor",realcluster,defdir,force))
-            {
+            const char *groupTypeStr=NULL;
+            switch (groupType) {
+            case grp_roxie:
+                groupTypeStr = "Roxie";
+                break;
+            case grp_thor:
+                groupTypeStr = "Thor";
+                break;
+            default:
+                throwUnexpected();
+            }
+            if (!addClusterGroup(groupname,grp,groupTypeStr,realcluster,defdir,force)) {
                 ret = false;
-                VStringBuffer msg("Newly constructed group definition for cluster %s, mismatched existing group layout", groupname);
+                VStringBuffer msg("Newly constructed group %s definition for cluster %s, mismatched existing group layout", groupTypeStr, groupname);
                 WARNLOG("%s", msg.str());
                 messages.append(msg).newline();
             }
@@ -7833,7 +7845,7 @@ class CInitGroups
             groupname.append("__");
             groupname.append(farm.queryProp("@name"));
             SocketEndpointArray eps;
-            loadEndpoints(farm,eps,true,true,"RoxieServerProcess");
+            loadEndpoints(farm,eps,grp_roxiefarm,"RoxieServerProcess");
             if (eps.ordinality()) {
                 Owned<IGroup> grp = createIGroup(eps);
                 if (!addClusterGroup(groupname.str(),grp,"RoxieFarm",true,farm.queryProp("@dataDirectory"),force))
@@ -7929,7 +7941,7 @@ public:
                         }
                         else
                         {
-                            if (!constructGroup(cluster,false,"ThorSlaveProcess",NULL,true,messages))
+                            if (!constructGroup(cluster,grp_thor,"ThorSlaveProcess",NULL,true,messages))
                                 ret = false;
                         }
                         break;
@@ -8041,7 +8053,7 @@ public:
             clusters.setown(root->getElements("ThorCluster"));
             ForEach(*clusters) {
                 IPropertyTree &cluster = clusters->query();
-                if (!constructGroup(cluster,false,"ThorSlaveProcess",NULL,force,messages))
+                if (!constructGroup(cluster,grp_thor,"ThorSlaveProcess",NULL,force,messages))
                     ret = false;
                 if (!constructThorSpareGroup(cluster,force,messages))
                     ret = false;
@@ -8051,7 +8063,7 @@ public:
                 const char *dir = clusters->query().queryProp("@slaveDataDir");
                 if (!dir||!*dir)
                     dir = clusters->query().queryProp("@baseDataDir");
-                if (!constructGroup(clusters->query(),true,"RoxieSlave",dir,force,messages))
+                if (!constructGroup(clusters->query(),grp_roxie,"RoxieSlave",dir,force,messages))
                     ret = false;
                 if (!constructFarmGroup(clusters->query(),force,messages))
                     ret = false;
