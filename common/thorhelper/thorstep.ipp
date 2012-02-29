@@ -257,8 +257,8 @@ protected:
 
 private:
     Linked<ISteppedInput> input;
-    LinkedRowQueue readAheadRows;               // rows that have been read from the input to provide as seek pointers for the next term
-    LinkedRowQueue seekRows;                    // rows that have been read ahead previous seek rows, that have been read past, but still required to return as results.
+    LinkedRowQueue readAheadRows; // rows that have been read from the input to provide seekRows for other terms
+    LinkedRowQueue seekRows;      // unique read-ahead rows that are >= the last seek position provided to ensureFilled()
 
 protected:
     IRangeCompare * compare;
