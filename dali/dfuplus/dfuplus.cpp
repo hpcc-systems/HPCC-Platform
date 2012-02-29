@@ -1213,7 +1213,11 @@ int CDfuPlusHelper::savexml()
     }
     
     const MemoryBuffer& xmlmap = resp->getXmlmap();
-    write(ofile, xmlmap.toByteArray(), xmlmap.length());
+    ssize_t written = write(ofile, xmlmap.toByteArray(), xmlmap.length());
+    if (written < 0)
+        throw MakeStringException(-1, "can't write to file %s\n", dstxml);
+    if (written != xmlmap.length())
+        throw MakeStringException(-1, "truncated write to file %s\n", dstxml);
     close(ofile);
     return 0;
 }

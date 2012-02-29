@@ -283,7 +283,11 @@ void indent(int indents)
 
 void out(const char *s,size_t l)
 {
-    write(gOutfile,s,(unsigned)l);
+    ssize_t written = write(gOutfile,s,(unsigned)l);
+    if (written < 0)
+        throw "Error while writing out";
+    if (written != l)
+        throw "Truncated write";
 }
 
 void outs(const char *s)
