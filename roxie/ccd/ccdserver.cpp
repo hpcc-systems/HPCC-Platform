@@ -13776,7 +13776,8 @@ public:
                     Owned<IRoxieInput> againResult = results->createIterator(helper.loopAgainResult());
                     OwnedConstRoxieRow row  = againResult->nextInGroup();
                     assertex(row);
-                    if (!*(const byte *)row.get())
+                    //Result is a row which contains a single boolean field.
+                    if (!((const bool *)row.get())[0])
                         finishedLooping = true;
                 }
             }

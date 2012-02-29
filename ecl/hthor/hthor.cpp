@@ -8911,9 +8911,10 @@ const void * CHThorLoopActivity::nextInGroup()
         {
             IHThorGraphResult * result = curResults->queryResult(helper.loopAgainResult());
             assertex(result);
-            const byte * row = static_cast<const byte *>(result->queryRow(0));
+            const void * row = result->queryRow(0);
             assertex(row);
-            if (!*row)
+            //Result is a row which contains a single boolean field.
+            if (!((const bool *)row)[0])
                 finishedLooping = true;
         }
         resultInput.init(curResults->queryResult(0));

@@ -2905,7 +2905,7 @@ IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldTyp
     }
 
     OwnedHqlExpr transform = createTransformForField(field, value);
-    return createRow(no_createrow, LINK(transform));
+    return createRow(no_createrow, transform.getClear());
 }
 
 inline bool isScheduleAction(IHqlExpression * expr)
