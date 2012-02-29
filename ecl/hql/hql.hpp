@@ -49,7 +49,7 @@ Relevant changes include
 */
 
 #define LANGUAGE_VERSION_MAJOR      3
-#define LANGUAGE_VERSION_MINOR      0
+#define LANGUAGE_VERSION_MINOR      6
 #define LANGUAGE_VERSION_SUB        0
 
 #define LANGUAGE_VERSION   estringify(LANGUAGE_VERSION_MAJOR) "." estringify(LANGUAGE_VERSION_MINOR) "." estringify(LANGUAGE_VERSION_SUB)
