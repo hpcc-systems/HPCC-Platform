@@ -1251,11 +1251,6 @@ void CConfigEnvHelper::UpdateThorAttributes(IPropertyTree* pParentNode)
 
     setAttribute(pParentNode, XML_ATTR_MULTISLAVES, multiSlaves ? "true" : "false");
     setAttribute(pParentNode, "@localThor", localThor ? "true" : "false");
-
-    StringBuffer sb;
-    int slavesPerNode = pParentNode->getPropInt("@slavesPerNode", 1);
-    sb.appendf("%d", nSlaves * slavesPerNode);
-    setAttribute(pParentNode, XML_ATTR_SLAVES, sb.str());
 }
 
 //---------------------------------------------------------------------------
