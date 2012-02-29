@@ -857,7 +857,6 @@ protected:
     IRoxieSlaveContext *ctx;
     const IRoxieServerActivityFactory *factory;
     IRoxieServerActivityCopyArray dependencies;
-    IntArray dependencyIndexes;
     IntArray dependencyControlIds;
     IArrayOf<IActivityGraph> childGraphs;
     CachedOutputMetaData meta;
@@ -1286,7 +1285,6 @@ public:
     virtual void addDependency(IRoxieServerActivity &source, unsigned sourceIdx, int controlId) 
     {
         dependencies.append(source);
-        dependencyIndexes.append(sourceIdx);
         dependencyControlIds.append(controlId);
     } 
 
@@ -2126,7 +2124,6 @@ class CRoxieServerInternalSinkActivity : public CRoxieServerActivity
 protected:
     unsigned numOutputs;
     bool executed;
-    bool *stopped;
     CriticalSection ecrit;
     Owned<IException> exception;
 
@@ -2135,20 +2132,14 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), numOutputs(_numOutputs)
     {
         executed = false;
-        stopped = new bool[numOutputs];
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
     }
 
-    ~CRoxieServerInternalSinkActivity()
+    virtual ~CRoxieServerInternalSinkActivity()
     {
-        delete [] stopped;
     }
 
     virtual void reset()
     {
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
         executed = false;
         exception.clear();
         CRoxieServerActivity::reset();
