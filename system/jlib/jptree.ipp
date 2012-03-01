@@ -381,6 +381,7 @@ public:
     virtual unsigned numUniq() { return checkChildren()?children->count():0; }  
     virtual unsigned numChildren();
     virtual bool isCaseInsensitive() { return isnocase(); }
+    virtual unsigned getCount(const char *xpath);
 // serializable impl.
     virtual void serialize(MemoryBuffer &tgt);
     virtual void deserialize(MemoryBuffer &src);
