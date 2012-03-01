@@ -1013,7 +1013,6 @@ public:
         assertex(_transaction);
         transaction.set(_transaction->baseTransaction()); // smacks of overkill
         transaction->addAction(this);
-        transaction->clearFiles();  // clean slate on open files (this is a bit arcane)
     }
     virtual ~CDFAction() {}
     virtual bool prepare()=0;  // should call lock
@@ -1226,8 +1225,6 @@ public:
                     break;
                 while (nlocked) // unlock for retry
                     actions.item(--nlocked).retry();
-                // This could be dangerous now that superfiles are in transactions
-                dflist.kill();
                 PROGLOG("CDistributedFileTransaction: Transaction pausing");
                 Sleep(SDS_TRANSACTION_RETRY/2+(getRandom()%SDS_TRANSACTION_RETRY)); 
             }
@@ -1383,6 +1380,7 @@ public:
         delayeddelete.kill();
     }
 
+    // MORE - remove this once CWrappedTransaction is gone
     IDistributedFileTransaction *baseTransaction() { return this; }
 };
 
