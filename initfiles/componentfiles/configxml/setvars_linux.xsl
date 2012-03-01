@@ -115,7 +115,14 @@ export autoSwapNode=<xsl:choose>
            <xsl:when test="SwapNode/@AutoSwapNode='1'">1</xsl:when>
            <xsl:otherwise>0</xsl:otherwise>
             </xsl:choose>
-export LCR=_lcr
+<xsl:choose>
+  <xsl:when test="string(@Legacy) != ''">
+    export LCR=
+  </xsl:when>
+  <xsl:otherwise>
+    export LCR=_lcr
+  </xsl:otherwise>
+</xsl:choose>
 <xsl:if test="string(SSH/@SSHidentityfile) != ''">
 export SSHidentityfile=<xsl:value-of select="SSH/@SSHidentityfile"/>
 </xsl:if>
