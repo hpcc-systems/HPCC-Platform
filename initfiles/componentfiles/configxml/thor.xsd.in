@@ -306,10 +306,10 @@
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>
-                        <tooltip>The build name to be deployed</tooltip>
-                        <viewType>hidden</viewType>
-                    </xs:appinfo>
-                </xs:annotation>
+           <tooltip>The build name to be deployed</tooltip>
+           <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
       </xs:attribute>
       <xs:attribute name="buildSet" type="buildSetType" use="required">
         <xs:annotation>
