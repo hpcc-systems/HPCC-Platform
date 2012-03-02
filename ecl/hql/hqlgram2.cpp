@@ -4050,7 +4050,7 @@ void HqlGram::ensureTypeCanBeIndexed(attribute &a)
         setDefaultString(a);
     else
     {
-        switch (t1->getTypeCode())
+        switch (t1->queryPromotedType()->getTypeCode())
         {
         case type_string:
         case type_varstring:
@@ -4059,10 +4059,15 @@ void HqlGram::ensureTypeCanBeIndexed(attribute &a)
         case type_unicode:
         case type_varunicode:
         case type_utf8:
+        case type_any:
             break;
         default:
-            ensureString(a);
-            break;
+            {
+                StringBuffer typeName;
+                reportWarning(ERR_TYPEMISMATCH_STRING, a.pos, "substring applied to value of type %s", getFriendlyTypeStr(t1, typeName).str());
+                ensureString(a);
+                break;
+            }
         }
     }
 }
