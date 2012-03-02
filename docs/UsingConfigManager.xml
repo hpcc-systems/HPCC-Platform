@@ -189,11 +189,11 @@
 
               <variablelist>
                 <varlistentry>
-                  <term>Number of support nodes: </term>
+                  <term>Number of support nodes:</term>
 
                   <listitem>
                     <para>Specify the number of nodes to use for support
-                    components. The default is 1. </para>
+                    components. The default is 1.</para>
                   </listitem>
                 </varlistentry>
 
@@ -203,7 +203,7 @@
                   <listitem>
                     <para>Specify the number of nodes to use for your Roxie
                     cluster. Enter zero (0) if you do not want a Roxie
-                    cluster. </para>
+                    cluster.</para>
                   </listitem>
                 </varlistentry>
 
@@ -213,7 +213,7 @@
                   <listitem>
                     <para>Specify the number of slave nodes to use in your
                     Thor cluster. A Thor master node will be added
-                    automatically. </para>
+                    automatically.</para>
                   </listitem>
                 </varlistentry>
 
@@ -228,7 +228,7 @@
                 </varlistentry>
 
                 <varlistentry>
-                  <term>Enable Roxie on demand </term>
+                  <term>Enable Roxie on demand</term>
 
                   <listitem>
                     <para>Specify whether or not to allow queries to be run
@@ -712,7 +712,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -943,7 +944,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
 
                     <row>
@@ -1039,7 +1041,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
 
                     <row>
@@ -1315,7 +1318,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1468,7 +1472,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
 
                     <row>
@@ -1566,7 +1571,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1709,7 +1715,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
 
                     <row>
@@ -2082,7 +2089,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>name</emphasis></entry>
 
-                      <entry>Name of the process instance</entry>
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
                     </row>
 
                     <row>
