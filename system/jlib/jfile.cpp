@@ -4857,8 +4857,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         return out.append(relpath); // if remote then already should be absolute
     }
 #ifdef _WIN32
-    char rPath[256];
-    rPath[0] = 0;
+    char rPath[MAX_PATH];
     char *filepart;
     DWORD res = GetFullPathName(relpath, sizeof(rPath), rPath, &filepart);
     if (0 == res)
@@ -4871,8 +4870,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     }
     out.append(rPath);
 #else
-    char rPath[PATH_MAX+1];
-    rPath[0] = 0;
+    char rPath[PATH_MAX];
     if (mustExist)
     {
         if (!realpath(relpath, rPath))
