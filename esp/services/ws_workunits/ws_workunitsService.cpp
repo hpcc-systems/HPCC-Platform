@@ -3275,6 +3275,7 @@ void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEsp
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
+    winfo.getExceptions(resp.updateWorkunit(), WUINFO_All);
 
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
