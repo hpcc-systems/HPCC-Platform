@@ -10597,9 +10597,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             bool isLocal = queryProperty(localAtom, parms) != NULL;
             OwnedHqlExpr normalizedSortOrder = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
             OwnedHqlExpr mappedGrouping = replaceSelector(&parms.item(2), dataset, cachedActiveTableExpr);
-            type.setown(getTypeGrouped(datasetType, mappedGrouping, isLocal));
-            type.setown(getTypeGroupSort(type, normalizedSortOrder));
-            type.setown(getTypeUngroup(type));
+            type.setown(getTypeShuffle(datasetType, mappedGrouping, normalizedSortOrder, isLocal));
             break;
         }
     case no_cosort:

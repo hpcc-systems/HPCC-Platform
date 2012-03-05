@@ -975,6 +975,14 @@ ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsi
 }
 
 
+extern HQL_API ITypeInfo * getTypeShuffle(ITypeInfo * prevType, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal)
+{
+    Owned<ITypeInfo> groupedType = getTypeGrouped(prevType, grouping, isLocal);
+    Owned<ITypeInfo> sortedType = getTypeGroupSort(groupedType, sortOrder);
+    return getTypeUngroup(sortedType);
+}
+
+
 //---------------------------------------------------------------------------------------------
 
 bool appearsToBeSorted(ITypeInfo * type, bool isLocal, bool ignoreGrouping)
@@ -1308,7 +1316,7 @@ IHqlExpression * convertShuffleToGroupedSort(IHqlExpression * expr)
     unwindChildren(args, expr, 3);
     removeProperty(args, localAtom);
     OwnedHqlExpr sorted = createDataset(no_sort, args);
-    return createDataset(no_group, LINK(sorted));
+    return createDataset(no_group, sorted.getClear());
 }
 
 static IHqlExpression * createShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
@@ -1333,8 +1341,6 @@ static IHqlExpression * createShuffled(IHqlExpression * dataset, IHqlExpression 
     if (!isLocal && !alwaysLocal)
         shuffle.setown(convertShuffleToGroupedSort(shuffle));
 
-    if (!isAlreadySorted(shuffle, order, isLocal||alwaysLocal, ignoreGrouping))
-        dbglogExpr(shuffle);
     assertex(isAlreadySorted(shuffle, order, isLocal||alwaysLocal, ignoreGrouping));
     return shuffle.getClear();
 }
