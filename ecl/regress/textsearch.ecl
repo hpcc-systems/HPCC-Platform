@@ -755,7 +755,7 @@ doReadWord(searchRecord search) := FUNCTION
 
     steppedMatches := stepped(matches, doc, segment, wpos);
 
-    projected := project(steppedMatches, createMatchRecord(left));
+    projected := project(steppedMatches, createMatchRecord(left), hint(dontDuplicateMe));
 
     return projected;
 END;
