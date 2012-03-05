@@ -445,7 +445,7 @@
             </listitem>
 
             <listitem>
-              <para>64-bit Debian 5.x (Lenny)</para>
+              <para>64-bit Debian 6.x (Squeeze)</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
@@ -731,7 +731,7 @@
 
             <programlisting>sudo service hpcc-init start</programlisting>
 
-            <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
             <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
             fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
@@ -1164,7 +1164,7 @@
 
             <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-            <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
@@ -1185,7 +1185,7 @@
                       processes are stopped (on Centos/Red
                       Hat/SuSe):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
                       Ubuntu</phrase><programlisting>sudo service hpcc-init status
-</programlisting><phrase>For Debian 5 (Lenny)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+</programlisting><phrase>For Debian 6 (Squeeze)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1505,7 +1505,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para><programlisting>sudo service hpcc-init start</programlisting></para>
 
-            <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
@@ -1544,7 +1544,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para><programlisting>sudo service hpcc-init start</programlisting></para>
 
-          <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
         </sect3>
@@ -1559,7 +1559,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-          <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
 
@@ -1599,7 +1599,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
           <para><programlisting>sudo service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
 
-          <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
           <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
 
@@ -1645,7 +1645,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para><programlisting>sudo service hpcc-init stop</programlisting></para>
 
-            <para><emphasis role="bold">Debian 5 (Lenny)</emphasis></para>
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
 
             <programlisting>sudo /etc/init.d/hpcc-init stop
 </programlisting>
