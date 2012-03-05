@@ -1,0 +1,1625 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>Rapid Data Delivery Engine Reference</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+   <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+   <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Introduction">
+    <title>Introduction</title>
+
+    <para>The Roxie engine - also known as the Rapid Data Delivery Engine or
+    RDDE - uses a combination of technologies and techniques that produce
+    extremely fast throughput for queries on indexed data housed in a
+    dedicated High Performance Computing Cluster (HPCC).</para>
+
+    <para>Roxie queries can exceed several thousand a second, compared to Thor
+    queries which tend to take from a few seconds to a few minutes each (from
+    end to end) depending on the complexity of the query.</para>
+
+    <para>To fully understand this concept, it is best to look at the purpose
+    for which each of these processes is designed:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>The Thor platform is designed to perform operations on every
+        record (or most records) in a massive dataset.</para>
+      </listitem>
+
+      <listitem>
+        <para>Queries can be run on the hThor platform if they can quickly
+        pinpoint small sets of records within the data.</para>
+      </listitem>
+
+      <listitem>
+        <para>Roxie queries are typically used to quickly pinpoint small sets
+        of records over and over again.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>If you think of all your data as an ocean, Thor would be used to
+    perform operations on the entire ocean.</para>
+
+    <para>An hThor query might be used to find a single fish within that sea
+    of data.</para>
+
+    <para>The query would be deployed to a Roxie cluster to be used to find
+    hundreds or thousands of individual fish-one after another.</para>
+
+    <para>Roxie queries are deployed to a Roxie cluster, which pre-loads all
+    queries into memory and prepares them to be ready to execute as soon as a
+    query is received.</para>
+
+    <para>Queries are sent to Roxie via XML, SOAP, or JSON, and the results
+    are returned in the same format. A client can communicate directly with
+    the Roxie cluster by opening a socket to one of the servers in the
+    cluster, or it can communicate via an ESP service such as WsECL.</para>
+
+    <sect1 id="Roxie_Overview">
+      <title>Roxie Overview</title>
+
+      <para>There are typically four aspects to using Roxie:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Creating indexes on datasets</para>
+        </listitem>
+
+        <listitem>
+          <para>Using indexes in queries</para>
+        </listitem>
+
+        <listitem>
+          <para>Compiling and Deploying queries to the Roxie Cluster</para>
+        </listitem>
+
+        <listitem>
+          <para>Providing access to those queries to client-facing interfaces
+          via SOAP or HTTP.</para>
+
+          <para></para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>When to Use Indexes</title>
+
+        <para>The Thor platform is designed to perform operations quickly on
+        massive datasets without indexes, where the entire dataset (or almost
+        all of it) is to be used. However, if only a few records are needed,
+        an index can access them more efficiently. In the ECL language, an
+        index behaves just like a dataset that happens to be able to implement
+        certain functions (typically filter and count functions) much more
+        quickly than a standard flat file or CSV dataset can.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Payload_INDEXes">
+      <title>Payload INDEXes</title>
+
+      <para>In conventional database systems, an index is used together with a
+      data file to locate records in that data file. You can do the same in
+      ECL by storing file positions in the index and using them in a FETCH
+      function to retrieve the corresponding data rows from the original
+      file.</para>
+
+      <para>However, because you can store whatever fields you wish in an
+      index, it is more common in Roxie queries to design indexes that store
+      both the search fields and the information you want to look up. This
+      eliminates an extra disk read for the FETCH. Since indexes are
+      compressed, this can also save disk space if the original data file does
+      not need to be stored on the Roxie cluster.</para>
+
+      <para>Any field in an index that does not need to be searched for can be
+      specified as being in the "payload" - such fields are stored only at the
+      leaf nodes of the index tree which can save some space and performance
+      in the lookups. The fields in the payload may simply be additional
+      fields from the base dataset, but they may also contain the result of
+      some preliminary computation (computed fields).</para>
+    </sect1>
+
+    <sect1 id="Roxie_Superfiles">
+      <title>Roxie Superfiles</title>
+
+      <para>A superfile used in Roxie may not contain more than a single
+      sub-file (a superkey, however, may contain multiple payload indexes).
+      This restriction makes using superfiles in Roxie just an exercise in
+      file redirection. By writing queries that use superfiles (even though
+      they contain only a single sub-file) you have the advantage of being
+      able to update your Roxie by simply deploying new data without needing
+      to re-compile the queries that use that data simply because the sub-file
+      name changed. This saves compilation time, and in a production
+      environment (which a Roxie typically is) where a data file is used by
+      many queries, this savings can be a significant.</para>
+
+      <para>See the <emphasis>ECL Programmer's Guide</emphasis> for more
+      details.</para>
+    </sect1>
+
+    <sect1 id="How-Roxie-Works">
+      <title>How Roxie Works</title>
+
+      <para>Roxie clusters consist of a number of machines connected together
+      to function as a single entity. ECL source code for one or more queries
+      is compiled and published to the cluster. Once published, queries can
+      process data rapidly.</para>
+
+      <para>Each machine in the cluster acts in two distinct roles - these
+      roles execute in the same process and share a lot of code - including
+      the compiled query code - but can be thought of as logically
+      distinct.</para>
+
+      <para>The <emphasis role="bold">Server</emphasis> process accepts
+      incoming queries from a client, evaluates the ECL code of the query
+      given the input that is provided in the client query, and returns the
+      result to the client. When the Server evaluates an ECL function that
+      requires data from disk, it determines the slave node or nodes that may
+      have the appropriate data, and sends a request to those slave nodes to
+      retrieve any matching data. Results from multiple slave nodes are
+      collated and become the input for further ECL functions evaluated on the
+      Server node. Typically, requesting applications use some form of load
+      balancing to distribute requests evenly to the available Servers.</para>
+
+      <para>The <emphasis role="bold">Slave</emphasis> process accepts
+      requests only from other Server nodes in the cluster. These requests
+      correspond to a single ECL function such as a filtered index read or a
+      disk fetch. Results are sent back to the Server that originally
+      requested them. In order to balance performance and manage hardware
+      failures, slaves receive the requests over multicast, and there will
+      typically be at least two slave nodes that will receive each request
+      from a server. The slave nodes communicate with each other to avoid
+      duplicating effort, so that whichever slave is first able to handle the
+      request tells the others not to bother. Each node in a cluster typically
+      handles Slave requests on two or more multicast channels, usually one
+      channel per disk drive. If any Slave node is not responding, the
+      requests on that channel are handled by the other peer Slave nodes
+      responsible for that channel.</para>
+
+      <para></para>
+
+      <para><graphic fileref="images/RM-02.jpg" /></para>
+
+      <para>This example shows a 5-node Roxie Cluster with each node
+      configured to be both a <emphasis role="bold">Server</emphasis> and a
+      <emphasis role="bold">Slave</emphasis>.</para>
+
+      <para>Queries that have been compiled with the target platform specified
+      as a Roxie cluster may be published to a QuerySet using EclWatch.</para>
+
+      <para>Each Roxie cluster loads queries from one or more QuerySet
+      lists.</para>
+
+      <para>When a query is added to the QuerySet that a Roxie is watching,
+      Roxie will preload the query .so (or .DLL) and prepare the execution
+      context as far as it can, so that it is ready to execute incoming
+      requests to execute that query as soon as they arrive. This may includes
+      loading the .so (or .DLL), resolving file references, and opening files
+      (if there are sufficient file handles available), preloading data into
+      memory if requested, and evaluating ECL code in the query that has been
+      marked as : ONCE.</para>
+
+      <para>Depending on the configuration, Roxie may read data remotely from
+      a Thor cluster where it was prepared, or if preferred, it may be copied
+      to the Roxie for local access.</para>
+
+      <para>Typically a development system might refer to data in situ on the
+      Thor cluster, while a production system may prefer the performance
+      benefits of copying data locally to the Roxie.</para>
+
+      <para>Roxie can read data remotely while it is being copied and switch
+      to the local copy once the copy operation is complete. This provides the
+      benefit of quick availability because the query can be active before the
+      data is copied, while still taking advantage of the performance benefits
+      of local data.</para>
+    </sect1>
+
+    <sect1 id="Roxie-Data-Backup">
+      <title>Roxie Data Backup</title>
+
+      <para>Roxie data is protected by three forms of redundancy:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Original Source Data File Retention: When a query is deployed,
+          the data is typically copied from a Thor cluster's hard drives.
+          Therefore, the Thor data can serve as backup, provided it is not
+          removed or altered on Thor. Thor data is typically retained for a
+          period of time sufficient to serve as a backup copy.</para>
+        </listitem>
+
+        <listitem>
+          <para>Peer-Node Redundancy: Each Slave node typically has one or
+          more peer nodes within its cluster. Each peer stores a copy of data
+          files it will read.</para>
+        </listitem>
+
+        <listitem>
+          <para>Sibling Cluster Redundancy: Although not required, Roxie
+          deployments may run multiple identically-configured Roxie clusters.
+          When two clusters are deployed for Production each node has an
+          identical twin in terms of data and queries stored on the node in
+          the other cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>This configuration provides multiple redundant copies of data
+      files. In this example, there are six copies of each file at any given
+      time; eliminating the need to use traditional backup procedures for
+      Roxie data files.</para>
+
+      <para></para>
+
+      <para><graphic fileref="images/RM-03.PNG" /></para>
+
+      <para></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Developing_Roxie_Queries">
+    <title>Developing Roxie Queries</title>
+
+    <sect1 id="Development_Path" role="nobrk">
+      <title>Development Path</title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Determine the need.</para>
+        </listitem>
+
+        <listitem>
+          <para>Evaluate data and determine fields to index.</para>
+        </listitem>
+
+        <listitem>
+          <para>Build Index(es).</para>
+        </listitem>
+
+        <listitem>
+          <para>Create a hThor query.</para>
+        </listitem>
+
+        <listitem>
+          <para>Test and fine-tune the query (using hThor).</para>
+        </listitem>
+
+        <listitem>
+          <para>Publish the Query to a Roxie cluster.</para>
+        </listitem>
+
+        <listitem>
+          <para>Test and certify (compare results to expected results).</para>
+        </listitem>
+      </orderedlist>
+
+      <para></para>
+
+      <para><emphasis role="bold">Note</emphasis>: These steps are explained
+      in detail in the HPCC Data Tutorial and the Programmer's Guide.</para>
+    </sect1>
+
+    <sect1 id="Methods-to-Submit-Jobs-to-a-Roxie-Cluster">
+      <title>Methods to Submit Jobs to a Roxie Cluster</title>
+
+      <para>After a query is compiled and deployed, there are several methods
+      to submit jobs that use the query. While the most common usage is via
+      custom applications using the XML or SOAP interface, the other methods
+      have valid uses, too.</para>
+
+      <para>A direct socket connection can communicate directly with the Roxie
+      cluster, eliminating all other intermediate components. This provides a
+      means of certifying the Roxie cluster, its configuration, the deployment
+      of the query, and the query itself.</para>
+
+      <para>SOAPCALL allows a Thor query to make calls to a Roxie query (See
+      the <emphasis>ECL Language Reference </emphasis>for details). This
+      provides the capability of combining Roxie results with other data
+      processing tasks performed during ETL.</para>
+
+      <para>Conducting queries via an ESP service using HTTP or HTTPS allows
+      access to queries directly from a browser. Web-based access allows you
+      to provide easy access to anyone you wish. Using HTTPS, you can ensure
+      data security using Secure Socket Layer (SSL) encryption. This ensures
+      all data is encrypted as it travels across a network or the Internet. In
+      addition, LDAP authentication is available to restrict access to a set
+      of users (LDAP security is only available in Enterprise Edition).</para>
+
+      <para>Custom applications using SOAP provides the most flexibility and
+      functionality. The application development process is simplified by
+      Enterprise Services Platform's automatic Web Services Definition
+      Language (WSDL) generation. Many development tools (such as, Microsoft's
+      .NET Studio or NetBeans JAVA) include a tool to generate code to create
+      proxy stubs from a WSDL document. This simplifies the development
+      process and ensures exposure of all necessary methods and
+      properties.</para>
+
+      <sect2 id="Direct-Socket-Connection-TCP-IP">
+        <title>Direct Socket Connection (TCP/IP)<?dbfo-need height="3in"?></title>
+
+        <para><graphic fileref="images/RM-04.jpg" /></para>
+
+        <beginpage />
+      </sect2>
+
+      <sect2 id="SOAPCALL_via_ECL">
+        <title><emphasis>SOAPCALL via ECL</emphasis></title>
+
+        <para><graphic fileref="images/RM-05.jpg" /></para>
+
+        <para></para>
+
+        <para></para>
+      </sect2>
+
+      <sect2 id="SOAP-or-HTTP-HTTPS">
+        <title>SOAP or HTTP/HTTPS<?dbfo-need height="6in"?></title>
+
+        <para><graphic fileref="images/RM-06.PNG" scale="90"
+        scalefit="1" /></para>
+
+        <para></para>
+
+        <beginpage />
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Managing Queries</title>
+
+    <para>Roxie queries are managed via Query Sets which are stored in Dali.
+    Query Sets control which queries are loaded onto Roxie when it starts up
+    and are manipulated by adding or removing them as required. The list of
+    queries currently held within a QuerySet can be viewed using ECL
+    Watch.</para>
+
+    <para>Once a query has been published to the Query Set, it can now be run
+    on the roxie using a web interface.</para>
+
+    <sect1>
+      <title>Adding a roxie query to the Query Set</title>
+
+      <para>To add a roxie query to a Query Set:</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Use ECL IDE to write your query and then compile it setting
+          the target as the roxie cluster in your HPCC environment.</para>
+        </listitem>
+
+        <listitem>
+          <para>Go the ECL Watch tab for the compiled workunit and click the
+          Publish button. A message is displayed indicating that your query
+          has been published successfully.</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Viewing Query Sets using ECL Watch</title>
+
+      <para>Using ECL Watch, you can view the query for all clusters on your
+      HPCC. Click on the <emphasis role="bold">Query Sets/Browse</emphasis>
+      menu item to see the clusters which are currently using Query Sets.
+      Click on the <emphasis role="bold">myroxie</emphasis> link to view the
+      list of queries currently available for roxie. Using this feature you
+      can:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>View the list of currently available queries on a
+          cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>View details about each query including the ID, the name of
+          the query, the workunit ID, the DLL(s) it uses and whether it is
+          suspended.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>View details of the aliases that exist for each query.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Delete a Query from the list.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Delete an Alias.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Toggle the suspend setting on/off</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Using WsECL to run a roxie query</title>
+
+      <para>WsECL is the ECL Web Service interface that is provided with HPCC
+      and is available using the following URL: http://nnn.nnn.nnn.nnn:8002,
+      where nnn.nnn.nnn.nnn is the IP address of your ESP.</para>
+
+      <para>WsECL uses the Query Sets information to display the list of
+      available runnable queries and you can use it, for example, to test that
+      your query works as expected.</para>
+
+      <para>The web page shows all clusters using Query Sets. Expand myroxie
+      in the tree and select the query you want to run. A default form is
+      displayed which is generated from the input field names and types. Enter
+      values and press submit to see the results and test your query.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Packages">
+    <title>Packages</title>
+
+    <para>Package files are only supported in the Enterprise Edition.</para>
+
+    <para>Packages are used as a means to separate data from queries. Newer
+    Package files can be copied to and loaded on a Roxie cluster without
+    recompiling queries. This allows you to refresh data and ensure you are
+    using identical code in your query.</para>
+
+    <para>This simplifies change control and allows query developers to
+    continue development without the risk of a query being deployed to
+    production before it is ready while still allowing data to be
+    updated.</para>
+
+    <para>Packages provide a reference to data files used in queries that
+    overrides the information originally provided in the query. This affords
+    greater flexibility and control over the data used by a query or a
+    collection of queries.</para>
+
+    <para>The end result is quicker, more flexible process, without the need
+    of recompiling complex queries. This allows you to update data without the
+    chance of deploying new code that has not been approved for migration to
+    production.</para>
+
+    <para>More to follow ***.</para>
+  </chapter>
+
+  <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
+    <title>Deploying Data to a Cluster using DFU</title>
+
+    <para>You can use the Distributed File Utility (DFU) in ECL Watch to copy
+    (or remote copy) data files to a Roxie cluster. This allows you to copy
+    large files to a cluster in advance of publishing a query. If data files
+    are copied in advance, a query which requires those files will use the
+    ones already in place. If you have large data sets, this allows you to
+    prepare in advance of query deployment.</para>
+
+    <para><emphasis role="bold">Note:</emphasis> To use this feature, the
+    FTSlave utility must be installed to each node in the cluster. This is
+    done automatically by the Configuration Manager Wizard.</para>
+
+    <sect1 id="Copy">
+      <title><!---->DFU Copy</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the ECLWatch web page. You can reach this page using
+            the following URL: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's IP address.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on <emphasis role="bold">Browse Logical Files
+            </emphasis>hyperlink below <emphasis role="bold">DFU
+            Files</emphasis> in the menu on the left.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the file to copy in the list of files, then click on
+            the icon, then select <emphasis role="bold">Copy</emphasis> from
+            the pop-up menu.</para>
+
+            <para><graphic fileref="images/RDDE_DFUcopy.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in <emphasis role="bold">Destination</emphasis> and
+            <emphasis role="bold">Options</emphasis>information.</para>
+
+            <para><graphic fileref="images/RDDE_DFUcopy.2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt" />
+
+                  <colspec colwidth="333.00pt" />
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destination:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Group</entry>
+
+                      <entry>Use the drop-list to select the Roxie cluster to
+                      copy to.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Note</emphasis>:</entry>
+
+                      <entry>You can only choose from clusters within the
+                      current environment.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical File</entry>
+
+                      <entry>The logical name for the copied file.</entry>
+                    </row>
+
+                    <row>
+                      <entry>File Mask</entry>
+
+                      <entry>Automatically updated based on logical file name
+                      entered.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Options:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Overwrite</entry>
+
+                      <entry>Check this box to overwrite files of the same
+                      name.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Replicate</entry>
+
+                      <entry>Check this box to create backup copies of all
+                      file parts exist in the backup directory (by convention
+                      on the d: drive of the node following in the
+                      cluster).</entry>
+                    </row>
+
+                    <row>
+                      <entry>Wrap</entry>
+
+                      <entry>Check this box to keep the number of parts the
+                      same and wrap if the target cluster is smaller that the
+                      original.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Compress</entry>
+
+                      <entry>Check this box to compress the files.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Submit
+            </emphasis>button.</para>
+
+            <para>The <emphasis role="bold">DFU
+            Workunit</emphasis>displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">View Progress</emphasis>
+            hyperlink to see a progress indicator.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1 id="Remote_Copy">
+      <title>Remote Copy</title>
+
+      <para>Remote Copy allows you to copy data to a Roxie from a Thor or
+      Roxie cluster outside your environment.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the ECLWatch web page. You can reach this page using
+            the following URL: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's IP address.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">Remote Copy</emphasis>
+            hyperlink below <emphasis role="bold">DFU Files</emphasis> in the
+            menu on the left.</para>
+
+            <para>The <emphasis role="bold">Copy File</emphasis> page
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in <emphasis role="bold">Source,
+            Destination,</emphasis> and <emphasis
+            role="bold">Options</emphasis>information.</para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt" />
+
+                  <colspec colwidth="333.00pt" />
+
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Source:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical File</entry>
+
+                      <entry>The logical file name in the remote
+                      environment</entry>
+                    </row>
+
+                    <row>
+                      <entry>Source Dali</entry>
+
+                      <entry>The Dali Server in the remote environment</entry>
+                    </row>
+
+                    <row>
+                      <entry>Source Username</entry>
+
+                      <entry>A valid user in the remote environment</entry>
+                    </row>
+
+                    <row>
+                      <entry>Source Password</entry>
+
+                      <entry>The password for the user in the remote
+                      environment</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Destination:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Group</entry>
+
+                      <entry>Use the drop-list to select the cluster to copy
+                      to.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Note:</entry>
+
+                      <entry>You can only choose from clusters within the
+                      current environment.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical File</entry>
+
+                      <entry>The logical name for the copied file.</entry>
+                    </row>
+
+                    <row>
+                      <entry>File Mask</entry>
+
+                      <entry>Automatically updated based on logical file name
+                      entered.</entry>
+                    </row>
+
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Options:</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Overwrite</entry>
+
+                      <entry>Check this box to overwrite files of the same
+                      name.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Replicate</entry>
+
+                      <entry>Check this box to create backup copies of all
+                      file parts exist in the backup directory (by convention
+                      on the d: drive of the node following in the
+                      cluster).</entry>
+                    </row>
+
+                    <row>
+                      <entry>Compress</entry>
+
+                      <entry>Check this box to compress the files.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Wrap</entry>
+
+                      <entry>Check this box to keep the number of parts the
+                      same and wrap if the target cluster is smaller that the
+                      original.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Submit
+            </emphasis>button.</para>
+
+            <para>The <emphasis role="bold">DFU Workunit</emphasis>
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">View Progress</emphasis>
+            hyperlink to see a progress indicator.</para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Capacity_Planning_for_Roxie_Clusters">
+    <title>Capacity Planning for Roxie Clusters</title>
+
+    <sect1 id="Capacity_Planning" role="nobrk">
+      <title>Capacity Planning</title>
+
+      <para>Roxie clusters are disk-based High Performance Computing Clusters
+      (HPCC) , typically using indexed files. A cluster is capable of storing
+      and manipulating as much data as its combined hard drive space; however,
+      this does not produce optimal performance.</para>
+
+      <para>For maximum performance, you should configure your cluster so
+      slave nodes perform most jobs in memory.</para>
+
+      <para>For example, if a query uses three data files with a combined file
+      size of 60 GB, a 40-channel cluster is a good size, while a 60-channel
+      is probably better.</para>
+
+      <para>Another consideration is the size of the Thor cluster creating the
+      data files and index files to be loaded. Your target Roxie cluster
+      should be the same size as the Thor on which the data and index files
+      are created or a number evenly divisible by the size of your Roxie
+      cluster. For example, a 100-way Thor to a 20-way Roxie would be
+      acceptable.</para>
+
+      <para>This is due to the manner in which data is loaded and processed by
+      Roxie slaves. If data is copied to slave nodes, the file parts are
+      directly copied from source location to target locations. They are NOT
+      split or resized to fit a different sized cluster. Therefore, if you
+      load 50 file parts onto a 40-channel cluster, part one goes to channel
+      one, part two to channel two, etc. Parts 41-50 start at the top again so
+      that part 41 goes to channel 1, and part 42 goes to channel 2, etc. The
+      result is an unevenly distributed workload and would result in reduced
+      performance. A cluster will only perform as fast as its slowest
+      node.</para>
+
+      <para>The final consideration is the number of Server processes in a
+      cluster. Each slave must also be a Server, but you can dedicate
+      additional nodes to be only Server processes. This is useful for queries
+      that require processing on the Server after results are returned from
+      slaves. Those Server-intensive queries could be sent only to dedicated
+      Server IP addresses so the load is removed from nodes acting as both
+      Server and slave.</para>
+
+      <sect2 id="Configuring_the_Channels">
+        <title>Configuring the Channels</title>
+
+        <para>In the illustration below, the nodes are configured using an N+5
+        scheme to share channels. Channels can be configured in many ways,
+        this is one example.</para>
+
+        <para><graphic fileref="images/RM-15.jpg" /></para>
+
+        <para>In this depiction, each enclosure holds five Roxie slave blades
+        (a row of servers in the picture). We will use this example for the
+        rest of this manual.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="PreFlight_and_Roxie_Metrics">
+    <title>PreFlight and Roxie Metrics</title>
+
+    <sect1 id="ECL-Watch-Preflight">
+      <title>ECL Watch / Preflight</title>
+
+      <para>ECL Watch's Topology section is used to perform Preflight
+      activities. These preflight utilities are used for daily health checks,
+      as well as trouble avoidance and troubleshooting. It provides a central
+      location to gather hardware and software information from a remote set
+      of machines and has many uses for day-to-day environment
+      preparation.</para>
+
+      <sect2 id="Regular_Uses">
+        <title>Regular Uses</title>
+
+        <para>Typical uses for Preflight in the preparation of the environment
+        before a data build</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Examine disk space utilization</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Critical for optimal operation of the Data Refinery
+                nodes.</para>
+              </listitem>
+
+              <listitem>
+                <para>Disk space utilization alarm threshold easily
+                adjusted.</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>View last boot up of all nodes in a cluster</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Confirms the boot-up state of a node without having to
+                login to the node.</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Confirm expected processes running on each node</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Make sure all HPCC processes are running on the
+                appropriate nodes</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Validate network availability of each node</para>
+          </listitem>
+        </itemizedlist>
+
+        <sect3>
+          <title>Using ECL Watch PreFlight in Troubleshooting</title>
+
+          <para>These are typical uses for Preflight in troubleshooting</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Validate Disk Space Utilization</para>
+            </listitem>
+
+            <listitem>
+              <para>Validate Memory Utilization</para>
+            </listitem>
+
+            <listitem>
+              <para>Validate monitoring agent process running on nodes
+              (heimdall.exe)</para>
+            </listitem>
+
+            <listitem>
+              <para>Validate processes running on the appropriate
+              machines</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>On a routine basis, typically before processing begins, an
+          entire system health check should be performed.</para>
+
+          <para>There are three sections in the Topology area of ECL
+          Watch:</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Clusters, including all clusters of any of the following
+              types:</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Thor (Data Refinery Cluster)</para>
+                </listitem>
+
+                <listitem>
+                  <para>Roxie (Rapid Data Delivery Engine Cluster)</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>System Servers, including all system components in the
+              current environment:</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Dali Server</para>
+                </listitem>
+
+                <listitem>
+                  <para>DFU Server(s)</para>
+                </listitem>
+
+                <listitem>
+                  <para>ECL CC Server(s)</para>
+                </listitem>
+
+                <listitem>
+                  <para>ECL Scheduler</para>
+                </listitem>
+
+                <listitem>
+                  <para>ECL Agent(s)</para>
+                </listitem>
+
+                <listitem>
+                  <para>ESP Server(s)</para>
+                </listitem>
+
+                <listitem>
+                  <para>Sasha Server</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+
+      <sect2 id="ECL_Watch_PreFlight_Tasks">
+        <title><emphasis>ECL Watch PreFlight Tasks</emphasis></title>
+
+        <para>Perform these tasks using ECL Watch when validating or
+        troubleshooting a component.</para>
+
+        <para></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Open the ECLWatch web page. You can reach this page using
+            the following URL: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's IP address.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>In the left side menu, click on one of the hyperlinks under
+            <emphasis role="bold">Topology</emphasis>:</para>
+
+            <para><emphasis role="bold">System Servers </emphasis>or<emphasis
+            role="bold"> Clusters </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>For a cluster, click on its hyperlink.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><graphic fileref="images/RM-16.jpg" /></para>
+
+        <para>A page displays showing all machines of the type selected in the
+        previous steps.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>For a cluster, make sure the <emphasis role="bold">Select
+            All</emphasis> checkbox is checked (to select all servers).</para>
+
+            <para>For System Servers, the critical servers are pre-selected.
+            If you only want to PreFlight a specific machine, check only the
+            box next to its listing.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the boxes for <emphasis role="bold">Get Processor
+            Information</emphasis>, <emphasis role="bold">Get storage
+            information</emphasis>, and <emphasis role="bold">Get software
+            information</emphasis>. These should be checked
+            automatically.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the <emphasis role="bold">Show processes
+            using</emphasis> filter checkbox. Submitting a request using the
+            predefined filters verifies whether the appropriate HPCC processes
+            are running. For example, a machine defined as a Dali server would
+            be verified for all processes expected to run on a Dali
+            server.</para>
+          </listitem>
+
+          <listitem>
+            <para>Optionally, check the <emphasis role="bold">Auto Refresh
+            Every</emphasis> checkbox and provide the number of minutes. This
+            will automatically query the servers and refresh the page at the
+            provided interval.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis> button.
+            </para>
+
+            <para>The resulting page displays all the requested information,
+            as shown below:</para>
+
+            <para><graphic fileref="images/RM-17.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Any expected processes that are not running are highlighted
+            in orange in the <emphasis role="bold">Processes Down</emphasis>
+            column.</para>
+          </listitem>
+
+          <listitem>
+            <para>Hovering the mouse over any column, displays additional
+            information.</para>
+          </listitem>
+
+          <listitem>
+            <para>Any values below the specified thresholds (see above) are
+            displayed with an orange background.</para>
+          </listitem>
+
+          <listitem>
+            <para>For disk space utilization, all local drives are displayed.
+            Partitions to exclude (such as RAM Drives) are defined in the
+            ECLWatch service.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis role="bold">Options</emphasis></para>
+
+        <para>The following option settings are available to customize the
+        execution and display.</para>
+
+        <para><emphasis role="bold">Machine Information</emphasis></para>
+
+        <para>Specifies that the query will return machine information for the
+        selected machines.</para>
+
+        <para><emphasis role="bold">Get Roxie Metrics</emphasis></para>
+
+        <para>This option is available only to Roxie cluster. It displays
+        diagnostic information about the cluster. See the <emphasis>Roxie
+        Metrics</emphasis><emphasis role="bold"> </emphasis>section in this
+        manual.</para>
+
+        <para><emphasis role="bold">Get Processor
+        Information</emphasis></para>
+
+        <para>Specifies that the query will include results about the
+        processor usage on the selected machines. The threshold for a warning
+        is set in the <emphasis role="bold">Warn if CPU Usage is
+        over</emphasis> entry control.</para>
+
+        <para><emphasis role="bold">Get storage Information</emphasis></para>
+
+        <para>Specifies that the query will include results about memory and
+        disk space on the selected machines. The threshold for a warning about
+        memory is set in the <emphasis role="bold">Warn if available memory is
+        under</emphasis> entry control. The threshold for disk space warnings
+        is set in the <emphasis role="bold">Warn if available disk space is
+        under</emphasis> entry control.</para>
+
+        <para><emphasis role="bold">Get software Information</emphasis></para>
+
+        <para>Specifies that the query will include results about running
+        processes on the selected machines.</para>
+
+        <para><emphasis role="bold">Show Processes using
+        filter</emphasis></para>
+
+        <para>Checking this box specifies that a query using predefined
+        filters will verify whether the appropriate HPCC processes are
+        running. For example, a machine defined as a Dali server would be
+        verified for all processes expected to run on a Dali server. If not
+        checked, all running processes are displayed in a pop-up window when
+        the mouse pointer is over the column.</para>
+
+        <para><emphasis role="bold">Additional Processes to
+        filter</emphasis></para>
+
+        <para><emphasis role="bold"></emphasis>When using a filter, this entry
+        box allows you to add additional processes to consider. If the
+        specified process is not running, it will appear in the <emphasis
+        role="bold">Down Processes</emphasis> column.</para>
+
+        <para><emphasis role="bold">Auto Refresh Every ___
+        mins.</emphasis></para>
+
+        <para>Optionally, provide an interval in minutes to automatically
+        re-submit the query.</para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Roxie-Queries-and-Roxie-Files-in-ECL-Watch">
+      <title>Roxie Queries and Roxie Files in ECL Watch</title>
+
+      <para>ECL Watch allows you to search for deployed Roxie Queries and to
+      search for deployed Roxie Files.</para>
+
+      <sect2 id="To_Search_Roxie_Queries">
+        <title><emphasis>To Search Roxie Queries</emphasis></title>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Open the ECLWatch web page. You can reach this page using
+            the following URL: http://nnn.nnn.nnn.nnn:8010, where
+            nnn.nnn.nnn.nnn is your node's IP address.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The ECL Watch home page will open.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bold">Search Roxie Queries
+            </emphasis>below <emphasis role="bold">Roxie
+            Queries</emphasis><graphic fileref="images/RM-18.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Select the <emphasis role="bold">Cluster </emphasis>from the
+            droplist.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>All Roxie clusters in this environment appear on the
+        list.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Select the query type (Suspended, Non-Suspended, or both)
+            from the <emphasis role="bold">Suspended
+            </emphasis>droplist.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Search
+            </emphasis>button</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
+
+        <para></para>
+
+        <para>The list of queries displays.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Rt-click to the <inlinegraphic fileref="images/RM-19.jpg" />
+            button on the left of any query, then select the action from the
+            popup menu.<graphic fileref="images/RM-20.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis role="bold">Details</emphasis> displays a page of
+        details about the query, including:</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>The Workunit ID</para>
+          </listitem>
+
+          <listitem>
+            <para>The Cluster</para>
+          </listitem>
+
+          <listitem>
+            <para>The name of the associated Shared Object (.so)</para>
+          </listitem>
+
+          <listitem>
+            <para>The Query's priority</para>
+          </listitem>
+
+          <listitem>
+            <para>The user that deployed it</para>
+          </listitem>
+
+          <listitem>
+            <para>Whether or not it is suspended.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">ShowSuperFiles</emphasis> lists all
+            superfiles used by the query</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">ShowNonSuperFiles</emphasis> lists all
+            non-superfiles used by the query</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">ShowGraph </emphasis>displays the
+            execution graph for the query.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para><emphasis role="bold">ShowGVCGraph </emphasis>displays the
+            execution query's graph (in GVC format).</para>
+
+            <graphic fileref="images/RM-20a.jpg" />
+          </listitem>
+        </itemizedlist>
+
+        <sect3>
+          <title>To Search Roxie Files:</title>
+
+          <para><emphasis></emphasis>This feature is only available in
+          Enterprise Edition</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Open the ECL Watch home page in a browser. The URL is the
+              IP address of your ESP Server plus the port to which the
+              EclWatch Service is bound (usually 8010).</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>The ECL Watch home page will open.</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Click on the <emphasis role="bold">Search Roxie Files
+              </emphasis>below <emphasis role="bold">Roxie Queries</emphasis>
+              in the menu on the left side.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para></para>
+
+          <para></para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Select the <emphasis role="bold">Cluster </emphasis>from
+              the droplist.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>All Roxie clusters in this environment appear on the
+          list.</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Select the file type (Non-Super Files or Super FIles) from
+              the <emphasis role="bold">File Type </emphasis>droplist.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Search
+              </emphasis>button</para>
+            </listitem>
+          </itemizedlist>
+
+          <para></para>
+
+          <para></para>
+
+          <para>The list of files displays.</para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para>Rt-click to the <inlinegraphic
+              fileref="images/RM-22.jpg" /> button on the left of any file,
+              then select the action from the popup menu.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para></para>
+
+          <para></para>
+
+          <itemizedlist mark="bullet">
+            <listitem>
+              <para><emphasis role="bold">Details</emphasis> displays a page
+              of details about the file.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">ViewDataFilee</emphasis> allows you
+              to view the contents of a file. <emphasis
+              role="bold"></emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">ShowQueries</emphasis> lists all
+              queries using this file</para>
+            </listitem>
+          </itemizedlist>
+
+          <para></para>
+
+          <para></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Viewing_Roxie_Key_Files">
+        <title>Viewing Roxie Key Files</title>
+
+        <para></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Open the ECL Watch home page in a browser. The URL is the IP
+            address of your ESP Server plus the port to which the EclWatch
+            Service is bound (usually 8010).</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The ECL Watch home page will open.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Click on the <emphasis role="bold">Search Roxie Files
+            </emphasis>below <emphasis role="bold">Roxie Queries</emphasis> in
+            the menu on the left side.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
+
+        <para></para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Select the <emphasis role="bold">Cluster </emphasis>from the
+            droplist.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>All Roxie clusters in this environment appear on the
+        list.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Select the file type (Non-Super Files or Super FIles) from
+            the <emphasis role="bold">File Type </emphasis>droplist.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Search
+            </emphasis>button.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>The list of files displays.</para>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Rt-click to the <inlinegraphic fileref="images/RM-25.jpg" />
+            button on the left of any key file, then select <emphasis
+            role="bold">ViewDataFile</emphasis> from the popup menu.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para></para>
+
+        <para>A form displays (containing fields in the Key File)</para>
+
+        <para></para>
+
+        <?hard-pagebreak?>
+
+        <itemizedlist mark="bullet">
+          <listitem>
+            <para>Provide search criteria in the fields, then press the
+            <emphasis role="bold">First </emphasis>button.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para>Searching using a value in a Keyed column performs an indexed
+        read. Values in Non-keyed columns provide post-fetch filtering (after
+        the indexed read).</para>
+
+        <para>The result displays in a similar manner as shown below:</para>
+
+        <para><graphic fileref="images/RM-28.jpg" scalefit="1" /></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Roxie_Metrics">
+      <title>Roxie Metrics<?dbfo-need height="5in"?></title>
+
+      <para><graphic fileref="images/RM-30.jpg" /></para>
+
+      <para></para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="102.05pt" />
+
+            <colspec colwidth="293.95pt" />
+
+            <tbody>
+              <row>
+                <entry>IP Address</entry>
+
+                <entry>The IP address of the Server node</entry>
+              </row>
+
+              <row>
+                <entry>slavesActive</entry>
+
+                <entry>Number of slaves active for that Server</entry>
+              </row>
+
+              <row>
+                <entry>lastQueryTime</entry>
+
+                <entry>Time stamp of most recent query executed</entry>
+              </row>
+
+              <row>
+                <entry>loQueryActive</entry>
+
+                <entry>Number of low priority queries active</entry>
+              </row>
+
+              <row>
+                <entry>loMin</entry>
+
+                <entry>Minimum time (ms) it took to run a low priority
+                query</entry>
+              </row>
+
+              <row>
+                <entry>retriesNeeded</entry>
+
+                <entry>Count of all reply packets that arrived to a Server as
+                a response to more than one try.</entry>
+              </row>
+
+              <row>
+                <entry>loMax</entry>
+
+                <entry>Maximum time (ms) it took to run a low priority
+                query</entry>
+              </row>
+
+              <row>
+                <entry>hiQueryActive</entry>
+
+                <entry>Number of high priority queries active</entry>
+              </row>
+
+              <row>
+                <entry>loQueryCount</entry>
+
+                <entry>Total number of low priority queries run</entry>
+              </row>
+
+              <row>
+                <entry>loQueryAverage</entry>
+
+                <entry>Average time it took to run a high priority
+                query</entry>
+              </row>
+
+              <row>
+                <entry>hiQueryCount</entry>
+
+                <entry>Total number of high priority queries run</entry>
+              </row>
+
+              <row>
+                <entry>hiMax</entry>
+
+                <entry>Maximum time (ms) it took to run a high priority
+                query</entry>
+              </row>
+
+              <row>
+                <entry>hiMin</entry>
+
+                <entry>Minimum time (ms) it took to run a high priority
+                query</entry>
+              </row>
+
+              <row>
+                <entry>heapBlocksAllocated</entry>
+
+                <entry>Number of times Roxie had to allocate memory from its
+                memory allocator</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+  </chapter>
+</book>

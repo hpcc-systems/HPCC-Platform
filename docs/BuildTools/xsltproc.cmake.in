@@ -1,0 +1,9 @@
+#set(ENV{XML_DEBUG_CATALOG} 1) Uncomment to add debugging to xsltproc catalogs.
+SET( ENV{SGML_CATALOG_FILES} ${XML_CATALOG})
+SET( ENV{XML_CATALOG_FILES} ${XML_CATALOG})
+execute_process(COMMAND "@XSLTPROC_EXECUTABLE@" -nonet @xinclude@ -o @_out_dir@/@_out@ @_xsl@ @_in_dir@/@_file@ RESULT_VARIABLE CMDRESULT)
+if(CMDRESULT)
+  message(FATAL_ERROR "xsltproc build failure: ${CMDRESULT}")
+endif(CMDRESULT)
+
+

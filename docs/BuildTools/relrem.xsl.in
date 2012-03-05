@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:template match="node()">
+        <xsl:copy>
+            <xsl:copy-of select="@*"/>
+            <xsl:apply-templates select="node()"/>
+        </xsl:copy>
+    </xsl:template>
+    <xsl:template match="@ROOT@">
+        <book xml:base="@DOC_IMAGES@">
+            <xsl:copy-of select="@*[name(.)!='xml:base']"/>
+            <xsl:apply-templates select="node()"/>
+        </book>
+    </xsl:template>
+    <xsl:template match="*[name() = 'xi:include']">
+        <xsl:if test="not(contains(@href,'Version'))">
+                <xsl:copy>
+                    <xsl:copy-of select="@*"/>
+                    <xsl:apply-templates select="node()"/>
+                </xsl:copy>
+        </xsl:if>
+        <xsl:if test="contains(@href,'Version')">
+                <xi:include xml:base="@VERSION_DIR@/" xmlns:xi="http://www.w3.org/2001/XInclude">
+			<xsl:copy-of select="@*"/>
+                        <xsl:apply-templates select="node()"/>
+                </xi:include>
+        </xsl:if>
+    </xsl:template>
+</xsl:stylesheet>

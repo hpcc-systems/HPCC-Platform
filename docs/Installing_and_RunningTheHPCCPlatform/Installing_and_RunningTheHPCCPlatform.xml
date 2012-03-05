@@ -1,0 +1,2932 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>Installing &amp; Running the HPCC Platform</title>
+
+  <bookinfo>
+    <title>Installing &amp; Running the HPCC Platform</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Welcome">
+    <title>Welcome</title>
+
+    <para>These instructions will guide you through installing and running the
+    HPCC<footnote>
+        <para><emphasis role="bold">H</emphasis>igh <emphasis
+        role="bold">P</emphasis>erformance <emphasis
+        role="bold">C</emphasis>omputing <emphasis
+        role="bold">C</emphasis>luster (HPCC) is a massively parallel
+        processing computing platform that solves Big Data problems. See
+        <ulink
+        url="http://hpccsystems.com/Why-HPCC/How-it-works">http://hpccsystems.com/Why-HPCC/How-it-works</ulink>
+        for more details.</para>
+      </footnote> Community Edition on a single node to start and then
+    optionally, expand it to a larger cluster of nodes.</para>
+
+    <para>The HPCC Thor technology is designed to effectively process,
+    analyze, and find links and associations within high volumes of complex
+    data. This can detect non-obvious relationships, scale to support
+    petabytes of data, and is significantly faster than competing technologies
+    while requiring less hardware and resources.</para>
+
+    <para>The HPCC Roxie technology - also known as the Rapid Data Delivery
+    Engine or RDDE - uses a combination of technologies and techniques that
+    produce extremely fast throughput for queries on indexed data.</para>
+
+    <para>This translates into better quality answers in less time so that
+    organizations can cope with massive data and efficiently turn information
+    into knowledge.</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+              <entry>We suggest reading this document in its entirety before
+              beginning. The entire process can take an hour or two, depending
+              on your download speed.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </chapter>
+
+  <chapter id="Hardware-and-Software-Requirements">
+    <title>Hardware and Software Requirements</title>
+
+    <para>The following section describes the various hardware and software
+    required in order to run the HPCC.</para>
+
+    <sect1 id="Switch" role="nobrk">
+      <title>Network Switch</title>
+
+      <para>A significant component of HPCC is the infrastructure it runs on,
+      specifically the switch.</para>
+
+      <sect2 id="Switch-Requirements">
+        <title>Switch requirements</title>
+
+        <itemizedlist spacing="compact">
+          <listitem>
+            <para>Sufficient number of ports to allow all nodes to be
+            connected directly to it;</para>
+          </listitem>
+
+          <listitem>
+            <para>IGMP v.2 support </para>
+          </listitem>
+
+          <listitem>
+            <para>IGMP snooping support</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><emphasis role="bold">Small:</emphasis> For a very small test
+        system, almost any gigabit switch will suffice. These are inexpensive
+        and readily available in six to 20-port models.</para>
+
+        <para><figure>
+            <title>1 GigE 8-port Switch</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/DHSMC8508T.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><emphasis role="bold">Medium</emphasis>: For medium sized (10-48
+        node) systems, we recommend using a Force10 s25, s50, s55, or s60
+        switch</para>
+
+        <para><figure>
+            <title>Force10 S55 48-port Network Switch</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/s55.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><?hard-pagebreak ?><emphasis role="bold">Large</emphasis>: For
+        large (48-350 node) system, the Force10 c150 or c300 are good
+        choices.</para>
+
+        <para><figure>
+            <title>Force 10 c150</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/c150-lg.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para><?hard-pagebreak ?><emphasis role="bold">Very Large</emphasis>:
+        For very large (more than 300 nodes) system, the Force10 e600 or e1200
+        are good choices.</para>
+
+        <para><figure>
+            <title>Force 10 e600 and e1200</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/Force10_ExaScaleE6001200.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2 id="Switch-additional-recommend">
+        <title>Switch additional recommended features</title>
+
+        <para><itemizedlist mark="square" spacing="compact">
+            <listitem>
+              <para>Non-blocking backplane</para>
+            </listitem>
+
+            <listitem>
+              <para>Low latency (under 35usec)</para>
+            </listitem>
+
+            <listitem>
+              <para>Layer 3 switching</para>
+            </listitem>
+
+            <listitem>
+              <para>Managed and monitored (SNMP is a plus)</para>
+            </listitem>
+
+            <listitem>
+              <para>Port channel (port bundling) support</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Load Balancer</title>
+
+      <para>In order to take full advantage of a Roxie cluster, a load
+      balancer is required. Each Roxie Node is capable of receiving requests
+      and returning results. Therefore, a load balancer distributes the load
+      in an efficient manner to get the best performance and avoid a potential
+      bottleneck.</para>
+
+      <para>We recommend the Web Accelerator product line from F5 Networks.
+      See <ulink
+      url="http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf">http://www.f5.com/pdf/products/big-ip-webaccelerator-ds.pdf
+      </ulink> for more information<phrase></phrase>.</para>
+
+      <para><figure>
+          <title>F5 Load Balancers</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/IR-009a.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <sect2>
+        <title>Load Balancer Requirements</title>
+
+        <sect3>
+          <title>Minimum requirements</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Throughput: 1Gbps Gigabit</para>
+              </listitem>
+
+              <listitem>
+                <para>Ethernet ports: 2</para>
+              </listitem>
+
+              <listitem>
+                <para>Balancing Strategy: Round Robin</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
+        <sect3>
+          <title>Standard requirements</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Throughput: 8Gbps</para>
+              </listitem>
+
+              <listitem>
+                <para>Gigabit Ethernet ports: 4</para>
+              </listitem>
+
+              <listitem>
+                <para>Balancing Strategy: Flexible (F5 iRules or
+                equivalent)</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Recommended capabilities</title>
+
+          <para><itemizedlist spacing="compact">
+              <listitem>
+                <para>Ability to provide cyclic load rotation (not load
+                balancing).</para>
+              </listitem>
+
+              <listitem>
+                <para>Ability to forward SOAP/HTTP traffic</para>
+              </listitem>
+
+              <listitem>
+                <para>Ability to provide triangulation/n-path routing (traffic
+                incoming through the load balancer to the node, replies sent
+                out the via the switch).</para>
+              </listitem>
+
+              <listitem>
+                <para>Ability to treat a cluster of nodes as a single entity
+                (for load balancing clusters not nodes)</para>
+
+                <para>or</para>
+
+                <para></para>
+              </listitem>
+
+              <listitem>
+                <para>Ability to stack or tier the load balancers for multiple
+                levels if not.</para>
+              </listitem>
+            </itemizedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Hardware">
+      <title>Nodes-Hardware</title>
+
+      <para>The HPCC can run as a single node system or a multi node
+      system.</para>
+
+      <para>These hardware recommendations are intended for a multi-node
+      production system. A test system can use less stringent specifications.
+      Also, while it is easier to manage a system where all nodes are
+      identical, this is not required. However, it is important to note that
+      your system will only run as fast as its slowest node.</para>
+
+      <sect2 id="Node-Mandatory-requirements">
+        <title>Node mandatory requirements</title>
+
+        <itemizedlist mark="square" spacing="compact">
+          <listitem>
+            <para>Pentium 4 or newer CPU</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit</para>
+          </listitem>
+
+          <listitem>
+            <para>4GB RAM</para>
+          </listitem>
+
+          <listitem>
+            <para>Two Hard Drives (with sufficient free space to handle the
+            size of the data you plan to process)</para>
+          </listitem>
+
+          <listitem>
+            <para>1 GigE network interface</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Node-recommended-specifications">
+        <title>Node recommended specifications</title>
+
+        <para><itemizedlist mark="square" spacing="compact">
+            <listitem>
+              <para>Nehalem Core i7 CPU</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit</para>
+            </listitem>
+
+            <listitem>
+              <para>4 GB RAM (or more)</para>
+            </listitem>
+
+            <listitem>
+              <para>1 GigE network interface</para>
+            </listitem>
+
+            <listitem>
+              <para>PXE boot support in BIOS</para>
+
+              <para>PXE boot support is recommended so you can manage OS,
+              packages, and other settings when you have a large system</para>
+            </listitem>
+
+            <listitem>
+              <para>Optionally IPMI and KVM over IP support</para>
+
+              <para><emphasis role="bold">For Roxie nodes:</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Two 10K RPM (or faster) SAS Hard Drives</para>
+
+              <para>Typically, drive speed is the priority for Roxie
+              nodes</para>
+
+              <para><emphasis role="bold">For Thor nodes:</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Two 7200K RPM (or faster) SATA Hard Drives (Thor)</para>
+            </listitem>
+
+            <listitem>
+              <para>Optionally 3 or more hard drives can be configured in a
+              RAID 5 container for increased performance and
+              availability</para>
+
+              <para>Typically, drive capacity is the priority for Thor
+              nodes</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Nodes-Software">
+      <title>Nodes-Software</title>
+
+      <para>All nodes must have the identical operating systems. We recommend
+      all nodes have identical BIOS settings, and packages installed. This
+      significantly reduces variables when troubleshooting. It is easier to
+      manage a system where all nodes are identical, but this is not
+      required.</para>
+
+      <sect2 id="Operating-System-Requirements">
+        <title>Operating System Requirements</title>
+
+        <para>You will need one of the following:</para>
+
+        <para><itemizedlist mark="square" spacing="compact">
+            <listitem>
+              <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 10.04 LTS, 11.04, or 11.10</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit OpenSuSe 11.3 or 11.4</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Debian 6.x (Squeeze)</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+
+      <sect2 id="configuration-manager">
+        <title>Dependencies</title>
+
+        <para>Installing HPCC on your system depends on having required
+        component packages installed on the system. The required dependencies
+        can vary depending on your platform. In some cases the dependencies
+        are included in the installation packages. In other instances the
+        installation may fail, and the package management utility will prompt
+        you for the required packages. Installation of these packages can vary
+        depending on your platform. For details of the specific installation
+        commands for obtaining and installing these packages, see the commands
+        specific to your Operating System.</para>
+      </sect2>
+
+      <sect2 id="SSH_Keys" role="brk">
+        <title>SSH Keys</title>
+
+        <para>The HPCC components use ssh keys to authenticate each other.
+        This is required for communication between nodes. A script to generate
+        keys has been provided .You should run that script and distribute the
+        public and private keys to all nodes after you have installed the
+        packages on all nodes, but before you configure a multi-node
+        HPCC.</para>
+
+        <para><itemizedlist spacing="compact">
+            <listitem>
+              <para>As root (or sudo as shown below), generate a new key using
+              this command:</para>
+
+              <para><programlisting>sudo /opt/HPCCSystems/sbin/keygen.sh</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Distribute the keys to all nodes. From the <emphasis
+              role="bold">/home/hpcc/.ssh</emphasis> directory, copy these
+              three files to the same directory (<emphasis
+              role="bold">/home/hpcc/.ssh</emphasis>) on each node:</para>
+
+              <itemizedlist spacing="compact">
+                <listitem>
+                  <para><emphasis role="bold">id_rsa</emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para><emphasis role="bold">id_rsa.pub</emphasis></para>
+                </listitem>
+
+                <listitem>
+                  <para><emphasis
+                  role="bold">authorized_keys</emphasis></para>
+                </listitem>
+              </itemizedlist>
+
+              <para>Make sure that files retain permissions when they are
+              distributed. These keys need to be owned by the user "<emphasis
+              role="bold">hpcc</emphasis>".</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="workstation-requirements">
+      <title>User Workstation Requirements</title>
+
+      <itemizedlist spacing="compact">
+        <listitem>
+          <para>Running the HPCC platform requires communication from your
+          user workstation with a browser to the HPCC. You will use it to
+          access ECL Watch—a Web-based interface to your HPCC system. ECL
+          Watch enables you to examine and manage many aspects of the HPCC and
+          allows you to see information about jobs you run, data files, and
+          system metrics.</para>
+
+          <para>Use one of the supported web browsers with Javascript
+          enabled.</para>
+
+          <itemizedlist spacing="compact">
+            <listitem>
+              <para>Internet Explorer® 7 (or later)</para>
+            </listitem>
+
+            <listitem>
+              <para>Firefox™ 3.0 (or later.)</para>
+
+              <!--***Add additional browsers when approved-->
+            </listitem>
+
+            <listitem>
+              <para>Google Chrome 10 (or later)</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>If browser security is set to <emphasis
+          role="bold">High</emphasis>, you should add ECLWatch as a Trusted
+          Site to allow Javascript execution.</para>
+        </listitem>
+
+        <listitem>
+          <para>Install the ECL IDE</para>
+
+          <para>The ECL IDE (Integrated Development Environment) is the tool
+          used to create queries into your data and ECL files with which to
+          build your queries.</para>
+
+          <para>From the ECLWatch web page, download the Windows install set.
+          If the link is not visible, either follow the link to the HPCC
+          System's portal or install the Optional Packages.</para>
+
+          <para>You can reach this page using the following URL:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your
+          node's IP address.</para>
+
+          <para>The ECL IDE was designed to run on Windows machines. See the
+          appendix for instructions on running on Linux workstations using
+          Wine.</para>
+        </listitem>
+
+        <listitem>
+          <para>Microsoft VS 2008 C++ compiler (either Express or Professional
+          edition). This is needed if you are running Windows and want to
+          compile queries locally. This allows you to compile and run ECL code
+          on your Windows workstation.</para>
+        </listitem>
+
+        <listitem>
+          <para>GCC. This is needed if you are running under Linux and want to
+          compile queries locally on a standalone Linux machine, (although it
+          may already be available to you since it usually comes with the
+          operating system).</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter id="HPCC-installation-and-startup">
+    <title>HPCC Installation and Startup</title>
+
+    <para>Follow these steps to install the packages and start components in a
+    single-node configuration to begin. Once it is successfully installed, you
+    will use the Configuration Manager to customize or expand your
+    system.</para>
+
+    <para>Configuration Manager is the utility with which we configure the
+    HPCC platform. It is run on your Linux Server and you access its interface
+    using a browser.<figure>
+        <title>System Overview: Thor</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GS-Thor01.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure><figure>
+        <title>System Overview: Roxie</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/GS-Roxie01.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 id="initial-set-up-single-node">
+      <title>Initial Setup-Single Node</title>
+
+      <para>This section covers installing the HPCC on a single node. This
+      will enable the HPCC system to operate successfully; however, the real
+      strength of the HPCC is when it is run in a multi-node environment and
+      can leverage the ability to perform operations using Massively Parallel
+      Processing (MPP).</para>
+
+      <para>In addition, on a production system, you would dedicate one or
+      more nodes to each server process. See the <emphasis>Using Configruation
+      Manager </emphasis>manual for more details.</para>
+
+      <sect2 id="installing-the-Package">
+        <title>Installing the Package</title>
+
+        <para>The installation and package that you download is different
+        depending on the operating system you plan to use. The installation
+        packages will fail to install if their dependencies are missing from
+        the target system.</para>
+
+        <para>Packages are available from the HPCC Systems website: <ulink
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
+
+        <para>To install the package, follow the appropriate installation
+        instructions:</para>
+
+        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+        <para>Install RPM with the -Uvh switch.</para>
+
+        <para>This is the upgrade command and will perform an automatic
+        upgrade if a previous version is installed or it will just install
+        fresh if no other version has been installed.</para>
+
+        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+
+        <blockquote>
+          <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
+          SuSe you must set a password for the hpcc user on all nodes. One way
+          to do do this is to issue the following command:</para>
+
+          <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
+          set the password on ALL nodes.</para>
+        </blockquote>
+
+        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+        <para>For Ubuntu installations a Debian package is provided. To
+        install the package, use:</para>
+
+        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+        <para></para>
+      </sect2>
+
+      <sect2 id="installing-the-Optional-Package">
+        <title>Installing the Optional Packages</title>
+
+        <para>There are three optional packages you can install which will
+        enable resources to be available from your ESP server's ECL Watch
+        page. These resources include:</para>
+
+        <para><itemizedlist spacing="compact">
+            <listitem>
+              <para>Documentation</para>
+            </listitem>
+
+            <listitem>
+              <para>ECL IDE</para>
+            </listitem>
+
+            <listitem>
+              <para>Graph Control</para>
+            </listitem>
+          </itemizedlist></para>
+
+        <para>We recommend installing these packages on your ESP Server
+        node.</para>
+
+        <para>You can find these packages at <ulink
+        url="http://hpccsystems.lexisnexis.com/download/free-community-edition">http://hpccsystems.lexisnexis.com/download/free-community-edition</ulink></para>
+
+        <para><?hard-pagebreak ?>To install the package, follow the
+        appropriate installation instructions:</para>
+
+        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+        <para>Install RPM with the -Uvh switch.</para>
+
+        <para>This is the upgrade command and will perform an automatic
+        upgrade if a previous version is installed or it will just install
+        fresh if no other version has been installed.</para>
+
+        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+
+        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+        <para>For Ubuntu installations a Debian package is provided. To
+        install the package, use:</para>
+
+        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+      </sect2>
+
+      <sect2 id="initial-startup">
+        <title><emphasis>Initial Startup</emphasis></title>
+
+        <orderedlist>
+          <listitem>
+            <para>Start the system using the default configuration.</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <programlisting>sudo service hpcc-init start</programlisting>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+            <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting><graphic
+            fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
+                frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>There are log files for each component in
+                      directories below <emphasis
+                      role="bold">/var/log/HPCCSystems</emphasis> (default
+                      location). If any component fails to start, these logs
+                      can help in troubleshooting.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2 id="ECL-on-a-single-node-system">
+        <title>Running an ECL Query on your Single-Node System</title>
+
+        <para>The single node system is running, and you can now create and
+        run some ECL<footnote>
+            <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+            role="bold">C</emphasis>ontrol <emphasis
+            role="bold">L</emphasis>anguage (ECL) is a declarative, data
+            centric programming language used to manage all aspects of the
+            massive data joins, sorts, and builds that truly differentiate
+            HPCC (High Performance Computing Cluster) from other technologies
+            in its ability to provide flexible data analysis on a massive
+            scale.</para>
+          </footnote> code using either ECL IDE the command line ECL compiler,
+        or the ECLPlus tool.</para>
+
+        <sect3>
+          <title>Install the ECL IDE and HPCC Client Tools</title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>In your browser, go to the <emphasis role="bold">ECL
+                Watch</emphasis> URL For example, http://nnn.nnn.nnn.nnn:8010,
+                where nnn.nnn.nnn.nnn is your node's IP address.</para>
+
+                <para><informaltable colsep="1" frame="all" rowsep="1">
+                    <?dbfo keep-together="always"?>
+
+                    <tgroup cols="2">
+                      <colspec colwidth="49.50pt" />
+
+                      <colspec />
+
+                      <tbody>
+                        <row>
+                          <entry><inlinegraphic
+                          fileref="images/caution.png" /></entry>
+
+                          <entry>Your IP address could be different from the
+                          ones provided in the example images. Please use the
+                          IP address of <emphasis role="bold">your</emphasis>
+                          node.</entry>
+                        </row>
+                      </tbody>
+                    </tgroup>
+                  </informaltable></para>
+              </listitem>
+
+              <listitem>
+                <para>From ECL Watch page, click on the <emphasis
+                role="bold">Resources </emphasis> link in the menu on the left
+                side.</para>
+
+                <para><figure>
+                    <title>ECL Watch Resource Page</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg07aa3.JPG" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+
+                <para><emphasis role="bold">Note: The order of items on the
+                page may vary depending on the order in which optional
+                packages are installed.</emphasis></para>
+
+                <para>If this page is not visible, either follow the link to
+                the HPCC System's portal or install the Optional
+                Packages,</para>
+              </listitem>
+
+              <listitem>
+                <para>Click on the ECL IDE Installer link. When prompted save
+                this file to your PC and then run it—do not run directly from
+                your browser. This is a Windows installer for a Windows
+                application.</para>
+              </listitem>
+
+              <listitem>
+                <para>You can close your browser, if desired.</para>
+              </listitem>
+
+              <listitem>
+                <para>Install the ECL IDE, following the prompts in the
+                installer. Once the ECL IDE is installed successfully, you can
+                proceed.</para>
+              </listitem>
+            </orderedlist></para>
+
+          <para><?hard-pagebreak ?></para>
+        </sect3>
+
+        <sect3>
+          <title>Running a basic ECL program</title>
+
+          <para>Now that the package is installed on your Linux node and ECL
+          IDE is installed on your Windows workstation, you can run your first
+          ECL program. ECL programs may be run locally or remotely. For larger
+          ECL jobs, you will want to target a remote cluster of machines,
+          which may not be running the same operating system as the machine
+          you are working on.</para>
+
+          <para>In this section we will use the <emphasis role="bold">command
+          line interface</emphasis> to the compiler to compile and run ECL
+          code locally.</para>
+
+          <para>The ECL compiler (eclcc) installs on to the eclcc server node
+          when a package is installed. :This should be in your path, so you
+          can run it from anywhere on the server. It is also installed on a
+          Windows machine when you install the ECL IDE. To compile and run on
+          Windows, you also need the Visual Studio 2008 C++ compiler (see
+          <emphasis>User Workstation Requirements </emphasis>for
+          details).</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Create a file called hello.ecl and type in the following
+              text (including the quotes): <programlisting>output('Hello world'); </programlisting></para>
+
+              <para>You can either use your favorite editor, or you can use
+              the command line by typing the following</para>
+
+              <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Compile your program using eclcc by typing the following
+              command:<programlisting>eclcc hello.ecl</programlisting></para>
+
+              <!--  ***       If you prefer, you can pipe the source code directly into the
+            compiler as shown in the following example:
+            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
+            </listitem>
+
+            <listitem>
+              <para>An executable file is created which you can run as
+              follows:</para>
+
+              <para><programlisting># on a Linux machine:
+   ./a.out
+# on a Windows machine:
+   a.out
+</programlisting></para>
+
+              <para>This generates the output "Hello world" (excluding
+              quotes), to the std output, your terminal window in this
+              example. You can redirect or pipe the output to a file or
+              program if you choose. This verifies that the compiler is
+              working properly.</para>
+            </listitem>
+          </orderedlist>
+        </sect3>
+
+        <sect3>
+          <title>Running remotely using ECLPlus</title>
+
+          <para>The <emphasis role="bold">ECLPlus</emphasis> application
+          accepts command line parameters to send directly to an ECL execution
+          engine. You can use eclplus to control the creation and execution of
+          larger ECL jobs which target a remote system. To compile jobs on a
+          remote system, eclcc is used to create an archive of the ECL code to
+          be compiled, and eclplus is used to submit it to a queue for
+          compilation by the remote compiler server (eclccserver).</para>
+
+          <para>To submit a job to the queue using ECL Plus, make sure the
+          HPCC has been started and use the following syntax: <programlisting>eclplus @hello.ecl cluster=hthor server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
+
+          <para>or</para>
+
+          <para><programlisting>eclplus @hello.ecl cluster=hthor server=.</programlisting></para>
+
+          <para>Where "." indicates the IP of the current box.</para>
+
+          <para>The workunit<footnote>
+              <para>A Workunit is a record of a task submitted to an HPCC. It
+              contains an identifier--workunit ID, the ECL code, results, and
+              other information about the job.</para>
+            </footnote> ID, status, and result are shown at the command
+          line.</para>
+
+          <para>View the full details of the workunit using the ECL Watch
+          interface for your HPCC at this location
+          http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is the IP of your
+          node. Either search for the workunit using the workunit ID or select
+          ECL Workunits/Browse and find your workunit in the list
+          provided.</para>
+
+          <para>Setting up an <emphasis role="bold">eclplus.ini</emphasis>
+          file makes running a workunit a little easier when you want to use
+          the same settings every time you submit a workunit in this way. See
+          the <emphasis>HPCC Client Tools </emphasis>manual for
+          details.</para>
+
+          <para>If your ECL is more complex than a single source file, you can
+          use the eclcc compiler locally to create an archive to be sent to
+          the eclccServer:</para>
+
+          <para><programlisting>eclcc hello.ecl -E | eclplus @ cluster=thor server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
+
+          <para>The cluster parameter must name a valid target cluster name as
+          listed in your environment's topology section.</para>
+        </sect3>
+
+        <sect3>
+          <title>Running a basic ECL program from the ECL IDE</title>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Open the ECL IDE on your Windows workstation, from your
+                start menu. (Start <emphasis role="bold">&gt;&gt;</emphasis>
+                All Programs <emphasis role="bold">&gt;&gt;</emphasis>
+                HPCCSystems <emphasis role="bold">&gt;&gt;</emphasis> ECL IDE
+                ).</para>
+
+                <informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/OSSgr3.png" /></entry>
+
+                        <entry>You can create a shortcut on your desktop to
+                        provide quick access to the ECL IDE.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+                <emphasis role="bold">Password</emphasis> provided in the
+                Login dialog.</para>
+
+                <informaltable colsep="1" rowsep="1">
+                  <tgroup cols="2">
+                    <colspec colwidth="80pt" />
+
+                    <colspec colwidth="100pt" />
+
+                    <tbody>
+                      <row>
+                        <entry>Login ID</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+
+                      <row>
+                        <entry>Password</entry>
+
+                        <entry>hpccdemo</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable>
+
+                <figure>
+                  <title>Login Window</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg06a.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <para>Open a new <emphasis role="bold">Builder
+                Window</emphasis> (CTRL+N) and write the following
+                code:</para>
+
+                <para><programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+                <para>This could also be written as:</para>
+
+                <para><programlisting>'Hello World';
+</programlisting>In the second program listing, the OUTPUT keyword is omitted.
+                This is possible because the language is declarative and the
+                OUTPUT action is implicit.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Select <emphasis role="bold">thor</emphasis> as your
+                target cluster.</para>
+
+                <para><emphasis role="bold">Thor</emphasis> is the Data
+                Refinery component of your HPCC. It is a disk based massively
+                parallel computer cluster, optimized for sorting,
+                manipulating, and transforming massive data.</para>
+
+                <para><figure>
+                    <title>Select target</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg10.JPG" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Press the syntax check button on the main toolbar (or
+                press F7).</para>
+
+                <para><figure>
+                    <title>Syntax Check</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg09.JPG" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure>A successful syntax check displays the "No Errors"
+                message.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Press the <emphasis role="bold">Go</emphasis> button (or
+                press ctrl+enter).</para>
+
+                <para><figure>
+                    <title>Completed job</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg11.JPG" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure>The green check mark indicates successful
+                completion.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Click on the workunit number tab and then on the Result
+                1 tab to see the output.</para>
+
+                <para><figure>
+                    <title>Completed job output</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/vmimg12.JPG" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Multi-Node-System">
+      <title>Configuring a Multi-Node System</title>
+
+      <para>While the single-node system is fully-functional, it does not take
+      advantage of the true power of an HPCC—the ability to perform operations
+      using Massively Parallel Processing (MPP). This section provides the
+      steps to expand your single-node system into a multi-node system using
+      the Configuration Manager Wizard.</para>
+
+      <sect2 id="configuring-a-multi-node-system">
+        <title>Using the Configuration Manager Wizard</title>
+
+        <para>This section details reconfiguring a system to use multiple
+        nodes. Before you start this section, you must have already downloaded
+        the correct packages for your distro from the HPCC Systems website:
+        <ulink
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
+
+        <orderedlist>
+          <listitem>
+            <para>If it is running, stop the HPCC system, using this
+            command:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>You can use this command to confirm HPCC
+                      processes are stopped (on Centos/Red
+                      Hat/SuSe):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
+                      Ubuntu</phrase><programlisting>sudo service hpcc-init status
+</programlisting><phrase>For Debian 6 (Squeeze)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Start the Configuration Manager service.<emphasis
+            role="bold"></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+
+            <para><graphic
+            fileref="images/gs_img_configmgrStart.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Leave this window open. You can minimize it, if
+            desired.</para>
+          </listitem>
+
+          <listitem>
+            <para>Using a Web browser, go to the Configuration Manager's
+            interface:</para>
+
+            <programlisting>http://&lt;<emphasis>node ip </emphasis>&gt;:8015</programlisting>
+
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>The Configuration Manager startup wizard displays. To use
+            the wizard, select the Generate new environment using wizard
+            button.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Provide a name for the environment file.</para>
+
+            <para>This will then be the name of the configuration xml. For
+            example, we will name this
+            <emphasis>NewEnvironment.xml</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Next</emphasis>
+            button.</para>
+
+            <para>Next you will need to define the IP addresses that your
+            system will use.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Enter the all the IP addresses you want to use in this
+            HPCC.</para>
+
+            <para>The IP addresses do not need to be contiguous. In the image
+            below, we specified the IP addresses nn.nnn.nnn.1-100 and
+            nn.nnn.nnn.111. These are separated with a semi-colon.</para>
+
+            <para>You can specify a range of IPs using a hyphen (for example,
+            NNN.NNN.NNN.1-100). IP Addresses can be specified individually
+            using semi-colon delimiters.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Next</emphasis>
+            button.</para>
+
+            <para>Alternatively, you could find the IP addresses using Auto
+            Discovery by selecting the Auto Discovery button. (only avallable
+            in Enterprise Edition)</para>
+
+            <para>Now you will define how many nodes to use for the Roxie and
+            Thor clusters.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Enter the appropriate values as indicated.</para>
+
+            <para><graphic fileref="images/GS_CMWiz003.jpg" /></para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Number of support nodes:</term>
+
+                <listitem>
+                  <para>Specify the number of nodes to use for support
+                  components. The default is 1.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of nodes for Roxie cluster:</term>
+
+                <listitem>
+                  <para>Specify the number of nodes to use for your Roxie
+                  cluster. Enter zero (0) if you do not want a Roxie
+                  cluster.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of slave nodes for Thor cluster</term>
+
+                <listitem>
+                  <para>Specify the number of slave nodes to use in your Thor
+                  cluster. A Thor master node will be added
+                  automatically.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Number of Thor slaves per node (default 1)</term>
+
+                <listitem>
+                  <para>Specify the number of Thor slave processes to
+                  instantiate on each slave node. Enter zero (0) if you do not
+                  want a Thor cluster.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Enable Roxie on demand</term>
+
+                <listitem>
+                  <para>Specify whether or not to allow queries to be run
+                  immediately on Roxie. This must be enabled to run the
+                  debugger. (Default is true)</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>Press the Next button</para>
+
+            <para>The Environment Summary displays.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on <emphasis role="bold">Finish</emphasis> to accept
+            these values. This saves the file.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>Keep in mind, that your HPPC configuration may be
+                      different depending on your needs. For example, you may
+                      not need a Roxie or you may need several smaller Roxie
+                      clusters. In addition, in a production [Thor] system,
+                      you would ensure that Thor and Roxie nodes are dedicated
+                      and have no other processes running on them. This
+                      document is intended to show you how to use the
+                      configuration tools. Capacity planning and system design
+                      is covered in a training module.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+
+            <graphic fileref="images/GS_ConfigMgrWiz004.jpg" />
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>You can resize the Environment Summary by
+                      clicking and dragging the lower right corner.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>You will now be notified that you have completed the
+            wizard.</para>
+
+            <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg" /></para>
+
+            <para>At this point the system has created a file named
+            NewEnvironment.xml in the <emphasis
+            role="bold">/etc/HPCCSystems/source</emphasis> directory</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Stop the Configuration Manager in the terminal where you
+            started it by pressing CTRL-C.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Be sure system is stopped before attempting to
+                      move the environment.xml file.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Copy the NewEnvironment.xml file from the source directory
+            to the /etc/HPCCSystems and rename the file to
+            environment.xml</para>
+
+            <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Make sure that you have sufficient privileges to
+                      write file(s) to the destination directory before
+                      attempting to copy. If prompted to overwrite the
+                      destination file, you should answer <emphasis
+                      role="bold">yes</emphasis>. The environment.xml file
+                      MUST be owned by the <emphasis
+                      role="bold">hpcc</emphasis> user.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>If you have added new machines to the cluster, you need to
+            copy and install the HPCC package onto all nodes, and generate and
+            clone the SSH keys. This can be done using the install-cluster.sh
+            script which is provided with HPCC. Use the following
+            command:</para>
+
+            <programlisting>/opt/HPCCSystems/sbin/install-cluster.sh -k &lt;package-file-name&gt;</programlisting>
+
+            <para>Where &lt;package-file-name&gt; is the name of the package
+            file that you want to install on every node - this will be in the
+            form hpccsystems-platform-<emphasis>xxxx-n.n.nnnn</emphasis>.rpm
+            (or .deb) depending on the version and distro. More details
+            including other options that may be used with this command are
+            included in the appendix.</para>
+          </listitem>
+
+          <listitem>
+            <para>Copy the <emphasis
+            role="bold">/etc/HPCCSystems/environment.xml</emphasis> to
+            <emphasis role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
+            role="bold">every</emphasis> node.</para>
+
+            <para>You may want to create a script to push out XML file to all
+            nodes. A sample script is provided with HPCC. The following
+            command copies the XML files out to all nodes as required:</para>
+
+            <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting>See the appendix for more information on using this
+            script.</para>
+          </listitem>
+
+          <listitem>
+            <para>Restart the HPCC system on <emphasis
+            role="bold">every</emphasis> node. The following command starts
+            the HPCC system on an individual node:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+
+            <para>You may want to create a script to push this command out to
+            every node. A sample script is provided with HPCC. Use the
+            following command to start HPCC on all nodes:</para>
+
+            <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+</programlisting>This script can also be used to stop HPCC on all nodes and to
+            stop and start individual components on all nodes. See the
+            appendix for more details.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Starting-and-stopping">
+      <title>Starting and Stopping</title>
+
+      <sect2 id="Start-Stop-Reset">
+        <title><emphasis>Start, Stop, Restart the System</emphasis></title>
+
+        <para>Once you have your system environment established , the
+        <emphasis role="bold">init </emphasis>system can be used to start,
+        stop, or restart components.</para>
+
+        <para>The following commands can be used:</para>
+
+        <sect3>
+          <title>To start the system:</title>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init start</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>To stop the system:</title>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init stop</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>You can use a script to start or stop multiple
+                    nodes in the system. See <emphasis>Example
+                    Scripts</emphasis> in the Appendix section for
+                    samples.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3>
+          <title>Start or Stop Single Components</title>
+
+          <para>To start or stop a single component, you can use the -c flag
+          in the init system as follows.</para>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <para><programlisting>sudo service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <programlisting>sudo /etc/init.d/hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>To stop dafilesrv (a helper application), you must
+                    use this command: sudo /sbin/service dafilesrv stop. See
+                    Helper Applications for details.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Starting-Stopping-Config-Manager">
+        <title><emphasis>Start or Stop Configuration
+        Manager</emphasis></title>
+
+        <para>Configure the system as desired using Configuration
+        Manager.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>If the system is running, stop the HPCC system, using this
+            command on <emphasis role="bold">every</emphasis> node:</para>
+
+            <para><emphasis role="bold">Centos/Red
+            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+            <para><programlisting>sudo service hpcc-init stop</programlisting></para>
+
+            <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+            <programlisting>sudo /etc/init.d/hpcc-init stop
+</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Start the Configuration Manager service on one node (usually
+            the first node is considered the head node and is used for this
+            task, but this is up to you)</para>
+
+            <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+          </listitem>
+
+          <listitem>
+            <para>Using a web browser, go to the Configuration Manager's
+            interface:</para>
+
+            <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>More Examples</title>
+
+    <para>This section contains additional ECL examples you can use on your
+    HPCC cluster. You can run these on a single-node system or a larger
+    multi-node cluster.</para>
+
+    <sect1 role="nobrk">
+      <title>ECL Example: Anagram1</title>
+
+      <para>This example takes a STRING and produces every possible anagram
+      from it. This code is the basis for a second example which evaluates
+      which of these are actual words using a word list data file.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the ECL IDE (Start <emphasis
+            role="bold">&gt;&gt;</emphasis> All Programs <emphasis
+            role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+            role="bold"> &gt;&gt;</emphasis> ECL IDE ) and login to your
+            HPCC.</para>
+          </listitem>
+
+          <listitem>
+            <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+            (CTRL+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..]; 
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">thor</emphasis> as your target
+            cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the syntax check button on the main toolbar (or press
+            F7)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis> button (or
+            press ctrl+enter).</para>
+
+            <para><figure>
+                <title>Completed job</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11a.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure>The green check mark indicates successful
+            completion.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the workunit number tab and then on the Result 1
+            tab to see the output.</para>
+
+            <para><figure>
+                <title>Completed job output</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11b.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <?hard-pagebreak ?>
+    </sect1>
+
+    <sect1>
+      <title>Roxie Example: Anagram2</title>
+
+      <para>In this example, we will download an open source data file of
+      dictionary words, spray that file to our Thor cluster, then validate our
+      anagrams against that file so that we determine which are valid words.
+      The validation step uses a JOIN of the anagram list to the dictionary
+      file. Using an index and a keyed join would be more efficient, but this
+      serves as a simple example.</para>
+
+      <sect2>
+        <title>Download the word list</title>
+
+        <para>We will download the word list from <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Download the <emphasis>Official 12 Dicts
+              </emphasis>Package. The files are available in tar.gz or ZIP
+              format.</para>
+            </listitem>
+
+            <listitem>
+              <para>Extract the <emphasis role="bold">2of12.txt</emphasis>
+              file to a folder on your local machine.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data">
+        <title>Load the Dictionary File to your Landing Zone</title>
+
+        <para>In this step, you will copy the data files to a location from
+        which it can be sprayed to your HPCC cluster. A Landing Zone is a
+        storage location attached to your HPCC. It has a utility running to
+        facilitate file spraying to a cluster.</para>
+
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch. This data file is only ~400
+        kb.</para>
+
+        <para>Next you will distribute (or Spray) the dataset to all the nodes
+        in the HPCC cluster. The power of the HPCC comes from its ability to
+        assign multiple processors to work on different portions of the data
+        file in parallel. Even though the VM Edition only has a single node,
+        the data must be sprayed to the cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>In your browser, go to the <emphasis role="bold">ECL
+            Watch</emphasis> URL For example, http://nnn.nnn.nnn.nnn:8010,
+            where nnn.nnn.nnn.nnn is your ESP Server's IP address.</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Your IP address could be different from the ones
+                      provided in the example images. Please use the IP
+                      address provided by <emphasis
+                      role="bold">your</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>From ECL Watch page, click on the <emphasis
+            role="bold">Upload/download File </emphasis> link in the menu on
+            the left side.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Once you click on the Upload/download file link, it will
+            take you to the <emphasis role="bold">Dropzones and
+            Files</emphasis> page, where you can choose to <emphasis
+            role="bold">Browse</emphasis> your machine for a file to
+            upload:</para>
+
+            <para><figure>
+                <title>Dropzones and Files</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04a.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Browse</emphasis> button to
+            browse the files on your local machine, select the file to upload
+            and then press the <emphasis role="bold">Open</emphasis>
+            button.</para>
+
+            <para>The file you selected should appear in the <emphasis
+            role="bold">Select a file to upload:</emphasis> field. The data
+            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            complete the file upload.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR">
+        <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
+        Cluster</emphasis></title>
+
+        <para>To use the data file in our HPCC system, we must “spray” it to
+        all the nodes. A <emphasis>spray</emphasis> or
+        <emphasis>import</emphasis> is the relocation of a data file from one
+        location (such as a Landing Zone) to multiple file parts on nodes in a
+        cluster.</para>
+
+        <para>The distributed or sprayed file is given a
+        <emphasis>logical-file-name</emphasis> as follows<emphasis
+        role="bold">: ~thor::word_list_csv </emphasis> The system maintains a
+        list of logical files and the corresponding physical file locations of
+        the file parts.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Open ECL Watch using the following URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp(where
+            nnn.nnn.nnn.nnn is your ESP Server’s IP Address and pppp is the
+            port. The default port is 8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the Spray CSV hyperlink under the DFU Files menu on
+            the left.</para>
+
+            <para><figure>
+                <title>Spray CSV</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_01.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>The <emphasis role="bold">DFU Spray CSV</emphasis> page
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select mydropzone in the Source <emphasis
+            role="bold">Machine/dropzone</emphasis> drop-list.</para>
+
+            <para>The IP Address is automatically filled and the Local Path is
+            partially filled with the default folder on your landing zone.
+            Note: The VM and Community Edition typically only has one landing
+            zone defined.</para>
+          </listitem>
+
+          <listitem>
+            <para>Complete the Local Path to include the complete file name or
+            use the <emphasis role="bold">Choose File</emphasis> button to
+            select the file from a list of files in the folder. The file is
+            <emphasis role="bold">2of12.txt</emphasis>.<emphasis
+            role="bold"></emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the rest of the parameters (if they are not filled
+            in already).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Max Record Length 8192</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separator \,</para>
+                </listitem>
+
+                <listitem>
+                  <para>Line Terminator \n,\r\n</para>
+                </listitem>
+
+                <listitem>
+                  <para>Quote: '</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the Label using the Logical File name desired:
+            thor::word_list_csv<emphasis role="bold"> </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
+            <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
+            </emphasis>boxes are checked.</para>
+
+            <para><figure>
+                <title>Spray the File</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1000.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+            role="bold"> </emphasis>button</para>
+
+            <para><figure>
+                <title>View Progress</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1001.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Click the <emphasis role="bold">View Progress</emphasis>
+            link</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>The Workunit progress page displays.</para>
+
+            <figure>
+              <title>Workunit Progress</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/VM1002.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2>
+        <title>Run the query on Thor<parameter></parameter></title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+              (CTRL+N) and write the following code:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bold">thor</emphasis> as your
+              target cluster.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the syntax check button on the main toolbar (or
+              press F7)</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+              role="bold"> </emphasis>button.</para>
+            </listitem>
+
+            <listitem>
+              <para>When it completes, select the Workunit<emphasis
+              role="bold"> </emphasis>tab, then select the Result tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine the result.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Compile and Publish the query to
+        Roxie<parameter></parameter></title>
+
+        <para><orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>RT-CLICK on the <emphasis role="bold">My Files</emphasis>
+              folder in the Repository<emphasis role="bold"></emphasis>
+              window, and select <emphasis role="bold">Insert
+              Folder</emphasis> from the pop-up menu.</para>
+
+              <para><figure>
+                  <title>Insert Folder</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/DTimg04.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Enter <emphasis role="bold">Anagram</emphasis> for the
+              label, then press the OK button.</para>
+
+              <para><figure>
+                  <title>Enter Folder Label</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1005.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>RT-CLICK on the <emphasis role="bold">Anagram
+              </emphasis>Folder, and select <emphasis role="bold">Insert
+              File</emphasis> from the pop-up menu.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Enter <emphasis role="bold">ValidateAnagrams</emphasis>
+              for the label, then press the OK button.</para>
+
+              <para>A Builder Window opens.</para>
+
+              <para><figure>
+                  <title>Builder Window</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1006.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Write the following code (you can copy the code from the
+              other builder window):<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bold">Roxie</emphasis> as your
+              target cluster.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the syntax check button on the main toolbar (or
+              press F7)</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>In the Builder window, in the upper left corner the
+              <emphasis role="bold">Submit</emphasis> button has a drop down
+              arrow next to it. Select the arrow to expose the <emphasis
+              role="bold">Compile</emphasis> option.</para>
+
+              <figure>
+                <title>Compile</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DTimg17.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bold">Compile</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>When it completes, select the Workunit<emphasis
+              role="bold"> </emphasis>tab, then select the Result tab.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>When the workunit finishes, it will display a green circle
+              indicating it has compiled.</para>
+
+              <para><figure>
+                  <title>Compiled</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/VM1007.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Deploy_the_Query_to_Roxie">
+        <title>Publish the Roxie query</title>
+
+        <para>Next we will publish the query to a Roxie Cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Select the workunit tab for the ValidateAnagrams that you
+            just compiled.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the ECL Watch tab.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Publish</emphasis> button
+            (you may need to scroll down the main window)</para>
+
+            <para><figure>
+                <title>Publish Query</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1008.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>When it successfully publishes, you will see:</para>
+
+            <para><figure>
+                <title>Workunit Published</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/DT173-18b.png" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Run_the_Roxie_Query">
+        <title>Run the Roxie Query in WsECL</title>
+
+        <para>Now that the query is published to a Roxie cluster, we can run
+        it using the WsECL service. WsECL is a web-based interface to queries
+        on an HPCC platform. Use the following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp (where
+        nnn.nnn.nnn.nnn is your ESP Server’s IP address and pppp is the port.
+        The default port is 8002)</emphasis></para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click on the + sign next to <emphasis
+            role="bold">myroxie</emphasis> to expand the tree.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis
+            role="bold">ValidateAnagrams.1</emphasis> hyperlink.</para>
+
+            <para>The form for the service displays.</para>
+
+            <para><figure>
+                <title>RoxieECL</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1009.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Select Output Tables in the drop-list.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Provide a word to make anagrams from (e.g., TEACHER), then
+            press the Submit button.</para>
+
+            <para>The results display.</para>
+
+            <para><figure>
+                <title>RoxieResults</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1010.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Next Steps</title>
+
+    <para>Available from the menu in the ECL IDE there are several documents
+    which provide details on various aspects of the HPCC.</para>
+
+    <para>You can access them from the help menu: Help <emphasis
+    role="bold">&gt;&gt;</emphasis> Documentation.</para>
+
+    <para><figure>
+        <title>Help Menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/vmimg07.JPG" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>You can also find these from the <emphasis
+    role="bold">Start</emphasis> menu :</para>
+
+    <para>Start <emphasis role="bold">&gt;&gt;</emphasis> All Programs
+    <emphasis role="bold">&gt;&gt;</emphasis> HPCC Systems <emphasis
+    role="bold">&gt;&gt;</emphasis> ECL IDE <emphasis
+    role="bold">&gt;&gt;</emphasis> Docs</para>
+
+    <para>To familiarize yourself with what your system can do we recommend
+    following the steps in<itemizedlist spacing="compact">
+        <listitem>
+          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">The Six Degrees of Kevin
+          Bacon</emphasis> example</para>
+        </listitem>
+
+        <listitem>
+          <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
+          learn how to configure an HPCC platform using Advanced View.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use your new skills to process your own massive
+          dataset!</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>The HPCC Systems Portal is also a valuable resource for more
+    information including:</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para>Video Tutorials</para>
+      </listitem>
+
+      <listitem>
+        <para>Additional examples</para>
+      </listitem>
+
+      <listitem>
+        <para>White Papers</para>
+      </listitem>
+
+      <listitem>
+        <para>Documentation</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+
+  <chapter id="Appendix">
+    <title>Appendix</title>
+
+    <sect1 id="Example-Scripts" role="nobrk">
+      <title>Example Scripts</title>
+
+      <para>For a multi-node configuration, the packages must be installed on
+      each node. You can install each one manually or use scripts to copy and
+      install the packages. On a large system where you have many nodes
+      copying and installing on every node is not practical, therefore we
+      provide some scripts you can use or to serve as examples to give you a
+      start in making your own.</para>
+
+      <para>Scripts are installed to the<emphasis role="bold">
+      /opt/HPCCSystems/sbin</emphasis> directory.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/caution.png" /></entry>
+
+                <entry>Make sure that you have the sufficient privileges to
+                sudo as an administrator to use the install-cluster.sh script.
+                To use the hpcc-push.sh or hpcc-run.sh scripts, you must sudo
+                as user <emphasis role="bold">hpcc</emphasis>.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <sect2>
+        <title>install-cluster.sh</title>
+
+        <para><emphasis
+        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k]
+        &lt;package-name&gt; </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="150pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>&lt;package-name&gt;</entry>
+
+                  <entry>Name of the HPCC package to install. Required</entry>
+                </row>
+
+                <row>
+                  <entry>-k</entry>
+
+                  <entry>When specified, the script generates and distributes
+                  ssh keys to all hosts. Optional.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para><emphasis role="bold">You can run this script as any user with
+        sufficient permissions to execute it; however, when prompted for
+        username/password, you must provide credentials for a user with
+        sufficient sudo rights to run commands as an administrator on all
+        nodes. </emphasis></para>
+
+        <para>Before you can use this script, you must have already defined
+        and generated an environment.xml file (using ConfigMgr's wizard or
+        advanced mode). This script:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>reads the active environment.xml file and gathers a list of
+            nodes upon which to act.</para>
+          </listitem>
+
+          <listitem>
+            <para>installs the HPCC platform package(s) on all nodes
+            specified.</para>
+          </listitem>
+
+          <listitem>
+            <para>pushes out and deploys the environment file
+            (environment.xml) to all nodes specified.</para>
+          </listitem>
+
+          <listitem>
+            <para>optionally, if you specify the -k option it also generates
+            the required ssh keys and deploys them as required to all nodes
+            specified.</para>
+          </listitem>
+        </itemizedlist>
+
+        <para><?hard-pagebreak ?><emphasis
+        role="bold">Examples:</emphasis></para>
+
+        <para>This example installs the HPCC Platform packages to remaining
+        nodes and pushes out the active environment.xml file to those
+        nodes.:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+
+        <para>This example installs the HPCC Platform packages to all nodes
+        and pushes out the active environment.xml file to those nodes. It also
+        generates ssh keys and pushes them out to all nodes.</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -k hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>hpcc-push.sh</title>
+
+        <para>To use this script, the ssh keys need to be properly configured
+        on all nodes, and you must use sudo:</para>
+
+        <para><emphasis role="bold">This script "pushes" files from the source
+        filename and path to the destination filename and path for all IP
+        addresses in the active environment.xml. </emphasis></para>
+
+        <para>The IP addresses were defined when editing the environment in
+        ConfigMgr.</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
+</programlisting>For example:</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh \
+             /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.xml
+</programlisting></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>hpcc-run.sh</title>
+
+        <para><emphasis role="bold">hpcc-run.sh
+        </emphasis><emphasis><emphasis>[-c component] [-a
+        {hpcc-init|dafilesrv}]
+        {start|stop|restart|status|setup}</emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="80.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>-c</entry>
+
+                  <entry><itemizedlist>
+                      <listitem>
+                        <para>-c <emphasis>componentname</emphasis></para>
+
+                        <para>Specifies the component upon which to execute
+                        the command. If omitted, the default is <emphasis
+                        role="bold">all</emphasis> components on the
+                        machine.</para>
+
+                        <para>-c <emphasis>componenttype</emphasis></para>
+
+                        <para>Specifies the component type upon which to
+                        execute the command. If more than one of this type is
+                        configured, all will be acted upon. If omitted, the
+                        default is <emphasis role="bold">all</emphasis>
+                        components on the machine.</para>
+                      </listitem>
+                    </itemizedlist></entry>
+                </row>
+
+                <row>
+                  <entry>-a</entry>
+
+                  <entry><itemizedlist spacing="compact">
+                      <listitem>
+                        <para>hpcc-init:
+                        [start|stop|restart|status|setup]</para>
+                      </listitem>
+
+                      <listitem>
+                        <para>dafilesrv [start|stop]</para>
+                      </listitem>
+                    </itemizedlist></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>To use this script, the ssh keys need to be properly configured
+        on all nodes, and you must sudo as user hpcc:</para>
+
+        <para><emphasis role="bold">This script runs a command on all IP
+        addresses in the active environment.xml. </emphasis></para>
+
+        <para>The IP addresses were defined when editing the environment in
+        ConfigMgr. This script supports all the parameters of hpcc-init and
+        dafilesrv.</para>
+
+        <para><emphasis role="bold">Example:</emphasis></para>
+
+        <para>This example starts all components on the nodes</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+</programlisting>This example starts all components of the esp type on the
+        nodes</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -c esp -a hpcc-init start 
+</programlisting>This example starts all components with a component name
+        myesp on the nodes</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -c myesp -a hpcc-init start 
+</programlisting>This example starts the dafilesrv helper application</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a dafilesrv start
+</programlisting></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Uninstalling-the-HPCC">
+      <title>Uninstalling the HPCC Platform</title>
+
+      <para>To uninstall the HPCC platform from your system, issue the
+      following command. If necessary, do so on each node that it is installed
+      on.</para>
+
+      <programlisting>sudo rpm -e HPCCSystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
+
+      <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+
+      <para></para>
+    </sect1>
+
+    <sect1 id="Helper-Applications">
+      <title>Helper Applications</title>
+
+      <para>There is a helper applications that runs on all nodes that you may
+      need to stop or start manually.</para>
+
+      <para>Normally, this process is started automatically the first time the
+      hpcc-init service executes.</para>
+
+      <para>Enter the following commands to stop or start the helper
+      application:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>dafilesrv</para>
+
+          <para><programlisting>sudo /sbin/service dafilesrv stop
+
+sudo /sbin/service dafilesrv start</programlisting><property><!--*** not for publication
+cd /var/lib/HPCCSystems/mythor
+source /opt/HPCCSystems/sbin/hpcc_setenv 
+init_stop_thor
+init_start_thor--></property></para>
+        </listitem>
+      </itemizedlist>
+
+      <para><?hard-pagebreak ?></para>
+    </sect1>
+
+    <sect1 id="hpcc-init">
+      <title>hpcc-init</title>
+
+      <para><emphasis role="bold">sbin/service hpcc-init
+      </emphasis><emphasis><emphasis>[</emphasis>option<emphasis>]</emphasis>
+      command</emphasis></para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="80.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>option</entry>
+
+                <entry><itemizedlist>
+                    <listitem>
+                      <para>-c <emphasis>componentname</emphasis>,
+                      --component=<emphasis>componentname</emphasis></para>
+
+                      <para>Specifies the component upon which to execute the
+                      command. If omitted, the default is <emphasis
+                      role="bold">all</emphasis> components on the
+                      machine.</para>
+
+                      <para>-c <emphasis>componenttype</emphasis>,
+                      --component=<emphasis>componenttype</emphasis></para>
+
+                      <para>Specifies the component type upon which to execute
+                      the command. If more than one of this type is
+                      configured, all will be acted upon. If omitted, the
+                      default is <emphasis role="bold">all</emphasis>
+                      components on the machine.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>--componentlist</para>
+
+                      <para>Provides a list of all component names on the
+                      current node as specified in the environment
+                      file.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>--typelist</para>
+
+                      <para>Provides a list of all component types on the
+                      current node as specified in the environment
+                      file.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>-h, --help</para>
+
+                      <para>Displays a help page</para>
+                    </listitem>
+                  </itemizedlist></entry>
+              </row>
+
+              <row>
+                <entry>command</entry>
+
+                <entry><itemizedlist>
+                    <listitem>
+                      <para>start:</para>
+
+                      <para>Starts component(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>stop</para>
+
+                      <para>Stops component(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>status</para>
+
+                      <para>Displays component(s) status</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>restart</para>
+
+                      <para>Restarts component(s)</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>force-reload</para>
+
+                      <para>Deletes all local configuration files, data files,
+                      log files, and then restarts component(s). BE CAREFUL
+                      using this command.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>setup</para>
+
+                      <para>Initializes component configuration files but does
+                      not start the component(s).</para>
+                    </listitem>
+                  </itemizedlist></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>The <emphasis role="bold">hpcc-init
+      </emphasis>function is used to start, stop, restart, setup, or check the
+      status of any or all HPCC components.</para>
+
+      <?hard-pagebreak ?>
+
+      <para><emphasis role="bold">Examples:</emphasis></para>
+
+      <programlisting>sudo /sbin/service hpcc-init start
+sudo /sbin/service hpcc-init stop
+
+sudo /sbin/service hpcc-init -c myeclserver start
+sudo /sbin/service hpcc-init --component=myeclserver start
+
+sudo /sbin/service hpcc-init -c esp start
+</programlisting>
+    </sect1>
+
+    <sect1 id="Running-HPCC-Tools-Under-WINE">
+      <title>Running the ECL IDE under WINE</title>
+
+      <para>To run the ECL IDE under WINE in Linux, follow these steps.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Install wine1.2 (this corresponds to Wine version 1.1.31) and
+          its dependencies.</para>
+        </listitem>
+
+        <listitem>
+          <para>Download msxml3.msi from Microsoft (Service Pack 7 or
+          later).</para>
+
+          <para><emphasis role="underline"><ulink
+          url="http://www.microsoft.com/downloads/details.aspx?familyid=28494391-052b-42ff-9674-f752bdca9582&amp;displaylang=en">http://support.microsoft.com/kb/308480/en-us</ulink></emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Install msxml3.msi in Wine (DOUBLE-CLICK the msi file and Wine
+          will install it).</para>
+        </listitem>
+
+        <listitem>
+          <para>Open Configure Wine (Applications/Wine/Configure Wine):</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the Libraries tab.</para>
+        </listitem>
+
+        <listitem>
+          <para>In the New override for library droplist, select
+          <emphasis>msxml3</emphasis>, then press the add button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis> msxml3</emphasis> in the Existing overrides
+          list and press Edit.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis>Native (Windows)</emphasis> option and
+          press the OK button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the OK button to close the Wine Configuration
+          window.</para>
+        </listitem>
+
+        <listitem>
+          <para>Install the HPCC ECL IDE (DOUBLE-CLICK the setup.msi file and
+          Wine will install it).</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+  </chapter>
+</book>
