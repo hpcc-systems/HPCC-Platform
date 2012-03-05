@@ -4844,28 +4844,89 @@ IFile * createIFile(const RemoteFilename & filename)
     return createIFile(getLocalOrRemoteName(name,filename).str());
 }
 
-StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out)
+StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
     if (isPathSepChar(relpath[0])&&(relpath[0]==relpath[1]))
+    {
+        if (mustExist)
+        {
+            OwnedIFile iFile = createIFile(relpath);
+            if (!iFile->exists())
+                throw MakeStringException(-1, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+        }
         return out.append(relpath); // if remote then already should be absolute
+    }
 #ifdef _WIN32
-    char path[256];
-    path[0] = 0;
+    char rPath[MAX_PATH];
     char *filepart;
-    GetFullPathName(relpath, sizeof(path), path, &filepart);
+    DWORD res = GetFullPathName(relpath, sizeof(rPath), rPath, &filepart);
+    if (0 == res)
+        throw MakeOsException(GetLastError(), "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+    else if (mustExist)
+    {
+        OwnedIFile iFile = createIFile(rPath);
+        if (!iFile->exists())
+            throw MakeStringException(-1, "makeAbsolutePath: could not resolve absolute path for %s", rPath);
+    }
+    out.append(rPath);
 #else
-    char path[PATH_MAX+1];
-    path[0] = 0;
-    if (!realpath(relpath,path))
-        throw MakeStringException(-1, "makeAbsolutePath: could not get absolute path of %s", relpath);
+    char rPath[PATH_MAX];
+    if (mustExist)
+    {
+        if (!realpath(relpath, rPath))
+            throw MakeErrnoException(errno, "makeAbsolutePath: could not resolve absolute path for %s", relpath);
+        out.append(rPath);
+    }
+    else
+    {
+        // no error, will attempt to resolve(realpath) as much of relpath as possible and append rest
+        const char *end = relpath+strlen(relpath);
+        if ('/' == *end) --end;
+        if (end != relpath)
+        {
+            const char *path = relpath;
+            const char *tail = end;
+            StringBuffer head;
+            loop
+            {
+                if (realpath(path,rPath))
+                {
+                    out.append(rPath);
+                    if (tail != end)
+                        out.append(tail);
+                    return out;
+                }
+                // mark next tail
+                loop
+                {
+                    --tail;
+                    if (tail == relpath)
+                        break;
+                    else if ('/' == *tail)
+                        break;
+                }
+                if (tail == relpath)
+                    break; // bail out and guess
+                head.append(tail-relpath, relpath);
+                path = head.str();
+            }
+        }
+        if (isAbsolutePath(relpath))
+            out.append(relpath);
+        else
+        {
+            appendCurrentDirectory(out, true);
+            addPathSepChar(out).append(relpath);
+        }
+    }
 #endif
-    return out.append(path);
+    return out;
 }
 
-StringBuffer &makeAbsolutePath(StringBuffer &relpath)
+StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustExist)
 {
     StringBuffer out;
-    makeAbsolutePath(relpath.str(),out);
+    makeAbsolutePath(relpath.str(),out,mustExist);
     relpath.swapWith(out);
     return relpath;
 }

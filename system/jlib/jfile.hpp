@@ -536,8 +536,8 @@ inline bool isAbsolutePath(const char *path)
 
 
 
-extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out);
-extern jlib_decl StringBuffer &makeAbsolutePath(StringBuffer &relpath);
+extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out,bool mustExist=false);
+extern jlib_decl StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustExist=false);
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath, const char *basedir, StringBuffer &out);
 extern jlib_decl const char *splitRelativePath(const char *full,const char *basedir,StringBuffer &reldir); // removes basedir if matches, returns tail and relative dir
 extern jlib_decl const char *splitDirMultiTail(const char *multipath,StringBuffer &dir,StringBuffer &tail);
