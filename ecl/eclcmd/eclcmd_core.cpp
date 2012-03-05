@@ -190,12 +190,19 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         fprintf(stdout, "\n");
         if (cmd.optVerbose)
             fprintf(stdout, "Deployed\n   wuid: ");
-        if (displayWuid || cmd.optVerbose)
-            fprintf(stdout, "%s\n", w);
         const char *state = resp->getWorkunit().getState();
-        if (cmd.optVerbose)
-            fprintf(stdout, "   state: %s\n", state);
-        return streq(resp->getWorkunit().getState(), state);
+        bool isCompiled = strieq(state, "compiled");
+        if (displayWuid || cmd.optVerbose || !isCompiled)
+            fprintf(stdout, "%s\n", w);
+        if (cmd.optVerbose || !isCompiled)
+            fprintf(stdout, "   state: %s\n\n", state);
+        IArrayOf<IConstECLException> &exceptions = resp->getWorkunit().getExceptions();
+        ForEachItemIn(i, exceptions)
+        {
+            IConstECLException &e = exceptions.item(i);
+            fprintf(stderr, "%s: %s %d: %s\n", e.getSource(), e.getSeverity(), e.getCode(), e.getMessage());
+        }
+        return isCompiled;
     }
     return false;
 }
