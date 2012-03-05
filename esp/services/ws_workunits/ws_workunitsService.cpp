@@ -3309,6 +3309,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
+    winfo.getExceptions(resp.updateWorkunit(), WUINFO_All);
 
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
