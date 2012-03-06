@@ -43,6 +43,7 @@ extern HQL_API bool isFieldSelectedFromRecord(IHqlExpression * expr);
 extern HQL_API void gatherHints(HqlExprCopyArray & target, IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryHint(IHqlExpression * expr, _ATOM name);
 extern HQL_API IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx);
+extern HQL_API void unwindHintAttrs(HqlExprArray & args, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * replaceChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild);
 extern HQL_API IHqlExpression * insertChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild);

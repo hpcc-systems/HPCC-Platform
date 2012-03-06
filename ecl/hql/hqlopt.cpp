@@ -3067,10 +3067,18 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         IHqlExpression * countProjectAttr = transformedCountProject;
                         if (childCountProject && transformContainsCounter(expandedTransform, childCountProject->queryChild(0)))
                             countProjectAttr = childCountProject;
-                        if (countProjectAttr)
-                            expandedTransform.setown(createComma(LINK(expandedTransform), LINK(countProjectAttr)));
                         noteUnused(child);
-                        OwnedHqlExpr ret = createDataset(op, LINK(child->queryChild(0)), createComma(expandedTransform.getClear(), LINK(transformedSeq), LINK(transformKeyed)));
+                        HqlExprArray args;
+                        args.append(*LINK(child->queryChild(0)));
+                        args.append(*expandedTransform.getClear());
+                        if (countProjectAttr)
+                            args.append(*LINK(countProjectAttr));
+                        args.append(*LINK(transformedSeq));
+                        if (transformKeyed)
+                            args.append(*LINK(transformKeyed));
+                        unwindHintAttrs(args, transformed);
+                        unwindHintAttrs(args, child);
+                        OwnedHqlExpr ret = createDataset(op, args);
                         ret.setown(child->cloneAllAnnotations(ret));
                         return transformed->cloneAllAnnotations(ret);
                     }

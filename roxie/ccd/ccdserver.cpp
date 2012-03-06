@@ -20848,10 +20848,11 @@ protected:
     unsigned * seekSizes;
     bool optimizeSteppedPostFilter;
     ISteppingMeta * projectedMeta;
+    unsigned maxSeekLookahead;
 
 public:
     CRoxieServerIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip)
+        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
         : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _maxRecordSize, _sorted, _isLocal, _maySkip), 
           readHelper((IHThorIndexReadArg &)basehelper)
     {
@@ -20859,6 +20860,7 @@ public:
         unsigned flags = indexHelper.getFlags();
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
         seekSizes = NULL;
+        maxSeekLookahead = _maxSeekLookahead;
 
         if (rawMeta)
         {
@@ -21040,7 +21042,11 @@ public:
         IMultipleStepSeekInfo *seeks = stepExtra.queryExtraSeeks();
         if (seeks)
         {
-            seeks->ensureFilled(seek, numFields, 40000/seekLen);  // MORE - could make this configurable
+            unsigned lookahead = 40000/seekLen;
+            if (maxSeekLookahead && (lookahead > maxSeekLookahead))
+                lookahead  = maxSeekLookahead;
+            seeks->ensureFilled(seek, numFields, lookahead);
+
             unsigned serialized = 1; // rawseek is always serialized...
             unsigned patchLength = out.length();
             out.append(serialized);  // NOTE - we come back and patch with the actual value...
@@ -21567,6 +21573,7 @@ public:
     bool variableFileName;
     bool enableFieldTranslation;
     unsigned rawSize;
+    unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
     CRoxieServerSideCache *cache;
@@ -21608,6 +21615,7 @@ public:
         }
         int cacheSize = _graphNode.getPropInt("hint[@name='cachehits']/@value", serverSideCacheSize);
         cache = cacheSize ? new CRoxieServerSideCache(cacheSize) : NULL;
+        maxSeekLookahead = _graphNode.getPropInt("hint[@name='maxseeklookahead']/@value", 0);
     }
 
     ~CRoxieServerBaseIndexActivityFactory()
@@ -21652,7 +21660,7 @@ public:
         else if (isSimple && !maySkip)
             return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip);
+            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip, maxSeekLookahead);
     }
 };
 

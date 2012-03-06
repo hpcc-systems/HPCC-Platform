@@ -8867,6 +8867,7 @@ stepFlag
                         {
                             $$.setExpr(createExprAttribute(filteredAtom), $1);
                         }
+    | hintAttribute
     ;
 
 
