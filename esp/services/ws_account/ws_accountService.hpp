@@ -43,15 +43,15 @@ public:
         if ((browserUserAgent.length() > 0) && strstr(browserUserAgent.str(), "Firefox"))
             isFF = true;
 
-        IPropertyTree *folder = ensureNavFolder(data, "My Account", "My Account");
+        IPropertyTree *folder = ensureNavFolder(data, "My Account", NULL);
         StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
         if (m_portalURL.length() > 0)
             path.appendf("&EEPortal=%s", m_portalURL.str());
 
-        ensureNavLink(*folder, "Change Password", path.str(), "Change Password");
+        ensureNavLink(*folder, "Change Password", path.str(), "Change Password for current account");
         if (!isFF)
-            ensureNavLink(*folder, "Relogin", path.str(), "Relogin");
-        ensureNavLink(*folder, "Who Am I", path.str(), "WhoAmI");
+            ensureNavLink(*folder, "Relogin", path.str(), "Log on using the same or different credential");
+        ensureNavLink(*folder, "Who Am I", path.str(), "Display the current user ");
     }
 };
 

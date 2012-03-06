@@ -61,10 +61,10 @@ public:
         if (m_portalURL.length() > 0)
             path.appendf("&EEPortal=%s", m_portalURL.str());
 
-        IPropertyTree *folder = ensureNavFolder(data, "Users/Permissions", "Permissions");
-        ensureNavLink(*folder, "Users", path.str(), "Users");
-        ensureNavLink(*folder, "Groups", path.str(), "Groups");
-        ensureNavLink(*folder, "Permissions", path.str(), "Permissions");
+        IPropertyTree *folder = ensureNavFolder(data, "Users/Permissions", NULL);
+        ensureNavLink(*folder, "Users", path.str(), "Manage Users and permissions");
+        ensureNavLink(*folder, "Groups", path.str(), "Manage Groups and permissions");
+        ensureNavLink(*folder, "Permissions", path.str(), "Manage Permissions");
     }
 
     int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)
