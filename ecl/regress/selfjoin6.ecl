@@ -15,26 +15,25 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-#ifndef __HQLOPT_HPP_
-#define __HQLOPT_HPP_
 
-#include "jlib.hpp"
-#include "hqlexpr.hpp"
+#option ('targetClusterType', 'roxie');
 
-enum
-{
-    HOOfold                     = 0x0001,
-    HOOcompoundproject          = 0x0002,
-    HOOnoclonelimit             = 0x0004,
-    HOOnocloneindexlimit        = 0x0008,
-    HOOinsidecompound           = 0x0010,
-    HOOfiltersharedproject      = 0x0020,
-    HOOhascompoundaggregate     = 0x0040,
-    HOOfoldconstantdatasets     = 0x0080,
-    HOOalwayslocal              = 0x0100,
-};
+namesRecord :=
+            RECORD
+string20        surname := '?????????????';
+string10        forename := '?????????????';
+integer2        age := 25;
+            END;
 
-extern HQL_API IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options);
-extern HQL_API void optimizeHqlExpression(HqlExprArray & target, HqlExprArray & source, unsigned options);
+namesTable := dataset([
+        {'Smithe','Pru',10},
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smith','Jo'},
+        {'Smith','Matthew'},
+        {'X','Z'}], namesRecord);
 
-#endif
+sorted1 := NOFOLD(SORT(NOFOLD(namesTable), surname, age));
+
+Joined := join (sorted1, sorted1, LEFT.surname = RIGHT.surname AND LEFT.forename = RIGHT.forename, TRANSFORM(LEFT));
+output(Joined);

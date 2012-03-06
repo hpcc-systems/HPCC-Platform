@@ -803,7 +803,7 @@ enum ThorActivityKind
     TAKcaseaction,
     TAKwhen_dataset,
     TAKwhen_action,
-        TAKunused2,
+    TAKshuffle,
     TAKindexgroupexists,
     TAKindexgroupcount,
     TAKhashdistributemerge,
@@ -957,6 +957,7 @@ enum ActivityInterfaceEnum
     TAIpipethrougharg_2,
     TAIpipewritearg_2,
     TAItemptablearg_2,
+    TAIshuffleextra_1,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -1510,6 +1511,16 @@ struct IHThorTopNExtra : public IInterface
 };
 
 struct IHThorTopNArg : public IHThorSortArg, public IHThorTopNExtra
+{
+    COMMON_NEWTHOR_FUNCTIONS
+};
+
+struct IHThorShuffleExtra : public IInterface
+{
+    virtual bool isSameGroup(const void * _left, const void * _right) = 0;
+};
+
+struct IHThorShuffleArg : public IHThorSortArg, public IHThorShuffleExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };

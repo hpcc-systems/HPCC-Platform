@@ -386,6 +386,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SERVICE
   SET
   SHARED
+  SHUFFLE
   SIMPLE_TYPE
   SIN
   SINGLE
@@ -7110,7 +7111,7 @@ simpleDataSet
                             RecordSelectIterator iter(active->queryRecord(), active);
                             ForEach(iter)
                                 components.append(*iter.get());
-                            OwnedHqlExpr sortlist = createValue(no_sortlist, makeSortListType(NULL), components);
+                            OwnedHqlExpr sortlist = createSortList(components);
                             OwnedHqlExpr hash = createValue(no_hash32, makeIntType(4, false), LINK(sortlist), createAttribute(internalAtom));
                             $$.setExpr(createDataset(no_distribute, ds.getClear(), createComma(hash.getClear(), $5.getExpr())), $1);
                         }
@@ -7334,7 +7335,7 @@ simpleDataSet
                                     values.append(OLINK(cur));
                             }
                             if (values.ordinality())
-                                cond = createValue(no_sortlist, makeSortListType(NULL), values);
+                                cond = createSortList(values);
                             else
                                 cond = createConstant(true);
 
@@ -8164,6 +8165,14 @@ simpleDataSet
                             $$.setExpr(parser->createSortExpr(no_sort, $4, $7, sortItems));
                             $$.setPosition($1);
                         }
+    | SHUFFLE '(' startSortOrder startTopFilter ',' sortListExpr ',' sortListExpr optCommonAttrs ')'  endSortOrder endTopFilter
+                        {
+                            OwnedHqlExpr options = $9.getExpr();
+                            if (isGrouped($4.queryExpr()))
+                                parser->reportError(HQLERR_CannotBeGrouped, $1, "SHUFFLE not yet supported on grouped datasets");
+                            //NB: $6 and $8 are reversed in their internal representation to make consistent with no_sort
+                            $$.setExpr(createDataset(no_shuffle, $4.getExpr(), createComma($8.getExpr(), $6.getExpr(), options.getClear())), $1);
+                        }
     | SORTED '(' startSortOrder startTopFilter ',' beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
@@ -8181,7 +8190,7 @@ simpleDataSet
                             IHqlExpression * record = dataset->queryRecord();
                             unwindRecordAsSelects(sorted, record, dataset->queryNormalizedSelector());
                             args.append(*dataset.getClear());
-                            args.append(*createValue(no_sortlist, makeSortListType(NULL), sorted));
+                            args.append(*createSortList(sorted));
                             $$.setExpr(createDataset(no_sorted, args));
                             $$.setPosition($1);
                         }
@@ -8191,7 +8200,7 @@ simpleDataSet
 
                             HqlExprArray args;
                             $5.unwindCommaList(args);
-                            OwnedHqlExpr stepOrder = createValue(no_sortlist, makeSortListType(NULL), args);
+                            OwnedHqlExpr stepOrder = createSortList(args);
                             $$.setExpr(createDatasetF(no_stepped, dataset.getClear(), stepOrder.getClear(), $6.getExpr(), NULL));
                             $$.setPosition($1);
                         }
@@ -10446,7 +10455,7 @@ optFieldMaps
                         {
                             HqlExprArray args;
                             parser->endList(args);
-                            $$.setExpr(createValue(no_sortlist, makeSortListType(NULL), args), $1);
+                            $$.setExpr(createSortList(args), $1);
                         }
     |                   { $$.setNullExpr(); }
     | '{' beginList error '}'
@@ -10478,7 +10487,8 @@ fieldMap
 
 sortListOptCurleys
     : sortList
-    | '{' sortList '}'  
+    | '{' sortList '}'
+    | '{' sortList '}' ',' sortList         /* Allow trailing attributes */
     ;
 
 sortList
@@ -10717,6 +10727,15 @@ beginList
     :                   {
                             parser->beginList();
                             $$.clear();
+                        }
+    ;
+
+sortListExpr
+    : beginList '{' sortList '}'
+                        {
+                            HqlExprArray elements;
+                            parser->endList(elements);
+                            $$.setExpr(createSortList(elements));
                         }
     ;
 

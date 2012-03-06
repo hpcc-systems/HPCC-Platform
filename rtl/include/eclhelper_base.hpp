@@ -1537,6 +1537,36 @@ class CThorTopNArg : public CThorArg, implements IHThorTopNArg
     virtual int compareBest(const void * _left) { return +1; }
 };
 
+class CThorShuffleArg : public CThorArg, implements IHThorShuffleArg
+{
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAIsortarg_1:
+            return static_cast<IHThorSortArg *>(this);
+        case TAIshuffleextra_1:
+            return static_cast<IHThorShuffleExtra *>(this);
+        }
+        return NULL;
+    }
+
+    virtual double getSkew()                            { return 0; }           // 0=default
+    virtual bool hasManyRecords() { return false; }
+    virtual double getTargetSkew()                      { return 0; }
+    virtual ISortKeySerializer * querySerialize() { return NULL; }
+    virtual unsigned __int64 getThreshold() { return 0; }
+    virtual IOutputMetaData * querySortedRecordSize() { return NULL; }
+    virtual const char * getSortedFilename() { return NULL; }
+    virtual ICompare * queryCompareLeftRight() { return NULL; }
+    virtual ICompare * queryCompareSerializedRow() { return NULL; }
+};
+
 class CThorKeyedJoinArg : public CThorArg, implements IHThorKeyedJoinArg
 {
     virtual void Link() const { RtlCInterface::Link(); }

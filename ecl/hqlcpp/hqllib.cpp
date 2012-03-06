@@ -262,7 +262,7 @@ protected:
                     throwUnexpected();
                     HqlExprArray parms;
                     unwindChildren(parms, oldSymbol, 1);
-                    IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), parms);
+                    IHqlExpression * formals = createSortList(parms);
                     newValue.setown(createFunctionDefinition(name, newValue.getClear(), formals, NULL, NULL));
                 }
 

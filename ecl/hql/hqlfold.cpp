@@ -3307,6 +3307,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             break;
         }
     case no_sort:
+    case no_shuffle:
     case no_sorted:
         {
             //If action does not change the type information, then it can't have done anything...
@@ -3314,7 +3315,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return removeParentNode(expr);
             if (isNull(child) || hasNoMoreRowsThan(child, 1))
                 return removeParentNode(expr);
-            //If all arguments to sort are constnat then remove it, otherwise the activities will not like it.
+            //If all arguments to sort are constant then remove it, otherwise the activities will not like it.
             //NOTE: MERGE has its sort order preserved, so it won't cause issues there.
             bool allConst = true;
             ForEachChildFrom(i, expr, 1)
@@ -5397,6 +5398,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_keyeddistribute:
     case no_cosort:
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_assertsorted:
     case no_topn:
