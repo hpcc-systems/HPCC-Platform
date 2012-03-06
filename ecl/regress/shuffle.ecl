@@ -15,26 +15,20 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-#ifndef __HQLOPT_HPP_
-#define __HQLOPT_HPP_
 
-#include "jlib.hpp"
-#include "hqlexpr.hpp"
+#option ('targetClusterType', 'roxie');
 
-enum
-{
-    HOOfold                     = 0x0001,
-    HOOcompoundproject          = 0x0002,
-    HOOnoclonelimit             = 0x0004,
-    HOOnocloneindexlimit        = 0x0008,
-    HOOinsidecompound           = 0x0010,
-    HOOfiltersharedproject      = 0x0020,
-    HOOhascompoundaggregate     = 0x0040,
-    HOOfoldconstantdatasets     = 0x0080,
-    HOOalwayslocal              = 0x0100,
-};
+namesRecord :=
+            RECORD
+string20        a;
+string10        b;
+integer2        c;
+integer2        d;
+            END;
 
-extern HQL_API IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options);
-extern HQL_API void optimizeHqlExpression(HqlExprArray & target, HqlExprArray & source, unsigned options);
+namesTable := dataset('x', namesRecord, thor);
 
-#endif
+s1 := sort(namesTable, a, b, c);
+s2 := shuffle(s1, {d},{a,b},local); // sort and grouping are round the wrong way!
+s3 := sorted(s2, {a,b,d}, assert);
+output(s3);

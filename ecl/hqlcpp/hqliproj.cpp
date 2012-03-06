@@ -188,9 +188,14 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
             switch (expr->getOperator())
             {
             case no_sort:
+                //MORE: What about checking for grouped!
                 if (!expr->hasProperty(localAtom))
                     return CostNetworkCopy;
                 return CostManyCopy;
+            case no_shuffle:
+                if (!expr->hasProperty(localAtom) && !isGrouped(expr))
+                    return CostNetworkCopy;
+                break;
             case no_group:
                 if (!expr->hasProperty(localAtom))
                     return CostNetworkGroup;

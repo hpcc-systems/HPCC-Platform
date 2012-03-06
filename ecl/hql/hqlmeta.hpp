@@ -45,6 +45,7 @@ extern HQL_API ITypeInfo * getTypeDistribute(ITypeInfo * prev, IHqlExpression * 
 extern HQL_API ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsigned firstChild);
 extern HQL_API ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType);
 extern HQL_API ITypeInfo * getTypeProject(ITypeInfo * prev, IHqlExpression * newRecord, TableProjectMapper & mapper);
+extern HQL_API ITypeInfo * getTypeShuffle(ITypeInfo * prev, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal);
 extern HQL_API ITypeInfo * getTypeCannotProject(ITypeInfo * prev, IHqlExpression * newRecord); // preserve grouping, but that's it.
 extern HQL_API ITypeInfo * getTypeUnknownDistribution(ITypeInfo * prev);
 extern HQL_API ITypeInfo * getTypeRemoveDistribution(ITypeInfo * prev);
@@ -63,14 +64,20 @@ extern HQL_API bool isPartitionedForGroup(IHqlExpression * table, const HqlExprA
 
 //The following only look at the sort order, and not the partitioning
 extern HQL_API bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal);
-extern HQL_API IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal);
+extern HQL_API IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal, bool allowShuffle);
 
 extern HQL_API bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalities);
 
 extern HQL_API bool appearsToBeSorted(ITypeInfo * type, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * newSort, bool isLocal, bool ignoreGrouping);
-extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
+extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowShuffle);
+
+extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping);
+extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API IHqlExpression * getShuffleSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
+extern HQL_API IHqlExpression * getShuffleSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
+extern HQL_API IHqlExpression * convertShuffleToGroupedSort(IHqlExpression * expr);
 
 extern HQL_API bool reorderMatchExistingLocalSort(HqlExprArray & sortedLeft, HqlExprArray & reorderedRight, IHqlExpression * dataset, const HqlExprArray & left, const HqlExprArray & right);
 

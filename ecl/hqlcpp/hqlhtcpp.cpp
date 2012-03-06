@@ -3184,7 +3184,7 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
             HqlExprArray parameters;
             OwnedHqlExpr entrypoint = createAttribute(entrypointAtom, createConstant(name));
             OwnedHqlExpr body = createValue(no_null, LINK(type), LINK(entrypoint));
-            OwnedHqlExpr formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
+            OwnedHqlExpr formals = createSortList(parameters);
             OwnedHqlExpr attrs = createAttribute(virtualAtom);
             OwnedHqlExpr function = createFunctionDefinition(NULL, LINK(body), LINK(formals), NULL, LINK(attrs));
             funcctx.addFunction(function);
@@ -5656,6 +5656,9 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
         if (isThorCluster(cluster))
             complexity = 5;
         break;
+    case no_shuffle:
+        complexity = 1;
+        break;
     case no_sort:
         if (isLocalActivity(expr) || !isThorCluster(cluster))
             complexity = 2;
@@ -6118,6 +6121,19 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityProcess(ctx, expr);
                 break;
             case no_group:
+                //Special case group(shuffle) which will be mapped to group(group(sort(group))) to remove
+                //the redundant group
+                if (!options.supportsShuffleActivity && (expr->queryChild(0)->getOperator() == no_shuffle))
+                {
+                    IHqlExpression * shuffle = expr->queryChild(0);
+                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(shuffle);
+                    assertex(groupedSort->getOperator() == no_group);
+                    OwnedHqlExpr newGroup = replaceChild(expr, 0, groupedSort->queryChild(0));
+                    result = doBuildActivityGroup(ctx, newGroup);
+                }
+                else
+                    result = doBuildActivityGroup(ctx, expr);
+                break;
             case no_cogroup:
             case no_assertgrouped:
                 result = doBuildActivityGroup(ctx, expr);
@@ -6170,6 +6186,15 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
             case no_sub:
                 result = doBuildActivitySub(ctx, expr);
+                break;
+            case no_shuffle:
+                if (!options.supportsShuffleActivity)
+                {
+                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(expr);
+                    result = buildCachedActivity(ctx, groupedSort);
+                }
+                else
+                    result = doBuildActivitySort(ctx, expr);
                 break;
             case no_sort:
             case no_cosort:
@@ -10742,19 +10767,8 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
 
     assertex(dataset.querySide() == no_activetable);
     bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, canRemoveSort, true);
-    if (noSortAttr)
-    {
-        IHqlExpression * child = noSortAttr->queryChild(0);
-        if (!child)
-            noNeedToSort = true;
-        else
-        {
-            if (side == no_left)
-                noNeedToSort = child->queryName() == leftAtom;
-            else if (side == no_left)
-                noNeedToSort = child->queryName() == rightAtom;
-        }
-    }
+    if (userPreventsSort(noSortAttr, side))
+        noNeedToSort = true;
     
     if (noNeedToSort || isLightweight)
     {
@@ -12967,7 +12981,7 @@ void optimizeGroupOrder(HqlExprArray & optimized, IHqlExpression * dataset, HqlE
 
 IHqlExpression * createOrderFromCompareArray(HqlExprArray & exprs, IHqlExpression * dataset, IHqlExpression * left, IHqlExpression * right)
 {
-    OwnedHqlExpr equalExpr = createValue(no_sortlist, makeSortListType(NULL), exprs);
+    OwnedHqlExpr equalExpr = createSortList(exprs);
     OwnedHqlExpr lhs = replaceSelector(equalExpr, dataset, left);
     OwnedHqlExpr rhs = replaceSelector(equalExpr, dataset, right);
     return createValue(no_order, LINK(signedType), lhs.getClear(), rhs.getClear());
@@ -13133,7 +13147,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         {
             if (info.equalities.ordinality() && !instance->isGrouped)
             {
-                OwnedHqlExpr order = createValue(no_sortlist, makeSortListType(NULL), info.equalities);
+                OwnedHqlExpr order = createValueSafe(no_sortlist, makeSortListType(NULL), info.equalities);
                 buildCompareMember(instance->nestedctx, "ComparePrimary", order, DatasetReference(dataset));
                 if (!targetThor())
                     equalities = &noEqualities;
@@ -14904,7 +14918,7 @@ IHqlExpression * HqlCppTranslator::createOrderFromSortList(const DatasetReferenc
         }
     }
 
-    return createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftList), createValue(no_sortlist, makeSortListType(NULL), rightList));
+    return createValue(no_order, LINK(signedType), createSortList(leftList), createSortList(rightList));
 }
 
 
@@ -14919,6 +14933,97 @@ void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList
     bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
 
     doBuildReturnCompare(ctx, order, no_order, false);
+}
+
+void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * sortlist)
+{
+    BuildCtx funcctx(ctx);
+    funcctx.addQuotedCompound("virtual bool isSameGroup(const void * _left, const void * _right)");
+    if (sortlist->getOperator() == no_activetable)
+        buildReturn(funcctx, queryBoolExpr(false));
+    else
+    {
+        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+
+        OwnedHqlExpr selSeq = createSelectorSequence();
+        OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
+        OwnedHqlExpr rightSelect = createSelector(no_right, dataset, selSeq);
+        HqlExprArray args;
+        HqlExprArray leftValues, rightValues;
+        HqlExprArray compares;
+        unwindChildren(compares, sortlist);
+
+        //Optimize the grouping conditions by ordering them by the fields in the record (so the
+        //doBuildReturnCompare() can combine as many as possible),  and remove duplicates
+        if (options.optimizeGrouping && (compares.ordinality() > 1))
+        {
+            HqlExprArray equalities;
+            optimizeGroupOrder(equalities, dataset, compares);
+            ForEachItemIn(i, equalities)
+            {
+                IHqlExpression * test = &equalities.item(i);
+                leftValues.append(*replaceSelector(test, dataset, leftSelect));
+                rightValues.append(*replaceSelector(test, dataset, rightSelect));
+            }
+        }
+
+        ForEachItemIn(idx, compares)
+        {
+            IHqlExpression * test = &compares.item(idx);
+            if (containsSelector(test, leftSelect) || containsSelector(test, rightSelect))
+                args.append(*LINK(test));
+            else
+            {
+                OwnedHqlExpr lhs = replaceSelector(test, dataset, leftSelect);
+                OwnedHqlExpr rhs = replaceSelector(test, dataset, rightSelect);
+                if (lhs != rhs)
+                {
+                    leftValues.append(*lhs.getClear());
+                    rightValues.append(*rhs.getClear());
+                }
+            }
+        }
+
+        OwnedHqlExpr result;
+        OwnedHqlExpr orderResult;
+        //Use the optimized equality code for more than one element - which often combines the comparisons.
+        if (leftValues.ordinality() != 0)
+        {
+            if (leftValues.ordinality() == 1)
+                args.append(*createValue(no_eq, makeBoolType(), LINK(&leftValues.item(0)), LINK(&rightValues.item(0))));
+            else
+                orderResult.setown(createValue(no_order, LINK(signedType), createSortList(leftValues), createSortList(rightValues)));
+        }
+
+        if (args.ordinality() == 1)
+            result.set(&args.item(0));
+        else if (args.ordinality() != 0)
+            result.setown(createValue(no_and, makeBoolType(), args));
+
+        bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
+        bindTableCursor(funcctx, dataset, "right", no_right, selSeq);
+        IHqlExpression * trueExpr = queryBoolExpr(true);
+        if (result)
+        {
+            if (orderResult)
+            {
+                buildFilteredReturn(funcctx, result, trueExpr);
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+            }
+            else
+            {
+                buildReturn(funcctx, result);
+            }
+        }
+        else
+        {
+            if (orderResult)
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+            else
+                buildReturn(funcctx, trueExpr);
+        }
+    }
 }
 
 ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpression * expr)
@@ -14956,93 +15061,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpr
         buildInstancePrefix(instance);
 
         //virtual bool isSameGroup(const void *left, const void *right);
-        BuildCtx funcctx(instance->startctx);
-        funcctx.addQuotedCompound("virtual bool isSameGroup(const void * _left, const void * _right)");
-        if (sortlist->getOperator() == no_activetable)
-            buildReturn(funcctx, queryBoolExpr(false));
-        else
-        {
-            funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-            funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
-
-            OwnedHqlExpr selSeq = createSelectorSequence();
-            OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
-            OwnedHqlExpr rightSelect = createSelector(no_right, dataset, selSeq);
-            HqlExprArray args;
-            HqlExprArray leftValues, rightValues;
-            HqlExprArray compares;
-            unwindChildren(compares, sortlist);
-
-            //Optimize the grouping conditions by ordering them by the fields in the record (so the
-            //doBuildReturnCompare() can combine as many as possible),  and remove duplicates
-            if (options.optimizeGrouping && (compares.ordinality() > 1))
-            {
-                HqlExprArray equalities;
-                optimizeGroupOrder(equalities, dataset, compares);
-                ForEachItemIn(i, equalities)
-                {
-                    IHqlExpression * test = &equalities.item(i);
-                    leftValues.append(*replaceSelector(test, dataset, leftSelect));
-                    rightValues.append(*replaceSelector(test, dataset, rightSelect));
-                }
-            }
-
-            ForEachItemIn(idx, compares)
-            {
-                IHqlExpression * test = &compares.item(idx);
-                if (containsSelector(test, leftSelect) || containsSelector(test, rightSelect))
-                    args.append(*LINK(test));
-                else
-                {
-                    OwnedHqlExpr lhs = replaceSelector(test, dataset, leftSelect);
-                    OwnedHqlExpr rhs = replaceSelector(test, dataset, rightSelect);
-                    if (lhs != rhs)
-                    {
-                        leftValues.append(*lhs.getClear());
-                        rightValues.append(*rhs.getClear());
-                    }
-                }
-            }
-
-            OwnedHqlExpr result;
-            OwnedHqlExpr orderResult;
-            //Use the optimized equality code for more than one element - which often combines the comparisons.
-            if (leftValues.ordinality() != 0)
-            {
-                if (leftValues.ordinality() == 1)
-                    args.append(*createValue(no_eq, makeBoolType(), LINK(&leftValues.item(0)), LINK(&rightValues.item(0))));
-                else
-                    orderResult.setown(createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftValues), createValue(no_sortlist, makeSortListType(NULL), rightValues)));
-            }
-
-            if (args.ordinality() == 1)
-                result.set(&args.item(0));
-            else if (args.ordinality() != 0)
-                result.setown(createValue(no_and, makeBoolType(), args));
-
-            bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
-            bindTableCursor(funcctx, dataset, "right", no_right, selSeq);
-            IHqlExpression * trueExpr = queryBoolExpr(true);
-            if (result)
-            {
-                if (orderResult)
-                {
-                    buildFilteredReturn(funcctx, result, trueExpr);
-                    doBuildReturnCompare(funcctx, orderResult, no_eq, true);
-                }
-                else
-                {
-                    buildReturn(funcctx, result);
-                }
-            }
-            else
-            {
-                if (orderResult)
-                    doBuildReturnCompare(funcctx, orderResult, no_eq, true);
-                else
-                    buildReturn(funcctx, trueExpr);
-            }
-        }
+        doBuildFuncIsSameGroup(instance->startctx, dataset, sortlist);
 
         buildInstanceSuffix(instance);
 
@@ -15303,6 +15322,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             helper = "Sort";
             break;
         }
+    case no_shuffle:
+        actKind = TAKshuffle;
+        helper = "Shuffle";
+        break;
     default:
         {
             cosort = expr->queryChild(2);
@@ -15357,6 +15380,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     buildSkewThresholdMembers(instance->classctx, expr);
 
+    if (expr->getOperator() == no_shuffle)
+        doBuildFuncIsSameGroup(instance->startctx, dataset, expr->queryChild(2));
+
     if (limit)
     {
         OwnedHqlExpr newLimit = ensurePositiveOrZeroInt64(limit);
@@ -15382,7 +15408,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
                 maxValues.replace(*LINK(cur.queryChild(0)), i);
             }
         }
-        OwnedHqlExpr order = createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), sortValues), createValue(no_sortlist, makeSortListType(NULL), maxValues));
+        OwnedHqlExpr order = createValue(no_order, LINK(signedType), createSortList(sortValues), createSortList(maxValues));
 
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual int compareBest(const void * _self)");

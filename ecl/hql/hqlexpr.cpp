@@ -1000,6 +1000,7 @@ const char *getOpString(node_operator op)
     case no_enth: return "ENTH";
     case no_sample: return "SAMPLE";
     case no_sort: return "SORT";
+    case no_shuffle: return "SHUFFLE";
     case no_sorted: return "SORTED";
     case no_choosen: return "CHOOSEN";
     case no_choosesets: return "CHOOSESETS";
@@ -1426,7 +1427,7 @@ const char *getOpString(node_operator op)
     case no_dataset_alias: return "TABLE";
 
     case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
-    case no_unused13: case no_unused14: case no_unused15: case no_unused17: case no_unused18: case no_unused19:
+    case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
@@ -1782,6 +1783,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_cosort:
     case no_keyed:
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_stepped:
     case no_transformebcdic:
@@ -2046,6 +2048,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_sample:
     case no_selectnth:
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_stepped:
     case no_assertsorted:
@@ -2332,6 +2335,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_section:
     case no_sample:
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_stepped:
     case no_assertsorted:
@@ -5377,6 +5381,7 @@ void CHqlDataset::cacheParent()
     case no_keyed:
     // change ordering
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_stepped:
     case no_cosort:
@@ -10587,6 +10592,14 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             type.setown(getTypeDistribute(datasetType, newDistribution, NULL));
             break;
         }
+    case no_shuffle:
+        {
+            bool isLocal = queryProperty(localAtom, parms) != NULL;
+            OwnedHqlExpr normalizedSortOrder = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
+            OwnedHqlExpr mappedGrouping = replaceSelector(&parms.item(2), dataset, cachedActiveTableExpr);
+            type.setown(getTypeShuffle(datasetType, mappedGrouping, normalizedSortOrder, isLocal));
+            break;
+        }
     case no_cosort:
     case no_sort:
     case no_sorted:
@@ -10713,7 +10726,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                 else
                     unwindRecordAsSelects(sortExprs, record, cachedActiveTableExpr);
 
-                OwnedHqlExpr sortOrder = createValue(no_sortlist, makeSortListType(NULL), sortExprs);
+                OwnedHqlExpr sortOrder = createSortList(sortExprs);
                 if (queryProperty(noRootAtom, parms))
                     type.setown(getTypeLocalSort(type, sortOrder));
                 else
@@ -10927,7 +10940,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             IHqlExpression * order= queryProperty(sortedAtom, parms);       // already uses no_activetable to refer to dataset
             assertex(order);
             unwindChildren(components, order);
-            OwnedHqlExpr sortlist = createValue(no_sortlist, makeSortListType(NULL), components);
+            OwnedHqlExpr sortlist = createSortList(components);
             if (queryProperty(localAtom, parms))
                 type.setown(getTypeLocalSort(datasetType, sortlist));
             else
@@ -10957,7 +10970,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             OwnedHqlExpr normalizedOrder = replaceSelector(order, selector, cachedActiveTableExpr);
             HqlExprArray components;
             unwindChildren(components, normalizedOrder);
-            OwnedHqlExpr sortlist = createValue(no_sortlist, makeSortListType(NULL), components);
+            OwnedHqlExpr sortlist = createSortList(components);
             //These are all currently implemented as local activities, need to change following if no longer true
             type.setown(getTypeLocalSort(datasetType, sortlist));
             break;
@@ -14976,6 +14989,11 @@ extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record)
     //  args.append(*LINK(record));
     args.append(*createAttribute(abstractAtom));
     return createRecord(args);
+}
+
+extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements)
+{
+     return createValue(no_sortlist, makeSortListType(NULL), elements);
 }
 
 //==============================================================================================================

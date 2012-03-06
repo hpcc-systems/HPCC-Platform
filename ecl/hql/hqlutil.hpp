@@ -637,5 +637,6 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
+extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
 
 #endif
