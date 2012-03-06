@@ -2554,6 +2554,31 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
     return 0;
 }
 
+jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+{
+    StringBuffer dir;
+    if (pTree)
+        getConfigurationDirectory(pTree->queryPropTree("Directories"),"temp",component,pTree->queryProp("@name"),dir);
+    if (!dir.length())
+    {
+#ifdef _WIN32
+        char path[_MAX_PATH+1];
+        if(GetTempPath(sizeof(path),path))
+            dir.append(path).append("HPCCSystems\\hpcc-data");
+        else
+            dir.append("c:\\HPCCSystems\\hpcc-data\\temp");
+#else
+        dir.append(getenv("TMPDIR"));
+        if (!dir.length())
+            dir.append("/var/lib");
+        dir.append("/HPCCSystems/hpcc-data/temp");
+#endif
+    }
+    dir.append(PATHSEPCHAR).append(component);
+    recursiveCreateDirectory(dir.str());
+    return target.set(dir);
+}
+
 //#define TESTURL
 #ifdef TESTURL
 
