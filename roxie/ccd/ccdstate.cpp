@@ -543,19 +543,12 @@ public:
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
         // Dali filenames used locally
-        bool resolveFilesLocally = !daliHelper->connected();
-        if (resolveFilesLocally && *_fileName != '~')
+        bool disconnected = !daliHelper->connected();
+        if (disconnected && strstr(fileName,"::"))
         {
             StringBuffer name;
-            if (strstr(fileName,"::"))
-            {
-                bool wasDFS;
-                makeSinglePhysicalPartName(fileName, name, true, wasDFS, baseDataDirectory.str());
-            }
-            else
-            {
-                makeAbsolutePath(fileName.str(), name);
-            }
+            bool wasDFS;
+            makeSinglePhysicalPartName(fileName, name, true, wasDFS, baseDataDirectory.str());
             fileName.clear().append(name);
         }
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, true);
@@ -569,9 +562,9 @@ public:
             resolved->remove();
             resolved.clear();
         }
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, resolveFilesLocally, false, true); // MORE - is onlyDFS right?
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, false, true); // MORE - is onlyDFS right?
         if (!ldFile)
-            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (resolveFilesLocally?"local":"DFS"));
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (disconnected?"local":"DFS"));
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
