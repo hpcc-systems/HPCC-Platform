@@ -2490,16 +2490,8 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                                 dirStr.append(pClusterProcess->queryProp("@directory"));
 
                             getMachineList(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), processAddresses);
-                            if (pClusterProcess->getPropBool("@multiSlaves"))
-                            {
-                                getMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
-                                getMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
-                            }
-                            else
-                            {
-                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
-                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
-                            }
+                            getThorMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
+                            getThorMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
                         }
                     }
                 }
