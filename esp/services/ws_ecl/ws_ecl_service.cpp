@@ -183,6 +183,13 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     roxies.setown(createProperties());
+    StringBuffer daliAddress;
+    const char *daliServers = cfg->queryProp("Software/EspProcess/@daliServers");
+    if (daliServers)
+    {
+        while (*daliServers && !strchr(":;,", *daliServers))
+            daliAddress.append(*daliServers++);
+    }
 
     Owned<IPropertyTreeIterator> it = pRoot->getElements("Software/RoxieCluster");
     ForEach(*it)
@@ -193,6 +200,8 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         if (server)
         {
             const char *ip = server->queryProp("@netAddress");
+            if ((!ip || *ip=='.') && daliAddress.length())
+                ip = daliAddress.str();
             const char *port = server->queryProp("@port");
             VStringBuffer addr("%s:%s", ip, port ? port : "9876");
             roxies->setProp(name, addr.str());
@@ -2541,7 +2550,7 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
         httpclient->sendRequest("POST", "text/xml", soapfromjson, output, status);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (web.get())
-            web->expandResults(soapresp.str(), output, xmlflags);
+            web->expandResults(output.str(), soapresp, xmlflags);
     }
     else
     {
@@ -2634,7 +2643,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
         httpclient->sendRequest("POST", "text/xml", content, output, status);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (web.get())
-            web->expandResults(soapresp.str(), output, xmlflags);
+            web->expandResults(output.str(), soapresp, xmlflags);
     }
     else
         submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags);
