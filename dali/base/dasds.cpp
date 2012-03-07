@@ -5779,6 +5779,8 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         }
         LOG(MCdebugInfo(100), unknownJob, "store loaded");
         const char *environment = config.queryProp("@environment");
+
+        Owned<IPropertyTree> oldEnvironment;
         if (environment && *environment)
         {
             LOG(MCdebugInfo(100), unknownJob, "loading external Environment from: %s", environment);
@@ -5791,22 +5793,9 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             Owned<IPropertyTree> envTree = createPTreeFromXMLFile(environment);
             if (0 != stricmp("Environment", envTree->queryName()))
                 throw MakeStringException(0, "External environment file '%s', has '%s' as root, expecting a 'Environment' xml node.", environment, envTree->queryName());
-            Owned<IPropertyTree> existingEnvTree = root->getPropTree("Environment");
-            if (existingEnvTree)
-            {
-                CDateTime dt;
-                dt.setNow();
-                StringBuffer bakName("Environment_");
-                unsigned i=bakName.length();
-                dt.getString(bakName);
-                for (;i<bakName.length();i++)
-                    if (bakName.charAt(i)==':')
-                        bakName.setCharAt(i,'_');
-                bakName.append(".bak");
-                WARNLOG("Detected existing Environment, saving to backup to: %s", bakName.str());
-                saveXML(bakName.str(), existingEnvTree);
-                root->removeTree(existingEnvTree);
-            }
+
+            oldEnvironment.setown(root->getPropTree("Environment"));
+            root->removeTree(oldEnvironment);
             root->addPropTree("Environment", envTree.getClear());
             externalEnvironment = true;
         }
@@ -6128,25 +6117,7 @@ void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
         CIgnore() { SDSManager->ignoreExternals=true; }
         ~CIgnore() { SDSManager->ignoreExternals=false; }
     } ignore;
-    Owned<IPropertyTree> environment;
-    if (externalEnvironment)
-    { // prevent it being saved with standard store
-        environment.setown(root->getPropTree("Environment"));
-        root->removeProp("Environment");
-    }
-    try
-    {
-        iStoreHelper->saveStore(root, NULL, currentEdition);
-    }
-    catch (IException *)
-    {
-        if (externalEnvironment)
-            root->addPropTree("Environment", environment.getClear());   
-        throw;
-    }
-    if (externalEnvironment)
-        root->addPropTree("Environment", environment.getClear());
-
+    iStoreHelper->saveStore(root, NULL, currentEdition);
     unsigned initNodeTableSize = allNodes.maxElements()+OVERFLOWSIZE;
     queryCoven().setInitSDSNodes(initNodeTableSize>INIT_NODETABLE_SIZE?initNodeTableSize:INIT_NODETABLE_SIZE);
 }
@@ -6225,9 +6196,15 @@ void CCovenSDSManager::saveDelta(const char *path, IPropertyTree &changeTree)
     {
         // don't save any changed to /Environment if external
         if (0 == strncmp("/Environment", path, strlen("/Environment")))
+        {
+            WARNLOG("Attempt to change read-only Dali environment, path = %s", path);
             return;
+        }
         if (0 == strcmp("/", path) && changeTree.hasProp("*[@name=\"Environment\"]"))
+        {
+            WARNLOG("Attempt to change read-only Dali environment, path = %s", path);
             return;
+        }
     }
     cleanChangeTree(changeTree);
     // write out with header details (e.g. path)
@@ -7875,14 +7852,14 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
     if (conn)
     {
         Owned<IPropertyTree> root = conn->getRoot();
-        Owned<IPropertyTree> child = root->getPropTree("Environment");
-        if (child.get())
+        Owned<IPropertyTree> oldEnvironment = root->getPropTree("Environment");
+        if (oldEnvironment.get())
         {
             StringBuffer bakname;
             Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-            toXML(child, *fstream);         // formatted (default)
-            root->removeTree(child);
+            toXML(oldEnvironment, *fstream);         // formatted (default)
+            root->removeTree(oldEnvironment);
         }
         root->addPropTree("Environment", LINK(newEnv));
         root.clear();
