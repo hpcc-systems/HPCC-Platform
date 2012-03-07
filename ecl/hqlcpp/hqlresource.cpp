@@ -1161,7 +1161,8 @@ bool ResourcerInfo::useGraphResult()
 
     if (linkedFromChild)
         return true;
-    if (options->targetClusterType != HThorCluster)
+    //Roxie converts spills into splitters, so best to retain them
+    if (options->targetClusterType == RoxieCluster)
         return false;
     return true;
 }
