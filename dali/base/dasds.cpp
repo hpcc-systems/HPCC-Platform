@@ -5803,6 +5803,13 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             externalEnvironment = true;
         }
 
+        bool forceGroupUpdate = config.getPropBool("@forceGroupUpdate");
+        StringBuffer response;
+        initClusterGroups(forceGroupUpdate, response, oldEnvironment);
+        if (response.length())
+            PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
+
+
         UInt64Array refExts;
         PROGLOG("Scanning store for external references");
         Owned<IPropertyTreeIterator> rootIter = root->getElements("//*");
@@ -7869,7 +7876,7 @@ bool CCovenSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupU
         conn->commit();
         conn->close();
         StringBuffer messages;
-        initClusterGroups(forceGroupUpdate, messages);
+        initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
         response.append(messages);
         PROGLOG("Environment and node groups updated");
     }
