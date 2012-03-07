@@ -1979,8 +1979,9 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
             conn->commit();
             conn->close();
             StringBuffer messages;
-            if (!initClusterGroups(forceGroupUpdate, messages))
-                WARNLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
+            initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
+            if (messages.length())
+                PROGLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
             PROGLOG("Environment and node groups updated");
         }
         return true;
