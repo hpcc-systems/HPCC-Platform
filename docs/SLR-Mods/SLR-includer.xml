@@ -347,13 +347,13 @@
 
     <xi:include href="Nodes.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="logicalToPhysical.xml"
+    <xi:include href="LogicalToPhysical.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="daliServers.xml"
+    <xi:include href="DaliServers.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="group.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="Group.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="GetExpandLogicalFileName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
