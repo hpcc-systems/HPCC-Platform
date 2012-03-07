@@ -1216,6 +1216,7 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
         if (options->targetThor() && original->isDataset() && !options->isChildQuery)
             args.append(*createAttribute(_distributed_Atom));
         dataset.setown(createDataset(no_getgraphresult, args));
+        loseDistribution = false;
     }
     else if (useGlobalResult())
     {

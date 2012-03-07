@@ -1582,6 +1582,7 @@ static IHqlExpression * optimizePreserveMeta(IHqlExpression * expr)
     default:
         return LINK(expr);
     }
+
     HqlExprArray args;
     unwindChildren(args, expr, 1);
 
