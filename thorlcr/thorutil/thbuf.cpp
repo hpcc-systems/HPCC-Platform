@@ -1514,7 +1514,11 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
     }
     virtual size32_t rowSize(const void *row)
     {
-        return serializeMeta->getRecordSize(row)+1; // space on disk, +1 = eog marker
+        if (meta == serializeMeta)
+            return meta->getRecordSize(row)+1; // space on disk, +1 = eog marker
+        CSizingSerializer ssz;
+        serializer->serialize(ssz,(const byte *)row);
+        return ssz.size()+1; // space on disk, +1 = eog marker
     }
 public:
     CSharedWriteAheadDisk(CActivityBase *activity, const char *spillName, unsigned outputCount, IRowInterfaces *rowIf, IDiskUsage *_iDiskUsage) : CSharedWriteAheadBase(activity, outputCount, rowIf),
