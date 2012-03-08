@@ -13555,7 +13555,7 @@ class CRoxieServerLoopActivity : public CRoxieServerActivity
 protected:
     IHThorLoopArg &helper;
     ThorActivityKind activityKind;
-    int maxIterations;
+    unsigned maxIterations;
     bool finishedLooping;
     unsigned flags;
     bool eof;
@@ -13579,8 +13579,8 @@ public:
     {
         eof = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
         if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
             finishedLooping = true;
@@ -14288,7 +14288,7 @@ class CRoxieServerGraphLoopActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopArg &helper;
-    int maxIterations;
+    unsigned maxIterations;
     unsigned flags;
     rtlRowBuilder GraphExtractBuilder;
     unsigned loopGraphId;
@@ -14306,8 +14306,8 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         if (maxIterations > maxGraphLoopIterations)
             throw MakeStringException(ROXIE_TOO_MANY_GRAPH_LOOP, "Attempt to execute graph %u times", maxIterations);
         if (maxIterations != 0)
