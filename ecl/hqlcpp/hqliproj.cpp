@@ -1428,6 +1428,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_newparse:
     case no_newxmlparse:
     case no_createrow:
+    case no_rollupgroup:
         return CreateRecordActivity;
     case no_inlinetable:
         return CreateRecordSourceActivity;
@@ -1530,7 +1531,6 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         //MORE: Rethink these later:
     case no_combine:
     case no_combinegroup:
-    case no_rollupgroup:
     case no_regroup:
     case no_loop:
     case no_graphloop:
