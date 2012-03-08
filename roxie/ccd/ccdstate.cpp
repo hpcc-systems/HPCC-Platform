@@ -2130,11 +2130,6 @@ private:
                 else
                     badFormat();
             }
-            else if (stricmp(queryName, "control:syncCluster") == 0)
-            {
-                syncCluster = control->getPropBool("@val", false);  // should we sync an out of sync cluster (always send a trap)
-                topology->setPropBool("@syncCluster", syncCluster);
-            }
             else if (stricmp(queryName, "control:systemMonitor")==0)
             {
                 unsigned interval = control->getPropInt("@interval", 60000);

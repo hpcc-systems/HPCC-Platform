@@ -81,7 +81,6 @@ unsigned restarts = 0;
 bool heapSort = false;
 bool insertionSort = false;
 bool fieldTranslationEnabled = false;
-bool syncCluster = false;  // should we sync an out of sync cluster (always send a trap)
 bool useTreeCopy = true;
 bool mergeSlaveStatistics = true;
 XmlReaderOptions defaultXmlReadFlags = xr_ignoreWhiteSpace;
@@ -725,7 +724,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         useTreeCopy = topology->getPropBool("@useTreeCopy", true);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
 
-        syncCluster = topology->getPropBool("@syncCluster", false);  // should we sync an out of sync cluster (always send a trap)
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
         enableForceKeyDiffCopy = topology->getPropBool("@enableForceKeyDiffCopy", false);
 
