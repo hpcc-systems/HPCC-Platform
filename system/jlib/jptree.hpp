@@ -110,6 +110,7 @@ interface jlib_decl IPropertyTree : extends serializable
     virtual bool isCaseInsensitive() = 0;
     virtual bool IsShared() const = 0;
     virtual void localizeElements(const char *xpath, bool allTail=false) = 0;
+    virtual unsigned getCount(const char *xpath) = 0;
     
 private:
     void setProp(const char *, int); // dummy to catch accidental use of setProp when setPropInt() intended
