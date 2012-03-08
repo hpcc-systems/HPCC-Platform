@@ -371,12 +371,7 @@
          <thead>
             <tr bgcolor="#C0C0C0">
                <th>Location</th>
-               <th>
-                <xsl:choose>
-                                <xsl:when test="$clusterName=''">Component</xsl:when>
-                                <xsl:otherwise>Type</xsl:otherwise>
-                            </xsl:choose>
-               </th>
+               <th>Component</th>
                <xsl:choose>
                   <xsl:when test="../../../Columns/Item">
                      <xsl:for-each select="../../../Columns/Item[text()='Condition']">
@@ -457,9 +452,16 @@
          </td>
          <td>
             <xsl:value-of select="DisplayType"/>
-            <xsl:if test="$clusterName='' and string(ComponentName)!=''">
-                    <br/>
-                    <xsl:value-of select="concat('[', ComponentName, ']')"/>
+            <xsl:if test="string(ComponentName)!=''">
+                <br/>
+                <xsl:choose>
+                    <xsl:when test="ProcessType='ThorSlaveProcess'">
+                        <xsl:value-of select="concat('[', ComponentName, ', ', ProcessNumber, ']')"/>
+                    </xsl:when>
+                    <xsl:when test="ProcessType!='ThorMasterProcess' and ProcessType!='RoxieServerProcess'">
+                        <xsl:value-of select="concat('[', ComponentName, ']')"/>
+                    </xsl:when>
+                </xsl:choose>
             </xsl:if>
          </td>
          <xsl:choose>
