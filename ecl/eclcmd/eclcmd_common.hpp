@@ -65,6 +65,10 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_WAIT_INI "waitTimeout"
 #define ECLOPT_WAIT_ENV "ECL_WAIT_TIMEOUT"
 
+#define ECLOPT_RESULT_LIMIT "--limit"
+#define ECLOPT_RESULT_LIMIT_INI "resultLimit"
+#define ECLOPT_RESULT_LIMIT_ENV "ECL_RESULT_LIMIT"
+
 #define ECLOPT_INPUT "--input"
 #define ECLOPT_INPUT_S "-in"
 
@@ -166,7 +170,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optNoArchive(false)
+    EclCmdWithEclTarget() : optNoArchive(false), optResultLimit((unsigned)-1)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -178,6 +182,7 @@ public:
         fprintf(stdout,
             "   --main=<definition>    definition to use from legacy ECL repository\n"
             "   --ecl-only             send ecl text to hpcc without generating archive\n"
+            "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
@@ -190,6 +195,7 @@ public:
     StringBuffer optImpPath;
     StringAttr optManifest;
     StringAttr optAttributePath;
+    unsigned optResultLimit;
     bool optNoArchive;
 };
 
