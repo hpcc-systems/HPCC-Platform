@@ -23,16 +23,16 @@
 
 class Cws_accountSoapBindingEx : public Cws_accountSoapBinding
 {
-    StringBuffer m_portalURL;
+    StringBuffer m_authType;
 
 public:
     Cws_accountSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : Cws_accountSoapBinding(cfg, name, process, llevel)
     {
         StringBuffer xpath;
-        xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", process);
-        const char* portalURL = cfg->queryProp(xpath.str());
-        if (portalURL && *portalURL)
-            m_portalURL.append(portalURL);
+        xpath.appendf("Software/EspProcess[@name='%s']/Authentication/@method", process);
+        const char* method = cfg->queryProp(xpath);
+        if (method && *method)
+            m_authType.append(method);
     }
 
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
@@ -44,14 +44,99 @@ public:
             isFF = true;
 
         IPropertyTree *folder = ensureNavFolder(data, "My Account", "My Account");
-        StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
-        if (m_portalURL.length() > 0)
-            path.appendf("&EEPortal=%s", m_portalURL.str());
 
-        ensureNavLink(*folder, "Change Password", path.str(), "Change Password");
-        if (!isFF)
-            ensureNavLink(*folder, "Relogin", path.str(), "Relogin");
-        ensureNavLink(*folder, "Who Am I", path.str(), "WhoAmI");
+        const char* build_level = getBuildLevel();
+        if (!stricmp(m_authType.str(), "none") || !stricmp(m_authType.str(), "local"))
+        {
+            ensureNavLink(*folder, "Change Password", "/Ws_Access/SecurityNotEnabled?form_", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
+            if (!isFF)
+                ensureNavLink(*folder, "Relogin", "/Ws_Access/SecurityNotEnabled?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
+            else
+                ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
+            ensureNavLink(*folder, "Who Am I", "/Ws_Access/SecurityNotEnabled?form_", "WhoAmI", NULL, NULL, 0, true);//Force the menu to use this setting
+        }
+        else
+        {
+            ensureNavLink(*folder, "Change Password", "/Ws_Account/UpdateUserInput", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
+            if (!isFF)
+                ensureNavLink(*folder, "Relogin", "/Ws_Account/LogoutUser", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
+            else
+                ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
+            ensureNavLink(*folder, "Who Am I", "/Ws_Account/WhoAmI", "WhoAmI", NULL, NULL, 0, true);//Force the menu to use this setting
+        }
+    }
+
+    int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
+    {
+        if(!stricmp(method, "LogoutUser")||!stricmp(method, "LogoutUserRequest"))
+        {
+            CEspCookie* logincookie = request->queryCookie("RELOGIN");
+            if(logincookie == NULL || stricmp(logincookie->getValue(), "1") == 0)
+            {
+                response->addCookie(new CEspCookie("RELOGIN", "0"));
+
+                StringBuffer content(
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+                    "<head>"
+                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
+                        "<title>Enterprise Services Platform</title>"
+                    "</head>"
+                    "<body onLoad=\"location.href='/ws_account/LogoutUserCancel'\">"
+                    "</body>"
+                "</html>");
+
+                response->sendBasicChallenge("ESP", content.str());
+            }
+            else
+            {
+                response->addCookie(new CEspCookie("RELOGIN", "1"));
+                response->setContentType("text/html; charset=UTF-8");
+                StringBuffer content(
+                "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+                    "<head>"
+                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
+                        "<title>Enterprise Services Platform</title>"
+                    "</head>"
+                    "<body>"
+                    "<br/><b>Relogin successful, you're now logged in as ");
+                content.append(context.queryUserId()).append(
+                    "</b>"
+                    "</body>"
+                    "</html>");
+
+                response->setContent(content.str());
+                response->send();
+            }
+
+            return 0;
+        }
+        else if(!stricmp(method, "LogoutUserCancel")||!stricmp(method, "LogoutUserRequest"))
+        {
+            CEspCookie* logincookie = request->queryCookie("RELOGIN");
+            response->addCookie(new CEspCookie("RELOGIN", "1"));
+            response->setContentType("text/html; charset=UTF-8");
+            StringBuffer content(
+            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+                "<head>"
+                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
+                    "<title>Enterprise Services Platform</title>"
+                    "<script type='text/javascript'>"
+                        "function closeWin() { top.opener=top; top.close(); }"
+                    "</script>"
+                "</head>"
+                "<body onload=\"javascript:closeWin();\">"
+                    "<br/><b>Relogin canceled, you're now still logged in as ");
+            content.append(context.queryUserId()).append(
+                "</b>"
+                "</body>"
+            "</html>");
+
+            response->setContent(content.str());
+            response->send();
+            return 0;
+        }
+        else
+            return Cws_accountSoapBinding::onGetInstantQuery(context, request, response, service, method);
     }
 };
 
@@ -60,6 +145,11 @@ class Cws_accountEx : public Cws_account
 public:
     IMPLEMENT_IINTERFACE;
 
+    virtual void init(IPropertyTree *cfg, const char *process, const char *service);
+
+    virtual bool onUpdateUser(IEspContext &context, IEspUpdateUserRequest &req, IEspUpdateUserResponse &resp);
+    virtual bool onUpdateUserInput(IEspContext &context, IEspUpdateUserInputRequest &req, IEspUpdateUserInputResponse &resp);
+    virtual bool onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspWhoAmIResponse &resp);
     virtual bool onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp);
 };
 
