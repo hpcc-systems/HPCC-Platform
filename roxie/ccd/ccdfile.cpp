@@ -1976,9 +1976,10 @@ public:
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
-        IFileDescriptor *fdesc = subFiles.item(0);
-        if (fdesc)
+        // Local files do not have descriptors
+        if (subFiles.ordinality() > 0)
         {
+            IFileDescriptor *fdesc = subFiles.item(0);
             unsigned numParts = fdesc->numParts();
             for (unsigned i = 1; i <= numParts; i++)
             {
