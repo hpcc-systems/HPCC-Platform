@@ -19475,6 +19475,7 @@ public:
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
         diskSize.set(helper.queryDiskRecordSize());
+        // MORE - This task do not take into accound the package's dynamicFileResolution property
         variableFileName = (helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
@@ -20487,7 +20488,8 @@ public:
         isLocal = _graphNode.getPropBool("att[@name='local']/@value");
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         sorted = (helper->getFlags() & TDRunsorted) == 0;
-        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0
+                || _queryFactory.queryPackage().dynamicFileResolution();
         maySkip = (helper->getFlags() & (TDRkeyedlimitskips|TDRkeyedlimitcreates|TDRlimitskips|TDRlimitcreates)) != 0;
         quotes = separators = terminators = NULL;
         if (!variableFileName)
@@ -22543,7 +22545,8 @@ public:
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         Owned<IHThorCountFileArg> helper = (IHThorCountFileArg *) helperFactory();
-        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0
+                || _queryFactory.queryPackage().dynamicFileResolution();
         assertex(helper->queryRecordSize()->isFixedSize());
         if (!variableFileName)
         {
@@ -29864,7 +29867,7 @@ public:
         CriticalBlock b(daliUpdateCrit);
         if (!dynamicPackage)
         {
-            dynamicPackage.setown(createPackage(NULL));
+            dynamicPackage.setown(createPackage(topology));
         }
         return dynamicPackage->lookupFileName(filename, isOpt, true);
     }
@@ -29874,7 +29877,7 @@ public:
         CriticalBlock b(daliUpdateCrit);
         if (!dynamicPackage)
         {
-            dynamicPackage.setown(createPackage(NULL));
+            dynamicPackage.setown(createPackage(topology));
         }
         return dynamicPackage->createFileName(filename, overwrite, extend, clusters);
     }

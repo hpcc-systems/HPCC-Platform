@@ -522,6 +522,11 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
+    virtual bool dynamicFileResolution() const
+    {
+        return node->getPropBool("@dynamicFileResolution", false);
+    }
+
     virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool cache) const
     {
         StringBuffer fileName;

@@ -71,6 +71,8 @@ interface IRoxiePackage : extends IInterface
     virtual const IResolvedFile *lookupFileName(const char *fileName, bool opt, bool cacheDaliResults) const = 0;
     // Lookup information in package to create new logical file name
     virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters) const = 0;
+    // One-off queries should leave file resolution dynamically
+    virtual bool dynamicFileResolution() const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
     // Retrieve hash for the package
