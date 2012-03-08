@@ -4859,6 +4859,8 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
 #ifdef _WIN32
     char rPath[MAX_PATH];
     char *filepart;
+    if (!relpath || '\0' == *relpath)
+        relpath = ".";
     DWORD res = GetFullPathName(relpath, sizeof(rPath), rPath, &filepart);
     if (0 == res)
         throw MakeOsException(GetLastError(), "makeAbsolutePath: could not resolve absolute path for %s", relpath);
