@@ -285,7 +285,7 @@ ESPresponse [exceptions_inline] WUCreateResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
-ESPrequest WUDeployWorkunitRequest
+ESPrequest [nil_remove] WUDeployWorkunitRequest
 {
     string Cluster;
     string Name;
@@ -293,6 +293,7 @@ ESPrequest WUDeployWorkunitRequest
     string ObjType;
     string FileName;
     binary Object;
+    int ResultLimit;
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse

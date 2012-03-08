@@ -321,6 +321,11 @@ public:
             cmdLine.append(" -manifest ").append(cmd.optManifest.get());
         if (cmd.optObj.value.get())
             cmdLine.append(" ").append(streq(cmd.optObj.value.get(), "stdin") ? "- " : cmd.optObj.value.get());
+        if ((int)cmd.optResultLimit > 0)
+        {
+            cmdLine.append(" -fapplyInstantEclTransformations=1");
+            cmdLine.append(" -fapplyInstantEclTransformationsLimit=").append(cmd.optResultLimit);
+        }
     }
 
     bool eclcc(StringBuffer &out)
@@ -441,6 +446,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
         return EclCmdOptionMatch;
+    if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
+        return EclCmdOptionMatch;
 
     return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
 }
@@ -465,6 +472,9 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
         if (!conversion.process())
             return false;
     }
+    if (optResultLimit == (unsigned)-1)
+        extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 100);
+
     return true;
 
 }
