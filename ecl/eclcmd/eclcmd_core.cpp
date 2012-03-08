@@ -178,6 +178,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setCluster(cluster);
     req->setObject(cmd.optObj.mb);
     req->setFileName(cmd.optObj.value.sget());
+    if ((int)cmd.optResultLimit > 0)
+        req->setResultLimit(cmd.optResultLimit);
 
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
