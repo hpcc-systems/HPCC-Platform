@@ -527,14 +527,16 @@ public:
             return false;
         // check to see if it was a spare and remove
         SocketEndpoint spareEp(newip);
-        rank_t r = spareGroup->rank(spareEp);
-        if (RANK_NULL != r)
+        if (spareGroup)
         {
-            PROGLOG("Removing spare : %s", newip);
-            spareGroup.setown(spareGroup->remove(r));
-            queryNamedGroupStore().add(spareGroupName, spareGroup); // NB: replace
+            rank_t r = spareGroup->rank(spareEp);
+            if (RANK_NULL != r)
+            {
+                PROGLOG("Removing spare : %s", newip);
+                spareGroup.setown(spareGroup->remove(r));
+                queryNamedGroupStore().add(spareGroupName, spareGroup); // NB: replace
+            }
         }
-
         info.clear();
 
         PROGLOG("SwapNode finished");
