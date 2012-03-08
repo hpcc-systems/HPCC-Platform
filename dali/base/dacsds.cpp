@@ -1965,22 +1965,23 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
         if (conn)
         {
             Owned<IPropertyTree> root = conn->getRoot();
-            Owned<IPropertyTree> child = root->getPropTree("Environment");
-            if (child.get())
+            Owned<IPropertyTree> oldEnvironment = root->getPropTree("Environment");
+            if (oldEnvironment.get())
             {
                 StringBuffer bakname;
                 Owned<IFileIO> io = createUniqueFile(NULL, "environment", "bak", bakname);
                 Owned<IFileIOStream> fstream = createBufferedIOStream(io);
-                toXML(child, *fstream);         // formatted (default)
-                root->removeTree(child);
+                toXML(oldEnvironment, *fstream);         // formatted (default)
+                root->removeTree(oldEnvironment);
             }
             root->addPropTree("Environment", LINK(newEnv));
             root.clear();
             conn->commit();
             conn->close();
             StringBuffer messages;
-            if (!initClusterGroups(forceGroupUpdate, messages))
-                WARNLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
+            initClusterGroups(forceGroupUpdate, messages, oldEnvironment);
+            if (messages.length())
+                PROGLOG("CClientSDSManager::updateEnvironment: %s", messages.str());
             PROGLOG("Environment and node groups updated");
         }
         return true;
