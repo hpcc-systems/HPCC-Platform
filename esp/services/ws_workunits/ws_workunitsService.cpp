@@ -3300,6 +3300,8 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         StringBuffer text(req.getObject().length(), req.getObject().toByteArray());
         wu.setQueryText(text.str());
     }
+    if (!req.getResultLimit_isNull())
+        wu->setResultLimit(req.getResultLimit());
 
     wu->commit();
     wu.clear();
