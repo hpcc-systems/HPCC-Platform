@@ -8814,6 +8814,8 @@ void CHThorLoopActivity::ready()
     maxIterations = helper.numIterations();
     if ((int)maxIterations < 0) maxIterations = 0;
     finishedLooping = ((kind == TAKloopcount) && (maxIterations == 0));
+    if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
+        finishedLooping = true;
     extractBuilder.clear();
     helper.createParentExtract(extractBuilder);
 }
@@ -8856,20 +8858,25 @@ const void * CHThorLoopActivity::nextInGroup()
         switch (kind)
         {
         case TAKloopdataset:
-            if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
             {
-                if (loopPending.ordinality() == 0)
+                if (!(flags & IHThorLoopArg::LFnewloopagain))
                 {
-                    eof = true;
-                    return NULL;
-                }
+                    if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+                    {
+                        if (loopPending.ordinality() == 0)
+                        {
+                            eof = true;
+                            return NULL;
+                        }
 
-                arrayInput.init(&loopPending);
-                curInput = &arrayInput;
-                finishedLooping = true;
-                continue;       // back to the input loop again
+                        arrayInput.init(&loopPending);
+                        curInput = &arrayInput;
+                        finishedLooping = true;
+                        continue;       // back to the input loop again
+                    }
+                }
+                break;
             }
-            break;
         case TAKlooprow:
             if (loopPending.empty())
             {
@@ -8899,8 +8906,18 @@ const void * CHThorLoopActivity::nextInGroup()
             *((thor_loop_counter_t *)counterRow) = loopCounter;
         }
 
-        Owned<IHThorGraphResult> curResult = loopGraph->execute(counterRow, loopPending, extractBuilder.getbytes());
-        resultInput.init(curResult);
+        Owned<IHThorGraphResults> curResults = loopGraph->execute(counterRow, loopPending, extractBuilder.getbytes());
+        if (flags & IHThorLoopArg::LFnewloopagain)
+        {
+            IHThorGraphResult * result = curResults->queryResult(helper.loopAgainResult());
+            assertex(result);
+            const void * row = result->queryRow(0);
+            assertex(row);
+            //Result is a row which contains a single boolean field.
+            if (!((const bool *)row)[0])
+                finishedLooping = true;
+        }
+        resultInput.init(curResults->queryResult(0));
         curInput = &resultInput;
 
         loopCounter++;
