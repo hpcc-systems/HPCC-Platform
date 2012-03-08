@@ -1162,6 +1162,13 @@ static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr)
         }
     }
 
+    if ((maximumSize == 0) && expr->hasProperty(_nonEmpty_Atom))
+    {
+        expectedSize = 1;
+        minimumSize = 1;
+        maximumSize = 1;
+    }
+
     if (maximumSize || !maximumSizeExpr)
     {
         OwnedHqlExpr maxExpr = getSizetConstant(truncMaxlength(maximumSize));

@@ -945,7 +945,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     //virtual IOutputMetaData * queryInputMeta()
     {
-        MetaInstance inputmeta(*this, dataset);
+        MetaInstance inputmeta(*this, dataset->queryRecord(), isGrouped(dataset));
         buildMetaInfo(inputmeta);
 
         StringBuffer s;
