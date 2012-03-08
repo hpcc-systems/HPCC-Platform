@@ -314,6 +314,12 @@ interface IRoxieServerLoopResultProcessor
     virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
 };
 
+interface IRoxieGraphResults : extends IEclGraphResults
+{
+public:
+    virtual IRoxieInput * createIterator(unsigned id) = 0;
+};
+
 class CGraphIterationInfo;
 
 interface IRoxieServerChildGraph : public IInterface
@@ -324,7 +330,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual void setInputResult(unsigned id, IGraphResult * result) = 0;
     virtual bool querySetInputResult(unsigned id, IRoxieInput * result) = 0;
     virtual void stopUnusedOutputs() = 0;
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract) = 0;
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void afterExecute() = 0;
 //sequential graph related helpers
     virtual void clearGraphLoopResults() = 0;

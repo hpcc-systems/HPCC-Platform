@@ -13582,6 +13582,8 @@ public:
         maxIterations = (int) helper.numIterations();
         if (maxIterations < 0) maxIterations = 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
+        if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
+            finishedLooping = true;
         loopExtractBuilder.clear();
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
@@ -13684,20 +13686,25 @@ public:
             switch (activityKind)
             {
             case TAKloopdataset:
-                if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
                 {
-                    if (loopPending.ordinality() == 0)
+                    if (!(flags & IHThorLoopArg::LFnewloopagain))
                     {
-                        eof = true;
-                        return NULL;
-                    }
+                        if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+                        {
+                            if (loopPending.ordinality() == 0)
+                            {
+                                eof = true;
+                                return NULL;
+                            }
 
-                    arrayInput.init(&loopPending);
-                    curInput = &arrayInput;
-                    finishedLooping = true;
-                    continue;       // back to the input loop again
+                            arrayInput.init(&loopPending);
+                            curInput = &arrayInput;
+                            finishedLooping = true;
+                            continue;       // back to the input loop again
+                        }
+                    }
+                    break;
                 }
-                break;
             case TAKlooprow:
                 if (loopPending.empty())
                 {
@@ -13723,7 +13730,18 @@ public:
             checkAbort();
             try 
             {
-                resultInput.setown(executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending));
+                Owned<IRoxieGraphResults> results = executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending);
+                resultInput.setown(results->createIterator(0));
+
+                if (flags & IHThorLoopArg::LFnewloopagain)
+                {
+                    Owned<IRoxieInput> againResult = results->createIterator(helper.loopAgainResult());
+                    OwnedConstRoxieRow row  = againResult->nextInGroup();
+                    assertex(row);
+                    //Result is a row which contains a single boolean field.
+                    if (!((const bool *)row.get())[0])
+                        finishedLooping = true;
+                }
             }
             catch (IException *E)
             {
@@ -13738,7 +13756,7 @@ public:
         }
     }
 
-    IRoxieInput * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
+    IRoxieGraphResults * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
     {
         try
         {
@@ -13749,7 +13767,7 @@ public:
 
             createCounterResult(loopGraph, counter);
 
-            Owned<IRoxieInput> ret = loopGraph->execute(0, parentExtractSize, parentExtract);
+            Owned<IRoxieGraphResults> ret = loopGraph->execute(parentExtractSize, parentExtract);
             loopGraph->afterExecute();
             return ret.getClear();
         }
@@ -24974,7 +24992,7 @@ public:
     }
 };
 
-class CGraphResults : public CInterface, implements IEclGraphResults
+class CGraphResults : public CInterface, implements IRoxieGraphResults
 {
     IArrayOf<IGraphResult> results;
     CriticalSection cs;
@@ -26888,10 +26906,10 @@ public:
         reset();
     }
 
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract)
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract)
     {
         doExecute(parentExtractSize, parentExtract);
-        return results->createIterator(id);
+        return LINK(results);
     }
     virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
     {

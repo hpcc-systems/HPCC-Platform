@@ -7997,6 +7997,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
         buildReturn(funcctx, loopCond);
     }
 
+    IHqlExpression * loopFirst = queryPropertyChild(expr, _loopFirst_Atom, 0);
+    if (loopFirst)
+        doBuildBoolFunction(instance->startctx, "loopFirstTime", loopFirst);
+
     IHqlExpression * parallel = expr->queryProperty(parallelAtom);
     if (parallel && (targetHThor() || !count || loopCond))
         parallel = NULL;
@@ -8037,6 +8041,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     if (counter) flags.append("|LFcounter");
     if (parallel) flags.append("|LFparallel");
     if (filter) flags.append("|LFfiltered");
+    if (loopFirst) flags.append("|LFnewloopagain");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -8048,8 +8053,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     //output dataset is result 0
     //input dataset is fed in using result 1
     //counter (if required) is fed in using result 2[0].counter;
-    unique_id_t loopId = buildLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, instance->activityId, (parallel != NULL));
+    ChildGraphBuilder builder(*this);
+    unique_id_t loopId = builder.buildLoopBody(subctx, dataset, selSeq, rowsid, body->queryChild(0), filter, loopCond, counter, instance->activityId, (parallel != NULL));
     instance->addAttributeInt("_loopid", loopId);
+
+    unsigned loopAgainResult = builder.queryLoopConditionResult();
+    if (loopAgainResult)
+        doBuildUnsignedFunction(instance->startctx, "loopAgainResult", loopAgainResult);
 
     buildInstanceSuffix(instance);
 
