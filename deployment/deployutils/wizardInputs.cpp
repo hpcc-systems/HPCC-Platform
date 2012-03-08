@@ -471,10 +471,16 @@ IPropertyTree* CWizardInputs::createEnvironment()
   xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
   pCompTree->setProp(xpath.str(), "linux"); 
 
+  unsigned x;
+  IpAddress ipaddr;
+
   for(unsigned i = 0; i < m_ipaddressSupport.ordinality(); i++)
   {
     IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
-    name.clear().appendf("node%03d", (i + 1));
+    ipaddr.ipset(m_ipaddressSupport.item(i));
+    ipaddr.getNetAddress(sizeof(x),&x);
+    name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
@@ -482,9 +488,12 @@ IPropertyTree* CWizardInputs::createEnvironment()
   }
 
   for(unsigned i = 0; i < m_ipaddress.ordinality(); i++)
-  { 
+  {
     IPropertyTree* pComputer = pCompTree->addPropTree(XML_TAG_COMPUTER,createPTree());
-    name.clear().appendf("node%03d", (m_ipaddressSupport.ordinality() + i + 1));
+    ipaddr.ipset(m_ipaddress.item(i));
+    ipaddr.getNetAddress(sizeof(x),&x);
+    name.clear().appendf("node%03d%03d", (x >> 16) & 0xFF, (x >> 24) & 0xFF);
+    getUniqueName(pCompTree, name, XML_TAG_COMPUTER, "");
     pComputer->addProp(XML_ATTR_COMPUTERTYPE, "linuxmachine");
     pComputer->addProp(XML_ATTR_DOMAIN, "localdomain");
     pComputer->addProp(XML_ATTR_NAME, name.str());
