@@ -3855,7 +3855,10 @@ public:
             {
                 IPropertyTree &thor = thors.item(i);
                 thorProcesses.append(thor.queryProp("@name"));
-                unsigned ts = thor.getPropInt("@slaves");
+                unsigned nodes = thor.getCount("ThorSlaveProcess");
+                if (!nodes)
+                    throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: Thor cluster can not have 0 slave processes");
+                unsigned ts = nodes * thor.getPropInt("@slavesPerNode", 1);
                 if (clusterWidth && (ts!=clusterWidth)) 
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
