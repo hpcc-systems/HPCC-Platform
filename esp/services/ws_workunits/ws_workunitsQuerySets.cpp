@@ -172,105 +172,6 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
     }
 }
 
-void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryInfo)
-{
-    queryInfo->setId(query->queryProp("@id"));
-    queryInfo->setName(query->queryProp("@name"));
-    queryInfo->setDll(query->queryProp("@dll"));
-    queryInfo->setWuid(query->queryProp("@wuid"));
-    queryInfo->setSuspended(query->getPropBool("@suspended", false));
-}
-
-void gatherQuerySetAliasDetails(IPropertyTree *alias, IEspQuerySetAlias *aliasInfo)
-{
-    aliasInfo->setName(alias->queryProp("@name"));
-    aliasInfo->setId(alias->queryProp("@id"));
-}
-
-void retrieveAllQuerysetDetails(IPropertyTree *registry, IEspWUQuerySetDetailsResponse &resp)
-{
-    IArrayOf<IEspQuerySetQuery> querySetQueries;
-    Owned<IPropertyTreeIterator> queries = registry->getElements("Query");
-    ForEach(*queries)
-    {
-        IPropertyTree &query = queries->query();
-        Owned<IEspQuerySetQuery> q = createQuerySetQuery("", "");
-        gatherQuerySetQueryDetails(&query, q);
-        querySetQueries.append(*q.getClear());
-    }
-    resp.setQuerysetQueries(querySetQueries);
-
-    IArrayOf<IEspQuerySetAlias> querySetAliases;
-    Owned<IPropertyTreeIterator> aliases = registry->getElements("Alias");
-    ForEach(*aliases)
-    {
-        IPropertyTree &alias = aliases->query();
-        Owned<IEspQuerySetAlias> a = createQuerySetAlias("", "");
-        gatherQuerySetAliasDetails(&alias, a);
-        querySetAliases.append(*a.getClear());
-    }
-}
-
-void retrieveQuerysetDetailsFromAlias(IPropertyTree *registry, const char *filter, IEspWUQuerySetDetailsResponse &resp)
-{
-    StringBuffer xpath;
-    xpath.append("Alias[@name='").append(filter).append("']");
-    IPropertyTree *alias = registry->queryPropTree(xpath);
-    if (!alias)
-    {
-        DBGLOG("Alias %s not found", filter);
-        return;
-    }
-
-    IArrayOf<IEspQuerySetAlias> querySetAliases;
-    Owned<IEspQuerySetAlias> a = createQuerySetAlias("", "");
-    gatherQuerySetAliasDetails(alias, a);
-    querySetAliases.append(*a.getClear());
-
-    xpath.clear().append("Query[@id='").append(a->getId()).append("']");
-    IPropertyTree *query = registry->queryPropTree(xpath);
-    if (!query)
-    {
-        DBGLOG("No matching Query %s found for Alias %s", a->getId(), filter);
-        return;
-    }
-
-    IArrayOf<IEspQuerySetQuery> querySetQueries;
-    Owned<IEspQuerySetQuery> q = createQuerySetQuery("", "");
-    gatherQuerySetQueryDetails(query, q);
-    querySetQueries.append(*q.getClear());
-    resp.setQuerysetQueries(querySetQueries);
-}
-
-void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *filter, const char *filterType, IEspWUQuerySetDetailsResponse &resp)
-{
-    StringBuffer xpath;
-    xpath.clear().append("Query[@").append(filterType).append("='").append(filter).append("']");
-    IPropertyTree *query = registry->queryPropTree(xpath);
-    if (!query)
-    {
-        DBGLOG("No matching Query %s found for %s", filter, filterType);
-        return;
-    }
-
-    IArrayOf<IEspQuerySetQuery> querySetQueries;
-    Owned<IEspQuerySetQuery> q = createQuerySetQuery("", "");
-    gatherQuerySetQueryDetails(query, q);
-    querySetQueries.append(*q.getClear());
-    resp.setQuerysetQueries(querySetQueries);
-
-    IArrayOf<IEspQuerySetAlias> querySetAliases;
-    xpath.clear().append("Alias[@id='").append(q->getId()).append("']");
-    Owned<IPropertyTreeIterator> aliases = registry->getElements(xpath.str());
-    ForEach(*aliases)
-    {
-        IPropertyTree &alias = aliases->query();
-        Owned<IEspQuerySetAlias> a = createQuerySetAlias("", "");
-        gatherQuerySetAliasDetails(&alias, a);
-        querySetAliases.append(*a.getClear());
-    }
-}
-
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
     if (isEmpty(req.getWuid()))
@@ -491,6 +392,165 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
     return true;
 }
 
+void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryInfo)
+{
+    queryInfo->setId(query->queryProp("@id"));
+    queryInfo->setName(query->queryProp("@name"));
+    queryInfo->setDll(query->queryProp("@dll"));
+    queryInfo->setWuid(query->queryProp("@wuid"));
+    queryInfo->setSuspended(query->getPropBool("@suspended", false));
+}
+
+void gatherQuerySetAliasDetails(IPropertyTree *alias, IEspQuerySetAlias *aliasInfo)
+{
+    aliasInfo->setName(alias->queryProp("@name"));
+    aliasInfo->setId(alias->queryProp("@id"));
+}
+
+void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+{
+    Owned<IPropertyTreeIterator> regQueries = registry->getElements("Query");
+    ForEach(*regQueries)
+    {
+        IPropertyTree &query = regQueries->query();
+        Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+        gatherQuerySetQueryDetails(&query, q);
+        queries.append(*q.getClear());
+    }
+
+    Owned<IPropertyTreeIterator> regAliases = registry->getElements("Alias");
+    ForEach(*regAliases)
+    {
+        IPropertyTree &alias = regAliases->query();
+        Owned<IEspQuerySetAlias> a = createQuerySetAlias();
+        gatherQuerySetAliasDetails(&alias, a);
+        aliases.append(*a.getClear());
+    }
+}
+
+void retrieveQuerysetDetailsFromAlias(IPropertyTree *registry, const char *name, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+{
+    StringBuffer xpath;
+    xpath.append("Alias[@name='").append(name).append("']");
+    IPropertyTree *alias = registry->queryPropTree(xpath);
+    if (!alias)
+    {
+        DBGLOG("Alias %s not found", name);
+        return;
+    }
+
+    Owned<IEspQuerySetAlias> a = createQuerySetAlias();
+    gatherQuerySetAliasDetails(alias, a);
+    xpath.clear().append("Query[@id='").append(a->getId()).append("']");
+    aliases.append(*a.getClear());
+
+    IPropertyTree *query = registry->queryPropTree(xpath);
+    if (!query)
+    {
+        DBGLOG("No matching Query %s found for Alias %s", a->getId(), name);
+        return;
+    }
+
+    Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+    gatherQuerySetQueryDetails(query, q);
+    queries.append(*q.getClear());
+}
+
+void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *value, const char *type, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+{
+    if (!strieq(type, "Id") && !strieq(type, "Name"))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unrecognized queryset filter type %s", type);
+
+    StringBuffer attributeName(type);
+    StringBuffer xpath;
+    xpath.clear().append("Query[@").append(attributeName.toLowerCase()).append("='").append(value).append("']");
+    IPropertyTree *query = registry->queryPropTree(xpath);
+    if (!query)
+    {
+        DBGLOG("No matching Query %s found for %s", value, type);
+        return;
+    }
+
+    Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+    gatherQuerySetQueryDetails(query, q);
+    xpath.clear().append("Alias[@id='").append(q->getId()).append("']");
+    queries.append(*q.getClear());
+
+    Owned<IPropertyTreeIterator> regAliases = registry->getElements(xpath.str());
+    ForEach(*regAliases)
+    {
+        IPropertyTree &alias = regAliases->query();
+        Owned<IEspQuerySetAlias> a = createQuerySetAlias();
+        gatherQuerySetAliasDetails(&alias, a);
+        aliases.append(*a.getClear());
+    }
+}
+
+void retrieveQuerysetDetails(IPropertyTree *registry, const char *type, const char *value, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+{
+    if (strieq(type, "All"))
+        return retrieveAllQuerysetDetails(registry, queries, aliases);
+    if (!value || !*value)
+        return;
+    if (strieq(type, "Alias"))
+        return retrieveQuerysetDetailsFromAlias(registry, value, queries, aliases);
+    return retrieveQuerysetDetailsFromQuery(registry, value, type, queries, aliases);
+}
+
+void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, IPropertyTree *registry, const char *type, const char *value)
+{
+    if (!registry)
+        return;
+
+    IArrayOf<IEspQuerySetQuery> queries;
+    IArrayOf<IEspQuerySetAlias> aliases;
+    retrieveQuerysetDetails(registry, type, value, queries, aliases);
+
+    Owned<IEspWUQuerySetDetail> detail = createWUQuerySetDetail();
+    detail->setQuerySetName(registry->queryProp("@id"));
+    detail->setQueries(queries);
+    detail->setAliases(aliases);
+    details.append(*detail.getClear());
+}
+
+void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char *queryset, const char *type, const char *value)
+{
+    if (!queryset || !*queryset)
+        return;
+    Owned<IPropertyTree> registry = getQueryRegistry(queryset, true);
+    if (!registry)
+        return;
+    retrieveQuerysetDetails(details, registry, type, value);
+}
+
+void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, const char *cluster, const char *queryset, const char *type, const char *value)
+{
+    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(cluster);
+    if (!info)
+        throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster %s not found", cluster);
+
+    SCMStringBuffer clusterQueryset;
+    info->getQuerySetName(clusterQueryset);
+    if (!clusterQueryset.length())
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "No QuerySets found for cluster %s", cluster);
+    if (notEmpty(queryset) && !strieq(clusterQueryset.str(), queryset))
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_ON_CLUSTER, "Cluster %s not configured to load QuerySet %s", cluster, queryset);
+
+    retrieveQuerysetDetails(details, clusterQueryset.str(), type, value);
+}
+
+void retrieveAllQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char *type, const char *value)
+{
+    Owned<IPropertyTree> root = getQueryRegistryRoot();
+    if (!root)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet Registry not found");
+    Owned<IPropertyTreeIterator> querysets = root->getElements("QuerySet");
+    if (!root)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet Registry not found");
+    ForEach(*querysets)
+        retrieveQuerysetDetails(details, &querysets->query(), type, value);
+}
+
 bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDetailsRequest & req, IEspWUQuerySetDetailsResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
@@ -499,38 +559,30 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
     if (!registry)
         return false;
 
-    const char *filterType = req.getFilterTypeAsString();
-    if (strieq(filterType, "All"))
-        retrieveAllQuerysetDetails(registry, resp);
-    else if (strieq(filterType, "Alias"))
-    {
-        const char *filter = req.getFilter();
-        if (!filter || !*filter)
-        {
-            DBGLOG("Need to specify an Alias name for lookup");
-            return false;
-        }
-        retrieveQuerysetDetailsFromAlias(registry, filter, resp);
-    }
-    else
-    {
-        const char *filter = req.getFilter();
-        if (!filter || !*filter)
-        {
-            DBGLOG("Need to specify an Alias name for lookup");
-            return false;
-        }
-        if (strieq(filterType, "Id"))
-            retrieveQuerysetDetailsFromQuery(registry, filter, "id", resp);
-        else if (strieq(filterType, "Name"))
-            retrieveQuerysetDetailsFromQuery(registry, filter, "name", resp);
-        else
-        {
-            DBGLOG("invalid filterType %s specified", filter);
-            return false;
-        }
+    IArrayOf<IEspQuerySetQuery> respQueries;
+    IArrayOf<IEspQuerySetAlias> respAliases;
 
-    }
+    retrieveQuerysetDetails(registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases);
+
+    resp.setQuerysetQueries(respQueries);
+    resp.setQuerysetAliases(respAliases);
+
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQuerySetDetailsRequest & req, IEspWUMultiQuerySetDetailsResponse & resp)
+{
+    IArrayOf<IEspWUQuerySetDetail> respDetails;
+
+    if (notEmpty(req.getClusterName()))
+        retrieveQuerysetDetailsByCluster(respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+    else if (notEmpty(req.getQuerySetName()))
+        retrieveQuerysetDetails(respDetails, req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+    else
+        retrieveAllQuerysetDetails(respDetails, req.getFilterTypeAsString(), req.getFilter());
+
+    resp.setQuerysets(respDetails);
+
     return true;
 }
 

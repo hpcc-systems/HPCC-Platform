@@ -23,6 +23,7 @@
 #    Cmake Input File for ecl
 #####################################################
 
+add_subdirectory (queries)
 
 project( ecl )
 

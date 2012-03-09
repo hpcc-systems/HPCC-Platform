@@ -77,6 +77,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"
+#define ECLOPT_SHOW "--show"
 
 #define ECLOPT_LIB_PATH_S "-L"
 #define ECLOPT_IMP_PATH_S "-I"
@@ -210,4 +211,7 @@ public:
     StringAttr optQuerySet;
     StringAttr optQuery;
 };
+
+void outputMultiExceptions(const IMultiException &me);
+
 #endif
