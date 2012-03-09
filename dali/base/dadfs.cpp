@@ -1011,7 +1011,7 @@ public:
     CDFAction(IDistributedFileTransaction *_transaction) : locked(0), state(TAS_NONE)
     {
         assertex(_transaction);
-        transaction.set(_transaction->baseTransaction()); // smacks of overkill
+        transaction.set(_transaction);
         transaction->addAction(this);
     }
     virtual ~CDFAction() {}
@@ -1199,7 +1199,7 @@ public:
     void addSuperFile(IDistributedSuperFile *sfile)
     {
         if (!findFile(sfile->queryLogicalName()))
-            dflist.append(*sfile);
+            dflist.append(*LINK(sfile));
     }
     void start()
     {
@@ -1379,86 +1379,7 @@ public:
         }
         delayeddelete.kill();
     }
-
-    // MORE - remove this once CWrappedTransaction is gone
-    IDistributedFileTransaction *baseTransaction() { return this; }
 };
-
-class CWrappedTransaction: public CInterface, implements IDistributedFileTransaction
-{
-    Linked<IDistributedFileTransaction> chain;
-    IDistributedFile *owner;
-    Linked<IUserDescriptor> udesc;
-    bool isactive;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CWrappedTransaction (IDistributedFileTransaction *_chain,IDistributedFile *_owner, IUserDescriptor *_udesc)
-        : chain(_chain), udesc(_udesc)
-    {
-        owner = _owner;
-        isactive = false;
-    }
-    void start()  { if (chain) chain->start(); }
-    void commit() { if (chain) chain->commit(); }
-    void autoCommit() { if (chain) chain->autoCommit(); }
-    void rollback() { if (chain) chain->rollback(); }
-    bool active()  { if (chain) return chain->active(); return isactive; }
-    bool setActive(bool on) { if (chain) return chain->setActive(on); bool ret = isactive; isactive = on; return ret; }
-    void addSuperFile(IDistributedSuperFile *sfile)
-    {
-        if (chain)
-            chain->addSuperFile(sfile);
-    }
-    IDistributedFile *lookupFile(const char *lfn,unsigned timeout=INFINITE)
-    {
-        if (owner&&(strcmp(lfn,owner->queryLogicalName())==0))
-            return LINK(owner);
-        if (chain)
-            return chain->lookupFile(lfn,timeout);
-        return queryDistributedFileDirectory().lookup(lfn,udesc,false,NULL,timeout);
-    }
-    IDistributedSuperFile *lookupSuperFile(const char *slfn,bool fixmissing=false,unsigned timeout=INFINITE)
-    {
-        if (owner) {
-            IDistributedSuperFile * super = owner->querySuperFile();
-            if (super&&(strcmp(slfn,super->queryLogicalName())==0))
-                return LINK(super);
-        }
-        if (chain)
-            return chain->lookupSuperFile(slfn,fixmissing,timeout);
-        return queryDistributedFileDirectory().lookupSuperFile(slfn,udesc,NULL,fixmissing,timeout);
-    }
-    IUserDescriptor *queryUser() { if (chain) return chain->queryUser(); return udesc; }
-    bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)
-    {
-        if (chain)
-            return chain->addDelayedDelete(lfn,remphys,user);
-        return false;
-    }
-    void addAction(CDFAction *action)
-    {
-        if (chain)
-            chain->addAction(action);
-        else
-            WARNLOG("addAction called on CWrappedTransaction without chain");
-    }
-    void clearFiles()
-    {
-        if (chain)
-            chain->clearFiles();
-        else
-            WARNLOG("clearFiles called on CWrappedTransaction without chain");
-    }
-
-    IDistributedFileTransaction *baseTransaction() { return chain?chain->baseTransaction():NULL; }
-
-    void clearOwner()
-    {
-        owner = NULL;
-    }
-};
-
 
 static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 {
@@ -5275,6 +5196,26 @@ public:
             return false;
         checkModify("removeSubFile");
         partscache.kill();
+
+        // Create a local transaction that will be destroyed (but never touch the external transaction)
+        Linked<IDistributedFileTransaction> localtrans;
+        bool local = false;
+        if (transaction) {
+            // Recurring calls will always have an active transaction, so commit will happen at the end
+            localtrans.set(transaction);
+            if (!localtrans->active()) {
+                local = true;
+                localtrans->start();
+            }
+        } else {
+            // TODO: Make it explicit in the API that a transaction is required
+            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans->start();
+            local = true;
+        }
+        // Make sure this file is in cache (reuse below)
+        localtrans->addSuperFile(this);
+
         if (remcontents) {
             CDfsLogicalFileName logicalname;
             logicalname.set(subfile);
@@ -5289,22 +5230,25 @@ public:
                 ForEach(*iter)
                     toremove.append(iter->query().queryLogicalName());
                 iter.clear();
-                Owned<CWrappedTransaction> wrappedtrans = new CWrappedTransaction(transaction,this,udesc);
                 ForEachItemIn(i,toremove)
-                    if (!sfile->removeSubFile(toremove.item(i),remsub,remphys,false,wrappedtrans,delayed))
+                    if (!sfile->removeSubFile(toremove.item(i),remsub,remphys,false,localtrans,delayed))
                         ret = false;
-                wrappedtrans->clearOwner();
                 if (!ret||!remsub)
                     return ret;
             }
         }
-        if (transaction&&transaction->active()) {
-            cRemoveSubFileAction *action = new cRemoveSubFileAction(transaction,queryLogicalName(),subfile,remsub,remphys);
-            // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-            return true;
-        }
 
-        return doRemoveSubFile(subfile,remsub,remphys,transaction,delayed);
+        // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
+        cRemoveSubFileAction *action = new cRemoveSubFileAction(localtrans,queryLogicalName(),subfile,remsub,remphys);
+
+        // Local transaction should commit all actions at once (including remcontents)
+        if (local)
+            localtrans->commit();
+        else
+            localtrans->autoCommit();
+
+        // MORE - auto-commit will throw an exception, change this to void
+        return true;
     }
 
     virtual bool swapSuperFile( IDistributedSuperFile *_file,
@@ -6655,7 +6599,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
         if (ifdoesnotexist) {
             // Cache, since we're going to use it
             if (transaction && transaction->active())
-                transaction->addSuperFile(LINK(sfile));
+                transaction->addSuperFile(sfile);
             return sfile;
         } else
             throw MakeStringException(-1,"createSuperFile: SuperFile %s already exists",logicalname.get());

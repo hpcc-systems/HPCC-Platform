@@ -190,7 +190,6 @@ interface IDistributedFileTransaction: extends IInterface
     virtual void addAction(CDFAction *action)=0; // internal
     virtual void addSuperFile(IDistributedSuperFile *sfile)=0; // TODO: avoid this being necessary
     virtual void clearFiles()=0; // internal
-    virtual IDistributedFileTransaction *baseTransaction()=0;
 };
 
 interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFile>
