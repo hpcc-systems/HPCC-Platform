@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="REGEXREPLACE">
+  <title>REGEXREPLACE</title>
+
+  <para><emphasis role="bold">REGEXREPLACE<indexterm>
+      <primary>REGEXREPLACE</primary>
+    </indexterm><indexterm>
+      <primary>REGEXREPLACE function</primary>
+    </indexterm>(</emphasis><emphasis>regex, text, replacement
+  </emphasis><emphasis role="bold">[, NOCASE<indexterm>
+      <primary>NOCASE</primary>
+    </indexterm>])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>regex</emphasis></entry>
+
+            <entry>A standard Perl regular expression.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>text</emphasis></entry>
+
+            <entry>The text to parse.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>replacement</emphasis></entry>
+
+            <entry>The replacement text. In this string, $0 refers to the
+            substring that matched the <emphasis>regex</emphasis> pattern, and
+            $1, $2, $3... match the first, second, third... groups in the
+            pattern.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">NOCASE</emphasis></entry>
+
+            <entry>Optional. Specifies a case insensitive search.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>REGEXREPLACE returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">REGEXREPLACE </emphasis>function uses the
+  <emphasis>regex<indexterm>
+      <primary>regex</primary>
+    </indexterm></emphasis> to parse through the <emphasis>text</emphasis> and
+  find matches, then replace them with the <emphasis>replacement</emphasis>
+  string. The <emphasis>regex</emphasis> must be a standard Perl regular
+  expression<indexterm>
+      <primary>Perl regular expression</primary>
+    </indexterm>. We use third-party libraries to support this, so for
+  non-unicode <emphasis>text</emphasis>, see boost docs at <emphasis
+  role="underline">http://www.boost.org/doc/libs/1_39_0/libs/regex/doc/html/index.html</emphasis>.
+  For unicode <emphasis>text</emphasis>, see the ICU docs, the sections
+  ‘Regular Expression Metacharacters' and ‘Regular Expression Operators' at
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/regexp</emphasis>
+  and the links from there, in particular the section ‘UnicodeSet patterns' at
+  <emphasis
+  role="underline">http://userguide.icu-project.org/strings/unicodeset</emphasis>.
+  We use version 2.6 which should support all listed features.</para>
+
+  <para>Example:</para>
+
+  <programlisting>REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
+        //ASCII
+REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
+        //UNICODE
+// both of these examples return 'the cap sap on the map'
+
+inrec := {STRING10 str, UNICODE10 ustr};
+inset := DATASET([{'She', u'Eins'}, {'Sells', u'Zwei'},
+{'Sea', u'Drei'}, {'Shells', u'Vier'}], inrec);
+outrec := {STRING10 orig, STRING10 withcase, STRING10
+        wocase,
+UNICODE10 uorig,UNICODE10 uwithcase,UNICODE10 uwocase};
+
+outrec trans(inrec l) := TRANSFORM
+SELF.orig := l.str;
+SELF.withcase := REGEXREPLACE('s', l.str, 'f');
+SELF.wocase := REGEXREPLACE('s', l.str, 'f', NOCASE);
+SELF.uorig := l.ustr;
+SELF.uwithcase := REGEXREPLACE(u'e', l.ustr, u'\u00EB');
+SELF.uwocase := REGEXREPLACE(u'e', l.ustr, u'\u00EB',
+        NOCASE);
+END;
+OUTPUT(PROJECT(inset, trans(LEFT)));
+
+/* the result set is:
+orig withcase wocase uorig uwithcase uwocase
+She She fhe Eins Eins \xc3\xabins
+Sells Sellf fellf Zwei Zw\xc3\xabi Zw\xc3\xabi
+Sea Sea fea Drei Dr\xc3\xabi Dr\xc3\xabi
+Shells Shellf fhellf Vier Vi\xc3\xabr Vi\xc3\xabr */
+</programlisting>
+
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="REGEXFIND">REGEXFIND</link></para>
+</sect1>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WorkunitList">
+  <title><emphasis role="bold">WorkunitList</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Workunit.WorkunitList    <indexterm>
+      <primary>STD.System.Workunit.WorkunitList</primary>
+    </indexterm>
+    <indexterm>
+      <primary>System.Workunit.WorkunitList</primary>
+    </indexterm>
+    <indexterm>
+      <primary>Workunit.WorkunitList</primary>
+    </indexterm>
+    <indexterm>
+      <primary>WorkunitList</primary>
+    </indexterm>
+(</emphasis>
+  <emphasis> lowwuid </emphasis> <emphasis role="bold">[</emphasis>
+  <emphasis>, highwuid </emphasis> <emphasis role="bold">] [</emphasis>
+  <emphasis>, username </emphasis> <emphasis role="bold">]</emphasis>
+  <emphasis role="bold"> [</emphasis> <emphasis>, cluster </emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>, jobname </emphasis>
+  <emphasis role="bold">] [</emphasis> <emphasis>, state </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, priority </emphasis> <emphasis
+  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
+  fileread </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
+  filewritten </emphasis> <emphasis role="bold">] [</emphasis> <emphasis>,
+  roxiecluster </emphasis> <emphasis role="bold">]</emphasis> <emphasis
+  role="bold"> [</emphasis> <emphasis>, eclcontains </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, online </emphasis> <emphasis
+  role="bold">] [</emphasis> <emphasis>, archived </emphasis> <emphasis
+  role="bold">])</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>lowwuid</emphasis></entry>
+
+          <entry>A null-terminated string containing the lowest WorkUnit
+          IDentifier to list. This may be an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>highwuid</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the highest
+          WorkUnit IDentifier to list. If omitted, the default is an empty
+          string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>cluster</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of the
+          cluster the workunit ran on. If omitted, the default is an empty
+          string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>jobname</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of the
+          workunit. This may contain wildcard ( * ? ) characters. If omitted,
+          the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>state</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the state of
+          the workunit. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>priority</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the priority of
+          the workunit. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fileread</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of a
+          file read by the workunit. This may contain wildcard ( * ? )
+          characters. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filewritten</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of a
+          file written by the workunit. This may contain wildcard ( * ? )
+          characters. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>roxiecluster</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the name of the
+          Roxie cluster. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>eclcontains</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing text to search
+          for in the workunit's ECL code. This may contain wildcard ( * ? )
+          characters. If omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>online</emphasis></entry>
+
+          <entry>Optional. A Boolean true/false value specifying whether the
+          search is performed online. If omitted, the default is TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>archived</emphasis></entry>
+
+          <entry>Optional. A Boolean true/false value specifying whether the
+          search is performed in the archives. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WorkunitList returns a DATASET.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WorkunitList </emphasis>function returns a
+  dataset of all workunits that meet the search criteria specified by the
+  parameters passed to the function. All the parameters are search values and
+  all but the first are omittable, therefore the easiest way to pass a
+  particular single search parameter would be to use the NAMED parameter
+  passing technique.</para>
+
+  <para>The resulting DATASET is in this format:</para>
+
+  <programlisting>WorkunitRecord := RECORD
+  STRING24 wuid;
+  STRING owner{MAXLENGTH(64)};
+  STRING cluster{MAXLENGTH(64)};
+  STRING roxiecluster{MAXLENGTH(64)};
+  STRING job{MAXLENGTH(256)};
+  STRING10 state;
+  STRING7 priority;
+  STRING20 created;
+  STRING20 modified;
+  BOOLEAN online;
+  BOOLEAN protected;
+END;</programlisting>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.System.Workunit.WorkunitList(''));
+ //list all current workunits
+OUTPUT(STD.System.Workunit.WorkunitList('',
+       NAMED eclcontains := 'COUNT'));
+ //list only those where the ECL code contains the word 'COUNT'
+ //this search is case insensitive and does include comments</programlisting>
+</sect1>

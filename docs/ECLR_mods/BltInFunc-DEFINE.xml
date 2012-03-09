@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="DEFINE">
+  <title>DEFINE<indexterm>
+      <primary>DEFINE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">DEFINE<indexterm>
+      <primary>DEFINE function</primary>
+    </indexterm>(</emphasis><emphasis> pattern, symbol </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt" />
+
+        <colspec colwidth="309.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>pattern</emphasis></entry>
+
+            <entry>The name of a RULE parsing pattern.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>symbol</emphasis></entry>
+
+            <entry>A string constant specifying the name to use in the USE
+            option on a PARSE function or the USE function in a RULE parsing
+            pattern.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>DEFINE creates a RULE pattern.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">DEFINE </emphasis>function defines a
+  <emphasis>symbol</emphasis> for the specified <emphasis>pattern
+  </emphasis>that may be forward referenced in previously defined parsing
+  pattern attributes. This is the only type of forward reference<indexterm>
+      <primary>forward reference</primary>
+    </indexterm> allowed in ECL.</para>
+
+  <para>Example:</para>
+
+  <programlisting>RULE a := USE('symbol');
+ //uses the 'symbol'pattern defined later - b
+RULE b := 'pattern';
+ //defines a rule pattern
+RULE s := DEFINE(b,'symbol');
+ //associate the “b” rule with the
+ //'symbol' for forward reference by rule “a”
+</programlisting>
+
+  <para>See Also: <link linkend="PARSE">PARSE</link>, <link linkend="PARSE_Pattern_Value_Types">PARSE Pattern Value Types</link></para>
+</sect1>

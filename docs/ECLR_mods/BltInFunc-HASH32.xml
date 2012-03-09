@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HASH32">
+  <title>HASH32</title>
+
+  <para><emphasis role="bold">HASH32<indexterm>
+      <primary>HASH64</primary>
+    </indexterm><indexterm>
+      <primary>HASH32 function</primary>
+    </indexterm>(</emphasis><emphasis>expressionlist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="83.35pt" />
+
+        <colspec colwidth="305.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expressionlist</emphasis></entry>
+
+            <entry>A comma-delimited list of values.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>HASH32 returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">HASH32</emphasis> function returns a 32-bit
+  FNV (Fowler/Noll/Vo) hash value derived from all the values in the
+  <emphasis>expressionlist</emphasis>. This uses a hashing algorithm that is
+  faster and less likely than HASH to return the same values from different
+  data. Trailing spaces are trimmed from string (or UNICODE) fields before the
+  value is calculated (casting to DATA prevents this).</para>
+
+  <para>Example:</para>
+
+  <programlisting>MySet := DISTRIBUTE(Person,HASH32(Person.per_ssn));
+    //people with the same SSN go to same Data Refinery node</programlisting>
+
+  <para>See Also: <link linkend="DISTRIBUTE">DISTRIBUTE</link>, <link linkend="HASH">HASH</link>, <link linkend="HASH64">HASH64</link>, <link linkend="HASHCRC">HASHCRC</link>, <link linkend="HASHMD5">HASHMD5</link></para>
+</sect1>

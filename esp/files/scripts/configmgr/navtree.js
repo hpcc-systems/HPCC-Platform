@@ -2726,7 +2726,7 @@ function populateSelectComputersPanel(paramdt)
   getFileName(true) + 'Cmd=Farms');
 }
 
-function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
+function initSelectComputersPanel(paramdt, fnSave, enableNumNodes, slavesPresent, slavesPerNode) {
   if (!paramdt.selectComputersPanel) {
     paramdt.selectComputersPanel = new YAHOO.widget.Dialog("selectComputersPanel",
                             { width: "520px",
@@ -2817,9 +2817,10 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
       newtext.innerHTML = "Number of thor slaves per node(default 1): ";
       var aTextBox = document.createElement('input');
       aTextBox.type = 'text';
-      aTextBox.value = '1';
+      aTextBox.value = slavesPerNode;
       aTextBox.id = 'slavesPerNode';
       aTextBox.style.width = "50";
+      aTextBox.disabled = slavesPresent;
       newdiv.appendChild(newtext);
       newdiv.appendChild(aTextBox);
       var nodes = document.getElementById("selectComputersPanel").childNodes;
@@ -2839,6 +2840,11 @@ function initSelectComputersPanel(paramdt, fnSave, enableNumNodes) {
   else {
     if (document.getElementById('slavesPerNodeDiv'))
       document.getElementById('slavesPerNodeDiv').style.display = 'none';
+  }
+
+  if (document.getElementById('slavesPerNode')) {
+    document.getElementById('slavesPerNode').disabled = slavesPresent;
+    document.getElementById('slavesPerNode').value = slavesPerNode;
   }
 }
 
@@ -3069,7 +3075,7 @@ function thorInstSelToXML(self, selectedRows, paramdt, type, validateComputers, 
   return xmlStr;
 }
 
-function promptThorTopology(self, type) {
+function promptThorTopology(self, type, slavesPresent, slavesPerNode) {
   var tmpdt = self;
   var handleSubmit = function() {
     var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
@@ -3180,7 +3186,7 @@ function promptThorTopology(self, type) {
     },
       getFileName(true) + 'Operation=Add&Type=' + type + '&XmlArgs=' + xmlStr);
   }
-  initSelectComputersPanel(tmpdt, handleSubmit, type==="Slave" ? true : false);
+  initSelectComputersPanel(tmpdt, handleSubmit, type==="Slave" ? true : false, slavesPresent, slavesPerNode);
   document.getElementById('selectComputersPanel').style.display = 'block';
   tmpdt.selectComputersPanel.render(document.body);
   tmpdt.selectComputersPanel.center();

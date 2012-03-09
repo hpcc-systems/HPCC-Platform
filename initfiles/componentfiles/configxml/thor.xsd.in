@@ -164,17 +164,17 @@
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
-          <xs:attribute name="SwapNodeCheckC" type="xs:boolean" use="optional" default="true">
+          <xs:attribute name="SwapNodeCheckPrimaryDrive" type="xs:boolean" use="optional" default="true">
             <xs:annotation>
               <xs:appinfo>
-                <tooltip>C drive is checked for read/write</tooltip>
+                <tooltip>Primary drive is checked for read/write</tooltip>
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
-          <xs:attribute name="SwapNodeCheckD" type="xs:boolean" use="optional" default="true">
+          <xs:attribute name="SwapNodeCheckMirrorDrive" type="xs:boolean" use="optional" default="true">
             <xs:annotation>
               <xs:appinfo>
-                <tooltip>D drive is checked for read/write</tooltip>
+                <tooltip>Mirror drive is checked for read/write</tooltip>
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
@@ -306,10 +306,10 @@
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>
-                        <tooltip>The build name to be deployed</tooltip>
-                        <viewType>hidden</viewType>
-                    </xs:appinfo>
-                </xs:annotation>
+           <tooltip>The build name to be deployed</tooltip>
+           <viewType>hidden</viewType>
+          </xs:appinfo>
+        </xs:annotation>
       </xs:attribute>
       <xs:attribute name="buildSet" type="buildSetType" use="required">
         <xs:annotation>
@@ -347,7 +347,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional" default="2048">
+      <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Memory (in MB) to use for Link Counted Rows</tooltip>
@@ -399,17 +399,17 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="2000">
+      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Port increment between local thor slaves (when localThor set)</tooltip>
+            <tooltip>This allows multiple slaves to exist on each node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="multiSlaves" type="xs:boolean" use="optional" default="false">
+      <xs:attribute name="localThorPortInc" type="xs:nonNegativeInteger" use="optional" default="2000">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Generate different port number using slaveport above as base - this allows multiple slaves to exist on each node</tooltip>
+            <tooltip>Port increment between slaves on same node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
@@ -512,7 +512,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional" default="1400">
+      <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Memory available to thor for heavyweith operations (MB)</tooltip>

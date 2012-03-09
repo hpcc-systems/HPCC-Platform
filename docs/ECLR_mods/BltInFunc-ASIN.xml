@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ASIN">
+  <title>ASIN</title>
+
+  <para><emphasis role="bold">ASIN<indexterm>
+      <primary>ASIN</primary>
+    </indexterm><indexterm>
+      <primary>ASIN function</primary>
+    </indexterm>(</emphasis><emphasis>sine</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.65pt" />
+
+        <colspec colwidth="309.15pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>sine</emphasis></entry>
+
+            <entry>The REAL sine value for which to find the arcsine.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ASIN returns a single REAL value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ASIN </emphasis>function returns the arcsine
+  (inverse) of the <emphasis>sine</emphasis>, in radians.</para>
+
+  <para>Example:</para>
+
+  <para><programlisting>ArcSine := ASIN(SineAngle);</programlisting></para>
+
+  <para>See Also: <link linkend="ACOS">ACOS</link>, <link linkend="COS">COS</link>, <link linkend="SIN">SIN</link>, <link linkend="TAN">TAN</link>, <link linkend="ATAN">ATAN</link>, <link linkend="COSH">COSH</link>, <link linkend="SINH">SINH</link>, <link linkend="TANH">TANH</link></para>
+</sect1>

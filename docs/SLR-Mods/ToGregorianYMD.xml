@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToGregorianYMD">
+  <title><emphasis role="bold">ToGregorianYMD</emphasis></title>
+
+  <para><emphasis role="bold">STD.Date.ToGregorianYMD<indexterm>
+      <primary>STD.Date.ToGregorianYMD</primary>
+    </indexterm><indexterm>
+      <primary>Date.ToGregorianYMD</primary>
+    </indexterm>(</emphasis> <emphasis>year</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>days</emphasis></entry>
+
+          <entry>A year value in the Days_t format.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>ToGregorianYMD returns a Date_t value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ToGregorianYMD</emphasis> function converts
+  the number days since 31st December 1BC to a date in the Gregorian calendar.
+  It returns three separate values: Year, or Month, or Day.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+INTEGER2  MyYear  := 2012;  
+UNSIGNED1 MyMonth := 1;   
+UNSIGNED1 MyDay   := 1;  
+  
+J := STD.Date.FromGregorianYMD(MyYear,MyMonth,MyDay);
+    //J contains 734503
+    
+Y := STD.Date.ToGregorianYMD(J).Year;   //Y contains 2012
+M := STD.Date.ToGregorianYMD(J).Month;  //M contains 1
+D := STD.Date.ToGregorianYMD(J).Day;    //D contains 1
+</programlisting>
+
+  <para></para>
+</sect1>

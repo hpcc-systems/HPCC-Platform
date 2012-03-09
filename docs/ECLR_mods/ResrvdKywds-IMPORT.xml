@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IMPORT">
+  <title>IMPORT</title>
+
+  <para><emphasis role="bold">IMPORT<indexterm>
+      <primary>IMPORT</primary>
+    </indexterm> </emphasis><emphasis>module-selector-list</emphasis>;</para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>folder
+  </emphasis><emphasis role="bold"> AS<indexterm>
+      <primary>AS</primary>
+    </indexterm> </emphasis><emphasis>alias </emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <para><emphasis role="bold">IMPORT </emphasis><emphasis>symbol-list
+  </emphasis><emphasis role="bold"> FROM<indexterm>
+      <primary>FROM</primary>
+    </indexterm> </emphasis><emphasis>folder </emphasis><emphasis
+  role="bold">;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="110" />
+
+      <tbody>
+        <row>
+          <entry><emphasis>module-selector-list</emphasis></entry>
+
+          <entry>A comma-delimited list of folder or file names in the
+          repository. The dollar sign ($) makes all definitions in the current
+          folder available.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>folder</emphasis></entry>
+
+          <entry>A folder or file name in the repository.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">AS<indexterm>
+              <primary>IMPORT AS</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Defines a local <emphasis>alias </emphasis>name for the
+          <emphasis>folder</emphasis>, typically used to create shorter local
+          names for easier typing.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>alias</emphasis></entry>
+
+          <entry>The short name to use instead of the
+          <emphasis>folder</emphasis> name.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>symbol-list</emphasis></entry>
+
+          <entry>A comma-delimited list of definitions from the
+          <emphasis>folder</emphasis> to make available without qualification.
+          A single asterisk (*) may be used to make all definitions from the
+          <emphasis>folder</emphasis> available without qualification.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FROM<indexterm>
+              <primary>IMPORT FROM</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Specifies the <emphasis>folder</emphasis> name in which the
+          <emphasis>symbol-list</emphasis> resides.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">IMPORT</emphasis> keyword makes EXPORT
+  definitions (and SHARED definitions from the same
+  <emphasis>folder</emphasis>) available for use in the current ECL
+  code.</para>
+
+  <para>Example:</para>
+
+  <programlisting>IMPORT $;                               //makes all definitions from the same folder available
+
+IMPORT $, Std;                          //makes the standard library functions available, also
+
+IMPORT MyModule;                        //makes available the definitions from MyModule folder
+
+IMPORT SomeFolder.SomeFile;             //make the specific file available
+
+IMPORT SomeReallyLongFolderName AS SN;  //alias the long name as "SN"
+
+IMPORT Def1,Def2 FROM Fred;             //makes Def1 and Def2 from Fred available, unqualified
+
+IMPORT * FROM Fred;                     //makes everything from Fred available, unqualified
+
+IMPORT Dev.Me.Project1;                 //makes the Dev/Me/Project1 folder available 
+</programlisting>
+
+  <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link
+  linkend="SHARED">SHARED</link></para>
+</sect1>

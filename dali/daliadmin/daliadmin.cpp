@@ -151,20 +151,6 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
     return splitXPath(path, head);
 }
 
-static void getBackSuffix(StringBuffer &out)
-{
-    if (out.length())
-        out.append('_');
-    CDateTime dt;
-    dt.setNow();
-    dt.getString(out);
-    unsigned i;
-    for (i=0;i<out.length();i++)
-        if (out.charAt(i)==':')
-            out.setCharAt(i,'_');
-    out.append(".bak");
-}
-
 // NB: there's strtoll under Linux
 static unsigned __int64 hextoll(const char *str, bool &error)
 {
@@ -264,11 +250,9 @@ static void import(const char *path,const char *src,bool add)
         Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, INFINITE);
         if (bconn) {
             Owned<IPropertyTree> broot = bconn->getRoot();
-            StringBuffer bakname(tail);
-            getBackSuffix(bakname);
+            StringBuffer bakname;
+            Owned<IFileIO> io = createUniqueFile(NULL, tail, "bak", bakname);
             OUTLOG("Saving backup of %s to %s",path,bakname.str());
-            Owned<IFile> f = createIFile(bakname.str());
-            Owned<IFileIO> io = f->open(IFOcreate);
             Owned<IFileIOStream> fstream = createBufferedIOStream(io);
             toXML(broot, *fstream);         // formatted (default)
         }
@@ -280,8 +264,8 @@ static void import(const char *path,const char *src,bool add)
     }
     Owned<IPropertyTree> root = conn->getRoot();
     if (!add) {
-      Owned<IPropertyTree> child = root->getPropTree(tail);
-      root->removeTree(child);
+        Owned<IPropertyTree> child = root->getPropTree(tail);
+        root->removeTree(child);
     }
     root->addPropTree(tail,LINK(branch));
     conn->commit();
@@ -291,7 +275,9 @@ static void import(const char *path,const char *src,bool add)
         path++;
     if (strcmp(path,"Environment")==0) {
         OUTLOG("Refreshing cluster groups from Environment");
-        initClusterGroups();
+        StringBuffer response;
+        if (!initClusterGroups(false, response))
+            WARNLOG("updating Environment via import path=%s, some groups clash and were not updated : %s", path, response.str());
     }
 }
 
@@ -318,10 +304,8 @@ static void _delete_(const char *path,bool backup)
     }
     if (backup) {
         StringBuffer bakname;
-        getBackSuffix(bakname);
+        Owned<IFileIO> io = createUniqueFile(NULL,"daliadmin", "bak", bakname);
         OUTLOG("Saving backup of %s/%s to %s",head.str(),tail,bakname.str());
-        Owned<IFile> f = createIFile(bakname.str());
-        Owned<IFileIO> io = f->open(IFOcreate);
         Owned<IFileIOStream> fstream = createBufferedIOStream(io);
         toXML(child, *fstream);         // formatted (default)
     }
@@ -625,7 +609,7 @@ static void dfsgroup(const char *name)
     StringBuffer eps;
     for (unsigned i=0;i<group->ordinality();i++) {
         group->queryNode(i).endpoint().getUrlStr(eps.clear());
-        OUTLOG("%d: %s",i,eps.str());
+        OUTLOG("%s",eps.str());
     }
 }
 
@@ -2276,7 +2260,7 @@ int main(int argc, char* argv[])
             }
             else if (stricmp(cmd,"dfsmap")==0) {
                 CHECKPARAMS(1,1);
-                dfsgroup(params.item(1));
+                dfsmap(params.item(1));
             }
             else if (stricmp(cmd,"dfsexist")==0) {
                 CHECKPARAMS(1,1);

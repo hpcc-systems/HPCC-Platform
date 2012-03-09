@@ -34,7 +34,6 @@ echo $$ > run_thor.lck
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
-    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"  
     export logpth="$logdir/$logpthtail"
     $deploydir/start_slaves
 
@@ -61,6 +60,16 @@ while [ 1 ]; do
 
         echo 'stopping thor(slaves) for restart'
         $deploydir/stop_thor $deploydir keep_sentinel
+
+        if [ 0 != $autoSwapNode ]; then
+            echo "Running autoswap $THORNAME"
+            compname=`basename $PWD`
+            swapnode auto $DALISERVER $compname
+            errcode=$?
+            if [ 0 != ${errcode} ]; then
+                echo auto swap node failed, errcode=${errcode}
+            fi
+        fi
     else
         echo failed to start thormaster$LCR, pausing for 30 seconds
         sleep 30
@@ -69,5 +78,5 @@ while [ 1 ]; do
         echo $SENTINEL 'has been removed or thormaster did not fully start - script stopping'
         exit 0
     fi
+    export logpthtail="`date +%m_%d_%Y_%H_%M_%S`"
 done
-

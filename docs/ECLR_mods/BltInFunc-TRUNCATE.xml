@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TRUNCATE">
+  <title>TRUNCATE</title>
+
+  <para><emphasis role="bold">TRUNCATE<indexterm>
+      <primary>TRUNCATE</primary>
+    </indexterm>(</emphasis><emphasis>real_value</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.10pt" />
+
+        <colspec colwidth="273.70pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>real_value</emphasis></entry>
+
+            <entry>The floating-point value to truncate.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TRUNCATE returns a single integer value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TRUNCATE </emphasis>function<indexterm>
+      <primary>TRUNCATE Function</primary>
+    </indexterm> returns the integer portion of the
+  <emphasis>real_value</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SomeRealValue := 3.75;
+INTEGER4 MyVal := TRUNCATE(SomeRealValue); // MyVal is 3
+</programlisting>
+
+  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="ROUNDUP">ROUNDUP</link></para>
+</sect1>

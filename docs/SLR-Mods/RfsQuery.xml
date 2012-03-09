@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RfsQuery">
+  <title><emphasis role="bold">EncodeRfsQuery</emphasis></title>
+
+  <para><emphasis>result</emphasis> <emphasis role="bold"> :=
+  STD.File.EncodeRfsQuery<indexterm>
+      <primary>STD.File.EncodeRfsQuery</primary>
+    </indexterm><indexterm>
+      <primary>File.RfsEncodeQuery</primary>
+    </indexterm><indexterm>
+      <primary>EncodeRfsQuery</primary>
+    </indexterm>(</emphasis> <emphasis> server, query </emphasis> <emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>server</emphasis></entry>
+
+          <entry>A null-terminated string containing the ip:port address for
+          the remote file server.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>query</emphasis></entry>
+
+          <entry>A null-terminated string containing the query to send to the
+          <emphasis>server</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>RfsQuery returns a null-terminated string containing the
+          result of the <emphasis>query</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">EncodeRfsQuery </emphasis>function returns a
+  string that can be used in a DATASET declaration to read data from an RFS
+  (Remote File Server) instance (e.g. rfsmysql) on another node.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT Std;
+rfsserver := '10.173.207.1:7080';
+rec := RECORD,MAXLENGTH(8192)
+  STRING  mydata;
+END;
+OUTPUT(DATASET(STD.File.EncodeRfsQuery( rfsserver,
+              'SELECT data FROM xml_testnh'),rec,CSV(MAXLENGTH(8192))));</programlisting>
+</sect1>

@@ -71,8 +71,16 @@ export THORSLAVEPORT=<xsl:value-of select="@slaveport"/>
 export THORSLAVEPORT=6600
     </xsl:otherwise>
 </xsl:choose>
+<xsl:if test="string(@localThorPortInc) != ''">
+export localthorportinc=<xsl:value-of select="@localThorPortInc"/>
+</xsl:if>
 export domain=<xsl:value-of select="$domainName"/>
-export thor=<xsl:value-of select="@slaves"/>
+<xsl:if test="string(@slavesPerNode) != ''">
+export slavespernode=<xsl:value-of select="@slavesPerNode"/>
+</xsl:if>
+<xsl:if test="string(@multiSlaves) != ''">
+export multislaves=<xsl:value-of select="@multiSlaves"/>
+</xsl:if>
 <xsl:if test="string($thoruser) != ''">
 export THORUSER=<xsl:value-of select="$thoruser"/>
 </xsl:if>
@@ -86,15 +94,6 @@ export DALISERVER=<xsl:call-template name="getDaliServers">
 </xsl:if>
 <xsl:if test="string(@localThor) != ''">
 export localthor=<xsl:value-of select="@localThor"/>
-</xsl:if>
-<xsl:if test="string(@localThorPortBase) != ''">
-export localthorportbase=<xsl:value-of select="@localThorPortBase"/>
-</xsl:if>
-<xsl:if test="string(@localThorPortInc) != ''">
-export localthorportinc=<xsl:value-of select="@localThorPortInc"/>
-</xsl:if>
-<xsl:if test="string(@multiSlaves) != ''">
-export multislaves=<xsl:value-of select="@multiSlaves"/>
 </xsl:if>
 <xsl:if test="string(Storage/@breakoutLimit) != ''">
 export breakoutlimit=<xsl:value-of select="Storage/@breakoutLimit"/>
@@ -115,7 +114,14 @@ export autoSwapNode=<xsl:choose>
            <xsl:when test="SwapNode/@AutoSwapNode='1'">1</xsl:when>
            <xsl:otherwise>0</xsl:otherwise>
             </xsl:choose>
-export LCR=_lcr
+<xsl:choose>
+  <xsl:when test="string(@Legacy) != ''">
+    export LCR=
+  </xsl:when>
+  <xsl:otherwise>
+    export LCR=_lcr
+  </xsl:otherwise>
+</xsl:choose>
 <xsl:if test="string(SSH/@SSHidentityfile) != ''">
 export SSHidentityfile=<xsl:value-of select="SSH/@SSHidentityfile"/>
 </xsl:if>

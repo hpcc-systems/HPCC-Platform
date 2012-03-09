@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FUNCTION_Structure">
+  <title>FUNCTION Structure<indexterm>
+      <primary>FUNCTION Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>[</emphasis><emphasis>resulttype</emphasis><emphasis
+  role="bold">]</emphasis><emphasis> funcname </emphasis><emphasis
+  role="bold">(</emphasis><emphasis> parameterlist </emphasis><emphasis
+  role="bold">) := FUNCTION<indexterm>
+      <primary>FUNCTION</primary>
+    </indexterm></emphasis><emphasis role="bold"> </emphasis></para>
+
+  <para><emphasis role="bold"></emphasis><emphasis>code</emphasis> <emphasis
+  role="bold"></emphasis></para>
+
+  <para><emphasis role="bold"> RETURN</emphasis>
+  <emphasis>retval</emphasis>;</para>
+
+  <para><emphasis role="bold">END;</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The return value type of the function. If omitted, the type
+          is implicit from the <emphasis>retval</emphasis> expression.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>The ECL attribute name of the function.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>The parameters to pass to the <emphasis>code</emphasis>.
+          These are available to all attributes defined in the FUNCTION's
+          <emphasis>code</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>The local attribute definitions that comprise the function.
+          These may not be EXPORT or SHARED attributes, but may include
+          actions (like OUTPUT).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">RETURN<indexterm>
+              <primary>RETURN</primary>
+            </indexterm></emphasis></entry>
+
+          <entry>Specifies the function's return value expression—the
+          <emphasis>retval</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>retval</emphasis></entry>
+
+          <entry>The value, expression, recordset, row (record), or action to
+          return.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FUNCTION </emphasis>structure allows you to
+  pass parameters to a set of related attribute definitions. This makes it
+  possible to pass parameters to an attribute that is defined in terms of
+  other non-exported attributes without the need to parameterise all of those
+  as well.</para>
+
+  <para>Side-effect actions contained in the <emphasis>code</emphasis> of the
+  FUNCTION must have definition names that must be referenced by the WHEN
+  function to execute.</para>
+
+  <para>Example:</para>
+
+  <programlisting>EXPORT doProjectChild(parentRecord l,UNSIGNED idAdjust2) := FUNCTION
+  newChildRecord copyChild(childRecord l) := TRANSFORM
+     SELF.person_id := l.person_id + idAdjust2;
+     SELF := l;
+   END;
+
+   RETURN PROJECT(CHOOSEN(l.children, numChildren),copyChild(LEFT));
+END;
+     //And called from
+SELF.children := doProjectChild(l, 99);
+          
+//**********************************
+EXPORT isAnyRateGE(STRING1 rate) := FUNCTION
+   SetValidRates := ['0','1','2','3','4','5','6','7','8','9'];
+   IsValidTradeRate := ValidDate(Trades.trd_drpt) AND
+                       Trades.trd_rate &gt;= rate AND
+                       Trades.trd_rate IN SetValidRates;
+   ValidPHR := Prev_rate(phr_grid_flag = TRUE,
+                         phr_rate IN SetValidRates,
+                         ValidDate(phr_date));
+   IsPHRGridRate := EXISTS(ValidPHR(phr_rate &gt;= rate,
+                                    AgeOf(phr_date)&lt;=24));
+   IsMaxPHRRate := MAX(ValidPHR(AgeOf(phr_date) &gt; 24),
+                       Prev_rate.phr_rate) &gt;= rate;
+   RETURN IsValidTradeRate OR IsPHRGridRate OR IsMaxPHRRate;
+END;
+
+//*************************************************************
+//a FUNCTION with side-effect Action
+namesTable := FUNCTION
+   namesRecord := RECORD
+     STRING20 surname;
+     STRING10 forename;
+     INTEGER2 age := 25;
+   END;
+   o := OUTPUT('namesTable used by user &lt;x&gt;');
+   ds := DATASET([{'x','y',22}],namesRecord);
+   RETURN WHEN(ds,O);
+END;
+z := namesTable : PERSIST('z');
+  //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
+
+OUTPUT(z);
+
+//*************************************************************
+//a coordinated set of 3 examples
+
+NameRec := RECORD
+  STRING5 title;
+  STRING20 fname;
+  STRING20 mname;
+  STRING20 lname;
+  STRING5 name_suffix;
+  STRING3 name_score;
+END;
+MyRecord := RECORD
+  UNSIGNED id;
+  STRING  uncleanedName;
+  NameRec Name;
+END;
+ds := DATASET('RTTEST::RowFunctionData', MyRecord, THOR);
+STRING73 CleanPerson73(STRING inputName) := FUNCTION
+  suffix :=[ ' 0',' 1',' 2',' 3',' 4',' 5',' 6',' 7',' 8','  9', 
+              ' J',' JR',' S',' SR'];
+  InWords := Std.Str.CleanSpaces(inputName);
+  HasSuffix := InWords[LENGTH(TRIM(InWords))-1 ..] IN suffix;
+  WordCount := LENGTH(TRIM(InWords,LEFT,RIGHT)) -
+               LENGTH(TRIM(InWords,ALL)) + 1;
+  HasMiddle := WordCount = 5 OR (WordCount = 4 AND NOT HasSuffix) ;
+  Sp1 := Std.Str.Find(InWords,' ',1);
+  Sp2 := Std.Str.Find(InWords,' ',2);
+  Sp3 := Std.Str.Find(InWords,' ',3);
+  Sp4 := Std.Str.Find(InWords,' ',4);
+  STRING5 title := InWords[1..Sp1-1];
+  STRING20 fname := InWords[Sp1+1..Sp2-1];
+  STRING20 mname := IF(HasMiddle,InWords[Sp2+1..Sp3-1],'');
+  STRING20 lname := MAP(HasMiddle AND NOT HasSuffix =&gt; InWords[Sp3+1..],
+                        HasMiddle AND HasSuffix =&gt; InWords[Sp3+1..Sp4-1],
+                        NOT HasMiddle AND NOT HasSuffix =&gt; InWords[Sp2+1..],
+                        NOT HasMiddle AND HasSuffix =&gt; InWords[Sp2+1..Sp3-1],
+                        '');
+  STRING5 name_suffix := IF(HasSuffix,InWords[LENGTH(TRIM(InWords))-1..],'');
+  STRING3 name_score := '';
+  RETURN title + fname + mname + lname + name_suffix + name_score;
+END;
+
+//Example 1 - a transform to create a row from an uncleaned name
+NameRec createRow(string inputName) := TRANSFORM
+  cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+  SELF.title := cleanedText[1..5];
+  SELF.fname := cleanedText[6..25];
+  SELF.mname := cleanedText[26..45];
+  SELF.lname := cleanedText[46..65];
+  SELF.name_suffix := cleanedText[66..70];
+  SELF.name_score := cleanedText[71..73];
+END;
+myRecord t(myRecord l) := TRANSFORM
+  SELF.Name := ROW(createRow(l.uncleanedName));
+  SELF := l;
+END;
+y := PROJECT(ds, t(LEFT));
+OUTPUT(y);
+
+//Example 2 - an attribute using that transform to generate the row.
+NameRec cleanedName(STRING inputName) :=  ROW(createRow(inputName));
+myRecord t2(myRecord l) := TRANSFORM
+  SELF.Name := cleanedName(l.uncleanedName);
+  SELF := l;
+END;
+y2 := PROJECT(ds, t2(LEFT));
+OUTPUT(y2);
+
+//Example 3 = Encapsulate the transform inside the attribute by
+// defining a FUNCTION.
+NameRec cleanedName2(STRING inputName) := FUNCTION
+          
+  NameRec createRow := TRANSFORM
+     cleanedText := LocalAddrCleanLib.CleanPerson73(inputName);
+     SELF.title := cleanedText[1..5];
+     SELF.fname := cleanedText[6..25];
+     SELF.mname := cleanedText[26..45];
+     SELF.lname := cleanedText[46..65];
+     SELF.name_suffix := cleanedText[66..70];
+     SELF.name_score := cleanedText[71..73];
+  END;
+
+  RETURN ROW(createRow);
+END;
+
+myRecord t3(myRecord l) := TRANSFORM
+  SELF.Name := cleanedName2(l.uncleanedName);
+  SELF := l;
+END;
+
+y3 := PROJECT(ds, t3(LEFT));
+OUTPUT(y3);        </programlisting>
+
+  <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
+  <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
+  linkend="WHEN">WHEN</link></para>
+</sect1>

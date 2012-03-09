@@ -1,0 +1,3299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>HPCC Configuration Manager</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="Buildin-HPCC-from-Source">
+    <title>Using Configuration Manager</title>
+
+    <para>Configuration Manager is the utility with which we configure the
+    HPCC platform. The HPCC platform's configuration is stored in an XML file
+    named <emphasis role="bold">environment.xml</emphasis>. When you install a
+    package, a default single-node environment.xml is generated. After that,
+    you can use the Configuration Manager to modify it and add nodes and
+    configure components.</para>
+
+    <para>The Configuration Manager Wizard creates a similar file, but after
+    it is generated, you must rename it and put it into place on each
+    node.</para>
+
+    <para>Configuration Manager also offers an <emphasis role="bold">Advanced
+    View</emphasis> which allows you to add instances of components or change
+    the default settings for components. Even if you plane to use Advanced
+    View, it is a good idea to start with a wizard generated configuration and
+    use Advanced View to finish it.</para>
+
+    <para>This document will guide you through configuring an HPCC environment
+    using the Configuration Manager.</para>
+
+    <sect1 id="configuring-a-multi-node-system">
+      <title>Running the Configuration Manager</title>
+
+      <para>This document will guide you through configuring an HPCC
+      environment using the Configuration Manager.</para>
+
+      <itemizedlist mark="square">
+        <listitem>
+          <para>The HPCC packages should already be installed on ALL
+          nodes.</para>
+
+          <para>You can use any tool or shell script you choose.</para>
+        </listitem>
+
+        <listitem>
+          <para>SSH to the first box in your environment and login as a user
+          with sudo privileges.</para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist mark="square">
+        <listitem>
+          <para>Start the Configuration Manager service on one node (usually
+          the first node is considered the head node and is used for this
+          task, but this is up to you).</para>
+
+          <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+
+          <para><graphic fileref="images/gs_img_configmgrStart.jpg" /></para>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist>
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface:</para>
+
+          <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+        </listitem>
+      </itemizedlist>
+
+      <itemizedlist mark="square">
+        <listitem>
+          <para>The Configuration Manager startup wizard displays.</para>
+
+          <para>There are a few different ways to configure your HPCC. You can
+          use the Generate environment wizard or experienced users can use the
+          Advanced View.</para>
+
+          <itemizedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>To use the wizard select the <emphasis
+              role="bold">Generate new environment using wizard</emphasis>
+              button.</para>
+
+              <para><graphic
+              fileref="images/GS_ConfigMgrWizStart.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Provide a name for the environment file.</para>
+
+              <para>This will then be the name of the configuration xml. For
+              example we will name our environment
+              <emphasis>NewEnvironment</emphasis>. This will produce an XML
+              file named<emphasis> NewEnvironment.xml</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the Next button.</para>
+
+              <para>Next you will need to define the IP addresses that your
+              HPCC will be using.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Enter the IP addresses.</para>
+
+              <para>IP Addresses can be specified individually using
+              semi-colon delimiters. You can also specify a range of IPs using
+              a hyphen (for example, nnn.nnn.nnn.x-y). In the image below, we
+              specified the IP addresses 10.239.219.1 through 10.239.219.100
+              using the range syntax, and also a single IP
+              10.239.219.111.</para>
+
+              <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the Next button.</para>
+
+              <para>Alternatively, you could find the IP addresses using Auto
+              Discovery by selecting the Auto Discovery button. (Auto
+              Discovery is only available in Enterprise Edition)</para>
+
+              <para>Now you will define how many nodes to use for the Roxie
+              and Thor clusters.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Enter the appropriate values as indicated.</para>
+
+              <para><graphic fileref="images/GS_CMWiz003.jpg" /></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Number of support nodes:</term>
+
+                  <listitem>
+                    <para>Specify the number of nodes to use for support
+                    components. The default is 1.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of nodes for Roxie cluster:</term>
+
+                  <listitem>
+                    <para>Specify the number of nodes to use for your Roxie
+                    cluster. Enter zero (0) if you do not want a Roxie
+                    cluster.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of slave nodes for Thor cluster</term>
+
+                  <listitem>
+                    <para>Specify the number of slave nodes to use in your
+                    Thor cluster. A Thor master node will be added
+                    automatically.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Number of Thor slaves per node (default 1)</term>
+
+                  <listitem>
+                    <para>Specify the number of Thor slave processes to
+                    instantiate on each slave node. Enter zero (0) if you do
+                    not want a Thor cluster.</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Enable Roxie on demand</term>
+
+                  <listitem>
+                    <para>Specify whether or not to allow queries to be run
+                    immediately on Roxie. This must be enabled to run the
+                    debugger. (Default is true)</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para>Press the <emphasis role="bold">Next</emphasis>
+              button</para>
+
+              <para>The wizard displays the configuration parameters.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Finish</emphasis> button
+              to accept these values or press the <emphasis
+              role="bold">Advanced View</emphasis> button to edit in advanced
+              mode.</para>
+
+              <graphic fileref="images/GS_ConfigMgrWiz004.jpg" />
+            </listitem>
+          </itemizedlist>
+
+          <para>You will now be notified that you have completed the
+          wizard.</para>
+
+          <para><graphic fileref="images/GS_ConfigMgrWiz005.jpg" /></para>
+
+          <para>At this point, you have created a file named
+          NewEnvironment.xml in the <emphasis
+          role="bold">/etc/HPCCSystems/source</emphasis> directory</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+                  <entry>Keep in mind, that your HPPC configuration may be
+                  different depending on your needs. For example, you may not
+                  need a Roxie or you may need several smaller Roxie clusters.
+                  In addition, in a production [Thor] system, you would ensure
+                  that Thor and Roxie nodes are dedicated and have no other
+                  processes running on them. This document is intended to show
+                  you how to use the configuration tools. Capacity planning
+                  and system design is covered in a training module.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Stop the HPCC</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/caution.png" /></entry>
+
+                    <entry>Be sure HPCC is stopped before attempting to move
+                    the environment.xml file.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Back up the original environment.xml file</para>
+
+          <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
+
+          <para>Note: the "live environment.xml file is located in your
+          <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
+          ConfigManager works on files in <emphasis
+          role="bold">/etc/HPCCSystems/source</emphasis> directory. You must
+          copy from this location to make an environment.xml file
+          active.</para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the new .xml file from the source directory to the
+          /etc/HPCCSystems and rename the file to
+          <emphasis>environment.xml</emphasis></para>
+
+          <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+          <para></para>
+        </listitem>
+
+        <listitem>
+          <para>Copy the <emphasis
+          role="bold">/etc/HPCCSystems/environment.xml</emphasis> to the
+          <emphasis role="bold">/etc/HPCCSystems/</emphasis> on
+          <emphasis>every</emphasis> node.</para>
+
+          <para>You may want to use a script to push out XML file to all
+          nodes. See the Example Scripts section in the Appendix of the
+          Installing_and_RunningtheHPCCPlatform document. You can use the
+          scripts as a model to create your own script to copy the
+          environment.xml file out to all your nodes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Restart the HPCC platform.</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Configuration Manager Advanced View</title>
+
+    <para>For the advanced user, the Advanced View offers access to adding
+    additional instances of components or making configuration settings for
+    individual components.</para>
+
+    <sect1 id="configuring-advanced-setup">
+      <title>Using ConfigMgr in Advanced Mode</title>
+
+      <para>This section shows some of the configuration options in Advanced
+      Mode.</para>
+
+      <para><itemizedlist mark="square">
+          <listitem>
+            <para>SSH to the first box in your environment and login as a user
+            with sudo privileges.</para>
+          </listitem>
+
+          <listitem>
+            <para>If it is running, stop the HPCC system, using this
+            command:</para>
+
+            <para><programlisting>sudo /sbin/service hpcc-init stop</programlisting><informaltable
+                colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>You can use this command to confirm HPCC
+                      processes are stopped: <para><programlisting>sudo /sbin/service hpcc-init status</programlisting></para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+        </itemizedlist><itemizedlist mark="square">
+          <listitem>
+            <para>Start the Configuration Manager service on one node (usually
+            the first node is considered the head node and is used for this
+            task, but this is up to you).</para>
+
+            <programlisting>source /opt/HPCCSystems/sbin/hpcc_setenv
+sudo configmgr</programlisting>
+
+            <para><graphic
+            fileref="images/gs_img_configmgrStart.jpg" /></para>
+          </listitem>
+        </itemizedlist><itemizedlist>
+          <listitem>
+            <para>Using a Web browser, go to the Configuration Manager's
+            interface:</para>
+
+            <programlisting>http://&lt;<emphasis>ip of installed system</emphasis>&gt;:8015</programlisting>
+          </listitem>
+        </itemizedlist><itemizedlist mark="square">
+          <listitem>
+            <para>The Configuration Manager startup wizard displays.</para>
+
+            <para>There are a few different ways to configure your system. You
+            can use the Generate environment wizard or experienced users can
+            use the Advanced set up.</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Select <emphasis role="bold">Advanced View</emphasis>,
+                then press the <emphasis role="bold">Next
+                </emphasis>button.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select an XML file from the drop list.</para>
+
+                <para>This list is populated from versions of an environment
+                XML file in your server's ./etc/HPCCSystems/source/
+                directory.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Press the <emphasis role="bold">Next</emphasis> button.
+                <graphic fileref="images/CM-WizStart.jpg" /></para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist></para>
+
+      <itemizedlist mark="circle">
+        <listitem>
+          <para>The Configuration Manager interface displays.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>Default access is read-only. Many options are only
+                    available when write-access is enabled. <para>Gain write
+                    access by checking the <emphasis role="bold">Write
+                    Access</emphasis> checkbox. </para><para>Unchecking this
+                    box returns the environment to read-only mode. All menu
+                    items are disabled in read-only mode. </para><para>Closing
+                    the web page automatically removes any write-access
+                    locks.</para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access</emphasis>
+          box.</para>
+
+          <para><graphic fileref="images/CM-img101.jpg" />The Save
+          button<inlinegraphic fileref="images/GS-img01c.png" /> validates and
+          saves the environment.</para>
+
+          <para>The validate button<inlinegraphic
+          fileref="images/GS-img01d.png" /> just validates the current
+          environment including any changes that have not yet been
+          saved.</para>
+
+          <para>The open button <inlinegraphic
+          fileref="images/CM-img18.jpg" /> allows you to open a new
+          environment file to work on.</para>
+
+          <para>The wizard button <inlinegraphic
+          fileref="images/CM-img19.jpg" /> will bring up the Configuration
+          Manager chooser form which will allow you to create or view an
+          environment file where you can also launch the configuration
+          wizard.</para>
+
+          <para>These buttons are only enabled in Write Access mode.</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>Hardware Section</title>
+
+        <para>This section allows you to define your list of servers. When
+        defining instances of components, you will choose from servers in this
+        list.</para>
+
+        <itemizedlist mark="circle">
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Select <emphasis role="bold">Hardware</emphasis> in the
+            Navigator panel on the left side.</para>
+
+            <para><graphic fileref="images/CM-img01.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Select the <emphasis role="bold">Computers</emphasis>
+            tab.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>RT-CLICK on one of computers listed, then select New
+            Range.</para>
+
+            <para><graphic fileref="images/CM-img02.jpg" /></para>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Specify the following:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Name Prefix - any name that will help you to identify
+                the node or range</para>
+              </listitem>
+
+              <listitem>
+                <para>Start IP Address</para>
+              </listitem>
+
+              <listitem>
+                <para>Stop IP Address</para>
+
+                <para>The IP Addresses can be specified in a range if all your
+                host IP addresses are consecutively numbered. If the IP
+                addresses are not sequential you should repeat the process for
+                each individual IP address and just add the IP address in both
+                the start and stop IP address field. You will then need to
+                repeat the process for each node.</para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
+
+            <para>The list of nodes now displays with the nodes that you just
+            added.</para>
+
+            <para><inlinegraphic fileref="images/CM-img03.jpg" /></para>
+
+            <para>Next, edit each System Server component instance and set it
+            to a newly defined node.</para>
+
+            <!--***The steps that follow are using one component per node. You can allocate more components per node, if needed.-->
+          </listitem>
+
+          <listitem>
+            <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
+            disk icon to save</para>
+          </listitem>
+        </itemizedlist>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Expand the <emphasis role="bold">Software</emphasis>
+            section, if necessary, in the Navigator panel on the left side, by
+            clicking on the <inlinegraphic
+            fileref="images/expandbutton.png" /> button.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2>
+        <title>Software Section</title>
+
+        <para>Use the software components section to configure software
+        components of the HPCC platform. Most software components are actual
+        running processes; however, some are just definitions used by the
+        system. These definitions are used by the configuration
+        generator.</para>
+
+        <sect3>
+          <title>Dali</title>
+
+          <sect4>
+            <title>Instances</title>
+
+            <para><itemizedlist mark="square">
+                <listitem>
+                  <para>Select <emphasis role="bold">Dali Server</emphasis> in
+                  the Navigator panel on the left side.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Select the Instances tab.</para>
+                </listitem>
+
+                <listitem>
+                  <?dbfo keep-together="always"?>
+
+                  <para>In the computer column, choose a node from the drop
+                  list as shown below:<graphic
+                  fileref="images/CM-img04.jpg" /></para>
+                </listitem>
+
+                <listitem>
+                  <para>Click the <inlinegraphic
+                  fileref="images/GS-img01c.png" /> disk icon to save</para>
+                </listitem>
+              </itemizedlist></para>
+          </sect4>
+
+          <sect4>
+            <title>DaliServer attributes</title>
+
+            <para>This section describes the DaliServer attributes.</para>
+
+            <para><graphic fileref="images/CM-img04-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>AuditLogDir</emphasis></entry>
+
+                      <entry>Audit Log Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>dataPath</emphasis></entry>
+
+                      <entry>the path to the data</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description </emphasis></entry>
+
+                      <entry>data path description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>environment</emphasis></entry>
+
+                      <entry>the current environment file in use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>LogDir</emphasis></entry>
+
+                      <entry>location of the log files</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>msgLevel</emphasis></entry>
+
+                      <entry>description of the msgLevel</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>DaliServer store</title>
+
+            <para>This section describes the attributes configuring how Dali
+            handles the system data store.</para>
+
+            <para><graphic fileref="images/CM-img04-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>EndTime</emphasis></entry>
+
+                      <entry>End Time</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>IdlePeriod</emphasis></entry>
+
+                      <entry>Period to remain Idle</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>IdleRate</emphasis></entry>
+
+                      <entry>IdleRate</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>keepStores</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>lightweightCoalesce</emphasis></entry>
+
+                      <entry>lightweight</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>MinTime</emphasis></entry>
+
+                      <entry>min. time...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>recoverDeltaErrors</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>StartTime</emphasis></entry>
+
+                      <entry>start time</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>DaliServer LDAP options</title>
+
+            <para>This section describes the DaliServer LDAP tab. (LDAP is
+            only available in Enterprise Edition)</para>
+
+            <para><graphic fileref="images/CM-img04-4.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>authMethod</emphasis></entry>
+
+                      <entry>Authentication Method. Kerberos</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>checkScopeScans</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>filesBasedn</emphasis></entry>
+
+                      <entry>The Base File Type</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>filesDefaultPassword</emphasis></entry>
+
+                      <entry>Default Password</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>filesDefaultUser</emphasis></entry>
+
+                      <entry>Default User</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldapProtocol</emphasis></entry>
+
+                      <entry>Default Protocol use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldapServer</emphasis></entry>
+
+                      <entry>LDAP Server</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>DaliServer Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Dafilesrv-Process">
+          <title>Dafilesrv Process</title>
+
+          <sect4>
+            <title>Dafilesrv Instances</title>
+
+            <para>Dafilesrv is a helper process that every node needs.</para>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select Dafilesrv in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>RT-CLICK on a computer in the computer column, and
+                select Add Instance .</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Select all computers in the list, then press the OK
+                button.</para>
+
+                <para><graphic fileref="images/CM-img12.jpg"
+                scalefit="1" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>Dafilesrv attributes</title>
+
+            <para>This section describes the Dafilesrv attributes.</para>
+
+            <para><graphic fileref="images/CM-img12-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>DaFileSrv Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>version</emphasis></entry>
+
+                      <entry>current version number</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="DFU-Server">
+          <title><emphasis>DFU Server</emphasis></title>
+
+          <sect4>
+            <title>DfuServer Instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select <emphasis role="bold">DFU Server</emphasis> in
+                the Navigator panel on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the computer column, choose a node from the drop list
+                as shown below:<graphic
+                fileref="images/CM-img05.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <sect4>
+            <title>DfuServer Attributes Tab</title>
+
+            <para>This section describes the DfuServer attributes.</para>
+
+            <para><graphic fileref="images/CM-img05-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>daliServers</emphasis></entry>
+
+                      <entry>The Dali servers to use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>Describes the component</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>dfuLogDir</emphasis></entry>
+
+                      <entry>The log directory</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>monitorinterval</emphasis></entry>
+
+                      <entry>the interval that the process checks ...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>monitorque</emphasis></entry>
+
+                      <entry>the queue to monitor</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>queue</emphasis></entry>
+
+                      <entry>the name of the dfu server queue</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>transferBufferSize</emphasis></entry>
+
+                      <entry>The value at which...</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>DfuServer SSH Options</title>
+
+            <para>This section describes the DfuServer SSH Options..</para>
+
+            <para><graphic fileref="images/CM-img05-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHidentityfile</emphasis></entry>
+
+                      <entry>The SSH file used for authentication</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHpassword</emphasis></entry>
+
+                      <entry>the SSH Password</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHretries</emphasis></entry>
+
+                      <entry>no. of retries to authenticate</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SHtimeout</emphasis></entry>
+
+                      <entry>the timeout interval</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHusername</emphasis></entry>
+
+                      <entry>SSH username default is
+                      <emphasis>hpcc</emphasis></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>DfuServer Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3>
+          <title>Directories</title>
+
+          <para>The DIrectories component is a global definition used by other
+          components to determine the directories they will use for various
+          functions.</para>
+
+          <para><graphic fileref="images/CM-161a.jpg" /></para>
+
+          <para></para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="3">
+              <colspec align="left" colwidth="122.40pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>Name</entry>
+
+                  <entry>Directory</entry>
+
+                  <entry>Description</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">log</emphasis></entry>
+
+                  <entry>/var/log/[NAME]/[INST]</entry>
+
+                  <entry>Location for Log files</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">temp</emphasis></entry>
+
+                  <entry>/var/lib/[NAME]/[INST]/temp</entry>
+
+                  <entry>Location for temp files</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">data</emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry>Base Location for data files</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">data2</emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">data3</emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry></entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">mirror</emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry>Base Location for mirror data files</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">query</emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry>Base Location for Queries</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold"></emphasis></entry>
+
+                  <entry></entry>
+
+                  <entry></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3 id="Drop-Zone">
+          <title><emphasis>Drop Zone</emphasis></title>
+
+          <sect4>
+            <title>DropZone Attributes</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select Drop Zone in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Attributes tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the Value column of the Computer row, choose a node
+                from the drop list as shown below:<graphic
+                fileref="images/CM-img06.jpg" scale="90"
+                scalefit="1" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <sect4>
+            <title>DropZone Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="ECL-Agent">
+          <title><emphasis>ECL Agent</emphasis></title>
+
+          <sect4>
+            <title>instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select ECL Agent in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the computer column, choose a node from the drop list
+                as shown below:<graphic
+                fileref="images/CM-img07.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <sect4>
+            <title>EclAgent Attributes Tab</title>
+
+            <para>This section describes the EclAgent Attributes tab.</para>
+
+            <para><graphic fileref="images/CM-img07-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>Describes the component</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>EclAgent Options Tab</title>
+
+            <para>This section describes the EclAgent Options tab.</para>
+
+            <para><graphic fileref="images/CM-img07-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>allowedPipePrograms</emphasis></entry>
+
+                      <entry>describes allowed Pipe Programs</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>daliServers</emphasis></entry>
+
+                      <entry>the Dali Servers</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>logDir</emphasis></entry>
+
+                      <entry>The log directory</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>pluginDirectory</emphasis></entry>
+
+                      <entry>the plugin directory</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>thorConnectTimeout</emphasis></entry>
+
+                      <entry>the Thor timeout value</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>traceLevel</emphasis></entry>
+
+                      <entry>the trace level</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>wuQueueName</emphasis></entry>
+
+                      <entry>the name of the workunit queue</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>EclAgentProcessNotes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3>
+          <title>ECL CC Server Process</title>
+
+          <sect4>
+            <title>Ecl CC Server Instances</title>
+
+            <para><itemizedlist mark="square">
+                <listitem>
+                  <para>Select Ecl CC Server - myeclccserver in the Navigator
+                  panel on the left side.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Select the Instances tab.</para>
+                </listitem>
+
+                <listitem>
+                  <para>In the computer column, choose a node from the drop
+                  list as shown below:<graphic
+                  fileref="images/CM-ECLCC-01.jpg" /></para>
+                </listitem>
+
+                <listitem>
+                  <para>Click the <inlinegraphic
+                  fileref="images/GS-img01c.png" /> disk icon to save</para>
+                </listitem>
+              </itemizedlist></para>
+          </sect4>
+
+          <sect4>
+            <title>Ecl CC Server Attributes Tab</title>
+
+            <para>This section describes the Ecl CC Server Attributes
+            tab.</para>
+
+            <para><graphic fileref="images/CM-ECLCC-02.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>daliServers</emphasis></entry>
+
+                      <entry>The Dali servers to use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>Describes the component</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>maxCompileThreads</emphasis></entry>
+
+                      <entry>The maximum number of compile threads</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>queue</emphasis></entry>
+
+                      <entry>Name of the Ecl cc server queue</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>traceLevel</emphasis></entry>
+
+                      <entry>The value ***</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>EclCC Server Process Options</title>
+
+            <para>To add a custom option, rt-click and select add.</para>
+
+            <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
+
+            <para></para>
+          </sect4>
+
+          <sect4>
+            <title>EclCC Server Process Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="ECL-Scheduler" role="brk">
+          <title><emphasis>ECL Scheduler</emphasis></title>
+
+          <sect4>
+            <title>instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select <emphasis role="bold">ECL Scheduler</emphasis> in
+                the Navigator panel on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the computer column, choose a node from the drop list
+                as shown below:<graphic fileref="images/CM-161.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>EclScheduler Attributes Tab</title>
+
+            <para>This section describes the EclScheduler Attributes
+            tab.</para>
+
+            <para><graphic fileref="images/CM-160.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>Describes the component</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>EclScheduler Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="ESP-Server" role="brk">
+          <title><emphasis>ESP Server</emphasis></title>
+
+          <sect4>
+            <title>Esp Process Instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select ESP - MyEsp in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the computer column, choose a node from the drop list
+                as shown below:<graphic
+                fileref="images/CM-img08.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>Esp - myesp Attributes Tab</title>
+
+            <para>This section describes the Esp - myesp Attributes
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img08-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>componentfilesDir</emphasis></entry>
+
+                      <entry>the component files directory</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>daliServers</emphasis></entry>
+
+                      <entry>the Dali servers</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>Describes the component</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>enableSEHMapping</emphasis></entry>
+
+                      <entry>True or False to enable***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>formOptionsAccess</emphasis></entry>
+
+                      <entry>True or False to enable...***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>httpConfigAccess</emphasis></entry>
+
+                      <entry>True or False to enable...***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>logLevel</emphasis></entry>
+
+                      <entry>The Level of ...***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>logRequests</emphasis></entry>
+
+                      <entry>True or False to enable...***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>logResponses</emphasis></entry>
+
+                      <entry>True or False to enable...***</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>maxBacklogQueueSize</emphasis></entry>
+
+                      <entry>The size of the backlog queue</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>maxConcurrentThreads</emphasis></entry>
+
+                      <entry>The maximum number of concurrent threads</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>maxRequestEntityLegnth</emphasis></entry>
+
+                      <entry>The maximum length for entity requests</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>perfReportDelay</emphasis></entry>
+
+                      <entry>The value at which...***</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>Esp - myesp Service BindingsTab</title>
+
+            <para>This section describes the Esp - myesp Service Bindings
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img08-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><emphasis role="bold">Attribute
+                      name</emphasis></entry>
+
+                      <entry><emphasis
+                      role="bold">Definition</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ECLWatch</emphasis></entry>
+
+                      <entry>provides ECL Watch interface</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Ws_ecl</emphasis></entry>
+
+                      <entry>Provides Web access to published queries</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>Esp - myesp AuthenticationTab</title>
+
+            <para>This section describes the Esp - myesp Service
+            Authentication tab. LDAP is a feature only available in Enterprise
+            Edition.</para>
+
+            <para><graphic fileref="images/CM-img08-3.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>AccurintSecurity</emphasis></entry>
+
+                      <entry>the AccurintSecurity pass...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldapAuthMethod</emphasis></entry>
+
+                      <entry>the LDAP Authentication Method</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldapConnections</emphasis></entry>
+
+                      <entry>the number of LDAP Connections</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldapServer</emphasis></entry>
+
+                      <entry>the LDAP server</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>method</emphasis></entry>
+
+                      <entry>the method...</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>Esp - myesp HTTPS Tab</title>
+
+            <para>This section describes the Esp - myesp HTTPS tab.</para>
+
+            <para><graphic fileref="images/CM-img08-4.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>acceptSelfSigned</emphasis></entry>
+
+                      <entry>True or False to enable self signed
+                      certificate...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>CA_Certificates_Path</emphasis></entry>
+
+                      <entry>the location of the CA Certificates</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>certificateFileName</emphasis></entry>
+
+                      <entry>name of the CA Certificate</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Name of the city</emphasis></entry>
+
+                      <entry>name of the city.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Name of the country</emphasis></entry>
+
+                      <entry>name of the country.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Number of days the certificate is
+                      valid.</emphasis></entry>
+
+                      <entry>The Number of days the certificate is
+                      valid.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>enableVerification</emphasis></entry>
+
+                      <entry>True or False to enable verification
+                      of...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>organization</emphasis></entry>
+
+                      <entry>name of the organization...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>organizationalUnit</emphasis></entry>
+
+                      <entry>OU to use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>passphrase</emphasis></entry>
+
+                      <entry>passphrase to use</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>privateKeyFileName</emphasis></entry>
+
+                      <entry>The privatekey name file (such as,
+                      privatekey.cer)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>regenerateCredentials</emphasis></entry>
+
+                      <entry>True or False to enable generation of
+                      credentials.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>requireAddressMatch</emphasis></entry>
+
+                      <entry>True or False to enable address match</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Name of the State</emphasis></entry>
+
+                      <entry>name of the state</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>TrustedPeers</emphasis></entry>
+
+                      <entry>The names of trusted peers.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>Esp - myesp Protocol XTab</title>
+
+            <para>This section describes the Esp - myesp Protocol X
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img08-5.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute name</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Authentication
+                      Timeout</emphasis></entry>
+
+                      <entry>The Authentication timeout value...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Default Time out </emphasis></entry>
+
+                      <entry>The default timeout value...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ldle Timeout</emphasis></entry>
+
+                      <entry>The timeout value...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Maximum Timeout</emphasis></entry>
+
+                      <entry>The maximum timeout value...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Minimum Timeout</emphasis></entry>
+
+                      <entry>The minimum timeout value...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>Thread Count</emphasis></entry>
+
+                      <entry>the number of threads...</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>EspProcess Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="FTSlave-Process" role="brk">
+          <title><emphasis>FTSlave Process</emphasis></title>
+
+          <para>FTSlave is a helper process that every node needs.</para>
+
+          <sect4>
+            <title>Instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select FTSlave in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>RT-CLICK on a computer in the computer column, and
+                select Add Instance .</para>
+
+                <para><graphic fileref="images/CM-190.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Select all computers in the list, then press the
+                <emphasis role="bold">OK</emphasis> button.</para>
+
+                <para><graphic fileref="images/CM-img11.jpg" /></para>
+              </listitem>
+
+              <listitem>
+                <para>Click the <inlinegraphic
+                fileref="images/GS-img01c.png" /> disk icon to save</para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <sect4>
+            <title>FtSlave attributes</title>
+
+            <para>This section describes the FTSlave attributes tab.</para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>FTSlave Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of the process instance (AlphaNumeric and
+                      underscore only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>version</emphasis></entry>
+
+                      <entry>current version number</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>FtSlave Process Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3>
+          <title><emphasis>Sasha Server</emphasis></title>
+
+          <sect4>
+            <title>Instances</title>
+
+            <itemizedlist mark="square">
+              <listitem>
+                <para>Select Sasha Server in the menu on the left side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the Instances tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>In the computer column, choose a node from the drop list
+                as shown below:</para>
+              </listitem>
+            </itemizedlist>
+
+            <graphic fileref="images/CM-img17.jpg" scalefit="1" />
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>SashaServer Process Archiver</title>
+
+            <para>This section describes the SashaServer Process Archiver
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img17-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>cachedWUat</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>cachedWUinterval</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>cachedWUlimit</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUrecoveryAt</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUrecoveryCutoff</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUrecoveryInterval</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUrecoveryLimit</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUat</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUcutoff</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUduration</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUinterval</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUlimit</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>DFUWUthrottle</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>keepResultFiles</emphasis></entry>
+
+                      <entry>Keep result files, True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUat</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUbackup</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUcutof</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUduration</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUinterval</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUlimit</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUretryinterval</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>WUthrottle</emphasis></entry>
+
+                      <entry>SashaServer Archiver Process description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>SashaServer Process Coalescer</title>
+
+            <para>This section describes the SashaServer Process Coalescer
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img17-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>coalesceAt</emphasis></entry>
+
+                      <entry>SashaServer Coalesce Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>coalesceInterval</emphasis></entry>
+
+                      <entry>SashaServer Coalesce Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>minDeltaSize</emphasis></entry>
+
+                      <entry>SashaServer Coalesce Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>recoverDeltaErrors</emphasis></entry>
+
+                      <entry>SashaServer Coalesce Process description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>SashaServer Process DfuXRef</title>
+
+            <para>This section describes the SashaServer Process DfuXref
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img17-3.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefAt</emphasis></entry>
+
+                      <entry>SashaServer DfuXRef Attribute description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefCutoff</emphasis></entry>
+
+                      <entry>SashaServer DfuXRef Attribute description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefEclWatchProvider</emphasis></entry>
+
+                      <entry>Xref Ecl Watch Provider, True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefInterval</emphasis></entry>
+
+                      <entry>value of SashaServer DfuXRef Attribute</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefList</emphasis></entry>
+
+                      <entry>SashaServer DfuXRef Attribute description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>SashaServer Process DfuExpiry</title>
+
+            <para>This section describes the SashaServer Process DfuExpiry
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img17-4.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ExpiryAt</emphasis></entry>
+
+                      <entry>SashaServer DfuExpiry tab description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ExpiryInterval</emphasis></entry>
+
+                      <entry>Interval in hours at which the Dfu
+                      expires</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>SashaServer Process ThorQMon</title>
+
+            <para>This section describes the SashaServer Process ThorQMon
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img17-5.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ThorQMonInterval</emphasis></entry>
+
+                      <entry>ThorQMonInterval description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ThorQMonQueues</emphasis></entry>
+
+                      <entry>ThorQMonQueues description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>ThorQMonSwitchMinTime</emphasis></entry>
+
+                      <entry>ThorQMonSwitchMinTime description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>SashaServer Process DaFileSrvMonitor</title>
+
+            <para>This section describes the SashaServer Process
+            DaFileSrvMonitor tab.</para>
+
+            <para><graphic fileref="images/CM-img17-6.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>dafsmonAt</emphasis></entry>
+
+                      <entry>dafsmon description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>dafsmonInterval</emphasis></entry>
+
+                      <entry>dafsmon description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>dafsmonList</emphasis></entry>
+
+                      <entry>dafsmon description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>SashaServer Process Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Thor">
+          <title><emphasis>Thor</emphasis></title>
+
+          <para>This section details how to define a Data Refinery (Thor)
+          cluster. Before you begin, you should decide the width of the
+          cluster (i.e., how many slave nodes will you have).</para>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <para>Select Thor Cluster - mythor in the Navigator panel on the
+              left side.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Topology</emphasis>
+              tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Expand the Topology, if needed, then RT-CLICK the Master
+              and select Delete.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>This deletes the sample one-node Thor.</para>
+
+          <para>You will replace this with a multi-node cluster.</para>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>RT-CLICK on the Topology and select Add Master.</para>
+
+              <para><graphic fileref="images/CM-img13.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select a computer from the list, then press the OK
+              button.</para>
+
+              <para><graphic fileref="images/gs_img17.png" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>RT-CLICK on the Master and select Add Slaves.</para>
+
+              <para><graphic fileref="images/CM-111.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the computers to use as slaves from the list, then
+              press the OK button. Use CTRL+CLICK to multi-select or
+              SHIFT+CLICK to select a range.</para>
+
+              <para><graphic fileref="images/CM-112.jpg" />The Nodes now
+              display below the Thor Master node.</para>
+
+              <para><graphic fileref="images/CM-img14.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist>
+            <listitem>
+              <para>Select Thor Cluster - mythor in the Navigator panel on the
+              left side.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the Attributes tab.</para>
+
+              <para><graphic fileref="images/CM-img15.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Change the value of the localThor to <emphasis
+              role="bold">false</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
+              disk icon to save</para>
+            </listitem>
+          </itemizedlist>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>ThorCluster Attributes</title>
+
+            <para>This section describes the Thor Cluster Attributes
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img18-1.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>allowedPipePrograms</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>autoCopyBackup</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>checkPointRecovery</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>daliServers</emphasis></entry>
+
+                      <entry>The Dali Server</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>defaultOutputNodeGroup</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>description</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>externalProgDir</emphasis></entry>
+
+                      <entry>Location of externals</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>globalMemorySize</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>idleRestartPeriod</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>largeMemSize</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>LCR</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>localThor</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>localThorPortBase</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>localThorPortInc</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>masterport</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>monitorDaliFileServer</emphasis></entry>
+
+                      <entry>Specifies whether to monitor for DaFileSrv
+                      process (True or False )</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>multiSlaves</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>multiThorExclusionLockName</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>multiThorMemoryThreshold</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>multiThorPriorityLock</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>name</emphasis></entry>
+
+                      <entry>Name of cluster</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>nodeGroup</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>pluginsPath</emphasis></entry>
+
+                      <entry>Location of plugins</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>queueName</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>replicateAsync</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>replicateOutputs</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>slaveDownTimeout</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>slaveport</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>smallSortThreshold</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>verifyDaliConnectionInterval</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>watchdogEnabled</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>watchdogProgressEnabled</emphasis></entry>
+
+                      <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>watchdogProgressInterval</emphasis></entry>
+
+                      <entry>ThorCluster Process description</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>ThorCluster SSH Options</title>
+
+            <para>This section describes the ThorCluster SSH Options
+            tab.</para>
+
+            <para><graphic fileref="images/CM-img18-2.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHidentityfile</emphasis></entry>
+
+                      <entry>Location of the SSH keys component files.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHpassword</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHretries</emphasis></entry>
+
+                      <entry>The number of times...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHtimeout</emphasis></entry>
+
+                      <entry>Timeout</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SSHusername</emphasis></entry>
+
+                      <entry>The user name of the account the SSH keys are
+                      associated with</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>ThorCluster Debug</title>
+
+            <para>The debug tab is for internal use only</para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>ThorCluster Swap Node</title>
+
+            <para>This section describes the ThorCluster Swap Node tab.</para>
+
+            <para><graphic fileref="images/CM-img18-4.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>AutoSwapNode</emphasis></entry>
+
+                      <entry>True or False. Set to True to enable
+                      AutoSwapNode</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>CheckAfterEveryJob</emphasis></entry>
+
+                      <entry>True or False. Set to True to Check after Every
+                      Job</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeCheckC</emphasis></entry>
+
+                      <entry>True or False. Set to True to ...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeCheckD</emphasis></entry>
+
+                      <entry>True or False. Set to True to...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeCheckScript</emphasis></entry>
+
+                      <entry></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeCheckScriptTimeout</emphasis></entry>
+
+                      <entry>The number ...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeInterval</emphasis></entry>
+
+                      <entry>The number ...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeMaxConcurrent</emphasis></entry>
+
+                      <entry>value of Maximum number of concurrent...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>SwapNodeRestartJob</emphasis></entry>
+
+                      <entry>True or False. Set to True...</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
+            <title>ThorCluster Backup</title>
+
+            <para>This section describes the ThorCluster Backup tab.</para>
+
+            <para><graphic fileref="images/CM-img18-5.jpg" /></para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry>Attribute</entry>
+
+                      <entry>Definition</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>breakoutLimit</emphasis></entry>
+
+                      <entry>value of...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>refreshRate</emphasis></entry>
+
+                      <entry>value of...</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </sect4>
+
+          <sect4>
+            <title>ThorCluster Notes</title>
+
+            <para>This tab allows you to add any notes pertinent to the
+            component's configuration. This can be useful to keep a record of
+            changes and to communicate this information to peers.</para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Roxie" role="brk">
+          <title><emphasis>Roxie</emphasis></title>
+
+          <para>This section details how to define a Rapid Data Delivery
+          Engine (Roxie) cluster. Before you begin, you should decide the
+          width of the cluster (i.e., how many agent nodes will you
+          have).***Change the value of the localslave to <emphasis
+          role="bold">false***</emphasis></para>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <para>Select Roxie Cluster in the Navigator panel on the left
+              side.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the Servers tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Expand the RoxieCluster &gt;&gt; farm1, if needed, then
+              RT-CLICK the Server and select
+              <guimenuitem>Delete</guimenuitem>.</para>
+
+              <para><graphic fileref="images/CM-112.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <para>This deletes the sample one-node Roxie Server.</para>
+
+          <para>You will replace this with several servers to act as Roxie
+          Servers.</para>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>RT-CLICK on the Roxie Cluster and select Add Farm.</para>
+
+              <para><graphic fileref="images/CM-112-1.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the computers to use as Servers from the list, then
+              press the OK button. Use Ctrl+click to multi-select or
+              shift+click to select a range.</para>
+
+              <para><graphic fileref="images/CM-112-2.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <para>Select the Agents tab.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the RoxieCluster, then RT-CLICK select Reconfigure
+              Agents.</para>
+
+              <para>This allows you to replace the single agent with the
+              multiple nodes you added as Servers.</para>
+
+              <para><graphic fileref="images/CM-img16.jpg" /></para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the computers to use as Agents from the list, then
+              press the <emphasis role="bold">OK</emphasis> button. Use
+              Ctrl+click to multi-select or shift+click to select a
+              range.</para>
+
+              <para><graphic fileref="images/CM-112-2.jpg" /><emphasis
+              role="bold">Note:</emphasis> In this example, we are using the
+              same five nodes that were made to be Servers. This is a typical
+              configuration.</para>
+            </listitem>
+          </itemizedlist>
+
+          <itemizedlist mark="square">
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select the redundancy scheme to use. Typically, this is
+              Circular Redundancy, as shown below.</para>
+
+              <para><graphic fileref="images/GS-img25.png" /></para>
+            </listitem>
+
+            <listitem>
+              <para>Click the <inlinegraphic fileref="images/GS-img01c.png" />
+              disk icon to save</para>
+            </listitem>
+
+            <listitem>
+              <para>Close Configuration Manager by pressing ctrl+C in the
+              command window where it is running.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="Topology" role="brk">
+          <title>Topology</title>
+
+          <para>This section describes the topology tab.</para>
+
+          <para></para>
+
+          <para><graphic fileref="images/CM-img20.jpg" /><informaltable
+              colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry>Attribute name</entry>
+
+                    <entry>Definition</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>Topology</emphasis></entry>
+
+                    <entry>describes the system topology</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>Cluster - thor</emphasis></entry>
+
+                    <entry>describes the Thor clusters</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>Cluster - hthor</emphasis></entry>
+
+                    <entry>describes the hthor clusters</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>Cluster - roxie</emphasis></entry>
+
+                    <entry>describes the Roxie clusters</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3 id="Propogate-configuration-changes">
+          <title><emphasis>Distribute Configuration Changes to all Nodes
+          </emphasis></title>
+
+          <para>Once your environment is set up as desired, you must copy the
+          configuration file out to the other nodes.</para>
+
+          <para></para>
+
+          <itemizedlist>
+            <listitem>
+              <para>If it is running, stop the system</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Be sure system is stopped before attempting to
+                        move the Environment.xml file.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <para>Back up the original environment.xml file</para>
+
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak </programlisting>
+
+              <para>Note: the "live environment.xml file is located in your
+              <emphasis role="bold">/etc/HPCCSystems/</emphasis> directory.
+              ConfigManager works on files in <emphasis
+              role="bold">/etc/HPCCSystems/source</emphasis> directory. You
+              must copy from this location to make an environment.xml file
+              active.</para>
+            </listitem>
+
+            <listitem>
+              <para>Copy the NewEnvironment.xml file from the source directory
+              to the /etc/HPCCSystems and rename the file to
+              environment.xml</para>
+
+              <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml</programlisting>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <para>Copy the /etc/HPCCSystems/environment.xml to the
+              /etc/HPCCSystems/ on every node.</para>
+
+              <para></para>
+            </listitem>
+
+            <listitem>
+              <para>Restart the HPCC system</para>
+
+              <para>You might prefer to script this process, especially if you
+              have many nodes. See the Example Scripts section in the Appendix
+              of the Installing_and_RunningtheHPCCPlatform document. You can
+              use the scripts as a model to create your own script to copy the
+              environment.xml file out to all your nodes.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

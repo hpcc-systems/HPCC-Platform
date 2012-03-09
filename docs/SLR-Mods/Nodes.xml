@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Nodes">
+  <title><emphasis role="bold">Nodes</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Thorlib.Nodes<indexterm>
+      <primary>STD.System.Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>System.Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>Thorlib.Nodes</primary>
+    </indexterm><indexterm>
+      <primary>Nodes</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          
+
+
+  <entry>Return:<emphasis> </emphasis></entry><entry>Nodes returns an UNSIGNED INTEGER4
+  value.</entry>
+
+
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+
+  <para>The <emphasis role="bold">Nodes </emphasis>function returns the number
+  of nodes in the cluster. This number is the same as the CLUSTERSIZE compile
+  time constant. The Nodes function is evaluated each time it is called, so
+  the choice to use the function versus the constant depends upon the
+  circumstances.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.System.Thorlib.Nodes();</programlisting>
+</sect1>

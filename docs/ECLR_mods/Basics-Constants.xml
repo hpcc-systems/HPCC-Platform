@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Constants">
+  <title>Constants</title>
+
+  <sect2 id="String">
+    <title>String</title>
+
+    <para>All string literals must be contained within single quotation marks
+    ( ' ' ). All ECL code is UTF-8 encoded, which means that all strings are
+    also UTF-8 encoded, whether Unicode or non-Unicode strings. Therefore, you
+    must use a UTF-8<indexterm>
+        <primary>UTF-8</primary>
+      </indexterm> editor (such as the ECL IDE <indexterm>
+        <primary>ECL IDE</primary>
+      </indexterm> program).</para>
+
+    <para>To include the single quote character (apostrophe) in a constant
+    string, prepend a backslash (\). To include the backslash character (\) in
+    a constant string, use two backslashes (\\) together.</para>
+
+    <programlisting>STRING20 MyString2 := 'Fred\'s Place';
+                     //evaluated as: "Fred's Place"
+STRING20 MyString3 := 'Fred\\Ginger\'s Place';
+                    //evaluated as: "Fred\Ginger's Place"</programlisting>
+
+    <para>Other available escape characters are: \t tab \n new line \r
+    carriage return \nnn 3 octal digits (for any other character)</para>
+
+    <para><emphasis role="bold">Hexadecimal<indexterm>
+        <primary>Hexadecimal</primary>
+      </indexterm> string constants<indexterm>
+        <primary>string constants</primary>
+      </indexterm> </emphasis>must begin with a leading “x” character. Only
+    valid hexadecimal values (0-9, A-F) may be in the character string and
+    there must be an even number of characters.</para>
+
+    <programlisting>DATA2 MyHexString := x'0D0A'; // a 2-byte hexadecimal string</programlisting>
+
+    <para><emphasis role="bold">Data string<indexterm>
+        <primary>Data string</primary>
+      </indexterm> constants<indexterm>
+        <primary>constants</primary>
+      </indexterm> </emphasis>must begin with a leading “D” character. This is
+    directly equivalent to casting the string constant to DATA.</para>
+
+    <programlisting>MyDataString := D'abcd'; // same as: (DATA)'abcd'</programlisting>
+
+    <para><emphasis role="bold">Unicode string<indexterm>
+        <primary>Unicode string</primary>
+      </indexterm> constants </emphasis>must begin with a leading “U”
+    character. Characters between the quotes are utf8-encoded and the type of
+    the constant is UNICODE.</para>
+
+    <programlisting>MyUnicodeString := U'abcd'; // same as: (UNICODE)'abcd'
+MyUnicodeString := U'abcd\353'; // becomes 'abcdë'</programlisting>
+
+    <para><emphasis role="bold">VARSTRING string constants<indexterm>
+        <primary>VARSTRING string constants</primary>
+      </indexterm> </emphasis>must begin with a leading “V” character. The
+    terminating null byte is implied and type of the constant is
+    VARSTRING.</para>
+
+    <programlisting>MyVarString := V'abcd'; // same as: (VARSTRING)'abcd'</programlisting>
+
+    <para><emphasis role="bold">QSTRING string constants<indexterm>
+        <primary>QSTRING string constants</primary>
+      </indexterm> </emphasis>must begin with a leading “Q” character. The
+    terminating null byte is implied and type of the constant is
+    VARSTRING.</para>
+
+    <programlisting>MyQString := Q'ABCD'; // same as: (QSTRING)'ABCD'</programlisting>
+  </sect2>
+
+  <sect2 id="Numeric">
+    <title>Numeric</title>
+
+    <para>Numeric constants containing a decimal portion are treated as REAL
+    values and those without are treated as INTEGER<indexterm>
+        <primary>INTEGER</primary>
+      </indexterm> (see <emphasis role="bold">Value Types</emphasis>). Integer
+    constants may be decimal, hexadecimal, or binary values.
+    Hexadecimal<indexterm>
+        <primary>Hexadecimal</primary>
+      </indexterm> values are specified with either a leading “0x” or a
+    trailing “x” character. Binary values<indexterm>
+        <primary>Binary values</primary>
+      </indexterm> are specified with either a leading “0b” or a trailing “b”
+    character.</para>
+
+    <programlisting>MyInt1 := 10; // value of MyInt1 is the INTEGER value 10
+MyInt2 := 0x0A; // value of MyInt2 is the INTEGER value 10
+MyInt3 := 0Ax; // value of MyInt3 is the INTEGER value 10
+MyInt4 := 0b1010; // value of MyInt4 is the INTEGER value 10
+MyInt5 := 1010b; // value of MyInt5 is the INTEGER value 10
+MyReal := 10.0; // value of MyReal is the REAL value 10.0</programlisting>
+  </sect2>
+</sect1>

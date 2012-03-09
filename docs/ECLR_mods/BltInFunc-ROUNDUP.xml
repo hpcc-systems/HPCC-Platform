@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ROUNDUP">
+  <title>ROUNDUP</title>
+
+  <para><emphasis role="bold">ROUNDUP<indexterm>
+      <primary>ROUNDUP</primary>
+    </indexterm><indexterm>
+      <primary>ROUNDUP function</primary>
+    </indexterm>(</emphasis><emphasis>realvalue</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.80pt" />
+
+        <colspec colwidth="275.00pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>realvalue</emphasis></entry>
+
+            <entry>The floating-point value to round.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ROUNDUP returns a single integer value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ROUNDUP </emphasis>function returns the
+  rounded integer of the <emphasis>realvalue</emphasis><indexterm>
+      <primary>realvalue</primary>
+    </indexterm> by rounding any decimal portion to the next larger integer
+  value, regardless of sign.</para>
+
+  <para>Example:</para>
+
+  <programlisting>SomeRealValue := 3.14159;
+INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is 4
+
+SomeRealValue := -3.9;
+INTEGER4 MyVal := ROUNDUP(SomeRealValue); // MyVal is -4
+</programlisting>
+
+  <para>See Also: <link linkend="ROUND">ROUND</link>, <link linkend="TRUNCATE">TRUNCATE</link></para>
+</sect1>

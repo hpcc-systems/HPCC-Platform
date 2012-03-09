@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_ONWARNING">
+  <title>#ONWARNING</title>
+
+  <para><emphasis role="bold">#ONWARNING<indexterm>
+      <primary>#ONWARNING</primary>
+    </indexterm>(</emphasis><emphasis>code, action</emphasis><emphasis
+  role="bold">); </emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="74.65pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>code</emphasis></entry>
+
+            <entry>The number displayed in the "Code" column of the ECL IDE's
+            Syntax Errors toolbox.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>One of these actions: ignore, error, or warning.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#ONWARNING </emphasis>statement allows you
+  to globally specify how to handle specific warnings. You may have it treated
+  as a warning, promote it to an error, or ignore it. Useful warnings can get
+  lost in a sea of less-useful ones. This feature allows you to get rid of the
+  "clutter."</para>
+
+  <para>The ONWARNING workflow service overrides any global warning handling
+  specified by #ONWARNING.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #ONWARNING(1041, error);
+       //globally promote "Record doesn't have an explicit
+       // maximum record size" warnings to errors
+  rec := { STRING x } : ONWARNING(1041, ignore);
+       //ignore "Record doesn't have an explicit maximum
+       // record size" warning on this attribute, only
+</programlisting>
+
+  <para>See Also: <link linkend="ONWARNING">ONWARNING</link></para>
+</sect1>

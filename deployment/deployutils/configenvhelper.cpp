@@ -70,17 +70,21 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
                 computers.push_back(pComputer);
         }
 
+        if (!strcmp(newType, "Master") && computers.size() != 1)
+          throw MakeStringException(-1, "Thor cannot have more than one master. Please choose one computer only!");
+
         int numNodes = 1;
         if (slavesPerNode && *slavesPerNode)
             numNodes = atoi(slavesPerNode);
 
         if (numNodes < 1)
             numNodes = 1;
+        pThor->setPropInt("@slavesPerNode", numNodes);
 
         if (!strcmp(newType, "Master"))
             retVal = this->AddNewNodes(pThor, XML_TAG_THORMASTERPROCESS, 0, computers, checkComps, skipExisting, usageList);
         else if (!strcmp(newType, "Slave"))
-            retVal = this->AddNewNodes(pThor, XML_TAG_THORSLAVEPROCESS, 0, computers, checkComps, skipExisting, usageList, numNodes);
+            retVal = this->AddNewNodes(pThor, XML_TAG_THORSLAVEPROCESS, 0, computers, checkComps, skipExisting, usageList);
         else if (!strcmp(newType, "Spare"))
             retVal = this->AddNewNodes(pThor, XML_TAG_THORSPAREPROCESS, 0, computers, checkComps, skipExisting, usageList);
 
@@ -104,53 +108,9 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
             if (pProcessNode)
                 pThor->removeTree(pProcessNode);
 
-            // Delete from topology node
-            IPropertyTree* pTopoNode = pThor->queryPropTree(XML_TAG_TOPOLOGY);
-
-            if (!strcmp(type, "Slave"))
-            {
-                Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_TOPOLOGY"//"XML_TAG_NODE);
-
-                ForEach(*iter)
-                {
-                    // Get macthing process node
-                    const char* szProcess = iter->query().queryProp(XML_ATTR_PROCESS);
-                    IPropertyTree* pProcessNode = GetProcessNode(pThor, szProcess);
-                    if (!strcmp(pProcessNode->queryName(), XML_TAG_THORMASTERPROCESS))
-                    {
-                        xpath.clear().appendf(XML_TAG_NODE"/["XML_ATTR_PROCESS"='%s']", process);
-                        IPropertyTree* pNode = iter->query().queryPropTree(xpath.str());
-                        if (pNode)
-                            iter->query().removeTree(pNode);
-
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                xpath.clear().appendf(XML_TAG_NODE"/["XML_ATTR_PROCESS"='%s']", process);
-                IPropertyTree* pNode = pTopoNode->queryPropTree(xpath.str());
-
-                //Remove all slaves from thor
-                if (pNode && !strcmp(type, "Master"))
-                {
-                    Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_TOPOLOGY"//"XML_TAG_NODE);
-
-                    ForEach(*iter)
-                    {
-                        // Get macthing process node
-                        const char* szProcess = iter->query().queryProp(XML_ATTR_PROCESS);
-                        IPropertyTree* pProcessNode = GetProcessNode(pThor, szProcess);
-                        if (pProcessNode && !strcmp(pProcessNode->queryName(), XML_TAG_THORSLAVEPROCESS))
-                            pThor->removeTree(pProcessNode);
-                    }
-                }
-
-                if (pNode)
-                    pTopoNode->removeTree(pNode);
-
-            }
+            //Remove all slaves from thor
+            if (!strcmp(type, "Master"))
+              pThor->removeProp(XML_TAG_THORSLAVEPROCESS);
         }
 
         RenameThorInstances(pThor);
@@ -1191,31 +1151,33 @@ void CConfigEnvHelper::RemoveSlaves(IPropertyTree* pRoxie, bool bLegacySlaves/*=
 
 void CConfigEnvHelper::RenameThorInstances(IPropertyTree* pThor)
 {
-    // Iterate through topology nodes
     int nSlave = 1;
     int nSpare = 1;
-    Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_TOPOLOGY"//"XML_TAG_NODE);
+    IPropertyTree* pMaster = pThor->queryPropTree(XML_TAG_THORMASTERPROCESS);
+    if (pMaster)
+      pMaster->setProp(XML_ATTR_NAME, "m1");
+
+    StringBuffer sName;
+
+    Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_THORSLAVEPROCESS);
     for (iter->first(); iter->isValid(); iter->next())
     {
-        // Get macthing process node
-        const char* szProcess = iter->query().queryProp(XML_ATTR_PROCESS);
-        IPropertyTree* pProcessNode = GetProcessNode(pThor, szProcess);
-        if (pProcessNode)
-        {
-            StringBuffer sName;
-            const char* szTag = pProcessNode->queryName();
-            if (strcmp(szTag, XML_TAG_THORSLAVEPROCESS) == 0)
-                sName.appendf("s%d", nSlave++);
-            else if (strcmp(szTag, XML_TAG_THORSPAREPROCESS) == 0)
-                sName.appendf("spare%d", nSpare++);
-            else if (strcmp(szTag, XML_TAG_THORMASTERPROCESS) == 0)
-                sName = "m1";
-            else continue;         
-
-            setAttribute(pProcessNode, XML_ATTR_NAME, sName);
-            setAttribute(&iter->query(), XML_ATTR_PROCESS, sName);
-        }
+      sName.clear().appendf("s%d", nSlave++);
+      setAttribute(&iter->query(), XML_ATTR_NAME, sName);
     }
+
+    iter.setown(pThor->getElements(XML_TAG_THORSPAREPROCESS));
+    for (iter->first(); iter->isValid(); iter->next())
+    {
+      sName.clear().appendf("spare%d", nSpare++);
+      setAttribute(&iter->query(), XML_ATTR_NAME, sName);
+    }
+
+    //With thor dynamic range changes, we do not need thor topology section
+    IPropertyTree* pTopology = pThor->queryPropTree(XML_TAG_TOPOLOGY);
+
+    if (pTopology)
+      pThor->removeTree(pTopology);
 }
 
 //----------------------------------------------------------------------------
@@ -1291,14 +1253,15 @@ void CConfigEnvHelper::UpdateThorAttributes(IPropertyTree* pParentNode)
     setAttribute(pParentNode, "@localThor", localThor ? "true" : "false");
 
     StringBuffer sb;
-    sb.appendf("%d", nSlaves);
+    int slavesPerNode = pParentNode->getPropInt("@slavesPerNode", 1);
+    sb.appendf("%d", nSlaves * slavesPerNode);
     setAttribute(pParentNode, XML_ATTR_SLAVES, sb.str());
 }
 
 //---------------------------------------------------------------------------
 //  AddNewNodes
 //---------------------------------------------------------------------------
-bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int nPort, IPropertyTreePtrArray& computers, bool validate, bool skipExisting, StringBuffer& usageList, int slavesPerNode)
+bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int nPort, IPropertyTreePtrArray& computers, bool validate, bool skipExisting, StringBuffer& usageList)
 {
     // Get parent node
     IPropertyTree* pParentNode = pThor;
@@ -1319,67 +1282,15 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
         if (skipExisting && !CheckTopologyComputerUse(computers[i], pThor, usageList))
             continue;
 
-        for (int j = 0; j < slavesPerNode; j++)
-        {
-            StringBuffer sName;
-            sName.appendf("temp%d", i + j + 1);
+        StringBuffer sName;
+        sName.appendf("temp%d", i + 1);
 
-            // Add process node
-            IPropertyTree* pProcessNode = createPTree(szType);
-            pProcessNode->addProp(XML_ATTR_NAME, sName);
-            pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
-            if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
-                addNode(pProcessNode, pThor);
-
-            //some thor "Topology" have been known to have multiple (unused) "Node" children with the same name
-            //so reuse any unused Topology/Node
-            //
-            Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_TOPOLOGY"//"XML_TAG_NODE);
-            IPropertyTree* pNode = NULL;
-
-            ForEach(*iter)
-            {
-                // Get macthing process node
-                const char* szProcess = iter->query().queryProp(XML_ATTR_PROCESS);
-                IPropertyTree* pProcessNode = GetProcessNode(pThor, szProcess);
-                if (!pProcessNode)
-                {
-                    pNode = &iter->query();
-                    pNode->setProp(XML_ATTR_PROCESS, sName);
-                    break;
-                }
-            }
-
-            if (!pNode)
-            {
-                // Add topology node
-                pNode = createPTree(XML_TAG_NODE);
-                pNode->addProp(XML_ATTR_PROCESS, sName);
-
-                IPropertyTree* pTopoNode = pThor->queryPropTree(XML_TAG_TOPOLOGY);
-                if (!pTopoNode)
-                    pTopoNode = pThor->addPropTree(XML_TAG_TOPOLOGY, createPTree());
-
-                if (!strcmp(szType, XML_TAG_THORSLAVEPROCESS))
-                {
-                    Owned<IPropertyTreeIterator> iter = pThor->getElements(XML_TAG_TOPOLOGY"//"XML_TAG_NODE);
-
-                    ForEach(*iter)
-                    {
-                        // Get macthing process node
-                        const char* szProcess = iter->query().queryProp(XML_ATTR_PROCESS);
-                        IPropertyTree* pProcessNode = GetProcessNode(pThor, szProcess);
-                        if (!strcmp(pProcessNode->queryName(), XML_TAG_THORMASTERPROCESS))
-                        {
-                            addNode(pNode, &iter->query());
-                            break;
-                        }
-                    }
-                }
-                else
-                    addNode(pNode, pTopoNode);
-            }
-        }
+        // Add process node
+        IPropertyTree* pProcessNode = createPTree(szType);
+        pProcessNode->addProp(XML_ATTR_NAME, sName);
+        pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
+        if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
+            addNode(pProcessNode, pThor);
     }
 
     RenameThorInstances(pThor);

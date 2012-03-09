@@ -356,15 +356,11 @@ int main( int argc, char *argv[]  )
                 tempdir = tempdirstr.str();
             SetTempDir(tempdir,true);
 
-            unsigned gmemsize = globals->getPropInt("@globalMemorySize"); // in MB
-            if (gmemsize==0) 
-                gmemsize = 2048;
-            initThorMemoryManager(gmemsize,globals->getPropInt("@memTraceLevel", 1),globals->getPropInt("@memoryStatsInterval", 60));
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
             LOG(MCdebugProgress, thorJob, "ThorSlave Version LCR - %d.%d started",THOR_VERSION_MAJOR,THOR_VERSION_MINOR);
             StringBuffer url;
-            LOG(MCdebugProgress, thorJob, "Slave %s - thor_tmp_dir set to : %s", slfEp.getUrlStr(url).toCharArray(), queryTempDir());
+            LOG(MCdebugProgress, thorJob, "Slave %s - temporary dir set to : %s", slfEp.getUrlStr(url).toCharArray(), queryTempDir());
 #ifdef _WIN32
             ULARGE_INTEGER userfree;
             ULARGE_INTEGER total;

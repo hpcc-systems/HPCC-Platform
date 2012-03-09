@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Type_Sturcture_Special_Functions">
+  <title>TYPE Structure Special Functions</title>
+
+  <sect2>
+    <title>LOAD</title>
+
+    <para><emphasis role="bold">EXPORT<indexterm>
+        <primary>EXPORT</primary>
+      </indexterm> </emphasis><emphasis>LogicalType </emphasis><emphasis
+    role="bold">LOAD<indexterm>
+        <primary><emphasis role="bold">LOAD</emphasis></primary>
+      </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
+    expression;</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>LogicalType</emphasis></entry>
+
+            <entry>The value type of the resulting output of the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>PhysicalType</emphasis></entry>
+
+            <entry>The value type of the input parameter to the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alias</emphasis></entry>
+
+            <entry>The name of the input to use in the
+            <emphasis>expression</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The operation to perform on the input.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">LOAD </emphasis>defines the callback function
+    to be applied to the bytes of the record to create the data value to be
+    used in the computation. This function defines how the system reads the
+    data from disk.</para>
+  </sect2>
+
+  <sect2 id="store">
+    <title>STORE</title>
+
+    <para><emphasis role="bold">EXPORT </emphasis><emphasis>PhysicalType
+    </emphasis><emphasis role="bold">STORE<indexterm>
+        <primary><emphasis role="bold">STORE</emphasis></primary>
+      </indexterm>(</emphasis><emphasis>LogicalType alias) :=
+    expression;</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>PhysicalType</emphasis></entry>
+
+            <entry>The value type of the resulting output of the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>LogicalType</emphasis></entry>
+
+            <entry>The value type of the input parameter to the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alias</emphasis></entry>
+
+            <entry>The name of the input to use in the
+            <emphasis>expression</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The operation to perform on the input.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">STORE</emphasis> defines the callback function
+    to be applied to the computed value to store it within the record. This
+    function defines how the system writes the data to disk.</para>
+  </sect2>
+
+  <sect2 id="physicallegnth">
+    <title>PHYSICALLENGTH</title>
+
+    <para><emphasis role="bold">EXPORT INTEGER<indexterm>
+        <primary><emphasis role="bold">INTEGER</emphasis></primary>
+      </indexterm> PHYSICALLENGTH<indexterm>
+        <primary><emphasis role="bold">PHYSICALLENGTH</emphasis></primary>
+      </indexterm>(</emphasis><emphasis>type alias) :=
+    expression;</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>type</emphasis></entry>
+
+            <entry>The value type of the input parameter to the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alias</emphasis></entry>
+
+            <entry>The name of the input to use in the
+            <emphasis>expression</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The operation to perform on the input.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">PHYSICALLENGTH </emphasis>defines the callback
+    function to determine the storage requirements of the logical format in
+    the specified physical format. This function defines how many bytes the
+    data occupies on disk.</para>
+  </sect2>
+
+  <sect2 id="maxlength">
+    <title>MAXLENGTH</title>
+
+    <para><emphasis role="bold">EXPORT INTEGER MAXLENGTH<indexterm>
+        <primary><emphasis role="bold">MAXLENGTH</emphasis></primary>
+      </indexterm></emphasis><emphasis> := expression;</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>An integer constant defining the maximum physical length of
+            the data.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">MAXLENGTH </emphasis>defines the callback
+    function to determine the maximum physical length of variable-length
+    data.</para>
+  </sect2>
+
+  <sect2 id="getisvalid">
+    <title>GETISVALID</title>
+
+    <para><emphasis role="bold">EXPORT BOOLEAN<indexterm>
+        <primary><emphasis role="bold">BOOLEAN</emphasis></primary>
+      </indexterm> GETISVALID<indexterm>
+        <primary><emphasis role="bold">GETISVALID</emphasis></primary>
+      </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
+    expression;</emphasis></para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>PhysicalType</emphasis></entry>
+
+            <entry>The value type of the input parameter to the
+            function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>alias</emphasis></entry>
+
+            <entry>The name of the input to use in the
+            <emphasis>expression</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The operation to perform on the input.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para><emphasis role="bold">GETISVALID </emphasis>defines the callback
+    function to determine that data values are in the specified physical
+    format.</para>
+
+    <para>Example:</para>
+
+    <programlisting>EXPORT NeedC(INTEGER len) := TYPE
+  EXPORT STRING LOAD(STRING S) := 'C' + S[1..len];
+  EXPORT STRING STORE(STRING S) := S[2..len+1];
+  EXPORT INTEGER PHYSICALLENGTH(STRING S) := len;
+  EXPORT INTEGER MAXLENGTH(STRING S) := len;
+  EXPORT BOOLEAN GETISVALID(STRING S) := S[1] &lt;&gt; 'C';
+END;
+          
+// delimited string data type
+EXPORT dstring(STRING del) := TYPE
+  EXPORT INTEGER PHYSICALLENGTH(STRING s) :=
+               Std.Str.Find(s,del)+length(del)-1;
+  EXPORT STRING LOAD(STRING s) :=
+               s[1..Std.Str.Find(s,del)-1];
+  EXPORT STRING STORE(STRING s) := s + del;
+END;</programlisting>
+
+    <para>See Also: <link linkend="TYPE_Structure">TYPE
+    Structure</link></para>
+  </sect2>
+</sect1>

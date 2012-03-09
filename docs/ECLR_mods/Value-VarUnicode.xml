@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="VARUNICODE">
+  <title>VARUNICODE</title>
+
+  <para><emphasis role="bold">VARUNICODE<indexterm>
+      <primary>VARUNICODE</primary>
+    </indexterm><indexterm>
+      <primary>VARUNICODE value type</primary>
+    </indexterm>[</emphasis><emphasis>locale</emphasis><emphasis
+  role="bold">][</emphasis><emphasis>n</emphasis><emphasis
+  role="bold">]</emphasis></para>
+
+  <para>A UTF-16 encoded unicode character string of <emphasis>n</emphasis>
+  characters, null terminated (not space-padded). The <emphasis>n
+  </emphasis>may be omitted only when used as a parameter type. The optional
+  <emphasis>locale </emphasis>specifies a valid unicode locale code, as
+  specified in ISO standards 639 and 3166 (not needed if LOCALE is specified
+  on the RECORD structure containing the field definition).</para>
+
+  <para>Type casting VARUNICODE to UNICODE, STRING, or DATA is allowed, while
+  casting to any other type will first implicitly cast to STRING and then cast
+  to the target value type.</para>
+
+  <para>Example:</para>
+
+  <programlisting>VARUNICODE16 MyUNIString := U'1234567890ABCDEF';
+        // utf-16-encoded string
+VARUNICODE4 MyUnicodeString := U'abcd';
+        // same as: (UNICODE)'abcd'
+VARUNICODE5 MyUnicodeString := U'abcd\353';
+        // becomes 'abcdë'
+VARUNICODE5 MyUnicodeString := U'abcdë';
+        // same as previous example</programlisting>
+</sect1>

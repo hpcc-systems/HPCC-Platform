@@ -1287,7 +1287,7 @@ public:
                 isactive = true;
                 commit();
             }
-            catch (IException *e) {
+            catch (IException *) {
                 rollback();
                 throw;
             }
@@ -6272,7 +6272,7 @@ public:
         return true;
     }
 
-    void swapNode(IpAddress &from, IpAddress &to)
+    void swapNode(const IpAddress &from, const IpAddress &to)
     {
         if (from.ipequals(to))
             return;
@@ -6283,12 +6283,16 @@ public:
         to.getIpText(tos);
         Owned<IPropertyTreeIterator> pe  = connlock.conn->queryRoot()->getElements("Group");
         ForEach(*pe) {
+            IPropertyTree &group = pe->query();
+            const char *kind = group.queryProp("@kind");
+            if (kind && streq("Spare", kind))
+                continue;
             StringBuffer name;
-            pe->query().getProp("@name",name);
+            group.getProp("@name",name);
             StringBuffer xpath("Node[@ip = \"");
             xpath.append(froms).append("\"]");
             for (unsigned guard=0; guard<1000; guard++) {
-                Owned<IPropertyTreeIterator> ne = pe->query().getElements(xpath.str());
+                Owned<IPropertyTreeIterator> ne = group.getElements(xpath.str());
                 if (!ne->first()) 
                     break;
                 ne->query().setProp("@ip",tos.str());
@@ -7592,6 +7596,20 @@ struct CMachineEntry: public CInterface
 typedef CMachineEntry *CMachineEntryPtr;
 typedef MapStringTo<CMachineEntryPtr> CMachineEntryMap;
 
+StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName)
+{
+    const char *name = cluster.queryProp("@name");
+    const char *nodeGroupName = cluster.queryProp("@nodeGroup");
+    if (nodeGroupName)
+        name = nodeGroupName;
+    return groupName.append(name);
+}
+
+StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName)
+{
+    return getClusterGroupName(cluster, groupName).append("_spares");
+}
+
 class CInitGroups
 {
     CMachineEntryMap machinemap;
@@ -7600,8 +7618,11 @@ class CInitGroups
     StringArray clusternames;
     unsigned defaultTimeout;
 
+    IPropertyTree *createTypedGroup(IGroup *group, const char *name, bool cluster, const char *kind, const char *dir)
+    {
+    }
 
-    void addClusterGroup(const char *name,IGroup *group,const char *kind, bool realcluster, const char *dir)
+    bool addClusterGroup(const char *name, IGroup *group, const char *kind, bool realcluster, const char *dir, bool force)
     {
         StringBuffer lcname(name);
         name = lcname.trim().toLowerCase().str();
@@ -7609,11 +7630,14 @@ class CInitGroups
         StringBuffer prop;
         prop.appendf("Group[@name=\"%s\"]",name);
         IPropertyTree *old = root->queryPropTree(prop.str());
-        if (group)
-            clusternames.append(name);
+        if (group) // Not sure this should happend if !realcluster
+        {
+            if (!kind || !*kind || !streq("Spare", kind)) // I think it should need this if !realcluster (as it won't be)
+                clusternames.append(name);
+        }
+        bool differs=false;
         if (old) {
             // see if identical
-            bool differs=false;
             const char *oldk = old->queryProp("@kind");
             if (oldk) {
                 if (kind)
@@ -7643,22 +7667,28 @@ class CInitGroups
                     SocketEndpoint ep(pe->query().queryProp("@ip"));
                     if (!ep.equals(group->queryNode(i).endpoint())) {
                         differs = true;
+                        break;
                     }
                     i++;
                 }
+                if (i<group->ordinality())
+                    differs = true;
                 if (!differs&&(i==group->ordinality())) {
                     if (old->getPropBool("@cluster")!=realcluster)
                         if (realcluster)
                             old->setPropInt("@cluster",1);
                         else
                             old->removeProp("@cluster");
-                    return;
+                    return true;
                 }
             }
-            root->removeProp(prop.str()); 
+            if (!differs || force)
+                root->removeProp(prop.str());
         }
         if (!group)
-            return;
+            return false;
+        if (differs && !force)
+            return false;
         IPropertyTree *val = createPTree("Group");
         val->setProp("@name",name);
         if (realcluster)
@@ -7669,16 +7699,16 @@ class CInitGroups
             val->setProp("@kind",kind);
         if (dir)
             val->setProp("@dir",dir);
-        INodeIterator &gi = *group->getIterator();
+        Owned<INodeIterator> iter = group->getIterator();
         StringBuffer str;
-        ForEach(gi) {
+        ForEach(*iter) {
             IPropertyTree *n = createPTree("Node");
             n = val->addPropTree("Node",n);
-            gi.query().endpoint().getIpText(str.clear());
+            iter->query().endpoint().getIpText(str.clear());
             n->setProp("@ip",str.str());
         }
-        gi.Release();
         root->addPropTree("Group",val);
+        return true;
     }
 
 
@@ -7760,23 +7790,45 @@ class CInitGroups
     }
 
 
-    void constructGroup(IPropertyTree& cluster,bool roxie,const char *processname, const char* defdir)
+    bool constructGroup(IPropertyTree& cluster,bool roxie,const char *processname, const char* defdir,bool force,StringBuffer &messages)
     {
         const char *groupname = cluster.queryProp("@name");
         const char *nodegroupname = cluster.queryProp("@nodeGroup");
         bool realcluster = !nodegroupname||!*nodegroupname||(strcmp(nodegroupname,groupname)==0);
         SocketEndpointArray eps;
         loadEndpoints(cluster,eps,roxie,false,processname);
+        bool ret = true;
         if (eps.ordinality()) {
-            Owned<IGroup> grp = createIGroup(eps);
-            addClusterGroup(groupname,grp,roxie?"Roxie":"Thor",realcluster,defdir);
+            Owned<IGroup> grp;
+            unsigned slavesPerNode = cluster.getPropInt("@slavesPerNode");
+            if (slavesPerNode)
+            {
+                SocketEndpointArray msEps;
+                for (unsigned s=0; s<slavesPerNode; s++)
+                {
+                    ForEachItemIn(e, eps)
+                        msEps.append(eps.item(e));
+                }
+                grp.setown(createIGroup(msEps));
+            }
+            else
+                grp.setown(createIGroup(eps));
+            if (!addClusterGroup(groupname,grp,roxie?"Roxie":"Thor",realcluster,defdir,force))
+            {
+                ret = false;
+                VStringBuffer msg("Newly constructed group definition for cluster %s, mismatched existing group layout", groupname);
+                WARNLOG("%s", msg.str());
+                messages.append(msg).newline();
+            }
 //          DBGLOG("GROUP: %s updated\n",groupname);
         }
+        return ret;
     }
 
-    void constructFarmGroup(IPropertyTree& cluster)
+    bool constructFarmGroup(IPropertyTree& cluster,bool force,StringBuffer &messages)
     {
         Owned<IPropertyTreeIterator> farms = cluster.getElements("RoxieFarmProcess");  // probably only one but...
+        bool ret = true;
         ForEach(*farms) {
             IPropertyTree& farm = farms->query();
             StringBuffer groupname(cluster.queryProp("@name"));
@@ -7786,13 +7838,52 @@ class CInitGroups
             loadEndpoints(farm,eps,true,true,"RoxieServerProcess");
             if (eps.ordinality()) {
                 Owned<IGroup> grp = createIGroup(eps);
-                addClusterGroup(groupname.str(),grp,"RoxieFarm",true,farm.queryProp("@dataDirectory"));
+                if (!addClusterGroup(groupname.str(),grp,"RoxieFarm",true,farm.queryProp("@dataDirectory"),force))
+                {
+                    ret = false;
+                    VStringBuffer msg("Newly constructed group definition for cluster %s, mismatched existing group layout", groupname.str());
+                    WARNLOG("%s", msg.str());
+                    messages.append(msg).newline();
+                }
     //          DBGLOG("GROUP: %s updated\n",groupname);
             }
-        }           
+        }
+        return ret;
     }
 
+    bool constructThorSpareGroup(IPropertyTree &cluster, bool force, StringBuffer &messages)
+    {
+        // construct spare group
+        StringBuffer spareGroupName;
+        getClusterSpareGroupName(cluster, spareGroupName);
+        SocketEndpointArray spareEps;
+        Owned<IPropertyTreeIterator> spares = cluster.getElements("ThorSpareProcess");
+        ForEach(*spares) {
+            IPropertyTree &spare = spares->query();
+            const char *computer = spare.queryProp("@computer");
+            CMachineEntryPtr *m = machinemap.getValue(computer);
+            if (!m) {
+                VStringBuffer msg("Cannot construct spare group %s, computer name %s not found\n", spareGroupName.str(), computer);
+                WARNLOG("%s", msg.str());
+                messages.append(msg).newline();
+                return false;
+            }
+            SocketEndpoint ep = (*m)->ep;
+            spareEps.append(ep);
+        }
+        if (!spareEps.ordinality())
+            return true; // nothing to do
+        Owned<IGroup> spareGroup = createIGroup(spareEps);
+        if (!addClusterGroup(spareGroupName.str(), spareGroup, "Spare", false, NULL, force)) {
+            VStringBuffer msg("Newly constructed spare group definition for cluster %s, mismatched existing group layout", cluster.queryProp("@name"));
+            WARNLOG("%s", msg.str());
+            messages.append(msg).newline();
+            return false;
+        }
+        return true;
+    }
 
+    enum CgCmd { cg_null, cg_reset, cg_add, cg_remove };
 public:
 
     CInitGroups(unsigned _defaultTimeout)
@@ -7801,24 +7892,171 @@ public:
         defaultTimeout = _defaultTimeout;
     }
 
-    void constructGroups()
+    bool doClusterGroup(CgCmd cmd, const char *clusterName, const char *type, bool spares, SocketEndpointArray *eps, StringBuffer &messages)
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn)
-            return;
+            return false;
+        if (!clusterName || !*clusterName)
+            return false;
+        if (!type || !*type)
+            return false;
+        bool ret = true;
         IPropertyTree* root = conn->queryRoot();
         Owned<IPropertyTreeIterator> clusters;
-        if (loadMachineMap()) { 
+        StringBuffer errMsg;
+        const char *clusterType = type;
+        if (loadMachineMap()) {
+            VStringBuffer xpath("%s[@name=\"%s\"]", type, clusterName);
+            clusters.setown(root->getElements(xpath.str()));
+            if (!clusters || !clusters->first()) {
+                VStringBuffer errMsg("Could not find type %s, %s cluster", type, clusterName);
+                WARNLOG("%s", errMsg.str());
+                messages.append(errMsg).newline();
+                ret = false;
+            }
+            else {
+                if (!streq("ThorCluster", type))
+                    return false; // currently only Thor supported here.
+                IPropertyTree &cluster = clusters->query();
+
+                switch (cmd)
+                {
+                    case cg_reset:
+                    {
+                        if (spares)
+                        {
+                            if (!constructThorSpareGroup(cluster,true,messages))
+                                ret = false;
+                        }
+                        else
+                        {
+                            if (!constructGroup(cluster,false,"ThorSlaveProcess",NULL,true,messages))
+                                ret = false;
+                        }
+                        break;
+                    }
+                    case cg_add:
+                    {
+                        assertex(eps);
+                        StringBuffer groupName;
+                        getClusterSpareGroupName(cluster, groupName);
+                        IPropertyTree *root = groupsconnlock.conn->queryRoot();
+                        VStringBuffer xpath("Group[@name=\"%s\"]",groupName.str());
+                        IPropertyTree *existing = root->queryPropTree(xpath.str());
+                        if (existing)
+                        {
+                            Owned<IPropertyTreeIterator> iter = existing->getElements("Node");
+                            ForEach(*iter)
+                            {
+                                SocketEndpoint ep(iter->query().queryProp("@ip"));
+                                if (eps->zap(ep))
+                                {
+                                    StringBuffer epStr;
+                                    VStringBuffer errMsg("addSpares: not adding: %s, already in spares", ep.getUrlStr(epStr).str());
+                                    WARNLOG("%s", errMsg.str());
+                                    messages.append(errMsg).newline();
+                                    while (eps->zap(ep)); // delete any other duplicates
+                                }
+                            }
+                        }
+                        else
+                        {
+                            existing = createPTree();
+                            existing->setProp("@name", groupName.str());
+                            existing = root->addPropTree("Group", existing);
+                        }
+                        // add remaining
+                        ForEachItemIn(e, *eps)
+                        {
+                            SocketEndpoint &ep = eps->item(e);
+                            StringBuffer ipStr;
+                            ep.getIpText(ipStr);
+                            IPropertyTree *node = createPTree();
+                            node->setProp("@ip", ipStr.str());
+                            existing->addPropTree("Node", node);
+                        }
+                        break;
+                    }
+                    case cg_remove:
+                    {
+                        assertex(eps);
+                        StringBuffer groupName;
+                        getClusterSpareGroupName(cluster, groupName);
+                        IPropertyTree *root = groupsconnlock.conn->queryRoot();
+                        VStringBuffer xpath("Group[@name=\"%s\"]",groupName.str());
+                        IPropertyTree *existing = root->queryPropTree(xpath.str());
+                        if (existing)
+                        {
+                            ForEachItemIn(e, *eps)
+                            {
+                                SocketEndpoint &ep = eps->item(e);
+                                StringBuffer ipStr;
+                                ep.getIpText(ipStr);
+                                VStringBuffer xpath("Node[@ip=\"%s\"]", ipStr.str());
+                                if (!existing->removeProp(xpath.str()))
+                                {
+                                    VStringBuffer errMsg("removeSpares: %s not found in spares", ipStr.str());
+                                    WARNLOG("%s", errMsg.str());
+                                    messages.append(errMsg).newline();
+                                    while (eps->zap(ep)); // delete any other duplicates
+                                }
+                                else
+                                    while (existing->removeProp(xpath.str())); // remove any others, shouldn't be any
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (clusters->next())
+                {
+                    VStringBuffer errMsg("resetThorGroup: more than one cluster named: %s", clusterName);
+                    WARNLOG("%s", errMsg.str());
+                    messages.append(errMsg).newline();
+                    ret = false;
+                }
+            }
+        }
+        return ret;
+    }
+    bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &messages)
+    {
+        return doClusterGroup(cg_reset, clusterName, type, spares, NULL, messages);
+    }
+    bool addSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &messages)
+    {
+        return doClusterGroup(cg_add, clusterName, type, true, &eps, messages);
+    }
+    bool removeSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &messages)
+    {
+        return doClusterGroup(cg_remove, clusterName, type, true, &eps, messages);
+    }
+    bool constructGroups(bool force, StringBuffer &messages)
+    {
+        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        if (!conn)
+            return false;
+        bool ret = true;
+        IPropertyTree* root = conn->queryRoot();
+        Owned<IPropertyTreeIterator> clusters;
+        if (loadMachineMap()) {
             clusters.setown(root->getElements("ThorCluster"));
-            ForEach(*clusters) 
-                constructGroup(clusters->query(),false,"ThorSlaveProcess",NULL);
+            ForEach(*clusters) {
+                IPropertyTree &cluster = clusters->query();
+                if (!constructGroup(cluster,false,"ThorSlaveProcess",NULL,force,messages))
+                    ret = false;
+                if (!constructThorSpareGroup(cluster,force,messages))
+                    ret = false;
+            }
             clusters.setown(root->getElements("RoxieCluster"));
             ForEach(*clusters) {
                 const char *dir = clusters->query().queryProp("@slaveDataDir");
                 if (!dir||!*dir)
                     dir = clusters->query().queryProp("@baseDataDir");
-                constructGroup(clusters->query(),true,"RoxieSlave",dir);
-                constructFarmGroup(clusters->query());
+                if (!constructGroup(clusters->query(),true,"RoxieSlave",dir,force,messages))
+                    ret = false;
+                if (!constructFarmGroup(clusters->query(),force,messages))
+                    ret = false;
             }
             clusters.setown(root->getElements("EclAgentProcess"));
             ForEach(*clusters) {
@@ -7838,7 +8076,13 @@ public:
                                 if (ins>1)
                                     gname.append('_').append(ins);
                                 Owned<IGroup> grp = createIGroup(1,&ep);
-                                addClusterGroup(gname.str(),grp,"hthor",true,NULL);
+                                if (!addClusterGroup(gname.str(),grp,"hthor",true,NULL,force))
+                                {
+                                    ret = false;
+                                    VStringBuffer msg("Newly constructed group definition for EclAgentProcess %s, mismatched existing group layout", groupname);
+                                    WARNLOG("%s", msg.str());
+                                    messages.append(msg).newline();
+                                }
                             }
                         }
                     }
@@ -7865,14 +8109,35 @@ public:
             }
         }
 //      DBGLOG("Initialized cluster groups");
+        return ret;
     }
 };
 
-void initClusterGroups(unsigned timems)
+bool initClusterGroups(bool force, StringBuffer &response, unsigned timems)
 {
     CInitGroups init(timems);
-    init.constructGroups();
+    return init.constructGroups(force, response);
 }
+
+bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems)
+{
+    CInitGroups init(timems);
+    return init.resetClusterGroup(clusterName, type, spares, response);
+}
+
+bool addClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems)
+{
+    CInitGroups init(timems);
+    return init.addSpares(clusterName, type, eps, response);
+}
+
+bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems)
+{
+    CInitGroups init(timems);
+    return init.removeSpares(clusterName, type, eps, response);
+}
+
+
 
 
 class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements IDaliServer
@@ -7880,13 +8145,16 @@ class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements I
     
     bool stopped;
     unsigned defaultTimeout;
+    bool forceGroupUpdate;
+
 public:
 
     IMPLEMENT_IINTERFACE;
 
-    CDaliDFSServer()
+    CDaliDFSServer(IPropertyTree *config)
         : Thread("CDaliDFSServer"), CTransactionLogTracker(MDFS_MAX)
     {
+        forceGroupUpdate = config->getPropBool("DFS/@forceGroupUpdate");
         stopped = true;
         defaultTimeout = INFINITE; // server uses default
     }
@@ -7902,7 +8170,9 @@ public:
 
     void ready()
     {
-        initClusterGroups();
+        StringBuffer response;
+        if (!initClusterGroups(forceGroupUpdate, response)) // false indicates some groups clashed and were not updated
+            PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
     }
     
     void suspend()
@@ -8844,10 +9114,10 @@ bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsigned short port,C
 }
 
 
-IDaliServer *createDaliDFSServer()
+IDaliServer *createDaliDFSServer(IPropertyTree *config)
 {
     assertex(!daliDFSServer); // initialization problem
-    daliDFSServer = new CDaliDFSServer();
+    daliDFSServer = new CDaliDFSServer(config);
     return daliDFSServer;
 }
 
@@ -10111,6 +10381,7 @@ void CDistributedFileDirectory::renameFileRelationships(const char *oldname,cons
 }
 
 
+// JCSMORE what was this for, not called by anything afaics
 bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user=NULL)
 {
     if (logicalname.isExternal()||logicalname.isForeign()||logicalname.isQuery()) 

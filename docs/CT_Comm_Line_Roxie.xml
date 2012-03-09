@@ -1,0 +1,1261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>Client Tools Overview</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Sept. 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="Command_Line_Interface_RoxieConfig">
+    <title><emphasis role="bold">Command Line RoxieConfig</emphasis></title>
+
+    <sect1 id="CommandLineInterface" role="nobrk">
+      <title>Command Line Interface</title>
+
+      <sect2 id="roxieconfigexe">
+        <title><emphasis>roxieconfig.exe</emphasis></title>
+
+        <para><emphasis role="bold">roxieconfig</emphasis><emphasis> action
+        option=value</emphasis></para>
+
+        <informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="85pt" />
+
+            <colspec colwidth="384.85pt" />
+
+            <tbody>
+              <row>
+                <entry><emphasis>action</emphasis></entry>
+
+                <entry>The operation to perform (required), from the list of
+                valid <emphasis>actions</emphasis> below.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>option</emphasis></entry>
+
+                <entry>An optional parameter specifying how to complete the
+                <emphasis>action</emphasis>.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>value</emphasis></entry>
+
+                <entry>The setting for the
+                <emphasis>option</emphasis>.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+
+        <para>The <emphasis role="bold">roxieconfig</emphasis> command line
+        executable accepts parameters to send directly to the ESP Server
+        running the WsRoxieConfig service and is used to manage Roxie
+        queries.</para>
+
+        <para><emphasis>Options </emphasis>can be typed directly on the
+        command line, sent using a script or batch file, through an INI file,
+        or any combination of these methods.</para>
+
+        <para>If <emphasis>user</emphasis>, <emphasis>password</emphasis>, or
+        <emphasis>RoxieConfigAddress </emphasis>are not specified, you are
+        prompted at runtime.</para>
+
+        <para>The roxieconfig command line tool must have access to the ESP
+        Server running the WsAttributes and WsRoxieConfig services.</para>
+
+        <sect3>
+          <title>Required parameters</title>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="85.55pt" />
+
+                <colspec colwidth="450.85pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis>user=</emphasis></entry>
+
+                    <entry>User’s login ID.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>password=</emphasis></entry>
+
+                    <entry>The password authorizing access for the
+                    user.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>RoxieConfigAddress=</emphasis></entry>
+
+                    <entry>The IP (or DNS Name) and port of the ESP Server
+                    running the WsRoxieConfig service. If omitted, the port
+                    defaults to 8050.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3>
+          <title>Options</title>
+
+          <para><emphasis role="bold">Note</emphasis>: For some
+          <emphasis>actions</emphasis>, some of these
+          <emphasis>options</emphasis> are required.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>name=</emphasis></entry>
+
+                  <entry>The name of a file, folder.eclfile, query, library,
+                  or alias.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>LoadDataOnly</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) only copies
+                  the data files associated with the query. When this option
+                  is enabled, the query and data are deployed but the query is
+                  not loaded nor is it runnable. Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry>ActivateLoadDataOnly=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) only copies
+                  the data files associated with the query and makes it
+                  active. When this option is enabled, the query and data are
+                  deployed but the query is not loaded nor is it runnable. The
+                  query can be referenced by its alias.</entry>
+                </row>
+
+                <row>
+                  <entry>AttributeLabel=</entry>
+
+                  <entry>The repository label associated with the version of
+                  the attribute you want to use.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>MakeActive</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) makes the
+                  query active after deployment. This adds an alias of either
+                  foldername.eclfilename or filename (without the extension).
+                  Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>SuspendPrevious</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) suspends
+                  any previous query of the same alias name (implies
+                  <emphasis>MakeActive</emphasis>). Default is 0
+                  (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>Suspend_Reload</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) removes and
+                  reloads the query from memory when Suspending or
+                  Unsuspending. This reduces the memory usage for a query that
+                  will not run.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>DeletePrevious</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) deletes any
+                  previous query of the same alias name (implies
+                  <emphasis>MakeActive</emphasis>and
+                  <emphasis>SuspendPrevious</emphasis>). Default is 0
+                  (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ImportAllModules</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) enables an
+                  implicit import of all folders when compiling the query.
+                  Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ImportImplicitModules</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) enables an
+                  implicit import of implicit (default) folders when compiling
+                  the query. Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>NoForms</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) disables
+                  generation of forms, WSDL, and other information used by the
+                  WsECL Service. Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>CheckOnly</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) performs a
+                  check of the query without actually deploying it. This is
+                  similar to a syntax check, but actually compiles the code
+                  and checks that all data files can be resolved.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>MemoryLimit</emphasis>=</entry>
+
+                  <entry>A value to override the default memory limit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>TimeLimit</emphasis>=</entry>
+
+                  <entry>A value to override the default time limit a query is
+                  allowed to use.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>WarnTimeLimit</emphasis>=</entry>
+
+                  <entry>A value to override the default time limit a query is
+                  can use before a warning is issued.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>PoolGraphs</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) specifies
+                  that graphs are to be reused when possible.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>QueryName</emphasis>=</entry>
+
+                  <entry>The alias to be assigned to the query. If omitted,
+                  the alias name defaults to foldername.eclfilename for a
+                  deployed ECL file or the filename (without extension) for a
+                  deployed ECL file.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>Filter</emphasis>=</entry>
+
+                  <entry>A filter for the ListDeployedQueries action using
+                  standard wildcards (? or *).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>RemoteRoxieAddress</emphasis>=</entry>
+
+                  <entry>The IP (or DNS Name) and port of the remote Roxie
+                  from which to load a query. If the Port is omitted, it
+                  defaults to 9876.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>DaliAddress</emphasis>=</entry>
+
+                  <entry>The IP (or DNS Name) and port of the Dali server to
+                  use to resolve data file information. If the Port is
+                  omitted, it defaults to 7070.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>HighPriority</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) makes a
+                  query high priority query. Default is 1 (high).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ExcludeAliasNames</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) excludes
+                  alias names (and only returns actual query names) when
+                  listing queries using the ListDeployedQueries or
+                  ListRemoteDeployedQueries services. Default is 0
+                  (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ExcludeQueryNames</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) excludes
+                  actual query names (and only returns aliases) when listing
+                  queries using ListDeployedQueries or
+                  ListRemoteDeployedQueries. Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ExcludeSuperFileNames</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) excludes
+                  SuperFiles when using the ListAllFilesInQueries action.
+                  Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ExcludeDataFileNames</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) excludes
+                  Data File names when using the ListAllFilesInQueries action.
+                  Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>AttributeServerAddress</emphasis>=</entry>
+
+                  <entry>The Name or IP:port (as configured for WsRoxieConfig
+                  in ConfigEnv) of the Attribute Server to use. The Attribute
+                  Server <emphasis role="bold">must</emphasis> be
+                  preconfigured for the service before ECL files can be
+                  deployed.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ModuleName</emphasis>=</entry>
+
+                  <entry>The name of a folder.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>Retries</emphasis>=</entry>
+
+                  <entry>A integer value (0-9) specifying the number of times
+                  to retry in the case of a communication error. Default is
+                  0.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>PromptForRetry</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) prompts the
+                  user to retry in the case of a communication error. If true,
+                  this overrides the <emphasis>retries</emphasis>option and
+                  will continue to retry with each affirmative response to the
+                  prompt. Default is 0 (false).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>QueryComment</emphasis>=</entry>
+
+                  <entry>The comment to attach to a query at deployment time
+                  or using UpdateQueryComment.</entry>
+                </row>
+
+                <row>
+                  <entry>Append=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) appends the
+                  comment to the existing comment.</entry>
+                </row>
+
+                <row>
+                  <entry>IP=</entry>
+
+                  <entry>IP address to use for ACL information. This is the
+                  source of the communication (for example, the IP of the ESP
+                  server running the WsECl service).</entry>
+                </row>
+
+                <row>
+                  <entry>Mask=</entry>
+
+                  <entry>Subnet mask to use for ACL information. Use
+                  combinations of IP and mask to establish the IP from which
+                  to control access.</entry>
+                </row>
+
+                <row>
+                  <entry>Query=</entry>
+
+                  <entry>Regular Expression value to use in the ACL
+                  information.</entry>
+                </row>
+
+                <row>
+                  <entry>ErrorMessage=</entry>
+
+                  <entry>Error Message to return when the query is not allowed
+                  due to matching ACL restriction.</entry>
+                </row>
+
+                <row>
+                  <entry>Allow=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) allows the
+                  query specified in the ACL information.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>Package</emphasis>=</entry>
+
+                  <entry>The name of a package file.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>OverwritePackage</emphasis>=</entry>
+
+                  <entry>A Boolean value (0, 1) that when true (1) specifies
+                  to overwrite an existing package file if it exists.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </sect3>
+
+        <sect3>
+          <title>roxieconfig.ini</title>
+
+          <para>All options can be sent on the command line, or placed in a
+          file called roxieconfig.ini. Options that do not change very often
+          should be put in the INI file. For example:</para>
+
+          <programlisting>RoxieConfigAddress=10.150.51.27:8050
+          DaliAddress=10.150.51.26:7070
+          AttributeServerAddress=10.150.51.27:8145
+          ImportAllModules=1
+          ImportImplicitModules=1
+          owner=emilyd
+          password=password</programlisting>
+
+          <para>Remember that <emphasis>any </emphasis>of these options can be
+          overridden on the command line.</para>
+
+          <para>In all the examples below, we'll assume roxieconfig.ini has
+          the above content.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png"
+                    scale="noin" /></entry>
+
+                    <entry>We do not recommend storing your password in the
+                    INI file (which is clear text). The password is included
+                    in the INI file for these examples to simplify the example
+                    code.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>Valid Actions</title>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Actions to Deploy Queries</title>
+
+          <para>Use these <emphasis>actions </emphasis>to deploy queries. All
+          of these <emphasis>actions </emphasis>deliver compiled queries to
+          Roxie nodes, register the compiled libraries with the cluster, and
+          resolve data file information.</para>
+
+          <para><emphasis role="bold">DeployECLAttribute </emphasis>Deploys a
+          query from an ECL file in a Repository. This <emphasis>action
+          </emphasis>requires the <emphasis>name </emphasis>option and must
+          contain a value of folder.eclfile. The <emphasis>DaliAddress
+          </emphasis>and <emphasis>AttributeServerAddress </emphasis>options
+          are also required.</para>
+
+          <para>DeployECLAttribute supports the
+          <emphasis>ImportAllModules</emphasis>,
+          <emphasis>ImportImplicitModules</emphasis>,
+          <emphasis>MakeActive</emphasis>,
+          <emphasis>SuspendPrevious</emphasis>,
+          <emphasis>DeletePrevious</emphasis>,
+          <emphasis>HighPriority</emphasis>, <emphasis>AttributeLabel,
+          MemoryLimit, TimeLimit, WarnTimeLimit, PoolGraphs, QueryComment,
+          ResolveFileInfo, Package, CheckOnly</emphasis>,
+          <emphasis>ActivateLoadDataOnly, </emphasis>and
+          <emphasis>LoadDataOnly </emphasis>options.</para>
+
+          <para>The <emphasis>name</emphasis> option <emphasis
+          role="underline">must </emphasis>reference a folder.eclfile in the
+          source repository The <emphasis>name </emphasis>option can be
+          repeated to deploy more than one ECL file.</para>
+
+          <para>When deploying multiple ECL files, <emphasis>all</emphasis>
+          other option settings are used for all ECL files. For example, if
+          you deploy two ECl files and specify
+          <emphasis>HighPriority</emphasis>=1, both are deployed as high
+          priority queries. If you want different settings for ECL files, you
+          must deploy them separately.</para>
+
+          <para>If <emphasis>MakeActive</emphasis> is set to 1, it will add an
+          Alias for the query. This creates an alias of
+          <emphasis>folder.eclfile</emphasis>. You can also specify an Alias
+          using the QueryName= option when deploying a single query.</para>
+
+          <para><emphasis role="bold">Examples</emphasis>:</para>
+
+          <programlisting>c:\&gt; roxieconfig DeployECLAttribute name=Tutorial.FindByZipCode
+
+c:\&gt; roxieconfig DeployECLAttribute name=Tutorial.FindByZipCode
+     name=Tutorial.FindByLastName name=Tutorial.FindByCityState SuspendPrevious=1</programlisting>
+
+          <para></para>
+
+          <para><emphasis role="bold">DeployECLFile</emphasis>Deploys a query
+          from a text file containing ECL code. The code in the text file must
+          be self-contained and cannot reference ECL files or service
+          libraries in a repository. The SOAP header information in ECL Files
+          is not used. Therefore, if you want to provide a SOAP interface, you
+          should deploy from an attribute.</para>
+
+          <para>This action requires the <emphasis>name </emphasis>option and
+          must contain a fully qualified FileName. The <emphasis>DaliAddress
+          </emphasis>option is also required and must contain the location of
+          the Dali server used to resolve data files.</para>
+
+          <para>It supports the <emphasis>ImportAllModules</emphasis>,
+          <emphasis>ImportImplicitModules</emphasis>,
+          <emphasis>MakeActive</emphasis>,
+          <emphasis>SuspendPrevious</emphasis>,
+          <emphasis>DeletePrevious</emphasis>,
+          <emphasis>HighPriority</emphasis>, <emphasis>AttributeLabel,
+          MemoryLimit, TimeLimit, WarnTimeLimit, PoolGraphs, QueryComment,
+          ResolveFileInfo, Package, CheckOnly</emphasis>,
+          <emphasis>ActivateLoadDataOnly, </emphasis>and
+          <emphasis>LoadDataOnly </emphasis>options.</para>
+
+          <para>The <emphasis>name </emphasis>option can be repeated to deploy
+          more than one file. When deploying multiple files, all other option
+          settings are used for all files. For example, if you deploy two
+          files and specify <emphasis>HighPriority</emphasis>=1, both are
+          deployed as high priority queries. If you want different settings,
+          you must deploy them separately.</para>
+
+          <para></para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="0">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png"
+                    scale="noin" /></entry>
+
+                    <entry>Even though an Attribute Repository is not used by
+                    this method of deployment, an Attribute Server must be
+                    defined in the WsRoxieConfig service anyway. This method
+                    uses that Attribute Server to resolve other information
+                    (for example, the ECL Queue).</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig DeployECLFile name=MyECL.txt SuspendPrevious=1
+
+c:\&gt; roxieconfig DeployECLFile name=MyECL.txt name=c:\Tutorial\OutputData.txt</programlisting>
+
+          <para></para>
+
+          <para>Note: Even though the command line application is NOT
+          case-sensitive, make sure to match case for filenames on Linux
+          systems. The tool uses operating system calls for filenames.</para>
+
+          <para><emphasis role="bold">DeployECLModule</emphasis>Deploys all
+          ECL files in the given folder that are eligible for deployment to a
+          Roxie cluster.</para>
+
+          <para>The <emphasis>name </emphasis>option is required and <emphasis
+          role="underline">must </emphasis>reference a folder containing one
+          or more eligible ECL files. The references folder must be in the
+          source repository The <emphasis>name </emphasis>option can be
+          repeated to deploy more than one folder.</para>
+
+          <para>DeployECLModule supports the
+          <emphasis>ImportAllModules</emphasis>,
+          <emphasis>ImportImplicitModules</emphasis>,
+          <emphasis>MakeActive</emphasis>,
+          <emphasis>SuspendPrevious</emphasis>,
+          <emphasis>DeletePrevious</emphasis>,
+          <emphasis>HighPriority</emphasis>, <emphasis>AttributeLabel,
+          MemoryLimit, TimeLimit, WarnTimeLimit, PoolGraphs, QueryComment,
+          ResolveFileInfo, Package, CheckOnly</emphasis>,
+          <emphasis>ActivateLoadDataOnly, </emphasis>and
+          <emphasis>LoadDataOnly </emphasis>options.</para>
+
+          <para>Since this action typically deploys multiple attributes,
+          <emphasis>all</emphasis> option settings are used for all
+          attributes. For example, if you deploy two attributes and specify
+          <emphasis>HighPriority</emphasis>=1, both are deployed as high
+          priority queries. If you want different settings for attributes, you
+          must deploy them separately.</para>
+
+          <para>If <emphasis>MakeActive</emphasis> is set to 1, it will add an
+          Alias for each query. This creates an alias of
+          <emphasis>folder.eclfile</emphasis>.</para>
+
+          <para><emphasis role="bold">Example </emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig DeployECLModule name=TutorialYourName</programlisting>
+
+          <para></para>
+
+          <para><emphasis role="bold">LoadRemoteQuery </emphasis>This
+          <emphasis>action </emphasis>allows you to deploy a query that has
+          been previously deployed to another Roxie cluster. This
+          <emphasis>action </emphasis>does <emphasis>not </emphasis>compile
+          the query; it copies the compiled query from the remote cluster to
+          the target cluster along with all supporting information (such as,
+          data files or service libraries needed).</para>
+
+          <para>The <emphasis>name </emphasis>option is required and it must
+          contain either the query name or an alias of the query on the remote
+          Roxie cluster.</para>
+
+          <para>The <emphasis>RemoteRoxieAddress </emphasis>is required and
+          must contain the location of a Farmer node on the remote
+          cluster..</para>
+
+          <para>This action also supports the
+          <emphasis>ImportAllModules</emphasis>,
+          <emphasis>ImportImplicitModules</emphasis>,
+          <emphasis>MakeActive</emphasis>,
+          <emphasis>SuspendPrevious</emphasis>,
+          <emphasis>DeletePrevious</emphasis>,
+          <emphasis>HighPriority</emphasis>, <emphasis>AttributeLabel,
+          MemoryLimit, TimeLimit, WarnTimeLimit, PoolGraphs, QueryComment,
+          CopyFileLocationInfo, CheckOnly</emphasis>,
+          <emphasis>ActivateLoadDataOnly, </emphasis>and
+          <emphasis>LoadDataOnly </emphasis>options.</para>
+
+          <para>The <emphasis>name </emphasis>option can be repeated to deploy
+          more than one query. When deploying multiple queries, all other
+          option settings are used for all queries. For example, if you deploy
+          two queries and specify <emphasis>HighPriority</emphasis>=1, both
+          are deployed as high priority queries. If you want different
+          settings, you must deploy them separately. You can also specify an
+          Alias using the QueryName= option when deploying a single
+          query.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig LoadRemoteQuery name=ListData.0
+     RemoteRoxieAddress=10.150.51.44:9876 MakeActive=1
+
+c:\&gt; roxieconfig LoadRemoteQuery name=MySearch
+     name=MyOtherSearch RemoteRoxieAddress=10.150.51.44:9876
+     SuspendPrevious=1</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Action to Remove Queries</title>
+
+          <para>This <emphasis>action </emphasis>allows you to delete a
+          query.</para>
+
+          <para><emphasis role="bold">DeleteDeployedQuery </emphasis>Allows
+          you to remove a deployed query.</para>
+
+          <para>The <emphasis>name </emphasis>option can be repeated to delete
+          more than one query.</para>
+
+          <para>If your Roxie Cluster is deployed with “remove unneeded files”
+          enabled, any associated files (data files, index files, etc.) are
+          also deleted when the query is deleted.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig DeleteDeployedQuery name=Tutorial.FetchPeople.0
+
+c:\&gt; roxieconfig DeleteDeployedQuery name=Tutorial.FetchPeople.0
+     name=Tutorial.FetchPeopleByZip.1</programlisting>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>Actions to Manage Aliases</title>
+
+          <para>These <emphasis>actions </emphasis>manage the Alias table.
+          Query aliases provide friendly names for queries.</para>
+
+          <para><emphasis role="bold"> ActivateDeployedQuery </emphasis>Allows
+          you to add an alias (either the default alias or a specified alias)
+          to a deployed query. This adds an entry into the alias table.</para>
+
+          <para>This <emphasis>name </emphasis>option is required and must
+          contain the query name. Use the <emphasis>QueryName
+          </emphasis>option specify your own alias (friendly name).</para>
+
+          <para>The <emphasis>name </emphasis>option can be repeated to
+          activate more than one query. When activating multiple queries, you
+          cannot specify a <emphasis>QueryName</emphasis>.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig ActivateDeployedQuery name=ListData.0 Queryname=ListMyData
+c:\&gt; roxieconfig ActivateDeployedQuery name=ListData.0 name=ListMoreData.0</programlisting>
+
+          <para><emphasis role="bold"> </emphasis></para>
+
+          <para><emphasis role="bold">RemoveQueryAlias</emphasis>Allows you to
+          remove an alias associated with a deployed query. This
+          <emphasis>action </emphasis>removes the entry from the alias
+          table.</para>
+
+          <para>The <emphasis>name </emphasis>option is required and must
+          contain the alias name to be removed. The <emphasis>name</emphasis>
+          option can be repeated to remove more than one alias.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig RemoveQueryAlias
+          name=Tutorial.FetchPeopleByLastName
+          name=TutorialYourName.FetchPeopleByZipService
+
+c:\&gt; roxieconfig RemoveQueryAlias name=FetchPeople</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Actions to Suspend and Unsuspend Queries</title>
+
+          <para>These <emphasis>actions </emphasis>manage a query’s ability to
+          execute. Suspended queries cannot be executed (an error message is
+          returned to the calling application indicating it is
+          suspended).</para>
+
+          <para><emphasis role="bold">SuspendDeployedQuery</emphasis> Allows
+          you to suspend a deployed query. A suspended query cannot be
+          executed and will return a error if an attempt to execute it is
+          made.</para>
+
+          <para>The <emphasis>name </emphasis>option is required and must
+          contain either the internal Roxie query name or an alias. The
+          <emphasis>name </emphasis>option can be repeated to suspend more
+          than one query. The Suspend_Reload option allows you to reduce
+          memory used by the suspended query.</para>
+
+          <para><emphasis role="bold">Note: </emphasis> If you suspend a query
+          by specifying an alias name, the suspension is made to the actual
+          query. Therefore, any other aliases are functionally suspended as
+          well.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig SuspendDeployedQuery
+          name=Tutorial.FetchPeopleByLastName.5 name=FetchPeople
+c:\&gt; roxieconfig SuspendDeployedQuery name=FetchPeople Suspend_Reload=1</programlisting>
+
+          <para><emphasis role="bold">UnsuspendDeployedQuery</emphasis> Allows
+          you to unsuspend a suspended query.</para>
+
+          <para>The <emphasis>name </emphasis>option is required and must
+          contain either the internal Roxie query name or an alias. The
+          <emphasis>name </emphasis>option can be repeated to unsuspend more
+          than one query. If you used Suspend_Reload when suspending a query,
+          you must use it when unsuspending to ensure all necessary
+          information is loaded into memory</para>
+
+          <para><emphasis role="bold">Note: </emphasis> If you unsuspend a
+          query by specifying an alias name, the unsuspension is made to the
+          actual query. Therefore, any other aliases are functionally
+          unsuspended as well.</para>
+
+          <para>You can only unsuspend a query that has been suspended by a
+          user. If Roxie suspends a query, the only way to unsuspend is to
+          resolve the reason Roxie suspended it.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig UnsuspendDeployedQuery
+          name=Tutorial.FetchPeopleByLastName.5 name=FetchPeople
+c:\&gt; roxieconfig UnsuspendDeployedQuery name=FetchPeople</programlisting>
+
+          <para></para>
+        </sect3>
+
+        <sect3>
+          <title>Actions to List Deployed Queries</title>
+
+          <para>These <emphasis>actions </emphasis>allow you to list queries
+          on a Roxie cluster.</para>
+
+          <para><emphasis role="bold">ListDeployedQueries</emphasis> Allows
+          you to list queries deployed on your Roxie cluster.</para>
+
+          <para>Use the <emphasis>filter </emphasis>option to limit the
+          results. Wildcards (? or *) are supported.</para>
+
+          <para>Use <emphasis>ExcludeAliasNames</emphasis>=1 to only return
+          actual query names or <emphasis>ExcludeQueryNames</emphasis>=1 to
+          return only alias names.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig ListDeployedQueries
+c:\&gt; roxieconfig ListDeployedQueries filter=JD*</programlisting>
+
+          <para><emphasis role="bold">ListRemoteDeployedQueries</emphasis>
+          Allows you to list queries deployed on a Remote Roxie
+          cluster.</para>
+
+          <para>Use the <emphasis>filter </emphasis>option to limit the
+          results. Wildcards (? or *) are supported</para>
+
+          <para>Use <emphasis>ExcludeAliasNames</emphasis>=1 to only return
+          actual query names or <emphasis>ExcludeQueryNames</emphasis>=1 to
+          return only alias names.</para>
+
+          <para>The <emphasis>RemoteRoxieAddress </emphasis>option is required
+          and must contain the address of the remote cluster.</para>
+
+          <para><emphasis role="bold">Examples </emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig ListRemoteDeployedQueries
+          RemoteRoxieAddress=10.150.51.33:9876</programlisting>
+
+          <para><programlisting>c:\&gt; roxieconfig ListDeployedQueries filter=JD*
+          RemoteRoxieAddress=10.150.51.33:9876</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Actions to List Information</title>
+
+          <para>These methods allow you to list items associated with a query
+          and vice versa.</para>
+
+          <para><emphasis role="bold">ListAllFilesInQueries </emphasis>Allows
+          you to list files used by queries..</para>
+
+          <para>The <emphasis>name </emphasis>option is required and must
+          contain either the internal Roxie query name or an alias. The
+          <emphasis>name </emphasis>option can be repeated to list files used
+          by more than one query.</para>
+
+          <para>Use <emphasis>ExcludeSuperFileNames</emphasis>=1 or
+          <emphasis>ExcludeDataFileNames</emphasis>=1 to limit results to Data
+          files only or Superfiles only. Use GroupBySupername=1 to group by
+          superfile. Use ExcludeSubfileName=1 to filter out subfiles.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig ListAllFilesInQueries name=ListMyData
+          ExcludeSuperFileNames=1</programlisting>
+
+          <programlisting>c:\&gt; roxieconfig ListAllFilesInQueries
+          name=ListMyData</programlisting>
+
+          <para><emphasis role="bold">ListSuperFilesInQueries
+          </emphasis>Allows you to list superfiles used by queries. This
+          <emphasis>action</emphasis> is identical to ListAllFilesInQueries
+          with the <emphasis>ExcludeDataFileNames </emphasis>option set to
+          1.</para>
+
+          <para>The <emphasis>name</emphasis> option is required and must
+          contain either the internal Roxie query name or an alias. The
+          <emphasis>name </emphasis>option can be repeated to list superfiles
+          used by more than one query.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig ListSuperFilesInQueries
+          name=ListMyData</programlisting>
+
+          <para>c:\&gt; roxieconfig ListSuperFilesInQueries name=ListMyData
+          name=Tutorial.ListPeople.3</para>
+
+          <para><emphasis role="bold">ListQueriesUsingFile</emphasis> Allows
+          you to list the queries using a file.</para>
+
+          <para>The <emphasis>name </emphasis>option is required and must
+          contain a logical filename. The <emphasis>name </emphasis>option can
+          be repeated to list all queries using multiple files.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig ListQueriesUsingFile
+          name=name="key::two"
+C:\&gt;roxieconfig ListQueriesUsingFile name=name="key::one"
+          name=name="key::two"</programlisting>
+
+          <para><emphasis role="bold">RetrieveUsageInfoForFiles
+          </emphasis>Allows you to list usage for specified files or
+          superfiles. This enables you to evaluate space needed for capacity
+          planning and housekeeping.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig RetrieveUsageInfoForFiles
+          name="key::one"</programlisting>
+
+          <para><emphasis role="bold">ListSubFiles </emphasis>Allows you to
+          list subfiles in the specified superfile.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig ListSubFiles name="superkey::one"</programlisting>
+
+          <para><emphasis role="bold">ListQueriesUsingFile</emphasis></para>
+
+          <para>Allows you to list queries using a specified file.</para>
+
+          <programlisting>C:\&gt;roxieconfig ListQueriesUsingFile name="key::one"</programlisting>
+
+          <para><emphasis role="bold">ListQueriesUsingAnyFile
+          </emphasis>Allows you to list queries using any number of specified
+          files using repeated name= options to specify each file.</para>
+
+          <para>C:\&gt;roxieconfig ListQueriesUsingAnyFile name="key::one"
+          name="key::two"</para>
+
+          <para><emphasis role="bold">ListAllLibrariesInQueries
+          </emphasis>Allows you to<emphasis role="bold"></emphasis>list all
+          libraries used by in all queries.</para>
+
+          <programlisting>c:\&gt; roxieconfig ListAllLibrariesInQueries name=MyQuery
+          UseAliasNames=true</programlisting>
+
+          <para><emphasis role="bold">ListAllQueriesUsingLibrary</emphasis>
+          Allows you to list all queries using one or all libraries.</para>
+
+          <programlisting>c:\&gt; roxieconfig ListAllQueriesUsingLibrary
+          name=MyLibrary</programlisting>
+
+          <para><emphasis role="bold">RetrieveQueryActivityInfo</emphasis>
+          Allows you to retrieves graph information about a particular
+          activity for a given query.</para>
+
+          <programlisting>c:\&gt; roxieconfig RetrieveQueryActivityInfo name=MyQuery
+          ActivityId=2</programlisting>
+
+          <para><emphasis role="bold">RetrieveQueryMetrics</emphasis> Allows
+          you to retrieve metrics for one or all queries with optional time
+          constraint.</para>
+
+          <programlisting>c:\&gt; roxieconfig RetrieveQueryMetrics name=MyQuery
+          StartTime= EndTime=</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Actions to List and Manage FileOpen Errors</title>
+
+          <para>These <emphasis>actions</emphasis> allow you to find errors
+          that are a result of deploying remote queries where file resolution
+          is not correct.</para>
+
+          <para><emphasis role="bold">ListFileOpenErrors </emphasis>Allows you
+          to list current errors opening files.</para>
+
+          <para><emphasis role="bold">Examples </emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig ListFileOpenErrors
+C:\&gt;roxieconfig ListFileOpenErrors &gt;errorlist.xml</programlisting>
+
+          <para><emphasis role="bold">CleanFileOpenErrors</emphasis> Allows
+          you to remove specified FileOpen errors.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig CleanFileOpenErrors</programlisting>
+
+          <para><emphasis role="bold">CleanFileOpenErrorsFromFile</emphasis>
+          Allows you to remove FileOpen errors contained in a text file on
+          diskFor example, a file created using roxieconfig ListFileOpenErrors
+          &gt;errorlist.xml</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig CleanFileOpenErrorsFromFile
+          name=”errorlist.xml”</programlisting>
+
+          <para></para>
+
+          <para><emphasis role="bold">RemoveUnneededLogicalRef</emphasis>
+          Allows you to remove logical references (in Dali) for file
+          information no longer used in Roxie. Use optional GatherInfoOnly=
+          option to list references that would be deleted.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig RemoveUnneededLogicalRef
+C:\&gt;roxieconfig RemoveUnneededLogicalRef
+          GatherInfoOnly=true</programlisting>
+
+          <sect4>
+            <title>Actions to List ECL files in Repositories</title>
+
+            <para>These <emphasis>actions</emphasis> allow you to find EXl
+            files in your repository that are candidates for deployment to a
+            Roxie cluster. An ECL file is a candidate when it contains the
+            interface-enabling comment block (SOAP Interface).</para>
+
+            <para>Use ListRoxieEligibleModules to find folders that contain
+            eligible ECL files, then use ListRoxieEligibleAttributes with the
+            <emphasis>module </emphasis>option (using the folder name found
+            from the previous function) to list ECl files that are eligible
+            for deployment to a Roxie cluster.</para>
+
+            <para><emphasis role="bold">ListRoxieEligibleModules</emphasis>
+            Allows you to find folders that contain eligible ECL files.</para>
+
+            <para>The <emphasis>AttributeServerAddress</emphasis> is required
+            and must contain the IP or DNS name of your Attribute Server as
+            configured in the WsRoxieConfig service. If not known, use
+            ListAttributeServers (see below) to get the name or IP.</para>
+
+            <para><emphasis role="bold">Example:</emphasis></para>
+
+            <programlisting>C:\&gt;roxieconfig
+            ListRoxieEligibleModulesAttributeServerAddress=10.150.254.4:8145</programlisting>
+
+            <para></para>
+
+            <para><emphasis role="bold">ListRoxieEligibleAttributes
+            </emphasis>Allows you to find ECL files that are eligible for
+            deployment to a Roxie cluster.</para>
+
+            <para>The <emphasis>module </emphasis>option is required and must
+            contain the name of a folder that contains one or more eligible
+            ECL files.</para>
+
+            <para>The <emphasis>AttributeServerAddress</emphasis> is required
+            and must contain the IP or DNS name of your Attribute Server as
+            configured in the WsRoxieConfig service. If not known, use
+            ListAttributeServers (see below) to get the name or IP.</para>
+
+            <para><emphasis role="bold">Examples </emphasis></para>
+
+            <programlisting>C:\&gt;roxieconfig
+            ListRoxieEligibleModulesAttributeServerAddress=10.150.254.4:8145
+            module=TutorialYourName</programlisting>
+          </sect4>
+        </sect3>
+
+        <sect3>
+          <title>Actions to Manage Packages</title>
+
+          <para>Use these <emphasis>actions </emphasis>to maintain package
+          file(s).</para>
+
+          <para><emphasis role="bold">CopyPackages</emphasis> Copies the
+          package(s) specified using the name= option. You can specify one or
+          more name=value pairs or use wildcards. The overwritepackage option
+          allows you to overwrite a package file of the same name. <emphasis
+          role="bold">This action is targeted for deprecation.</emphasis> It
+          has been replaced with AddPackage.</para>
+
+          <para></para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig copypackages name=mypackage.pkg
+c:\&gt; roxieconfig copypackages name=mypackag*.pkg
+c:\&gt; roxieconfig copypackages name=mypackage1.pkg
+          name=mypackage2.pkg
+c:\&gt; roxieconfig copypackages name=mypackage1.pkg
+          overwritepackage=1</programlisting>
+
+          <para><emphasis role="bold">AddPackages</emphasis> Copies a package
+          set specified using the packageId= and name= options. You can only
+          specify one packageid, but you can use name=value pairs or use
+          wildcards to specify the individual package files within a set to
+          consider. The overwritepackage option allows you to overwrite a
+          package file of the same name within a package set. The added
+          package set is NOT loaded into memory unless the LoadPackage=true is
+          used. Using LoadPackage=true and MakePkgActive=true loads the
+          package set and makes it the active package set.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig addpackage PackageId=2.pkg name=*.pkg
+          MakePkgActive=true LoadPackage=true
+c:\&gt; roxieconfig addpackage PackageId=2.pkg name=*.pkg
+          MakePkgActive=false LoadPackage=true
+c:\&gt; roxieconfig addpackage PackageId=2.pkg
+          overwritepackage=1</programlisting>
+
+          <para><emphasis role="bold">DeletePackages </emphasis>Removes the
+          package set or package(s) specified using the packageId= or name=
+          options. You can specify one or more name=value pairs or use
+          wildcards. This action removes the package set or package file(s)
+          from both memory and disk. You cannot delete the active package
+          set.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig deletepackages PackageId=2.pkg
+c:\&gt; roxieconfig deletepackages name=mypackag*.pkg
+c:\&gt; roxieconfig deletepackages name=mypackage1.pkg name=mypackage2.pkg</programlisting>
+
+          <para><emphasis role="bold">ValidatePackages </emphasis>Validates
+          the package set or package(s) specified using the name= options. You
+          can specify one or more name=value pairs or use wildcards. This
+          validates package files on your loc al macine, not on the Roxie
+          cluster.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>roxieconfig validatepackages name=*.pkg
+roxieconfig validatepackages name=mypackag*.pkg
+roxieconfig validatepackages name=mypackage1.pkg name=mypackage2.pkg
+</programlisting>
+
+          <para><emphasis role="bold">SelectPackage </emphasis>Selects the
+          package set (from all loaded into memory) and makes it
+          active.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>c:&gt; roxieconfig SelectPackage PackageId=2.pkg</programlisting>
+
+          <para><emphasis role="bold">LoadPackageFiles</emphasis><emphasis
+          role="bold"> </emphasis>Loads one package set that has already been
+          added or copied to the cluster. This action is used in lieu of
+          restarting the cluster to reload packages. Use the
+          MakePkgActive=true option to make it active.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>c:&gt; roxieconfig LoadPackageFiles PackageId=2.pkg
+c:&gt; roxieconfig LoadPackageFiles PackageId=2.pkg <emphasis role="bold"> </emphasis>MakePkgActive=true
+          <emphasis role="bold">ListLoadedPackageIds </emphasis>Lists
+          the loaded package sets on a cluster and specifies which one is
+          active.</programlisting>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>c:&gt; roxieconfig ListLoadedPackageIds</programlisting>
+
+          <para><emphasis role="bold">ReLoadPackageFiles</emphasis><emphasis
+          role="bold"> </emphasis>Reloads all packages on the cluster.
+          ReloadPackageFiles reads all deployed package sets and package files
+          and replaces the packages currently loaded in memory. This action is
+          used in lieu of restarting the cluster to reload packages.</para>
+
+          <para><emphasis role="bold">Example</emphasis></para>
+
+          <programlisting>c:&gt; roxieconfig ReLoadPackageFiles</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Actions to Manage Access Control Lists</title>
+
+          <para><emphasis role="bold">UpdateACLInfo </emphasis>Adds an entry
+          to the active Access Control List. <emphasis role="bold">
+          </emphasis>The ip= parameter is the source of the communication (for
+          example, the IP of the ESP server running the WsECl service). The
+          Mask= parameter is the subnet mask to use. Use combinations of IP
+          and mask to establish the IP from which to control access. The
+          allow= parameter is a Boolean specifying whether to allow access.
+          The ErrorMessage= parameter allows you to specify the message
+          returned when access is restricted.</para>
+
+          <para>The query= parameter is a sting value using Regular
+          Expressions to</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>C:\roxieconfig&gt;roxieconfig UpdateACLInfo ip="10.173.9.2"
+          mask="255.255.255.255" allow=0
+          query="*&lt;Name&gt;SMITH&lt;/Name&gt;.*" ErrorMessage="Too Many
+          Smiths"</programlisting>
+
+          <para></para>
+
+          <para><emphasis role="bold">Note: </emphasis> ACL information
+          submitted on-the-fly is volatile. In other words, it will not be
+          used if the cluster or a node is restarted. If you add an item using
+          the command line, you should also add any items into the active ACL
+          list in the Environment Configuration Tool and deploy configuration
+          files. This ensures the Access control will persist and that all
+          farmers will have the same information.</para>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>Other Actions</title>
+
+          <para>These actions allow you to retrieve information from the
+          WsRoxieConfig service.</para>
+
+          <para><emphasis role="bold">ListAttributeServers</emphasis> Allows
+          you to retrieve information about available Attribute Servers in
+          your environment. These Attribute Servers
+          <emphasis>must</emphasis><emphasis role="bold"> </emphasis>be
+          preconfigured in WsRoxieConfig.</para>
+
+          <para><emphasis role="bold">Example:</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig ListAttributeServers</programlisting>
+
+          <para><emphasis role="bold">GetVersion </emphasis>Returns the
+          version number of the WsRoxieConfig Service.</para>
+
+          <para><emphasis role="bold">Examples </emphasis></para>
+
+          <programlisting>c:\&gt; roxieconfig GetVersion</programlisting>
+
+          <para><emphasis role="bold">UpdateQueryComment </emphasis>Allows you
+          to update the comment associated with previously deployed query. Use
+          the append=0 option to overwrite existing comment or append=1
+          (default) to append submitted comment to any existing
+          comment.</para>
+
+          <para><emphasis role="bold">Examples</emphasis></para>
+
+          <programlisting>roxieconfig UpdateQueryComment name=”myquery”
+          QueryComment=”comment” Append=0</programlisting>
+
+          <para><emphasis role="bold">ListKeysTrasnslatedInQuery</emphasis>
+          Returns a list of keys for a specified query that have key
+          translation enabled and being used.</para>
+
+          <para><emphasis role="bold">Example:</emphasis></para>
+
+          <programlisting>C:\&gt;roxieconfig ListKeysTrasnslatedInQuery
+          name=”myquery”</programlisting>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

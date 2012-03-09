@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NONEMPTY">
+  <title>NONEMPTY<indexterm>
+      <primary>NONEMPTY</primary>
+    </indexterm></title>
+
+  <para><emphasis id="term" role="bold">NONEMPTY<indexterm>
+      <primary>NONEMPTY function</primary>
+    </indexterm>(</emphasis><emphasis>recordsetlist</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.00pt" />
+
+        <colspec colwidth="272.80pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordsetlist</emphasis></entry>
+
+            <entry>A comma-delimited list of record sets.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>NONEMPTY returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">NONEMPTY </emphasis>function returns the
+  first record set from the <emphasis>recordsetlist</emphasis> that contains
+  any records. This is similar to using the EXISTS function in an IF
+  expression to return one of two possible record sets.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  ds := NONEMPTY(SomeData(SomeFilter),
+  SomeData(SomeOtherFilter),
+  SomeOtherData(YetAnotherFilter));</programlisting>
+
+  <para>See Also: <link linkend="EXISTS">EXISTS</link></para>
+</sect1>

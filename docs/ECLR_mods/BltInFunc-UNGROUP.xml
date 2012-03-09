@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="UNGROUP">
+  <title>UNGROUP</title>
+
+  <para><emphasis role="bold">UNGROUP<indexterm>
+      <primary>UNGROUP</primary>
+    </indexterm>( </emphasis><emphasis>recordset </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.75pt" />
+
+        <colspec colwidth="275.05pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of previously GROUPed records.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>UNGROUP returns a record set.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">UNGROUP </emphasis>function<indexterm>
+      <primary>UNGROUP Function</primary>
+    </indexterm> removes previous grouping. This is equivalent to using the
+  GROUP function<indexterm>
+      <primary>GROUP function</primary>
+    </indexterm> without a second parameter.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  MyRec := RECORD
+  STRING20 Last;
+  STRING20 First;
+  END;
+  
+  SortedSet := SORT(Person,Person.last_name); //sort by last
+          name
+  GroupedSet := GROUP(SortedSet,last_name); //then group
+          them
+  
+  SecondSort := SORT(GroupedSet,Person.first_name);
+  //sorts by first name within each last name group
+  // this is a "sort within group"
+  
+  UnGroupedSet := UNGROUP(GroupedSet); //ungroup the
+          dataset
+</programlisting>
+
+  <para>See Also: <link linkend="GROUP">GROUP</link></para>
+</sect1>

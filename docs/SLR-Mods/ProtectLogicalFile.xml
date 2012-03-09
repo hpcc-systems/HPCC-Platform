@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ProtectLogicalFile">
+  <title><emphasis role="bold">ProtectLogicalFile</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.ProtectLogicalFile<indexterm>
+      <primary>STD.File.ProtectLogicalFile</primary>
+    </indexterm><indexterm>
+      <primary>File.ProtectLogicalFile</primary>
+    </indexterm><indexterm>
+      <primary>ProtectLogicalFile</primary>
+    </indexterm>(</emphasis> <emphasis> logicalfilename </emphasis> <emphasis
+  role="bold">[ </emphasis> <emphasis>, value </emphasis> <emphasis
+  role="bold"> ] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>logicalfilename</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the logical
+          file as it is known by the DFU.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>value</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating whether to protect or
+          un-protect the file. If omitted, the default is TRUE.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ProtectLogicalFile </emphasis>function
+  toggles protection on and off for the specified
+  <emphasis>logicalfilename</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+file := '~class::bmf::join::halfkeyed';
+
+STD.File.ProtectLogicalFile(file);         //protect
+STD.File.ProtectLogicalFile(file, FALSE);  //unprotect
+</programlisting>
+</sect1>

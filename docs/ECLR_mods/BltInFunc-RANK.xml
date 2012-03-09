@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RANK">
+  <title>RANK</title>
+
+  <para><emphasis role="bold">RANK<indexterm>
+      <primary>RANK</primary>
+    </indexterm><indexterm>
+      <primary>RANK function</primary>
+    </indexterm>(</emphasis><emphasis>position, set </emphasis><emphasis
+  role="bold">[ </emphasis><emphasis>,</emphasis><emphasis
+  role="bold">DESCEND<indexterm>
+      <primary>DESCEND</primary>
+    </indexterm> ])</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="84.45pt" />
+
+        <colspec colwidth="268.35pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>position</emphasis></entry>
+
+            <entry>An integer indicating the element in the sorted set to
+            return.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>set</emphasis></entry>
+
+            <entry>The set of values.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">DESCEND</emphasis></entry>
+
+            <entry>Optional. Indicates descending order sort.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>RANK returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">RANK </emphasis>function sorts the
+  <emphasis>set</emphasis> in ascending (or descending, if DESCEND is present)
+  order, then returns the ordinal position (its index value) of the unsorted
+  set's <emphasis>position</emphasis> element after the <emphasis>set
+  </emphasis>has been sorted. This is the opposite of RANKED.</para>
+
+  <para>Example:</para>
+
+  <programlisting>Ranking := RANK(1,[20,30,10,40]);
+// returns 2 - 1st element (20) in unsorted set is
+// 2nd element after sorting to [10,20,30,40]
+Ranking := RANK(1,[20,30,10,40],DESCEND);
+// returns 3 - 1st element (20) in unsorted set is
+// 3rd element after sorting to [40,30,20,10]
+</programlisting>
+
+  <para>See Also: <link linkend="RANKED">RANKED</link>, <link
+  linkend="SORT">SORT</link>, <link linkend="SORTED">SORTED</link>, <link
+  linkend="Recordset_Filtering">Sets and Filters</link></para>
+</sect1>

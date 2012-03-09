@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FileRelationshipList">
+  <title><emphasis role="bold">FileRelationshipList</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.FileRelationshipList<indexterm>
+      <primary>STD.File.FileRelationshipList</primary>
+    </indexterm><indexterm>
+      <primary>File.FileRelationshipList</primary>
+    </indexterm><indexterm>
+      <primary>FileRelationshipList</primary>
+    </indexterm>(</emphasis> <emphasis> primary, secondary</emphasis>
+  <emphasis> </emphasis> <emphasis role="bold">[</emphasis> <emphasis>,
+  primaryfields </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
+  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, secondaryfields
+  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
+  [</emphasis> <emphasis>,</emphasis> <emphasis role="bold"> </emphasis>
+  <emphasis>relationship </emphasis> <emphasis
+  role="bold">]);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>primary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the primary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondary</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical filename of
+          the secondary file.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>primaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the primary
+          key field for the <emphasis>primary</emphasis> file. The value
+          “__fileposition__” indicates the <emphasis>secondary</emphasis> is
+          an INDEX that must use FETCH to access non-keyed fields. If omitted,
+          the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>secondaryfields</emphasis></entry>
+
+          <entry>A null-terminated string containing the name of the foreign
+          key field relating to the <emphasis>primary</emphasis> file. If
+          omitted, the default is an empty string.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>relationship</emphasis></entry>
+
+          <entry>A null-terminated string containing either “link” or “view”
+          indicating the type of relationship between the
+          <emphasis>primary</emphasis> and <emphasis>secondary</emphasis>
+          files. If omitted, the default is “link.”</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>FileRelationshipList returns a dataset in the
+          FsFileRelationshipRecord format.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FileRelationshipList</emphasis> function
+  returns a list file relationships between the <emphasis>primary</emphasis>
+  and <emphasis>secondary</emphasis> files. The return records are structured
+  in the FsFileRelationshipRecord format:</para>
+
+  <programlisting>EXPORT FsFileRelationshipRecord := RECORD 
+  STRING primaryfile {MAXLENGTH(1023)}; 
+  STRING secondaryfile {MAXLENGTH(1023)};  
+  STRING primaryflds {MAXLENGTH(1023)}; 
+  STRING secondaryflds {MAXLENGTH(1023)}; 
+  STRING kind {MAXLENGTH(16)}; 
+  STRING cardinality {MAXLENGTH(16)}; 
+  BOOLEAN payload; 
+  STRING description {MAXLENGTH(1023)}; 
+END;</programlisting>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.FileRelationshipList('names', 'inquiries'));
+</programlisting>
+
+  <para>See Also: <link
+  linkend="AddFileRelationship">AddFileRelationship</link></para>
+</sect1>

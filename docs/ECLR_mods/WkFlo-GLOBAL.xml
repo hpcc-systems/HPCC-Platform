@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GLOBAL_workflow_service">
+  <title>GLOBAL - Service</title>
+
+  <para><emphasis>attribute </emphasis>:= <emphasis>expression
+  </emphasis><emphasis role="bold">: GLOBAL<indexterm>
+      <primary>GLOBAL</primary>
+    </indexterm> [ ( </emphasis><emphasis>cluster</emphasis><emphasis
+  role="bold"> [, FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> ] ) ]<indexterm>
+      <primary>GLOBAL workflow service</primary>
+    </indexterm></emphasis>;</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>attribute</emphasis></entry>
+
+            <entry>The name of the Attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>The definition of the attribute.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>cluster</emphasis></entry>
+
+            <entry>Optional. A string constant specifying the name of the
+            supercomputer cluster on which to build the attribute. This makes
+            it possible to use the attribute on a smaller cluster when it must
+            be built on a larger cluster, allowing for more efficient resource
+            utilization. If omitted, the attribute is built on the currently
+            executing cluster.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. When the expression is a dataset or recordset,
+            FEW specifies that the resulting dataset is stored completely
+            within the workunit. If not specified, then the dataset is stored
+            as a THOR file and the workunit contains only the name of the
+            file.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">GLOBAL </emphasis>service causes the
+  <emphasis>attribute</emphasis> to be evaluated at global scope instead of
+  the enclosing scope, similar to the GLOBAL() function -- that is, not inside
+  a filter/transform etc. It may be evaluated multiple times in the same
+  workunit if it is used from multiple workflow items, but it will share code
+  with the context it is used.</para>
+
+  <para>GLOBAL is different from INDEPENDENT operates in that INDEPENDENT is
+  only ever executed once, while GLOBAL is executed once in each workflow item
+  that uses it.</para>
+
+  <para>Example:</para>
+
+  <programlisting>I := RANDOM() : INDEPENDENT;  //calculated once, period
+G := RANDOM() : GLOBAL;       //calculated once in each graph
+
+ds := DATASET([{1,0,0},{2,0,0}],{UNSIGNED1 rec,UNSIGNED Ival, UNSIGNED Gval });
+
+RECORDOF(ds) XF(ds L) := TRANSFORM
+  SELF.Ival := I;
+  SELF.Gval := G;
+  SELF := L;
+END;
+
+P1 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal1');
+P2 := PROJECT(ds,XF(left)) : PERSIST('~RTTEST::PERSIST::IndependentVsGlobal2');
+
+OUTPUT(P1);    
+OUTPUT(P2);    //this gets the same Ival values as P1, but different Gval values
+</programlisting>
+
+  <para>See Also: <link linkend="GLOBAL">GLOBAL function</link>, <link
+  linkend="INDEPENDENT">INDEPENDENT</link></para>
+</sect1>

@@ -543,7 +543,7 @@ interface INamedGroupStore: implements IGroupResolver
     virtual void remove(const char *logicalgroupname) = 0;
     virtual bool find(IGroup *grp, StringBuffer &lname, bool add=false) = 0;
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;
-    virtual void swapNode(IpAddress &from, IpAddress &to) = 0;
+    virtual void swapNode(const IpAddress &from, const IpAddress &to) = 0;
     virtual IGroup *getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, StringBuffer *dir=NULL) = 0;
     virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir) = 0;
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                    // sets default timeout for SDS connections and locking                                                                                         // returns previous value
@@ -607,10 +607,16 @@ extern da_decl bool removePhysicalFiles(IGroup *grp,const char *_filemask,unsign
 
 // for server use
 interface IDaliServer;
-extern da_decl IDaliServer *createDaliDFSServer(); // called for coven members
+extern da_decl IDaliServer *createDaliDFSServer(IPropertyTree *config); // called for coven members
 
 // to initialize clustergroups after clusters change in the environment
-extern da_decl void initClusterGroups(unsigned timems=INFINITE);
+extern da_decl bool initClusterGroups(bool force, StringBuffer &response, unsigned timems=INFINITE);
+extern da_decl bool resetClusterGroup(const char *clusterName, const char *type, bool spares, StringBuffer &response, unsigned timems=INFINITE);
+extern da_decl bool addClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems=INFINITE);
+extern da_decl bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpointArray &eps, StringBuffer &response, unsigned timems=INFINITE);
+// should poss. belong in lib workunit
+extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
+extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user=NULL);
 

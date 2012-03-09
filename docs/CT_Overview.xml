@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="CT_Overview">
+  <title><emphasis role="bold">Overview</emphasis></title>
+
+  <para>This manual contains documentation for the set of Client Tools for use
+  with the LexisNexis HPCC. These tools include:</para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis role="bold">ECL IDE</emphasis></entry>
+
+          <entry>An integrated development environment for ECL programmers to
+          create, edit, and execute ECL code.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL Debugger</emphasis></entry>
+
+          <entry>A development tool integrated into the ECL IDE, which is used
+          to debug queries as they are developed.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECLPlus</emphasis></entry>
+
+          <entry>Command line ECL execution tool to facilitate automation of
+          ECL Code execution.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL</emphasis></entry>
+
+          <entry>Command line ECL tool.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">ECL Compiler</emphasis></entry>
+
+          <entry>Command line ECL Compiler</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DFUPlus</emphasis></entry>
+
+          <entry>Command line Distributed File Utility management tool,
+          facilitate automation of data file spray, despray, and other common
+          file handling tasks.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold"> </emphasis></para>
+
+  <sect1 id="Documentation_Conventions">
+    <title>Documentation Conventions</title>
+
+    <sect2 id="ECL_Language">
+      <title><emphasis>ECL Language</emphasis></title>
+
+      <para>Although ECL is not case-sensitive, ECL reserved keywords and
+      built-in functions in this document are always shown in ALL CAPS to make
+      them stand out for easy identification.</para>
+
+      <sect3>
+        <title>Example Code</title>
+
+        <para>All example code in this document appears in the following
+        font:</para>
+
+        <programlisting>MyECLFileName := COUNT(Person);
+// MyECLFileName is a user-defined ECL file
+// COUNT is a built-in ECL function
+// Person is the name of a dataset</programlisting>
+
+        <para>ECL file names and record set names are always shown in example
+        code as mixed-case. Run-on words may be used to explicitly identify
+        purpose in examples.</para>
+      </sect3>
+
+      <sect3>
+        <title>Actions</title>
+
+        <para>In step-by-step sections, there will be explicit actions to
+        perform. These are all shown with a bullet to differentiate action
+        steps from explanatory text, as shown here:</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Keyboard and mouse actions are shown in small caps, such
+              as: DOUBLE-CLICK, or press the ENTER key. word.</para>
+            </listitem>
+
+            <listitem>
+              <para>On-screen items to select are shown in boldface, such as:
+              press the <emphasis role="bold">OK </emphasis>button.</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect3>
+    </sect2>
+
+    <sect2 id="Installation">
+      <title><emphasis>Installation</emphasis></title>
+
+      <para>The installation program installs all client tools, including the
+      ECL IDE, ECLPlus, DFUPlus, and RoxieConfig. The installation program
+      provides the option to select which tools to install.</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>From the CD, your Build Server, or your download:</para>
+        </listitem>
+
+        <listitem>
+          <para>Run <emphasis role="bold">setup.msi </emphasis>, then follow
+          the prompts</para>
+        </listitem>
+      </itemizedlist>
+
+      <para><emphasis>System Requirements</emphasis></para>
+
+      <para>The recommended system configuration is:</para>
+
+      <para>A Pentium III processor (or higher) and at least 128 megabytes
+      (MB) of RAM.</para>
+
+      <para>Microsoft Windows 2000, Windows XP, Windows Server 2003, Windows
+      Vista, Windows 7, or higher.</para>
+
+      <para>A full installation requires less than 16 MB of disk space.<!-- --></para>
+
+      <para>The optional Tutorial Data File is 100 MB.</para>
+
+      <para>In addition, you will need Internet Explorer 7 and have Active
+      Scripting support enabled (Javascript). If browser security is set to
+      High, you should add the ECLWatch IP (or DNS name) as a Trusted
+      Site.</para>
+
+      <para>Adobe Reader 5 (or higher) is required to view the documentation
+      PDF files.</para>
+
+      <para>GVC Viewer is used to display graphs in ECL Watch, RoxieConfig GUI
+      and ECL IDE. It is installed automatically.</para>
+    </sect2>
+  </sect1>
+</chapter>

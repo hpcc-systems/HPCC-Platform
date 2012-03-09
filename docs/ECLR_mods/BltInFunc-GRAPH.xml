@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="GRAPH">
+  <title>GRAPH</title>
+
+  <para><emphasis role="bold">GRAPH<indexterm>
+      <primary>GRAPH</primary>
+    </indexterm><indexterm>
+      <primary>GRAPH function</primary>
+    </indexterm>( </emphasis><emphasis>recordset , iterations
+  </emphasis><emphasis role="bold">, </emphasis><emphasis>
+  processor</emphasis><emphasis role="bold"> )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="79.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The initial set of records to process.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>iterations</emphasis></entry>
+
+            <entry>The number of times to call the processor function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>processor</emphasis></entry>
+
+            <entry>The function attribute to process the input. This function
+            may use the following as arguments:</entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><programlisting role="tab"><emphasis role="bold">ROWSET<indexterm>
+                    <primary>ROWSET</primary>
+                  </indexterm>(LEFT)<indexterm>
+                    <primary>ROWSET(LEFT)</primary>
+                  </indexterm>   </emphasis>Specifies the set of input datasets, which may be indexed 
+                                  to specify the result set from any specific iteration — 
+                                  ROWSET(LEFT)[0] indicates the initial input <emphasis>recordset</emphasis> while
+                                  ROWSET(LEFT)[1] indicates the result set from the first 
+                                  iteration. This may also be used as the first parameter 
+                                  to the RANGE function to specify a set of datasets 
+                                  (allowing the graph to efficiently process N-ary merge/join<indexterm>
+                  <primary>N-ary merge/join</primary>
+                </indexterm> 
+                                  arguments).
+
+<emphasis role="bold">COUNTER</emphasis><indexterm>
+                  <primary>COUNTER</primary>
+                </indexterm>             Specifies an INTEGER parameter for the graph iteration number.
+</programlisting></entry>
+          </row>
+
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>GRAPH returns the record set result of the last of the
+            <emphasis>iterations</emphasis>.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">GRAPH </emphasis>function is similar to the
+  LOOP function<indexterm>
+      <primary>LOOP function</primary>
+    </indexterm>, but it executes as though all the
+  <emphasis>iterations</emphasis> of the <emphasis>processor</emphasis> call
+  were expanded out, removing any branches that can't be executed, and then
+  joined together. The resulting graph is as efficient as if the graph had
+  been expanded out by hand.</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRec := RECORD
+  STRING20 lname;
+  STRING10 fname;
+  UNSIGNED2 age := 25;
+  UNSIGNED2 ctr := 0;
+END;
+namesTable2 := DATASET([{'Flintstone','Fred',35},
+    {'Flintstone','Wilma',33},
+    {'Jetson','Georgie',10},
+    {'Mr. T','Z-man'}], namesRec);
+
+loopBody(SET OF DATASET(namesRec) ds, UNSIGNED4 c) :=
+      PROJECT(ds[c-1],    //ds[0]=original input
+     TRANSFORM(namesRec,
+    SELF.age := LEFT.age+c; //c is graph COUNTER
+    SELF.ctr := COUNTER;    //PROJECT’s COUNTER
+    SELF := LEFT));
+
+g1 := GRAPH(namesTable2,10,loopBody(ROWSET(LEFT),COUNTER));
+
+OUTPUT(g1);
+</programlisting>
+
+  <para>See Also: <link linkend="LOOP">LOOP</link>, <link linkend="RANGE">RANGE</link></para>
+</sect1>

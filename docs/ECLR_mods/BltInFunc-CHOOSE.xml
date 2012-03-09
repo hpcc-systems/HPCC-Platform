@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CHOOSE">
+  <title>CHOOSE</title>
+
+  <para><emphasis role="bold">CHOOSE<indexterm>
+      <primary>CHOOSE</primary>
+    </indexterm><indexterm>
+      <primary>CHOOSE function</primary>
+    </indexterm>(</emphasis><emphasis>expression, value,… , value,
+  elsevalue</emphasis><emphasis role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="80.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>An arithmetic expression that results in a positive integer
+            and determines which value parameter to return.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>value</emphasis></entry>
+
+            <entry>The values to return. There may be as many value parameters
+            as necessary to specify all the expected values of the expression.
+            This may not be a record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>elsevalue</emphasis></entry>
+
+            <entry>The value to return when the expression returns an
+            out-of-range value. The last parameter is always the
+            <emphasis>elsevalue</emphasis>. This may not be a record
+            set.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CHOOSE returns a single value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CHOOSE </emphasis>function evaluates the
+  <emphasis>expression</emphasis> and returns the <emphasis>value</emphasis>
+  parameter whose ordinal position in the list of parameters corresponds to
+  the result of the <emphasis>expression</emphasis>. If none match, it returns
+  the <emphasis>elsevalue</emphasis>. All <emphasis>values</emphasis> and the
+  <emphasis>elsevalue</emphasis> must be of the same type.</para>
+
+  <para>Example:</para>
+
+  <programlisting>MyExp := 1+2;
+MyChoice := CHOOSE(MyExp,9,8,7,6,5); // returns 7
+MyChoice := CHOOSE(MyExp,1,2,3,4,5);  // returns 3
+MyChoice := CHOOSE(MyExp,15,14,13,12,11);  // returns 13
+WorstRate := CHOOSE(IntRate,1,2,3,4,5,6,6,6,6,0);
+ // WorstRate receives 6 if the IntRate is 7, 8, or 9
+</programlisting>
+
+  <para>See Also: <link linkend="CASE">CASE</link>, <link linkend="IF">IF</link>, <link linkend="MAP">MAP</link></para>
+</sect1>

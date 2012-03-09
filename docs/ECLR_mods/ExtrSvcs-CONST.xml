@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CONST">
+  <title>CONST</title>
+
+  <para><emphasis role="bold">CONST<indexterm>
+      <primary>CONST</primary>
+    </indexterm><indexterm>
+      <primary>CONST Function</primary>
+    </indexterm></emphasis></para>
+
+  <para>The <emphasis role="bold">CONST </emphasis>keyword specifies that the
+  value passed as a parameter will always be treated as a constant. This is
+  essentially a flag that allows the compiler to properly optimize its code
+  when declaring external functions.</para>
+
+  <para>Example:</para>
+
+  <programlisting>STRING CatStrings(CONST STRING S1, CONST STRING S2) := S1 + S2;</programlisting>
+
+  <para>See Also: <link linkend="Function_Attributes__Parameter_Passing">Functions (Parameters Passing</link>), <link linkend="SERVICE_Structure">SERVICE Structure</link></para>
+</sect1>

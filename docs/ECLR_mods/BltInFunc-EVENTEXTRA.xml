@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EVENTEXTRA">
+  <title>EVENTEXTRA</title>
+
+  <para><emphasis role="bold">EVENTEXTRA<indexterm>
+      <primary>EVENTEXTRA</primary>
+    </indexterm>( </emphasis><emphasis>tag</emphasis><emphasis role="bold">
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.45pt" />
+
+        <colspec colwidth="310.35pt" />
+
+        <tbody>
+          <row>
+            <entry>Return:</entry>
+
+            <entry>EVENTNAME returns a single string value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">EVENTEXTRA</emphasis> function<indexterm>
+      <primary>EVENTEXTRA function</primary>
+    </indexterm> returns the contents of the <emphasis>tag</emphasis> from the
+  XML text in the EVENT function's second parameter.</para>
+
+  <para>Example:</para>
+
+  <programlisting>doMyService := FUNCTION
+  OUTPUT('Did a Service for: ' + 'EVENTNAME=' + EVENTNAME);
+  NOTIFY(EVENT('MyServiceComplete',
+               '&lt;Event&gt;&lt;returnTo&gt;FRED&lt;/returnTo&gt;&lt;/Event&gt;'),
+    EVENTEXTRA('returnTo'));
+  RETURN EVENTEXTRA('returnTo');
+END;
+
+doMyService : WHEN('MyService');
+
+// and a call
+NOTIFY('MyService',
+       '&lt;Event&gt;&lt;returnTo&gt;'+WORKUNIT+'&lt;/returnTo&gt;&lt;/Event&gt;');
+WAIT('MyServiceComplete');
+OUTPUT('WORKUNIT DONE')
+</programlisting>
+
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="EVENTNAME">EVENTNAME</link>, <link linkend="CRON">CRON</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
+</sect1>

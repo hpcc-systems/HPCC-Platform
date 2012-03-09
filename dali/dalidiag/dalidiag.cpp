@@ -50,7 +50,7 @@ void usage(const char *exe)
     printf("-timesds            -- time SDS subscriptions\n");
     printf("-build              -- list current build info\n");
     printf("-sdsfetch <xpath>   -- get a SDS branch\n");
-    printf("                       (no externals, better to use sdsfix export)\n");
+    printf("                       (no externals, better to use daliadmin export)\n");
     printf("-sdssize            -- calculate size of SDS branch\n");
     printf("                       (NB don't do on large branch - may run out of memory!)\n");
     printf("-nodeinfo <ip>      -- information about the given node (i.e cluster and part)\n");

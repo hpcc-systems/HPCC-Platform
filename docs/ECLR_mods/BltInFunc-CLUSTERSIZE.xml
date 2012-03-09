@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CLUSTERSIZE">
+  <title>CLUSTERSIZE<indexterm>
+      <primary>CLUSTERSIZE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">CLUSTERSIZE</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.40pt" />
+
+        <colspec colwidth="310.40pt" />
+
+        <tbody>
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CLUSTERSIZE returns a single INTEGER value.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CLUSTERSIZE </emphasis>compile time constant
+  returns the number of nodes in the cluster. This is the same value as
+  returned by the Std.System.ThorLib.Nodes() function..</para>
+
+  <para>Example:</para>
+
+  <programlisting>OUTPUT(CLUSTERSIZE)</programlisting>
+</sect1>

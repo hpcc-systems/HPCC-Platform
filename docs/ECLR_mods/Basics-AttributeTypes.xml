@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Basic_Attribute_Types">
+  <title>Basic Attribute Types<indexterm>
+      <primary>Attribute Types</primary>
+    </indexterm></title>
+
+  <para>The basic types of Attributes used most commonly throughout ECL coding
+  are: <emphasis role="bold">Boolean</emphasis><indexterm>
+      <primary>Boolean</primary>
+    </indexterm>, <emphasis role="bold">Value<indexterm>
+      <primary>Value</primary>
+    </indexterm></emphasis>, <emphasis role="bold">Set<indexterm>
+      <primary>Set</primary>
+    </indexterm></emphasis>, <emphasis role="bold">Record Set<indexterm>
+      <primary>Record Set</primary>
+    </indexterm></emphasis>, and <emphasis role="bold">TypeDef<indexterm>
+      <primary>TypeDef</primary>
+    </indexterm></emphasis>.</para>
+
+  <sect2 id="Boolean_Attributes">
+    <title>Boolean Attribute<indexterm>
+        <primary>Boolean Attribute</primary>
+      </indexterm>s</title>
+
+    <para>A Boolean Attribute is defined as any Attribute whose definition is
+    a logical expression resulting in a TRUE/FALSE result. For example, the
+    following are all Boolean Attributes:</para>
+
+    <programlisting>IsBoolTrue  := TRUE;
+IsFloridian := Person.per_st = 'FL';
+IsOldPerson := Person.Age &gt;= 65;</programlisting>
+  </sect2>
+
+  <sect2 id="Value_Attributes">
+    <title>Value Attribute<indexterm>
+        <primary>Value Attribute</primary>
+      </indexterm>s</title>
+
+    <para>A Value Attribute is defined as any Attribute whose expression is an
+    arithmetic or string expression with a single-valued result. For example,
+    the following are all Value Attributes:</para>
+
+    <programlisting>ValueTrue      := 1;
+FloridianCount := COUNT(Person(Person.per_st = 'FL'));
+OldAgeSum     := SUM(Person(Person.Age &gt;= 65),Person.Age);</programlisting>
+  </sect2>
+
+  <sect2 id="Set_Attributes">
+    <title>Set Attributes</title>
+
+    <para>A Set Attribute<indexterm>
+        <primary>Set Attribute</primary>
+      </indexterm> is defined as any Attribute whose expression is a set of
+    values, defined within square brackets<indexterm>
+        <primary>square brackets</primary>
+      </indexterm>. Constant set<indexterm>
+        <primary>Constant set</primary>
+      </indexterm>s are created as a set of explicitly declared constant
+    values<indexterm>
+        <primary>constant values</primary>
+      </indexterm> that must be declared within square brackets, whether that
+    set is defined as a separate attribute or simply included in-line in
+    another expression. All the constants must be of the same type.</para>
+
+    <programlisting>SetInts  := [1,2,3,4,5]; // an INTEGER set with 5 elements
+SetReals := [1.5,2.0,3.3,4.2,5.0];
+            // a REAL set with 5 elements
+SetStatusCodes := ['A','B','C','D','E'];
+            // a STRING set with 5 elements</programlisting>
+
+    <para>The elements in any explicitly declared set can also be composed of
+    arbitrary expressions. All the expressions must result in the same type
+    and must be constant expressions.</para>
+
+    <programlisting>SetExp := [1,2+3,45,SomeIntegerAttribute,7*3];
+                        // an INTEGER set with 5 elements</programlisting>
+
+    <para>Declared Sets can contain attributes and expressions<indexterm>
+        <primary>Sets can contain attributes and expressions</primary>
+      </indexterm> as well as constants as long as all the elements are of the
+    same result type. For example:</para>
+
+    <programlisting>StateCapitol(STRING2 state) :=
+          CASE(state, 'FL' =&gt; 'Tallahassee', 'Unknown');
+SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
+          person[1].per_full_city];</programlisting>
+
+    <para>Set Attribute<indexterm>
+        <primary>Set Attribute</primary>
+      </indexterm>s can also be defined using the SET function<indexterm>
+        <primary>SET function</primary>
+      </indexterm> (which see). Sets defined this way may be used like any
+    other set.</para>
+
+    <programlisting>SetSomeField := SET(SomeFile, SomeField);
+          // a set of SomeField values</programlisting>
+
+    <para>Sets can also contain datasets for use with those functions (such
+    as: MERGE, JOIN, MERGEJOIN, or GRAPH) that require sets of datsets as
+    input parameters.</para>
+
+    <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
+  </sect2>
+
+  <sect2 id="Set_Ordering_and_Indexing">
+    <title>Set Ordering and Indexing <indexterm>
+        <primary>Set Ordering</primary>
+      </indexterm><indexterm>
+        <primary>Indexing</primary>
+      </indexterm></title>
+
+    <para>Sets are implicitly ordered and you may index into them to access
+    individual elements. Square brackets are used to specify the element
+    number to access. The first element is number one (1).</para>
+
+    <programlisting>MySet := [5,4,3,2,1];
+ReverseNum := MySet[2]; //indexing to MySet's element number 2,
+                       //so ReverseNum contains the value 4</programlisting>
+
+    <para>String<indexterm>
+        <primary>String</primary>
+      </indexterm>s (Character Sets<indexterm>
+        <primary>Character Sets</primary>
+      </indexterm>) may also be indexed to access individual or multiple
+    contiguous elements within the set of characters (a string is treated as
+    though it were a set of 1-character strings). An element number within
+    square brackets specifies an individual character to extract.</para>
+
+    <programlisting>MyString := 'ABCDE';
+MySubString := MyString[2]; // MySubString is 'B'</programlisting>
+
+    <para>Substrings may be extracted by using two periods to separate the
+    beginning and ending element numbers within the square brackets to specify
+    the substring<indexterm>
+        <primary>substring</primary>
+      </indexterm> (string slice<indexterm>
+        <primary>string slice</primary>
+      </indexterm>) to extract. Either the beginning or ending element number
+    may be omitted to indicate a substring from the beginning to the specified
+    element, or from the specified element through to the end.</para>
+
+    <programlisting>MyString := 'ABCDE';
+MySubString1 := MyString[2..4]; // MySubString1 is 'BCD'
+MySubString2 := MyString[ ..4]; // MySubString2 is 'ABCD'
+MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
+  </sect2>
+
+  <sect2 id="Record_Set_Attributes">
+    <title>Record Set Attributes</title>
+
+    <para>The term “Dataset”<indexterm>
+        <primary>Dataset</primary>
+      </indexterm> in ECL explicitly means a “physical” data file in the
+    supercomputer (on disk or in memory), while the term “Record
+    Set”<indexterm>
+        <primary>Record Set</primary>
+      </indexterm> indicates any set of records derived from a Dataset (or
+    another Record Set), usually based on some filter condition to limit the
+    result set to a subset of records. Record sets are also created as the
+    return result from one of the built-in functions that return result
+    sets.</para>
+
+    <para>A Record Set Attribute<indexterm>
+        <primary>Record Set Attribute</primary>
+      </indexterm> is defined as any Attribute whose expression is a filtered
+    dataset or record set, or any function that returns a record set. For
+    example, the following are all Record Set Attributes:</para>
+
+    <programlisting>FloridaPersons    := Person(Person.per_st = 'FL');
+OldFloridaPersons := FloridaPersons(Person.Age &gt;= 65);</programlisting>
+  </sect2>
+
+  <sect2 id="Record_Set_Ordering_and_Indexing">
+    <title>Record Set Ordering and Indexing</title>
+
+    <para>All Datasets and Record Sets are implicitly ordered and may be
+    indexed to access individual records within the set. Square brackets are
+    used to specify the element number to access, and the first element in any
+    set is number one (1).</para>
+
+    <para>Datasets (including child datasets) and Record Sets may use the same
+    method as described above for strings to access individual or multiple
+    contiguous records.</para>
+
+    <programlisting>MyRec1 := Person[1];     // first rec in dataset
+MyRec2 := Person[1..10]; // first ten recs in dataset
+MyRec4 := Person[2..];   // all recs except the first</programlisting>
+
+    <para><emphasis role="bold">Note:</emphasis> ds[1] and ds[1..1] are not
+    the same thing—ds[1..1] is a recordset (may be used in recordset context)
+    while ds[1] is a single row (may be used to reference single
+    fields).</para>
+
+    <para>And you can also access individual fields in a specified record with
+    a single index:</para>
+
+    <programlisting>MyField := Person[1].per_last_name; // last name in first rec</programlisting>
+
+    <para>Indexing a record set with a value that is out of bounds is defined
+    to return a row where all the fields contain blank/zero values. It is
+    often more efficient to index an out of bound value rather than writing
+    code that handles the special case of an out of bounds index value.</para>
+
+    <para>For example, the expression:</para>
+
+    <programlisting>IF(COUNT(ds) &gt; 0, ds[1].x, 0); </programlisting>
+
+    <para>is simpler as:</para>
+
+    <programlisting>ds[1].x    //note that this returns 0 if ds contains no records.
+</programlisting>
+
+    <para></para>
+  </sect2>
+
+  <sect2 id="TypeDef_Attributes">
+    <title>TypeDef Attributes</title>
+
+    <para>A TypeDef Attribute<indexterm>
+        <primary>TypeDef Attribute</primary>
+      </indexterm> is defined as any Attribute whose definition is a value
+    type, whether built-in or user-defined. For example, the following are all
+    TypeDef Attributes (except GetXLen):</para>
+
+    <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
+
+EXPORT xstring(UNSIGNED len) := TYPE
+  EXPORT INTEGER PHYSICALLENGTH(DATA x) := GetXLen(x,len) + len;
+  EXPORT STRING LOAD(DATA x) := (STRING)x[(len+1)..GetXLen(x,len) + len];
+  EXPORT DATA STORE(STRING x):= TRANSFER(LENGTH(x),DATA4)[1..len] + (DATA)x;
+END;
+
+pstr := xstring(1); // typedef for user defined type
+pppstr := xstring(3);
+nameStr := STRING20; // typedef of a system type
+
+namesRecord := RECORD
+  pstr surname;
+  nameStr forename;
+  pppStr addr;
+  
+END;
+//A RECORD structure is also a typedef attribute (user-defined)</programlisting>
+  </sect2>
+</sect1>

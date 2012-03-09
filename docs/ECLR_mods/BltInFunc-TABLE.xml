@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TABLE">
+  <title>TABLE</title>
+
+  <para><emphasis role="bold">TABLE<indexterm>
+      <primary>TABLE</primary>
+    </indexterm><indexterm>
+      <primary>TABLE Function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, format</emphasis><emphasis
+  role="bold"> [</emphasis><emphasis>,expression</emphasis><emphasis
+  role="bold"> [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">FEW<indexterm>
+      <primary>FEW</primary>
+    </indexterm> | MANY<indexterm>
+      <primary>MANY</primary>
+    </indexterm>] [</emphasis><emphasis>, </emphasis><emphasis
+  role="bold">UNSORTED<indexterm>
+      <primary>UNSORTED</primary>
+    </indexterm>]] [</emphasis><emphasis>,</emphasis><emphasis
+  role="bold">LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm>]</emphasis><emphasis role="bold"> [, KEYED<indexterm>
+      <primary>KEYED</primary>
+    </indexterm> ]</emphasis> <emphasis role="bold"> [, MERGE<indexterm>
+      <primary>MERGE</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="86.85pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>format</emphasis></entry>
+
+            <entry>An output RECORD structure<indexterm>
+                <primary>RECORD structure</primary>
+              </indexterm> definition that defines the type, name, and source
+            of the data for each field.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>expression</emphasis></entry>
+
+            <entry>Optional. Specifies a "group by" clause. You may have
+            multiple expressions separated by commas to create a single
+            logical "group by" clause. If expression is a field of the
+            recordset, then there is a single group record in the resulting
+            table for every distinct value of the expression. Otherwise
+            expression is a LEFT/RIGHT type expression in the DEDUP
+            manner.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FEW</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in
+            fewer than 10,000 distinct groups. This allows optimization to
+            produce a significantly faster result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MANY</emphasis></entry>
+
+            <entry>Optional. Indicates that the expression will result in many
+            distinct groups.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">UNSORTED</emphasis></entry>
+
+            <entry>Optional. Specifies that you don't care about the order of
+            the groups. This allows optimization to produce a significantly
+            faster result.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+            <entry>Optional. Specifies the operation is performed on each
+            supercomputer node independently, without requiring interaction
+            with all other nodes to acquire data; the operation maintains the
+            distribution of any previous DISTRIBUTE.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">KEYED</emphasis></entry>
+
+            <entry>Optional. Specifies the activity is part of an index read
+            operation, which allows the optimizer to generate optimal code for
+            the operation.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+            <entry>Optional. Specifies that results are aggregated on each
+            node and then the aggregated intermediaries are aggregated
+            globally. This is a safe method of aggregation that shines
+            particularly well if the underlying data was skewed. If it is
+            known that the number of groups will be low then ,FEW will be even
+            faster; avoiding the local sort of the underlying data.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TABLE returns a new table.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TABLE </emphasis>function is similar to
+  OUTPUT, but instead of writing records to a file, it outputs those records
+  in a new table (a new dataset in the supercomputer), in memory. The new
+  table is temporary and exists only while the specific query that invoked it
+  is running.</para>
+
+  <para>The new table inherits the implicit relationality the
+  <emphasis>recordset </emphasis>has (if any), unless the optional
+  <emphasis>expression</emphasis> is used to perform aggregation. This means
+  the parent record is available when processing table records, and you can
+  also access the set of child records related to each table record. There are
+  two forms of TABLE usage: the "Vertical Slice" form, and the "CrossTab
+  Report" form.</para>
+
+  <para>For the "Vertical Slice" form, there is no
+  <emphasis>expression</emphasis> parameter specified. The number of records
+  in the input <emphasis>recordset</emphasis> is equal to the number of
+  records produced.</para>
+
+  <para>For the "CrossTab Report" form there is usually an
+  <emphasis>expression</emphasis> parameter and, more importantly, the output
+  <emphasis>format</emphasis> RECORD structure<indexterm>
+      <primary>RECORD structure</primary>
+    </indexterm> contains at least one field using an aggregate function with
+  the keyword GROUP as its first parameter. The number of records produced is
+  equal to the number of distinct values of the
+  <emphasis>expression</emphasis>.</para>
+
+  <para>Example:</para>
+
+  <programlisting>//"vertical slice" form:
+MyFormat := RECORD
+STRING25 Lname := Person.per_last_name;
+Person.per_first_name;
+STRING5 NewField := '';
+END;
+PersonTable := TABLE(Person,MyFormat);
+// adding a new field is one use of this form of TABLE
+
+
+//"CrossTab Report" form:
+rec := RECORD
+Person.per_st;
+StCnt := COUNT(GROUP);
+END
+Mytable := TABLE(Person,rec,per_st,FEW);
+// group persons by state in Mytable to produce a
+        crosstab
+</programlisting>
+
+  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="GROUP">GROUP</link>, <link linkend="DATASET">DATASET</link>, <link linkend="RECORD_Structure">RECORD Structure</link></para>
+</sect1>

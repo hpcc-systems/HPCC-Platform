@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Reverse">
+  <title><emphasis role="bold">Reverse</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.Reverse<indexterm>
+      <primary>STD.Str.Reverse</primary>
+    </indexterm><indexterm>
+      <primary>Str.Reverse</primary>
+    </indexterm><indexterm>
+      <primary>Reverse</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.Reverse<indexterm>
+      <primary>STD.Uni.Reverse</primary>
+    </indexterm><indexterm>
+      <primary>Uni.Reverse</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to reverse.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Reverse returns a STRING or UNICODE value, as
+          appropriate.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Reverse </emphasis>functions return the
+  <emphasis>source</emphasis> string with all characters in reverse
+  order.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.Str.Reverse('ABCDE'); //A contains 'EDCBA'
+</programlisting>
+</sect1>

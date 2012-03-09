@@ -1249,7 +1249,6 @@
                description="Thor process"
                localThor="true"
                monitorDaliFileServer="true"
-               multiSlaves="false"
                name="mythor"
                pluginsPath="${PLUGINS_PATH}"
                replicateAsync="false"
@@ -1267,11 +1266,6 @@
    <SwapNode/>
    <ThorMasterProcess computer="localhost" name="m1"/>
    <ThorSlaveProcess computer="localhost" name="s1"/>
-   <Topology>
-    <Node process="m1">
-     <Node process="s1"/>
-    </Node>
-   </Topology>
   </ThorCluster>
   <Topology build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" buildSet="topology" name="topology">
    <Cluster name="hthor" prefix="hthor">

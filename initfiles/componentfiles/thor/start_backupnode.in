@@ -55,7 +55,7 @@ if [ -z "$BACKUPNODE_DATA" ]; then
     exit 1
 fi
 if [ ! -r $INSTANCE_DIR/slaves ]; then
-    echo cannot read $INSTANCE_DIR/slaves 
+    echo cannot read $INSTANCE_DIR/slaves
     exit 1
 fi
 mkdir -p $BACKUPNODE_DATA

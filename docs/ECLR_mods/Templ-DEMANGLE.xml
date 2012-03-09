@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="_DEMANGLE">
+  <title>#DEMANGLE</title>
+
+  <para><emphasis role="bold">#DEMANGLE<indexterm>
+      <primary>#DEMANGLE</primary>
+    </indexterm>( </emphasis><emphasis> identifier </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.00pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>identifier</emphasis></entry>
+
+            <entry>A valid ECL identifier label containing only letters,
+            numbers, dollar sign ($), and underscore (_) characters.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">#DEMANGLE </emphasis>statement takes an
+  <emphasis>identifier</emphasis> string and returns the string as it was
+  before it was #MANGLEd.</para>
+
+  <para>Example:</para>
+
+  <programlisting>  #DECLARE (mstg);
+  #DECLARE (dmstg);
+  #SET (mstg, #MANGLE('SECTION_STATES/AREACODES'));
+  
+  export res1 := %'mstg'%;
+  res1;      //res1 = 'SECTION_5fSTATES_2fAREACODES'
+  
+  // Do some processing with ECL Valid Label name "mstg"
+  
+  #SET (dmstg, #DEMANGLE(%'mstg'%));
+  export res2 := %'dmstg'%;
+  res2; //res2 = 'SECTION_STATES/AREACODES'
+</programlisting>
+
+  <para>See Also: <link linkend="_MANGLE">#MANGLE</link>, <link
+  linkend="Attribute_Definition">Attribute Names</link></para>
+</sect1>

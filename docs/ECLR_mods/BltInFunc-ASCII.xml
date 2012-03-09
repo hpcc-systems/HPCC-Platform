@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ASCII">
+  <title>ASCII</title>
+
+  <para><emphasis role="bold">ASCII<indexterm>
+      <primary>ASCII</primary>
+    </indexterm><indexterm>
+      <primary>ASCII function</primary>
+    </indexterm>(</emphasis><emphasis>recordset</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="78.75pt" />
+
+        <colspec colwidth="310.05pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>recordset</emphasis></entry>
+
+            <entry>The set of records to process. This may be the name of a
+            dataset or a record set derived from some filter condition, or any
+            expression that results in a derived record set.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>ASCII returns a set of records.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">ASCII </emphasis>function returns the
+  <emphasis>recordset </emphasis>with all STRING fields translated from EBCDIC
+  to ASCII.</para>
+
+  <para>Example:</para>
+
+  <para><programlisting>AsciiRecs := ASCII(SomeEBCDICInput);</programlisting></para>
+
+  <para>See Also: <link linkend="EBCDIC">EBCDIC</link></para>
+</sect1>

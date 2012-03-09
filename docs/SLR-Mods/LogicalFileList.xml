@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="LogicalFileList">
+  <title><emphasis role="bold">LogicalFileList</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.LogicalFileList<indexterm>
+      <primary>STD.File.LogicalFileList</primary>
+    </indexterm><indexterm>
+      <primary>File.LogicalFileList</primary>
+    </indexterm><indexterm>
+      <primary>LogicalFileList</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis role="bold">[
+  </emphasis> <emphasis>pattern </emphasis> <emphasis role="bold">] [,
+  </emphasis> <emphasis>includenormal</emphasis> <emphasis role="bold"> ] [,
+  </emphasis> <emphasis>includesuper</emphasis> <emphasis role="bold">
+  ]</emphasis> <emphasis role="bold"> [, </emphasis> <emphasis>unknownszero
+  </emphasis> <emphasis role="bold">] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>pattern</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the mask of the
+          files to list. If omitted,the default is '*' (all files).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includenormal</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating whether to include
+          “normal” files. If omitted, the default is TRUE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>includesuper</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating whether to include
+          SuperFiles. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>unknownszero</emphasis></entry>
+
+          <entry>Optional. A boolean flag indicating to set file sizes that
+          are unknown to zero (0) instead of minus-one (-1). If omitted, the
+          default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis></emphasis></entry>
+
+          <entry>LogicalFileList returns returns a dataset in the following
+          format:</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><programlisting format="linespecific">EXPORT FsLogicalFileNameRecord := RECORD
+  STRING name;
+END;
+
+EXPORT FsLogicalFileInfoRecord := RECORD(FsLogicalFileNameRecord)
+  BOOLEAN superfile;
+  UNSIGNED8 size;
+  UNSIGNED8 rowcount;
+  STRING19 modified;
+  STRING owner;
+  STRING cluster;
+END;
+</programlisting>The <emphasis role="bold">LogicalFileList </emphasis>function
+  returns a list of the logical files in the environment files as a dataset in
+  the format listed above.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">OUTPUT(STD.File.LogicalFileList());
+  //returns all normal files
+    
+OUTPUT(STD.File.LogicalFileList(,FALSE,TRUE));
+  //returns all SuperFiles</programlisting>
+</sect1>

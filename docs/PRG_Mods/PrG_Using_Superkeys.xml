@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Using_SuperKeys">
+  <title><emphasis role="bold">Using SuperKeys</emphasis></title>
+
+  <para>A SuperFile whose sub-files are INDEXes (not DATASETs) is a SuperKey.
+  As described previously in the <emphasis>Indexing Into SuperFiles</emphasis>
+  article, there is a problem with using a SuperKey to try to index into a
+  SuperFile. So what good are SuperKeys?</para>
+
+  <para>In the <emphasis>Using ECL Keys (INDEX Files)</emphasis> article, the
+  technique of creating and using INDEXes that contain payload fields was
+  demonstrated. By putting the payload fields in the INDEX itself, there
+  becomes no need to directly access the base dataset from which the INDEX was
+  built. Thus, the problem becomes moot.</para>
+
+  <para>SuperKeys are built with payload keys. And, since the primary
+  operation for a payload key is the half-keyed JOIN, that also becomes the
+  primary SuperKey operational use.</para>
+
+  <para>Both SuperFiles and SuperKeys may be used in Thor operations. Roxie,
+  however, only supports SuperFiles containing a single sub-file, which makes
+  them useful for indirection but not for general purpose use. Therefore,
+  SuperKeys are most useful in Roxie operations.</para>
+
+  <para>The following attribute definitions used by the code examples in this
+  article are declared in the DeclareData MODULE structure attribute:</para>
+
+  <programlisting>EXPORT SubKey1 := '~PROGGUIDE::SUPERKEY::Accounts1';
+EXPORT SubKey2 := '~PROGGUIDE::SUPERKEY::Accounts2';
+EXPORT SubKey3 := '~PROGGUIDE::SUPERKEY::Accounts3';
+EXPORT SubKey4 := '~PROGGUIDE::SUPERKEY::Accounts4';
+EXPORT SubIDX1 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX1';
+EXPORT SubIDX2 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX2';
+EXPORT SubIDX3 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX3';
+EXPORT SubIDX4 := '~PROGGUIDE::SUPERKEY::KEY::AcctsIDX4';
+EXPORT AcctSKname :=
+        '~PROGGUIDE::SUPERKEY::KEY::AcctsSK';
+EXPORT AcctSK := INDEX(Accounts,{PersonID},
+</programlisting>
+
+  <sect2 id="Building_SuperKeys">
+    <title>Building SuperKeys</title>
+
+    <para>Before you can create a SuperKey, you must first have some INDEXes
+    to use. The following code (contained in SuperKey1.ECL) builds four
+    separate payload keys from the Account dataset:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+s1 := $.DeclareData.Accounts(Account[1] = '1');
+s2 := $.DeclareData.Accounts(Account[1] = '2');
+s3 := $.DeclareData.Accounts(Account[1] = '3');
+s4 := $.DeclareData.Accounts(Account[1] IN ['4','5','6','7','8','9']);
+ 
+Rec := $.DeclareData.Layout_Accounts_Link;
+RecPlus := {Rec,UNSIGNED8 RecPos{virtual(fileposition)}};
+d1 := DATASET($.DeclareData.SubKey1,RecPlus,THOR);
+d2 := DATASET($.DeclareData.SubKey2,RecPlus,THOR);
+d3 := DATASET($.DeclareData.SubKey3,RecPlus,THOR);
+d4 := DATASET($.DeclareData.SubKey4,RecPlus,THOR);
+
+i1 := INDEX(d1,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX1);
+i2 := INDEX(d2,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX2);
+i3 := INDEX(d3,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX3);
+i4 := INDEX(d4,{PersonID},
+            {Account,OpenDate,IndustryCode,AcctType,AcctRate,
+             Code1,Code2,HighCredit,Balance,RecPos},
+            $.DeclareData.SubIDX4);
+
+BldDat := PARALLEL(
+        IF(~Std.File.FileExists($.DeclareData.SubKey1),
+           OUTPUT(s1,
+                 {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                  AcctRate,Code1,Code2,HighCredit,Balance},
+                 $.DeclareData.SubKey1)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey2),
+           OUTPUT(s2,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey2)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey3),
+           OUTPUT(s3,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey3)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubKey4),
+           OUTPUT(s4,
+                  {PersonID,Account,OpenDate,IndustryCode,AcctType,
+                   AcctRate,Code1,Code2,HighCredit,Balance},
+                  $.DeclareData.SubKey4)));
+
+BldIDX := PARALLEL(
+        IF(~Std.File.FileExists($.DeclareData.SubIDX1),
+           BUILDINDEX(i1)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX2),
+           BUILDINDEX(i2)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX3),
+           BUILDINDEX(i3)),
+
+        IF(~Std.File.FileExists($.DeclareData.SubIDX4),
+           BUILDINDEX(i4)));
+
+SEQUENTIAL(BldDat,BldIDX);
+</programlisting>
+
+    <para>This code sequentially builds logical files by taking sub-sets of
+    records from the Accounts dataset and writing those records to files on
+    disk. Once the logical files physically exist, then the BUILDINDEX actions
+    write the payload keys to disk.</para>
+
+    <para>One interesting twist to this code is the use of the
+    Std.File.FileExists function to detect whether these files have already
+    been created. The code in the next section also uses the
+    Std.File.SuperFileExists function to detect whether the SuperFile has
+    already been created, and create it only if it hasn't been. This technique
+    allows the example code in this article to run correctly whether another
+    user has already gone through the examples or not.</para>
+  </sect2>
+
+  <sect2 id="Creating_a_SuperKey">
+    <title>Creating a SuperKey</title>
+
+    <para>Creating a SuperKey is exactly the same process as creating a
+    SuperFile. The following code (contained in SuperKey2.ECL) creates a
+    SuperKey and adds the first two payload keys to it:</para>
+
+    <programlisting>IMPORT $;
+IMPORT Std;
+
+SEQUENTIAL(
+   IF(~Std.File.SuperFileExists($.DeclareData.AcctSKname),
+      Std.File.CreateSuperFile($.DeclareData.AcctSKname)),
+   Std.File.StartSuperFileTransaction(),
+   Std.File.ClearSuperFile($.DeclareData.AcctSKname),
+   Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX1),
+   Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX2),
+   Std.File.FinishSuperFileTransaction());
+</programlisting>
+  </sect2>
+
+  <sect2 id="Using_a_SuperKey">
+    <title>Using a SuperKey</title>
+
+    <para>Once you have a SuperKey ready for use, you can use it in half-keyed
+    JOINs, as demonstrated in this code (contained in SuperKey3.ECL):</para>
+
+    <programlisting>IMPORT $;
+
+r1 := RECORD
+  $.DeclareData.Layout_Person;
+  $.DeclareData.Layout_Accounts;
+END;
+
+r1 Xform($.DeclareData.Person.FilePlus L, $.DeclareData.AcctSK R) := TRANSFORM
+  SELF := L;
+  SELF := R;
+END;
+
+J3 := JOIN($.DeclareData.Person.FilePlus(PersonID BETWEEN 1 AND 100),
+           $.DeclareData.AcctSK,
+           LEFT.PersonID=RIGHT.PersonID,
+           Xform(LEFT,RIGHT));		
+ 
+OUTPUT(J3,ALL);
+</programlisting>
+  </sect2>
+
+  <sect2 id="Maintaining_SuperKeys">
+    <title>Maintaining SuperKeys</title>
+
+    <para>A SuperKey is simply a SuperFile whose component sub-files are
+    payload keys. Therefore, building and maintaining a SuperKey is exactly
+    the same process as described already in the <emphasis>Creating and
+    Maintaining SuperFiles</emphasis> article. The only significant difference
+    is the manner in which you create the component sub-files, which process
+    is already described in the <emphasis>Using ECL Keys (INDEX
+    Files)</emphasis> article.</para>
+  </sect2>
+</sect1>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ToUpperCase">
+  <title><emphasis role="bold">ToUpperCase</emphasis></title>
+
+  <para><emphasis role="bold">STD.Str.ToUpperCase<indexterm>
+      <primary>STD.Str.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Str.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>ToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.ToUpperCase<indexterm>
+      <primary>STD.Uni.ToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.ToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis>source</emphasis> <emphasis
+  role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <para><emphasis role="bold">STD.Uni.LocaleToUpperCase<indexterm>
+      <primary>STD.Uni.LocaleToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>Uni.LocaleToUpperCase</primary>
+    </indexterm><indexterm>
+      <primary>LocaleToUpperCase</primary>
+    </indexterm>(</emphasis> <emphasis> source, locale </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>source</emphasis></entry>
+
+          <entry>A string containing the data to change case.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>locale</emphasis></entry>
+
+          <entry>A null-terminated string containing the language and country
+          code to use to determine correct sort order and other
+          operations.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ToUpperCase returns a STRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ToUpperCase </emphasis>functions return the
+  <emphasis>source</emphasis> string with all lower case characters converted
+  to upper case.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.Str.ToUpperCase('abcde');
+ //A contains ‘ABCDE’
+</programlisting>
+</sect1>

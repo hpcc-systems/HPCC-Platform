@@ -173,6 +173,9 @@
           </xsl:call-template>
         </xsl:attribute>
       </xsl:element>
+      <xsl:element name="DFS">
+        <xsl:copy-of select="@forceGroupUpdate"/>
+      </xsl:element>
       <xsl:element name="Coven">
         <xsl:attribute name="store">dalicoven.xml</xsl:attribute>
         <xsl:element name="Alerts">

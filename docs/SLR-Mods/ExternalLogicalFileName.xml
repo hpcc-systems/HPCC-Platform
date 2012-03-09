@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ExternalLogicalFileName">
+  <title><emphasis role="bold">ExternalLogicalFileName</emphasis></title>
+
+  <para><emphasis role="bold">STD.File.ExternalLogicalFileName<indexterm>
+      <primary>STD.File.ExternalLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>File.ExternalLogicalFileName</primary>
+    </indexterm><indexterm>
+      <primary>ExternalLogicalFileName</primary>
+    </indexterm>(</emphasis> <emphasis> machineIP, filename </emphasis>
+  <emphasis role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>machineIP</emphasis></entry>
+
+          <entry>A null-terminated string containing the IP address of the
+          remote machine.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>filename</emphasis></entry>
+
+          <entry>A null-terminated string containing the path/name of the
+          file.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>ExternalLogicalFileName returns returns a VARSTRING
+          (null-terminated) value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">ExternalLogicalFileName </emphasis>function
+  returns an appropriately encoded external logical file name that can be used
+  to directly read a file from any node that is running the dafilesrv utility
+  (typically a landing zone). It handles upper case characters by escaping
+  those characters in the return string.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IP   := '10.150.254.6';
+file := '/c$/training/import/AdvancedECL/people';
+DS1  := DATASET(STD.File.ExternalLogicalFileName(IP,file),
+        Training_Advanced.Layout_PeopleFile, FLAT);
+OUTPUT(STD.File.ExternalLogicalFileName(IP,file));
+//returns:
+//~file::10.150.254.6::c$::training::import::^advanced^e^c^l::people
+OUTPUT(DS1);
+//returns records from the external file
+</programlisting>
+</sect1>

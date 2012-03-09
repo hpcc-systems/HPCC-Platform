@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="MERGEJOIN">
+  <title>MERGEJOIN<indexterm>
+      <primary>MERGEJOIN</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">MERGEJOIN<indexterm>
+      <primary>MERGEJOIN function</primary>
+    </indexterm>(</emphasis><emphasis>setofdatasets, joincondition,
+  </emphasis><emphasis role="bold">SORTED<indexterm>
+      <primary>SORTED</primary>
+    </indexterm>( </emphasis><emphasis>fields</emphasis><emphasis
+  role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
+  role="bold">] [, DEDUP<indexterm>
+      <primary>DEDUP</primary>
+    </indexterm> ])</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="82.00pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>setofdatasets</emphasis></entry>
+
+          <entry>The SET of recordsets to process ([idx1,idx2,idx3]),
+          typically INDEXes, which all must have the same format.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>joincondition</emphasis></entry>
+
+          <entry>An expression specifying how to match records in the
+          <emphasis>setofdatasets</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">SORTED</emphasis></entry>
+
+          <entry>Specifies the sort order of records in the input
+          <emphasis>setofdatasets</emphasis> and also the output sort order of
+          the result set.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>fields</emphasis></entry>
+
+          <entry>A comma-delimited list of fields in the
+          <emphasis>setofdatasets</emphasis>, which must be a subset of the
+          input sort order. These fields must all be used in the
+          <emphasis>joincondition</emphasis> as they define the order in which
+          the fields are STEPPED.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>jointype</emphasis></entry>
+
+          <entry>Optional. An inner join if omitted, else one of the listed
+          types below.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DEDUP</emphasis></entry>
+
+          <entry>Optional. Specifies the output result set contains only
+          unique records.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">MERGEJOIN</emphasis> function is a variation
+  of the SET OF DATASETs forms of the MERGE and JOIN functions. Like MERGE, it
+  merges records from the <emphasis>setofdatasets</emphasis> into a single
+  result set, but like JOIN, it uses the <emphasis>joincondition</emphasis>
+  and <emphasis>jointype</emphasis> to determine which records to include in
+  the result set. It does not, however, use a TRANSFORM function to produce
+  the result; it includes all records, unchanged, from the
+  <emphasis>setofdatasets</emphasis> that match the
+  <emphasis>joincondition</emphasis>.</para>
+
+  <sect2 id="Matching_Logic_mergejoin">
+    <title>Matching Logic<indexterm>
+        <primary>Record Matching Logic</primary>
+      </indexterm></title>
+
+    <para>The record matching<indexterm>
+        <primary>record matching</primary>
+      </indexterm> <emphasis>joincondition</emphasis> may contain two parts: a
+    STEPPED condition that may optionally be ANDed with non-STEPPED
+    conditions. The STEPPED expression contains equality expressions of the
+    <emphasis>fields</emphasis> from the SORTED option, ANDed together, using
+    LEFT and RIGHT as dataset qualifiers. If not present, the STEPPED
+    condition is deduced from the <emphasis>fields</emphasis> specified by the
+    SORTED option.</para>
+
+    <para>The order of the datasets within the
+    <emphasis>setofdatasets</emphasis> can be significant to the way the
+    <emphasis>joincondition</emphasis> is evaluated. The
+    <emphasis>joincondition</emphasis> is duplicated between adjacent pairs of
+    datasets, which means that this <emphasis>joincondition</emphasis>:</para>
+
+    <para>LEFT.field = RIGHT.field</para>
+
+    <para>when applied against a <emphasis>setofdatasets </emphasis>containing
+    three datasets, is logically equivalent to:</para>
+
+    <para>ds1.field = ds2.field AND ds2.field = ds3.field</para>
+  </sect2>
+
+  <sect2 id="Join_Types_Mergejoin">
+    <title>Join Types<indexterm>
+        <primary>Join Types</primary>
+      </indexterm>:</title>
+
+    <para>The following <emphasis>jointypes</emphasis> produce the following
+    types of results, based on the records matching produced by the
+    <emphasis>joincondition</emphasis>:</para>
+
+    <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="94.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">INNER<indexterm>
+                <primary>INNER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Only those records that exist in all datasets in the
+            <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LEFT OUTER<indexterm>
+                <primary>LEFT OUTER</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>At least one record for every record in the first dataset
+            in the <emphasis>setofdatasets</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LEFT ONLY<indexterm>
+                <primary>LEFT ONLY</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>One record for every record in the first dataset in the
+            <emphasis>setofdatasets</emphasis> for which there is no match in
+            any of the subsequent datasets.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MOFN<indexterm>
+                <primary>MOFN</primary>
+              </indexterm>(</emphasis>min <emphasis
+            role="bold">[</emphasis>,max<emphasis
+            role="bold">])</emphasis></entry>
+
+            <entry>One record for every record with matching records in min
+            number of adjacent datasets within the
+            <emphasis>setofdatasets</emphasis>. If max is specified, the
+            record is not included if max number of dataset matches are
+            exceeded.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <para>Example:</para>
+
+    <programlisting>Rec := RECORD,MAXLENGTH(4096)
+  STRING1 Letter;
+  UNSIGNED1 DS;
+END;
+ds1 := DATASET([{'A',1},{'B',1},{'C',1},{'D',1},{'E',1}],Rec);
+ds2 := DATASET([{'A',2},{'B',2},{'H',2},{'I',2},{'J',2}],Rec);
+ds3 := DATASET([{'B',3},{'C',3},{'M',3},{'N',3},{'O',3}],Rec);
+ds4 := DATASET([{'A',4},{'B',4},{'R',4},{'S',4},{'T',4}],Rec);
+ds5 := DATASET([{'B',5},{'V',5},{'W',5},{'X',5},{'Y',5}],Rec);
+SetDS := [ds1,ds2,ds3,ds4,ds5];j1 := MERGEJOIN(SetDS,
+      STEPPED(LEFT.Letter=RIGHT.Letter),
+      SORTED(Letter));j2 := MERGEJOIN(SetDS,
+      STEPPED(LEFT.Letter=RIGHT.Letter),
+      SORTED(Letter),LEFT OUTER);j3 := MERGEJOIN(SetDS,
+      STEPPED(LEFT.Letter=RIGHT.Letter),
+      SORTED(Letter),LEFT ONLY);j4 := MERGEJOIN(SetDS,
+      STEPPED(LEFT.Letter=RIGHT.Letter),
+      SORTED(Letter),MOFN(3));j5 := MERGEJOIN(SetDS,
+      STEPPED(LEFT.Letter=RIGHT.Letter),
+      SORTED(Letter),MOFN(3,4));
+OUTPUT(j1);
+OUTPUT(j2);
+OUTPUT(j3);
+OUTPUT(j4);
+OUTPUT(j5);
+</programlisting>
+
+    <para>See Also: <link linkend="MERGE">MERGE</link>, <link linkend="JOIN">JOIN</link>, <link linkend="STEPPED">STEPPED</link></para>
+  </sect2>
+</sect1>

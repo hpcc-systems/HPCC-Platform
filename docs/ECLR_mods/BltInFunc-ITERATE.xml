@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="ITERATE">
+  <title>ITERATE<indexterm>
+      <primary>ITERATE</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">ITERATE<indexterm>
+      <primary>ITERATE function</primary>
+    </indexterm>(</emphasis><emphasis>recordset, transform
+  </emphasis><emphasis role="bold">[, LOCAL<indexterm>
+      <primary>LOCAL</primary>
+    </indexterm> ] )</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="94.8" />
+
+      <tbody>
+        <row>
+          <entry><emphasis>recordset</emphasis></entry>
+
+          <entry>The set of records to process.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>The TRANSFORM function to call for each record in the
+          <emphasis>recordset</emphasis>.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para><emphasis role="bold">LOCAL</emphasis> Optional. Specifies the
+  operation is performed on each supercomputer node independently, without
+  requiring interaction with all other nodes to acquire data; the operation
+  maintains the distribution of any previous DISTRIBUTE.</para>
+
+  <para>Return:<emphasis> </emphasis>ITERATE returns a record set.</para>
+
+  <para>The <emphasis role="bold">ITERATE </emphasis>function processes
+  through all records in the <emphasis>recordset </emphasis>one pair of
+  records at a time, performing the <emphasis>transform</emphasis> function on
+  each pair in turn. The first record in the <emphasis>recordset</emphasis> is
+  passed to the <emphasis>transform</emphasis> as the first right record,
+  paired with a left record whose fields are all blank or zero. Each resulting
+  record from the <emphasis>transform</emphasis> becomes the left record for
+  the next pair.</para>
+
+  <sect2 id="TRANSFORM_Function_Requirements_Iterate">
+    <title>TRANSFORM Function Requirements - ITERATE</title>
+
+    <para>The <emphasis>transform</emphasis> function<indexterm>
+        <primary>transform function</primary>
+      </indexterm> must take at least two parameters: LEFT and RIGHT records
+    that must both be of the same format as the resulting recordset. An
+    optional third parameter may be specified: an integer COUNTER specifying
+    the number of times the <emphasis>transform</emphasis> has been called for
+    the <emphasis>recordset </emphasis>or the current group in the
+    <emphasis>recordset</emphasis> (see the GROUP function).</para>
+
+    <para>Example:</para>
+
+    <programlisting>ResType := RECORD
+  INTEGER1 Val;
+  INTEGER1 Rtot;
+END;
+
+Records := DATASET([{1,0},{2,0},{3,0},{4,0}],ResType);
+/* these are the recs going in: 
+<emphasis role="underline">Val Rtot </emphasis>
+ 1   0
+ 2   0
+ 3   0
+ 4   0 */
+
+ResType T(ResType L, ResType R) := TRANSFORM
+  SELF.Rtot := L.Rtot + R.Val;
+  SELF := R;
+END;
+
+MySet1 := ITERATE(Records,T(LEFT,RIGHT));
+
+/* these are the recs coming out: <emphasis role="underline">
+Val Rtot</emphasis>
+ 1   1
+ 2   3
+ 3   6
+ 4   10 */
+
+//The following code outputs a running balance:
+Run_bal := RECORD
+  Trades.trd_bal;
+  INTEGER8 Balance := 0;
+END;
+TradesBal := TABLE(Trades,Run_Bal);
+
+Run_Bal DoRoll(Run_bal L, Run_bal R) := TRANSFORM
+  SELF.Balance := L.Balance + IF(validmoney(R.trd_bal),R.trd_bal,0);
+  SELF := R;
+END;
+
+MySet2 := ITERATE(TradesBal,DoRoll(LEFT,RIGHT));
+</programlisting>
+
+    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="ROLLUP">ROLLUP</link></para>
+  </sect2>
+</sect1>

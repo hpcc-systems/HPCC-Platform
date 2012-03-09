@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="WUID">
+  <title><emphasis role="bold">WUID</emphasis></title>
+
+  <para><emphasis role="bold">STD.System.Job.WUID<indexterm>
+      <primary>STD.System.Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>System.Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>Job.WUID</primary>
+    </indexterm> <indexterm>
+      <primary>WUID</primary>
+    </indexterm>(</emphasis> <emphasis> </emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>WUID returns a VARSTRING value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">WUID </emphasis>function returns the
+  workunit identifier of the current job. This is the same as the WORKUNIT
+  compile time constant. </para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.System.Job.WUID();   </programlisting>
+</sect1>
