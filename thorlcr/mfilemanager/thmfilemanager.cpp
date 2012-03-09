@@ -449,7 +449,7 @@ public:
             ForEachItemIn(g, groups)
             {
                 ClusterPartDiskMapSpec mspec;
-                mspec.defaultCopies = replicate?2:1; // may be changed on publish to reflect always backed up on thor cluster
+                mspec.defaultCopies = replicate?DFD_DefaultCopies:DFD_NoCopies; // may be changed on publish to reflect always backed up on thor cluster
                 const char *groupname = groupNames.item(g);
                 if (groupname && *groupname)
                     desc->addCluster(groupname, &groups.item(g), mspec);
@@ -524,11 +524,7 @@ public:
         if (replicateOutputs && (!temporary || job.queryUseCheckpoints()))
         {
             // this potentially modifies fileDesc but I think OK at this point
-            for (unsigned clusterIdx = 0; clusterIdx<fileDesc.numClusters(); clusterIdx++) {
-                ClusterPartDiskMapSpec &mapspec = fileDesc.queryPartDiskMapping(clusterIdx);
-                if (mapspec.defaultCopies==1)
-                    mapspec.defaultCopies = 2;
-            }
+           fileDesc.ensureReplicate();
         }
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(&fileDesc);
         if (temporary && !job.queryUseCheckpoints())

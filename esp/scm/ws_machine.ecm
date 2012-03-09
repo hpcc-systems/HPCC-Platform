@@ -129,6 +129,7 @@ ESPstruct MachineInfoEx
    string ComponentName;
    string ComponentPath;
    int    OS;
+   [min_ver("1.10")] int    ProcessNumber;
    ESParray<ESPstruct ProcessorInfo> Processors;
    ESParray<ESPstruct StorageInfo> Storage;
    ESParray<ESPstruct SWRunInfo> Running;
@@ -301,7 +302,7 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     string TimeStamp;
 };
 //-------- service ---------
-ESPservice [version("1.09"), default_client_version("1.09")] ws_machine
+ESPservice [version("1.10"), default_client_version("1.10")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;

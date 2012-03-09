@@ -75,9 +75,10 @@ export THORSLAVEPORT=6600
 export localthorportinc=<xsl:value-of select="@localThorPortInc"/>
 </xsl:if>
 export domain=<xsl:value-of select="$domainName"/>
-<xsl:if test="string(@slavesPerNode) != ''">
-export slavespernode=<xsl:value-of select="@slavesPerNode"/>
-</xsl:if>
+export slavespernode=<xsl:choose>
+<xsl:when test="string(@slavesPerNode) != ''"><xsl:value-of select="@slavesPerNode"/></xsl:when>
+<xsl:otherwise>1</xsl:otherwise>
+</xsl:choose>
 <xsl:if test="string(@multiSlaves) != ''">
 export multislaves=<xsl:value-of select="@multiSlaves"/>
 </xsl:if>

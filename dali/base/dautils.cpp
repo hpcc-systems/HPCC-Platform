@@ -1460,7 +1460,7 @@ void expandFileTree(IPropertyTree *file,bool expandnodes,const char *cluster)
             }
         }
         if (clusterinfo&&!file->hasProp("@replicated")) // legacy
-            file->setPropBool("@replicated",clusterinfo->queryPartDiskMapping().defaultCopies>1);
+            file->setPropBool("@replicated",clusterinfo->queryPartDiskMapping().isReplicated());
 
     }
 }
@@ -2775,7 +2775,7 @@ public:
         RemoteFilename rfn;
         getPartFilename(rfn,0,0);
         fileDesc->setPart(0,rfn);
-        fileDesc->queryPartDiskMapping(0).defaultCopies = 1;
+        fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_DefaultCopies;
         return fileDesc.getClear();
     }
 

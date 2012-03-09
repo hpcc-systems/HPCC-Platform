@@ -16,50 +16,34 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-deploydir=$1
-slavenum=$2
-logpth=$3
-instancedir=$4
-slaveport=$5
-hpcc_compname=$6
-hpcc_setenv=$7
-logredirect=$8
+slavenum=$1
+prog=$2
+master=$3
+logpth=$4
+instancedir=$5
+slaveport=$6
+hpcc_compname=$7
+hpcc_setenv=$8
+logredirect=$9
 
 source ${hpcc_setenv}
-PID_NAME="$PID/${hpcc_compname}_slave.pid"
+PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
 
-INSTALL_DIR=`dirname ${hpcc_setenv}`/..
-source  ${INSTALL_DIR}/etc/init.d/hpcc_common
-which_pidof
-
-if [ $# -lt 8 ]; then
-  echo usage: $0 thordeploydir slaveno logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
+if [ $# -lt 9 ]; then
+  echo usage: slavenum prog master logdir workingdir slaveport hpcc_compname hpcc_setenv logredirect
   exit 1
 fi
 
-sudo /etc/init.d/hpcc-init -c $hpcc_compname setup 2>/dev/null 2>/dev/null
-
-exec >$logredirect 2>&1
+mkdir -p $instancedir
+mkdir -p `dirname $logredirect`
+exec >>$logredirect 2>&1
 
 cd $instancedir
-. ./setvars
 
-slaveproc="thorslave_$THORSLAVEPORT"
-if [ "$multislaves" = "true" ] || [ "$localthor" = "true" ]; then
-    logpth=${logpth}_${slaveport}
-fi
+echo "slave init `date`"
 
-ln -s -f $deploydir/thorslave${LCR} $slaveproc
-export PATH=$PATH:$deploydir
+lckfile="start_slave_${slaveport}.lck"
 
-echo "slave $slavenum init `date`"
-
-lckfile="start_slave"
-if [ "$multislaves" = "true" ] || [ "$localthor" = "true" ]; then
-    lckfile=${lckfile}_${slaveport}
-fi
-
-lckfile="${lckfile}.lck"
 # prevent two slaves starting together
 while [ -e $lckfile ]; do
   echo waiting on lckfile: $lckfile
@@ -79,32 +63,18 @@ echo $$ > $lckfile
 ulimit -c unlimited
 ulimit -n 8192
 
+slaveproc="thorslave_${hpcc_compname}"
+ln -s -f `which $prog` $slaveproc
 
-if [ "$multislaves" != "true" ] && [ "$localthor" != "true" ]; then
-    # kill stubborn slave
-    oldpid=`${PIDOF} $slaveproc`
-    if [ -n "$oldpid" ]; then
-      # used hard kill as don't want unregistering
-      echo killing pid $oldpid $slaveproc
-      kill -9 $oldpid 
-    fi
-fi
+echo "slave starting `date`"
 
-if [ "$localthor" != "true" ]; then
-    ln -s -f $deploydir/thorslave${LCR} $instancedir/$slaveproc
-fi
-
-echo "slave $slavenum starting `date`"
-
-export PATH=$PATH:$BINDIR
-
-echo $instancedir/$slaveproc master=$THORMASTER:$THORMASTERPORT slave=.:$slaveport daliservers=$DALISERVER logDir=$logpth $remotedeploy
-$instancedir/$slaveproc master=$THORMASTER:$THORMASTERPORT slave=.:$slaveport daliservers=$DALISERVER logDir=$logpth $remotedeploy 2>/dev/null 1>/dev/null &
+echo $instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth
+$instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth 2>/dev/null 1>/dev/null &
 slavepid=$!
 echo $slavepid > $PID_NAME
 if [ "$slavepid" -eq "0" ]; then
-  echo "failed to start $slavenum at `date`"
+  echo "failed to start at `date`"
 else
-  echo "slave  $slavenum pid $slavepid started `date`"
+  echo "slave pid $slavepid started `date`"
 fi
 

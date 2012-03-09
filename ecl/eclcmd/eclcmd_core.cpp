@@ -40,132 +40,11 @@ void outputMultiExceptions(const IMultiException &me)
     fprintf(stderr, "\n");
 }
 
-class ConvertEclParameterToArchive
-{
-public:
-    ConvertEclParameterToArchive(EclCmdWithEclTarget &_cmd) : cmd(_cmd)
-    {
-    }
-
-    void appendOptPath(StringBuffer &cmdLine, const char opt, const char *path)
-    {
-        if (!path || !*path)
-            return;
-        if (*path==';')
-            path++;
-        cmdLine.append(" -").append(opt).append(path);
-    }
-
-    void buildCmd(StringBuffer &cmdLine)
-    {
-        cmdLine.set("eclcc -E");
-        appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
-        appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
-        if (cmd.optManifest.length())
-            cmdLine.append(" -manifest ").append(cmd.optManifest.get());
-        if (streq(cmd.optObj.value.sget(), "stdin"))
-            cmdLine.append(" - ");
-        else
-            cmdLine.append(" ").append(cmd.optObj.value.get());
-    }
-
-    bool eclcc(StringBuffer &out)
-    {
-        StringBuffer cmdLine;
-        buildCmd(cmdLine);
-
-        Owned<IPipeProcess> pipe = createPipeProcess();
-        bool hasInput = streq(cmd.optObj.value.sget(), "stdin");
-        pipe->run(cmd.optVerbose ? "EXEC" : NULL, cmdLine.str(), NULL, hasInput, true, true);
-
-        StringBuffer errors;
-        Owned<EclCmdErrorReader> errorReader = new EclCmdErrorReader(pipe, errors);
-        errorReader->start();
-
-        if (pipe->hasInput())
-        {
-            pipe->write(cmd.optObj.mb.length(), cmd.optObj.mb.toByteArray());
-            pipe->closeInput();
-        }
-        if (pipe->hasOutput())
-        {
-           byte buf[4096];
-           loop
-           {
-                size32_t read = pipe->read(sizeof(buf),buf);
-                if (!read)
-                    break;
-                out.append(read, (const char *) buf);
-            }
-        }
-        int retcode = pipe->wait();
-        errorReader->join();
-
-        if (errors.length())
-            fprintf(stderr, "%s\n", errors.str());
-
-        return (retcode == 0);
-    }
-
-    bool process()
-    {
-        if (cmd.optObj.type!=eclObjSource || cmd.optObj.value.isEmpty())
-            return false;
-
-        StringBuffer output;
-        if (eclcc(output) && output.length() && isArchiveQuery(output.str()))
-        {
-            cmd.optObj.type = eclObjArchive;
-            cmd.optObj.mb.clear().append(output.str());
-            return true;
-        }
-        fprintf(stderr,"\nError creating archive\n");
-        return false;
-    }
-
-private:
-    EclCmdWithEclTarget &cmd;
-
-    class EclCmdErrorReader : public Thread
-    {
-    public:
-        EclCmdErrorReader(IPipeProcess *_pipe, StringBuffer &_errs)
-            : Thread("EclToArchive::ErrorReader"), pipe(_pipe), errs(_errs)
-        {
-        }
-
-        virtual int run()
-        {
-           byte buf[4096];
-           loop
-           {
-                size32_t read = pipe->readError(sizeof(buf), buf);
-                if (!read)
-                    break;
-                errs.append(read, (const char *) buf);
-            }
-            return 0;
-        }
-    private:
-        IPipeProcess *pipe;
-        StringBuffer &errs;
-    };
-};
-
-
-
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool displayWuid=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool noarchive, bool displayWuid=true)
 {
     StringBuffer s;
     if (cmd.optVerbose)
         fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
-
-    if (cmd.optObj.type==eclObjSource)
-    {
-        ConvertEclParameterToArchive conversion(cmd);
-        if (!conversion.process())
-            return false;
-    }
 
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
     switch (cmd.optObj.type)
@@ -178,8 +57,14 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
             break;
         case eclObjSource:
         {
-            fprintf(stderr, "Failed to create archive from ECL Text\n");
-            return false;
+            if (noarchive)
+                req->setObjType("ecl_text");
+            else
+            {
+                fprintf(stderr, "Failed to create archive from ECL Text\n");
+                return false;
+            }
+            break;
         }
         default:
             fprintf(stderr, "Cannot deploy %s\n", cmd.optObj.queryTypeName());
@@ -192,6 +77,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setCluster(cluster);
     req->setObject(cmd.optObj.mb);
     req->setFileName(cmd.optObj.value.sget());
+
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
@@ -282,7 +168,7 @@ public:
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL) ? 0 : 1;
+        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -308,7 +194,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false)
+    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -327,6 +213,8 @@ public:
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+                continue;
+            if (iter.matchOption(optCluster, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
@@ -375,7 +263,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid))
+        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -389,16 +277,20 @@ public:
             req->setJobName(optName.get());
         if (optCluster.length())
             req->setCluster(optCluster.get());
+        req->setWait(optMsToWait);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
         const char *id = resp->getQueryId();
         if (id && *id)
         {
             const char *qs = resp->getQuerySet();
             fprintf(stdout, "\n%s/%s\n", qs ? qs : "", resp->getQueryId());
         }
+        if (resp->getReloadFailed())
+            fputs("\nAdded to Queryset, but request to reload queries on cluster failed\n", stderr);
+
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
 
         return 0;
     }
@@ -407,7 +299,7 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <wuid>\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <so|dll|->\n"
-            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n\n"
+            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n"
             "ecl publish --cluster=<val> --name=<val> [--activate] <ecl_file|->\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
@@ -419,12 +311,14 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
+            "   --wait=<ms>            maximum time to wait for cluster finish updating\n"
         );
         EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optCluster;
     StringAttr optName;
+    int optMsToWait;
     bool optActivate;
     bool activateSet;
 };
@@ -527,7 +421,7 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optVerbose))
+            if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)

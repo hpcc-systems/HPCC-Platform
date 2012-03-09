@@ -1182,7 +1182,7 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     OwnedHqlExpr query = createActionList(results);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, query, represents, numResults, no_none);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, resourced, true);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, represents, resourced, true);
     if (!translator.queryOptions().serializeRowsetInExtract)
         extractBuilder->setAllowDestructor();
     translator.beginExtract(graphctx, extractBuilder);
@@ -1231,7 +1231,7 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     OwnedHqlExpr query = createActionList(results);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_none);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, resourced, false);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, represents, resourced, false);
     createBuilderAlias(aliasctx, extractBuilder);
     translator.beginExtract(ctx, extractBuilder);
 
@@ -1353,8 +1353,8 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * da
         resourced.setown(appendOwnedOperand(resourced, createAttribute(multiInstanceAtom)));
 
     bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildQuery(ctx);
-    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, GraphRemote, false)
-                                                           : translator.createExtractBuilder(ctx, PETloop, resourced, false);
+    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, represents, GraphRemote, false)
+                                                           : translator.createExtractBuilder(ctx, PETloop, represents, resourced, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -1477,8 +1477,8 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, IHqlExpression
     }
 
     bool isGlobalThorLoop = translator.targetThor() && !translator.insideChildQuery(ctx);
-    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, GraphRemote, false)
-                                                           : translator.createExtractBuilder(ctx, PETloop, resourced, false);
+    Owned<ParentExtract> extractBuilder = isGlobalThorLoop ? translator.createExtractBuilder(ctx, PETloop, represents, GraphRemote, false)
+                                                           : translator.createExtractBuilder(ctx, PETloop, represents, resourced, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -1504,7 +1504,7 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx, IHqlExpression *
         query.set(ds);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_allnodes);
 
-    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, GraphRemote, false);
+    Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, represents, GraphRemote, false);
 
     createBuilderAlias(subctx, extractBuilder);
 
@@ -4289,7 +4289,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     if (useImplementationClass)
         instance->setImplementationClass(newLocalResultReadArgAtom);
     if (expr->hasProperty(_loop_Atom))
-        instance->graphLabel.set("Begin Loop");
+    {
+        if (isCurrentActiveGraph(ctx, graphId))
+            instance->graphLabel.set("Begin Loop");
+        else
+            instance->graphLabel.set("Outer Loop Input");
+    }
     buildActivityFramework(instance);
 
     buildInstancePrefix(instance);
@@ -4298,8 +4303,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     else
         instance->addConstructorParameter(resultNum);
 
-    if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
     buildInstanceSuffix(instance);
 
     queryAddResultDependancy(*instance->queryBoundActivity(), graphId, resultNum);
@@ -4439,8 +4443,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphLoopResult(BuildCtx & 
 
     buildInstancePrefix(instance);
     doBuildUnsignedFunction(instance->startctx, "querySequence", resultNum);
-    if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
     buildInstanceSuffix(instance);
 
     return instance->getBoundActivity();

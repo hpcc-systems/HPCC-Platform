@@ -243,9 +243,11 @@ private:
     void setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue);
     int checkProcess(const char* type, const char* name, StringArray& typeArray, StringArray& nameArray);
     void getMachineList(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* machineName,
-                                              const char* machineType, const char* status, const char* directory,
+                                              const char* machineType, const char* directory,
                                 StringArray& processAddresses,
                                 set<string>* pMachineNames=NULL);
+    void getThorMachineList(IConstEnvironment* constEnv,  IPropertyTree* cluster, const char* machineName, const char* machineType, const char* directory,
+                                StringArray& processAddresses);
     const char* getProcessTypeFromMachineType(const char* machineType);
     void getTargetClusterProcesses(StringArray& targetClusters, StringArray& processTypes, StringArray& processNames, StringArray& processAddresses, IPropertyTree* pTargetClusterTree);
     void setTargetClusterInfo(IPropertyTree* pTargetClusterTree, IArrayOf<IEspMachineInfoEx>& machineArray, IArrayOf<IEspTargetClusterInfo>& targetClusterInfoList);
@@ -259,7 +261,7 @@ private:
     void determineRequredProcesses(CMachineInfoThreadParam* pParam, const char* pszProcessType, 
                                              bool bMonitorDaliFileServer, const StringArray& additionalProcesses, 
                                              set<string>& requiredProcesses);
-    void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path);
+    void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path, unsigned& processNumber);
     int lookupSnmpComponentIndex(const StringBuffer& sProcessType);
     const char* GetDisplayProcessName(const char* processName, char* buf);
 

@@ -22,6 +22,7 @@
 #include "jmisc.hpp"
 #include "jutil.hpp"
 #include "thirdparty.h"
+#include "dadfs.hpp"
 #include "ws_topology.hpp"
 
 #include "rmtfile.hpp"
@@ -90,29 +91,30 @@ class CMachineInfoThreadParam : public CWsMachineThreadParam
 public:
    IMPLEMENT_IINTERFACE;
 
-   IEspContext& m_context;
-   StringBuffer m_sProcessType;
+    IEspContext& m_context;
+    StringBuffer m_sProcessType;
     StringBuffer m_sCompName;
     StringBuffer m_sConfigAddress;
-   StringBuffer m_sUserId;
-   StringBuffer m_sPassword;
+    StringBuffer m_sUserId;
+    StringBuffer m_sPassword;
     StringBuffer m_sPath;
+    unsigned     m_processNumber;
     bool             m_bECLAgent;
-   bool         m_bGetProcessorInfo;
-   bool         m_bGetStorageInfo;
-   bool         m_bGetSwInfo;
-   bool         m_bFilterProcesses;
-   bool         m_bMonitorDaliFileServer;
+    bool         m_bGetProcessorInfo;
+    bool         m_bGetStorageInfo;
+    bool         m_bGetSwInfo;
+    bool         m_bFilterProcesses;
+    bool         m_bMonitorDaliFileServer;
     bool             m_bMultipleInstances;
-   Cws_machineEx::OpSysType   m_operatingSystem;
-   Linked<IEspMachineInfoEx>    m_pMachineInfo;
-   Linked<IEspMachineInfoEx>    m_pMachineInfo1;
-   set<string>& m_columnSet;
-   StringArray& m_columnArray;
-   const StringArray& m_additionalProcesses;
+    Cws_machineEx::OpSysType   m_operatingSystem;
+    Linked<IEspMachineInfoEx>    m_pMachineInfo;
+    Linked<IEspMachineInfoEx>    m_pMachineInfo1;
+    set<string>& m_columnSet;
+    StringArray& m_columnArray;
+    const StringArray& m_additionalProcesses;
 
     CMachineInfoThreadParam( const char* pszAddress, const char* pszProcessType, const char* pszCompName, const char* pszUserId,
-                            const char* pszPassword, const char* pszPath, set<string>& columnSet, StringArray& columnArray,
+                            const char* pszPassword, const char* pszPath, unsigned processNumber, set<string>& columnSet, StringArray& columnArray,
                             bool bGetProcessorInfo, bool bGetStorageInfo, bool bGetSwInfo, bool bFilterProcesses,
                             bool bMonitorDaliFileServer, Cws_machineEx::OpSysType os, const StringArray& additionalProcesses,
                             IEspMachineInfoEx* pMachineInfo,  Cws_machineEx* pService, IEspContext& context, const char* pszConfigAddress)
@@ -122,25 +124,26 @@ public:
          m_operatingSystem(os),
          m_context(context),
          m_additionalProcesses(additionalProcesses)
-   {
+    {
         m_bECLAgent        = false;
-      m_sUserId          = pszUserId;
-      m_sPassword        = pszPassword;
+        m_sUserId          = pszUserId;
+        m_sPassword        = pszPassword;
         m_sPath              = pszPath;
-      m_bFilterProcesses = bFilterProcesses;
-      m_bMonitorDaliFileServer = bMonitorDaliFileServer;
-      m_sProcessType     = pszProcessType;
+        m_bFilterProcesses = bFilterProcesses;
+        m_bMonitorDaliFileServer = bMonitorDaliFileServer;
+        m_sProcessType     = pszProcessType;
         m_sCompName          = pszCompName;
         m_sConfigAddress     = pszConfigAddress,
-      m_bGetProcessorInfo= bGetProcessorInfo;
-      m_bGetStorageInfo  = bGetStorageInfo;
-      m_bGetSwInfo       = bGetSwInfo;
-      m_pMachineInfo.set( pMachineInfo );
+        m_bGetProcessorInfo= bGetProcessorInfo;
+        m_bGetStorageInfo  = bGetStorageInfo;
+        m_bGetSwInfo       = bGetSwInfo;
+        m_pMachineInfo.set( pMachineInfo );
         m_bMultipleInstances = false;
+        m_processNumber = processNumber;
     }
 
     CMachineInfoThreadParam( const char* pszAddress, const char* pszProcessType, const char* pszCompName, const char* pszUserId,
-                            const char* pszPassword, const char* pszPath, set<string>& columnSet, StringArray& columnArray,
+                            const char* pszPassword, const char* pszPath, unsigned processNumber, set<string>& columnSet, StringArray& columnArray,
                             bool bGetProcessorInfo, bool bGetStorageInfo, bool bGetSwInfo, bool bFilterProcesses,
                             bool bMonitorDaliFileServer, Cws_machineEx::OpSysType os, const StringArray& additionalProcesses,
                             IEspMachineInfoEx* pMachineInfo,  IEspMachineInfoEx* pMachineInfo1,  Cws_machineEx* pService, IEspContext& context, const char* pszConfigAddress)
@@ -151,50 +154,23 @@ public:
          m_context(context),
          m_additionalProcesses(additionalProcesses)
    {
-      m_sUserId          = pszUserId;
-      m_sPassword        = pszPassword;
+        m_sUserId          = pszUserId;
+        m_sPassword        = pszPassword;
         m_sPath              = pszPath;
-      m_bFilterProcesses = bFilterProcesses;
-      m_bMonitorDaliFileServer = bMonitorDaliFileServer;
-      m_sProcessType     = pszProcessType;
+        m_bFilterProcesses = bFilterProcesses;
+        m_bMonitorDaliFileServer = bMonitorDaliFileServer;
+        m_sProcessType     = pszProcessType;
         m_sCompName          = pszCompName;
         m_sConfigAddress     = pszConfigAddress,
-      m_bGetProcessorInfo= bGetProcessorInfo;
-      m_bGetStorageInfo  = bGetStorageInfo;
-      m_bGetSwInfo       = bGetSwInfo;
-      m_pMachineInfo.set( pMachineInfo );
-      m_pMachineInfo1.set( pMachineInfo1 );
+        m_bGetProcessorInfo= bGetProcessorInfo;
+        m_bGetStorageInfo  = bGetStorageInfo;
+        m_bGetSwInfo       = bGetSwInfo;
+        m_pMachineInfo.set( pMachineInfo );
+        m_pMachineInfo1.set( pMachineInfo1 );
         m_bECLAgent        = true;
         m_bMultipleInstances = false;
+        m_processNumber = processNumber;
     }
-
-    CMachineInfoThreadParam( const char* pszAddress, const char* pszProcessType,
-                                     const char* pszCompName, const char* pszSecString, const char* pszUserId,
-                            const char* pszPassword, const char* pszPath, set<string>& columnSet, StringArray& columnArray,
-                            bool bGetProcessorInfo, bool bGetStorageInfo, bool bGetSwInfo, bool bFilterProcesses,
-                            bool bMonitorDaliFileServer, Cws_machineEx::OpSysType os, const StringArray& additionalProcesses,
-                            IEspMachineInfoEx* pMachineInfo,  Cws_machineEx* pService, IEspContext& context)
-       : CWsMachineThreadParam(pszAddress, pszSecString, pService),
-         m_columnSet(columnSet),
-         m_columnArray(columnArray),
-         m_operatingSystem(os),
-         m_context(context),
-         m_additionalProcesses(additionalProcesses)
-   {
-      m_sUserId          = pszUserId;
-      m_sPassword        = pszPassword;
-        m_sPath              = pszPath;
-      m_bFilterProcesses = bFilterProcesses;
-      m_bMonitorDaliFileServer = bMonitorDaliFileServer;
-      m_sProcessType     = pszProcessType;
-        m_sCompName          = pszCompName;
-      m_bGetProcessorInfo= bGetProcessorInfo;
-      m_bGetStorageInfo  = bGetStorageInfo;
-      m_bGetSwInfo       = bGetSwInfo;
-      m_pMachineInfo.set( pMachineInfo );
-        m_bMultipleInstances = false;
-        m_bECLAgent        = false;
-   }
 
    virtual void doWork()
    {
@@ -604,6 +580,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
         StringBuffer sCompName;
         OpSysType    os = OS_Windows;
         StringBuffer sPath;
+        unsigned processNumber = 0;
 
         const char *configAddress = (*iAddr).second.c_str();
         char* props = (char*) strchr(configAddress, ':');
@@ -613,7 +590,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
             props = (char*) configAddress;
 
         if (props)
-            parseProperties( props, sProcessType, sCompName, os, sPath);
+            parseProperties( props, sProcessType, sCompName, os, sPath, processNumber);
         else
             bFilterProcesses = false;
 
@@ -628,7 +605,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
                machineArray.append(*pMachineInfo.getLink());
 
                 CMachineInfoThreadParam* pThreadReq =
-                    new CMachineInfoThreadParam( address.str(), sProcessType.str(), sCompName.str(), reqInfo.getUserName(), reqInfo.getPassword(), sPath.str(),
+                    new CMachineInfoThreadParam( address.str(), sProcessType.str(), sCompName.str(), reqInfo.getUserName(), reqInfo.getPassword(), sPath.str(), processNumber,
                                                           columnSet, columnArray, reqInfo.getGetProcessorInfo(), reqInfo.getGetStorageInfo(), reqInfo.getGetSoftwareInfo(),
                                                           bFilterProcesses, bMonitorDaliFileServer, os, additionalProcesses, pMachineInfo, this, context, configAddress);
 
@@ -642,7 +619,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
                 machineArray.append(*pMachineInfo1.getLink());
 
                 CMachineInfoThreadParam* pThreadReq =
-                    new CMachineInfoThreadParam( address.str(), sProcessType.str(), sCompName.str(), reqInfo.getUserName(), reqInfo.getPassword(), sPath.str(),
+                    new CMachineInfoThreadParam( address.str(), sProcessType.str(), sCompName.str(), reqInfo.getUserName(), reqInfo.getPassword(), sPath.str(), processNumber,
                                          columnSet, columnArray, reqInfo.getGetProcessorInfo(), reqInfo.getGetStorageInfo(), reqInfo.getGetSoftwareInfo(),
                                          bFilterProcesses, bMonitorDaliFileServer, os, additionalProcesses, pMachineInfo, pMachineInfo1, this, context, configAddress);
 
@@ -1118,7 +1095,12 @@ void Cws_machineEx::doGetMachineInfo(IEspContext& context, CMachineInfoThreadPar
         if (!stricmp(pParam->m_sProcessType.str(), "ThorMasterProcess"))
             preFlightCommand.append("_master");
         else if (!stricmp(pParam->m_sProcessType.str(), "ThorSlaveProcess"))
-            preFlightCommand.append("_slave");
+        {
+            preFlightCommand.appendf("_slave_%d", pParam->m_processNumber);
+            double version = context.getClientVersion();
+            if (version > 1.09)
+                info->setProcessNumber(pParam->m_processNumber);
+        }
 
         StringBuffer sResponse;
         iRet = remoteGetMachineInfo(context, pParam->m_sAddress.str(), pParam->m_sConfigAddress.str(), preFlightCommand.str(), pParam->m_sUserName.str(), pParam->m_sPassword.str(), sResponse, machineInfo);
@@ -1964,7 +1946,7 @@ void Cws_machineEx::doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam
 //this method parses address info of the form "192.168.1.4-6:ThorSlaveProcess:thor1:2:path1"
 //into respective components
 void Cws_machineEx::parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName,
-                                                OpSysType& os, StringBuffer& path)
+                                                OpSysType& os, StringBuffer& path, unsigned& processNumber)
 {
     StringArray sArray;
     DelimToStringArray(info, sArray, ":");
@@ -1978,47 +1960,53 @@ void Cws_machineEx::parseProperties(const char* info, StringBuffer& processType,
     path.clear();
     os  = OS_Windows;
 
-    if (ordinality > 1)
+    if (ordinality < 2)
+        return;
+
+    sCompName.append( sArray.item(1) );
+    if (ordinality < 3)
+        return;
+
+    os  = (OpSysType) atoi( sArray.item(2) );
+    if (ordinality < 4)
+        return;
+
+    path.append( sArray.item(3) );
+    if (path.length())
     {
-        sCompName.append( sArray.item(1) );
-        if (ordinality > 2)
+        char pat1, pat2;
+        char rep1, rep2;
+
+        if (os == OS_Linux)
         {
-            os  = (OpSysType) atoi( sArray.item(2) );
-            if (ordinality > 3)
-            {
-                path.append( sArray.item(3) );
-                if (path.length())
-                {
-                    char pat1, pat2;
-                    char rep1, rep2;
-
-                    if (os == OS_Linux)
-                    {
-                        pat1 = ':'; rep1 = '$';
-                        pat2 = '\\';rep2 = '/';
-                    }
-                    else
-                    {
-                        pat1 = '$'; rep1 = ':';
-                        pat2 = '/';rep2 = '\\';
-                    }
-
-                    path.replace( pat1, rep1 );
-                    path.replace( pat2, rep2 );
-
-                    const char* pszPath = path.str();
-                    if (os == OS_Linux && *pszPath != '/')
-                    {
-                        path.insert(0, '/');
-                        pszPath = path.str();
-                    }
-
-                    if (*(pszPath + path.length()-1) != rep2)
-                        path.append(rep2);
-                }
-            }
+            pat1 = ':'; rep1 = '$';
+            pat2 = '\\';rep2 = '/';
         }
+        else
+        {
+            pat1 = '$'; rep1 = ':';
+            pat2 = '/';rep2 = '\\';
+        }
+
+        path.replace( pat1, rep1 );
+        path.replace( pat2, rep2 );
+
+        const char* pszPath = path.str();
+        if (os == OS_Linux && *pszPath != '/')
+        {
+            path.insert(0, '/');
+            pszPath = path.str();
+        }
+
+        if (*(pszPath + path.length()-1) != rep2)
+            path.append(rep2);
     }
+
+    if (ordinality < 5)
+        return;
+
+    processNumber  = atoi( sArray.item(4) );
+    return;
 }
 
 void Cws_machineEx::getTimeStamp(char* timeStamp)
@@ -2153,8 +2141,76 @@ int Cws_machineEx::checkProcess(const char* type, const char* name, StringArray&
     return pos;
 }
 
+void Cws_machineEx::getThorMachineList(IConstEnvironment* constEnv, IPropertyTree* cluster, const char* machineName, const char* machineType, 
+                                   const char* directory, StringArray& processAddresses)
+{
+    if (!constEnv || !cluster)
+        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
+
+    StringBuffer groupName;
+    if (strieq(machineType, eqThorSlaveProcess))
+        getClusterGroupName(*cluster, groupName);
+    else if (strieq(machineType, eqThorSpareProcess))
+        getClusterSpareGroupName(*cluster, groupName);
+
+    if (groupName.length() < 1)
+        return;
+
+    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName.str());
+    if (!nodeGroup || (nodeGroup->ordinality() == 0))
+        return;
+
+    unsigned processNumber = 0;
+    Owned<INodeIterator> gi = nodeGroup->getIterator();
+    ForEach(*gi)
+    {
+        StringBuffer addressRead;
+        gi->query().endpoint().getIpText(addressRead);
+        if (addressRead.length() == 0)
+        {
+            WARNLOG("Net address not found for a node in node group %s", groupName.str());
+            continue;
+        }
+
+        processNumber++;
+
+        StringBuffer netAddress;
+        const char* ip = addressRead.str();
+        if (!streq(ip, "."))
+        {
+            netAddress.append(ip);
+        }
+        else
+        {
+            IpAddress ipaddr = queryHostIP();
+            ipaddr.getIpText(netAddress);
+        }
+
+        if (netAddress.length() == 0)
+        {
+            WARNLOG("Net address not found for a node in node group %s", groupName.str());
+            continue;
+        }
+
+        Owned<IConstMachineInfo> pMachineInfo =  constEnv->getMachineByAddress(addressRead.str());
+        if (pMachineInfo.get())
+        {
+            StringBuffer os, processAddress;
+            os.append(pMachineInfo->getOS());
+            processAddress.appendf("%s|%s:%s:%s:%s:%s:%d", netAddress.str(), addressRead.str(), machineType, machineName, os.str(), directory, processNumber);
+            processAddresses.append(processAddress);
+        }
+        else
+        {
+            WARNLOG("Machine not found for a node in node group %s", groupName.str());
+        }
+    }
+
+    return;
+}
+
 void Cws_machineEx::getMachineList(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* machineName,
-                                              const char* machineType, const char* status, const char* directory,
+                                              const char* machineType, const char* directory,
                                 StringArray& processAddresses,
                                 set<string>* pMachineNames/*=NULL*/)
 {
@@ -2432,9 +2488,18 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         {
                             if (dirStr.length() < 1)
                                 dirStr.append(pClusterProcess->queryProp("@directory"));
-                            getMachineList(constEnv, pClusterProcess, process, eqThorMasterProcess, "", dirStr.str(), processAddresses);
-                            getMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, "", dirStr.str(), processAddresses);
-                            getMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, "", dirStr.str(), processAddresses);
+
+                            getMachineList(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), processAddresses);
+                            if (pClusterProcess->getPropBool("@multiSlaves"))
+                            {
+                                getMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
+                                getMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
+                            }
+                            else
+                            {
+                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), processAddresses);
+                                getThorMachineList(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), processAddresses);
+                            }
                         }
                     }
                 }
@@ -2473,8 +2538,8 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                             if (dirStr.length() < 1)
                                 dirStr.append(pClusterProcess->queryProp("@directory"));
                             set<string> machineNames; //used for checking duplicates
-                            getMachineList(constEnv, pClusterProcess, process, "RoxieServerProcess", "", dirStr.str(), processAddresses, &machineNames);
-                            getMachineList(constEnv, pClusterProcess, process, "RoxieSlaveProcess", "", dirStr.str(), processAddresses, &machineNames);
+                            getMachineList(constEnv, pClusterProcess, process, "RoxieServerProcess", dirStr.str(), processAddresses, &machineNames);
+                            getMachineList(constEnv, pClusterProcess, process, "RoxieSlaveProcess", dirStr.str(), processAddresses, &machineNames);
                         }
                     }
                 }
@@ -2506,7 +2571,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclCCServerProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclCCServer, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclCCServer, dirStr.str(), processAddresses);
                 }
             }
         }
@@ -2536,7 +2601,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclAgentProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclAgent, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclAgent, dirStr.str(), processAddresses);
                 }
             }
         }
@@ -2566,7 +2631,7 @@ void Cws_machineEx::getTargetClusterProcesses(StringArray& targetClusters, Strin
                         dirStr.clear().append(eclSchedulerProcess.queryProp("@directory"));
                     }
 
-                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclScheduler, "", dirStr.str(), processAddresses);
+                    getMachineList(constEnv, pEnvironmentSoftware, process, eqEclScheduler, dirStr.str(), processAddresses);
                 }
             }
         }

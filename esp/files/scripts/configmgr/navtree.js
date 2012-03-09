@@ -649,15 +649,12 @@ function createNavigationTree(navTreeData) {
   function onMenuSWClick(p_sType, p_aArgs, p_oValue) {
     var menuItemName = this.cfg.getProperty("text");
 
-    if (menuItemName === 'New Esp Services' || menuItemName === 'New Plugins')
+    if (menuItemName === 'New Esp Services')
       return;
 
-    if (this.parent.id === "SWNewPlugins")
-    //menuItemName = "plugins_" + this.cfg.getProperty("text");
-      menuItemName = this.cfg.getProperty("text");
-
     getWaitDlg().show();
-    if (menuItemName === "Delete Component/Service/Plugin") {
+
+    if (menuItemName === "Delete Component/Service") {
       var targetRec; //for undefined
       var xmlStr = navDT.selectionToXML(targetRec, navDT.getSelectedRows(), targetRec, "Components");
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
@@ -1062,10 +1059,6 @@ function createNavigationTree(navTreeData) {
   for (i = 0; i < navDT.navTreeData[0]["menuEspServices"].length; i++)
     espServiceMenu[i] = { text: navDT.navTreeData[0]["menuEspServices"][i], onclick: { fn: onMenuSWClick} };
 
-  var pluginsMenu = new Array();
-  for (i = 0; i < navDT.navTreeData[0]["menuPlugins"].length; i++)
-    pluginsMenu[i] = { text: navDT.navTreeData[0]["menuPlugins"][i], onclick: { fn: onMenuSWClick} };
-
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
                     { text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
@@ -1109,15 +1102,7 @@ function createNavigationTree(navTreeData) {
                                 },
                                 onclick: { fn: onMenuSWClick }
                               },
-                              { text: "New Plugins",
-                                submenu: {
-                                  id: "SWNewPlugins",
-                                  lazyload: true,
-                                  itemdata: pluginsMenu
-                                },
-                                onclick: { fn: onMenuSWClick }
-                              },
-                              { text: "Delete Component/Service/Plugin", onclick: { fn: onMenuSWClick} }
+                              { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} }
                           ],
     "Columns": [
                               {
@@ -1185,7 +1170,7 @@ function createNavigationTree(navTreeData) {
       this.addItems(aMenuItems);
 
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
-        this.getItem(3).cfg.setProperty("disabled", true);
+        this.getItem(2).cfg.setProperty("disabled", true);
       }
 
       if (record.getData('id') === 0) {
@@ -2251,7 +2236,7 @@ function refreshNavTree(paramds, paramdt, selRec) {
 
 function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex, callback) {
   var caller = this;
-
+  this.focus();
   var handleCancel = function() {
     this.hide();
     caller.promptPwdPanel.cfg.queueProperty("keylisteners", null);

@@ -61,9 +61,10 @@
 static const char * CC_NAME[] =   { "\"#" PATHSEPSTR "bin" PATHSEPSTR "cl.bat\"",   "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
 static const char * LINK_NAME[] = { "\"#" PATHSEPSTR "bin" PATHSEPSTR "link.bat\"", "\"#" PATHSEPSTR "bin" PATHSEPSTR "g++\"" };
 static const char * LIB_DIR[] = { "\"#\\lib\"", "\"#/lib\"" };
+static const char * LIB_OPTION_PREFIX[] = { "", "-Wl," };
 static const char * USE_LIBPATH_FLAG[] = { "/libpath:\"", "-L" };
 static const char * USE_LIBPATH_TAIL[] = { "\"", "" };
-static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath -Wl," };
+static const char * USE_LIBRPATH_FLAG[] = { NULL, "-Wl,-rpath," };
 static const char * USE_LIB_FLAG[] = { "", "-l" };
 static const char * USE_LIB_TAIL[] = { ".lib", "" };
 static const char * USE_INCLUDE_FLAG[] = { "/I\"", "\"-I" };
@@ -330,7 +331,8 @@ void CppCompiler::addInclude(const char * paths)
 
 void CppCompiler::addLinkOption(const char * option)
 {
-    linkerOptions.append(' ').append(option);
+    if (option && *option)	
+        linkerOptions.append(' ').append(LIB_OPTION_PREFIX[targetCompiler]).append(option);
 }
 
 void CppCompiler::addSourceFile(const char * filename)
@@ -400,7 +402,7 @@ bool CppCompiler::compile()
     else if (!onlyCompile)
         ret = doLink();
 
-    if (!saveTemps)
+    if (!saveTemps && !onlyCompile)
     {
         removeTemporaries();
         StringBuffer temp;
@@ -442,7 +444,12 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     cmdline.append(" ").append(sourceDir);
     cmdline.append(fullFileName);
     expandCompileOptions(cmdline);
-    cmdline.append(" ").append(libraryOptions);
+
+    if (useDebugLibrary)
+        cmdline.append(" ").append(LIBFLAG_DEBUG[targetCompiler]);
+    else
+        cmdline.append(" ").append(LIBFLAG_RELEASE[targetCompiler]);
+
     _addInclude(cmdline, stdIncludes);
     
     if (targetCompiler == Vs6CppCompiler)
@@ -484,11 +491,23 @@ void CppCompiler::expandCompileOptions(StringBuffer & target)
 bool CppCompiler::doLink()
 {
     StringBuffer cmdline;
-    cmdline.append(LINK_NAME[targetCompiler]).append(LINK_SEPARATOR[targetCompiler]).append(linkerOptions);
+    cmdline.append(LINK_NAME[targetCompiler]).append(LINK_SEPARATOR[targetCompiler]);
+
+    cmdline.append(" ");
+    if (targetDebug)
+        cmdline.append(createDLL ? DLL_LINK_OPTION_DEBUG[targetCompiler] : EXE_LINK_OPTION_DEBUG[targetCompiler]);
+    else
+        cmdline.append(createDLL ? DLL_LINK_OPTION_RELEASE[targetCompiler] : EXE_LINK_OPTION_RELEASE[targetCompiler]);
+    cmdline.append(" ");
+
+    if (createDLL)
+        cmdline.append(" ").append(LINK_OPTION_CORE[targetCompiler]);
+    cmdline.append(stdLibs);
 
     ForEachItemIn(i0, allSources)
         cmdline.append(" ").append("\"").append(targetDir).append(allSources.item(i0)).append(".").append(OBJECT_FILE_EXT[targetCompiler]).append("\"");
 
+    cmdline.append(linkerOptions);
     cmdline.append(linkerLibraries);
 
     StringBuffer outName;
@@ -562,42 +581,16 @@ void CppCompiler::removeTemporaries()
 void CppCompiler::setDebug(bool _debug)
 {
     targetDebug = _debug;
-    resetLinkOptions();
 }
-
-void CppCompiler::resetLinkOptions()
-{
-    if (targetDebug)
-    {
-        setLinkOptions(createDLL ? DLL_LINK_OPTION_DEBUG[targetCompiler] : EXE_LINK_OPTION_DEBUG[targetCompiler]);
-    }
-    else
-    {
-        setLinkOptions(createDLL ? DLL_LINK_OPTION_RELEASE[targetCompiler] : EXE_LINK_OPTION_RELEASE[targetCompiler]);
-    }
-}
-
 
 void CppCompiler::setDebugLibrary(bool debug)
 {
-    if (debug)
-        libraryOptions.set(LIBFLAG_DEBUG[targetCompiler]);
-    else
-        libraryOptions.set(LIBFLAG_RELEASE[targetCompiler]);
-}
-
-void CppCompiler::setLinkOptions(const char * option)
-{
-    linkerOptions.clear().append(" ").append(option).append(" ");
-    if (createDLL)
-        linkerOptions.append(" ").append(LINK_OPTION_CORE[targetCompiler]);
-    linkerOptions.append(stdLibs);
+    useDebugLibrary = debug;
 }
 
 void CppCompiler::setCreateExe(bool _createExe) 
 { 
     createDLL = !_createExe; 
-    resetLinkOptions();
 }
 
 

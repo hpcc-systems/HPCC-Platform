@@ -37,6 +37,7 @@
 #include "hqlattr.hpp"
 #include "hqlerror.hpp"
 #include "hqlexpr.ipp"
+#include "hqlrepository.hpp"
 
 #define SIZET_CACHE_SIZE    5001
 #define FIXEDATTR_CACHE_SIZE 1001
@@ -4767,13 +4768,53 @@ bool isConstantDataset(IHqlExpression * expr)
 
 inline bool iseol(char c) { return c == '\r' || c == '\n'; }
 
-#define MATCHOPTION(len, text) (((end - start) == len) && (memicmp(buffer+start, text, len) == 0))
+static unsigned skipSpace(unsigned start, unsigned len, const char * buffer)
+{
+    while (start < len && isspace((byte)buffer[start]))
+        start++;
+    return start;
+}
 
-IHqlExpression * extractCppBodyAttrs(unsigned len, const char * buffer)
+static unsigned trimSpace(unsigned len, const char * buffer)
+{
+    while (len && isspace((byte)buffer[len-1]))
+        len--;
+    return len;
+}
+
+static void stripQuotes(unsigned & start, unsigned & end, const char * buffer)
+{
+    if (end - start >= 2)
+    {
+        if (buffer[start] == '\'' && buffer[end-1] == '\'')
+        {
+            start++;
+            end--;
+        }
+    }
+}
+
+static bool matchOption(unsigned & cur, unsigned max, const char * buffer, unsigned lenMatch, const char * match)
+{
+    if (cur + lenMatch > max)
+        return false;
+    if (memicmp(buffer+cur, match, lenMatch) != 0)
+        return false;
+    if (cur + lenMatch < max)
+    {
+        if (isalnum(buffer[cur+lenMatch]))
+            return false;
+    }
+    cur = skipSpace(cur+lenMatch, max, buffer);
+    return true;
+}
+
+
+IHqlExpression * extractCppBodyAttrs(unsigned lenBuffer, const char * buffer)
 {
     OwnedHqlExpr attrs;
     unsigned prev = '\n';
-    for (unsigned i=0; i < len; i++)
+    for (unsigned i=0; i < lenBuffer; i++)
     {
         char next = buffer[i];
         switch (next)
@@ -4784,20 +4825,32 @@ IHqlExpression * extractCppBodyAttrs(unsigned len, const char * buffer)
         case '#':
             if (prev == '\n')
             {
-                if ((i + 1 + 6 < len) && memicmp(buffer+i+1, "option", 6) == 0)
+                if ((i + 1 + 6 < lenBuffer) && memicmp(buffer+i+1, "option", 6) == 0)
                 {
-                    unsigned start = i+1+6;
-                    while (start < len && isspace((byte)buffer[start]))
-                        start++;
+                    unsigned start = skipSpace(i+1+6, lenBuffer, buffer);
                     unsigned end = start;
-                    while (end < len && !iseol((byte)buffer[end]))
+                    while (end < lenBuffer && !iseol((byte)buffer[end]))
                         end++;
-                    if (MATCHOPTION(4, "pure"))
+                    end = trimSpace(end, buffer);
+                    if (matchOption(start, lenBuffer, buffer, 4, "pure"))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(pureAtom)));
-                    else if (MATCHOPTION(4, "once"))
+                    else if (matchOption(start, lenBuffer, buffer, 4, "once"))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(onceAtom)));
-                    else if (MATCHOPTION(6, "action"))
+                    else if (matchOption(start, lenBuffer, buffer, 6, "action"))
                         attrs.setown(createComma(attrs.getClear(), createAttribute(actionAtom)));
+                    else if (matchOption(start, lenBuffer, buffer, 7, "library"))
+                    {
+                        stripQuotes(start, end, buffer);
+                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        OwnedHqlExpr arg = createConstant(restOfLine.getClear());
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(libraryAtom, arg.getClear())));
+                    }
+                    else if (matchOption(start, lenBuffer, buffer, 4, "link"))
+                    {
+                        Owned<IValue> restOfLine = createUtf8Value(end-start, buffer+start, makeUtf8Type(UNKNOWN_LENGTH, NULL));
+                        OwnedHqlExpr arg = createConstant(restOfLine.getClear());
+                        attrs.setown(createComma(attrs.getClear(), createAttribute(linkAtom, arg.getClear())));
+                    }
                 }
             }
             //fallthrough
@@ -7343,22 +7396,38 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
 {
     if (expr->isMacro())
     {
-        if (!queryLegacyEclSemantics())
-            return NULL;
-        //Only expand macros if legacy semantics enabled
         IHqlExpression * macroBodyExpr;
         if (expr->getOperator() == no_funcdef)
         {
             if (expr->queryChild(1)->numChildren() != 0)
+            {
+                ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters()", NULL, 1, 0, 0);
                 return NULL;
+            }
             macroBodyExpr = expr->queryChild(0);
         }
         else
             macroBodyExpr = expr;
 
         IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+        size32_t len = macroContents->length();
+
+        //Strangely some macros still have the ENDMACRO on the end, and others don't.  This should be removed really.
+        StringBuffer macroText;
+        macroText.append(len, macroContents->getText());
+        if ((len >= 8) && strieq(macroText.str()+(len-8),"ENDMACRO"))
+            macroText.setLength(len-8);
+        //Now append a semi colon since that is how macros are normally called.
+        macroText.append(";");
+
+        //This might be cleaner if it was implemented by parsing the text myModule.myAttribute().
+        //It would make implementing default parameters easy.  However it could introduce other problems
+        //with implicitly importing myModule.
+        Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
         Owned<IHqlScope> scope = createPrivateScope();
-        return parseQuery(scope, macroContents, ctx, NULL, true);
+        if (queryLegacyEclSemantics())
+            importRootModulesToScope(scope, ctx);
+        return parseQuery(scope, mappedContents, ctx, NULL, true);
     }
 
     if (expr->isFunction())

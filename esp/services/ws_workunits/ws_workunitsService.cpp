@@ -69,6 +69,24 @@ public:
           throw MakeStringException(ECLWATCH_CANNOT_CREATE_WORKUNIT,"Could not create workunit.");
         get()->setUser(context.queryUserId());
     }
+
+    void associateDll(const char *dllpath, const char *dllname)
+    {
+        Owned<IWUQuery> query = get()->updateQuery();
+        StringBuffer dllurl;
+        createUNCFilename(dllpath, dllurl);
+        unsigned crc = crc_file(dllpath);
+        associateLocalFile(query, FileTypeDll, dllpath, "Workunit DLL", crc);
+        queryDllServer().registerDll(dllname, "Workunit DLL", dllurl.str());
+    }
+
+    void setQueryText(const char *text)
+    {
+        if (!text || !*text)
+            return;
+        Owned<IWUQuery> query=get()->updateQuery();
+        query->setQueryText(text);
+    }
 };
 
 
@@ -1078,8 +1096,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
                 wu->setDebugValue(item.getName(), item.getValue(), true);
         }
 
-        Owned<IWUQuery> query = wu->updateQuery();
-        query->setQueryText(req.getECL());
+        wu.setQueryText(req.getECL());
 
         SCMStringBuffer wuid;
         wu->getWuid(wuid);
@@ -1130,8 +1147,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
         if(req.getIncludeDependencies())
             wu->setApplicationValueInt("SyntaxCheck","IncludeDependencies",1,true);
 
-        Owned<IWUQuery> query = wu->updateQuery();
-        query->setQueryText(req.getECL());
+        wu.setQueryText(req.getECL());
 
         SCMStringBuffer wuid;
         wu->getWuid(wuid);
@@ -3241,12 +3257,9 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
 }
 
 
-void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
+void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
 {
-    const MemoryBuffer &obj = req.getObject();
-
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+    NewWsWorkunit wu(context);
 
     SCMStringBuffer wuid;
     wu->getWuid(wuid);
@@ -3262,10 +3275,11 @@ void deployArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEsp
         wu->setJobName(name.str());
     }
 
-    Owned<IWUQuery> query=wu->updateQuery();
-    StringBuffer text(obj.length(), obj.toByteArray());
-    query->setQueryText(text.str());
-    query.clear();
+    if (req.getObject().length())
+    {
+        StringBuffer text(req.getObject().length(), req.getObject().toByteArray());
+        wu.setQueryText(text.str());
+    }
 
     wu->commit();
     wu.clear();
@@ -3320,8 +3334,7 @@ void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     StringBuffer dllpath, dllname;
     writeSharedObject(req.getFileName(), obj, dllpath, dllname);
 
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    WorkunitUpdate wu(factory->createWorkUnit(NULL, "ws_workunits", context.queryUserId()));
+    NewWsWorkunit wu(context);
 
     SCMStringBuffer wuid;
     wu->getWuid(wuid);
@@ -3336,13 +3349,7 @@ void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
     }
 
-    StringBuffer dllurl;
-    createUNCFilename(dllpath.str(), dllurl);
-    unsigned crc = crc_file(dllpath.str());
-
-    Owned<IWUQuery> query = wu->updateQuery();
-    associateLocalFile(query, FileTypeDll, dllpath, "Workunit DLL", crc);
-    queryDllServer().registerDll(dllname.str(), "Workunit DLL", dllurl.str());
+    wu.associateDll(dllpath.str(), dllname.str());
 
     if (notEmpty(req.getName()))
         wu->setJobName(req.getName());
@@ -3365,8 +3372,8 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
-        if (strieq(type, "archive"))
-            deployArchive(context, req, resp);
+        if (strieq(type, "archive")|| strieq(type, "ecl_text"))
+            deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))
             deploySharedObject(context, req, resp);
         else

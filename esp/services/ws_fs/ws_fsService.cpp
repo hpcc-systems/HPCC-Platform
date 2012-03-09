@@ -2004,8 +2004,13 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         else
         {
             const char* cs = req.getSourceCsvSeparate();
-            if(cs == NULL || *cs == '\0')
+            if (req.getNoSourceCsvSeparator())
+            {
+                cs = "";
+            }
+            else if(cs == NULL || *cs == '\0')
                 cs = "\\,";
+
             const char* ct = req.getSourceCsvTerminate();
             if(ct == NULL || *ct == '\0')
                 ct = "\\n,\\r\\n";
@@ -2262,8 +2267,6 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
 
         destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
 
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file and sub file name
-
         if(compressed)
             destination->setCompressed(true);
 
@@ -2295,7 +2298,6 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName
         IDFUfileSpec *destination = wu->queryUpdateDestination();
         destination->setLogicalName(dstName);
         destination->setFileMask(fileMask);
-        destination->setRoxiePrefix(destCluster);                       // added to start of each file name
 
         destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
 

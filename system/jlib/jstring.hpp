@@ -377,6 +377,7 @@ extern jlib_decl bool clipStrToBool(size_t len, const char * text);
 extern jlib_decl bool clipStrToBool(const char * text);
 extern jlib_decl StringBuffer & ncnameEscape(char const * in, StringBuffer & out);
 extern jlib_decl StringBuffer & ncnameUnescape(char const * in, StringBuffer & out);
+extern jlib_decl StringBuffer & elideString(StringBuffer & s, unsigned maxLength);
 
 extern jlib_decl bool startsWith(const char* src, const char* dst);
 extern jlib_decl bool endsWith(const char* src, const char* dst);

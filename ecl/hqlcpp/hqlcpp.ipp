@@ -988,8 +988,8 @@ public:
     IHqlExpression * createRowSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind);
 
     AliasKind buildExprInCorrectContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, bool evaluateLocally);
-    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * expr, bool doDeclare);
-    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, GraphLocalisation localisation, bool doDeclare);
+    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare);
+    ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, GraphLocalisation localisation, bool doDeclare);
         
     void buildDefaultRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
     void buildNullRow(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & bound);
@@ -1480,7 +1480,7 @@ public:
     void doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateFirstFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateNextFunc(BuildCtx & ctx, IHqlExpression * expr);
-    void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr);
+    void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
     void doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * alreadyDoneExpr);
 
 
@@ -1748,6 +1748,7 @@ protected:
     IHqlExpression * spotGlobalCSE(IHqlExpression * _expr);
     void spotGlobalCSE(HqlExprArray & exprs);
     IHqlExpression * extractGlobalCSE(IHqlExpression * expr);
+    void processCppBodyDirectives(IHqlExpression * expr);
 
 
     void markThorBoundaries(WorkflowArray & array);

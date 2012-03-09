@@ -181,7 +181,7 @@
                      if (method == 'SprayVariable')
                      {
                         disable = (document.getElementById('sourceMaxRecordSize') != null && document.getElementById('sourceMaxRecordSize').value == 0) || 
-                                      (document.getElementById('sourceCsvSeparate') != null && document.getElementById('sourceCsvSeparate').value  == '') ||
+                                      (document.getElementById('sourceCsvSeparator') != null && document.getElementById('sourceCsvSeparator').value  == '') ||
                                       (document.getElementById('sourceCsvTerminate') != null && document.getElementById('sourceCsvTerminate').value == '') ||
                                       (document.getElementById('sourceCsvQuote') != null && document.getElementById('sourceCsvQuote').value == '') ||
                                       (document.getElementById('sourceRowTag') != null && document.getElementById('sourceRowTag').value == '');
@@ -227,6 +227,18 @@
                 document.getElementById('sourceN').innerHTML = pathSep + pathSep + selected.value + prefix + path;
                 handleSubmitBtn();
               }
+            }
+
+            function setSourceCsvSeparator(noSeparatorCheckbox)
+            {
+                var separatorInputField = document.getElementById("sourceCsvSeparator");
+                if (separatorInputField == NaN)
+                    return;
+
+                if (noSeparatorCheckbox.checked)
+                    separatorInputField.disabled = true;
+                else
+                    separatorInputField.disabled = false;
             }
 
             function beforeSubmit()
@@ -457,7 +469,13 @@
                <tr>
                   <td>Separator:</td>
                   <td>
-                     <input type="text" id="sourceCsvSeparate" name="sourceCsvSeparate" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvSeparator" name="sourceCsvSeparator" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                  </td>
+               </tr>
+               <tr>
+                  <td/>
+                  <td>
+                      <input type="checkbox" id="NoSourceCsvSeparator" name="NoSourceCsvSeparator" value="1" onclick="return setSourceCsvSeparator(this)">No Separator</input>
                   </td>
                </tr>
                <tr>

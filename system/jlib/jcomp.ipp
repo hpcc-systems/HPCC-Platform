@@ -39,7 +39,6 @@ public:
     virtual bool compile();
     virtual void setDebug(bool _debug);
     virtual void setDebugLibrary(bool _debug);
-    virtual void setLinkOptions(const char * option);
     virtual void setOnlyCompile(bool _onlyCompile) { onlyCompile = _onlyCompile; }
     virtual void setCreateExe(bool _createExe); 
     virtual void setOptimizeLevel(unsigned level);
@@ -55,7 +54,6 @@ protected:
     void expandRootDirectory(StringBuffer & expanded, StringBuffer & in);
     StringBuffer & getObjectName(StringBuffer & out, const char * filename);
     void removeTemporaries();
-    void resetLinkOptions();
     bool compileFile(IThreadPool * pool, const char * filename, Semaphore & finishedCompiling);
     bool doLink();
     void writeLogFile(const char* filepath, StringBuffer& log);
@@ -65,7 +63,6 @@ public:
 
 protected:
     StringBuffer    compilerOptions;
-    StringAttr      libraryOptions;
     StringBuffer    linkerOptions;
     StringBuffer    linkerLibraries;
     StringAttr      sourceDir;
@@ -78,6 +75,7 @@ protected:
     bool            onlyCompile;
     bool            createDLL;
     bool            targetDebug;
+    bool            useDebugLibrary;
     bool            verbose;
     void _addInclude(StringBuffer &s, const char *paths);
     bool            saveTemps;

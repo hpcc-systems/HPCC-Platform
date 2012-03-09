@@ -517,17 +517,17 @@ public:
         fdir = &queryDistributedFileDirectory();
         switch(_clustmap) {
         case DFUcpdm_c_replicated_by_d:
-            spec1.defaultCopies = 2;
+            spec1.defaultCopies = DFD_DefaultCopies;
             break;
         case DFUcpdm_c_only:
-            spec1.defaultCopies = 1;
+            spec1.defaultCopies = DFD_NoCopies;
             break;
         case DFUcpdm_d_only:
-            spec1.defaultCopies = 1;
+            spec1.defaultCopies = DFD_NoCopies;
             spec1.startDrv = 1;
             break;
         case DFUcpdm_c_then_d:
-            spec1.defaultCopies = 1;
+            spec1.defaultCopies = DFD_NoCopies;
             spec1.flags = CPDMSF_wrapToNextDrv;
             break;
         }

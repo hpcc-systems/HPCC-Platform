@@ -2182,11 +2182,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (graphEclText.length() == 0)
         toECL(dataset->queryBody(), graphEclText, false, true);
 
-    if (graphEclText.length() > MAX_GRAPH_ECL_LENGTH)
-    {
-        graphEclText.setLength(MAX_GRAPH_ECL_LENGTH);
-        graphEclText.append("...");
-    }
+    elideString(graphEclText, MAX_GRAPH_ECL_LENGTH);
     if (strcmp(graphEclText.str(), "<>") != 0)
         addAttribute("ecl", graphEclText.str());
 
@@ -2470,7 +2466,7 @@ ParentExtract * ActivityInstance::createNestedExtract()
 {
     if (!nestedExtract)
     {
-        nestedExtract.setown(new ParentExtract(translator, PETnested, GraphCoLocal, evalContext));
+        nestedExtract.setown(new ParentExtract(translator, PETnested, NULL, GraphCoLocal, evalContext));
         nestedExtract->beginNestedExtract(startctx);
     }
     return LINK(nestedExtract);
@@ -6054,7 +6050,23 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 //Use the get graph result activity if we are generating the correct level graph.
                 //otherwise it needs to be serialized from the parent activity
                 {
-                    if (isCurrentActiveGraph(ctx, expr->queryChild(1)))
+                    IHqlExpression * graphId = expr->queryChild(1);
+                    bool canAccessResultDirectly = isCurrentActiveGraph(ctx, graphId);
+                    if (!canAccessResultDirectly)
+                    {
+                        //Sometimes results for the parent graph can be accessed from a child graph (e.g., loops).
+                        //The test for Thor is temporary - roxie and hthor should both allow access to outer results
+                        //from inside a loop.
+                        //In fact roxie/hthor could access parent results directly from a child query if the parent
+                        //activity is always on the master.  (Thor could if it knew to access the entire result.)
+                        if (getTargetClusterType() == ThorLCRCluster)
+                        {
+                            ParentExtract * extract = static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract));
+                            if (extract)
+                                canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
+                        }
+                    }
+                    if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
                     else
                         result = doBuildActivityChildDataset(ctx, expr);
@@ -11985,11 +11997,19 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
     }
 }
 
-void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr)
+void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge)
 {
+    if (expr->getOperator() == no_aggregate)
+    {
+        OwnedHqlExpr mergeTransform = getUserAggregateMergeTransform(expr, requiresOrderedMerge);
+        doBuildUserMergeAggregateFunc(ctx, expr, mergeTransform);
+        return;
+    }
+
     IHqlExpression * tgtRecord = expr->queryChild(1);
     IHqlExpression * transform = expr->queryChild(2);
 
+    requiresOrderedMerge = false;
     OwnedHqlExpr selSeq = createDummySelectorSequence();
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * _right)");
@@ -12643,15 +12663,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     StringBuffer flags;
+    bool requiresOrderedMerge = false;
     if (specialOp == no_none)
     {
         doBuildAggregateClearFunc(instance->startctx, expr);
         if (op == no_aggregate)
         {
-            bool requiresOrderedMerge = false;
             doBuildUserAggregateFuncs(instance->startctx, expr, requiresOrderedMerge);
-            if (requiresOrderedMerge)
-                flags.append("|TAForderedmerge");
         }
         else        
         {
@@ -12659,10 +12677,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
             doBuildAggregateNextFunc(instance->startctx, expr);
 
             if (targetThor() && !isGrouped(dataset) && !expr->hasProperty(localAtom))
-                doBuildAggregateMergeFunc(instance->startctx, expr);
+                doBuildAggregateMergeFunc(instance->startctx, expr, requiresOrderedMerge);
         }
     }
 
+    if (requiresOrderedMerge)
+        flags.append("|TAForderedmerge");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getAggregateFlags", flags.str()+1);
 
@@ -14499,6 +14519,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAssert(BuildCtx & ctx, IHqlExp
 
     //MORE: Change this when ThroughApply activities are supported in engines.
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKfilter, expr,"Filter");
+    instance->graphLabel.set("Assert");
 
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
@@ -15815,11 +15836,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     if (valueText.length())
     {
         StringBuffer graphLabel;
-        if (valueText.length() > MAX_ROW_VALUE_TEXT_LEN)
-        {
-            valueText.setLength(MAX_ROW_VALUE_TEXT_LEN);
-            valueText.append("...");
-        }
+        elideString(valueText, MAX_ROW_VALUE_TEXT_LEN);
         graphLabel.append(getActivityText(instance->kind)).append("\n{").append(valueText).append("}");
         instance->graphLabel.set(graphLabel.str());
     }

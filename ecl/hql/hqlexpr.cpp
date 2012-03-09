@@ -3416,8 +3416,17 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_call:
         {
             IHqlExpression * funcdef = queryBody()->queryFunctionDefinition();
-            if (funcdef->getOperator() == no_funcdef && funcdef->queryChild(0)->getOperator() == no_outofline)
+            IHqlExpression * body = funcdef->queryChild(0);
+            if ((funcdef->getOperator() == no_funcdef) && (body->getOperator() == no_outofline))
+            {
                 infoFlags2 |= HEF2containsCall;
+                IHqlExpression * bodycode = body->queryChild(0);
+                if (bodycode->getOperator() == no_cppbody)
+                {
+                    if (bodycode->queryProperty(actionAtom))
+                        infoFlags |= HEFvolatile;
+                }
+            }
             else
                 infoFlags2 |= (HEF2containsCall|HEF2containsDelayedCall);
             break;
@@ -3426,6 +3435,12 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_getresult:
         {
             if (false && matchesConstantValue(queryPropertyChild(this, sequenceAtom, 0), ResultSequenceOnce))
+                infoFlags |= HEFvolatile;
+            break;
+        }
+    case no_cppbody:
+        {
+            if (queryProperty(actionAtom))
                 infoFlags |= HEFvolatile;
             break;
         }
@@ -3505,9 +3520,6 @@ switch (op)
     case no_le:
     case no_lt:
         assertex(type->getTypeCode() == type_boolean);
-        break;
-    case no_alias:
-        assertex(queryChild(0)->getOperator() != no_alias);
         break;
     case no_funcdef:
         {
@@ -12672,9 +12684,12 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
     case no_counter:
         return (expr == counter);
     case no_select:
-        if (expr->hasProperty(newAtom))
-            return exprContainsCounter(checker, expr->queryChild(0), counter);
-        return false;
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            if (expr->hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()) || (ds->getOperator() == no_selectnth))
+                return exprContainsCounter(checker, ds, counter);
+            return false;
+        }
     }
     ForEachChild(idx, expr)
         if (exprContainsCounter(checker, expr->queryChild(idx), counter))

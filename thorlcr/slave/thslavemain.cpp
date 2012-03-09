@@ -123,6 +123,18 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         globals->Release();
         globals = createPTree(msg);
         mergeCmdParams(globals); // cmd line 
+
+        const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
+        const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
+        PROGLOG("Master build: %s", masterBuildTag);
+#ifndef _DEBUG
+        if (!_masterBuildTag || 0 != strcmp(BUILD_TAG, _masterBuildTag))
+        {
+            StringBuffer errStr("Thor master/slave build mismatch, master = ");
+            replyError(errStr.append(masterBuildTag).append(", slave = ").append(BUILD_TAG).str());
+            return false;
+        }
+#endif
         msg.read((unsigned &)masterSlaveMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
@@ -203,7 +215,7 @@ void startSlaveLog()
     ep.getUrlStr(fileName);
     fileName.append("_").append(getMachinePortBase());
 
-    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
+    Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
     lf->setCreateAliasFile(false);
     lf->setName(fileName.str());//override default filename
     lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
@@ -276,40 +288,8 @@ int main( int argc, char *argv[]  )
         slfEp.port = getMachinePortBase();
         startSlaveLog();
 
-#define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
-#ifdef ISDALICLIENT
-        const char *daliServers = globals->queryProp("@DALISERVERS");
-        if (!daliServers)
-        {
-            LOG(MCerror, thorJob, "No Dali server list specified\n");
-            return 1;
-        }
-        Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
-        unsigned retry = 0;
-        loop {
-            try {
-                LOG(MCdebugProgress, thorJob, "calling initClientProcess");
-                initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
-                break;
-            }
-            catch (IJSOCK_Exception *e) { 
-                if ((e->errorCode()!=JSOCKERR_port_in_use))
-                    throw;
-                FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
-                if (retry++>10) 
-                    throw;
-                e->Release();
-                LOG(MCdebugProgress, thorJob, "Retrying");
-                Sleep(retry*2000);  
-            }
-        }
-        setPasswordsFromSDS();
-#else
         startMPServer(getFixedPort(TPORT_mp));
-#endif
-
 #ifdef USE_MP_LOG
-        startMPServer(getFixedPort(TPORT_mp));
         startLogMsgParentReceiver();
         LOG(MCdebugProgress, thorJob, "MPServer started on port %d", getFixedPort(TPORT_mp));
 #endif
@@ -320,6 +300,35 @@ int main( int argc, char *argv[]  )
         markNodeCentral(masterEp);
         if (RegisterSelf(masterEp))
         {
+#define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
+#ifdef ISDALICLIENT
+            const char *daliServers = globals->queryProp("@DALISERVERS");
+            if (!daliServers)
+            {
+                LOG(MCerror, thorJob, "No Dali server list specified\n");
+                return 1;
+            }
+            Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+            unsigned retry = 0;
+            loop {
+                try {
+                    LOG(MCdebugProgress, thorJob, "calling initClientProcess");
+                    initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
+                    break;
+                }
+                catch (IJSOCK_Exception *e) {
+                    if ((e->errorCode()!=JSOCKERR_port_in_use))
+                        throw;
+                    FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
+                    if (retry++>10)
+                        throw;
+                    e->Release();
+                    LOG(MCdebugProgress, thorJob, "Retrying");
+                    Sleep(retry*2000);
+                }
+            }
+            setPasswordsFromSDS();
+#endif
             StringBuffer thorPath;
             globals->getProp("@thorPath", thorPath);
             recursiveCreateDirectory(thorPath.str());
@@ -432,8 +441,8 @@ int main( int argc, char *argv[]  )
 
 #ifdef USE_MP_LOG
     stopLogMsgReceivers();
-    stopMPServer();
 #endif
+    stopMPServer();
     ::Release(globals);
     releaseAtoms(); // don't know why we can't use a module_exit to destruct these...
 

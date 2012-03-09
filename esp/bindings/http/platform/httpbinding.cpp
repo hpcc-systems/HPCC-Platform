@@ -850,8 +850,8 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     StringBuffer ns;
     soapmsg.appendf(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\""
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+          " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
           " xmlns=\"%s\">"
         " <soap:Body>%s </soap:Body></soap:Envelope>",
         generateNamespace(ctx, request, serv, method, ns).str(), filtered.str()
@@ -964,8 +964,8 @@ void EspHttpBinding::getSoapMessage(StringBuffer& soapmsg, IEspContext& ctx, CHt
     
     soapmsg.appendf(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope\""
-            " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding\""
+        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+            " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\""
             " xmlns=\"urn:hpccsystems:ws:");
     if (serv && *serv)
         soapmsg.appendLower(strlen(serv), serv);
@@ -1102,18 +1102,11 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
     if (m_viewConfig || (user && (user->getStatus()==SecUserStatus_Inhouse)))
     {
         ESPLOG(LogNormal, "Get config file: %s", m_configFile.get());
-        StringBuffer mimetype;
-        MemoryBuffer content;
-        httpContentFromFile(m_configFile, mimetype, content);
 
-        response->setContent(content.length(), content.toByteArray());
-
-        StringBuffer plainText;
-        request->getParameter("PlainText", plainText);
-        if ((plainText.length() > 0) && (!stricmp(plainText.str(), "yes")))
-            response->setContentType(HTTP_TYPE_TEXT_PLAIN);
-        else
-            response->setContentType("text/xml; charset=UTF-8");
+        StringBuffer content;
+        xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
+        response->setContent(content.str());
+        response->setContentType("text/xml; charset=UTF-8");
         response->setStatus(HTTP_STATUS_OK);
         response->send();
         return 0;
@@ -1258,19 +1251,6 @@ bool EspHttpBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequ
     
 
     schema.append(
-//      "<xsd:import namespace=\"http://schemas.xmlsoap.org/soap/encoding/\" schemaLocation=\"http://schemas.xmlsoap.org/soap/encoding/\"/>\n"
-/*      "<xsd:complexType name=\"EspStringArray\">"
-            "<xsd:sequence>"
-                "<xsd:element name=\"Item\" type=\"xsd:string\"  minOccurs=\"0\" maxOccurs=\"unbounded\" />"
-            "</xsd:sequence>"
-        "</xsd:complexType>\n"
-        "<xsd:complexType name=\"EspIntArray\">"
-            "<xsd:sequence>"
-                "<xsd:element name=\"Item\" type=\"xsd:int\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>"
-            "</xsd:sequence>"
-        "</xsd:complexType>\n"
-*/
-        // EspException type
         "<xsd:complexType name=\"EspException\">"
             "<xsd:all>"
                 "<xsd:element name=\"Code\" type=\"xsd:string\"  minOccurs=\"0\"/>"

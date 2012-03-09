@@ -26,10 +26,11 @@ class EvalContext;
 // A parent extract represents the set of fields etc. which are used from the parent activity,
 // which are local to the point that the executeChildActivity() is called.  The type indicates
 // the reason it is being created.
+// There should always an EvalContext associated with a ParentExtract
 class ParentExtract : public HqlExprAssociation
 {
 public:
-    ParentExtract(HqlCppTranslator & _translator, PEtype _type, GraphLocalisation _localisation, EvalContext * _container=NULL);
+    ParentExtract(HqlCppTranslator & _translator, PEtype _type, IHqlExpression * _graphId, GraphLocalisation _localisation, EvalContext * _container);
     ~ParentExtract();
 
 //HqlExprAssociation
@@ -57,6 +58,7 @@ public:
 
     bool requiresOnStart() const;
     bool insideChildQuery() const;
+    bool areGraphResultsAccessible(IHqlExpression * searchGraphId) const;
 
 protected:
     void ensureAccessible(BuildCtx & ctx, IHqlExpression * expr, const CHqlBoundExpr & bound, CHqlBoundExpr & tgt, IHqlExpression * colocal);
@@ -79,6 +81,7 @@ protected:
     CHqlBoundExpr boundExtract;     // always a reference to a row. for "extract"
     Owned<BuildCtx> buildctx;       // may be null if nested extract
     PEtype type;
+    IHqlExpression * graphId;
     bool canDestroyExtract;
 };
 
@@ -131,6 +134,7 @@ public://only used by friends
 
     bool requiresOnStart() const;
     bool insideChildQuery() const;
+    bool areGraphResultsAccessible(IHqlExpression * graphId) const;
 
 protected:
     Owned<ParentExtract> parentExtract;         // extract of the parent EvalContext
