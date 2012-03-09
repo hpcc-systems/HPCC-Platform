@@ -5151,9 +5151,27 @@ public:
             return;
         checkModify("addSubFile");
         partscache.kill();
+
+        // Create a local transaction that will be destroyed (but never touch the external transaction)
+        Linked<IDistributedFileTransaction> localtrans;
+        bool local = false;
+        if (transaction) {
+            localtrans.set(transaction);
+            if (!localtrans->active()) {
+                local = true;
+                localtrans->start();
+            }
+        } else {
+            // TODO: Make it explicit in the API that a transaction is required
+            localtrans.setown(new CDistributedFileTransaction(udesc));
+            local = true;
+            localtrans->start();
+        }
+        localtrans->addSuperFile(this);
+
         if (addcontents) {
             StringArray subs;
-            Owned<IDistributedSuperFile> sfile = parent->lookupSuperFile(subfile,udesc,transaction);  // Timeout TBD?
+            Owned<IDistributedSuperFile> sfile = localtrans->lookupSuperFile(subfile);
             if (sfile) {
                 Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator(true);
                 ForEach(*iter)
@@ -5161,27 +5179,17 @@ public:
             }
             sfile.clear();
             ForEachItemIn(i,subs) {
-                addSubFile(subs.item(i),before,other,false,transaction);
+                addSubFile(subs.item(i),before,other,false,localtrans);
             }
-            return;
-
-        }
-        if (transaction&&transaction->active()) {
-            cAddSubFileAction *action = new cAddSubFileAction(transaction,queryLogicalName(),subfile,before,other,addcontents);
+        } else {
             // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-            return;
+            cAddSubFileAction *action = new cAddSubFileAction(localtrans,queryLogicalName(),subfile,before,other,addcontents);
         }
-        Owned<IDistributedFile> sub = transaction ? transaction->lookupFile(subfile) : parent->lookup(subfile,udesc,false,NULL,defaultTimeout);
-        if (!sub)
-            throw MakeStringException(-1,"addSubFile(3): File %s cannot be found to add",subfile);
-        {
-            // need to reload subfiles if changed
-            DistributedFilePropertyLock lock(this);
-            if (lock.needsReload())
-                loadSubFiles(true,transaction,1000*60*10);
-            doAddSubFile(sub.getClear(),before,other,transaction);
-        }
-        updateParentFileAttrs(transaction);
+
+        if (local)
+            localtrans->commit();
+        else
+            localtrans->autoCommit();
     }
 
     virtual bool removeSubFile(const char *subfile,         // if NULL removes all
@@ -6556,7 +6564,7 @@ public:
             super.setown(new CDistributedSuperFile(parent, root, logicalname, user));
             created = true;
         }
-        transaction->addSuperFile(LINK(super));
+        transaction->addSuperFile(super);
     }
     virtual ~cCreateSuperFileAction() {}
     bool prepare()
