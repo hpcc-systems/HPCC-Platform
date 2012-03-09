@@ -267,6 +267,9 @@ static void import(const char *path,const char *src,bool add)
         Owned<IPropertyTree> child = root->getPropTree(tail);
         root->removeTree(child);
     }
+    Owned<IPropertyTree> oldEnvironment;
+    if (streq(path,"Environment"))
+        oldEnvironment.setown(createPTreeFromIPT(conn->queryRoot()));
     root->addPropTree(tail,LINK(branch));
     conn->commit();
     OUTLOG("Branch %s loaded from '%s'",path,src);
@@ -276,8 +279,9 @@ static void import(const char *path,const char *src,bool add)
     if (strcmp(path,"Environment")==0) {
         OUTLOG("Refreshing cluster groups from Environment");
         StringBuffer response;
-        if (!initClusterGroups(false, response))
-            WARNLOG("updating Environment via import path=%s, some groups clash and were not updated : %s", path, response.str());
+        initClusterGroups(false, response, oldEnvironment);
+        if (response.length())
+            PROGLOG("updating Environment via import path=%s : %s", path, response.str());
     }
 }
 
