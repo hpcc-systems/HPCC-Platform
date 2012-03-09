@@ -5357,12 +5357,14 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
   }
   else
   {
+    // JAKESMITH->SMEDA - apparently this code is legacy and can be deleted, please do + clearup related code if any
     try
     {
       m_Environment->commit();
       StringBuffer response;
-      if (!initClusterGroups(false, response))
-        WARNLOG("CWsDeployFileInfo::saveEnvironment: some groups clash and were not updated : %s", response.str());
+      initClusterGroups(false, response, NULL);
+      if (response.length())
+        PROGLOG("CWsDeployFileInfo::saveEnvironment: %s", response.str());
     }
     catch (IException* e)
     {
