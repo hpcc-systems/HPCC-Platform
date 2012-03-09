@@ -831,3 +831,12 @@ is_root(){
     fi
 }
 
+is_user(){
+    USER=$1
+    if [ "$(id -u)" != "$(id -u ${USER})" ]; then
+        echo "This operation should be run as ${USER}"
+        exit
+    fi
+}
+
+

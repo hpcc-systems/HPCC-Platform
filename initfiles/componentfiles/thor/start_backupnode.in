@@ -20,6 +20,7 @@
 
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 which_pidof
+set_environmentvars
 
 if [ $# -lt 1 ]; then
     echo usage: $0 thorinstance 
@@ -41,10 +42,20 @@ if [ -z "$PATH_PRE" ]; then
     PATH_PRE=`cat ${CONFIG_DIR}/environment.conf | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^path=" | sed -e 's/^path=//'`/sbin/hpcc_setenv
 fi
 source ${PATH_PRE} ""
+is_user ${user}
 DEPLOY_DIR=${INSTALL_DIR}/bin
 ENVPATH=${CONFIG_DIR}/${ENV_XML_FILE}
 RUN_DIR=`cat ${HPCC_CONFIG} | sed -n "/\[DEFAULT\]/,/\[/p" | grep "^runtime=" | sed -e 's/^runtime=//'`
 INSTANCE_DIR=$RUN_DIR/$1
+
+if [ ! -e $INSTANCE_DIR ] ; then
+  # perhaps they gave a full path?
+  if [ ! -e $1 ] ; then
+    echo Usage: $0 thor_cluster_name
+    exit 1
+  fi
+  INSTANCE_DIR=$1
+fi
 
 cd $INSTANCE_DIR
 
@@ -54,14 +65,19 @@ if [ -z "$BACKUPNODE_DATA" ]; then
     echo cannot determine backupnode directory 
     exit 1
 fi
-if [ ! -r $INSTANCE_DIR/slaves ]; then
-    echo cannot read $INSTANCE_DIR/slaves
+. $INSTANCE_DIR/setvars
+
+if [ ! -z ${THORPRIMARY} ]; then
+    groupName=${THORPRIMARY}
+else
+    groupName=${THORNAME}
+fi
+daliadmin $DALISERVER dfsgroup ${groupName} > $INSTANCE_DIR/slaves
+errcode=$?
+if [ 0 != ${errcode} ]; then
+    echo 'failed to lookup dali group for $groupName'
     exit 1
 fi
-mkdir -p $BACKUPNODE_DATA
-rm -f $BACKUPNODE_DATA/*.ERR
-rm -f $BACKUPNODE_DATA/*.DAT
-. $INSTANCE_DIR/setvars
 
 BACKUPNODE_DATA=$BACKUPNODE_DATA/last_backup
 if [ "$localthor" == "true" ]; then
@@ -70,8 +86,13 @@ else
  BACKUPNODE_REMOTEDATA=//$THORMASTER$BACKUPNODE_DATA
 fi
 
-echo ------------------------------
-echo scanning files from dali ...
+mkdir -p $BACKUPNODE_DATA
+rm -f $BACKUPNODE_DATA/*.ERR
+rm -f $BACKUPNODE_DATA/*.DAT
+
+echo Using backupnode directory $BACKUPNODE_DATA
+echo Reading slaves file $INSTANCE_DIR/slaves
+echo Scanning files from dali ...
 
 NODEGROUP=$THORPRIMARY
 if [ -z "$THORPRIMARY" ]; then
@@ -83,21 +104,22 @@ LOGDATE=`date +%m_%d_%Y_%H_%M_%S`
 LOGFILE="$LOGPATH/$LOGDATE".log
 mkdir -p `dirname $LOGFILE` 
 
-$DEPLOY_DIR/backupnode -O $DALISERVER $NODEGROUP $BACKUPNODE_DATA &>> $LOGFILE
+$DEPLOY_DIR/backupnode -O $DALISERVER $NODEGROUP $BACKUPNODE_DATA >> $LOGFILE 2>&1
 if [ $? -ne 0 ]; then
   echo Backupnode failed - see $LOGFILE
   exit 1
 fi
 
-frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b &>> $LOGFILE
-frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA $INSTANCE_DIR/slaves %n $2 > $LOGPATH/${LOGDATE}_node%n.log'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b 2>&1 >> $LOGFILE
+frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+echo frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
 
 echo ------------------------------
 sleep 5
 echo ------------------------------
 echo Waiting for backup to complete
 
-nohup backupnode -W $INSTANCE_DIR/slaves $BACKUPNODE_DATA 2>&1 >> $LOGFILE &
+nohup backupnode -W $INSTANCE_DIR/slaves $BACKUPNODE_DATA >> $LOGFILE 2>&1 &
 pid=`${PIDOF} backupnode`
 trap "echo start_backupnode exiting, backupnode process $pid still continuing; exit 0" 2
 if [ -n "$pid" ]; then
