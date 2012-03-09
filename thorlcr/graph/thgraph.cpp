@@ -348,6 +348,7 @@ bool isDiskInput(ThorActivityKind kind)
     switch (kind)
     {
         case TAKcsvread:
+        case TAKxmlread:
         case TAKdiskread:
         case TAKdisknormalize:
         case TAKdiskaggregate:
