@@ -415,7 +415,6 @@ extern unsigned statsExpiryTime;
 extern time_t startupTime;
 extern unsigned miscDebugTraceLevel;
 extern bool fieldTranslationEnabled;
-extern bool syncCluster;  // should we sync an out of sync cluster (always send a trap)
 
 extern unsigned defaultParallelJoinPreload;
 extern unsigned defaultConcatPreload;
