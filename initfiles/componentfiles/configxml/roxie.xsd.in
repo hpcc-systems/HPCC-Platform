@@ -427,13 +427,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="checkState" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Check to make sure all roxie nodes have the same "version" of the state file - works with syncCluster to actually determine if nodes will get modified</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="copyResources" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
@@ -726,13 +719,6 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Time (in seconds) that detailed reporting stats are kept</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="syncCluster" type="xs:boolean" use="optional" default="false">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Modify node(s) to ensure all roxie nodes have the same "version" of the state file</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
