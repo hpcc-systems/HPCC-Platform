@@ -1980,6 +1980,9 @@ public:
         if (subFiles.ordinality() > 0)
         {
             IFileDescriptor *fdesc = subFiles.item(0);
+            if (!fdesc)
+                return f.getClear();
+
             unsigned numParts = fdesc->numParts();
             for (unsigned i = 1; i <= numParts; i++)
             {
