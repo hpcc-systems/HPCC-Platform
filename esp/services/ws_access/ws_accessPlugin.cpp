@@ -18,6 +18,8 @@
 
 #pragma warning (disable : 4786)
 
+#include "ws_access_esp.ipp"
+
 //ESP Bindings
 #include "http/platform/httpprot.hpp"
 
@@ -35,8 +37,8 @@ ESP_FACTORY IEspService * esp_service_factory(const char *name, const char* type
 {
    if (strcmp(type, "ws_access")==0)
    {
-      Cws_access* service = new Cws_access;
-        service->init(cfg, process, name);
+      Cws_accessEx* service = new Cws_accessEx;
+      service->init(cfg, process, name);
       return service;
    }
    return NULL;
@@ -48,7 +50,7 @@ ESP_FACTORY IEspRpcBinding * esp_binding_factory(const char *name, const char* t
 {
    if (strcmp(type, "ws_accessSoapBinding")==0)
    {
-        Cws_accessSoapBinding* binding = new Cws_accessSoapBinding(cfg, name, process);
+      Cws_accessSoapBinding* binding = new Cws_accessSoapBindingEx(cfg, name, process);
       return binding;
    }
 

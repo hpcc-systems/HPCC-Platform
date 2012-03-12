@@ -16,6 +16,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#include "xslprocessor.hpp"
+
+ESPrequest UpdateUserInputRequest
+{
+};
+
+ESPresponse [exceptions_inline] UpdateUserInputResponse
+{
+    string username;
+};
+
+ESPrequest WhoAmIRequest
+{
+};
+
+ESPresponse [exceptions_inline] WhoAmIResponse
+{
+    string username;
+};
+
+ESPrequest UpdateUserRequest
+{
+    [label("User Name"), cols(20)] string username;
+    [label("Old Password"), password, cols(20)] oldpass;
+    [label("New password"), password, cols(20)] newpass1;
+    [label("Retype new password"), password, cols(20)] newpass2;
+};
+
+ESPresponse [exceptions_inline] UpdateUserResponse
+{
+    int retcode;
+    string message;
+};
+
 ESPrequest VerifyUserRequest
 {
 	string application;
@@ -29,9 +63,11 @@ ESPresponse [exceptions_inline] VerifyUserResponse
 
 ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] ws_account
 {
+    ESPmethod [client_xslt("/esp/xslt/account_input.xslt")] UpdateUserInput(UpdateUserInputRequest, UpdateUserInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/account_whoami.xslt")] WhoAmI(WhoAmIRequest, WhoAmIResponse);
+    ESPmethod [resp_xsl_default("./smc_xslt/account.xslt")] UpdateUser(UpdateUserRequest, UpdateUserResponse);
 	ESPmethod VerifyUser(VerifyUserRequest, VerifyUserResponse);
 };
-
 
 SCMexportdef(ws_account);
 

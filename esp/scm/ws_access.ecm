@@ -1,0 +1,690 @@
+/*##############################################################################
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+ESPstruct UserInfo
+{
+    string username;
+    string fullname;
+};
+
+ESPstruct GroupInfo
+{
+    string name;
+    bool deletable;
+};
+
+ESPstruct AccountPermission
+{
+    string basedn;
+        string RType;
+    string rname;
+    string rtitle;
+    string prefix;
+    string ResourceName;
+    string PermissionName;
+    bool allow_access;
+    bool allow_read;
+    bool allow_write;
+    bool allow_full;
+    bool deny_access;
+    bool deny_read;
+    bool deny_write;
+    bool deny_full;
+};
+
+ESPstruct GroupAccountPermission
+{
+    string GroupName;
+    ESParray<ESPstruct AccountPermission, Permission> Permissions;
+};
+
+ESPrequest UserRequest
+{
+    string searchinput;
+};
+
+ESPresponse UserResponse
+{
+    [min_ver("1.04")] bool NoSecMngr(false);
+    bool toomany;
+    bool posixok;
+    ESParray<ESPstruct UserInfo, User> Users;
+};
+
+ESPrequest UserEditRequest
+{
+    string username;
+};
+
+ESPresponse UserEditResponse
+{
+    string username;
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+};
+
+ESPrequest UserGroupEditInputRequest
+{
+    string username;
+};
+
+ESPresponse UserGroupEditInputResponse
+{
+    string username;
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+};
+
+
+ESPrequest UserGroupEditRequest
+{
+    string username;
+    string action;
+    ESParray<string> groupnames;
+};
+
+ESPresponse UserGroupEditResponse
+{
+    string username;
+    string action;
+
+    int retcode;
+    string retmsg;
+};
+
+
+ESPrequest UserPosixInputRequest
+{
+    string username;
+};
+
+ESPresponse UserPosixInputResponse
+{
+    string username;
+    bool   posixenabled;
+    string gidnumber;
+    string uidnumber;
+    string homedirectory;
+    string loginshell;
+};
+
+ESPrequest UserPosixRequest
+{
+    string username;
+    bool   posixenabled;
+    string gidnumber;
+    string uidnumber;
+    string homedirectory;
+    string loginshell;
+};
+
+ESPresponse UserPosixResponse
+{
+    string username;
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest UserSudoersInputRequest
+{
+    string username;
+};
+
+ESPresponse UserSudoersInputResponse
+{
+    string username;
+    bool   insudoers;
+    string sudoHost;
+    string sudoCommand;
+    string sudoOption;
+};
+
+ESPrequest UserSudoersRequest
+{
+    string username;
+    string action;
+    string sudoHost;
+    string sudoCommand;
+    string sudoOption;
+};
+
+ESPresponse UserSudoersResponse
+{
+    string username;
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest UserInfoEditInputRequest
+{
+    string username;
+};
+
+ESPresponse UserInfoEditInputResponse
+{
+    string username;
+    string firstname;
+    string lastname;
+};
+
+ESPrequest UserInfoEditRequest
+{
+    string username;
+    string firstname;
+    string lastname;
+};
+
+ESPresponse UserInfoEditResponse
+{
+    string username;
+    int  retcode;
+    string retmsg;
+};
+
+ESPrequest AddUserRequest
+{
+    [label("User Name"), cols(20)] string username;
+    [label("First Name"), cols(20)] string firstname;
+    [label("Last Name"), cols(20)] string lastname;
+    [label("Password"), password, cols(20)] password1;
+    [label("Retype password"), password, cols(20)] password2;
+};
+
+ESPresponse AddUserResponse
+{
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest UserActionRequest
+{
+    string action;
+    string ActionType;
+    ESParray<string> usernames;
+};
+
+ESPresponse UserActionResponse
+{
+    string action;
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest UserResetPassInputRequest
+{
+    string username;
+};
+
+ESPresponse UserResetPassInputResponse
+{
+    string username;
+};
+
+ESPrequest UserResetPassRequest
+{
+    string username;
+    string newPassword;
+    string newPasswordRetype;
+};
+
+ESPresponse UserResetPassResponse
+{
+    string username;
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest GroupRequest
+{
+};
+
+ESPresponse GroupResponse
+{
+    [min_ver("1.04")] bool NoSecMngr(false);
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+};
+
+ESPrequest GroupAddRequest
+{
+    string groupname;
+};
+
+ESPresponse GroupAddResponse
+{
+    string groupname;
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest [nil_remove] GroupActionRequest
+{
+    ESParray<string> groupnames;
+    string ActionType;
+    bool DeletePermission;
+};
+
+ESPresponse GroupActionResponse
+{
+    string Groupnames;
+    ESParray<ESPstruct AccountPermission, Permission> Permissions;
+    int retcode;
+    string retmsg;
+};
+
+
+ESPrequest GroupEditRequest
+{
+    string groupname;
+};
+
+ESPresponse GroupEditResponse
+{
+    string groupname;
+    ESParray<ESPstruct UserInfo, User> Users;
+};
+
+ESPrequest GroupMemberEditInputRequest
+{
+    string searchinput;
+    string groupname;
+};
+
+ESPresponse GroupMemberEditInputResponse
+{
+    string groupname;
+    bool toomany;
+    ESParray<ESPstruct UserInfo, User> Users;
+};
+
+ESPrequest GroupMemberEditRequest
+{
+    string groupname;
+    string action;
+    ESParray<string> usernames;
+};
+
+ESPresponse GroupMemberEditResponse
+{
+    string groupname;
+    string action;
+
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest BasednsRequest
+{
+};
+
+ESPstruct DnStruct
+{
+    string name;
+    string basedn;
+    string rtype;
+    string rtitle;
+    string templatename;
+};
+
+ESPresponse BasednsResponse
+{
+    [min_ver("1.04")] bool NoSecMngr(false);
+    ESParray<ESPstruct DnStruct, Basedn> Basedns;
+};
+
+ESPrequest ResourcesRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string templatename;
+    string prefix;
+    string searchinput;
+};
+
+ESPstruct Resource
+{
+    string name;
+    string description;
+    bool isSpecial;
+};
+
+ESPresponse ResourcesResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    ESParray<ESPstruct Resource, Resource> Resources;
+
+    string default_basedn;
+    string default_name;
+    string prefix;
+    [min_ver("1.05")] bool toomany;
+};
+
+ESPrequest ResourceAddInputRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+};
+
+ESPresponse ResourceAddInputResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+};
+
+ESPrequest ResourceAddRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string name;
+    string description;
+    string prefix;
+};
+
+ESPresponse ResourceAddResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest ResourceDeleteRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+    ESParray<string> names;
+    int DoUpdate(0);
+};
+
+ESPresponse ResourceDeleteResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string prefix;
+
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest ResourcePermissionsRequest
+{
+    string basedn;
+    string rtype;
+    string name;
+    string rtitle;
+    string prefix;
+};
+
+ESPstruct ResourcePermission
+{
+    string account_name;
+    string escaped_account_name;
+    int account_type;
+    bool allow_access;
+    bool allow_read;
+    bool allow_write;
+    bool allow_full;
+    bool deny_access;
+    bool deny_read;
+    bool deny_write;
+    bool deny_full;
+};
+
+ESPresponse ResourcePermissionsResponse
+{
+    string basedn;
+    string rtype;
+    string name;
+    string rtitle;
+    string prefix;
+    ESParray<ESPstruct ResourcePermission, Permission> Permissions;
+};
+
+ESPrequest PermissionAddRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string rname;
+    string prefix;
+    [min_ver("1.01")] string BasednName;
+    [min_ver("1.01")] string AccountName;
+    [min_ver("1.01")] int AccountType;
+};
+
+ESPresponse PermissionAddResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string rname;
+    string prefix;
+    [min_ver("1.01")] string BasednName;
+    [min_ver("1.01")] string AccountName;
+    [min_ver("1.01")] int AccountType;
+    bool toomany;
+    ESParray<ESPstruct UserInfo, User> Users;
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+    [min_ver("1.01")] ESParray<string> Resources;
+};
+
+ESPrequest PermissionsResetInputRequest
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string rname;
+    string prefix;
+    ESParray<string> names;
+};
+
+ESPresponse PermissionsResetInputResponse
+{
+    string basedn;
+    string rtype;
+    string rtitle;
+    string rname;
+    string prefix;
+    bool toomany;
+    ESParray<ESPstruct UserInfo, User> Users;
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+    ESParray<string, Resource> Resources;
+    string ResourceList;
+};
+
+ESPrequest PermissionsResetRequest
+{
+    string basedn;
+    string rtype;
+    string rname;
+    string rtitle;
+    string prefix;
+    ESParray<string> names;
+
+    bool allow_access;
+    bool allow_read;
+    bool allow_write;
+    bool allow_full;
+    bool deny_access;
+    bool deny_read;
+    bool deny_write;
+    bool deny_full;
+
+    string userarray;
+    string grouparray;
+};
+
+ESPresponse PermissionsResetResponse
+{
+    string basedn;
+    string rtype;
+    string rname;
+    string rtitle;
+    string prefix;
+
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest PermissionActionRequest
+{
+    string basedn;
+    string rtype;
+    string rname;
+    string rtitle;
+    string prefix;
+    string action;
+
+    string account_name;
+    int account_type;
+    bool allow_access;
+    bool allow_read;
+    bool allow_write;
+    bool allow_full;
+    bool deny_access;
+    bool deny_read;
+    bool deny_write;
+    bool deny_full;
+
+    string user;
+    string group;
+    [min_ver("1.01")] string BasednName;
+    [min_ver("1.01")] string ResourceName;
+};
+
+ESPresponse PermissionActionResponse
+{
+    string basedn;
+    string rtype;
+    string rname;
+    string rtitle;
+    string prefix;
+   [min_ver("1.01")] string AccountName;
+    [min_ver("1.01")] bool IsGroup;
+
+    int retcode;
+    string retmsg;
+};
+
+ESPrequest AccountPermissionsRequest
+{
+    string AccountName;
+    bool IsGroup;
+    bool IncludeGroup(false);
+};
+
+ESPresponse AccountPermissionsResponse
+{
+    string AccountName;
+    bool IsGroup;
+    [min_ver("1.03")] bool IncludeGroup;
+
+    ESParray<string> BasednNames;
+
+    ESParray<ESPstruct AccountPermission, Permission> Permissions;
+    //[min_ver("1.03")] ESParray<ESPstruct AccountPermission, Permission> AuthUsersPermission;
+    //[min_ver("1.03")] ESParray<ESPstruct AccountPermission, Permission> EveryonePermission;
+    [min_ver("1.03")] ESParray<ESPstruct GroupAccountPermission, GroupPermission> GroupPermissions;
+};
+
+ESPrequest [nil_remove] FilePermissionRequest
+{
+    string FileName;
+    string UserName;
+    string GroupName;
+};
+
+ESPresponse [nil_remove] FilePermissionResponse
+{
+    [min_ver("1.04")] bool NoSecMngr(false);
+    string FileName;
+    string UserName;
+    string GroupName;
+
+    bool toomany;
+    ESParray<ESPstruct UserInfo, User> Users;
+    ESParray<ESPstruct GroupInfo, Group> Groups;
+    ///ESPstruct AccountPermission Permission; //Support permission change later
+    string UserPermission;
+};
+
+ESPrequest [nil_remove] UserAccountExportRequest
+{
+    ESParray<string> usernames;
+    ESParray<string> groupnames;
+};
+
+ESPresponse [nil_remove] UserAccountExportResponse
+{
+    [http_content("application/octet-stream")] binary Result;
+};
+
+
+ESPservice [version("1.05"), default_client_version("1.05"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+{
+    ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resetpassinput.xslt")] UserResetPassInput(UserResetPassInputRequest, UserResetPassInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resetpass.xslt")] UserResetPass(UserResetPassRequest, UserResetPassResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_usergroupeditinput.xslt")] UserGroupEditInput(UserGroupEditInputRequest, UserGroupEditInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_usergroupedit.xslt")] UserGroupEdit(UserGroupEditRequest, UserGroupEditResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_posix.xslt")] UserPosix(UserPosixRequest, UserPosixResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_posixinput.xslt")] UserPosixInput(UserPosixInputRequest, UserPosixInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_sudoersinput.xslt")] UserSudoersInput(UserSudoersInputRequest, UserSudoersInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_sudoers.xslt")] UserSudoers(UserSudoersRequest, UserSudoersResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_userinfoeditinput.xslt")] UserInfoEditInput(UserInfoEditInputRequest, UserInfoEditInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_userinfoedit.xslt")] UserInfoEdit(UserInfoEditRequest, UserInfoEditResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groups.xslt")] Groups(GroupRequest, GroupResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groupadd.xslt")] GroupAdd(GroupAddRequest, GroupAddResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groupdelete.xslt")] GroupAction(GroupActionRequest, GroupActionResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groupedit.xslt")] GroupEdit(GroupEditRequest, GroupEditResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groupmembereditinput.xslt")] GroupMemberEditInput(GroupMemberEditInputRequest, GroupMemberEditInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_groupmemberedit.xslt")] GroupMemberEdit(GroupMemberEditRequest, GroupMemberEditResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_adduser.xslt")] AddUser(AddUserRequest, AddUserResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_useraction.xslt")] UserAction(UserActionRequest, UserActionResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_basedns.xslt")] Permissions(BasednsRequest, BasednsResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resources.xslt")] Resources(ResourcesRequest, ResourcesResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resourceadd.xslt")] ResourceAdd(ResourceAddRequest, ResourceAddResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resourcedelete.xslt")] ResourceDelete(ResourceDeleteRequest, ResourceDeleteResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_resourceaddinput.xslt")] ResourceAddInput(ResourceAddInputRequest, ResourceAddInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_permissions.xslt")] ResourcePermissions(ResourcePermissionsRequest, ResourcePermissionsResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_permissionaddinput.xslt")] PermissionAddInput(PermissionAddRequest, PermissionAddResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_permissionchange.xslt")] PermissionAction(PermissionActionRequest, PermissionActionResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_accountpermissions.xslt")] AccountPermissions(AccountPermissionsRequest, AccountPermissionsResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_filepermission.xslt")] FilePermission(FilePermissionRequest, FilePermissionResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_permissionsreset.xslt")] PermissionsReset(PermissionsResetRequest, PermissionsResetResponse);
+    //ESPmethod [client_xslt("/esp/xslt/access_useraccountexport.xslt")] UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
+    ESPmethod UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
+
+};
+
+SCMexportdef(ws_access);
+
+SCMapi(ws_access) IClientws_access *createws_accessClient();

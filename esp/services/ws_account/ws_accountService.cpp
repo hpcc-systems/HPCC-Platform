@@ -17,10 +17,149 @@
 ############################################################################## */
 
 #include "ws_accountService.hpp"
+#include "ldapsecurity.ipp"
 #include "exception_util.hpp"
 
 const int CUTOFF_MAJOR = 533;
 const int CUTOFF_MINOR = 6;
+
+const char* MSG_SEC_MANAGER_IS_NULL = "Security manager is not found. Please check if the system authentication is set up correctly";
+
+void Cws_accountEx::init(IPropertyTree *cfg, const char *process, const char *service)
+{
+}
+
+bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & req, IEspUpdateUserResponse & resp)
+{
+    try
+    {
+        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        if(secmgr == NULL)
+        {
+            throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, "Security manager can't be converted to LdapSecManager. Only LdapSecManager supports this function.");
+        }
+
+        ISecUser* user = context.queryUser();
+        if(user == NULL)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("Can't find user in esp context. Please check if the user was properly logged in.");
+            return false;
+        }
+        if(req.getUsername() == NULL || strcmp(req.getUsername(), user->getName()) != 0)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("Username/password don't match.");
+            return false;
+        }
+
+        const char* oldpass = req.getOldpass();
+        if(oldpass == NULL || strcmp(oldpass, user->credentials().getPassword()) != 0)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("Username/password don't match.");
+            return false;
+        }
+
+        const char* newpass1 = req.getNewpass1();
+        const char* newpass2 = req.getNewpass2();
+        if(newpass1 == NULL || newpass2 == NULL || strlen(newpass1) < 4 || strlen(newpass2) < 4)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("New password must be 4 characters or longer.");
+            return false;
+        }
+        if(strcmp(newpass1, newpass2) != 0)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("Password and retype don't match.");
+            return false;
+        }
+        if(strcmp(oldpass, newpass1) == 0)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("New password can't be the same as current password.");
+            return false;
+        }
+
+        const char* pwscheme = secmgr->getPasswordStorageScheme();
+        bool isCrypt = pwscheme && (stricmp(pwscheme, "CRYPT") == 0);
+        if(isCrypt && strncmp(oldpass, newpass1, 8) == 0)
+        {
+            resp.setRetcode(-1);
+            resp.setMessage("The first 8 characters of the new password must be different from before.");
+            return false;
+        }
+
+        bool ok = false;
+        try
+        {
+            ok = secmgr->updateUser(*user, newpass1);
+        }
+        catch(IException* e)
+        {
+            StringBuffer emsg;
+            e->errorMessage(emsg);
+            resp.setRetcode(-1);
+            resp.setMessage(emsg.str());
+            return false;
+        }
+        catch(...)
+        {
+            ok = false;
+        }
+
+        if(!ok)
+        {
+            throw MakeStringException(ECLWATCH_CANNOT_CHANGE_PASSWORD, "Failed in changing password.");
+        }
+
+        resp.setRetcode(0);
+        if(isCrypt && strlen(newpass1) > 8)
+            resp.setMessage("Your password has been changed successfully, however, only the first 8 chars are effective.");
+        else
+            resp.setMessage("Your password has been changed successfully.");
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool Cws_accountEx::onUpdateUserInput(IEspContext &context, IEspUpdateUserInputRequest &req, IEspUpdateUserInputResponse &resp)
+{
+    try
+    {
+        ISecUser* user = context.queryUser();
+        if(user != NULL)
+        {
+            resp.setUsername(user->getName());
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool Cws_accountEx::onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspWhoAmIResponse &resp)
+{
+    try
+    {
+        ISecUser* user = context.queryUser();
+        if(user != NULL)
+        {
+            resp.setUsername(user->getName());
+        }
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e, ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
 
 bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp)
 {

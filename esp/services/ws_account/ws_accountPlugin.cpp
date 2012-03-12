@@ -18,6 +18,8 @@
 
 #pragma warning (disable : 4786)
 
+#include "ws_account_esp.ipp"
+
 //ESP Bindings
 #include "http/platform/httpprot.hpp"
 
