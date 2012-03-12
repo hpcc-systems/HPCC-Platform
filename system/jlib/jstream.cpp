@@ -229,7 +229,7 @@ void CFileOutputStream::writeBytes(const void *b, int len)
     if (written < 0)
         throw MakeStringException(-1, "Error while writing %d bytes\n", len);
     if (written != len)
-        throw MakeStringException(-1, "Truncated (%d) while writing %d bytes\n", written, (int)len);
+        throw MakeStringException(-1, "Truncated (%d) while writing %d bytes\n", (int)written, len);
 }
 
 extern jlib_decl IByteOutputStream *createOutputStream(int handle)
