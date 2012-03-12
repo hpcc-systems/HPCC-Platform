@@ -135,6 +135,41 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefilelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUCopyLogicalFiles.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUDeployWorkunit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_accountpermissions.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_adduser.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_basedns.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_filepermission.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groupadd.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groupdelete.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groupedit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groupmemberedit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groupmembereditinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_groups.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_permissionaddinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_permissionchange.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_permissionresetinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_permissions.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_permissionsreset.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_posix.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_posixinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resetpass.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resetpassinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resourceadd.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resourceaddinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resourcedelete.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_resources.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_sudoers.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_sudoersinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_useraction.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_useredit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_usergroupedit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_usergroupeditinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_userinfoedit.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_userinfoeditinput.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_users.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/account.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/account_input.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/account_whoami.xslt
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/smc_xslt COMPONENT Runtime )
 ENDFOREACH ( iFILES )
