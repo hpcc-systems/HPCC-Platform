@@ -1610,6 +1610,13 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       const char* rowIndex = pSetting->queryProp("@rowIndex");
       const char* pszOldValue = pSetting->queryProp("@oldValue");
       const char* pszNewValue = pSetting->queryProp("@newValue");
+            
+      StringBuffer xpath_key;
+      xpath_key.appendf("%s/%s/%s[%s='%s']", XML_TAG_SOFTWARE, XML_TAG_TOPOLOGY, XML_TAG_CLUSTER, XML_ATTR_NAME, pszNewValue);
+      //Check to see if the cluster name is already in use
+      IPropertyTree* pEnvCluster = pEnvRoot->queryPropTree(xpath_key);
+      if (pEnvCluster != NULL)
+        throw MakeStringException(-1, "Cluster - %s is already in use. Please enter a unique name for the Cluster.", pszNewValue);      
 
       StringBuffer buf("Topology");
 
