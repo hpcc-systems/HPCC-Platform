@@ -30401,14 +30401,9 @@ private:
             {
                 unlockChildren();
                 if (!got)
-                {
-                    if (!syncCluster)
-                        throw MakeStringException(ROXIE_CLUSTER_SYNC_ERROR, "lock failed - cluster may be out of sync");
-                    else
-                        throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
-                }
-                if (traceLevel && !syncCluster)
-                    DBGLOG("Lock succeded but revision updated - go around again");
+                    throw MakeStringException(ROXIE_LOCK_ERROR, "lock failed");
+                if (traceLevel)
+                    DBGLOG("Lock succeeded but revision updated - go around again");
             }
             else
                 return got-1;
