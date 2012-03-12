@@ -435,13 +435,26 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
     return true;
 }
 
-void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryInfo)
+void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryInfo, const char *cluster, IPropertyTree *queriesOnCluster)
 {
     queryInfo->setId(query->queryProp("@id"));
     queryInfo->setName(query->queryProp("@name"));
     queryInfo->setDll(query->queryProp("@dll"));
     queryInfo->setWuid(query->queryProp("@wuid"));
     queryInfo->setSuspended(query->getPropBool("@suspended", false));
+    if (queriesOnCluster)
+    {
+        VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']/@suspended", query->queryProp("@id"));
+        if (queriesOnCluster->getPropBool(xpath.str()))
+        {
+            IArrayOf<IEspClusterQueryState> clusters;
+            Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
+            clusterState->setCluster(cluster);
+            clusterState->setSuspended(true);
+            clusters.append(*clusterState.getClear());
+            queryInfo->setClusters(clusters);
+        }
+    }
 }
 
 void gatherQuerySetAliasDetails(IPropertyTree *alias, IEspQuerySetAlias *aliasInfo)
@@ -450,14 +463,14 @@ void gatherQuerySetAliasDetails(IPropertyTree *alias, IEspQuerySetAlias *aliasIn
     aliasInfo->setId(alias->queryProp("@id"));
 }
 
-void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
 {
     Owned<IPropertyTreeIterator> regQueries = registry->getElements("Query");
     ForEach(*regQueries)
     {
         IPropertyTree &query = regQueries->query();
         Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-        gatherQuerySetQueryDetails(&query, q);
+        gatherQuerySetQueryDetails(&query, q, cluster, queriesOnCluster);
         queries.append(*q.getClear());
     }
 
@@ -471,7 +484,7 @@ void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQu
     }
 }
 
-void retrieveQuerysetDetailsFromAlias(IPropertyTree *registry, const char *name, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+void retrieveQuerysetDetailsFromAlias(IPropertyTree *registry, const char *name, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster, IPropertyTree *queriesOnCluster)
 {
     StringBuffer xpath;
     xpath.append("Alias[@name='").append(name).append("']");
@@ -495,11 +508,11 @@ void retrieveQuerysetDetailsFromAlias(IPropertyTree *registry, const char *name,
     }
 
     Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-    gatherQuerySetQueryDetails(query, q);
+    gatherQuerySetQueryDetails(query, q, cluster, queriesOnCluster);
     queries.append(*q.getClear());
 }
 
-void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *value, const char *type, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *value, const char *type, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
 {
     if (!strieq(type, "Id") && !strieq(type, "Name"))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Unrecognized queryset filter type %s", type);
@@ -515,7 +528,7 @@ void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *value
     }
 
     Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-    gatherQuerySetQueryDetails(query, q);
+    gatherQuerySetQueryDetails(query, q, cluster, queriesOnCluster);
     xpath.clear().append("Alias[@id='").append(q->getId()).append("']");
     queries.append(*q.getClear());
 
@@ -529,25 +542,25 @@ void retrieveQuerysetDetailsFromQuery(IPropertyTree *registry, const char *value
     }
 }
 
-void retrieveQuerysetDetails(IPropertyTree *registry, const char *type, const char *value, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases)
+void retrieveQuerysetDetails(IPropertyTree *registry, const char *type, const char *value, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
 {
     if (strieq(type, "All"))
-        return retrieveAllQuerysetDetails(registry, queries, aliases);
+        return retrieveAllQuerysetDetails(registry, queries, aliases, cluster, queriesOnCluster);
     if (!value || !*value)
         return;
     if (strieq(type, "Alias"))
-        return retrieveQuerysetDetailsFromAlias(registry, value, queries, aliases);
-    return retrieveQuerysetDetailsFromQuery(registry, value, type, queries, aliases);
+        return retrieveQuerysetDetailsFromAlias(registry, value, queries, aliases, cluster, queriesOnCluster);
+    return retrieveQuerysetDetailsFromQuery(registry, value, type, queries, aliases, cluster, queriesOnCluster);
 }
 
-void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, IPropertyTree *registry, const char *type, const char *value)
+void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, IPropertyTree *registry, const char *type, const char *value, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
 {
     if (!registry)
         return;
 
     IArrayOf<IEspQuerySetQuery> queries;
     IArrayOf<IEspQuerySetAlias> aliases;
-    retrieveQuerysetDetails(registry, type, value, queries, aliases);
+    retrieveQuerysetDetails(registry, type, value, queries, aliases, cluster, queriesOnCluster);
 
     Owned<IEspWUQuerySetDetail> detail = createWUQuerySetDetail();
     detail->setQuerySetName(registry->queryProp("@id"));
@@ -556,14 +569,14 @@ void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, IPropertyT
     details.append(*detail.getClear());
 }
 
-void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char *queryset, const char *type, const char *value)
+void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char *queryset, const char *type, const char *value, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
 {
     if (!queryset || !*queryset)
         return;
     Owned<IPropertyTree> registry = getQueryRegistry(queryset, true);
     if (!registry)
         return;
-    retrieveQuerysetDetails(details, registry, type, value);
+    retrieveQuerysetDetails(details, registry, type, value, cluster, queriesOnCluster);
 }
 
 void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, const char *cluster, const char *queryset, const char *type, const char *value)
@@ -572,6 +585,17 @@ void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, c
     if (!info)
         throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster %s not found", cluster);
 
+    Owned<IPropertyTree> queriesOnCluster;
+    if (info->getPlatform()==RoxieCluster)
+    {
+        const SocketEndpointArray &eps = info->getRoxieServers();
+        if (eps.length())
+        {
+            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), 5);
+            queriesOnCluster.setown(sendRoxieControlQuery(sock, "<control:queries/>", 5));
+        }
+    }
+
     SCMStringBuffer clusterQueryset;
     info->getQuerySetName(clusterQueryset);
     if (!clusterQueryset.length())
@@ -579,7 +603,7 @@ void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, c
     if (notEmpty(queryset) && !strieq(clusterQueryset.str(), queryset))
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_ON_CLUSTER, "Cluster %s not configured to load QuerySet %s", cluster, queryset);
 
-    retrieveQuerysetDetails(details, clusterQueryset.str(), type, value);
+    retrieveQuerysetDetails(details, clusterQueryset.str(), type, value, cluster, queriesOnCluster);
 }
 
 void retrieveAllQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char *type, const char *value)
