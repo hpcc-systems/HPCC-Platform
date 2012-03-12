@@ -19475,8 +19475,8 @@ public:
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
         diskSize.set(helper.queryDiskRecordSize());
-        // MORE - This task do not take into accound the package's dynamicFileResolution property
-        variableFileName = (helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = (helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0
+                || factory->queryQueryFactory().queryPackage().dynamicFileResolution();
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
 
