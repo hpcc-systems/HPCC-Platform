@@ -5749,6 +5749,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         ICopyArrayOf<CServerRemoteTree> convertQueue;
     } treeMaker(&nodeCreator);
 
+    Owned<IPropertyTree> oldEnvironment;
     try
     {
         bool saveNeeded = false;
@@ -5780,7 +5781,6 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
         LOG(MCdebugInfo(100), unknownJob, "store loaded");
         const char *environment = config.queryProp("@environment");
 
-        Owned<IPropertyTree> oldEnvironment;
         if (environment && *environment)
         {
             LOG(MCdebugInfo(100), unknownJob, "loading external Environment from: %s", environment);
@@ -5799,13 +5799,6 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
             root->addPropTree("Environment", envTree.getClear());
             externalEnvironment = true;
         }
-
-        bool forceGroupUpdate = config.getPropBool("@forceGroupUpdate");
-        StringBuffer response;
-        initClusterGroups(forceGroupUpdate, response, oldEnvironment);
-        if (response.length())
-            PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
-
 
         UInt64Array refExts;
         PROGLOG("Scanning store for external references");
@@ -6115,6 +6108,12 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     }
     Owned<IRemoteConnection> conn = connect("/", 0, RTM_INTERNAL, INFINITE);
     initializeInternals(conn->queryRoot());
+    conn.clear();
+    bool forceGroupUpdate = config.getPropBool("@forceGroupUpdate");
+    StringBuffer response;
+    initClusterGroups(forceGroupUpdate, response, oldEnvironment);
+    if (response.length())
+        PROGLOG("DFS group initialization : %s", response.str()); // should this be a syslog?
 }
 
 void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
