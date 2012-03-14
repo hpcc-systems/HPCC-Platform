@@ -1,0 +1,134 @@
+/*##############################################################################
+Copyright (C) 2011 HPCC Systems.
+############################################################################## */
+
+ESPrequest EchoRequest
+{
+    string Request;
+};
+
+ESPresponse EchoResponse
+{
+    string Response;
+};
+
+ESPstruct BasePackageStatus
+{
+    int Code;
+    string Description;
+};
+
+
+ESPrequest AddPackageRequest
+{
+    string Info;
+    boolean Activate;
+    boolean OverWrite;
+    string QuerySet;
+    string PackageName;
+};
+
+
+ESPresponse AddPackageResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPrequest DeletePackageRequest
+{
+    string QuerySet;
+    string PackageName;
+};
+
+ESPresponse DeletePackageResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPrequest ActivatePackageRequest
+{
+    string PackageName;
+    string PackageMapName;
+};
+
+ESPresponse ActivatePackageResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPrequest DeActivatePackageRequest
+{
+    string PackageName;
+    string PackageMapName;
+};
+
+ESPresponse DeActivatePackageResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPrequest GetPackageRequest
+{
+    string Cluster;
+    string PackageName;
+};
+
+ESPresponse GetPackageResponse
+{
+    ESPstruct BasePackageStatus status;
+    string Info;
+};
+
+ESPrequest ListPackageRequest
+{
+    string Cluster;
+};
+
+ESPstruct PackageListData
+{
+    string Id;
+    string Queries;
+};
+
+ESPstruct PackageListMapData
+{
+    string Id;
+    ESParray<ESPstruct PackageListData> PkgListData;
+};
+
+ESPresponse ListPackageResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESParray<ESPstruct PackageListMapData> PkgListMapData;
+};
+
+ESPrequest CopyFilesRequest
+{
+    string Process;
+    string PackageName;
+    string DaliIp;
+    string Info;
+    bool OverWrite;
+};
+
+
+ESPresponse CopyFilesResponse
+{
+    ESPstruct BasePackageStatus status;
+};
+
+ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+{
+    ESPmethod Echo(EchoRequest, EchoResponse);
+    ESPmethod AddPackage(AddPackageRequest, AddPackageResponse);
+    ESPmethod DeletePackage(DeletePackageRequest, DeletePackageResponse);
+    ESPmethod ActivatePackage(ActivatePackageRequest, ActivatePackageResponse);
+    ESPmethod DeActivatePackage(DeActivatePackageRequest, DeActivatePackageResponse);
+    ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
+    ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
+    ESPmethod CopyFiles(CopyFilesRequest, CopyFilesResponse);
+};
+
+SCMexportdef(WsPackageProcess);
+
+SCMapi(WsPackageProcess) IClientWsPackageProcess *createWsPackageProcessClient();

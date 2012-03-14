@@ -43,7 +43,7 @@
         </html>
     </xsl:template>
     <xsl:template match="UpdateUserInputResponse">
-        <form name="esp_form" method="POST" action="/ws_lnaccount/UpdateUser">
+        <form name="esp_form" method="POST" action="/ws_account/UpdateUser">
             <input type="hidden" id="username" name="username" value="{username}"/>
             <table>
                 <tr><th colspan="2"><h3>Change Password</h3></th></tr>
