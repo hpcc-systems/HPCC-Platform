@@ -576,6 +576,8 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             if (ds->hasProperty(prefetchAtom))
                 break;
 
+            //MORE: If the record is empty then either remove the project if no SKIP, or convert the SKIP to a filter
+
             //Don't remove projects for the moment because they can make counts of disk reads much less
             //efficient.  Delete the following lines once we have a count-diskread activity
             if (!isScalarAggregate && !(options & (HOOcompoundproject|HOOinsidecompound)) && !ds->hasProperty(_countProject_Atom) )

@@ -292,8 +292,7 @@ void NlpParseContext::buildProductions(HqlCppTranslator & translator, BuildCtx &
         ForEachItemIn(i, productions)
         {
             IHqlExpression & cur = productions.item(i);
-            OwnedHqlExpr dataset = createDataset(no_anon, LINK(cur.queryChild(1)->queryRecord()));
-            MetaInstance meta(translator, dataset);
+            MetaInstance meta(translator, cur.queryChild(1)->queryRecord(), false);
             translator.buildMetaInfo(meta);
 
             s.clear().append("case ").append(getIntValue(cur.queryChild(0)));

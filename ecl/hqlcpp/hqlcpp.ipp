@@ -1608,7 +1608,7 @@ public:
 
     void buildSetXmlSerializer(StringBuffer & helper, ITypeInfo * valueType);
 
-    void buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, const char * name);
+    void buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, bool isGrouped, const char * name);
     void buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName);
     void buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName);
     bool buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression * record, const char * prefetcherName);
