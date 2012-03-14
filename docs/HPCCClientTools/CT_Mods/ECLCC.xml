@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../../">
+  <bookinfo>
+    <title>The ECL Compiler</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
+
+    <date><emphasis role="bold">BETA</emphasis> </date>
+
+    <corpname>HPCC Systems</corpname>
+
+    <copyright>
+      <year>2011 HPCC Systems. All rights reserved</year>
+    </copyright>
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="ECL_Compiler">
+    <title><emphasis role="bold">ECL Compiler</emphasis></title>
+
+    <para>The ECL Compiler is the compiler component of the High Performance
+    Computing Cluster (HPCC). It is embedded and included when you install the
+    HPCC. The compiler is the component that actually compiles the ECL code.
+    </para>
+
+    <para>The syntax and many of the compiler options implemented are similar
+    to the gcc compiler. You can execute either the Linux or Windows version
+    of eclcc, which, when run, load several of our shared objects (SO files,
+    on Linux) or DLLs (on Windows). The ECL Compiler can process hThor, Thor,
+    or Roxie targeted ECL code.</para>
+
+    <para><!--*** Now ECLCC is actually embedded in the HPCC - delivered with the RPMs--><informaltable
+        colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic xml:base="../../" fileref="images/OSSgr3.png" /></entry>
+
+              <entry>To compile and run ECL code locally on your Windows
+              machine, you will need the Microsoft Visual Studio 2008 C++
+              compiler (either Express or Professional edition). This is
+              available from <ulink
+              url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable><!--  ***this whole thing should be comment!
+      /sect2 id="configuration-manager"/
+        <title>Dependencies and packages</title>
+
+        <para>Running eclcc depends on having these required component
+        packages listed below installed on the system.</para>
+
+        <itemizedlist mark="square">
+          <listitem>
+            <para>Microsoft Visual C++</para>
+          </listitem>
+
+          <listitem>
+            <para>Visual Studio 9 (Visual Studio 10 requires to manually set
+            the ENVIRONMENT VS90COMNTOOLS == C:\ProgramFiles\Microsoft Visual
+            Studio 10.0\Common7\Tools)</para>
+
+            <para>Can download from <ulink
+            url="http://www.microsoft.com/express/Downloads/#2008-Visual-CPP">http://www.microsoft.com/express/Downloads/#2008-Visual-CPP</ulink></para>
+          </listitem>
+
+          <listitem>
+            <para>Other Dependencies maybe required***
+            </para>
+              </listitem>
+            </itemizedlist>
+      //sect2/
+         ***END OF COMMENT***   --></para>
+
+    <sect1 id="Stand-Alone-ECL-Compiler">
+      <title><emphasis>Using the ECL Compiler as a Stand Alone option
+      </emphasis></title>
+
+      <para>The ECL Compiler is normally used through the ECL IDE, however,
+      you can use the ECL Compiler in a stand alone manner, to create stand
+      alone programs, or workunits. The ECL Compiler can read ECL code from
+      standard input, or can read it from a specified input file. It compiles
+      the code into an executable program (Such as an ‘EXE’ file in Windows).
+      The resulting program, when executed, runs the job, writing any output
+      to standard output. Alternatively, you could redirect the output to a
+      file or pipe into another process. With the ECL Compiler, you do not
+      need a supercomputer cluster to develop and run ECL code. </para>
+
+      <para>Running the ECL Compiler without any options (or specifying –help)
+      will display the syntax.</para>
+
+      <para><programlisting>C:\eclcc&gt;eclcc -help
+</programlisting></para>
+
+      <para>Usage: eclcc &lt;options&gt; ECL_file.ecl</para>
+
+      <para>General options:</para>
+
+      <para> <informaltable colsep="0" frame="none" rowsep="0">
+
+          <?dbfo keep-together="always"?>
+
+								            <tgroup cols="2">
+								              <colspec align="left" colwidth="125.55pt" />
+								
+				              <colspec />
+            <tbody>
+              <row>
+                <entry>-g</entry>
+
+                <entry>Enable debug symbols in generated code</entry>
+              </row>
+
+              <row>
+                <entry>-I<emphasis>path</emphasis></entry>
+
+                <entry>Add path to locations to search for ecl imports</entry>
+              </row>
+
+              <row>
+                <entry>-L<emphasis>path</emphasis></entry>
+
+                <entry>Add path to locations to search for system
+                libraries</entry>
+              </row>
+
+              <row>
+                <entry>-o<emphasis>file</emphasis></entry>
+
+                <entry>Specify name of output file (default a.out if linking
+                to executable, or stdout)</entry>
+              </row>
+
+              <row>
+                <entry>-P<emphasis>path</emphasis></entry>
+
+                <entry>Specify the path of the output files</entry>
+              </row>
+
+              <row>
+                <entry>-Wc,xx</entry>
+
+                <entry>Supply option for the c++ compiler</entry>
+              </row>
+
+              <row>
+                <entry>-save-temps</entry>
+
+                <entry>Do not delete intermediate files (implied if
+                -g)</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para><informaltable colsep="1" frame="all">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+           <colspec colwidth="49.50pt" />
+					
+           <colspec />
+            <tbody>
+              <row>
+                <entry><inlinegraphic xml:base="../../" fileref="images/OSSgr3.png" /></entry>
+
+                <entry><emphasis role="bold">NOTE: </emphasis>If there are
+                spaces in the path you specify, put it in quotes. For example:
+                –L"C:\Program Files"</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>ECL options:</para>
+
+      <para>
+          <informaltable colsep="0" frame="none" rowsep="0">
+					
+					          <?dbfo keep-together="always"?>
+					
+													            <tgroup cols="2">
+													              <colspec align="left" colwidth="125.55pt" />
+													
+				              <colspec />
+            <tbody>
+              <row>
+                <entry>-E</entry>
+
+                <entry>Output preprocessed ECL in xml archive form</entry>
+              </row>
+
+              <row>
+                <entry>-S</entry>
+
+                <entry>Generate c++ output, but don't compile</entry>
+              </row>
+
+              <row>
+                <entry>-foption[=value]</entry>
+
+                <entry>Set an ecl option (#option)</entry>
+              </row>
+
+              <row>
+                <entry>-shared</entry>
+
+                <entry>Generate workunit shared object instead of a stand
+                alone exe</entry>
+              </row>
+
+              <row>
+                <entry>-target=hthor</entry>
+
+                <entry>Generate code for hthor executable (default)</entry>
+              </row>
+
+              <row>
+                <entry>-target=roxie</entry>
+
+                <entry>Generate code for roxie cluster</entry>
+              </row>
+
+              <row>
+                <entry>-target=thor</entry>
+
+                <entry>Generate code for thor cluster</entry>
+              </row>
+
+              <row>
+                <entry>-wu</entry>
+
+                <entry>Only generate workunit informaton as xml file</entry>
+              </row>
+              
+              <row>
+                <entry>-manifest=&lt;manifest file path&gt;</entry>
+
+                <entry>Specifies the manifest file containing the resources to include</entry>
+              </row>
+              
+              </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+
+      <?dbfo-need height="3in"?>
+
+      <para>Other options:</para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+
+          <?dbfo keep-together="always"?>
+
+								            <tgroup cols="2">
+								              <colspec align="left" colwidth="125.55pt" />
+								
+				              <colspec />
+            <tbody>
+              <row>
+                <entry>-b</entry>
+
+                <entry>Batch mode. Each source file is processed in turn.
+                Output name depends on the input filename</entry>
+              </row>
+
+              <row>
+                <entry>-c</entry>
+
+                <entry>compile only (don't link)</entry>
+              </row>
+
+              <row>
+                <entry>-help</entry>
+
+                <entry>Display this message</entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>Display this message</entry>
+              </row>
+
+              <row>
+                <entry>--logdetail=n</entry>
+
+                <entry>Set the level of detail in the log file</entry>
+              </row>
+
+              <row>
+                <entry>--logfile file</entry>
+
+                <entry>Write log to specified file</entry>
+              </row>
+
+              <row>
+                <entry>-specs file</entry>
+
+                <entry>Read eclcc configuration from specified file</entry>
+              </row>
+
+              <row>
+                <entry>-v --verbose</entry>
+
+                <entry>Output additional tracing information while
+                compiling</entry>
+              </row>
+
+              <row>
+                <entry>--version</entry>
+
+                <entry>Output version information</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para></para>
+    </sect1>
+
+    <sect1 id="compiled_options">
+      <title>Compiled Options:</title>
+
+      <para>After you have successfully compiled the code, it produces an
+      executable file. There are a few additional options that can be used
+      when running that executable.</para>
+
+      <para>Usage: a.out &lt;options&gt;</para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+
+          <?dbfo keep-together="always"?>
+
+								            <tgroup cols="2">
+								              <colspec align="left" colwidth="125.55pt" />
+								
+				              <colspec />
+            <tbody>
+              <row>
+                <entry>-wu=&lt;file&gt;</entry>
+
+                <entry>Write XML formatted workunit to given filespec and
+                exit</entry>
+              </row>
+
+              <row>
+                <entry>-xml</entry>
+
+                <entry>Display output as XML</entry>
+              </row>
+
+              <row>
+                <entry>-raw</entry>
+
+                <entry>Display output as binary</entry>
+              </row>
+
+              <row>
+                <entry>-limit=x</entry>
+
+                <entry>Limit number of output rows</entry>
+              </row>
+
+              <row>
+                <entry>--help</entry>
+
+                <entry>Display help text</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+
+    <sect1 id="Examples">
+      <title>Examples</title>
+
+      <para>The following example demonstrates what you can do once the ECL
+      Compiler is installed and operational.</para>
+
+      <sect2>
+        <title>Running a basic ECL program using the command line
+        compiler</title>
+
+        <para>Once the ECL Compiler is installed, you can use the ECL Compiler
+        to run an ECL program.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Create a file called hello.ecl, and type in the
+            text<programlisting>Output('Hello world'); </programlisting></para>
+
+            <para>(including the quotes) into the file.</para>
+
+            <para>You can either use your favorite editor, or you can use the
+            command line by typing the following (for Windows systems):</para>
+
+            <para><programlisting>echo Output('Hello world'); &gt; hello.ecl</programlisting></para>
+
+            <para>on a Linux system you would need to escape some characters
+            as follows:</para>
+
+            <para><programlisting>echo "Output('Hello world');" &gt; hello.ecl</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Compile your program using the ECL Compiler by issuing the
+            following command:</para>
+
+            <para><programlisting>eclcc hello.ecl</programlisting><!--*** Need to tell them where to run this  --></para>
+
+            <!--  ***COMMENTED OUT per authors discretion - this code is just messy when talking about multiple platforms! 
+              If you prefer, you can pipe the source code directly into the
+            compiler as shown in the following example:
+            <para><programlisting>echo \'hello again\'| eclcc -</programlisting></para> -->
+          </listitem>
+
+          <listitem>
+            <para>An executable file is created which you can run by typing
+            the following:</para>
+
+            <para>on Linux systems:</para>
+
+            <para><programlisting>   ./a.out
+</programlisting></para>
+
+            <para>on Windows systems:</para>
+
+            <para><programlisting>   a.out</programlisting>This will generate
+            the output "Hello world" (excluding quotes), to the std output,
+            your terminal window in this example. You can redirect or pipe the
+            output to a file or program if you choose. This simple example
+            will verify the compiler is working properly.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+
+      <sect2 id="Compile_with_options">
+        <title>Compile with Options</title>
+
+        <para>Once verified that the ECL Compiler is working correctly, you
+        can try using some of the options. One such variation might be to
+        specify the -o option which allows us to input more meaningful output
+        filename of Hello.</para>
+
+        <para><programlisting>eclcc -oHello hello.ecl</programlisting>This
+        produces a file called "Hello", which can now be run from the command
+        line.</para>
+
+        <para>on Linux systems:</para>
+
+        <programlisting>   ./Hello
+</programlisting>
+
+        <para>on Windows systems:</para>
+
+        <para><programlisting>   Hello</programlisting>This will result in the
+        output of the following.</para>
+
+        <para><programlisting>Hello world</programlisting></para>
+
+        <para>There are additional options that can be used when running the
+        executable. Using our Hello program, as an example, we can execute it
+        with an option to generate different output. One such option is the
+        -xml option which generates the output in an XML format.</para>
+
+        <para>on Linux systems:</para>
+
+        <programlisting>   ./Hello -xml
+</programlisting>
+
+        <para>on Windows systems:</para>
+
+        <para><programlisting>   Hello -xml</programlisting></para>
+
+        <para>This would result in the output of the following:</para>
+
+        <programlisting>&lt;Dataset name="Result 1"&gt;&lt;Row&gt;&lt;Result_1&gt;Hello world&lt;/Result_1&gt;&lt;/Row&gt;&lt;/Dataset&gt;</programlisting>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
