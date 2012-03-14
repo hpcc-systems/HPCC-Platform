@@ -286,7 +286,7 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
                 msg.appendf("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
                 errors->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
             }
-            else if (subminor != LANGUAGE_VERSION_MINOR)
+            else if (subminor != LANGUAGE_VERSION_SUB)
             {
                 //This adds the warning if any other warnings occur.
                 StringBuffer msg;

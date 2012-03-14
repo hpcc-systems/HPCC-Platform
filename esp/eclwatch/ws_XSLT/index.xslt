@@ -20,6 +20,8 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="html"/>
     <xsl:variable name="chaturl0" select="ActivityResponse/ChatURL"/>
+    <xsl:variable name="sortby" select="ActivityResponse/SortBy"/>
+    <xsl:variable name="descending" select="ActivityResponse/Descending"/>
     <xsl:template match="ActivityResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
@@ -38,14 +40,40 @@
         <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
         ]]></xsl:text>
         <title>EclWatch</title>
-                <script type="text/javascript">
-                    var chatUrl='<xsl:value-of select="$chaturl0"/>';
-                </script>
-                <script language="JavaScript1.2" id="menuhandlers">
-                  //var chatUrl="chaturl";
+        <script type="text/javascript">
+            var chatUrl='<xsl:value-of select="$chaturl0"/>';
+            var sortBy='<xsl:value-of select="$sortby"/>';
+            var descending='<xsl:value-of select="$descending"/>';
+        </script>
+        <script language="JavaScript1.2" id="menuhandlers">
+            <xsl:text disable-output-escaping="yes"><![CDATA[
+                function onLoad()
+                {
+                    var selection = document.getElementById("sortClusters");
+                    if (selection != NaN)
+                    {
+                        if (sortBy == 'Name' && descending == 1)
+                            selection.options[1].selected="selected";
+                        else if (sortBy == 'Size' && descending == 0)
+                            selection.options[2].selected="selected";
+                        else if (sortBy == 'Size' && descending == 1)
+                            selection.options[3].selected="selected";
+                        else
+                            selection.options[0].selected="selected";
+                    }
+                }
 
-                  <xsl:text disable-output-escaping="yes"><![CDATA[
-
+                function sortClustersChanged(sortClusterBy)
+                {
+                    if (sortClusterBy == 2)
+                        document.location.href = "/WsSmc/Activity?SortBy=Name&Descending=1";
+                    else if (sortClusterBy == 3)
+                        document.location.href = "/WsSmc/Activity?SortBy=Size";
+                    else if (sortClusterBy == 4)
+                        document.location.href = "/WsSmc/Activity?SortBy=Size&Descending=1";
+                    else
+                        document.location.href = "/WsSmc/Activity?SortBy=Name";
+                }
 
                 function commandQueue(action,isThor,cluster,queue,wuid)
                 {
@@ -465,7 +493,7 @@
                ]]></xsl:text>
                </script> 
             </head>
-            <body class="yui-skin-sam" onload="nof5()">
+            <body class="yui-skin-sam" onload="nof5();onLoad()">
                 <form>
                     <table>
                         <xsl:if test="ShowChatURL = 1">
@@ -492,16 +520,34 @@
                         </xsl:if>
                     </table>
                 </form>
-                <xsl:choose>
-                    <xsl:when test="UserPermission = 0">
-                        <A href="javascript:void(0)" onclick="SetBanner();">
-                            <h3>Existing Activity on Servers:</h3>
-                        </A>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <h3>Existing Activity on Servers:</h3>
-                    </xsl:otherwise>
-                </xsl:choose>
+                <table width="100%">
+                    <tbody>
+                        <tr>
+                            <td align="left">
+                                <xsl:choose>
+                                    <xsl:when test="UserPermission = 0">
+                                        <A href="javascript:void(0)" onclick="SetBanner();">
+                                            <h3>Existing Activity on Servers:</h3>
+                                        </A>
+                                    </xsl:when>
+                                    <xsl:otherwise>
+                                        <h3>
+                                            Existing Activity on Servers:<xsl:value-of select="SortBy"/>
+                                        </h3>
+                                    </xsl:otherwise>
+                                </xsl:choose>
+                            </td>
+                            <td align="right">
+                                <select id="sortClusters" name="sortClusters" onchange="sortClustersChanged(options[selectedIndex].value);">
+                                    <option value="1">Sort clusters by name ascending</option>
+                                    <option value="2">Sort clusters by name descending</option>
+                                    <option value="3">Sort clusters by size ascending</option>
+                                    <option value="4">Sort clusters by size descending</option>
+                                </select>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
                 <form id="queue" action="/WsSMC" method="post">
                     <input type="hidden" name="ClusterType" id="ClusterType" value=""/>
           <input type="hidden" name="Cluster" id="Cluster" value=""/>

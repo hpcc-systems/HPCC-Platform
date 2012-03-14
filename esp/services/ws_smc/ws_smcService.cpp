@@ -515,7 +515,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 if (version > 1.06)
                     returnCluster->setQueueStatus2(color_type);
                 returnCluster->setDoCommand(doCommand);
-                ThorClusters.append(*returnCluster);
+                if (version > 1.10)
+                    returnCluster->setClusterSize(cluster.getSize());
+
+                addToThorClusterList(ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
             }
             if (version > 1.06) // JCSMORE->WANGKX , is this necessary?
             {
@@ -533,13 +536,20 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     addQueuedWorkUnits(queueName, queue, aws, context, "RoxieServer", NULL);
                     const char *queueState = getQueueState(queue, -1, NULL);
                     returnCluster->setQueueStatus(queueState);
+                    if (version > 1.10)
+                        returnCluster->setClusterSize(cluster.getSize());
 
-                    RoxieClusters.append(*returnCluster);
+                    addToRoxieClusterList(RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
                 }
             }
         }
         resp.setThorClusters(ThorClusters);
         resp.setRoxieClusters(RoxieClusters);
+        if (version > 1.10)
+        {
+            resp.setSortBy(req.getSortBy());
+            resp.setDescending(req.getDescending());
+        }
 
         IArrayOf<IConstTpEclServer> eclccservers;
         CTpWrapper dummy;
@@ -698,6 +708,82 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
     }
 
     return true;
+}
+
+void CWsSMCEx::addToThorClusterList(IArrayOf<IEspThorCluster>& clusters, IEspThorCluster* cluster, const char* sortBy, bool descending)
+{
+    if (clusters.length() < 1)
+    {
+        clusters.append(*cluster);
+        return;
+    }
+
+    const char* clusterName = cluster->getClusterName();
+    unsigned clusterSize = cluster->getClusterSize();
+    bool clusterAdded = false;
+    ForEachItemIn(i, clusters)
+    {
+        int strCmp = 0;
+        IEspThorCluster& cluster1 = clusters.item(i);
+        if (!sortBy || !*sortBy || strieq(sortBy, "name"))
+        {
+            strCmp = strcmp(cluster1.getClusterName(), clusterName);
+        }
+        else
+        {//size
+            //strCmp = cluster1.getClusterSize() - clusterSize;
+            int si = cluster1.getClusterSize();
+            strCmp = si - clusterSize;
+        }
+
+        if ((descending && (strCmp < 0)) || (!descending && (strCmp > 0)))
+        {
+            clusters.add(*cluster, i);
+            clusterAdded =  true;
+            break;
+        }
+    }
+
+    if (!clusterAdded)
+        clusters.append(*cluster);
+    return;
+}
+
+void CWsSMCEx::addToRoxieClusterList(IArrayOf<IEspRoxieCluster>& clusters, IEspRoxieCluster* cluster, const char* sortBy, bool descending)
+{
+    if (clusters.length() < 1)
+    {
+        clusters.append(*cluster);
+        return;
+    }
+
+    const char* clusterName = cluster->getClusterName();
+    unsigned clusterSize = cluster->getClusterSize();
+    bool clusterAdded = false;
+    ForEachItemIn(i, clusters)
+    {
+        int strCmp = 0;
+        IEspRoxieCluster& cluster1 = clusters.item(i);
+        if (!sortBy || !*sortBy || strieq(sortBy, "name"))
+        {
+            strCmp = strcmp(cluster1.getClusterName(), clusterName);
+        }
+        else
+        {//size
+            strCmp = cluster1.getClusterSize() - clusterSize;
+        }
+
+        if ((descending && (strCmp < 0)) || (!descending && (strCmp > 0)))
+        {
+            clusters.add(*cluster, i);
+            clusterAdded = true;
+            break;
+        }
+    }
+
+    if (!clusterAdded)
+        clusters.append(*cluster);
+    return;
 }
 
 
