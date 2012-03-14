@@ -53,6 +53,7 @@ ESPStruct ThorCluster
     [min_ver("1.05")] int JobsInQueue;
     [min_ver("1.07")] int QueueStatus2;
     [min_ver("1.09")] string ThorLCR;
+    [min_ver("1.11")] int ClusterSize;
 };
 
 ESPStruct RoxieCluster
@@ -64,6 +65,7 @@ ESPStruct RoxieCluster
     int JobsRunning;
     int JobsInQueue;
     int QueueStatus2;
+    [min_ver("1.11")] int ClusterSize;
 };
 
 ESPStruct HoleCluster
@@ -86,10 +88,12 @@ ESPrequest [nil_remove] ActivityRequest
     string BannerContent;
     string BannerColor;
     string BannerSize;
-    [min_ver("1.08")] string BannerScroll;
+    string BannerScroll;
     int BannerAction(0);
     bool EnableChatURL;
     bool FromSubmitBtn(false);
+    string SortBy;
+    bool Descending(false);
 };
 
 ESPresponse [exceptions_inline] ActivityResponse
@@ -108,6 +112,8 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.06")] string ChatURL;
     [min_ver("1.06")] int ShowBanner(0);
     [min_ver("1.06")] int ShowChatURL(0);
+    [min_ver("1.11")] string SortBy;
+    [min_ver("1.11")] bool Descending(false);
 };
 
 ESPrequest SMCIndexRequest
@@ -250,7 +256,7 @@ BrowseResourcesResponse
 };
 
 //ESPservice [noforms, version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSMC
-ESPservice [noforms, version("1.10"), default_client_version("1.10"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.11"), default_client_version("1.11"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPuses ESPStruct Capability;
     ESPuses ESPStruct Permission;
