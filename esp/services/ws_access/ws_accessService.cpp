@@ -338,7 +338,7 @@ bool Cws_accessEx::setNewFileScopePermissions(ISecManager* secmgr, IEspResourceA
         paction.m_account_name.append(actname);
         paction.m_allows = perm.getAllows();
         paction.m_denies = perm.getDenies();
-        if ((accType != GROUP_ACT) || (stricmp(actname, "Administrators") != 0) && (stricmp(actname, "Authenticated Users") != 0))
+        if ((accType != GROUP_ACT) || ((stricmp(actname, "Administrators") != 0) && (stricmp(actname, "Authenticated Users") != 0)))
         {
             paction.m_action.append("add");
 
