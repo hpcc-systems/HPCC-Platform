@@ -146,17 +146,33 @@ public:
     {
         const char *queryid = query.getId();
         bool isActive = queryMap.isActive(queryid);
+        bool suspendedOnCluster = false;
+        ForEachItemIn(idx, query.getClusters())
+        {
+            IConstClusterQueryState &state = query.getClusters().item(idx);
+            if (state.getSuspended())
+            {
+                suspendedOnCluster = true;
+                break;
+            }
+        }
+
         if (flags)
         {
             if (isActive && !(flags & QUERYLIST_SHOW_ACTIVE))
                 return;
             if (query.getSuspended() && !(flags & QUERYLIST_SHOW_SUSPENDED))
                 return;
+            if (suspendedOnCluster && !(flags & QUERYLIST_SHOW_CLUSTER_SUSPENDED))
+                return;
             if (!isActive && !query.getSuspended() &&  !(flags & QUERYLIST_SHOW_UNFLAGGED))
                 return;
         }
-        VStringBuffer line("  %c%c  ", query.getSuspended() ? 'S' : ' ', isActive ? 'A' : ' ');
-        line.append(queryid);
+        StringBuffer line(" ");
+        line.append(suspendedOnCluster ? 'X' : ' ');
+        line.append(query.getSuspended() ? 'S' : ' ');
+        line.append(isActive ? 'A' : ' ');
+        line.append(' ').append(queryid);
         if (isActive)
         {
             Owned<IPropertyTreeIterator> activeNames = queryMap.getActiveNames(queryid);
