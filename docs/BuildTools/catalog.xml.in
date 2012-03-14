@@ -1,0 +1,14 @@
+<?xml version='1.0'?>
+<catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog" prefer="system" >
+
+<group  prefer="public" >
+<rewriteSystem
+        systemIdStartString="http://www.oasis-open.org/docbook/xml/4.5/"
+        rewritePrefix="${DOCBOOK_RESOURCES}/docbook-xml/" />
+<rewriteURI
+        uriStartString="http://docbook.sourceforge.net/release/xsl/current/"
+        rewritePrefix="${DOCBOOK_RESOURCES}/docbook-xsl/" />
+
+</group> 
+
+</catalog>
