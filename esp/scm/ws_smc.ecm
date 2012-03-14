@@ -47,7 +47,6 @@ ESPStruct ThorCluster
     string ClusterName;
     [min_ver("1.03")] string QueueName;
     string QueueStatus;
-    int    DoCommand;
     [min_ver("1.05")] int QueueAvailable;
     [min_ver("1.05")] int JobsRunning;
     [min_ver("1.05")] int JobsInQueue;
@@ -56,22 +55,22 @@ ESPStruct ThorCluster
     [min_ver("1.11")] int ClusterSize;
 };
 
+ESPStruct HThorCluster
+{
+    string ClusterName;
+    string QueueName;
+    string QueueStatus;
+};
+
 ESPStruct RoxieCluster
 {
     string ClusterName;
     string QueueName;
     string QueueStatus;
-    int    DoCommand;
     int JobsRunning;
     int JobsInQueue;
     int QueueStatus2;
     [min_ver("1.11")] int ClusterSize;
-};
-
-ESPStruct HoleCluster
-{
-    string ClusterName;
-    string DataModel;
 };
 
 ESPStruct DFUJob
@@ -101,10 +100,9 @@ ESPresponse [exceptions_inline] ActivityResponse
     string Build;
     ESParray<ESPstruct ThorCluster> ThorClusters;
     [min_ver("1.07")] ESParray<ESPstruct RoxieCluster> RoxieClusters;
-    ESParray<ESPstruct HoleCluster> HoleClusters;
+    [min_ver("1.12")] ESParray<ESPstruct HThorCluster> HThorClusters;
     ESParray<ESPstruct DFUJob> DFUJobs;
     ESParray<ESPstruct ActiveWorkunit> Running;
-    [min_ver("1.06")] int UserPermission(-1);
     [min_ver("1.06")] string BannerContent;
     [min_ver("1.06")] string BannerColor;
     [min_ver("1.06")] string BannerSize;
@@ -114,6 +112,8 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.06")] int ShowChatURL(0);
     [min_ver("1.11")] string SortBy;
     [min_ver("1.11")] bool Descending(false);
+    [min_ver("1.12")] bool SuperUser(false);
+    [min_ver("1.12")] string AccessRight;
 };
 
 ESPrequest SMCIndexRequest
@@ -256,12 +256,11 @@ BrowseResourcesResponse
 };
 
 //ESPservice [noforms, version("1.04"), default_client_version("1.04"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsSMC
-ESPservice [noforms, version("1.11"), default_client_version("1.11"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPuses ESPStruct Capability;
     ESPuses ESPStruct Permission;
     ESPuses ESPStruct ThorCluster;
-    ESPuses ESPStruct HoleCluster;
     ESPuses ESPStruct ActiveWorkunit;
     ESPuses ESPStruct DFUJob;
 

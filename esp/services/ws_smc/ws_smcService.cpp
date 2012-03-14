@@ -237,7 +237,7 @@ void addQueuedWorkUnits(const char *queueName, IJobQueue *queue, IArrayOf<IEspAc
 const char *getQueueState(IJobQueue *queue, int runningJobsInQueue, int *colorTypePtr)
 {
     int qStatus = 1;
-    const char *queueState = NULL;
+    char *queueState = "running";
     if (queue->stopped())
     {
         queueState = "stopped";
@@ -248,8 +248,7 @@ const char *getQueueState(IJobQueue *queue, int runningJobsInQueue, int *colorTy
         queueState = "paused";
         qStatus = 2;
     }
-    else
-        queueState = "running";
+
     if (NULL != colorTypePtr)
     {
         int &color_type = *colorTypePtr;
@@ -271,7 +270,7 @@ const char *getQueueState(IJobQueue *queue, int runningJobsInQueue, int *colorTy
         else if (qStatus > 1)
             color_type = 2;
     }
-    return queueState;
+    return (const char *) queueState;
 }
 
 bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp)
@@ -285,8 +284,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         double version = context.getClientVersion();
 
+        bool superUser = false;
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-        if(req.getFromSubmitBtn() && secmgr && secmgr->isSuperUser(context.queryUser()))
+        if(secmgr && secmgr->isSuperUser(context.queryUser()))
+            superUser = true;
+
+        if(req.getFromSubmitBtn() && (!secmgr || superUser))
         {
             StringBuffer chatURLStr, bannerStr;
             const char* chatURL = req.getChatURL();
@@ -347,12 +350,6 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         if (version > 1.05)
         {
-            int UserPermission = -1;
-            CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
-            if(secmgr && secmgr->isSuperUser(context.queryUser()))
-                UserPermission = 0;
-
-            resp.setUserPermission(UserPermission);
             resp.setShowBanner(m_BannerAction);
             resp.setShowChatURL(m_EnableChatURL);
             resp.setBannerContent(m_Banner.str());
@@ -363,6 +360,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             if (version > 1.07)
             {
                 resp.setBannerScroll(m_BannerScroll.str());
+            }
+            if (version > 1.11)
+            {
+                resp.setSuperUser(superUser);
             }
         }
 
@@ -484,9 +485,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         }
 
         SecAccessFlags access;
-        bool doCommand=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
+        bool fullAccess=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
 
         IArrayOf<IEspThorCluster> ThorClusters;
+        IArrayOf<IEspHThorCluster> HThorClusters;
         IArrayOf<IEspRoxieCluster> RoxieClusters;
 
         CConstWUClusterInfoArray clusters;
@@ -514,13 +516,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 returnCluster->setQueueStatus(queueState);
                 if (version > 1.06)
                     returnCluster->setQueueStatus2(color_type);
-                returnCluster->setDoCommand(doCommand);
                 if (version > 1.10)
                     returnCluster->setClusterSize(cluster.getSize());
 
                 addToThorClusterList(ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
             }
-            if (version > 1.06) // JCSMORE->WANGKX , is this necessary?
+            if (version > 1.06)
             {
                 str.clear();
                 if (cluster.getRoxieProcess(str).length())
@@ -542,6 +543,21 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     addToRoxieClusterList(RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
                 }
             }
+            if (version > 1.11 && (cluster.getPlatform() == HThorCluster))
+            {
+                IEspHThorCluster* returnCluster = new CHThorCluster("","");
+                str.clear();
+                returnCluster->setClusterName(cluster.getName(str).str());
+                str.clear();
+                returnCluster->setQueueName(cluster.getAgentQueue(str).str());
+                str.clear();
+                const char *queueName = cluster.getAgentQueue(str).str();
+                Owned<IJobQueue> queue = createJobQueue(queueName);
+                addQueuedWorkUnits(queueName, queue, aws, context, "HThorServer", NULL);
+                const char *queueState = getQueueState(queue, -1, NULL);
+                returnCluster->setQueueStatus(queueState);
+                HThorClusters.append(*returnCluster);
+            }
         }
         resp.setThorClusters(ThorClusters);
         resp.setRoxieClusters(RoxieClusters);
@@ -550,7 +566,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             resp.setSortBy(req.getSortBy());
             resp.setDescending(req.getDescending());
         }
-
+        if (version > 1.11)
+        {
+            resp.setHThorClusters(HThorClusters);
+            if (fullAccess)
+                resp.setAccessRight("Access_Full");
+        }
         IArrayOf<IConstTpEclServer> eclccservers;
         CTpWrapper dummy;
         dummy.getTpEclCCServers(eclccservers);
