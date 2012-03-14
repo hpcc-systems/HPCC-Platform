@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../../">
+  <bookinfo>
+    <title>Client Tools Overview</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>Sept. 2011</pubdate>
+  </bookinfo>
+
+  <chapter id="Command_Line_ECL">
+    <title><emphasis role="bold">ECL Plus</emphasis></title>
+
+    <sect1 id="Command_Line_Interface" role="nobrk">
+      <title>Command Line Interface</title>
+
+      <sect2 id="ECLPlus_exe">
+        <title><emphasis>ECLPlus.exe</emphasis></title>
+
+        <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
+        owner= password= cluster= server= queue= timeout=
+        ecl=</emphasis><emphasis> file= format= output= jobname= -debugparam1=
+        _applicationparam1=</emphasis><emphasis>
+        /variablename1=</emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>action=</emphasis></entry>
+
+                  <entry>One of the following options:
+                  list|view|dump|delete|abort|query|graph(the default option
+                  is “query”).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>owner=</emphasis></entry>
+
+                  <entry>Either the userid or a workunit identifier (in the
+                  form: wuid=&lt;wuid&gt;).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>password=</emphasis></entry>
+
+                  <entry>The password authorizing access for the
+                  owner.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>cluster=</emphasis></entry>
+
+                  <entry>The name of the cluster to use.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>server=</emphasis></entry>
+
+                  <entry>The URL or IP address of the ECL Watch
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>queue=</emphasis></entry>
+
+                  <entry>The name of the ECL server queue.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>timeout=</emphasis></entry>
+
+                  <entry>Query timeout in seconds (0 for
+                  asynchronous).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>ecl=</emphasis></entry>
+
+                  <entry>The ECL code to execute. Optionally, this may be
+                  replaced by the name of an input file containing the ECL to
+                  execute (in the form: @inputfile), or the name of a stored
+                  ECL file to execute (in the form: $folder.eclfile).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>file=</emphasis></entry>
+
+                  <entry>The logical name of the file, or the logical name
+                  with the starting and ending rows specified (in the form:
+                  !logicalName[startrow,endrow]).</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>format=</emphasis></entry>
+
+                  <entry>One of the following options: default | csv | csvh |
+                  xml | runecl | bin(ary)</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>output=</emphasis></entry>
+
+                  <entry>The name of the file to output.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>jobname=</emphasis></entry>
+
+                  <entry>The name to give the job.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>pagesize=</emphasis></entry>
+
+                  <entry>The number of rows per page. If omitted, the default
+                  is 500.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>-debugparam=</emphasis></entry>
+
+                  <entry>Debug parameters to pass on the command line, in the
+                  form: -debugparam=debugvalue</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>_applicationparam=</emphasis></entry>
+
+                  <entry>Parameters to pass on the command line, in the form:
+                  _applicationparam=applicationvalue</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>/variablename= </emphasis></entry>
+
+                  <entry>Variables to pass on the command line, in the form:
+                  /variablename=[(int)|(bool)] valueThe default value type is
+                  string unless int or bool is specified (in parentheses
+                  preceding the value). The <emphasis>variablename</emphasis>
+                  is the STORED name of an EXL file in your ECL code.
+                  <emphasis role="bold">Not yet
+                  implemented.</emphasis></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>The <emphasis role="bold">ECLPlus.exe</emphasis> application
+        accepts command line parameters to send directly to an ECL execution
+        engine. These options can be typed directly on the command line, sent
+        using a script or batch file, through an INI file, or any
+        combination.</para>
+
+        <sect3>
+          <title>ECLPLUS.INI</title>
+
+          <para>All the options can be put directly on the command line, or
+          placed in a file called ECLPLUS.INI. Options that do not change very
+          often should be put in the ini file. For example:</para>
+
+          <programlisting>server=10.150.50.12
+cluster=training
+queue=eclserver_training
+owner=rtor
+password=password</programlisting>
+
+          <para>In all the examples below, we'll assume eclplus.ini has the
+          above content.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic xml:base="../../" fileref="images/caution.png"
+                    scale="noin" /></entry>
+
+                    <entry>We do not recommend storing your password in the
+                    INI file (which is clear text). The password is included
+                    in the INI file for these examples to simplify the example
+                    code.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
+
+        <sect3>
+          <title>Running queries in batch mode</title>
+
+          <para>Batch mode queries are executed using the
+          <emphasis>ecl=</emphasis> option, in any of its three forms. In the
+          first form you simply put your ECL code on the command line
+          itself:</para>
+
+          <programlisting>C:\&gt;Eclplus ecl=1+1
+            // Result = 2</programlisting>
+
+          <para>In the second form, your ECL code is in an input file. For
+          example, assume you have a text file called dataset.txt, which
+          contains the following ECL code:</para>
+
+          <programlisting>myrec := record
+string10 firstname,
+string10 lastname
+end;
+ds := dataset([{'Yanrui', 'Ma'}, {'Richard', 'Taylor'},
+{'Richard', 'Chapman'}], myrec);
+output(ds, ,'testdata::namesdb');</programlisting>
+
+          <para>Then if you run:</para>
+
+          <programlisting>C:\&gt;Eclplus @dataset.txt</programlisting>
+
+          <para>A dataset will be created and the result will be written to
+          the thor file testdata::namesdb.</para>
+
+          <para>If also have a text file called datasetquery.txt
+          containing:</para>
+
+          <programlisting>myrec := record
+string10 firstname,
+string10 lastname
+end;
+ds1 := dataset('testdata::namesdb', myrec, thor);
+output(ds1);</programlisting>
+
+          <para>then run:</para>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt</programlisting>
+
+          <para>You'll get:</para>
+
+          <programlisting>firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Passing command line values to ECL files</title>
+
+          <para>Using the <emphasis>/variablename= </emphasis>command line
+          capability, you can pass in specific values to ECL files with the
+          STORED Workflow Service. Given this code in the repository attribute
+          MyECLFile.BWR_TestECLPlus: <emphasis role="bold">Not yet
+          implemented.</emphasis></para>
+
+          <programlisting>MyCount := 0 : STORED('Fred');
+        output(MyCount);</programlisting>
+
+          <para></para>
+
+          <para>This ECLPlus command line produces this result:</para>
+
+          <programlisting>C:\eclplus&gt;eclplus $MyModule.BWR_TestECLPlus
+          /Fred=(int)12
+Workunit W20091212-144654-963059896 submitted
+[Result 1]
+Result_1
+12</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Workunit manipulation</title>
+
+          <para>A workunit is a data structure that is passed among eclplus,
+          daliserver, and eclserver. It contains realtime information about
+          the query, so you can control the process of a query by manipulating
+          the workunit.</para>
+        </sect3>
+
+        <sect3>
+          <title>List all work units</title>
+
+          <para>To list all work units:</para>
+
+          <programlisting>C:\&gt;Eclplus action=list</programlisting>
+
+          <para></para>
+
+          <para>The output looks like:</para>
+
+          <programlisting>WUID OWNER JOBNAME STATUS
+W20090226-100258-85132143 yma dataset.txt completed
+W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
+
+          <para></para>
+
+          <para></para>
+
+          <para>Each workunit has a WUID (WorkUnit IDentifier), owner, jobname
+          and status. You can see that the jobname is simply the filename that
+          contains the query, but you can specify the jobname by your self,
+          like this:</para>
+
+          <programlisting>C:\&gt;Eclplus jobname=myquery1 @datasetquery.txt</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>View the result of a certain workunit</title>
+
+          <para>You can look at specific workunit results, like this:</para>
+
+          <programlisting>C:\&gt;Eclplus action=view wuid=
+          W20090226-100958-85552898</programlisting>
+
+          <para>The output will look like:</para>
+
+          <programlisting>firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Dump a workunit</title>
+
+          <para>If you want to get all the details describing a workunit, use
+          the dump option for the action parameter:</para>
+
+          <programlisting>C:\&gt;Eclplus action=dump wuid= W20090226-100958-85552898</programlisting>
+
+          <para>See the Workunit Dump section below for the result.</para>
+        </sect3>
+
+        <sect3>
+          <title>See the thor graph of a workunit:</title>
+
+          <para>The thor graph</para>
+
+          <programlisting>C:\&gt;Eclplus action=graph wuid=W20090226-100958-85552898</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Aborting a workunit</title>
+
+          <para>If a query is taking an usually long time and you doubt
+          something is wrong, you can abort it by:</para>
+
+          <programlisting>C:\&gt;Eclplus action=abort wuid= W20090226-100958-85552898</programlisting>
+
+          <para>You can use list to find out the wuid the workunit and use
+          abort to abort it.</para>
+        </sect3>
+
+        <sect3>
+          <title>Timeout</title>
+
+          <para>Before you run a query, if you know the query is going to take
+          a long time, you can specify a timeout, then your eclplus will
+          return when it reaches the timeout, and the query will run in the
+          background.</para>
+
+          <para>For example:</para>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt timeout=0</programlisting>
+
+          <para>Eclplus will return immediately.</para>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt timeout=2</programlisting>
+
+          <para>Eclplus will return in 2 seconds.</para>
+
+          <para>You can list/view the workunit associated with the query to
+          monitor its status.</para>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>Output format</title>
+
+          <para>By default, the result displays on the screen. You can direct
+          it to a file, by using the output option:</para>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt output=o1.txt
+C:\&gt;type o1.txt
+firstname lastname
+Yanrui Ma
+Richard Taylor
+Richard Chapman</programlisting>
+
+          <para>Also, you may specify the following output formats:</para>
+        </sect3>
+
+        <sect3>
+          <title>csv</title>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=csv
+[QUERY 0]
+"Yanrui ","Ma "
+"Richard ","Taylor "
+"Richard ","Chapman "</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>csvh</title>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=csvh
+[QUERY 0]
+"firstname","lastname"
+"Yanrui ","Ma "
+"Richard ","Taylor "
+"Richard ","Chapman "</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>raw</title>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=raw
+Yanrui     Ma
+Richard    Taylor
+Richard    Chapman</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>runecl</title>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=runecl
+[QUERY 0]
+[0]
+firstname -&gt; Yanrui
+lastname -&gt; Ma
+[1]
+firstname -&gt; Richard
+lastname -&gt; Taylor
+[2]
+firstname -&gt; Richard
+lastname -&gt; Chapman</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>bin(ary)</title>
+
+          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=bin
+Yanrui Ma Richard Taylor Richard Chapman</programlisting>
+        </sect3>
+
+        <sect3>
+          <title>Running queries in Interactive mode</title>
+
+          <para>Assuming you have the ECLPLUS.INI file as listed above, when
+          you run eclplus without any options you will enter interactive
+          mode:</para>
+
+          <programlisting>C:\&gt;Eclplus
+Connected to:
+SDS=172.16.20.13 Queue=eclserver_linux_7way Cluster=linux_7way
+ECL&gt;</programlisting>
+
+          <para>Type in ? for a list of the available commands:</para>
+
+          <programlisting>ECL&gt; ?</programlisting>
+
+          <para>Supported commands:</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>&lt;ecl&gt;</entry>
+
+                  <entry>executes the supplied ecl</entry>
+                </row>
+
+                <row>
+                  <entry>@file.ecl</entry>
+
+                  <entry>executes the ecl in file.ecl</entry>
+                </row>
+
+                <row>
+                  <entry>conn[ect] SDSserver</entry>
+
+                  <entry>connects to the specified SDS server</entry>
+                </row>
+
+                <row>
+                  <entry>disc[onnect]</entry>
+
+                  <entry>disconnects from the active SDS server</entry>
+                </row>
+
+                <row>
+                  <entry>l[ist] {line}</entry>
+
+                  <entry>list command history, or retrieve one line</entry>
+                </row>
+
+                <row>
+                  <entry>sta[rt] file.ecl</entry>
+
+                  <entry>executes the ecl in file.ecl</entry>
+                </row>
+
+                <row>
+                  <entry>setparam name=value</entry>
+
+                  <entry>set global variable name to value</entry>
+                </row>
+
+                <row>
+                  <entry>sav[e] file</entry>
+
+                  <entry>save ecl to a local file</entry>
+                </row>
+
+                <row>
+                  <entry>spo[ol] {file|off}</entry>
+
+                  <entry>send query output to a file, or the console if
+                  'off'</entry>
+                </row>
+
+                <row>
+                  <entry>exit</entry>
+
+                  <entry>exit ECLPlus</entry>
+                </row>
+
+                <row>
+                  <entry>quit</entry>
+
+                  <entry>exit ECLPlus</entry>
+                </row>
+
+                <row>
+                  <entry>ver[sion]</entry>
+
+                  <entry>display version information</entry>
+                </row>
+
+                <row>
+                  <entry>help</entry>
+
+                  <entry>displays this message</entry>
+                </row>
+
+                <row>
+                  <entry>?</entry>
+
+                  <entry>displays this message</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Most of the commands are self-explanatory. You can run a query
+          by typing in the ecl directly:</para>
+
+          <programlisting>ECL&gt; 1+1
+Result
+2</programlisting>
+
+          <para>Or by running a file that contains the query:</para>
+
+          <programlisting>ECL&gt; @datasetquery.txt
+firstname lastname
+Yanrui  Ma
+Richard Taylor
+Richard Chapman</programlisting>
+
+          <beginpage />
+        </sect3>
+
+        <sect3>
+          <title>Workunit Dump</title>
+
+          <para>A Workunit dump is an XML representation of every piece of
+          data in the workunit. This contains all the information that you
+          could discover about the workunit by using ECL Watch.</para>
+
+          <para>The following workunit dump came from a simple COUNT(person)
+          query in the Training environment:</para>
+
+          <programlisting>&lt;W20110615-160604 agentPID="4162" agentSession="4296042782" cloneable="1" 
+ clusterName="thor" codeVersion="138"  isClone="1" scope="hpccdemo" 
+ state="completed" submitID="hpccdemo" 
+ token="X1lUMJ6oacON/1anTHTQW1JVHr1bbY8EWTSJhlDOrtYxmD13Z5ly4Qd26sEYVtxhW"&gt;
+  &lt;Action&gt;run&lt;/Action&gt;
+  &lt;Debug&gt;
+    &lt;applyinstantecltransformations&gt;1&lt;/applyinstantecltransformations&gt;
+    &lt;applyinstantecltransformationslimit&gt;100&lt;/applyinstantecltransformationslimit&gt;
+    &lt;created_by&gt;ws_workunits&lt;/created_by&gt;
+    &lt;created_for&gt;hpccdemo&lt;/created_for&gt;
+    &lt;eclagentlog&gt;//192.168.237.132/var/log/HPCCSystems/myeclagent/eclagent.06_15_11.log
+    &lt;/eclagentlog&gt;
+    &lt;targetclustertype&gt;hthor&lt;/targetclustertype&gt;
+  &lt;/Debug&gt;
+  &lt;Query fetchEntire="1"&gt;
+    &lt;Associated&gt;
+      &lt;File crc="701142319" filename="libW20110615-160604.so" type="dll"/&gt;
+    &lt;/Associated&gt;
+    &lt;Text&gt;
+      &lt;Archive build="community_3.0.0" eclVersion="3.0.0"&gt;  &lt;Query 
+       originalFilename="C:\DOCUME~1\Hpccdemo\LOCALS~1\Temp\TFR2CE.tmp"&gt; 
+       OUTPUT(&amp;apos;Hello World&amp;apos;); &lt;/Query&gt; &lt;/Archive&gt;
+    &lt;/Text&gt;
+  &lt;/Query&gt;
+  &lt;resultLimit&gt;100&lt;/resultLimit&gt;
+  &lt;Results&gt;
+    &lt;Result fetchEntire="1" name="Result 1" sequence="0" status="calculated"&gt;
+      &lt;rowCount&gt;1&lt;/rowCount&gt;
+      &lt;SchemaRaw xsi:type="SOAP-ENC:base64"&gt; UmVzdWx0XzEABPH///8BYXNjaWkAAWFzY2lpAAAYAAAAAA== 
+      &lt;/SchemaRaw&gt;
+      &lt;totalRowCount&gt;1&lt;/totalRowCount&gt;
+      &lt;Value xsi:type="SOAP-ENC:base64"&gt; CwAAAEhlbGxvIFdvcmxk &lt;/Value&gt;
+    &lt;/Result&gt;
+  &lt;/Results&gt;
+  &lt;TimeStamps&gt;
+    &lt;TimeStamp application="workunit"&gt;
+      &lt;Created ts="1308153964"&gt; 2011-06-15T16:06:04Z &lt;/Created&gt;
+    &lt;/TimeStamp&gt;
+    &lt;TimeStamp application="EclAgent" instance="localhost.localdom"&gt;
+      &lt;Started ts="1308153971"&gt; 2011-06-15T16:06:11Z &lt;/Started&gt;
+    &lt;/TimeStamp&gt;
+    &lt;TimeStamp application="EclAgent" instance="localhost.localdom"&gt;
+      &lt;Finished ts="1308153971"&gt; 2011-06-15T16:06:11Z &lt;/Finished&gt;
+    &lt;/TimeStamp&gt;
+  &lt;/TimeStamps&gt;
+  &lt;Timings&gt;
+    &lt;Timing count="1" duration="1" max="1308040" name="WorkUnit_lockRemote"/&gt;
+    &lt;Timing count="1" duration="6" max="6577412" name="SDS_Initialize"/&gt;
+    &lt;Timing count="1" duration="0" max="704338" name="Environment_Initialize"/&gt;
+    &lt;Timing count="1" duration="16" max="16414003" name="Process"/&gt;
+  &lt;/Timings&gt;
+  &lt;Workflow&gt;
+    &lt;Item mode="normal" state="done" type="normal" wfid="1"&gt;
+      &lt;Schedule/&gt;
+    &lt;/Item&gt;
+  &lt;/Workflow&gt;
+&lt;/W20110615-160604&gt;</programlisting>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
