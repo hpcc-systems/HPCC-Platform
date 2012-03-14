@@ -21,7 +21,7 @@ PROJECT(docs)
 define_property(GLOBAL PROPERTY DOC_TARGETS BRIEF_DOCS "docs" FULL_DOCS "docs")
 mark_as_advanced(DOC_TARGETS)
 
-include(${CMAKE_SOURCE_DIR}/docMacros.cmake)
+include(${CMAKE_MODULE_PATH}/docMacros.cmake)
 
 set (DOCBOOK_RESOURCES ${CMAKE_CURRENT_BINARY_DIR}/resources)
 set (DOCBOOK_XSL ${CMAKE_CURRENT_BINARY_DIR}/resources/docbook-xsl)

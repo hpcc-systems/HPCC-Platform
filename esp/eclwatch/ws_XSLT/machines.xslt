@@ -231,18 +231,18 @@
                                 <xsl:if test="TpMachine[2] and not($SwapNode)">
                                     <xsl:attribute name="id">selectAll1</xsl:attribute>
                                     <input type="checkbox" id="selectAll1" title="Select or deselect all machines" onclick="selectAll0(this)">
-                    <xsl:if test="not($SwapNode)">
-                      <xsl:attribute name="checked">true</xsl:attribute>
-                    </xsl:if>
-                  </input>
+                                        <xsl:if test="not($SwapNode)">
+                                            <xsl:attribute name="checked">true</xsl:attribute>
+                                        </xsl:if>
+                                    </input>
                                 </xsl:if>
                             </th>
                             <th align="center">Name</th>
-              <xsl:if test="/TpMachineQueryResponse/HasThorSpareProcess/text()='1' and /TpMachineQueryResponse/Type='THORMACHINES'">
-                  <th>Action</th>
-              </xsl:if>
-              <th>Net Address</th>
-                            <th>Type</th>
+                                <xsl:if test="/TpMachineQueryResponse/HasThorSpareProcess/text()='1' and /TpMachineQueryResponse/Type='THORMACHINES'">
+                                    <th>Action</th>
+                                </xsl:if>
+                            <th>Network Address</th>
+                            <th>Component</th>
                             <th>Domain</th>
                             <th>Platform</th>
                         </tr>
@@ -368,7 +368,10 @@
         <xsl:value-of select="Netaddress"/>
       </td>
       <td>
-                <xsl:value-of select="$displayType"/>
+            <xsl:value-of select="$displayType"/>
+            <xsl:if test="Type='ThorSlaveProcess'">
+                <br/><xsl:value-of select="concat('[', ProcessNumber, ']')"/>
+            </xsl:if>
             </td>
             <td>
                 <xsl:value-of select="Domain"/>

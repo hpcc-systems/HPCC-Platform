@@ -878,6 +878,9 @@ void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed)
 
 unsigned getAffinityCpus()
 {
+#ifdef __APPLE__
+    // MORE - could do better
+#else
     cpu_set_t cpuset;
     int err = pthread_getaffinity_np(GetCurrentThreadId(), sizeof(cpu_set_t), &cpuset);
     if (0 == err)
@@ -895,6 +898,8 @@ unsigned getAffinityCpus()
         return numCpus;
 #endif /* GLIBC */
     }
+#endif
+    return 1;
 }
 
 static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigned &swaptotal,unsigned &swapinuse) 
