@@ -1858,7 +1858,11 @@ void CFileIO::close()
 void CFileIO::flush()
 {
     CriticalBlock procedure(cs);
+#ifdef F_FULLFSYNC
+    if (fcntl(file, F_FULLFSYNC) != 0)
+#else
     if (fdatasync(file) != 0)
+#endif
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
 }
 
