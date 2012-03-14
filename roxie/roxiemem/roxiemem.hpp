@@ -67,11 +67,24 @@ interface IRowAllocatorCache
     virtual void checkValid(unsigned cacheId, const void *row) const = 0;
 };
 
+//This interface allows activities that hold on to large numbers of rows to be called back to try and free up
+//memory.  E.g., sorts can spill to disk, read ahead buffers can reduce the number being readahead etc.
+//Lower priority callbacks are called before higher priority.
+//The freeBufferedRows will call all callbacks with critical=false, before calling with critical=true
 interface IBufferedRowCallback
 {
     virtual unsigned getPriority() const = 0; // lower values get freed up first.
-    virtual bool freeBufferedRows(bool critical) = 0; // return true if managed to free something.
+    virtual bool freeBufferedRows(bool critical) = 0; // return true if and only if managed to free something.
 };
+
+//This interface is called to gain exclusive access to a memory blocks shared between processes.
+//MORE: The block size needs to be consistent for all thors on this node
+interface ILargeMemCallback: extends IInterface
+{
+    virtual bool take(memsize_t largeMemory)=0;   // called when a memory request about to be satisfied will require an extra block.
+    virtual void give(memsize_t largeMemory)=0;   // called when the memory allocated falls back below the limit
+};
+
 
 struct roxiemem_decl HeapletBase
 {
@@ -371,36 +384,6 @@ private:
 };
 
 
-class roxiemem_decl RoxieRowArray
-{
-public:
-    inline ~RoxieRowArray() { kill(); }
-    inline void add(const void * row, unsigned i) { rows.add(row, i); }
-    inline void append(const void * row) { rows.append(row); }
-    inline const void * get(unsigned i) const { return rows.item(i); }
-    inline const void * getClear(unsigned i) { const void * row = rows.item(i); rows.replace(NULL, i); return row; }
-    inline const void * item(unsigned i) const { return rows.item(i); }
-    inline const void * link(unsigned i) const { const void * row = rows.item(i); if (row) LinkRoxieRow(row); return row; }
-           void set(const void * row, unsigned i);
-    inline void kill()
-    {
-        ForEachItemIn(idx, rows)
-            ReleaseRoxieRow(rows.item(idx));
-        rows.kill();
-    }
-    inline void killClear()
-    {
-        ForEachItemIn(idx, rows)
-            ReleaseRoxieRow(getClear(idx));
-        rows.kill();
-    }
-    inline unsigned ordinality() const { return rows.ordinality(); }
-
-private:
-    ConstPointerArray rows;
-};
-
-
 interface IFixedRowHeap : extends IInterface
 {
     virtual void *allocate() = 0;
@@ -470,7 +453,7 @@ interface IDataBufferManager : extends IInterface
 
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
-extern roxiemem_decl void setTotalMemoryLimit(memsize_t max);
+extern roxiemem_decl void setTotalMemoryLimit(memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();

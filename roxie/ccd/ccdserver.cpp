@@ -64,6 +64,9 @@ namespace ccdserver_hqlhelper
 #include "dllserver.hpp"
 #include "workflow.hpp"
 #include "nbcd.hpp"
+#include "roxiemem.hpp"
+#include "roxierowbuff.hpp"
+
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 #include "roxierow.hpp"
@@ -7296,6 +7299,154 @@ public:
     }
 };
 
+class CSpillingQuickSortAlgorithm : implements ISortAlgorithm, implements roxiemem::IBufferedRowCallback
+{
+    enum {
+        InitialSortElements = 0,
+        //The number of rows that can be added without entering a critical section, and therefore also the number
+        //of rows that might not get freed when memory gets tight.
+        CommitStep=32
+    };
+    roxiemem::DynamicRoxieOutputRowArray rowsToSort;
+    roxiemem::RoxieSimpleInputRowArray sorted;
+    ICompare *compare;
+    IRoxieSlaveContext * ctx;
+    Owned<IDiskMerger> diskMerger;
+    Owned<IRowStream> diskReader;
+    Owned<IOutputMetaData> rowMeta;
+    unsigned activityId;
+
+public:
+    CSpillingQuickSortAlgorithm(ICompare *_compare, IRoxieSlaveContext * _ctx, IOutputMetaData * _rowMeta, unsigned _activityId)
+        : rowsToSort(&_ctx->queryRowManager(), InitialSortElements, CommitStep), ctx(_ctx), compare(_compare), rowMeta(_rowMeta), activityId(_activityId)
+    {
+        ctx->queryRowManager().addRowBuffer(this);
+    }
+    ~CSpillingQuickSortAlgorithm()
+    {
+        ctx->queryRowManager().removeRowBuffer(this);
+        diskReader.clear();
+    }
+
+    virtual void prepare(IRoxieInput *input)
+    {
+        loop
+        {
+            const void * next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!rowsToSort.append(next))
+            {
+                {
+                    roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+                    //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
+                    //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
+                    //rows first).
+                    if (rowsToSort.numCommitted() != 0)
+                    {
+                        rowsToSort.flush();
+                        spillRows();
+                    }
+                    //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                    //spillRows() cannot shift active row pointer since it can be called from any thread
+                    rowsToSort.flush();
+                }
+
+                if (!rowsToSort.append(next))
+                {
+                    ReleaseRoxieRow(next);
+                    throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+                }
+            }
+        }
+        rowsToSort.flush();
+
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        if (diskMerger)
+        {
+            spillRows();
+            rowsToSort.kill();
+            diskReader.setown(diskMerger->merge(compare));
+        }
+        else
+        {
+            unsigned numRows = rowsToSort.numCommitted();
+            if (numRows)
+            {
+                const void * * rows = rowsToSort.getBlock(numRows);
+                //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
+                qsortvec(const_cast<void * *>(rows), numRows, *compare);
+            }
+            sorted.transferFrom(rowsToSort);
+        }
+    }
+
+    virtual const void *next()
+    {
+        if(diskReader)
+            return diskReader->nextRow();
+        return sorted.dequeue();
+    }
+
+    virtual void reset()
+    {
+        //MORE: This could transfer any row pointer from sorted back to rowsToSort. It would trade
+        //fewer heap allocations with not freeing up the memory from large group sorts.
+        rowsToSort.clearRows();
+        sorted.kill();
+        //Disk reader must be cleared before the merger - or the files may still be locked.
+        diskReader.clear();
+        diskMerger.clear();
+    }
+
+//interface roxiemem::IBufferedRowCallback
+    virtual unsigned getPriority() const
+    {
+        //Spill global sorts before grouped sorts
+        if (rowMeta->isGrouped())
+            return 20;
+        return 10;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        return spillRows();
+    }
+
+protected:
+    bool spillRows()
+    {
+        unsigned numRows = rowsToSort.numCommitted();
+        if (numRows == 0)
+            return false;
+
+        const void * * rows = rowsToSort.getBlock(numRows);
+        qsortvec(const_cast<void * *>(rows), numRows, *compare);
+
+        Owned<IRowWriter> out = queryMerger()->createWriteBlock();
+        for (unsigned i= 0; i < numRows; i++)
+        {
+            out->putRow(rows[i]);
+        }
+        rowsToSort.noteSpilled(numRows);
+        return true;
+    }
+
+    IDiskMerger * queryMerger()
+    {
+        if (!diskMerger)
+        {
+            unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
+            StringBuffer spillBasename;
+            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%"I64F"u", seq);
+            Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
+            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx->queryCodeContext());
+            diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
+        }
+        return diskMerger;
+    }
+};
+
 #define INSERTION_SORT_BLOCKSIZE 1024
 
 class SortedBlock : public CInterface, implements IInterface
@@ -7719,7 +7870,7 @@ public:
     }
 };
 
-typedef enum {heapSort, insertionSort, quickSort, unknownSort } RoxieSortAlgorithm;
+typedef enum {heapSort, insertionSort, quickSort, spillingQuickSort, unknownSort } RoxieSortAlgorithm;
 
 class CRoxieServerSortActivity : public CRoxieServerActivity
 {
@@ -7738,6 +7889,16 @@ public:
         compare = helper.queryCompare();
         readInput = false;
         sorter = NULL;
+    }
+
+    ~CRoxieServerSortActivity()
+    {
+        delete sorter;
+    }
+
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         switch (sortAlgorithm)
         {
         case heapSort:
@@ -7749,6 +7910,9 @@ public:
         case quickSort:
             sorter = new CQuickSortAlgorithm(compare);
             break;
+        case spillingQuickSort:
+            sorter = new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId);
+            break;
         case unknownSort:
             sorter = NULL; // create it later....
             break;
@@ -7757,12 +7921,6 @@ public:
             break;
         }
     }
-
-    ~CRoxieServerSortActivity()
-    {
-        delete sorter;
-    }
-
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -7858,6 +8016,12 @@ public:
                         if (sortFlags & TAFstable)
                             throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
                         sortAlgorithm = quickSort;
+                    }
+                    else if (stricmp(useAlgorithm, "spillingquicksort")==0)
+                    {
+                        if (sortFlags & TAFstable)
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                        sortAlgorithm = spillingQuickSort;
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
                         sortAlgorithm = heapSort; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection
@@ -32249,7 +32413,7 @@ protected:
         static bool heapInitialized = false;
         if (!heapInitialized)
         {
-            roxiemem::setTotalMemoryLimit(100 * 1024 * 1024);
+            roxiemem::setTotalMemoryLimit(100 * 1024 * 1024, 0, NULL);
             heapInitialized = true;
         }
         package.setown(createPackage(NULL));

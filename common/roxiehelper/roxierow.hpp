@@ -47,4 +47,18 @@ inline bool RoxieRowCheckValid(unsigned allocatorId, const void * row)
     return true;
 }
 
+class RoxieRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    virtual void releaseRow(const void *row)
+    {
+        ReleaseRoxieRow(row);
+    }
+    virtual void linkRow(const void *row)
+    {
+        LinkRoxieRow(row);
+    }
+};
+
 #endif

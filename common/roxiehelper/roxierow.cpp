@@ -64,6 +64,7 @@ public:
     }
 };
 
+//This is here as demonstration of an alternative implementation...  crc16 is possibly a bit expensive.
 class Sum16CheckingHelper
 {
 public:
