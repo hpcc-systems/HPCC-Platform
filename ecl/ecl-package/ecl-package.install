@@ -1,0 +1,1 @@
+installFile "$binPath/ecl-package" "/usr/bin/ecl-package" 1 || exit 1
