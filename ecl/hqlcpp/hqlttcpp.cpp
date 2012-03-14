@@ -9057,6 +9057,35 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
             return transformed.getClear();
         }
+    case no_merge:
+        {
+            HqlExprArray children;
+            transformChildren(expr, children);
+            IHqlExpression * sorted = queryProperty(sortedAtom, children);
+            if (!sorted || queryProperty(_implicitSorted_Atom, children))
+            {
+                IHqlExpression * dataset = &children.item(0);
+                removeProperty(children, _implicitSorted_Atom);
+
+                if (sorted)
+                    children.zap(*sorted);
+
+                HqlExprArray sorts;
+                OwnedHqlExpr order = getExistingSortOrder(dataset, expr->hasProperty(localAtom), true);
+                if (order)
+                    unwindChildren(sorts, order);
+                ForEachItemInRev(i, sorts)
+                {
+                    if (sorts.item(i).isAttribute())
+                    {
+                        reportError(HQLWRN_MergeBadSortOrder_Text, true);
+                        sorts.remove(i);
+                    }
+                }
+                children.append(*createExprAttribute(sortedAtom, sorts));
+            }
+            return expr->clone(children);
+        }
     }
 
     return Parent::createTransformed(expr);
@@ -10356,39 +10385,7 @@ IHqlExpression * HqlTreeNormalizer::transformKeyIndex(IHqlExpression * expr)
 IHqlExpression * HqlTreeNormalizer::transformMerge(IHqlExpression * expr)
 {
     HqlExprArray children;
-    bool same = transformChildren(expr, children);
-
-    //MORE: Check sort orders are consistent and add an order attribute,
-    IHqlExpression * dataset = &children.item(0);
-    IHqlExpression * distribution = queryDistribution(dataset);
-
-//  I'm really not sure why the following code was present.
-//  if (distribution && !isSortDistribution(distribution) && !expr->hasProperty(localAtom))
-//      children.append(*createLocalAttribute());
-
-    IHqlExpression * sorted = queryProperty(sortedAtom, children);
-    if (!sorted || queryProperty(_implicitSorted_Atom, children))
-    {
-        if (sorted)
-        {
-            removeProperty(children, _implicitSorted_Atom);
-            children.zap(*sorted);
-        }
-
-        HqlExprArray sorts;
-        OwnedHqlExpr order = getExistingSortOrder(dataset, expr->hasProperty(localAtom), true);
-        if (order)
-            unwindChildren(sorts, order);
-        ForEachItemInRev(i, sorts)
-        {
-            if (sorts.item(i).isAttribute())
-            {
-                translator.reportWarning(HQLWRN_MergeBadSortOrder, HQLWRN_MergeBadSortOrder_Text);
-                sorts.remove(i);
-            }
-        }
-        children.append(*createExprAttribute(sortedAtom, sorts));
-    }
+    transformChildren(expr, children);
 
     HqlExprArray args;
     reorderAttributesToEnd(args, children);
