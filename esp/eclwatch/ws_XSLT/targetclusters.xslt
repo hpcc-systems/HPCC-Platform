@@ -292,7 +292,7 @@
             </tr>
       <tr>
         <td/>
-        <td colspan="6" align="left" style="padding-left=30px">
+        <td colspan="7" align="left" style="padding-left=30px">
           <span id="div_{$name}_{position()}" style="display:inline;visibility:visible">
                 <table class="blueline" border="2" frame="box" rules="groups">
                   <colgroup>
@@ -301,17 +301,17 @@
                     <col width="20%"/>
                     <col width="10%"/>
                     <col width="8%"/>
-                    <col width="15%"/>
                     <col width="25%"/>
+                    <col width="20%"/>
                   </colgroup>
                   <tr bgcolor="#C0C0C0">
                     <th/>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Computer</th>
-                    <th>Platform</th>
-                    <th>Network Address</th>
-                    <th>Directory</th>
+                    <th align="center">Name</th>
+                    <th align="center">Component</th>
+                    <th align="center">Computer</th>
+                    <th align="center">Platform</th>
+                    <th align="center">Network Address</th>
+                    <th align="center">Directory</th>
                   </tr>
 
                   <xsl:if test="count(TpClusters/TpCluster)">
@@ -415,12 +415,12 @@
                   <xsl:value-of select="Name"/>
                 </a>
               </td>
-              <td>
+              <td align="center">
                 <xsl:value-of select="$type4"/>
               </td>
               <td>
               </td>
-              <td>
+              <td align="center">
                 <xsl:choose>
                   <xsl:when test="OS=0">Windows</xsl:when>
                   <xsl:when test="OS=2">Linux</xsl:when>
@@ -466,14 +466,13 @@
                       <thead>
                         <tr>
                           <th align="center">Name</th>
-                          <th>Type</th>
+                          <th align="center">Component</th>
                           <xsl:if test="Type='ThorCluster' and HasThorSpareProcess/text()='1'">
                             <th>Action</th>
                           </xsl:if>
-                          <th>Net Address</th>
-                          <th>Domain</th>
-                          <th>Platform</th>
-                          <th>Log</th>
+                          <th align="center">Network Address</th>
+                          <th align="center">Domain</th>
+                          <th align="center">Platform</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -549,21 +548,21 @@
                 </tbody>
               </table>
             </td>
-            <td>
+            <td align="center">
               <xsl:value-of select="$type4"/>
             </td>
-            <td>
+            <td align="center">
               <xsl:value-of select="Name"/>
             </td>
-                <td>
-                  <xsl:choose>
-                    <xsl:when test="OS=0">Windows</xsl:when>
-                    <xsl:when test="OS=2">Linux</xsl:when>
-                    <xsl:when test="OS=1">Solaris</xsl:when>
-                    <xsl:otherwise>Unknown</xsl:otherwise>
-                  </xsl:choose>
-                </td>
-                <td>
+            <td align="center">
+              <xsl:choose>
+                <xsl:when test="OS=0">Windows</xsl:when>
+                <xsl:when test="OS=2">Linux</xsl:when>
+                <xsl:when test="OS=1">Solaris</xsl:when>
+                <xsl:otherwise>Unknown</xsl:otherwise>
+              </xsl:choose>
+            </td>
+            <td align="center">
               <xsl:value-of select="Netaddress"/>
               <xsl:if test="not(Port=0)">
                 :<xsl:value-of select="Port"/>
@@ -748,17 +747,17 @@
                   <table class="blueline" border="2" frame="box" rules="groups">
                     <thead>
                       <tr>
-                        <th>Component</th>
-                        <th>Dali Server</th>
+                        <th align="center">Component</th>
+                        <th align="center">Dali Server</th>
                         <!--th>WUQueueName</th-->
-                        <th>Configuration</th>
+                        <th align="center">Configuration</th>
                       </tr>
                     </thead>
                     <tbody>
                       <xsl:variable name="netAddress" select="Netaddress"/>
                       <tr>
-                        <td>AgentExec</td>
-                        <td>
+                        <td align="center">AgentExec</td>
+                        <td align="center">
                           <xsl:value-of select="../../DaliServer"/>
                         </td>
                         <td>
@@ -824,22 +823,25 @@
             <xsl:when test="Type='HoleControlProcess'">Hole Control</xsl:when>
             <xsl:when test="Type='HoleCollatorProcess'">Hole Collator</xsl:when>
             <xsl:when test="Type='HoleStandbyProcess'">Hole Standby</xsl:when>
-            <xsl:when test="Type='RoxieFarmerProcess'">Roxie Farmer</xsl:when>
-            <xsl:when test="Type='RoxieSlaveProcess'">Roxie Slave</xsl:when>
+            <xsl:when test="Type='RoxieServerProcess'">Roxie Server</xsl:when>
             <xsl:when test="Type='DropZone'">Drop Zone</xsl:when>
             <xsl:otherwise>
               <xsl:value-of select="Type"/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:variable>
-        <td>
+        <td align="center">
           <xsl:value-of select="Name"/>
         </td>
-      <td>
+      <td align="center">
         <xsl:value-of select="$displayType"/>
+          <xsl:if test="Type='ThorSlaveProcess'">
+              <br/>
+              <xsl:value-of select="concat('[', $clusterName, ', ', ProcessNumber, ']')"/>
+          </xsl:if>
       </td>
       <xsl:if test="$clusterType='ThorCluster' and ../../HasThorSpareProcess/text()='1'">
-          <td>
+          <td align="center">
             <xsl:if test="Type='ThorSlaveProcess'">
               <a href="/WsTopology/TpMachineQuery?Type=THORSPARENODES&amp;Cluster={$clusterName}&amp;OldIP={Netaddress}&amp;Path={../../Path}"
                 title="Swap node...">
@@ -847,51 +849,20 @@
               </a>
             </xsl:if>
           </td>
-        </xsl:if>
-        <td>
+      </xsl:if>
+      <td align="center">
           <xsl:value-of select="Netaddress"/>
-        </td>
-        <td>
+      </td>
+      <td align="center">
           <xsl:value-of select="Domain"/>
-        </td>
-        <td>
+      </td>
+      <td align="center">
           <xsl:choose>
             <xsl:when test="OS=0">Windows</xsl:when>
             <xsl:when test="OS=1">Solaris</xsl:when>
             <xsl:when test="OS=2">Linux</xsl:when>
             <xsl:otherwise>Unknown</xsl:otherwise>
           </xsl:choose>
-        </td>
-      <td>
-        <a style="padding-right:2" href="">
-          <xsl:variable name="url">
-            <xsl:text disable-output-escaping="yes">/WsTopology/TpGetComponentFile%3fFileType%3dlog%26NetAddress%3d</xsl:text>
-            <xsl:value-of select="concat(Netaddress, '%26CompType%3d', Type, '%26OsType%3d', OS, '%26Directory%3d')"/>
-          </xsl:variable>
-          <xsl:variable name="pageCaption">
-            <xsl:text disable-output-escaping="yes">esp_iframe_title=Log file for </xsl:text>
-            <xsl:value-of select="concat($displayType, ' [', Netaddress, '] of ')"/>
-            <!--xsl:variable name="clusterType" select="$clusterType"/-->
-            <xsl:text disable-output-escaping="yes"> cluster '</xsl:text>
-            <xsl:value-of select="$clusterName"/>
-            <xsl:text disable-output-escaping="yes">'</xsl:text>
-          </xsl:variable>
-          <xsl:attribute name="onclick">
-            <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
-            <xsl:value-of select="Netaddress"/>
-            <xsl:text disable-output-escaping="yes">', '</xsl:text>
-            <xsl:value-of select="translate(../../LogDirectory, '\', '/')"/>
-            <xsl:text disable-output-escaping="yes">', '</xsl:text>
-            <xsl:value-of select="$url"/>
-            <xsl:text disable-output-escaping="yes">', "</xsl:text>
-            <xsl:value-of select="$pageCaption"/>
-            <xsl:text disable-output-escaping="yes">",</xsl:text>
-            <xsl:value-of select="OS"/>
-            <xsl:text disable-output-escaping="yes">);</xsl:text>
-          </xsl:attribute>
-          <img border="0" src="/esp/files_/img/base.gif" alt="View log file..." width="19" height="16"/>
-        </a>
-        <xsl:value-of select="../../LogDirectory"/>
       </td>
     </tr>
     </xsl:template>

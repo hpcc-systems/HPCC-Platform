@@ -95,20 +95,16 @@
               <table class="sort-table" id="clustersTable">
                 <caption><h2 align="left">Clusters</h2></caption>
                 <colgroup>
-                  <col width="1%" align="center"/>
                   <col width="2%" align="center"/>
-                  <col width="18%" align="left"/>
-                  <col width="9%" align="left"/>
-                  <col width="10%" align="left"/>
-                  <col width="30%" align="left"/>
-                  <col width="30%" align="left"/>
+                  <col width="15%" align="left"/>
+                  <col width="19%" align="left"/>
+                  <col width="8%" align="left"/>
+                  <col width="28%" align="left"/>
+                  <col width="28%" align="left"/>
                 </colgroup>
                 <tr class="grey">
-                  <th id="selectAll1">
-                    <input type="checkbox" title="Select or deselect all clusters" onclick="selectAll(this.checked)"/>
-                  </th>
-                  <th colspan="2" align="left">Name</th>
-                  <th>Type</th>
+                  <th colspan="2">Name</th>
+                  <th>Component</th>
                   <th>Platform</th>
                   <th>Directory</th>
                   <th>Log Directory</th>
@@ -116,34 +112,6 @@
                 <xsl:apply-templates select="TpClusters/TpCluster">
                   <xsl:sort select="Name"/>
                 </xsl:apply-templates>
-              </table>
-              <table cellpadding="0" width="100%">
-                <tr>
-                  <th id="selectAll2" width="1%" style="padding-left:4px" align="left">
-                    <input type="checkbox" title="Select or deselect all clusters" onclick="selectAll(this.checked)"></input>
-                  </th>
-                  <th colspan="5" align="left">Select All / None</th>
-                </tr>
-                <tr>
-                  <td height="20"/>
-                </tr>
-                <xsl:if test="$enableSNMP != 0">
-                  <tr>
-                    <td><b>User Name: </b></td>
-                    <td><input type="text" id="submit3" name="submit3" size="20" value=""/></td>
-                  </tr>
-                  <tr>
-                    <td><b>Password: </b></td>
-                    <td><input type="password" id="submit4" name="submit4" size="20" value=""/></td>
-                  </tr>
-                  <tr>
-                    <td/>
-                    <td>
-                      <input type="submit" id="submit1" value="Start" onclick="return onSubmit(0)"/>
-                      <input type="submit" id="submit2" value="Stop" onclick="return onSubmit(1)"/>
-                    </td>
-                  </tr>
-                </xsl:if>
               </table>
             </xsl:when>
             <xsl:otherwise>
@@ -172,6 +140,13 @@
         </xsl:choose>
       </xsl:variable>
       <xsl:variable name="type3" select="translate($type2, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+      <xsl:variable name="type4">
+        <xsl:choose>
+            <xsl:when test="Type='RoxieCluster'">Roxie Cluster Process</xsl:when>
+            <xsl:when test="Type='ThorCluster'">Thor Cluster Process</xsl:when>
+            <xsl:when test="Type='HoleCluster'">Hole Cluster Process</xsl:when>
+        </xsl:choose>
+      </xsl:variable>
       <xsl:variable name="absolutePath">
         <xsl:call-template name="makeAbsolutePath">
           <xsl:with-param name="path" select="Directory"/>
@@ -206,13 +181,6 @@
           </xsl:otherwise>
                 </xsl:choose>                                                       
             </xsl:variable>
-      <td>
-        <!--we encode name, type, os and path for component - the service uses the name (first token)
-        to look up component's address-->
-        <input type="checkbox" name="Addresses_i{count(preceding::TpCluster)}" 
-        value="{Name}:{Type}:{Name}:{OS}:{translate(Directory, ':', '$')}:{$type3}MACHINES:{Path}" onclick="return clicked(this, event)">
-        </input>
-      </td>
       <td width="45" nowrap="true">
         <xsl:variable name="href0">
           <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
@@ -228,7 +196,7 @@
         </a>
       </td>
       <td>
-        <xsl:value-of select="$type2"/>
+        <xsl:value-of select="$type4"/>
       </td>
       <td>
         <xsl:choose>
