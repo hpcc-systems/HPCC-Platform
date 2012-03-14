@@ -80,6 +80,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
+  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
+
   ##########################################################
 
   # common compiler/linker flags
