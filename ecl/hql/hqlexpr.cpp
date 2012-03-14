@@ -116,6 +116,7 @@ static IHqlExpression * cachedSelfExpr;
 static IHqlExpression * cachedSelfReferenceExpr;
 static IHqlExpression * cachedNoBody;
 static IHqlExpression * cachedNullRecord;
+static IHqlExpression * cachedNullRowRecord;
 static IHqlExpression * cachedOne;
 static IHqlExpression * cachedLocalAttribute;
 static IHqlExpression * constantTrue;
@@ -171,6 +172,8 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     cachedSelfExpr = createValue(no_self, makeRowType(NULL));
     cachedSelfReferenceExpr = createValue(no_selfref);
     cachedNullRecord = createRecord()->closeExpr();
+    OwnedHqlExpr nonEmptyAttr = createAttribute(_nonEmpty_Atom);
+    cachedNullRowRecord = createRecord(nonEmptyAttr);
     cachedOne = createConstant(1);
     cachedLocalAttribute = createAttribute(localAtom);
     constantTrue = createConstant(createBoolValue(true));
@@ -206,6 +209,7 @@ MODULE_EXIT()
     cachedActiveTableExpr->Release();
     cachedSelfReferenceExpr->Release();
     cachedSelfExpr->Release();
+    cachedNullRowRecord->Release();
     cachedNullRecord->Release();
 
     ClearTypeCache();
@@ -1565,6 +1569,7 @@ bool checkConstant(node_operator op)
     case no_counter:
     case no_loopcounter:
     case no_sequence:
+    case no_table:
         return false;
     // following are currently not implemented in the const folder - can enable if they are.
     case no_global:
@@ -14304,6 +14309,11 @@ IHqlExpression * queryNullRecord()
     return cachedNullRecord;
 }
 
+IHqlExpression * queryNullRowRecord()
+{
+    return cachedNullRowRecord;
+}
+
 IHqlExpression * createNullDataset()
 {
     return createDataset(no_null, LINK(queryNullRecord()));
@@ -14801,7 +14811,7 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 {
     IHqlExpression * transform = aggregate->queryChild(2);
     IHqlExpression * assign = transform->queryChild(0);
-    if (assign->getOperator() != no_assign)
+    if (!assign || assign->getOperator() != no_assign)
         return false;
     IHqlExpression * count = assign->queryChild(1);
     if (count->getOperator() != no_countgroup)

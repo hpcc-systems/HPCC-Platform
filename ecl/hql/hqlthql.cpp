@@ -1084,7 +1084,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             ForEachChild(i2, expr)
             {
                 IHqlExpression *child = queryChild(expr, i2);
-                if (child->getOperator() == no_record)
+                if (child && child->getOperator() == no_record)
                 {
                     s.append("(");
                     if (isEclAlias(child) || !m_recurse)

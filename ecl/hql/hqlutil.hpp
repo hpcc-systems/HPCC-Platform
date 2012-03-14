@@ -63,6 +63,7 @@ extern HQL_API IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression *
 
 extern HQL_API void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool sortIndexPayload);
 extern HQL_API bool recordContainsBlobs(IHqlExpression * record);
+inline bool recordIsEmpty(IHqlExpression * record) { return queryLastField(record) == NULL; }
 extern HQL_API IHqlExpression * queryVirtualFileposField(IHqlExpression * record);
 
 extern HQL_API IHqlExpression * flattenListOwn(IHqlExpression * list);

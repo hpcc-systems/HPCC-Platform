@@ -1869,10 +1869,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
             if (fieldInfo.hasVirtualsOrDeserialize())
             {
                 OwnedHqlExpr diskTable = createDataset(no_anon, LINK(physicalRecord));
-                translator.buildMetaMember(instance->classctx, diskTable, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, diskTable, false, "queryDiskRecordSize");
             }
             else
-                translator.buildMetaMember(instance->classctx, tableExpr, "queryDiskRecordSize");
+                translator.buildMetaMember(instance->classctx, tableExpr, isGrouped(tableExpr), "queryDiskRecordSize");
 
         }
     }
@@ -6807,7 +6807,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
 
     classctx.addQuoted("ICodeContext * ctx;");
     classctx.addQuoted("unsigned activityId;");
-    buildMetaMember(classctx, dataset, "queryRecordSize");
+    buildMetaMember(classctx, dataset, false, "queryRecordSize");
 
     transformClass->setIncomplete(false);
 
@@ -6894,7 +6894,7 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
     unsigned maxColumns = buildCsvReadTransform(classctx, dataset, false, optCsvAttr);
     doBuildUnsignedFunction(classctx, "getMaxColumns", maxColumns);
 
-    buildMetaMember(classctx, dataset, "queryRecordSize");
+    buildMetaMember(classctx, dataset, false, "queryRecordSize");
     buildCsvParameters(classctx, optCsvAttr, NULL, true);
 
     transformClass->setIncomplete(false);
@@ -6935,7 +6935,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
 
     doBuildVarStringFunction(instance->classctx, "queryIteratorPath", queryRealChild(mode, 0));
 
-    buildMetaMember(instance->classctx, tableExpr, "queryDiskRecordSize");  // A lie, but I don't care....
+    buildMetaMember(instance->classctx, tableExpr, false, "queryDiskRecordSize");  // A lie, but I don't care....
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
@@ -7075,8 +7075,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         translator.buildRecordSerializeExtract(funcctx, memoryRhsRecord);
 
         StringBuffer s;
-        OwnedHqlExpr serializedRhs = createDataset(no_anon, LINK(serializedRhsRecord));
-        MetaInstance meta(translator, serializedRhs);
+        MetaInstance meta(translator, serializedRhsRecord, false);
         translator.buildMetaInfo(meta);
         instance->classctx.addQuoted(s.clear().append("virtual IOutputMetaData * queryExtractedSize() { return &").append(meta.queryInstanceObject()).append("; }"));
     }

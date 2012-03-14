@@ -3030,6 +3030,7 @@ class CThorLibraryCallArg : public CThorArg, implements IHThorLibraryCallArg
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
     virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
+    virtual IOutputMetaData * queryOutputMeta()             { return NULL; }
 
     virtual IInterface * selectInterface(ActivityInterfaceEnum which)
     {

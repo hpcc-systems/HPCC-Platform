@@ -498,55 +498,6 @@ int ComplexImplicitProjectInfo::docompare(const void * l,const void * r) const
 }
 
 
-void ComplexImplicitProjectInfo::ensureOutputNotEmpty()
-{
-    if (outputInfo && (outputFields.ordinality() == 0))
-    {
-        //MORE: Sometimes this can pull in other data from upstream activities - should pick one that is already required if
-        //there are any.  e.g., count(ds(x=0)) should pick field x.
-#if 1
-        IHqlExpression * best = &outputInfo->outputFields.item(0);
-#else
-        //Looks good, but in first field is more often used by something else. so disable...
-        //choose the smallest field at a fixed offset
-        IHqlExpression * best = NULL;
-        unsigned bestSize = UNKNOWN_LENGTH;
-        ForEachItemIn(i, outputInfo->outputFields)
-        {
-            IHqlExpression & cur = outputInfo->outputFields.item(i);
-            ITypeInfo * curType = cur.queryType();
-            type_t tc = curType->getTypeCode();
-            //try not to select record fields - they tend to have 0 length size
-            size32_t curSize = (tc == type_row) ? UNKNOWN_LENGTH-1 : curType->getSize();
-            if (!best)
-            {
-                best = &cur;
-                bestSize = curSize;
-            }
-            else if (bestSize > curSize)
-            {
-                switch (tc)
-                {
-                case type_bitfield:
-                case type_alien:
-                case type_row:
-                    //avoid these if at all possible....
-                    break;
-                default:
-                    best = &cur;
-                    bestSize = curSize;
-                    break;
-                }
-            }
-            if (curSize == UNKNOWN_LENGTH)
-                break;
-        }
-#endif
-
-        outputFields.append(OLINK(*best));
-    }
-}
-
 void ComplexImplicitProjectInfo::finalizeOutputRecord()
 {
     //MORE: Create them in the same order as the original record + don't change if numOutputFields = numOriginalOutputFields
@@ -563,9 +514,10 @@ void ComplexImplicitProjectInfo::finalizeOutputRecord()
             }
 
             outputFields.sort(*outputInfo);
-            assertex(outputFields.ordinality() != 0);
-
             outputFields.getFields(recordFields);
+
+            if (recordFields.ordinality() == 0)
+                recordFields.append(*createAttribute(_nonEmpty_Atom));
 
             //Ensure that maxSize is set on the new record - if necessary
             OwnedHqlExpr newRecord = createRecord(recordFields);
@@ -1674,11 +1626,6 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
         if (extra->outputFields.includeAll())
             assertex(extra->newOutputRecord != NULL);       //extra->newOutputRecord.set(expr->queryRecord());
-
-        //Ensure at least one field is required - otherwise meta goes wrong.  It really needs to be added here, rather than later,
-        //otherwise the field tracking for iterate/rollup etc. go wrong.  Could possibly improve later if we added code to project the
-        //dataset in front of a iterate/rollup
-        extra->ensureOutputNotEmpty();
     }
 
     switch (extra->activityKind())
