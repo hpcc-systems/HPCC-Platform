@@ -39,6 +39,7 @@ class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, impl
     SubscriptionId change;
     ISDSSubscription *notifier;
     StringAttr id;
+    mutable CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE;
     CDaliPackageWatcher(const char *_id, const char *xpath, ISDSSubscription *_notifier)
@@ -52,6 +53,8 @@ public:
     }
     virtual void unsubscribe()
     {
+        CriticalBlock b(crit);
+        notifier = NULL;
         querySDS().unsubscribe(change);
     }
     virtual const char *queryName() const
@@ -60,7 +63,9 @@ public:
     }
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        notifier->notify(id, xpath, flags, valueLen, valueData);
+        CriticalBlock b(crit);
+        if (notifier)
+            notifier->notify(id, xpath, flags, valueLen, valueData);
     }
 };
 

@@ -141,22 +141,15 @@ static bool checkPartsInCluster(const char *title,const char *clustername, IProp
 
 
 
-bool CXRefFilesNode::RemovePhysical(const char* _Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
+bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
 {   
     size32_t startlen = errstr.length();
-    IPropertyTree* subBranch = FindNode(_Partmask);
+    IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch) {
-        ERRLOG("%s branch not found",_Partmask);
-        errstr.appendf("ERROR: %s branch not found",_Partmask);
+        ERRLOG("%s branch not found",Partmask);
+        errstr.appendf("ERROR: %s branch not found",Partmask);
         return false;
     }
-    const char *Partmask = _Partmask;
-    StringBuffer tmpmask; // expand driveless form
-    // No longer required?? TBD
-    if ((Partmask[0]=='/')&&Partmask[1]&&(Partmask[1]!='/')&&(Partmask[2]!='$')) 
-        Partmask = tmpmask.append("/c$").append(Partmask).str();
-    else if ((Partmask[0]=='\\')&&(Partmask[1]!='\\'))
-        Partmask = tmpmask.append("c:").append(Partmask).str();
     // sanity check file doesn't (now) exist 
     bool exists = false;
     StringBuffer lfn;
@@ -263,9 +256,9 @@ bool CXRefFilesNode::RemovePhysical(const char* _Partmask,IUserDescriptor* udesc
         }
     } afor(files,errstr,crit);  
     afor.For(files.ordinality(),10,false,true);
-    if (!RemoveTreeNode(_Partmask))                 
+    if (!RemoveTreeNode(Partmask))                 
     {
-        ERRLOG("Error Removing XRef Branch %s",_Partmask);
+        ERRLOG("Error Removing XRef Branch %s",Partmask);
         return false;
     }
     m_bChanged = true;
@@ -302,22 +295,14 @@ bool CXRefFilesNode::RemoveLogical(const char* LogicalName,IUserDescriptor* udes
     return true;
 }
 
-bool CXRefFilesNode::AttachPhysical(const char* _Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
+bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc, const char *clustername, StringBuffer &errstr)
 {
-    IPropertyTree* subBranch = FindNode(_Partmask);
+    IPropertyTree* subBranch = FindNode(Partmask);
     if (!subBranch) {
-        ERRLOG("%s node not found",_Partmask);
-        errstr.appendf("ERROR: %s node not found",_Partmask);
+        ERRLOG("%s node not found",Partmask);
+        errstr.appendf("ERROR: %s node not found",Partmask);
         return false;
     }
-    const char *Partmask = _Partmask;
-    StringBuffer tmpmask; // expand driveless form
-    // No longer required?? TBD
-    if ((Partmask[0]=='/')&&Partmask[1]&&(Partmask[1]!='/')&&(Partmask[2]!='$')) 
-        Partmask = tmpmask.append("/c$").append(Partmask).str();
-    else if ((Partmask[0]=='\\')&&(Partmask[1]!='\\'))
-        Partmask = tmpmask.append("c:").append(Partmask).str();
-
     if (!checkPartsInCluster(Partmask,clustername,subBranch,errstr,false))
         return false;
 
@@ -382,9 +367,9 @@ bool CXRefFilesNode::AttachPhysical(const char* _Partmask,IUserDescriptor* udesc
     Owned<IDistributedFile> dFile = queryDistributedFileDirectory().createNew(fileDesc);
     dFile->attach(logicalName.toCharArray(),udesc);
 
-    if (!RemoveTreeNode(_Partmask)) {                   
-        ERRLOG("Removing XRef Branch %s",_Partmask);
-        errstr.appendf("ERROR: Removing XRef Branch %s",_Partmask);
+    if (!RemoveTreeNode(Partmask)) {                   
+        ERRLOG("Removing XRef Branch %s",Partmask);
+        errstr.appendf("ERROR: Removing XRef Branch %s",Partmask);
         return false;
     }
     m_bChanged = true;
