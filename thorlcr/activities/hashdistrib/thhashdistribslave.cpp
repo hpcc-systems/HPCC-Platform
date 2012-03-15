@@ -2554,7 +2554,7 @@ public:
         helper = static_cast <IHThorHashAggregateArg *> (queryHelper());
         appendOutputLinked(this);
 
-        if (!container.queryLocal())
+        if (!container.queryLocalOrGrouped())
             mptag = container.queryJob().deserializeMPTag(data);
         ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
     }
