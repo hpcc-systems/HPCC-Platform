@@ -587,7 +587,6 @@ class CPackageMap : public CInterface, implements IPackageMap
     MapStringToMyClass<IRoxiePackage> packages;
     StringAttr packageId;
     StringAttr querySetId;
-    Owned<IPropertyTree> querySets;
     bool active;
     StringArray wildMatches, wildIds;
 public:
