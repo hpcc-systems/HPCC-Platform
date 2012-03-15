@@ -371,13 +371,17 @@ static IHqlExpression * optimizeCaseConstant(node_operator op, IHqlExpression * 
                     //CASE(x,a1=>v1,a2=>v2,a3=>v3,v0) [not]= y
                     //If y ==a0 then transform to x [NOT] IN [a<n>] where v<n>!=y
                     bool matchesDefault = (defValue->compare(constVal) == 0);
+                    HqlExprCopyArray matches;
                     HqlExprArray exceptions;
                     for (unsigned i=0; i<caseResults.ordinality(); i++)
                     {
-                        IHqlExpression * val = (IHqlExpression *)&caseResults.item(i);
+                        IHqlExpression * key = caseExpr->queryChild(i+1)->queryChild(0);
+                        IHqlExpression * val = &caseResults.item(i);
                         bool caseMatches = (val->queryValue()->compare(constVal) == 0);
-                        if (caseMatches != matchesDefault)
-                            exceptions.append(*LINK(caseExpr->queryChild(i+1)->queryChild(0)));
+                        if (caseMatches == matchesDefault)
+                            matches.append(*key->queryBody());
+                        else if (!matches.contains(*key->queryBody()))
+                            exceptions.append(*LINK(key));
                     }
                     bool defaultsToTrue = (matchesDefault && (op == no_eq)) || (!matchesDefault && (op == no_ne));
                     if (exceptions.ordinality() == 0)
