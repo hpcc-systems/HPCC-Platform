@@ -16430,6 +16430,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
+    IInputBase *input; // Hiding the one in the base class - note this is an IInputBase not an IRoxieInput
 
     bool fillGroup()
     {
@@ -16623,8 +16624,8 @@ public:
         if ((helper.getJoinFlags() & JFlimitedprefixjoin) && helper.getJoinLimit()) 
         {   //limited match join (s[1..n])
             dualcache.setown(new CRHDualCache());
-            dualcache->init(input);
-            setInput(0, (IRoxieInput *)dualcache->queryOut1());
+            dualcache->init(CRoxieServerActivity::input);
+            input = dualcache->queryOut1();
             failingOuterAtmost = false;
             matchedLeft = false;
             leftIndex = 0;
@@ -16633,13 +16634,13 @@ public:
             limitedhelper.setown(createRHLimitedCompareHelper());
             limitedhelper->init( helper.getJoinLimit(), dualcache->queryOut2(), collate, helper.queryPrefixCompare() );
         }
+        else
+            input = CRoxieServerActivity::input;
     }
 
     virtual void reset()
     {
         group.clear();
-        if (limitedhelper)
-            input = (IRoxieInput*)dualcache->input();
         CRoxieServerActivity::reset();
         defaultLeft.clear();
         defaultRight.clear();
