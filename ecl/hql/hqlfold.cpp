@@ -2320,8 +2320,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_implicitcast:
         {
             IHqlExpression * child = expr->queryChild(0);
-            node_operator childOp = child->getOperator();
             ITypeInfo * exprType = expr->queryType();
+            if (exprType == child->queryType())
+                return LINK(child);
+
+            node_operator childOp = child->getOperator();
             switch (childOp)
             {
             case no_constant:
