@@ -466,7 +466,7 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
             return false;
     }
     if (optResultLimit == (unsigned)-1)
-        extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 100);
+        extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 0);
 
     return true;
 
