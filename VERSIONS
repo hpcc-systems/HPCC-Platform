@@ -45,9 +45,10 @@ Branches with names starting candidate- contain code that is being prepared for
 release as a stable version. Fixes for bugs discovered during closedown testing
 will be merged into the current candidate- branch.
 
-A branch with the name split-X.Y will refer to the point at which the branch for
-candidate-X.Y split off from master. This is normally the point where bug fixes
-intended for release in the X.Y series should be based.
+When preparing a patch or a GitHub pull request, a new git branch should be created
+based on the appropriate target - if the change is to go into the next 3.6 build, then
+base it on candidate-3.6.x, for example. All changes that are accepted into candidate-3.6.x
+are normally merged into the master branch too.
 
 Tags
 ====
