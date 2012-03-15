@@ -1486,7 +1486,7 @@ const char * const helpText[] = {
     "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
     "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
     "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
-    "! -fshowRecordCountInGraph Show estimates of record counts the graph",
+    "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
     "! -fspanMultipleCpp       Generate a work unit in multiple c++ files",
     "",
 };
