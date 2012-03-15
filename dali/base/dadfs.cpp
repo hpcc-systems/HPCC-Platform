@@ -8111,7 +8111,6 @@ public:
                     VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", cluster.queryProp("@name"));
                     oldCluster = oldEnvironment->queryPropTree(xpath.str());
                 }
-                force = true; // JCSMORE, roxie groups may only change on detected environment change in future?
                 constructGroup(cluster,NULL,oldCluster,grp_roxie,force,messages);
                 constructFarmGroup(clusters->query(),oldCluster,force,messages);
             }
