@@ -37,140 +37,116 @@
             </script>
             <script language="JavaScript1.2">
             <xsl:text disable-output-escaping="yes"><![CDATA[
-                function getSelected(o)
+                function updatePermRow(rowId)
                 {
-                    if (o.tagName=='INPUT' && o.type == 'checkbox' && o.value != 'on')
-                        return o.checked ? '\n'+o.value : '';
-
-                    var s='';
-                    var ch=o.children;
-                    if (ch)
-                        for (var i in ch)
-                            s=s+getSelected(ch[i]);
-                    return s;
+                    var formId = 'row_action_'+rowId;
+                    var thisForm = document.forms[formId];
+                    thisForm.allow_access.value = document.getElementById('allow_access_'+rowId).checked;
+                    thisForm.allow_read.value = document.getElementById('allow_read_'+rowId).checked;
+                    thisForm.allow_write.value = document.getElementById('allow_write_'+rowId).checked;
+                    thisForm.allow_full.value = document.getElementById('allow_full_'+rowId).checked;
+                    thisForm.deny_access.value = document.getElementById('deny_access_'+rowId).checked;
+                    thisForm.deny_read.value = document.getElementById('deny_read_'+rowId).checked;
+                    thisForm.deny_write.value = document.getElementById('deny_write_'+rowId).checked;
+                    thisForm.deny_full.value = document.getElementById('deny_full_'+rowId).checked;
                 }
 
-                function onLoad()
-                {
-                    initSelection('resultsTable');
-                    var table = document.getElementById('resultsTable');
-                    if (table)
-                        sortableTable = new SortableTable(table, table, ["String", "None", "None", "None"]);
-                }
-
-                function onSubmit(o, theaction)
-                {
-                    document.forms[0].action = ""+theaction;
-                    return true;
-                }
-
-                function translate(boolval)
-                {
-                    if(boolval == 1)
-                    {
-                        return "checked";
-                    }
-                    else
-                    {
-                        return "";
-                    }
-                }
-                function permChange(f, i)
+                function permChange(rowId, i)
                 {
                     if(i.name == "allow_access")
                     {
                         if(i.checked)
                         {
-                            f.deny_access.checked=false;
-                            f.deny_full.checked=false;
+                            document.getElementById('deny_access_'+rowId).checked=false;
+                            document.getElementById('deny_full_'+rowId).checked=false;
                         }
                         else
-                            f.allow_full.checked = false;
+                        {
+                            document.getElementById('allow_full_'+rowId).checked=false;
+                        }
                     }
                     else if(i.name == "allow_read")
                     {
                         if(i.checked)
                         {
-                            f.deny_read.checked=false;
-                            f.deny_full.checked=false;
+                            document.getElementById('deny_read_'+rowId).checked=false;
+                            document.getElementById('deny_full_'+rowId).checked=false;
                         }
                         else
-                            f.allow_full.checked = false;
+                            document.getElementById('allow_full_'+rowId).checked = false;
                     }
                     else if(i.name == "allow_write")
                     {
                         if(i.checked)
                         {
-                            f.deny_write.checked=false;
-                            f.deny_full.checked=false;
+                            document.getElementById('deny_write_'+rowId).checked=false;
+                            document.getElementById('deny_full_'+rowId).checked=false;
                         }
                         else
-                            f.allow_full.checked = false;
+                            document.getElementById('allow_full_'+rowId).checked = false;
                     }
                     else if(i.name == "allow_full")
                     {
                         if(i.checked)
                         {
-                            f.deny_access.checked=false;
-                            f.deny_read.checked=false;
-                            f.deny_write.checked=false;
-                            f.deny_full.checked=false;
-                            f.allow_access.checked = true;
-                            f.allow_read.checked = true;
-                            f.allow_write.checked = true;
+                            document.getElementById('deny_access_'+rowId).checked=false;
+                            document.getElementById('deny_read_'+rowId).checked=false;
+                            document.getElementById('deny_write_'+rowId).checked=false;
+                            document.getElementById('deny_full_'+rowId).checked=false;
+                            document.getElementById('allow_access_'+rowId).checked = true;
+                            document.getElementById('allow_read_'+rowId).checked = true;
+                            document.getElementById('allow_write_'+rowId).checked = true;
                         }
                     }
                     else if(i.name == "deny_access")
                     {
                         if(i.checked)
                         {
-                            f.allow_access.checked=false;
-                            f.allow_full.checked=false;
+                            document.getElementById('allow_access_'+rowId).checked=false;
+                            document.getElementById('allow_full_'+rowId).checked=false;
                         }
                         else
-                            f.deny_full.checked = false;
+                            document.getElementById('deny_full_'+rowId).checked = false;
                     }
                     else if(i.name == "deny_read")
                     {
                         if(i.checked)
                         {
-                            f.allow_read.checked=false;
-                            f.allow_full.checked=false;
+                            document.getElementById('allow_read_'+rowId).checked=false;
+                            document.getElementById('allow_full_'+rowId).checked=false;
                         }
                         else
-                            f.deny_full.checked = false;
+                            document.getElementById('deny_full_'+rowId).checked = false;
                     }
                     else if(i.name == "deny_write")
                     {
                         if(i.checked)
                         {
-                            f.allow_write.checked=false;
-                            f.allow_full.checked=false;
+                            document.getElementById('allow_write_'+rowId).checked=false;
+                            document.getElementById('allow_full_'+rowId).checked=false;
                         }
                         else
-                            f.deny_full.checked = false;
+                            document.getElementById('deny_full_'+rowId).checked = false;
                     }
                     else if(i.name == "deny_full")
                     {
                         if(i.checked)
                         {
-                            f.allow_access.checked=false;
-                            f.allow_read.checked=false;
-                            f.allow_write.checked=false;
-                            f.allow_full.checked=false;
-                            f.deny_access.checked = true;
-                            f.deny_read.checked = true;
-                            f.deny_write.checked = true;
+                            document.getElementById('allow_access_'+rowId).checked=false;
+                            document.getElementById('allow_read_'+rowId).checked=false;
+                            document.getElementById('allow_write_'+rowId).checked=false;
+                            document.getElementById('allow_full_'+rowId).checked=false;
+                            document.getElementById('deny_access_'+rowId).checked = true;
+                            document.getElementById('deny_read_'+rowId).checked = true;
+                            document.getElementById('deny_write_'+rowId).checked = true;
                         }
                     }
-
+                    updatePermRow(rowId);
                 }
-
-                var sortableTable = null;
             ]]></xsl:text>
             </script>
         </head>
-    <body class="yui-skin-sam" onload="nof5();onLoad()">
+    <body class="yui-skin-sam" onload="nof5()">
             <h3>Permissions of <xsl:value-of select="name"/></h3>
             <p/>
             <xsl:choose>
@@ -193,12 +169,11 @@
     </xsl:template>
 
     <xsl:template match="Permissions">
-        <table class="sort-table" id="resultsTable">
+        <table class="sort-table">
         <colgroup>
             <col width="150"/>
             <col width="200"/>
             <col width="200"/>
-            <col width="150"/>
             <col width="150"/>
         </colgroup>
         <thead>
@@ -229,14 +204,7 @@
                 <xsl:attribute name="onmouseleave">this.bgColor = '#F0F0F0'</xsl:attribute>
             </xsl:otherwise>
         </xsl:choose>
-        <form  method="post" action="/ws_access/PermissionAction">
-        <input type="hidden" name="basedn" value="{../../basedn}"/>
-        <input type="hidden" name="rtype" value="{../../rtype}"/>
-        <input type="hidden" name="rname" value="{../../name}"/>
-        <input type="hidden" name="rtitle" value="{../../rtitle}"/>
-        <input type="hidden" name="prefix" value="{../../prefix}"/>
-        <input type="hidden" name="account_name" value="{account_name}"/>
-        <input type="hidden" name="account_type" value="{account_type}"/>
+        <xsl:variable name="pid" select="position()"/>
         <td align="left">
         <xsl:value-of select="account_name"/>
         </td>
@@ -247,40 +215,40 @@
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="allow_access=1">
-                            <input type="checkbox" name="allow_access" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_access_{$pid}" name="allow_access" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="allow_access" value="1"  onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_access_{$pid}" name="allow_access" value="1"  onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="allow_read=1">
-                            <input type="checkbox" name="allow_read" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_read_{$pid}" name="allow_read" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="allow_read" value="1"  onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_read_{$pid}" name="allow_read" value="1"  onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="allow_write=1">
-                            <input type="checkbox" name="allow_write" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_write_{$pid}" name="allow_write" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="allow_write" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_write_{$pid}" name="allow_write" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="allow_full=1">
-                            <input type="checkbox" name="allow_full" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_full_{$pid}" name="allow_full" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="allow_full" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="allow_full_{$pid}" name="allow_full" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
@@ -293,49 +261,68 @@
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="deny_access=1">
-                            <input type="checkbox" name="deny_access" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_access_{$pid}" name="deny_access" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="deny_access" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_access_{$pid}" name="deny_access" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="deny_read=1">
-                            <input type="checkbox" name="deny_read" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_read_{$pid}" name="deny_read" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="deny_read" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_read_{$pid}" name="deny_read" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="deny_write=1">
-                            <input type="checkbox" name="deny_write" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_write_{$pid}" name="deny_write" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="deny_write" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_write_{$pid}" name="deny_write" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
                 <td width="50" align="right">
                     <xsl:choose>
                         <xsl:when test="deny_full=1">
-                            <input type="checkbox" name="deny_full" value="1" checked="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_full_{$pid}" name="deny_full" value="1" checked="1" onClick="permChange({$pid},this)"/>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="deny_full" value="1" onClick="permChange(this.form,this)"/>
+                            <input type="checkbox" id="deny_full_{$pid}" name="deny_full" value="1" onClick="permChange({$pid},this)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </td>
             </tr>
             </table>
         </td>
-        <td><input type="submit" name="action" value="delete" onclick="return confirm('Are you sure you want to delete permissions for {escaped_account_name}?')"/><input type="submit" name="action" value="update" onclick="return confirm('Are you sure you want to update permissions for {escaped_account_name}?')"/></td>
-        </form>
-        </tr>
+        <td>
+            <form id="row_action_{$pid}" method="post" action="/ws_access/PermissionAction">
+                <input type="hidden" name="basedn" value="{../../basedn}"/>
+                <input type="hidden" name="rtype" value="{../../rtype}"/>
+                <input type="hidden" name="rname" value="{../../name}"/>
+                <input type="hidden" name="rtitle" value="{../../rtitle}"/>
+                <input type="hidden" name="prefix" value="{../../prefix}"/>
+                <input type="hidden" name="account_name" value="{account_name}"/>
+                <input type="hidden" name="account_type" value="{account_type}"/>
+                <input type="hidden" name="allow_access" value="{allow_access}"/>
+                <input type="hidden" name="allow_read" value="{allow_read}"/>
+                <input type="hidden" name="allow_write" value="{allow_write}"/>
+                <input type="hidden" name="allow_full" value="{allow_full}"/>
+                <input type="hidden" name="deny_access" value="{deny_access}"/>
+                <input type="hidden" name="deny_read" value="{deny_read}"/>
+                <input type="hidden" name="deny_write" value="{deny_write}"/>
+                <input type="hidden" name="deny_full" value="{deny_full}"/>
+                <input type="submit" name="action" value="delete" onclick="return confirm('Are you sure you want to delete permissions for {escaped_account_name}?')"/>
+                <input type="submit" name="action" value="update" onclick="return confirm('Are you sure you want to update permissions for {escaped_account_name}?')"/>
+            </form>
+        </td>
+    </tr>
     </xsl:template>
 
     <xsl:template match="*|@*|text()"/>
