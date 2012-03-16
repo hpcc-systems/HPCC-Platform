@@ -2744,7 +2744,7 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_select:
         if (!expr->hasProperty(newAtom))
             return createTransformedActiveSelect(expr);
-        break;
+        return NewHqlTransformer::createTransformed(expr);
     }
 
     switch (getChildDatasetType(expr))
@@ -2787,21 +2787,6 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
         }
     case childdataset_evaluate:
         throwUnexpected();
-        {
-            // I doubt this really works, but by the time any sensible transform is applied to the tree 
-            // evaluates will have been converted to projects instead
-            IHqlExpression * arg0 = expr->queryChild(0);
-            OwnedHqlExpr child = transform(arg0);
-
-            HqlExprArray children;
-            children.append(*LINK(child));
-            pushChildContext(arg0->queryNormalizedSelector(true), child->queryNormalizedSelector(true));
-            bool same = optimizedTransformChildren(expr, children);
-            popChildContext();
-            if (!same)
-                return expr->clone(children);
-            return LINK(expr);
-        }
     default:
         return NewHqlTransformer::createTransformed(expr);
     }
