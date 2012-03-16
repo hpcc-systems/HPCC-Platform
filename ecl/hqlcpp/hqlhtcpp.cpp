@@ -1718,7 +1718,7 @@ void HqlCppTranslator::finalizeTempRow(BuildCtx & ctx, BoundRow * row, BoundRow 
 
 bool GlobalFileTracker::checkMatch(IHqlExpression * searchFilename)
 {
-    if (searchFilename == filename.get())
+    if (searchFilename->queryBody() == filename.get())
     {
         usageCount++;
         return true;
@@ -9737,11 +9737,12 @@ void HqlCppTranslator::buildXmlWriteMembers(ActivityInstance * instance, IHqlExp
 ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * dataset  = expr->queryChild(0);
-    IHqlExpression * filename = queryRealChild(expr, 1);
+    IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
-    if (!filename)
+    if (!rawFilename)
         return doBuildActivityOutputWorkunit(ctx, expr, isRoot);
 
+    OwnedHqlExpr filename = foldHqlExpression(rawFilename);
     IHqlExpression * program  = queryRealChild(expr, 2);
     IHqlExpression * csvAttr = expr->queryProperty(csvAtom);
     IHqlExpression * xmlAttr = expr->queryProperty(xmlAtom);
