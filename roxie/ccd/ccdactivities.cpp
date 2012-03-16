@@ -2408,18 +2408,14 @@ public:
                 }
                 row = m.readDirect(len);
                 if (!finalBuilder.exists())
-                {
-                    size32_t clonedSize;
-                    void * cloned = cloneRow(rowAllocator, row, clonedSize);
-                    finalBuilder.setown(clonedSize, cloned);
-                }
+                    cloneRow(finalBuilder, row, meta);
                 else
                     helper->mergeAggregate(finalBuilder, row);
             }
         }
         if (finalBuilder.exists())
         {
-            size32_t finalSize = meta.getRecordSize(finalBuilder.getSelf());
+            size32_t finalSize = meta.getRecordSize(finalBuilder.getSelf());  // MORE - can probably track it above...
             finalRow.setown(finalBuilder.finalizeRowClear(finalSize));
         }
     }
