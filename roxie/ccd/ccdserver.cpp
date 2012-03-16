@@ -16665,7 +16665,6 @@ public:
                     else 
                     {
                         eof = true;
-                        input = (IRoxieInput*)dualcache->input();
                     }
                 }
                 
