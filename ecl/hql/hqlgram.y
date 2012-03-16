@@ -3173,6 +3173,15 @@ soapFlag
                             $$.setExpr(createExprAttribute(responseAtom, createAttribute(noTrimAtom)), $1);
                         }
     | commonAttribute
+    | TOK_LOG '(' MIN ')'
+                        {
+                            $$.setExpr(createExprAttribute(logAtom, createAttribute(minAtom)), $1);
+                        }
+    | TOK_LOG '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_string, false);
+                            $$.setExpr(createExprAttribute(logAtom, $3.getExpr()), $1);
+                        }
     ;
 
 onFailAction

@@ -715,7 +715,8 @@ public:
 
         rowProvider = _rowProvider;
         helper = rowProvider->queryActionHelper();
-        callHelper = rowProvider->queryCallHelper();
+        callHelper = rowProvider->queryCallHelper();  //MORE: This should not be done this way!! Should use extra as below.
+        helperExtra = static_cast<IHThorSoapCallExtra*>(helper->selectInterface(TAIsoapcallextra_1));
         flags = helper->getFlags();
 
         authToken.append(_authToken);
@@ -725,7 +726,10 @@ public:
         else
             maxRetries = helper->numRetries();
 
+        //Allow all of these options to be specified separately.  Possibly useful, and the code is cleaner.
+        logMin = (flags & SOAPFlogmin) != 0;
         logXML = (flags & SOAPFlog) != 0;
+        logUserMsg = (flags & SOAPFlogusermsg) != 0;
 
         timeout = helper->getTimeout();
         if (timeout == (unsigned)-1)
@@ -975,7 +979,19 @@ public:
         return false;
     }
 
+    void addUserLogMsg(const byte * row)
+    {
+        if (logUserMsg)
+        {
+            size32_t lenText;
+            rtlDataAttr text;
+            helperExtra->getLogText(lenText, text.refstr(), row);
+            logctx.CTXLOG("%s: user(%.*s)", wscCallTypeText(), lenText, text.getstr());
+        }
+    }
+
     inline IXmlToRowTransformer * getRowTransformer() { return rowTransformer; }
+    inline const char * wscCallTypeText() const { return wscType == STsoap ? "SOAPCALL" : "HTTPCALL"; }
 
 protected:
     friend class CWSCHelperThread;
@@ -1019,6 +1035,7 @@ protected:
     IWSCRowProvider * rowProvider;
     IHThorWebServiceCallActionArg * helper;
     IHThorWebServiceCallArg *   callHelper;
+    IHThorWebServiceCallExtra * helperExtra;
     Linked<IEngineRowAllocator> outputAllocator;
     Owned<IException> error;
     UrlArray urlArray;
@@ -1030,7 +1047,10 @@ protected:
     unsigned maxRetries;
     unsigned timeout; //seconds
     unsigned timeLimit; //seconds
-    bool logXML, aborted;
+    bool logXML;
+    bool logMin;
+    bool logUserMsg;
+    bool aborted;
     const IContextLogger &logctx;
     unsigned flags;
     StringAttr soapaction;
@@ -1085,6 +1105,8 @@ void CWSCHelperThread::outputXmlRows(CommonXmlWriter &xmlWriter, ConstPointerArr
             xmlWriter.outputQuoted(itemtag);
             xmlWriter.outputQuoted(">");
         }
+
+        master->addUserLogMsg((const byte *)inputRows.item(idx));
     }
 }
 
@@ -1393,7 +1415,10 @@ private:
             request.append("\r\n");//httpcall
 
         if (soapTraceLevel > 6 || master->logXML)
-            master->logctx.CTXLOG("%sCALL: request(%s)", master->wscType == STsoap ? "SOAP" : "HTTP", request.str());
+            master->logctx.CTXLOG("%s: request(%s)", master->wscCallTypeText(), request.str());
+
+        if (master->logMin)
+            master->logctx.CTXLOG("%s: request(%s:%u)", master->wscCallTypeText(), url.host.str(), url.port);
     }
 
     int readHttpResponse(StringBuffer &response, ISocket *socket)
