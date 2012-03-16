@@ -20343,9 +20343,7 @@ public:
             else
             {
                  // NOTE need to clone this because going to modify below, could special case 1 row only
-                void * cloned = cloneRow(rowAllocator, firstRow, finalSize);
-                //NB: finalSize is updated by the call above, so don't combine these statements
-                rowBuilder.setown(finalSize, cloned);
+                finalSize = cloneRow(rowBuilder, firstRow, meta);
                 ReleaseRoxieRow(firstRow);
             }
             loop
@@ -22072,9 +22070,7 @@ public:
         else
         {
              // NOTE need to clone this because going to modify below, could special case 1 row only
-            void * cloned = cloneRow(rowAllocator, firstRow, finalSize);
-            //NB: finalSize is updated by the call above, so don't combine these statements
-            rowBuilder.setown(finalSize, cloned);
+            finalSize = cloneRow(rowBuilder, firstRow, meta);
             ReleaseRoxieRow(firstRow);
         }
         loop
