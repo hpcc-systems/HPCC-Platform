@@ -91,7 +91,6 @@ if [ ${DEBUG:-NO_DEBUG} != "NO_DEBUG" ]; then
 fi
 
 exec_script_path=${path}/bin
-configgenPath="${path}/sbin/configgen"
 reg_path=${path}/sbin
 
 compName=configmgr
@@ -169,19 +168,6 @@ fi
 
 createConf "${filename}" "${portnum}" "${conffile}"
 chown ${user}:${group} ${conffile}
-
-# Configgen checking step
-echo -n "Validating environment file ${filename} using configgen ..."
-sleep 1
-cmd="${configgenPath} -env ${filename} -validateonly"
-eval $cmd
-if [ "$?" -ne 0 ]; then
-    echo " Failure"
-    exit
-else
-    echo " Success"
-fi
-
 
 # Sanity Check for previous instances of configmgr. This code also takes care if configmgr script/configesp is not running and it killed by kill command
 
