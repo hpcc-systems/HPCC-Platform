@@ -16201,6 +16201,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         if (dataset)
         {
             funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+            bindTableCursor(funcctx, dataset, "left");
             bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
         }
         doBuildFunctionReturn(funcctx, unknownStringType, logText);

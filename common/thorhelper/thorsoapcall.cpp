@@ -986,7 +986,7 @@ public:
             size32_t lenText;
             rtlDataAttr text;
             helperExtra->getLogText(lenText, text.refstr(), row);
-            logctx.CTXLOG("%s: user(%.*s)", wscCallTypeText(), lenText, text.getstr());
+            logctx.CTXLOG("%s: %.*s", wscCallTypeText(), lenText, text.getstr());
         }
     }
 

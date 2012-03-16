@@ -67,7 +67,7 @@ SOAPCALL('http://webservices.megacorp.com', 'WsAttributes', GetAttributeInRecord
 
 output(SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributesDs', GetAttributeInRecord, createInRecord2(LEFT.moduleName, LEFT.attr), dataset(GetAttributeOutRecord), LOG('megacorp:'+LEFT.moduleName+'.'+LEFT.attr)));
 
-output(SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributesDs', GetAttributeInRecord, createInRecord2(LEFT.moduleName, LEFT.attr), dataset(GetAttributeOutRecord), LOG,LOG(MIN),LOG('megacorp:'+LEFT.moduleName+'.'+LEFT.attr)));
+output(SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributesDs', GetAttributeInRecord, createInRecord2(LEFT.moduleName, LEFT.attr), dataset(GetAttributeOutRecord), LOG,LOG(MIN),LOG('megacorp:'+moduleName+'.'+attr)));
 
 
 output(HTTPCALL('http://webservices.megacorp.com', 'WsAttributesDs', 'blah', GetAttributeOutRecord, LOG,LOG(MIN),LOG('megacorp:xxx')));
