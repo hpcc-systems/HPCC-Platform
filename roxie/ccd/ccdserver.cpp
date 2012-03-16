@@ -16430,7 +16430,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     Owned<IEngineRowAllocator> defaultAllocator;
     Owned<IRHLimitedCompareHelper> limitedhelper;
     Owned<CRHDualCache> dualcache;
-    IInputBase *input; // Hiding the one in the base class - note this is an IInputBase not an IRoxieInput
+    IInputBase *dualCacheInput;
 
     bool fillGroup()
     {
@@ -16598,6 +16598,7 @@ public:
         leftIndex = 0;
         rightIndex = 0;
         rightOuterIndex = 0;
+        dualCacheInput = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -16625,7 +16626,7 @@ public:
         {   //limited match join (s[1..n])
             dualcache.setown(new CRHDualCache());
             dualcache->init(CRoxieServerActivity::input);
-            input = dualcache->queryOut1();
+            dualCacheInput = dualcache->queryOut1();
             failingOuterAtmost = false;
             matchedLeft = false;
             leftIndex = 0;
@@ -16634,8 +16635,6 @@ public:
             limitedhelper.setown(createRHLimitedCompareHelper());
             limitedhelper->init( helper.getJoinLimit(), dualcache->queryOut2(), collate, helper.queryPrefixCompare() );
         }
-        else
-            input = CRoxieServerActivity::input;
     }
 
     virtual void reset()
@@ -16655,7 +16654,7 @@ public:
             {
                 if (!group.isItem(rightIndex))
                 {
-                    lhs.setown(input->nextInGroup());   //get from dualcache
+                    lhs.setown(dualCacheInput->nextInGroup());
                     if (lhs)
                     {
                         rightIndex = 0;
@@ -16680,104 +16679,107 @@ public:
             }
             return NULL;
         }
-        if (first)
+        else
         {
-            first = false;
-            fillGroup();
-        }
-        while(!eof)
-        {
-            if(failingOuterAtmost)
-                while(group.isItem(leftIndex))
-                {
-                    const void * ret = joinRecords(group.item(leftIndex++), defaultRight);
-                    if(ret)
-                    {
-                        processed++;
-                        return ret;
-                    }
-                }
-            if((joinLimit == 0) || !group.isItem(rightIndex))
+            if (first)
             {
-                if(leftOuterJoin && !matchedLeft && !failingLimit)
-                {
-                    const void * ret = joinRecords(group.item(leftIndex), defaultRight);
-                    if(ret)
-                    {
-                        matchedLeft = true;
-                        processed++;
-                        return ret;
-                    }
-                }
-                leftIndex++;
-                matchedLeft = false;
-                rightIndex = 0;
-                joinLimit = keepLimit;
+                first = false;
+                fillGroup();
             }
-            if(!group.isItem(leftIndex))
+            while(!eof)
             {
-                if(failingLimit || failingOuterAtmost)
-                {
-                    const void * lhs;
-                    while((lhs = input->nextInGroup()) != NULL)
+                if(failingOuterAtmost)
+                    while(group.isItem(leftIndex))
                     {
-                        const void * ret = joinRecords(lhs, defaultRight, failingLimit);
-                        ReleaseRoxieRow(lhs);
+                        const void * ret = joinRecords(group.item(leftIndex++), defaultRight);
                         if(ret)
                         {
                             processed++;
                             return ret;
                         }
                     }
-                    failingLimit.clear();
-                }
-                if(rightOuterJoin && !failingLimit)
-                    while(group.isItem(rightOuterIndex))
-                        if(!matchedRight.item(rightOuterIndex++))
+                if((joinLimit == 0) || !group.isItem(rightIndex))
+                {
+                    if(leftOuterJoin && !matchedLeft && !failingLimit)
+                    {
+                        const void * ret = joinRecords(group.item(leftIndex), defaultRight);
+                        if(ret)
                         {
-                            const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1));
+                            matchedLeft = true;
+                            processed++;
+                            return ret;
+                        }
+                    }
+                    leftIndex++;
+                    matchedLeft = false;
+                    rightIndex = 0;
+                    joinLimit = keepLimit;
+                }
+                if(!group.isItem(leftIndex))
+                {
+                    if(failingLimit || failingOuterAtmost)
+                    {
+                        const void * lhs;
+                        while((lhs = input->nextInGroup()) != NULL)  // dualCache never active here
+                        {
+                            const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                            ReleaseRoxieRow(lhs);
                             if(ret)
                             {
                                 processed++;
                                 return ret;
                             }
                         }
-                if(!fillGroup())
-                    return NULL;
-                continue;
-            }
-            const void * lhs = group.item(leftIndex);
-            if(failingLimit)
-            {
-                leftIndex++;
-                const void * ret = joinRecords(lhs, defaultRight, failingLimit);
-                if(ret)
-                {
-                    processed++;
-                    return ret;
+                        failingLimit.clear();
+                    }
+                    if(rightOuterJoin && !failingLimit)
+                        while(group.isItem(rightOuterIndex))
+                            if(!matchedRight.item(rightOuterIndex++))
+                            {
+                                const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1));
+                                if(ret)
+                                {
+                                    processed++;
+                                    return ret;
+                                }
+                            }
+                    if(!fillGroup())
+                        return NULL;
+                    continue;
                 }
-            }
-            else
-            {
-                const void * rhs = group.item(rightIndex++);
-                if(helper.match(lhs, rhs))
+                const void * lhs = group.item(leftIndex);
+                if(failingLimit)
                 {
-                    matchedLeft = true;
-                    matchedRight.replace(true, rightIndex-1);
-                    if(!exclude)
+                    leftIndex++;
+                    const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                    if(ret)
                     {
-                        const void * ret = joinRecords(lhs, rhs);
-                        if(ret)
+                        processed++;
+                        return ret;
+                    }
+                }
+                else
+                {
+                    const void * rhs = group.item(rightIndex++);
+                    if(helper.match(lhs, rhs))
+                    {
+                        matchedLeft = true;
+                        matchedRight.replace(true, rightIndex-1);
+                        if(!exclude)
                         {
-                            processed++;
-                            joinLimit--;
-                            return ret;
+                            const void * ret = joinRecords(lhs, rhs);
+                            if(ret)
+                            {
+                                processed++;
+                                joinLimit--;
+                                return ret;
+                            }
                         }
                     }
                 }
             }
+            return NULL;
         }
-        return NULL;
     }
 };
 
