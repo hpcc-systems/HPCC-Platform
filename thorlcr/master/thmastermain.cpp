@@ -569,8 +569,6 @@ int main( int argc, char *argv[]  )
                 }
                 assertex(nodes.ordinality());
                 thorGroup.setown(createIGroup(nodes.ordinality(), nodes.getArray()));
-                nodeGroup.append(thorname);
-                globals->setProp("@nodeGroup", thorname);
             }
             else
             {
@@ -578,13 +576,12 @@ int main( int argc, char *argv[]  )
                 return 0; // no recycle
             }
         }
+        if (!globals->getProp("@nodeGroup", nodeGroup)) {
+            nodeGroup.append(thorname);
+            globals->setProp("@nodeGroup", thorname);
+        }        
         if (!thorGroup)
         {
-            if (!globals->getProp("@nodeGroup", nodeGroup)) {
-                nodeGroup.append(thorname);
-                globals->setProp("@nodeGroup", thorname);
-            }
-            
             thorGroup.setown(queryNamedGroupStore().lookup(nodeGroup.str()));
             if (!thorGroup)
             {
