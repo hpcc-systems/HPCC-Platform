@@ -1721,7 +1721,7 @@ void HqlCppTranslator::finalizeTempRow(BuildCtx & ctx, BoundRow * row, BoundRow 
 
 bool GlobalFileTracker::checkMatch(IHqlExpression * searchFilename)
 {
-    if (searchFilename == filename.get())
+    if (searchFilename->queryBody() == filename.get())
     {
         usageCount++;
         return true;
@@ -9754,11 +9754,12 @@ void HqlCppTranslator::buildXmlWriteMembers(ActivityInstance * instance, IHqlExp
 ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * dataset  = expr->queryChild(0);
-    IHqlExpression * filename = queryRealChild(expr, 1);
+    IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
-    if (!filename)
+    if (!rawFilename)
         return doBuildActivityOutputWorkunit(ctx, expr, isRoot);
 
+    OwnedHqlExpr filename = foldHqlExpression(rawFilename);
     IHqlExpression * program  = queryRealChild(expr, 2);
     IHqlExpression * csvAttr = expr->queryProperty(csvAtom);
     IHqlExpression * xmlAttr = expr->queryProperty(xmlAtom);
@@ -16157,6 +16158,24 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     IHqlExpression * namespaceAttr = expr->queryProperty(namespaceAtom);
     IHqlExpression * responseAttr = expr->queryProperty(responseAtom);
+    IHqlExpression * logText = NULL;
+    bool logMin = false;
+    bool logXml = false;
+    ForEachChildFrom(i, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->isAttribute() && cur->queryName()==logAtom)
+        {
+            IHqlExpression * opt = cur->queryChild(0);
+            if (!opt)
+                logXml = true;
+            else if (!opt->isAttribute())
+                logText = opt;
+            else if (opt->queryName() == minAtom)
+                logMin = true;
+        }
+    }
+
     //virtual unsigned getFlags()
     {
         StringBuffer flags;
@@ -16164,7 +16183,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFgroup");
         if (expr->hasProperty(onFailAtom))
             flags.append("|SOAPFonfail");
-        if (expr->hasProperty(logAtom))
+        if (logXml)
             flags.append("|SOAPFlog");
         if (expr->hasProperty(trimAtom))
             flags.append("|SOAPFtrim");
@@ -16176,6 +16195,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFencoding");
         if (responseAttr && responseAttr->hasProperty(noTrimAtom))
             flags.append("|SOAPFpreserveSpace");
+        if (logMin)
+            flags.append("|SOAPFlogmin");
+        if (logText)
+            flags.append("|SOAPFlogusermsg");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -16203,6 +16226,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
             doBuildVarStringFunction(instance->startctx, "queryNamespaceVar", namespaceAttr->queryChild(1));
     }
 
+    if (logText)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual void getLogText(size32_t & __lenResult, char * & __result, const void * _left)");
+        if (dataset)
+        {
+            funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+            bindTableCursor(funcctx, dataset, "left");
+            bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
+        }
+        doBuildFunctionReturn(funcctx, unknownStringType, logText);
+    }
     if (!isSink)
     {
         //virtual IXmlToRowTransformer * queryTransformer()
@@ -16279,6 +16314,24 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         doBuildVarStringFunction(instance->startctx, "queryOutputIteratorPath", separator->queryChild(0));
 
     IHqlExpression * namespaceAttr = expr->queryProperty(namespaceAtom);
+    IHqlExpression * logText = NULL;
+    bool logMin = false;
+    bool logXml = false;
+    ForEachChildFrom(i, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur->isAttribute() && cur->queryName()==logAtom)
+        {
+            IHqlExpression * opt = cur->queryChild(0);
+            if (!opt)
+                logXml = true;
+            else if (!opt->isAttribute())
+                logText = opt;
+            else if (opt->queryName() == minAtom)
+                logMin = true;
+        }
+    }
+
     //virtual unsigned getFlags()
     {
         StringBuffer flags;
@@ -16286,7 +16339,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFgroup");
         if (expr->hasProperty(onFailAtom))
             flags.append("|SOAPFonfail");
-        if (expr->hasProperty(logAtom))
+        if (logXml)
             flags.append("|SOAPFlog");
         if (expr->hasProperty(trimAtom))
             flags.append("|SOAPFtrim");
@@ -16294,6 +16347,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
             flags.append("|SOAPFliteral");
         if (namespaceAttr)
             flags.append("|SOAPFnamespace");
+        if (logMin)
+            flags.append("|SOAPFlogmin");
+        if (logText)
+            flags.append("|SOAPFlogusermsg");
 
         if (flags.length())
             doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -16319,6 +16376,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         doBuildVarStringFunction(instance->startctx, "queryNamespaceName", namespaceAttr->queryChild(0));
         if (namespaceAttr->queryChild(1))
             doBuildVarStringFunction(instance->startctx, "queryNamespaceVar", namespaceAttr->queryChild(1));
+    }
+
+    if (logText)
+    {
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual void getLogText(size32_t & __lenResult, char * & __result, const void * _left)");
+        doBuildFunctionReturn(funcctx, unknownStringType, logText);
     }
 
     if (!isSink)

@@ -954,7 +954,9 @@ const void *CHThorIndexReadActivity::nextInGroup()
                 }
                 try
                 {
-                    return cloneRow(agent.queryCodeContext(), rowAllocator, keyRow);
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    size32_t finalSize = cloneRow(rowBuilder, keyRow, outputMeta);
+                    return rowBuilder.finalizeRowClear(finalSize);
                 }
                 catch(IException * e)
                 {
@@ -1040,7 +1042,9 @@ const void *CHThorIndexReadActivity::nextGE(const void * seek, unsigned numField
                 }
                 try
                 {
-                    return cloneRow(agent.queryCodeContext(), rowAllocator, row);
+                    RtlDynamicRowBuilder rowBuilder(rowAllocator);
+                    size32_t finalSize = cloneRow(rowBuilder, row, outputMeta);
+                    return rowBuilder.finalizeRowClear(finalSize);
                 }
                 catch(IException * e)
                 {
