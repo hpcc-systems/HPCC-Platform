@@ -2328,6 +2328,7 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
     virtual unsigned     getTimeLimit()                 { return 0; }
     virtual const char * queryProxyAddress()            { return NULL; }
     virtual const char * queryAcceptType()              { return NULL; }
+    virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 
 class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
@@ -2373,6 +2374,7 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
     virtual unsigned     getTimeLimit()                 { return 0; }
     virtual const char * queryProxyAddress()            { return NULL; }
     virtual const char * queryAcceptType()              { return NULL; }
+    virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 typedef CThorSoapCallArg CThorHttpCallArg;
 
