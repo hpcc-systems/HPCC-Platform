@@ -3659,7 +3659,7 @@ void EclResourcer::spotSharedInputs()
         ForEachItemIn(i2, curGraph.sinks)
         {
             ResourceGraphLink & cur = curGraph.sinks.item(i2);
-            IHqlExpression * curExpr = cur.sourceNode;
+            IHqlExpression * curExpr = cur.sourceNode->queryBody();
             if (!visited.contains(*curExpr))
             {
                 ResourcerInfo * info = queryResourceInfo(curExpr);
