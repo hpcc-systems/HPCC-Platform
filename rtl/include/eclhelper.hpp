@@ -2017,6 +2017,8 @@ enum
     SOAPFnamespace      = 0x0020,
     SOAPFencoding       = 0x0040,
     SOAPFpreserveSpace  = 0x0080,
+    SOAPFlogmin         = 0x0100,
+    SOAPFlogusermsg     = 0x0200,
 };
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
@@ -2053,6 +2055,7 @@ struct IHThorWebServiceCallExtra : public IInterface
     virtual IXmlToRowTransformer * queryInputTransformer() = 0;
     virtual const char * queryInputIteratorPath()       { return NULL; }
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
+    virtual void getLogText(size32_t & lenText, char * & text, const void * left) = 0;  // iff SOAPFlogusermsg set
 };
 typedef IHThorWebServiceCallExtra IHThorSoapCallExtra;
 
