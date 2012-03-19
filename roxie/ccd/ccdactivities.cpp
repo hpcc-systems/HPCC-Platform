@@ -772,7 +772,8 @@ public:
         forceUnkeyed(_forceUnkeyed)
     {
         helper = (IHThorDiskReadBaseArg *) basehelper;
-        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0
+                || _aFactory->queryQueryFactory().queryPackage().dynamicFileResolution();
         isOpt = (helper->getFlags() & TDRoptional) != 0;
         diskSize.set(helper->queryDiskRecordSize());
         processed = 0;
@@ -916,7 +917,8 @@ public:
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
     {
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
-        bool variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        bool variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0
+                                || _queryFactory.queryPackage().dynamicFileResolution();
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;

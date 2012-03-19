@@ -517,6 +517,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 runOnce = globals->getPropInt("port", 0) == 0;
             }
         }
+        // If standalone or workunit mode, tell root CRoxiePackage
+        // to resolve files dynamically
+        if (runOnce || standAloneDll)
+            topology->setPropBool("@dynamicFileResolution", true);
 
         traceLevel = topology->getPropInt("@traceLevel", runOnce ? 0 : 1);
         if (traceLevel > MAXTRACELEVEL)
