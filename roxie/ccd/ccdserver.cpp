@@ -16846,7 +16846,7 @@ private:
                 if(index==size)
                     index = 0;
                 if(index==start)
-                    return; //table is full, should never happen
+                    throwUnexpected(); //table is full, should never happen
             }
             table[index] = right;
         }
@@ -16967,23 +16967,32 @@ public:
     void loadRight()
     {
         ConstPointerArray rightset;
-        const void * next;
-        while(true)
+        unsigned i = 0;
+        try
         {
-            next = input1->nextInGroup();
-            if(!next)
+            const void * next;
+            while(true)
+            {
                 next = input1->nextInGroup();
-            if(!next)
-                break;
-            rightset.append(next);
+                if(!next)
+                    next = input1->nextInGroup();
+                if(!next)
+                    break;
+                rightset.append(next);
+            }
+            unsigned rightord = rightset.ordinality();
+            table.setown(new LookupTable(rightord, helper.queryCompareLeftRight(), helper.queryCompareRight(), helper.queryHashLeft(), helper.queryHashRight(), dedupRHS));
+
+            for(i=0; i<rightord; i++)
+                table->add(rightset.item(i));
         }
-
-        unsigned rightord = rightset.ordinality();
-        table.setown(new LookupTable(rightord, helper.queryCompareLeftRight(), helper.queryCompareRight(), helper.queryHashLeft(), helper.queryHashRight(), dedupRHS));
-
-        unsigned i;
-        for(i=0; i<rightord; i++)
-            table->add(rightset.item(i));
+        catch (...)
+        {
+            unsigned rightord = rightset.ordinality();
+            for ( ; i<rightord; i++)
+                ReleaseRoxieRow(rightset.item(i));
+            throw;
+        }
     };
 
     virtual void reset()
