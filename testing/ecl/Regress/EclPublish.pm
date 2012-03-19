@@ -85,6 +85,7 @@ sub submit($$)
         my %vals = ('--username' => $self->{owner},
                     '--password' => $self->{password},
                     '--cluster' => $self->{cluster},
+                    '--server' => $self->{server},
                     '--name' => $basename
                    );
         my $args = ["run", "$run->{path}", map("$_=$vals{$_}", sort(keys(%vals)))];
@@ -101,6 +102,7 @@ sub submit($$)
             my %vals = ('--username' => $self->{owner},
                         '--password' => $self->{password},
                         '--cluster' => $self->{cluster},
+                        '--server' => $self->{server},
                         '--name' => $basename
                        );
             my $args = ["publish", "$run->{path}", "--activate", map("$_=$vals{$_}", sort(keys(%vals)))];
