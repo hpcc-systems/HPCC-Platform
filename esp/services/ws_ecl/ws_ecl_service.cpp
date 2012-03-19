@@ -13,6 +13,7 @@
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
+#define     WSECL_ACCESS      "WsEclAccess"
 
 const char *wsEclXsdTypes[] = {
     "xsd:string",
@@ -2361,8 +2362,6 @@ int CWsEclBinding::onRelogin(IEspContext &context, CHttpRequest* request, CHttpR
     return EspHttpBinding::onRelogin(context, request, response);
 }
 
-
-
 int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     Owned<IMultiException> me = MakeMultiException("WsEcl");
@@ -2371,6 +2370,10 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
     {
         IEspContext *context = request->queryContext();
         IProperties *parms = request->queryParameters();
+
+        if (!context->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
+            throw MakeStringException(-1, "WsEcl access permission denied.");
+
         const char *thepath = request->queryPath();
 
         StringBuffer serviceName;
@@ -2495,6 +2498,9 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
         IEspContext *ctx = request->queryContext();
         IProperties *parms = request->queryParameters();
 
+        if (!ctx->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
+            throw MakeStringException(-1, "WsEcl access permission denied.");
+
         const char *thepath = request->queryPath();
 
         StringBuffer serviceName;
@@ -2607,6 +2613,15 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     if (!strieq(serviceName.str(), "WsEcl"))
         return CHttpSoapBinding::HandleSoapRequest(request, response);
+
+    if(ctx->toBeAuthenticated()) //future support WsSecurity tags?
+    {
+        response->sendBasicChallenge(getChallengeRealm(), false);
+        return 0;
+    }
+
+    if (!ctx->validateFeatureAccess(WSECL_ACCESS, SecAccess_Full, false))
+        throw MakeStringException(-1, "WsEcl access permission denied.");
 
     StringBuffer action;
     nextPathNode(thepath, action);
