@@ -2805,7 +2805,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
         if (expr->getOperator() == no_table)
             transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
         OwnedHqlExpr optimized = optimizeHqlExpression(transformed, optFlags);
-        traceExpression("before disk optimize", transformed);
         traceExpression("after disk optimize", optimized);
         return doBuildActivityDiskRead(ctx, optimized);
     }
@@ -6310,7 +6309,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexRead(BuildCtx & ctx, IHql
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     //If the filter is false, then it may get reduced to a NULL operation!
@@ -6388,9 +6386,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexNormalize(BuildCtx & ctx,
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
-    optimized.setown(foldHqlExpression(optimized));
-    traceExpression("before physical", expr);
-    traceExpression("after physical", transformed);
     traceExpression("after optimize", optimized);
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
@@ -6559,7 +6554,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexAggregate(BuildCtx & ctx,
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
@@ -6722,7 +6716,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIndexGroupAggregate(BuildCtx &
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
     OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
-    optimized.setown(foldHqlExpression(optimized));
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)

@@ -5765,6 +5765,7 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
     case no_constant:
     case no_param:
     case no_variable:
+    case no_attr:
         return LINK(expr);
     case no_select:
         if (!expr->hasProperty(newAtom))
