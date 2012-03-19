@@ -1999,9 +1999,7 @@ IHqlExpression * CTreeOptimizer::createTransformed(IHqlExpression * expr)
 
     //Do this first, so that any references to a child dataset that changes are correctly updated, before proceeding any further.
     OwnedHqlExpr dft = defaultCreateTransformed(expr);
-#ifndef USE_MERGING_TRANSFORM
     updateOrphanedSelectors(dft, expr);
-#endif
 
     OwnedHqlExpr ret = doCreateTransformed(dft, expr);
     if (ret->queryBody() == expr->queryBody())
