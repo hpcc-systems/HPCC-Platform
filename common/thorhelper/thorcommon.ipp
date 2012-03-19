@@ -709,16 +709,7 @@ class NullDiskCallback : public IThorDiskCallback, extends CInterface
     virtual const char * queryLogicalFilename(const void * row) { return NULL; }
 };
 
-extern THORHELPER_API void * cloneRow(IEngineRowAllocator * allocator, const void * row, size32_t &sizeout);
 extern THORHELPER_API size32_t cloneRow(ARowBuilder & rowBuilder, const void * row, IOutputMetaData * meta);
-
-inline void *cloneRow(ICodeContext * ctx, IEngineRowAllocator * allocator, const void * row)
-{
-    // legacy version that doesn't return size
-    size32_t sztmp;
-    return cloneRow(allocator, row, sztmp);
-}
-
 
 //The CThorContiguousRowBuffer is the source for a readAhead call to ensure the entire row
 //is in a contiguous block of memory.  The read() and skip() functions must be implemented

@@ -414,7 +414,7 @@ class GlobalFileTracker : public CInterface, public IHqlDelayedCodeGenerator
 public:
     GlobalFileTracker(IHqlExpression * _filename, IPropertyTree * _graphNode)
     {
-        filename.set(_filename);
+        filename.set(_filename->queryBody());
         graphNode.set(_graphNode);
         usageCount = 0;
     }

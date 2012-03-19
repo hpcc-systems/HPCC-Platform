@@ -664,8 +664,9 @@ class SourceBuilder
 {
 public:
     SourceBuilder(HqlCppTranslator & _translator, IHqlExpression *_tableExpr, IHqlExpression *_nameExpr)
-        : tableExpr(_tableExpr), nameExpr(_nameExpr), translator(_translator)
+        : tableExpr(_tableExpr), translator(_translator)
     { 
+        nameExpr.setown(foldHqlExpression(_nameExpr));
         needDefaultTransform = true; 
         needToCallTransform = false; 
         isPreloaded = false;

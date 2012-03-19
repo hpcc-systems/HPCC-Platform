@@ -580,24 +580,6 @@ public:
     }
 };
 
-
-//Deprecated - should use the second definition below
-void * cloneRow(IEngineRowAllocator * allocator, const void * row, size32_t &sizeout)
-{
-    IOutputMetaData * meta = allocator->queryOutputMeta();
-    void * ret = allocator->createRow();        
-    sizeout = meta->getRecordSize(row);     // TBD could be better?
-    //GH this may no longer be big enough
-    memcpy(ret, row, sizeout);
-    if (meta->getMetaFlags() & MDFneedserialize)
-    {
-        ChildRowLinkerWalker walker;
-        meta->walkIndirectMembers(static_cast<const byte *>(ret), walker);
-    }
-    //NB: Does not call finalizeRow()...
-    return ret;
-}
-
 //the visitor callback is used to ensure link counts for children are updated.
 size32_t cloneRow(ARowBuilder & rowBuilder, const void * row, IOutputMetaData * meta)
 {

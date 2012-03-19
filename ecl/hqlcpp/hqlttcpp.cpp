@@ -4611,7 +4611,8 @@ IHqlExpression * GlobalAttributeInfo::queryFilename(IHqlExpression * value, ICon
             {
                 ITypeInfo * type = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
 
-                cachedFilename.setown(createValue(no_concat, type, createConstant(prefix), cachedFilename.getClear()));
+                OwnedHqlExpr filename = createValue(no_concat, type, createConstant(prefix), cachedFilename.getClear());
+                cachedFilename.setown(foldHqlExpression(filename));
             }
         }
     }

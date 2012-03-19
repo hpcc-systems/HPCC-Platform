@@ -87,7 +87,9 @@ size32_t ThorExpand(const void * src, size32_t srcSz, MemoryBuffer & dest)
 
 size32_t ThorExpand(MemoryBuffer & src, MemoryBuffer & dest)
 {
-    return ThorExpand((const void *)src.toByteArray(), src.length(), dest);
+    size32_t len = src.remaining();
+    const void *pSrc = src.readDirect(len);
+    return ThorExpand(pSrc, len, dest);
 }
 
 
