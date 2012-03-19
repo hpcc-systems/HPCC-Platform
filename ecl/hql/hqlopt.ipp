@@ -24,30 +24,21 @@
 #include "hqlfold.ipp"
 #include "hqlutil.hpp"
 
-#define USE_MERGING_TRANSFORM
-#ifdef USE_MERGING_TRANSFORM
-#define OPTINFOBASE MergingTransformInfo
-#define OPTTRANSFORMBASE MergingHqlTransformer
-#else
-#define OPTINFOBASE NewTransformInfo
-#define OPTTRANSFORMBASE NewHqlTransformer
-#endif
-
 enum KeyCompType { SAME_KEY, PARTIAL_KEY, SUPER_KEY, DIFFERENT_KEY };
 
 typedef Owned<TableProjectMapper> OwnedMapper;
 
-class OptTransformInfo : public OPTINFOBASE
+class OptTransformInfo : public NewTransformInfo
 {
 public:
-    OptTransformInfo(IHqlExpression * _expr) : OPTINFOBASE(_expr) { useCount = 0; }
+    OptTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { useCount = 0; }
 
 public:
     unsigned useCount;
 };
 
 class DedupInfoExtractor;
-class CTreeOptimizer : public OPTTRANSFORMBASE, public NullFolderMixin
+class CTreeOptimizer : public NewHqlTransformer, public NullFolderMixin
 {
     friend class ExpandMonitor;
 public:
@@ -133,7 +124,7 @@ protected:
     inline bool isAlwaysLocal() const { return (options & HOOalwayslocal) != 0; }
 
 protected:
-    typedef OPTTRANSFORMBASE PARENT;
+    typedef NewHqlTransformer PARENT;
     unsigned options;
     StringBuffer nodeText[2];
     HqlExprAttr noHoistAttr;
