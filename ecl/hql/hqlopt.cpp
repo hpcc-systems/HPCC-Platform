@@ -3814,7 +3814,11 @@ IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options)
     HqlExprArray args, newArgs;
     unwindCommaCompound(args, expr);
     optimizeHqlExpression(newArgs, args, options);
-    return createActionList(newArgs);
+    OwnedHqlExpr optimized = createActionList(newArgs);
+    //If the graph was optimized then it is highly likely there are now constant folding opportunities
+    if (expr != optimized)
+        return foldHqlExpression(optimized);
+    return optimized.getClear();
 }
 
 
