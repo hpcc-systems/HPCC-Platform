@@ -9620,7 +9620,6 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
         assertex(dest.get());
         int common = hasCommonSubChildren(orig, dest);
         if (common != NotFound) {
-            transaction->rollback();
             throw MakeStringException(-1,"promoteSuperFiles: superfiles %s and %s share same subfile %s",
                     orig->queryLogicalName(), dest->queryLogicalName(), orig->querySubFile(common).queryLogicalName());
         }
