@@ -1401,6 +1401,21 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
 
 #endif
 
+bool TableInvariantTransformer::isAlwaysAlias(IHqlExpression * expr)
+{
+    if (queryBodyExtra(expr)->createAlias)
+        return true;
+    switch (expr->getOperator())
+    {
+    case no_alias:
+    case no_getresult:      // these are commoned up in the code generator, so don't do it twice.
+    case no_getgraphresult:
+    case no_getgraphloopresult:
+        return true;
+    }
+    return false;
+}
+
 bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -1414,7 +1429,7 @@ bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
             {
                 IHqlExpression * cast = expr->queryChild(0);
                 ITypeInfo * castType = cast->queryType();
-                if (castType->isInteger() && (queryBodyExtra(cast)->createAlias || cast->getOperator() == no_alias))
+                if (castType->isInteger() && isAlwaysAlias(cast))
                 {
                     switch (type->getSize())
                     {
@@ -1428,7 +1443,7 @@ bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
     case no_not:
         {
             IHqlExpression * child = expr->queryChild(0);
-            if (queryBodyExtra(child)->createAlias || child->getOperator() == no_alias)
+            if (isAlwaysAlias(child))
                 return true;
             break;
         }
