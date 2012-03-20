@@ -609,13 +609,6 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
     if (level >= LogNormal)
         DBGLOG("EspHttpBinding::onGet");
     
-    if (level>=LogMax)
-    {
-        DBGLOG("Request Header:\n%s", request->queryHeader());
-        DBGLOG("Request Content:\n%s", request->queryContent());
-    }
-    
-    
     response->setVersion(HTTP_VERSION);
     response->addHeader("Expires", "0");
 
