@@ -282,6 +282,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         ELSE()
           message(FATAL_ERROR "OPENLDAP requested but package not found")
         ENDIF()
+      ELSE()
+        add_definitions (-D_NO_LDAP)
       ENDIF(USE_OPENLDAP)
 
       IF (USE_CPPUNIT)

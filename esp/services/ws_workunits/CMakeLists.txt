@@ -97,7 +97,6 @@ target_link_libraries ( ws_workunits
          schedulectrl
          roxiecommlib
          roxiemanager
-         LdapSecurity
          hql
          jhtree
          fileview2

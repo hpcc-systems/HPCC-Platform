@@ -61,7 +61,6 @@ target_link_libraries ( EclDirect
          jlib
          xmllib 
          esphttp 
-         LdapSecurity 
          mp 
          hrpc 
          remote 
