@@ -54,8 +54,10 @@ extern DEPLOYUTILS_API bool generateHeaderForTopology(const IPropertyTree* pEnv,
 extern DEPLOYUTILS_API bool generateHeadersForEnvSettings(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false);
 extern DEPLOYUTILS_API bool generateHeadersForEnvXmlView(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false);
 extern DEPLOYUTILS_API bool getComputersListWithUsage(const IPropertyTree* pEnv, StringBuffer& sbComputers, StringBuffer& sbFilter);
-extern DEPLOYUTILS_API IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, bool allSubTypes = true, 
-                                                          bool cloudFlag = false, CWizardInputs* pWInputs = NULL, bool genOptional = true);
+extern DEPLOYUTILS_API IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName,
+                                                          const char* buildSetName, const IPropertyTree* pCfg, const char* servicename,
+                                                          bool allSubTypes = true, bool cloudFlag = false, CWizardInputs* pWInputs = NULL,
+                                                          bool forceOptional=false);
 extern DEPLOYUTILS_API bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pCompNode, const char* compName, StringBuffer& sMsg, const char* szNewName=NULL);
 extern DEPLOYUTILS_API bool generateHeaderForComponent(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName);
 extern DEPLOYUTILS_API const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const char* xpath, const char* category);
@@ -81,7 +83,8 @@ extern DEPLOYUTILS_API void runScript(StringBuffer& output, StringBuffer& errMsg
 extern DEPLOYUTILS_API bool validateIPS(const char* ipAddressList);
 extern DEPLOYUTILS_API void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr , bool prepareLink);
 extern DEPLOYUTILS_API void mergeAttributes(IPropertyTree* pTo, IPropertyTree* pFrom);
-extern DEPLOYUTILS_API void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pConstEnv);
+extern DEPLOYUTILS_API void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pConstEnvconst,
+                                                     const IPropertyTree* pCfg, const char* serviceName);
 extern DEPLOYUTILS_API bool updateDirsWithConfSettings(IPropertyTree* pEnvRoot, IProperties* pParams, bool ovrLog = true, bool ovrRun = true);
 extern DEPLOYUTILS_API bool validateEnv(IConstEnvironment* pConstEnv, bool abortOnException = true);
 #endif
