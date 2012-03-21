@@ -198,12 +198,29 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
             fprintf(stdout, "%s\n", w);
         if (cmd.optVerbose || !isCompiled)
             fprintf(stdout, "   state: %s\n\n", state);
+
+        unsigned errorCount=0;
+        unsigned warningCount=0;
         IArrayOf<IConstECLException> &exceptions = resp->getWorkunit().getExceptions();
         ForEachItemIn(i, exceptions)
         {
             IConstECLException &e = exceptions.item(i);
-            fprintf(stderr, "%s: %s %d: %s\n", e.getSource(), e.getSeverity(), e.getCode(), e.getMessage());
+            if (e.getSource())
+                fprintf(stderr, "%s: ", e.getSource());
+            if (e.getFileName())
+                fputs(e.getFileName(), stderr);
+            if (!e.getLineNo_isNull() && !e.getColumn_isNull())
+                fprintf(stderr, "(%d,%d): ", e.getLineNo(), e.getColumn());
+
+            fprintf(stderr, "%s C%d: %s\n", e.getSeverity(), e.getCode(), e.getMessage());
+            if (strieq(e.getSeverity(), "warning"))
+                warningCount++;
+            else if (strieq(e.getSeverity(), "error"))
+                errorCount++;
         }
+        if (errorCount || warningCount)
+            fprintf(stderr, "%d error, %d warning\n\n", errorCount, warningCount);
+
         return isCompiled;
     }
     return false;
