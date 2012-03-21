@@ -92,12 +92,12 @@ public:
     {
         data.setProp("@appName", "EclWatch");
         data.setProp("@start_page", "/WsSMC/Activity");
-        IPropertyTree *folder = ensureNavFolder(data, "Clusters", "Clusters", NULL, false, 1);
-        ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "View Activity", NULL, NULL, 1);
-        ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Show Scheduled WUs", NULL, NULL, 2);
+        IPropertyTree *folder = ensureNavFolder(data, "Clusters", NULL, NULL, false, 1);
+        ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "Display Activity on all target clusters in an environment", NULL, NULL, 1);
+        ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Access the ECL Scheduler to view and manage scheduled workunits or events", NULL, NULL, 2);
 
-        IPropertyTree *folderTools = ensureNavFolder(data, "Resources", "HPCC Resources", NULL, false, 8);
-        ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "List HPCC Resources for Download", NULL, NULL, 1);
+        IPropertyTree *folderTools = ensureNavFolder(data, "Resources", NULL, NULL, false, 8);
+        ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "Browse a list of resources available for download, such as the ECL IDE, documentation, examples, etc. These are only available if optional packages are installed on the ESP Server.", NULL, NULL, 1);
     }
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {

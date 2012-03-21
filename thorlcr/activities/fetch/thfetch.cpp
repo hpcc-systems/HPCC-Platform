@@ -102,7 +102,7 @@ public:
         if (fetchFile)
         {
             IHThorFetchArg *helper = (IHThorFetchArg *)queryHelper();
-            fetchFile->queryProperties().serialize(dst);
+            fetchFile->queryAttributes().serialize(dst);
         }
     }
 };

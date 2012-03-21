@@ -701,6 +701,14 @@ struct HqlCppOptions
     bool                createImplicitAliases;
     bool                combineSiblingGraphs;
     bool                optimizeSharedGraphInputs;
+    bool                supportsShuffleActivity;  // Does the target engine support SHUFFLE?
+    bool                implicitShuffle;  // convert sort when partially sortted to shuffle (group,sort,ungroup)
+    bool                implicitBuildIndexShuffle;  // use shuffle when building indexes?
+    bool                implicitJoinShuffle;  // use shuffle for paritially sorted join inputs when possible
+    bool                implicitGroupShuffle;  // use shuffle if some sort conditions match when grouping
+    bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
+    bool                implicitGroupHashDedup;
+    bool                shuffleLocalJoinConditions;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1204,7 +1212,6 @@ public:
     void doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality);
     void buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
 
-    unique_id_t buildLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset, unique_id_t containerId);
         
@@ -1421,6 +1428,8 @@ public:
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);
 
+    void doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant);
+
     void doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
 
     IHqlExpression * doBuildOrderElement(BuildCtx & ctx, IHqlExpression * left, IHqlExpression * right);
@@ -1483,6 +1492,7 @@ public:
     void doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
     void doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow * selfRow, IHqlExpression * expr, IHqlExpression * alreadyDoneExpr);
 
+    void doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * sortlist);
 
     void processUserAggregateTransform(IHqlExpression * expr, IHqlExpression * transform, SharedHqlExpr & firstTransform, SharedHqlExpr & nextTransform);
     void doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge);
@@ -1598,7 +1608,7 @@ public:
 
     void buildSetXmlSerializer(StringBuffer & helper, ITypeInfo * valueType);
 
-    void buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, const char * name);
+    void buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, bool isGrouped, const char * name);
     void buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName);
     void buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName);
     bool buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression * record, const char * prefetcherName);
@@ -1901,12 +1911,12 @@ public:
     IHqlExpression * addDataset(IHqlExpression * expr);
     void buildStmt(BuildCtx & ctx, IHqlExpression * expr);
     unique_id_t buildGraphLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
-    unique_id_t buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
+    unique_id_t buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
     unique_id_t buildRemoteGraph(BuildCtx & ctx, IHqlExpression * ds, unique_id_t containerId);
     void generateGraph(BuildCtx & ctx);
     void generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr, OwnedHqlExpr * retResultsExpr);
     bool isDatasetPresent(IHqlExpression * expr);
-    
+    unsigned queryLoopConditionResult() const { return loopAgainResult; }
 protected:
     void createBuilderAlias(BuildCtx & ctx, ParentExtract * extractBuilder);
 
@@ -1918,6 +1928,7 @@ protected:
     OwnedHqlExpr instanceExpr;
     OwnedHqlExpr resultInstanceExpr;
     OwnedHqlExpr represents;
+    unsigned loopAgainResult;
     HqlExprArray results;
     unsigned numResults;
 };

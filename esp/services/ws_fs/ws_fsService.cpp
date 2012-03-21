@@ -2575,7 +2575,7 @@ bool CFileSprayEx::onRename(IEspContext &context, IEspRename &req, IEspRenameRes
                 }
                 else
                 {
-                    const char *cluster = df->queryProperties().queryProp("@group");
+                    const char *cluster = df->queryAttributes().queryProp("@group");
                     if (cluster && *cluster)
                     {
                         wu->setClusterName(cluster);

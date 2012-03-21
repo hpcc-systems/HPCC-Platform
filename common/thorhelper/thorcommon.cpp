@@ -768,6 +768,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKexternalsink:           return "User Output";
     case TAKexternalprocess:        return "User Proceess";
     case TAKwhen_action:            return "When";
+    case TAKshuffle:                return "Shuffle";
     }
     throwUnexpected();
 }

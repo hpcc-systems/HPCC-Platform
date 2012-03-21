@@ -2838,7 +2838,7 @@ char *EclAgent::getFilePart(const char *lfn, bool create)
         desc->setDefaultDir(dir.str());
         desc->setPart(0, queryMyNode(), base.str(), NULL);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
-        file->attach(full_lfn.str(),NULL,queryUserDescriptor());
+        file->attach(full_lfn.str(),queryUserDescriptor());
         return physical.detach();
     }
     else

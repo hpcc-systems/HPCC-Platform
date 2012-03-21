@@ -284,6 +284,13 @@ bool EclCmdCommon::finalizeOptions(IProperties *globals)
     extractEclCmdOption(optPort, globals, ECLOPT_PORT_ENV, ECLOPT_PORT_INI, ECLOPT_PORT_DEFAULT, NULL);
     extractEclCmdOption(optUsername, globals, ECLOPT_USERNAME_ENV, ECLOPT_USERNAME_INI, NULL, NULL);
     extractEclCmdOption(optPassword, globals, ECLOPT_PASSWORD_ENV, ECLOPT_PASSWORD_INI, NULL, NULL);
+
+    if (!optVerbose)
+    {
+        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
+        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
+    }
+
     return true;
 }
 

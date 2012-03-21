@@ -396,7 +396,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         return (totalCRC <= pseudoCrc);
     }
 
-    IPropertyTree & cur = f->queryProperties();
+    IPropertyTree & cur = f->queryAttributes();
     if ((eclCRC != cur.getPropInt("@eclCRC")) || (totalCRC != cur.getPropInt64("@totalCRC")))
         return false;
     return true;
@@ -1806,7 +1806,7 @@ EclBoundLoopGraph::EclBoundLoopGraph(IAgentContext & _agent, IEclLoopGraph * _gr
     activityId = _activityId;
 }
 
-IHThorGraphResult * EclBoundLoopGraph::execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract)
+IHThorGraphResults * EclBoundLoopGraph::execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract)
 {
     Owned<GraphResults> results = new GraphResults(3);
 
@@ -1823,7 +1823,7 @@ IHThorGraphResult * EclBoundLoopGraph::execute(void * counterRow, ConstPointerAr
     }
 
     graph->executeChild(parentExtract, results, NULL);
-    return LINK(results->queryResult(0));
+    return results.getClear();
 }
 
 

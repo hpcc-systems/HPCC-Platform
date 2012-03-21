@@ -188,7 +188,7 @@ void CDistributedFileSystem::physicalCopy(IPropertyTree * source, const char * t
 offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget, bool dontsetattr)
 {
     //MORE: Should this be done on multiple threads??? (NH: probably)
-    offset_t totalSize = forceget?-1:file->queryProperties().getPropInt64("@size",-1);
+    offset_t totalSize = forceget?-1:file->queryAttributes().getPropInt64("@size",-1);
     if (totalSize == -1) {
         unsigned numParts = file->numParts();
         totalSize = 0;
@@ -205,9 +205,8 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
         }
         if (((totalSize != -1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
-            IPropertyTree &tree = file->lockProperties();
-            tree.setPropInt64("@size", totalSize);
-            file->unlockProperties();
+            DistributedFilePropertyLock lock(file);
+            lock.queryAttributes().setPropInt64("@size", totalSize);
         }
     }
     //LOG(MCdebugInfo(1000), unknownJob, "DFS: getSize(%s)=%"I64F"d", file->queryLogicalName(), totalSize);
@@ -271,8 +270,9 @@ offset_t CDistributedFileSystem::getSize(IDistributedFilePart * part, bool force
         size = part->getFileSize(true,forceget);
         if (((size != (offset_t)-1)||forceget) && !dontsetattr) // note forceget && !dontsetattr will reset attr if can't work out size
         {
-            IPropertyTree &tree = part->lockProperties();
-            tree.setPropInt64("@size", size);
+            // TODO: Create DistributedFilePropertyLock for parts
+            part->lockProperties();
+            part->queryAttributes().setPropInt64("@size", size);
             part->unlockProperties();
         }
     }

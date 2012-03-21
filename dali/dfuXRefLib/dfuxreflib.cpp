@@ -1787,7 +1787,7 @@ class CXRefManager: public CXRefManagerBase
                         name.toLowerCase();
                         CFileEntry *entry= filemap.find(name.str());
                         if (entry) {
-                            __int64 sz = part->queryProperties().getPropInt64("@size", -1);
+                            __int64 sz = part->queryAttributes().getPropInt64("@size", -1);
                             if (sz!=entry->size) {
                                 StringBuffer s1;
                                 entry->getLogicalName(s1);
@@ -1801,7 +1801,7 @@ class CXRefManager: public CXRefManagerBase
                         else 
                             total = -1;
                     }
-                    sz = file->queryProperties().getPropInt64("@size", -1);
+                    sz = file->queryAttributes().getPropInt64("@size", -1);
                     if (sz!=total) {
                         outf("SIZEFIX: Changing total size for %s from %"I64F"d to %"I64F"d\n",item.lname.get(),sz,total);
                         if (total!=-1)

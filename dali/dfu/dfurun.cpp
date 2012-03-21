@@ -857,7 +857,7 @@ public:
             else {
                 if (ctx.superoptions->getIfModified()&&
                     (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
-                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryProperties().getPropInt64("@fileCrc"))&&
+                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
                     (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false)))) {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
@@ -903,8 +903,8 @@ public:
                 sfile->addSubFile(subfiles.item(i));
             }
             if (newroxieprefix.length()) {
-                sfile->lockProperties().setProp("@roxiePrefix",newroxieprefix.str());
-                sfile->unlockProperties();
+                DistributedFilePropertyLock lock(sfile);
+                lock.queryAttributes().setProp("@roxiePrefix",newroxieprefix.str());
             }
 
         }
@@ -1139,7 +1139,7 @@ public:
                               (cmd==DFUcmd_move)||(cmd==DFUcmd_rename)||((cmd==DFUcmd_copy)&&multiclusterinsert)));
                         if (!srcFile) 
                             throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
-                        oldRoxiePrefix.set(srcFile->queryProperties().queryProp("@roxiePrefix"));
+                        oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                         iskey = isFileKey(srcFile);
                         if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
                             destination->setNumPartsOverride(srcFile->numParts());
@@ -1334,7 +1334,7 @@ public:
                                 if (needrep) 
                                     replicating = true;
                                 else
-                                    dstFile->attach(dstName.get(),NULL, userdesc);
+                                    dstFile->attach(dstName.get(), userdesc);
                                 Audit("COPYDIFF",userdesc,srcName.get(),dstName.get());
                             }
                         }
@@ -1344,7 +1344,7 @@ public:
                                 if (needrep) 
                                     replicating = true;
                                 else
-                                    dstFile->attach(dstName.get(),NULL, userdesc);
+                                    dstFile->attach(dstName.get(), userdesc);
                                 Audit("COPY",userdesc,srcName.get(),dstName.get());
                             }
                         }
@@ -1369,7 +1369,7 @@ public:
                                 if (needrep) 
                                     replicating = true;
                                 else
-                                    dstFile->attach(dstName.get(),NULL,userdesc);
+                                    dstFile->attach(dstName.get(),userdesc);
                                 Audit("COPY",userdesc,srcFile?srcFile->queryLogicalName():NULL,dstName.get());
                             }
                         }
@@ -1400,7 +1400,7 @@ public:
                     fsys.move(srcFile,dstFile,recovery, recoveryconn, filter, opttree, &feedback, &abortnotify, dfuwuid);
                     runningconn.clear();
                     if (!abortnotify.abortRequested()) {
-                        dstFile->attach(dstName.get(),NULL,userdesc);
+                        dstFile->attach(dstName.get(),userdesc);
                         Audit("MOVE",userdesc,srcFile?srcFile->queryLogicalName():NULL,dstName.get());
                     }
                 }
@@ -1492,7 +1492,7 @@ public:
                             if (needrep) 
                                 replicating = true;
                             else
-                                dstFile->attach(dstName.get(),NULL, userdesc);
+                                dstFile->attach(dstName.get(), userdesc);
                             Audit("IMPORT",userdesc,dstName.get(),NULL);
                         }
                         runningconn.clear();
@@ -1513,7 +1513,7 @@ public:
                 break;
             case DFUcmd_add:
                 {
-                    dstFile->attach(dstName.get(),NULL,userdesc);
+                    dstFile->attach(dstName.get(),userdesc);
                     Audit("ADD",userdesc,dstName.get(),NULL);
                 }
                 break;
@@ -1590,7 +1590,7 @@ public:
                             }
                             else {
                                 //dstFile->queryPartDiskMapping(0).maxCopies = 2;           // dont think this is right ** TBD
-                                dstFile->attach(dstName.get(),NULL,userdesc);
+                                dstFile->attach(dstName.get(),userdesc);
                             }
                             progress->setDone(NULL,0,true);
                             Audit("REPLICATE",userdesc,dstName.get(),NULL);

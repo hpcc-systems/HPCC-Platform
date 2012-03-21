@@ -857,7 +857,6 @@ protected:
     IRoxieSlaveContext *ctx;
     const IRoxieServerActivityFactory *factory;
     IRoxieServerActivityCopyArray dependencies;
-    IntArray dependencyIndexes;
     IntArray dependencyControlIds;
     IArrayOf<IActivityGraph> childGraphs;
     CachedOutputMetaData meta;
@@ -1231,12 +1230,6 @@ public:
                     }
                 }
 #endif
-                // MORE - not absolutely sure that this is needed since dependency gets started and stopped by the execute
-                ForEachItemIn(idx, dependencies)
-                {
-                    if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
-                }
                 if (input)
                     input->stop(aborting);
             }
@@ -1292,7 +1285,6 @@ public:
     virtual void addDependency(IRoxieServerActivity &source, unsigned sourceIdx, int controlId) 
     {
         dependencies.append(source);
-        dependencyIndexes.append(sourceIdx);
         dependencyControlIds.append(controlId);
     } 
 
@@ -1310,11 +1302,6 @@ public:
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract)
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink");
-    }
-
-    virtual void stopSink(unsigned idx)
-    {
-        throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
     }
 
     virtual __int64 evaluate() 
@@ -2135,31 +2122,19 @@ public:
 class CRoxieServerInternalSinkActivity : public CRoxieServerActivity
 {
 protected:
-    unsigned numOutputs;
     bool executed;
-    bool *stopped;
     CriticalSection ecrit;
     Owned<IException> exception;
 
 public:
-    CRoxieServerInternalSinkActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerActivity(_factory, _probeManager), numOutputs(_numOutputs)
+    CRoxieServerInternalSinkActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager)
     {
         executed = false;
-        stopped = new bool[numOutputs];
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
-    }
-
-    ~CRoxieServerInternalSinkActivity()
-    {
-        delete [] stopped;
     }
 
     virtual void reset()
     {
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
         executed = false;
         exception.clear();
         CRoxieServerActivity::reset();
@@ -2168,18 +2143,6 @@ public:
     virtual IRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
-    }
-
-    virtual void stopSink(unsigned outputIdx)
-    {
-        if (!stopped[outputIdx])
-        {
-            stopped[outputIdx] = true;
-            for (unsigned s = 0; s < numOutputs; s++)
-                if (!stopped[s])
-                    return;
-            stop(false); // all outputs stopped - stop parent.
-        }
     }
 
     virtual const void *nextInGroup()
@@ -4488,7 +4451,7 @@ class CRoxieServerApplyActivity : public CRoxieServerInternalSinkActivity
 
 public:
     CRoxieServerApplyActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorApplyArg &) basehelper)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorApplyArg &) basehelper)
     {
     }
 
@@ -5293,29 +5256,29 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 class CRoxieServerTempTableActivity : public CRoxieServerActivity
 {
     IHThorTempTableArg &helper;
-    bool eof;
     unsigned curRow;
+    unsigned numRows;
 
 public:
     CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
     {
-        eof = false;
         curRow = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        eof = false;
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
     }
 
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        if (!eof)
+        // Filtering empty rows, returns the next valid row
+        while (curRow < numRows)
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned outSize = helper.getRow(rowBuilder, curRow++);
@@ -5325,7 +5288,6 @@ public:
                 return rowBuilder.finalizeRowClear(outSize);
             }
         }
-        eof = true;
         return NULL;
     }
 
@@ -6035,8 +5997,8 @@ class CRoxieServerLocalResultWriteActivity : public CRoxieServerInternalSinkActi
     unsigned graphId;
 
 public:
-    CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
@@ -6100,7 +6062,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLocalResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerLocalResultWriteActivity(this, _probeManager, graphId);
     }
 
 };
@@ -6266,8 +6228,8 @@ class CRoxieServerGraphLoopResultWriteActivity : public CRoxieServerInternalSink
     unsigned graphId;
 
 public:
-    CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
@@ -6371,7 +6333,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerGraphLoopResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerGraphLoopResultWriteActivity(this, _probeManager, graphId);
     }
 
 };
@@ -7840,7 +7802,13 @@ public:
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sorter = new CQuickSortAlgorithm(compare);
+                        else
+                            sorter = new CHeapSortAlgorithm(compare);
+                    }
                 }
                 else
                     sorter = new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
@@ -7896,7 +7864,13 @@ public:
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sortAlgorithm = insertionSort;
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sortAlgorithm = quickSort;
+                        else
+                            sortAlgorithm = heapSort;
+                    }
                 }
             }
         }
@@ -8906,8 +8880,8 @@ class CRoxieServerPipeWriteActivity : public CRoxieServerInternalSinkActivity
     bool recreate;
     bool inputExhausted;
 public:
-    CRoxieServerPipeWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorPipeWriteArg &)basehelper)
+    CRoxieServerPipeWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorPipeWriteArg &)basehelper)
     {
         recreate = helper.recreateEachRow();
         firstRead = false;
@@ -9024,7 +8998,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPipeWriteActivity(this, _probeManager, usageCount);
+        return new CRoxieServerPipeWriteActivity(this, _probeManager);
     }
 };
 
@@ -9545,8 +9519,8 @@ class CRoxieServerActionActivity : public CRoxieServerInternalSinkActivity
     IHThorActionArg &helper;
 public:
 
-    CRoxieServerActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorActionArg &)basehelper)
+    CRoxieServerActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorActionArg &)basehelper)
     {
     }
 
@@ -9566,7 +9540,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerActionActivity(this, _probeManager, usageCount);
+        return new CRoxieServerActionActivity(this, _probeManager);
     }
 };
 
@@ -10574,7 +10548,7 @@ protected:
 
 public:
     CRoxieServerDiskWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorDiskWriteArg &)basehelper)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorDiskWriteArg &)basehelper)
     {
         extend = ((helper.getFlags() & TDWextend) != 0);
         overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
@@ -11027,7 +11001,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 
 public:
     CRoxieServerIndexWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
     {
         overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
         reccount = 0;
@@ -13581,7 +13555,7 @@ class CRoxieServerLoopActivity : public CRoxieServerActivity
 protected:
     IHThorLoopArg &helper;
     ThorActivityKind activityKind;
-    int maxIterations;
+    unsigned maxIterations;
     bool finishedLooping;
     unsigned flags;
     bool eof;
@@ -13605,9 +13579,11 @@ public:
     {
         eof = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
+        if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
+            finishedLooping = true;
         loopExtractBuilder.clear();
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
@@ -13710,20 +13686,25 @@ public:
             switch (activityKind)
             {
             case TAKloopdataset:
-                if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
                 {
-                    if (loopPending.ordinality() == 0)
+                    if (!(flags & IHThorLoopArg::LFnewloopagain))
                     {
-                        eof = true;
-                        return NULL;
-                    }
+                        if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+                        {
+                            if (loopPending.ordinality() == 0)
+                            {
+                                eof = true;
+                                return NULL;
+                            }
 
-                    arrayInput.init(&loopPending);
-                    curInput = &arrayInput;
-                    finishedLooping = true;
-                    continue;       // back to the input loop again
+                            arrayInput.init(&loopPending);
+                            curInput = &arrayInput;
+                            finishedLooping = true;
+                            continue;       // back to the input loop again
+                        }
+                    }
+                    break;
                 }
-                break;
             case TAKlooprow:
                 if (loopPending.empty())
                 {
@@ -13749,7 +13730,18 @@ public:
             checkAbort();
             try 
             {
-                resultInput.setown(executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending));
+                Owned<IRoxieGraphResults> results = executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending);
+                resultInput.setown(results->createIterator(0));
+
+                if (flags & IHThorLoopArg::LFnewloopagain)
+                {
+                    Owned<IRoxieInput> againResult = results->createIterator(helper.loopAgainResult());
+                    OwnedConstRoxieRow row  = againResult->nextInGroup();
+                    assertex(row);
+                    //Result is a row which contains a single boolean field.
+                    if (!((const bool *)row.get())[0])
+                        finishedLooping = true;
+                }
             }
             catch (IException *E)
             {
@@ -13764,7 +13756,7 @@ public:
         }
     }
 
-    IRoxieInput * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
+    IRoxieGraphResults * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
     {
         try
         {
@@ -13775,7 +13767,7 @@ public:
 
             createCounterResult(loopGraph, counter);
 
-            Owned<IRoxieInput> ret = loopGraph->execute(0, parentExtractSize, parentExtract);
+            Owned<IRoxieGraphResults> ret = loopGraph->execute(parentExtractSize, parentExtract);
             loopGraph->afterExecute();
             return ret.getClear();
         }
@@ -14296,7 +14288,7 @@ class CRoxieServerGraphLoopActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopArg &helper;
-    int maxIterations;
+    unsigned maxIterations;
     unsigned flags;
     rtlRowBuilder GraphExtractBuilder;
     unsigned loopGraphId;
@@ -14314,8 +14306,8 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         if (maxIterations > maxGraphLoopIterations)
             throw MakeStringException(ROXIE_TOO_MANY_GRAPH_LOOP, "Attempt to execute graph %u times", maxIterations);
         if (maxIterations != 0)
@@ -19121,8 +19113,8 @@ class CRoxieServerWorkUnitWriteActivity : public CRoxieServerInternalSinkActivit
     IRoxieServerContext *serverContext;
 
 public:
-    CRoxieServerWorkUnitWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
+    CRoxieServerWorkUnitWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
     {
         grouped = (helper.getFlags() & POFgrouped) != 0;
         serverContext = NULL;
@@ -19259,7 +19251,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWorkUnitWriteActivity(this, _probeManager, isReread, usageCount);
+        return new CRoxieServerWorkUnitWriteActivity(this, _probeManager, isReread);
     }
 
 };
@@ -19277,8 +19269,8 @@ class CRoxieServerRemoteResultActivity : public CRoxieServerInternalSinkActivity
     IHThorRemoteResultArg &helper;
 
 public:
-    CRoxieServerRemoteResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorRemoteResultArg &)basehelper)
+    CRoxieServerRemoteResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorRemoteResultArg &)basehelper)
     {
     }
 
@@ -19302,7 +19294,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRemoteResultActivity(this, _probeManager, usageCount);
+        return new CRoxieServerRemoteResultActivity(this, _probeManager);
     }
 
 };
@@ -20883,10 +20875,11 @@ protected:
     unsigned * seekSizes;
     bool optimizeSteppedPostFilter;
     ISteppingMeta * projectedMeta;
+    unsigned maxSeekLookahead;
 
 public:
     CRoxieServerIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip)
+        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
         : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _maxRecordSize, _sorted, _isLocal, _maySkip), 
           readHelper((IHThorIndexReadArg &)basehelper)
     {
@@ -20894,6 +20887,7 @@ public:
         unsigned flags = indexHelper.getFlags();
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
         seekSizes = NULL;
+        maxSeekLookahead = _maxSeekLookahead;
 
         if (rawMeta)
         {
@@ -21075,7 +21069,11 @@ public:
         IMultipleStepSeekInfo *seeks = stepExtra.queryExtraSeeks();
         if (seeks)
         {
-            seeks->ensureFilled(seek, numFields, 40000/seekLen);  // MORE - could make this configurable
+            unsigned lookahead = 40000/seekLen;
+            if (maxSeekLookahead && (lookahead > maxSeekLookahead))
+                lookahead  = maxSeekLookahead;
+            seeks->ensureFilled(seek, numFields, lookahead);
+
             unsigned serialized = 1; // rawseek is always serialized...
             unsigned patchLength = out.length();
             out.append(serialized);  // NOTE - we come back and patch with the actual value...
@@ -21602,6 +21600,7 @@ public:
     bool variableFileName;
     bool enableFieldTranslation;
     unsigned rawSize;
+    unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
     CRoxieServerSideCache *cache;
@@ -21643,6 +21642,7 @@ public:
         }
         int cacheSize = _graphNode.getPropInt("hint[@name='cachehits']/@value", serverSideCacheSize);
         cache = cacheSize ? new CRoxieServerSideCache(cacheSize) : NULL;
+        maxSeekLookahead = _graphNode.getPropInt("hint[@name='maxseeklookahead']/@value", 0);
     }
 
     ~CRoxieServerBaseIndexActivityFactory()
@@ -21687,7 +21687,7 @@ public:
         else if (isSimple && !maySkip)
             return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip);
+            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip, maxSeekLookahead);
     }
 };
 
@@ -24999,7 +24999,7 @@ public:
     }
 };
 
-class CGraphResults : public CInterface, implements IEclGraphResults
+class CGraphResults : public CInterface, implements IRoxieGraphResults
 {
     IArrayOf<IGraphResult> results;
     CriticalSection cs;
@@ -26913,10 +26913,10 @@ public:
         reset();
     }
 
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract)
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract)
     {
         doExecute(parentExtractSize, parentExtract);
-        return results->createIterator(id);
+        return LINK(results);
     }
     virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
     {

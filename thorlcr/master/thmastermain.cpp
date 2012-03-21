@@ -628,7 +628,10 @@ int main( int argc, char *argv[]  )
         SetTempDir(tempdir,true);
 
         char thorPath[1024];
-        GetCurrentDirectory(1024, thorPath);
+        if (!GetCurrentDirectory(1024, thorPath)) {
+            ERRLOG("ThorMaster::main: Current directory path too big, setting it to null");
+            thorPath[0] = 0;
+        }
         unsigned l = strlen(thorPath);
         if (l) { thorPath[l] = PATHSEPCHAR; thorPath[l+1] = '\0'; }
         globals->setProp("@thorPath", thorPath);

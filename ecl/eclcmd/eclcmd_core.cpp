@@ -198,12 +198,29 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
             fprintf(stdout, "%s\n", w);
         if (cmd.optVerbose || !isCompiled)
             fprintf(stdout, "   state: %s\n\n", state);
+
+        unsigned errorCount=0;
+        unsigned warningCount=0;
         IArrayOf<IConstECLException> &exceptions = resp->getWorkunit().getExceptions();
         ForEachItemIn(i, exceptions)
         {
             IConstECLException &e = exceptions.item(i);
-            fprintf(stderr, "%s: %s %d: %s\n", e.getSource(), e.getSeverity(), e.getCode(), e.getMessage());
+            if (e.getSource())
+                fprintf(stderr, "%s: ", e.getSource());
+            if (e.getFileName())
+                fputs(e.getFileName(), stderr);
+            if (!e.getLineNo_isNull() && !e.getColumn_isNull())
+                fprintf(stderr, "(%d,%d): ", e.getLineNo(), e.getColumn());
+
+            fprintf(stderr, "%s C%d: %s\n", e.getSeverity(), e.getCode(), e.getMessage());
+            if (strieq(e.getSeverity(), "warning"))
+                warningCount++;
+            else if (strieq(e.getSeverity(), "error"))
+                errorCount++;
         }
+        if (errorCount || warningCount)
+            fprintf(stderr, "%d error, %d warning\n\n", errorCount, warningCount);
+
         return isCompiled;
     }
     return false;
@@ -275,7 +292,12 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'deploy' command creates a workunit on the HPCC system from the given ECL\n"
+            "text, file, archive, shared object, or dll.  The workunit will be created in\n"
+            "the 'compiled' state.\n"
+            "\n"
             "ecl deploy --cluster=<val> --name=<val> <ecl_file|->\n"
             "ecl deploy --cluster=<val> --name=<val> <archive|->\n"
             "ecl deploy [--cluster=<val>] [--name=<val>] <so|dll|->\n\n"
@@ -285,8 +307,8 @@ public:
             "   <so|dll|->             workunit dll or shared object to deploy\n"
             " Options:\n"
             "   -cl, --cluster=<val>   cluster to associate workunit with\n"
-            "   -n, --name=<val>       workunit job name\n"
-        );
+            "   -n, --name=<val>       workunit job name\n",
+            stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
@@ -399,7 +421,14 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'publish' command creates a query in a queryset.  The query is created\n"
+            "by adding a workunit to a queryset and assigning it a query name.\n"
+            "\n"
+            "If the query is being created from an ECL file, archive, shared object, dll,\n"
+            "or text, a workunit is first created and then published to the queryset.\n"
+            "\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <wuid>\n"
             "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <so|dll|->\n"
             "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n"
@@ -414,8 +443,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
-            "   --wait=<ms>            maximum time to wait for cluster finish updating\n"
-        );
+            "   --wait=<ms>            maximum time to wait for cluster to finish updating\n",
+            stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
@@ -429,7 +458,7 @@ private:
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1)
+    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -452,6 +481,8 @@ public:
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
+                continue;
+            if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -503,6 +534,7 @@ public:
 
         Owned<IClientWURunRequest> req = client->createWURunRequest();
         req->setCloneWorkunit(true);
+        req->setNoRootTag(optNoRoot);
 
         StringBuffer wuid;
         StringBuffer queryset;
@@ -553,7 +585,14 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'run' command exectues an ECL workunit, text, file, archive, shared\n"
+            "object, or dll on the specified HPCC target cluster.\n"
+            "\n"
+            "Query input can be provided in xml form via the --input parameter.  Input\n"
+            "xml can be provided directly or by refrencing a file\n"
+            "\n"
             "ecl run [--cluster=<val>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
             "ecl run [--cluster=<c>][--input=<file|xml>][--wait=<ms>] <queryset> <query>\n"
             "ecl run [--cluster=<c>][--name=<nm>][--input=<file|xml>][--wait=<i>] <dll|->\n"
@@ -569,8 +608,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   --wait=<ms>            time to wait for completion\n"
-        );
+            "   --wait=<ms>            time to wait for completion\n",
+            stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
@@ -578,6 +617,7 @@ private:
     StringAttr optName;
     StringAttr optInput;
     unsigned optWaitTime;
+    bool optNoRoot;
 };
 
 class EclCmdActivate : public EclCmdWithQueryTarget
@@ -623,12 +663,16 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
-            "ecl activate <queryset> <query>\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'activate' command assigns a query to the active alias with the same\n"
+            "name as the query.\n"
+            "\n"
+            "ecl activate <queryset> <query_id>\n"
             " Options:\n"
             "   <queryset>             name of queryset containing query to activate\n"
-            "   <query>                query to activate\n"
-        );
+            "   <query_id>             query to activate\n",
+            stdout);
         EclCmdWithQueryTarget::usage();
     }
 };
@@ -677,12 +721,15 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
-            "ecl unpublish <queryset> <query>\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'unpublish' command removes a query from a queryset.\n"
+            "\n"
+            "ecl unpublish <queryset> <query_id>\n"
             " Options:\n"
-            "   <queryset>             name of queryset containing query to unpublish\n"
-            "   <query>                query to remove from query set\n"
-        );
+            "   <queryset>             name of queryset containing the query to remove\n"
+            "   <query_id>             query to remove from the queryset\n",
+            stdout);
         EclCmdWithQueryTarget::usage();
     }
 };
@@ -731,12 +778,16 @@ public:
     }
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
-            "ecl deactivate <queryset> <query>\n"
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'deactivate' command removes an active query alias from the given queryset.\n"
+            "\n"
+            "ecl deactivate <queryset> <active_alias>\n"
+            "\n"
             " Options:\n"
             "   <queryset>             queryset containing alias to deactivate\n"
-            "   <query>                query to deactivate (delete)\n"
-        );
+            "   <active_alias>         active alias to be removed from the queryset\n",
+            stdout);
         EclCmdWithQueryTarget::usage();
     }
 };

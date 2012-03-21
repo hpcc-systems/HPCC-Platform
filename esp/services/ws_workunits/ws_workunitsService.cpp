@@ -1112,7 +1112,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
             case WUStateUnknown:
             {
                 SCMStringBuffer result;
-                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation);
+                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation, req.getNoRootTag());
                 resp.setResults(result.str());
                 break;
             }

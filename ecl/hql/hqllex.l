@@ -878,6 +878,7 @@ SERVICE             { RETURNHARD(SERVICE); }
 SET                 { RETURNSYM(SET); }
 __SET_DEBUG_OPTION__ { RETURNSYM(HASH_OPTION); }
 SHARED              { RETURNHARD(SHARED); }
+SHUFFLE             { RETURNSYM(SHUFFLE); }
 SIN                 { RETURNSYM(SIN); }
 SINGLE              { RETURNSYM(SINGLE); }
 SINH                { RETURNSYM(SINH); }

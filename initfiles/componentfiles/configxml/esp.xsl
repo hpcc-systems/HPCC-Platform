@@ -161,17 +161,6 @@
                     </verify>
                 </EspProtocol>
             </xsl:if>
-            <!-- insert https protocol, if a certificate has been specified for it-->
-            <xsl:if test="EspBinding[@protocol='protocolx']">
-                <EspProtocol name="protocolx" type="protocolx_protocol">
-                    <xsl:attribute name="plugin">
-                       <xsl:call-template name="makeServicePluginName">
-                          <xsl:with-param name="plugin" select="'protocolx'"/>
-                       </xsl:call-template>
-                    </xsl:attribute>
-                    <xsl:copy-of select="ProtocolX/@*"/>
-                </EspProtocol>
-            </xsl:if>
             <xsl:variable name="importedServiceDefinitionFiles">
                 <xsl:call-template name="importServiceDefinitionFiles">
                     <xsl:with-param name="filesList" select="$serviceFilesList"/>

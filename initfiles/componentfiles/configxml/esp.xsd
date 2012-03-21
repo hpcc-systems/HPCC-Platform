@@ -154,7 +154,6 @@
                                 <xs:restriction base="xs:string">
                                     <xs:enumeration value="http"/>
                                     <xs:enumeration value="https"/>
-                                    <xs:enumeration value="protocolx"/>
                                 </xs:restriction>
                             </xs:simpleType>
                         </xs:attribute>
@@ -225,7 +224,7 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
-                        <xs:attribute name="method" use="optional" default="local">
+                        <xs:attribute name="method" use="optional" default="none">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <autogenforwizard>1</autogenforwizard>
@@ -432,63 +431,6 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Set this to true to regenerate the private key, certificate and CSR.</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                    </xs:complexType>
-                </xs:element>
-                <xs:element name="ProtocolX" minOccurs="0">
-                    <xs:annotation>
-                        <xs:appinfo>
-                            <title>Protocol X</title>
-                        </xs:appinfo>
-                    </xs:annotation>
-                    <xs:complexType>
-                        <xs:attribute name="minTimeout" type="xs:string" use="optional" default="30">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Minimum Timeout</title>
-                                    <tooltip>The minimum user-specified transaction timeout in seconds</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="maxTimeout" type="xs:string" use="optional" default="36">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Maximum Timeout</title>
-                                    <tooltip>The maximum user-specified transaction timeout in seconds</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="defaultTimeout" type="xs:string" use="optional" default="21">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Default Timeout</title>
-                                    <tooltip>The default transaction timeout, in seconds, if not user-specified</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="idleTimeout" type="xs:string" use="optional" default="3600">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Idle Timeout</title>
-                                    <tooltip>When no traffic is seen for this many seconds, the connection is closed by the server</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="authTimeout" type="xs:string" use="optional" default="3">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Authentication Timeout</title>
-                                    <tooltip>Connection is refused if authentication takes longer than this (seconds)</tooltip>
-                                </xs:appinfo>
-                            </xs:annotation>
-                        </xs:attribute>
-                        <xs:attribute name="threadCount" type="xs:string" use="optional" default="2">
-                            <xs:annotation>
-                                <xs:appinfo>
-                                    <title>Thread Count</title>
-                                    <tooltip>The maximum number of threads allocated to process transactions</tooltip>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>

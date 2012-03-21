@@ -250,7 +250,6 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract) = 0;
     virtual void serializeCreateStartContext(MemoryBuffer &out) = 0;
     virtual void serializeExtra(MemoryBuffer &out) = 0;
-    virtual void stopSink(unsigned idx) = 0;
 //Functions to support result streaming between parallel loop/graphloop/library implementations
     virtual IRoxieInput * querySelectOutput(unsigned id) = 0;
     virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input) = 0;
@@ -315,6 +314,12 @@ interface IRoxieServerLoopResultProcessor
     virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
 };
 
+interface IRoxieGraphResults : extends IEclGraphResults
+{
+public:
+    virtual IRoxieInput * createIterator(unsigned id) = 0;
+};
+
 class CGraphIterationInfo;
 
 interface IRoxieServerChildGraph : public IInterface
@@ -325,7 +330,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual void setInputResult(unsigned id, IGraphResult * result) = 0;
     virtual bool querySetInputResult(unsigned id, IRoxieInput * result) = 0;
     virtual void stopUnusedOutputs() = 0;
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract) = 0;
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void afterExecute() = 0;
 //sequential graph related helpers
     virtual void clearGraphLoopResults() = 0;

@@ -187,14 +187,17 @@ public:
     IMPLEMENT_IINTERFACE;
     CRoxieDaliHelper()
     {
-        const char *roxieUser = topology->queryProp("@ldapUser");
-        const char *roxiePassword = topology->queryProp("@ldapPassword");
-        if (roxieUser && *roxieUser && roxiePassword && *roxiePassword)
+        if (topology)
         {
-            StringBuffer password;
-            decrypt(password, roxiePassword);
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(roxieUser, password.str());
+            const char *roxieUser = topology->queryProp("@ldapUser");
+            const char *roxiePassword = topology->queryProp("@ldapPassword");
+            if (roxieUser && *roxieUser && roxiePassword && *roxiePassword)
+            {
+                StringBuffer password;
+                decrypt(password, roxiePassword);
+                userdesc.setown(createUserDescriptor());
+                userdesc->set(roxieUser, password.str());
+            }
         }
     }
 

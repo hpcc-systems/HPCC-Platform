@@ -371,13 +371,17 @@ static IHqlExpression * optimizeCaseConstant(node_operator op, IHqlExpression * 
                     //CASE(x,a1=>v1,a2=>v2,a3=>v3,v0) [not]= y
                     //If y ==a0 then transform to x [NOT] IN [a<n>] where v<n>!=y
                     bool matchesDefault = (defValue->compare(constVal) == 0);
+                    HqlExprCopyArray matches;
                     HqlExprArray exceptions;
                     for (unsigned i=0; i<caseResults.ordinality(); i++)
                     {
-                        IHqlExpression * val = (IHqlExpression *)&caseResults.item(i);
+                        IHqlExpression * key = caseExpr->queryChild(i+1)->queryChild(0);
+                        IHqlExpression * val = &caseResults.item(i);
                         bool caseMatches = (val->queryValue()->compare(constVal) == 0);
-                        if (caseMatches != matchesDefault)
-                            exceptions.append(*LINK(caseExpr->queryChild(i+1)->queryChild(0)));
+                        if (caseMatches == matchesDefault)
+                            matches.append(*key->queryBody());
+                        else if (!matches.contains(*key->queryBody()))
+                            exceptions.append(*LINK(key));
                     }
                     bool defaultsToTrue = (matchesDefault && (op == no_eq)) || (!matchesDefault && (op == no_ne));
                     if (exceptions.ordinality() == 0)
@@ -2320,8 +2324,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_implicitcast:
         {
             IHqlExpression * child = expr->queryChild(0);
-            node_operator childOp = child->getOperator();
             ITypeInfo * exprType = expr->queryType();
+            if (exprType == child->queryType())
+                return LINK(child);
+
+            node_operator childOp = child->getOperator();
             switch (childOp)
             {
             case no_constant:
@@ -3307,6 +3314,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             break;
         }
     case no_sort:
+    case no_shuffle:
     case no_sorted:
         {
             //If action does not change the type information, then it can't have done anything...
@@ -3314,7 +3322,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 return removeParentNode(expr);
             if (isNull(child) || hasNoMoreRowsThan(child, 1))
                 return removeParentNode(expr);
-            //If all arguments to sort are constnat then remove it, otherwise the activities will not like it.
+            //If all arguments to sort are constant then remove it, otherwise the activities will not like it.
             //NOTE: MERGE has its sort order preserved, so it won't cause issues there.
             bool allConst = true;
             ForEachChildFrom(i, expr, 1)
@@ -5398,6 +5406,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_keyeddistribute:
     case no_cosort:
     case no_sort:
+    case no_shuffle:
     case no_sorted:
     case no_assertsorted:
     case no_topn:
@@ -5756,6 +5765,7 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
     case no_constant:
     case no_param:
     case no_variable:
+    case no_attr:
         return LINK(expr);
     case no_select:
         if (!expr->hasProperty(newAtom))

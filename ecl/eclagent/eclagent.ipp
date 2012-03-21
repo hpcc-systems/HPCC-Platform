@@ -699,7 +699,7 @@ public:
     EclBoundLoopGraph(IAgentContext & _agent, IEclLoopGraph * _graph, IOutputMetaData * _resultMeta, unsigned _activityId);
     IMPLEMENT_IINTERFACE
 
-    virtual IHThorGraphResult * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract);
+    virtual IHThorGraphResults * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract);
     virtual void execute(void * counterRow, IHThorGraphResults * graphLoopResults, const byte * parentExtract);
 
 protected:

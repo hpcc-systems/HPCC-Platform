@@ -226,7 +226,6 @@ public:
     void addAllOutputs();
     bool addOutputField(IHqlExpression * field);
     IHqlExpression * createOutputProject(IHqlExpression * ds);
-    void ensureOutputNotEmpty();
     void finalizeOutputRecord();
     void inheritRequiredFields(UsedFieldSet * requiredList);
     bool safeToReorderInput();

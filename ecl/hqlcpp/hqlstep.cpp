@@ -931,7 +931,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     {
         HqlExprArray skewArgs;
         unwindChildren(skewArgs, skew);
-        OwnedHqlExpr skewOrder = createValue(no_sortlist, makeSortListType(NULL), skewArgs);
+        OwnedHqlExpr skewOrder = createSortList(skewArgs);
         DatasetReference datasetRef(dataset);
         buildCompareEqMember(instance->classctx, "PartitionCompareEq", skewOrder, leftRef);
     }
@@ -945,7 +945,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     //virtual IOutputMetaData * queryInputMeta()
     {
-        MetaInstance inputmeta(*this, dataset);
+        MetaInstance inputmeta(*this, dataset->queryRecord(), isGrouped(dataset));
         buildMetaInfo(inputmeta);
 
         StringBuffer s;

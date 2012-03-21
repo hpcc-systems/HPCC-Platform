@@ -361,7 +361,7 @@
                     <img title="Compressed" border="0" src="/esp/files_/img/zip.gif" width="16" height="16"/>
                 </xsl:if>
             </td>
-            <td>
+            <td align="left">
                 <xsl:choose>
                     <xsl:when test="isDirectory=1">
                         <a title="Open folder..." href="{$href}">

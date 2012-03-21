@@ -664,12 +664,6 @@
              FQDN=""
              name="s1"
              netAddress="."/>
-   <ProtocolX authTimeout="3"
-              defaultTimeout="21"
-              idleTimeout="3600"
-              maxTimeout="36"
-              minTimeout="30"
-              threadCount="2"/>
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"

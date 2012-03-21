@@ -86,7 +86,14 @@
                     </xsl:attribute>
                 </img>
                     <b>
-                        <xsl:value-of select="@name"/>
+                        <a>
+                            <xsl:if test="@tooltip">
+                                <xsl:attribute name="title">
+                                    <xsl:value-of select="@tooltip"/>
+                                </xsl:attribute>
+                            </xsl:if>
+                            <xsl:value-of select="@name"/>
+                        </a>
                     </b>
                     <xsl:if test="@showSchemaLinks">
                       <xsl:text disable-output-escaping="yes">&nbsp;</xsl:text>

@@ -1885,35 +1885,54 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
     //Happens when also hoisting a non-table expression e.g, globalAutoHoist
 
     IHqlExpression * newDs = transformed->queryChild(0);
-    if (newDs && newDs->isDataset())
+    if (!newDs || !newDs->isDataset())
+        return LINK(transformed);
+
+    //More: a specialised HEF flag would make this more efficient...
+    childDatasetType childType = getChildDatasetType(expr);
+    switch (childType)
     {
-        //More: a specialised HEF flag would make this more efficient...
-        childDatasetType childType = getChildDatasetType(expr);
-        switch (childType)
-        {
-        case childdataset_dataset:
-        case childdataset_datasetleft: 
-        case childdataset_top_left_right:
-            {
-                IHqlExpression * ds = expr->queryChild(0);
-                if (newDs != ds)
-                {
-                    OwnedHqlExpr transformedSelector = transformSelector(ds->queryNormalizedSelector());
-                    IHqlExpression * newSelector = newDs->queryNormalizedSelector();
-                    if (transformedSelector != newSelector)
-                    {
-                        //DBGLOG("****Mismatched selector for %s->%s****", getOpString(ds->getOperator()), getOpString(newDs->getOperator()));
-                        HqlExprArray args;
-                        args.append(*LINK(newDs));
-                        replaceSelectors(args, transformed, 1, transformedSelector, newSelector);
-                        return transformed->clone(args);
-                    }
-                }
-                break;
-            }
-        }
+    case childdataset_dataset:
+    case childdataset_datasetleft:
+    case childdataset_top_left_right:
+        break;
+    default:
+        return LINK(transformed);
     }
-    return LINK(transformed);
+
+    LinkedHqlExpr updated = transformed;
+    IHqlExpression * ds = expr->queryChild(0);
+    loop
+    {
+        if (newDs == ds)
+            return updated.getClear();
+
+        OwnedHqlExpr transformedSelector = transformSelector(ds->queryNormalizedSelector());
+        IHqlExpression * newSelector = newDs->queryNormalizedSelector();
+        if (transformedSelector != newSelector)
+        {
+            HqlExprArray args;
+            args.append(*LINK(updated->queryChild(0)));
+            replaceSelectors(args, updated, 1, transformedSelector, newSelector);
+            updated.setown(updated->clone(args));
+        }
+
+        //In unusual sitatuations we also need to map selectors for any parent datasets that are in scope
+        IHqlExpression * newRoot = queryRoot(newDs);
+        if (!newRoot || newRoot->getOperator() != no_select)
+            break;
+        IHqlExpression * oldRoot = queryRoot(ds);
+        if (!oldRoot || oldRoot->getOperator() != no_select)
+            break;
+        if (oldRoot == newRoot)
+            break;
+
+        //ds.x has changed to ds'.x - need to map any selectors from ds to ds'
+        newDs = queryDatasetCursor(newRoot->queryChild(0));
+        ds = queryDatasetCursor(oldRoot->queryChild(0));
+    }
+
+    return updated.getClear();
 }
 
 //---------------------------------------------------------------------------
@@ -2744,7 +2763,7 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_select:
         if (!expr->hasProperty(newAtom))
             return createTransformedActiveSelect(expr);
-        break;
+        return NewHqlTransformer::createTransformed(expr);
     }
 
     switch (getChildDatasetType(expr))
@@ -2787,21 +2806,6 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
         }
     case childdataset_evaluate:
         throwUnexpected();
-        {
-            // I doubt this really works, but by the time any sensible transform is applied to the tree 
-            // evaluates will have been converted to projects instead
-            IHqlExpression * arg0 = expr->queryChild(0);
-            OwnedHqlExpr child = transform(arg0);
-
-            HqlExprArray children;
-            children.append(*LINK(child));
-            pushChildContext(arg0->queryNormalizedSelector(true), child->queryNormalizedSelector(true));
-            bool same = optimizedTransformChildren(expr, children);
-            popChildContext();
-            if (!same)
-                return expr->clone(children);
-            return LINK(expr);
-        }
     default:
         return NewHqlTransformer::createTransformed(expr);
     }

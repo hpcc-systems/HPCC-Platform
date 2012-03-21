@@ -459,7 +459,7 @@ class CFileCloner
         }
 
         Owned<IDistributedFile> dstfile = fdir->createNew(dstfdesc);
-        dstfile->attach(destfilename,NULL,userdesc);
+        dstfile->attach(destfilename,userdesc);
 
 
 
@@ -636,8 +636,8 @@ public:
                 sfile->addSubFile(subfiles.item(i));
             }
             if (!nameprefix.isEmpty()) {
-                sfile->lockProperties().setProp("@roxiePrefix",nameprefix.get());
-                sfile->unlockProperties();
+                DistributedFilePropertyLock lock(sfile);
+                lock.queryAttributes().setProp("@roxiePrefix",nameprefix.get());
             }
         }
         else {
@@ -708,50 +708,38 @@ public:
 
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user);
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        transaction->start();
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction);
         bool newfile = false;
         if (!superfile) {
-            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user));
+            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
             newfile = true;
         }
-        try {
-            if (numtoadd) {
-                unsigned i;
-                for (i=0;i<numtoadd;i++)
-                    if (superfile->querySubFileNamed(subfiles[i]))
-                        throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
-                Owned<IDistributedFileTransaction> transaction;
-                if (numtoadd>1) {
-                    transaction.setown(createDistributedFileTransaction(user));
-                    transaction->start();
-                }
-                //StringBuffer before;
-                for (i=0;i<numtoadd;i++) {
-                    if (before&&*before)
-                        superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
-                    else
-                        superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
-                }
-                if (transaction.get()) {
-                    superfile.clear(); // superfile must not be active when transactiion committed
-                    transaction->commit();
-                }
+        if (numtoadd) {
+            unsigned i;
+            for (i=0;i<numtoadd;i++)
+                if (superfile->querySubFileNamed(subfiles[i]))
+                    throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
+            for (i=0;i<numtoadd;i++) {
+                if (before&&*before)
+                    superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
+                else
+                    superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
             }
-        } catch (IException *) {
-            // TODO: DFS transaction could take care of it
-            if (newfile)
-                queryDistributedFileDirectory().removeEntry(superfname,user);
-            throw;
+            transaction->commit();
         }
     }
 
 
     void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, IUserDescriptor *user)
     {
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,NULL,true);
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction,true);
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
         StringAttrArray toremove;
+        // Delete All
         if (numtodelete == 0) {
             if (delsub) {
                 Owned<IDistributedFileIterator> iter=superfile->getSubFileIterator();
@@ -762,6 +750,8 @@ public:
                 }
             }
         }
+        // Delete Some / Wildcard
+        // MORE - shouldn't we allow wildcard to delete all matching, without the need to specify numtodelete?
         else {
             for (unsigned i1=0;i1<numtodelete;i1++)
                 if (strchr(subfiles[i1],'?')||strchr(subfiles[i1],'*')) {
@@ -779,39 +769,20 @@ public:
                     else
                         throwError1(DFUERR_DSuperFileDoesntContainSub, subfiles[i1]);
         }
+        // Do we have something to delete?
         if (toremove.ordinality()) {
-            Owned<IDistributedFileTransaction> transaction;
-            if (!delsub) {
-                if (toremove.ordinality()>1) {
-                    transaction.setown(createDistributedFileTransaction(user));
-                    transaction->start();
-                }
-            }
-            ForEachItemIn(i2,toremove) {
-                try {
-                    superfile->removeSubFile(toremove.item(i2).text.get(),delsub,delsub,false,transaction);
-                }
-                catch (IException *e) {
-                    StringBuffer s("Warning: ");
-                    s.append(toremove.item(i2).text).append(" could not be removed");
-                    EXCLOG(e, s.str());
-                    e->Release();
-                }
-            }
-            if (transaction.get()) {
-                superfile.clear(); // superfile must not be active when transaction committed
-                transaction->commit();
-            }
+            transaction->start();
+            ForEachItemIn(i2,toremove)
+                superfile->removeSubFile(toremove.item(i2).text.get(),delsub,delsub,false,transaction);
+            transaction->commit();
         }
-        if (numtodelete == 0) {
-            superfile.setown(queryDistributedFileDirectory().lookupSuperFile(superfname,user,NULL,true));
-            if (superfile.get()) {
-                if (superfile->numSubFiles()!=0) {
-                    throwError1(DFUERR_DSuperFileNotEmpty, superfname);
-                }
-                superfile.clear();
-                queryDistributedFileDirectory().removeEntry(superfname);
-            }
+        // Delete superfile if empty
+        if (superfile->numSubFiles() != 0) {
+            if (numtodelete == 0)
+                throwError1(DFUERR_DSuperFileNotEmpty, superfname);
+            superfile.clear();
+            // MORE - add file deletion to transaction
+            queryDistributedFileDirectory().removeEntry(superfname);
         }
     }
 
@@ -861,7 +832,7 @@ public:
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc,true);
         if (file)
-            file->attach(lfn,NULL,user);
+            file->attach(lfn,user);
     }
 
     void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser=NULL,IUserDescriptor *user=NULL)
@@ -877,7 +848,7 @@ public:
         }
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
         if (file)
-            file->attach(lfn,NULL,user);
+            file->attach(lfn,user);
     }
 
 
@@ -916,7 +887,7 @@ public:
                 dfile->detach();
             else {
                 if (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
-                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryProperties().getPropInt64("@fileCrc"))&&
+                    ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
                     (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false))) {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;

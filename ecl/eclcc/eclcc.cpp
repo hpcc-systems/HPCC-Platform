@@ -1205,6 +1205,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     ArgvIterator iter(argc, argv);
     StringAttr tempArg;
     bool tempBool;
+    bool showHelp = false;
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
@@ -1254,10 +1255,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             setDebugOption("saveEclTempFiles", tempBool);
         }
-        else if (strcmp(arg, "-help")==0 || strcmp(arg, "--help")==0)
+        else if (iter.matchFlag(showHelp, "-help") || iter.matchFlag(showHelp, "--help"))
         {
-            usage();
-            return false;
         }
         else if (iter.matchPathFlag(includeLibraryPath, "-I"))
         {
@@ -1387,6 +1386,12 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else
             processArgvFilename(inputFiles, arg);
     }
+    if (showHelp)
+    {
+        usage();
+        return false;
+    }
+
     // Option post processing follows:
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend)
         optNoCompile = true;
@@ -1411,55 +1416,100 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
 //=========================================================================================
 
+// Exclamation in the first column indicates it is only part of the verbose output
+const char * const helpText[] = {
+    "",
+    "Usage:",
+    "    eclcc <options> queryfile.ecl",
+    "",
+    "General options:",
+    "    -I <path>     Add path to locations to search for ecl imports",
+    "    -L <path>     Add path to locations to search for system libraries",
+    "    -o <file>     Specify name of output file (default a.out if linking to",
+    "                  executable, or stdout)",
+    "    -manifest     Specify path to manifest file listing resources to add",
+    "    -foption[=value] Set an ecl option (#option)",
+    "    -main <ref>   Compile definition <ref> from the source collection",
+    "    -syntax       Perform a syntax check of the ECL",
+    "    -target=hthor Generate code for hthor executable (default)",
+    "    -target=roxie Generate code for roxie cluster",
+    "    -target=thor  Generate code for thor cluster",
+    "",
+    "Output control options",
+    "    -E            Output preprocessed ECL in xml archive form",
+    "!   -M            Output meta information for the ecl files",
+    "!   -Md           Output dependency information",
+    "    -q            Save ECL query text as part of workunit",
+    "    -wu           Only generate workunit information as xml file",
+    "",
+    "c++ options",
+    "    -S            Generate c++ output, but don't compile",
+    "!   -c            compile only (don't link)",
+    "    -g            Enable debug symbols in generated code",
+    "    -Wc,xx        Pass option xx to the c++ compiler",
+    "!   -Wl,xx        Pass option xx to the linker",
+    "!   -Wa,xx        Passed straight through to c++ compiler",
+    "!   -Wp,xx        Passed straight through to c++ compiler",
+    "!   -save-cpps    Do not delete generated c++ files (implied if -g)",
+    "!   -save-temps   Do not delete intermediate files",
+    "    -shared       Generate workunit shared object instead of a stand-alone exe",
+    "",
+    "Other options:",
+    "!   -b            Batch mode.  Each source file is processed in turn.  Output",
+    "!                 name depends on the input filename",
+#ifdef _WIN32
+    "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
+#endif
+    "    -help, --help Display this message",
+    "    -help -v      Display verbose help message",
+    "!   -internal     Run internal tests",
+    "!   -legacy       Use legacy import semantics (deprecated)",
+    "    --logfile <file> Write log to specified file",
+    "!   --logdetail=n Set the level of detail in the log file",
+#ifdef _WIN32
+    "!   -m            Enable leak checking",
+#endif
+    "!   -P <path>     Specify the path of the output files (only with -b option)",
+    "    -specs file   Read eclcc configuration from specified file",
+    "!   -split m:n    Process a subset m of n input files (only with -b option)",
+    "    -v --verbose  Output additional tracing information while compiling",
+    "    --version     Output version information",
+    "!",
+    "!#options",
+    "! -factivitiesPerCpp      Number of activities in each c++ file",
+    "!                         (requires -fspanMultipleCpp)",
+    "! -fapplyInstantEclTransformations Limit non file outputs with a CHOOSEN",
+    "! -fapplyInstantEclTransformationsLimit Number of records to limit to",
+    "! -fcheckAsserts          Check ASSERT() statements",
+    "! -fmaxCompileThreads     Number of compiler instances to compile the c++",
+    "! -fnoteRecordSizeInGraph Add estimates of record sizes to the graph",
+    "! -fpickBestEngine        Allow simple thor queries to be passed to thor",
+    "! -fshowActivitySizeInGraph Show estimates of generated c++ size in the graph",
+    "! -fshowMetaInGraph       Add distribution/sort orders to the graph",
+    "! -fshowRecordCountInGraph Show estimates of record counts in the graph",
+    "! -fspanMultipleCpp       Generate a work unit in multiple c++ files",
+    "",
+};
+
 void EclCC::usage()
 {
-    //Flags can take form -Fx or -F x
-    //options can take the form -option=x or -option x
-
-    fprintf(stdout,"\nUsage:\n"
-           "    eclcc <options> queryfile.ecl\n"
-           "\nGeneral options:\n"
-           "    -g            Enable debug symbols in generated code\n"
-           "    -I <path>     Add path to locations to search for ecl imports\n"
-           "    -L <path>     Add path to locations to search for system libraries\n"
-           "    -o <file>     Specify name of output file (default a.out if linking to\n"
-           "                  executable, or stdout)\n"
-           "    -P <path>     Specify the path of the output files\n"
-           "    -Wc,xx        Supply option for the c++ compiler\n"
-           "    -Wl,xx        Supply option for the linker\n"
-           "    -save-cpps    Do not delete generated c++ files (implied if -g)\n"
-           "    -save-temps   Do not delete intermediate files\n"
-           "    -manifest     Specify path to manifest file listing resources to add\n"
-           "\nECL options:\n"
-           "    -E            Output preprocessed ECL in xml archive form\n"
-           "    -S            Generate c++ output, but don't compile\n"
-           "    -foption[=value] Set an ecl option (#option)\n"
-           "    -main <ref>   Compile definition <ref> from the source collection\n"
-           "    -q            Save ECL query text as part of workunit\n"
-           "    -shared       Generate workunit shared object instead of a stand alone exe\n"
-           "    -syntax       Perform a syntax check of the ECL\n"
-           "    -target=hthor Generate code for hthor executable (default)\n"
-           "    -target=roxie Generate code for roxie cluster\n"
-           "    -target=thor  Generate code for thor cluster\n"
-           "    -wu           Only generate workunit informaton as xml file\n"
-           "\nOther options:\n"
-           "    -b            Batch mode.  Each source file is processed in turn.  Output\n"
-           "                  name depends on the input filename\n"
-           "    -c            compile only (don't link)\n"
-           "    -help         Display this message\n"
-           "    --help        Display this message\n"
-           "    --logdetail=n Set the level of detail in the log file\n"
-           "    --logfile file Write log to specified file\n"
-           "    -specs file   Read eclcc configuration from specified file\n"
-           "    -v --verbose  Output additional tracing information while compiling\n"
-           "    --version     Output version information\n\n"
-);
-
-    //Options not included in usage text
-    //-brk        set breakpoint on nth allocation (windows)
-    //-m          enable leak checking (windows)
-    //-split a:b  only compile 1/b of the input files, sample a.  Use for parallel regression testing.
-    //-Wl,-Wp,-Wa passed through to gcc compiler
+    for (unsigned line=0; line < _elements_in(helpText); line++)
+    {
+        const char * text = helpText[line];
+        if (*text == '!')
+        {
+            if (logVerbose)
+            {
+                //Allow conditional headers
+                if (text[1] == ' ')
+                    fprintf(stdout, " %s\n", text+1);
+                else
+                    fprintf(stdout, "%s\n", text+1);
+            }
+        }
+        else
+            fprintf(stdout, "%s\n", text);
+    }
 }
 
 //=========================================================================================
