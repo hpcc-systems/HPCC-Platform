@@ -141,7 +141,7 @@ SET(CPACK_PACKAGE_VERSION_PATCH ${point}${stagever})
 set ( CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>" )
 set( CPACK_SOURCE_GENERATOR TGZ )
 set ( CPACK_RPM_PACKAGE_VERSION "${projname}")
-SET(CPACK_RPM_PACKAGE_RELEASE "${version}${stagever}")
+SET(CPACK_RPM_PACKAGE_RELEASE "${version}-${stagever}")
 if ( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
 else( ${ARCH64BIT} EQUAL 1 )
@@ -211,7 +211,7 @@ set(CPACK_SOURCE_IGNORE_FILES
 ## Run file configuration to set build tag along with install lines for generated
 ## config files.
 ###
-set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}-${stagever}")
+set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}")
 if (USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
     execute_process(COMMAND "${GIT_COMMAND}" describe --exact --tags --dirty
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
