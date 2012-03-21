@@ -106,9 +106,13 @@ static void loadResource(const char *filepath, MemoryBuffer &content)
     read(fio, 0, (size32_t) f->size(), content);
 }
 
-bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *filename, int &id)
+bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *respath, const char *filepath, int &id)
 {
-    VStringBuffer xpath("Resource[@filename='%s']", filename);
+    StringBuffer xpath;
+    if (respath && *respath)
+        xpath.appendf("Resource[@resourcePath='%s']", respath);
+    else
+        xpath.appendf("Resource[@originalFilename='%s']", filepath);
     Owned<IPropertyTreeIterator> iter = manifest->getElements(xpath.str());
     ForEach (*iter)
     {
@@ -126,10 +130,8 @@ bool ResourceManager::getDuplicateResourceId(const char *srctype, const char *fi
     return false;
 }
 
-void ResourceManager::addManifest(const char *filename)
+void ResourceManager::addManifestFile(const char *filename)
 {
-    if (finalized)
-        throwError1(HQLERR_ResourceAddAfterFinalManifest, "MANIFEST");
     Owned<IPropertyTree> manifestSrc = createPTreeFromXMLFile(filename);
 
     StringBuffer dir; 
@@ -143,32 +145,57 @@ void ResourceManager::addManifest(const char *filename)
     ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
-        if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
+        if (streq(item.queryName(), "Include") && item.hasProp("@filename"))
+            addManifestInclude(item, dir.str());
+        else if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
         {
+            StringBuffer filepath;
+            StringBuffer respath;
+            makeAbsolutePath(item.queryProp("@filename"), dir.str(), filepath);
+            makePathUniversal(filepath.str(), respath);
+
+            item.setProp("@originalFilename", filepath.str());
+            item.setProp("@resourcePath", respath.str());
+
             if (!item.hasProp("@type"))
                 item.setProp("@type", "UNKNOWN");
-            const char *filename = item.queryProp("@filename");
             int id;
-            if (getDuplicateResourceId(item.queryProp("@type"), filename, id))
+            if (getDuplicateResourceId(item.queryProp("@type"), respath.str(), NULL, id))
             {
                 item.setPropInt("@id", id);
                 manifest->addPropTree("Resource", LINK(&item));
             }
             else
             {
-                StringBuffer fullpath;
-                if (!isAbsolutePath(filename))
-                    fullpath.append(dir);
-                fullpath.append(filename);
-
                 MemoryBuffer content;
-                loadResource(fullpath.str(), content);
+                loadResource(filepath.str(), content);
                 addCompress(item.queryProp("@type"), content.length(), content.toByteArray(), &item);
             }
         }
         else
             manifest->addPropTree(item.queryName(), LINK(&item));
     }
+}
+
+void ResourceManager::addManifest(const char *filename)
+{
+    StringBuffer path;
+    Owned<IPropertyTree> t = createPTree();
+    t->setProp("@originalFilename", makeAbsolutePath(filename, path).str());
+    manifest->addPropTree("Include", t.getClear());
+    addManifestFile(filename);
+}
+
+void ResourceManager::addManifestInclude(IPropertyTree &include, const char *dir)
+{
+    StringBuffer includePath;
+    makeAbsolutePath(include.queryProp("@filename"), dir, includePath);
+    VStringBuffer xpath("Include[@originalFilename='%s']", includePath.str());
+    if (manifest->hasProp(xpath.str()))
+        return;
+    include.setProp("@originalFilename", includePath.str());
+    manifest->addPropTree("Include", LINK(&include));
+    addManifestFile(includePath.str());
 }
 
 void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
@@ -186,17 +213,25 @@ void ResourceManager::addManifestFromArchive(IPropertyTree *archive)
         Owned<IAttributeIterator> aiter = manifestSrc->getAttributes();
         ForEach (*aiter)
             manifest->setProp(aiter->queryName(), aiter->queryValue());
+        StringBuffer manifestDir;
+        if (manifestSrc->hasProp("@originalFilename"))
+            splitDirTail(manifestSrc->queryProp("@originalFilename"), manifestDir);
+
         Owned<IPropertyTreeIterator> iter = manifestSrc->getElements("*");
         ForEach(*iter)
         {
             IPropertyTree &item = iter->query();
-            if (streq(item.queryName(), "Resource")&& item.hasProp("@filename"))
+            if (streq(item.queryName(), "Resource") && item.hasProp("@filename"))
             {
                 if (!item.hasProp("@type"))
                     item.setProp("@type", "UNKNOWN");
-                const char *filename = item.queryProp("@filename");
+                const char *filename;
+                if (item.hasProp("@originalFilename"))
+                    filename = item.queryProp("@originalFilename");
+                else
+                    filename = item.queryProp("@filename");
                 int id;
-                if (getDuplicateResourceId(item.queryProp("@type"), filename, id))
+                if (getDuplicateResourceId(item.queryProp("@type"), NULL, filename, id))
                 {
                     item.setPropInt("@id", (int)id);
                     manifest->addPropTree("Resource", LINK(&item));

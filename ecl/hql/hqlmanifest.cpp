@@ -27,37 +27,86 @@ class ResourceManifest : public CInterface
 {
 public:
     ResourceManifest(const char *filename)
-        : manifest(createPTreeFromXMLFile(filename)), origPath(filename)
+        : manifest(createPTreeFromXMLFile(filename))
     {
         makeAbsolutePath(filename, absFilename);
         splitDirTail(absFilename, dir);
+        expand();
     }
 
     void addToArchive(IPropertyTree *archive);
     void loadResource(const char *filepath, MemoryBuffer &content);
     bool checkResourceFilesExist();
+private:
+    bool loadInclude(IPropertyTree &include, const char *dir);
+    void expand();
 public:
     Owned<IPropertyTree> manifest;
-    StringAttr origPath;
     StringBuffer absFilename;
     StringBuffer dir;
 };
 
-bool ResourceManifest::checkResourceFilesExist()
+void updateResourcePaths(IPropertyTree &resource, const char *dir)
+{
+    StringBuffer filepath;
+    makeAbsolutePath(resource.queryProp("@filename"), dir, filepath);
+    resource.setProp("@originalFilename", filepath.str());
+
+    StringBuffer respath;
+    makePathUniversal(filepath.str(), respath);
+    resource.setProp("@resourcePath", respath.str());
+}
+
+bool ResourceManifest::loadInclude(IPropertyTree &include, const char *dir)
+{
+    const char *filename = include.queryProp("@filename");
+    StringBuffer includePath;
+    makeAbsolutePath(filename, dir, includePath);
+
+    VStringBuffer xpath("Include[@originalFilename='%s']", includePath.str());
+    if (manifest->hasProp(xpath.str()))
+        return false;
+
+    include.setProp("@originalFilename", includePath.str());
+    StringBuffer includeDir;
+    splitDirTail(includePath, includeDir);
+
+    Owned<IPropertyTree> manifestInclude = createPTreeFromXMLFile(includePath.str());
+    Owned<IPropertyTreeIterator> it = manifestInclude->getElements("*");
+    ForEach(*it)
+    {
+        IPropertyTree &item = it->query();
+        if (streq(item.queryName(), "Resource"))
+            updateResourcePaths(item, includeDir.str());
+        else if (streq(item.queryName(), "Include"))
+        {
+            if (!loadInclude(item, includeDir.str()))
+                continue;
+        }
+        manifest->addPropTree(item.queryName(), LINK(&item));
+    }
+    return true;
+}
+
+void ResourceManifest::expand()
 {
     Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
     ForEach(*resources)
+        updateResourcePaths(resources->query(), dir.str());
+    Owned<IPropertyTreeIterator> includes = manifest->getElements("Include[@filename]");
+    ForEach(*includes)
+        loadInclude(includes->query(), dir.str());
+}
+
+bool ResourceManifest::checkResourceFilesExist()
+{
+    Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@originalFilename]");
+    ForEach(*resources)
     {
-        const char *filename = resources->query().queryProp("@filename");
-        StringBuffer fullpath;
-        if (!isAbsolutePath(filename))
-            fullpath.append(dir);
-        fullpath.append(filename);
-        if (!checkFileExists(fullpath.str()))
+        const char *filepath = resources->query().queryProp("@originalFilename");
+        if (!checkFileExists(filepath))
         {
-            StringBuffer absResPath;
-            makeAbsolutePath(fullpath.str(), absResPath);
-            ERRLOG("Error: RESOURCE file '%s' does not exist", absResPath.str());
+            ERRLOG("Error: RESOURCE file '%s' does not exist", filepath);
             return false;
         }
     }
@@ -79,36 +128,31 @@ void ResourceManifest::addToArchive(IPropertyTree *archive)
     if (!additionalFiles->hasProp("@xmlns:xsi"))
         additionalFiles->setProp("@xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 
-    StringBuffer xml;
-    toXML(manifest, xml);
-    additionalFiles->setProp("Manifest", xml.str());
-    additionalFiles->setProp("Manifest/@originalFilename", origPath.sget());
-
-    Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
+    Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@resourcePath]");
     ForEach(*resources)
     {
-        StringBuffer absResPath;
-        const char *filename = resources->query().queryProp("@filename");
-        VStringBuffer xpath("Resource[@originalFilename='%s']", filename);
+        IPropertyTree &item = resources->query();
+        const char *respath = item.queryProp("@resourcePath");
+
+        VStringBuffer xpath("Resource[@resourcePath='%s']", respath);
         if (!additionalFiles->hasProp(xpath.str()))
         {
-            if (!isAbsolutePath(filename))
-            {
-                StringBuffer relResPath(dir);
-                relResPath.append(filename);
-                makeAbsolutePath(relResPath.str(), absResPath);
-            }
-            else
-                absResPath.append(filename);
-
             IPropertyTree *resTree = additionalFiles->addPropTree("Resource", createPTree("Resource"));
-            resTree->setProp("@originalFilename", filename);
+
+            const char *filepath = item.queryProp("@originalFilename");
+            resTree->setProp("@originalFilename", filepath);
+            resTree->setProp("@resourcePath", respath);
 
             MemoryBuffer content;
-            loadResource(absResPath.str(), content);
+            loadResource(filepath, content);
             resTree->setPropBin(NULL, content.length(), content.toByteArray());
         }
     }
+
+    StringBuffer xml;
+    toXML(manifest, xml);
+    additionalFiles->setProp("Manifest", xml.str());
+    additionalFiles->setProp("Manifest/@originalFilename", absFilename.str());
 }
 
 void addManifestResourcesToArchive(IPropertyTree *archive, const char *filename)
