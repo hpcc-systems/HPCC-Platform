@@ -2463,16 +2463,8 @@ public:
             Owned<IPropertyTree> t = getNamedPropTree(root,"SuperOwner","@name",superfile,false);
             if (t && !link)
                 root->removeTree(t);
-            else if (link) {
-                if (t) {
-                    // Linking to same super-file it already belongs is OK
-                    StringBuffer buf;
-                    t->getProp("@name", buf);
-                    assertex(strcmp(buf.str(), superfile) == 0);
-                }
-                else
-                    t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
-            }
+            else if (!t && link)
+                t.setown(addNamedPropTree(root,"SuperOwner","@name",superfile));
         }
         else 
             ERRLOG("linkSuperOwner - cannot link to %s (no connection in file)",superfile);
