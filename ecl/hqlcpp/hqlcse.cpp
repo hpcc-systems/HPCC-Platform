@@ -241,11 +241,32 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
         extra->alreadyAliased = true;
     }
 
+    switch (op)
+    {
+    case no_assign:
+    case no_transform:
+    case no_newtransform:
+    case no_range:
+    case no_rangefrom:
+        if (expr->isConstant())
+            return;
+        break;
+    case no_constant:
+        return;
+    }
+
     if (extra->numRefs++ != 0)
     {
-        if (!spottedCandidate && extra->worthAliasing() && (op != no_alias))
+        if (op == no_alias)
+            return;
+        if (!spottedCandidate && extra->worthAliasing())
             spottedCandidate = true;
-        //if (canCreateTemporary(expr))
+        if (canCreateTemporary(expr))
+            return;
+
+        //Ugly! This is here as a temporary hack to stop branches of maps being commoned up and always
+        //evaluated.  The alias spotting and generation really needs to take conditionality into account....
+        if (op == no_mapto)
             return;
     }
 
