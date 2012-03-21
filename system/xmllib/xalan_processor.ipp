@@ -170,7 +170,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXslSource(const char* fname, IIncludeHandler* handler, const char *cacheId=NULL) : m_XalanTransformer()
+    CXslSource(const char* fname, IIncludeHandler* handler, const char *cacheId) : m_XalanTransformer()
     {
         m_filename.set(fname);
         m_sourcetype = IO_TYPE_FILE;
@@ -179,6 +179,25 @@ public:
 
         if(handler)
             setIncludeHandler(handler);
+    }
+
+    CXslSource(IIncludeHandler* handler, const char *cacheId, const char *rootpath) : m_XalanTransformer()
+    {
+        if (!handler)
+            throw MakeStringException(-1, "xsl embedded include handler not set");
+        if (!rootpath || !*rootpath)
+            throw MakeStringException(-1, "xsl embedded resource path not set");
+        m_sourcetype = IO_TYPE_BUFFER;
+        m_CompiledStylesheet = NULL;
+        m_cacheId.set(cacheId);
+
+        MemoryBuffer mb;
+        bool pathOnly=false;
+        if (handler->getInclude(rootpath, mb, pathOnly) && mb.length())
+            m_xsltext.append(mb.length(), mb.toByteArray());
+
+        setIncludeHandler(handler);
+        m_rootpath.set(rootpath);
     }
 
     CXslSource(const char* buf, int len, IIncludeHandler* handler, const char *cacheId, const char *rootpath = NULL) : m_XalanTransformer()
@@ -510,6 +529,7 @@ public:
     virtual int setXmlSource(const char *pszFileName);
     virtual int setXmlSource(const char *pszBuffer, unsigned int nSize);
     virtual int loadXslFromFile(const char *pszFileName, const char *altCacheId=NULL);
+    virtual int loadXslFromEmbedded(const char *path, const char *cacheId);
     virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath);
     virtual int setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath);
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize);

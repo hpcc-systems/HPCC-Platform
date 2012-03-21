@@ -302,6 +302,8 @@ public:
 
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
+    bool getEspInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
+
 
     void addVariableFromPTree(IWorkUnit *w, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     void addInputsFromPTree(IPropertyTree *pt);
@@ -339,11 +341,44 @@ void WuWebView::calculateResourceIncludePaths()
         Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource[@filename]");
         ForEach(*iter)
         {
-            StringBuffer abspath;
-            iter->query().setProp("@res_include_path", makeAbsolutePath(iter->query().queryProp("@filename"), dir.get(), abspath).str());
+            if (!iter->query().hasProp("@resourcePath")) //backward compatible
+            {
+                StringBuffer abspath;
+                makeAbsolutePath(iter->query().queryProp("@filename"), dir.get(), abspath);
+
+                StringBuffer respath;
+                makePathUniversal(abspath.str(), respath);
+                iter->query().setProp("@resourcePath", respath.str());
+            }
         }
         manifestIncludePathsSet=true;
     }
+}
+
+bool WuWebView::getEspInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly)
+{
+    StringBuffer absPath;
+    makeAbsolutePath(includename, dir.get(), absPath);
+    if (checkFileExists(absPath.str()))
+    {
+        Owned <IFile> f = createIFile(absPath.str());
+        Owned <IFileIO> fio = f->open(IFOread);
+        read(fio, 0, (size32_t) f->size(), includebuf);
+    }
+    //esp looks in two places for path starting with "xslt/"
+    else if (mapEspDirectories && !strncmp(includename, "xslt/", 5))
+    {
+        absPath.clear().append(dir.get());
+        absPath.append("smc_").append(includename);;
+        makeAbsolutePath(absPath);
+        if (checkFileExists(absPath.str()))
+        {
+            Owned <IFile> f = createIFile(absPath.str());
+            Owned <IFileIO> fio = f->open(IFOread);
+            read(fio, 0, (size32_t) f->size(), includebuf);
+        }
+    }
+    return true;
 }
 
 bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly)
@@ -357,18 +392,13 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
     //eliminate extra '/' for windows absolute paths
     if (len>9 && includename[2]==':')
         includename++;
-    StringBuffer relpath;
     if (mapEspDirectories && !strnicmp(includename, "/esp/", 5))
-        relpath.append(includename+=5);
-    else
-        relpath.append(includename); //still correct for OS
-    StringBuffer abspath;
-    makeAbsolutePath(relpath.str(), dir.get(), abspath);
+        return getEspInclude(includename+5, includebuf, pathOnly);
 
     IPropertyTree *res = NULL;
     if (manifest)
     {
-        VStringBuffer xpath("Resource[@res_include_path='%s']", abspath.str());
+        VStringBuffer xpath("Resource[@resourcePath='%s']", includename);
         res = manifest->queryPropTree(xpath.str());
     }
     if (res)
@@ -377,24 +407,11 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
         getResource(res, xslt);
         includebuf.append(xslt.str());
     }
-    else if (checkFileExists(abspath.str()))
+    else if (checkFileExists(includename))
     {
-        Owned <IFile> f = createIFile(abspath.str());
+        Owned <IFile> f = createIFile(includename);
         Owned <IFileIO> fio = f->open(IFOread);
         read(fio, 0, (size32_t) f->size(), includebuf);
-    }
-    //esp looks in two places for path starting with "xslt/"
-    else if (mapEspDirectories && !strncmp(includename, "xslt/", 5))
-    {
-        StringBuffer relpath(dir.get());
-        relpath.append("smc_").append(includename);;
-        makeAbsolutePath(relpath.str(), abspath.clear());
-        if (checkFileExists(abspath.str()))
-        {
-            Owned <IFile> f = createIFile(abspath.str());
-            Owned <IFileIO> fio = f->open(IFOread);
-            read(fio, 0, (size32_t) f->size(), includebuf);
-        }
     }
     return true;
 }
@@ -436,7 +453,7 @@ void WuWebView::getResource(const char *name, StringBuffer &content, StringBuffe
         xpath.append("[@type='").append(type).append("']");
     IPropertyTree *res = ensureManifest()->queryPropTree(xpath.str());
     calculateResourceIncludePaths();
-    includepath.append(res->queryProp("@res_include_path"));
+    includepath.append(res->queryProp("@resourcePath"));
     if (res)
         getResource(res, content);
 }
@@ -461,6 +478,8 @@ void WuWebView::getResultXSLT(const char *viewName, StringBuffer &xslt, StringBu
 void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuffer &expanded, StringBuffer &out)
 {
     IPropertyTree *mf = ensureManifest();
+    calculateResourceIncludePaths();
+
     VStringBuffer xpath("Views/Results[@name='%s']", viewName);
     IPropertyTree *view = mf->queryPropTree(xpath.str());
     if (!view)
@@ -471,24 +490,24 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
     const char *type=view->queryProp("@type");
     if (!type)
         throw MakeStringException(WUWEBERR_UnknownViewType, "No type defined for view %s", viewName);
-    else if (strieq(type, "xml"))
-    {
-        out.swapWith(expanded.buffer);
-        return;
-    }
-    else if (!strieq(type, "xslt"))
+    if (strieq(type, "xml"))
+        return out.swapWith(expanded.buffer);
+    if (!strieq(type, "xslt"))
         throw MakeStringException(WUWEBERR_UnknownViewType, "View %s has an unknown type of %s", viewName, type);
 
-    StringBuffer xslt;
-    StringBuffer rootpath;
-    getResultXSLT(viewName, xslt, rootpath);
-    if (!xslt.length())
-        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "XSLT for %s view not found", viewName);
+    const char *resname = view->queryProp("@resource");
+    if (!resname || !*resname)
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource for %s view not defined", viewName);
+    xpath.clear().appendf("Resource[@name='%s']/@resourcePath", resname);
+    const char *respath = ensureManifest()->queryProp(xpath.str());
+    if (!respath || !*respath)
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource %s not resolved", resname);
+
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
-    t->setIncludeHandler(this);
     StringBuffer cacheId(viewName);
     cacheId.append('@').append(dllname.str()); //using dllname, cloned workunits can share cache entry
-    t->setXslSource(xslt.str(), xslt.length(), cacheId.str(), rootpath.str());
+    t->setIncludeHandler(this);
+    t->loadXslFromEmbedded(respath, cacheId.str());
     t->setXmlSource(expanded.buffer.str(), expanded.buffer.length());
     t->transform(out);
 }
