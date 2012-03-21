@@ -4848,6 +4848,20 @@ IFile * createIFile(const RemoteFilename & filename)
     return createIFile(getLocalOrRemoteName(name,filename).str());
 }
 
+StringBuffer &makePathUniversal(const char *path, StringBuffer &out)
+{
+    if (!path||!*path)
+        return out;
+    if (path[1]==':')
+    {
+        out.append('/').append(*path);
+        path+=2;
+    }
+    for (; *path; path++)
+        out.append(isPathSepChar(*path) ? '/' : *path);
+    return out;
+}
+
 StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustExist)
 {
     if (isPathSepChar(relpath[0])&&(relpath[0]==relpath[1]))

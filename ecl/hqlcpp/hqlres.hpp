@@ -36,7 +36,7 @@ public:
     void addManifestFromArchive(IPropertyTree *archive);
     void addWebServiceInfo(IPropertyTree *wsinfo);
     IPropertyTree *ensureManifestInfo(){if (!manifest) manifest.setown(createPTree("Manifest")); return manifest;}
-    bool getDuplicateResourceId(const char *srctype, const char *filename, int &id);
+    bool getDuplicateResourceId(const char *srctype, const char *respath, const char *filename, int &id);
     void finalize();
 
     unsigned count();
@@ -45,6 +45,8 @@ public:
     bool queryWriteText(StringBuffer & resTextName, const char * filename);
 private:
     void putbytes(int h, const void *b, unsigned len);
+    void addManifestFile(const char *filename);
+    void addManifestInclude(IPropertyTree &include, const char *dir);
 };
 
 #endif

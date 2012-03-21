@@ -552,6 +552,13 @@ int CXslTransform::loadXslFromFile(const char *pszFileName, const char *cacheId)
     return 0;
 }
 
+int CXslTransform::loadXslFromEmbedded(const char *path, const char *cacheId)
+{
+    m_xslsource.setown(new CXslSource(m_sourceResolver?m_sourceResolver->getIncludeHandler():NULL, cacheId, path));
+
+    return 0;
+}
+
 int CXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath)
 {
     assertex(cacheId && *cacheId);

@@ -30,6 +30,7 @@
 extern int xmlLoadExtDtdDefaultValue;
 xsltDocLoaderFunc originalLibXsltIncludeHandler = NULL;
 
+xmlDocPtr libXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int options, IIncludeHandler* handler, xsltLoadType type);
 xmlDocPtr globalLibXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int options, void *ctx, xsltLoadType type);
 
 void libxsltCustomMessageHandler(StringBuffer& out, const char* in, IXslTransform* transform);
@@ -44,10 +45,25 @@ public:
         srcType = IO_TYPE_FILE;
     }
 
+    CLibXsltSource(IIncludeHandler *handler, const char* rootpath, const char *_cacheId) : cacheId(_cacheId), compiledXslt(NULL), filename(rootpath)
+    {
+        srcType = IO_TYPE_BUFFER;
+        bool pathOnly=false;
+        MemoryBuffer mb;
+        if (!handler->getInclude(rootpath, mb, pathOnly) || pathOnly || !mb.length())
+            throw MakeStringException(XSLERR_InvalidSource, "Failed to load XSLT resource path %s\n", rootpath);
+        text.set(mb.toByteArray(), mb.length());
+        StringBuffer s("file://");
+        if (*rootpath!='/')
+            s.append('/');
+        filename.set(s.append(rootpath).str());
+    }
+
     CLibXsltSource(const char* s, int len, const char *_cacheId) : cacheId(_cacheId), compiledXslt(NULL)
     {
         srcType = IO_TYPE_BUFFER;
         text.set(s, len);
+        filename.set("buffer.xslt");
     }
 
     virtual ~CLibXsltSource()
@@ -105,7 +121,6 @@ xsltStylesheetPtr CLibXsltSource::parseXsltFile()
         return NULL;
 
     xmlDocPtr doc = xsltDocDefaultLoader((xmlChar *)filename.get(), NULL, XSLT_PARSE_OPTIONS, NULL, XSLT_LOAD_START);
-
     if (!doc)
         throw MakeStringException(XSLERR_InvalidSource, "Failed to parse XSLT source\n");
     doc->_private = static_cast<void *>(this);
@@ -139,7 +154,7 @@ void CLibXsltSource::compile()
                 compiledXslt = parseXsltFile();
             else if (srcType == IO_TYPE_BUFFER)
             {
-                xmlDocPtr xsldoc = xmlReadMemory(text.get(), text.length(), "inmemory.xslt", NULL, 0);
+                xmlDocPtr xsldoc = xmlReadMemory(text.get(), text.length(), filename.get(), NULL, 0);
                 if (!xsldoc)
                     throw MakeStringException(XSLERR_InvalidSource, "XSLT source contains invalid XML\n");
                 xsldoc->_private=(void*)this;
@@ -328,6 +343,7 @@ public:
     virtual int setXslSource(const char *pszBuffer, unsigned int nSize, const char *cacheId, const char *rootpath);
     virtual int setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath=NULL);
     virtual int loadXslFromFile(const char *pszFileName, const char *altCacheId=NULL);
+    virtual int loadXslFromEmbedded(const char *path, const char *cacheId);
 
     virtual int setResultTarget(char *pszBuffer, unsigned int nSize);
     virtual int setResultTarget(const char *pszFileName);
@@ -597,6 +613,12 @@ int CLibXslTransform::setXslSource(const char *pszBuffer, unsigned int nSize, co
     return 0;
 }
 
+int CLibXslTransform::loadXslFromEmbedded(const char *path, const char *cacheId)
+{
+    xslSrc.setown(new CLibXsltSource(includeHandler.get(), path, cacheId));
+    return 0;
+}
+
 int CLibXslTransform::setXslNoCache(const char *pszBuffer, unsigned int nSize, const char *rootpath)
 {
     xslSrc.setown(new CLibXsltSource(pszBuffer, nSize, NULL));
@@ -728,6 +750,19 @@ CLibXsltSource *getXsltStylesheetSourceObject(xsltStylesheetPtr x)
     return static_cast<CLibXsltSource *>(x->_private);
 }
 
+xmlDocPtr libXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int options, IIncludeHandler* handler, xsltLoadType type)
+{
+    bool mbContainsPath=false;
+    MemoryBuffer mb;
+    if (!handler->getInclude((const char *)URI, mb, mbContainsPath))
+        return originalLibXsltIncludeHandler(URI, dict, options, NULL, type);
+    if (mbContainsPath)
+        return originalLibXsltIncludeHandler((const xmlChar *)mb.append((char)0).toByteArray(), dict, options, NULL, type);
+    if (mb.length())
+        return xmlReadMemory(mb.toByteArray(), mb.length(), (const char *)URI, NULL, 0);
+    return NULL;
+}
+
 IIncludeHandler* getXsltStylesheetIncludeHandler(xsltStylesheetPtr x, IIncludeHandler *def)
 {
     CLibXsltSource *src = getXsltStylesheetSourceObject(x);
@@ -741,17 +776,9 @@ xmlDocPtr globalLibXsltIncludeHandler(const xmlChar * URI, xmlDictPtr dict, int 
         x = ((xsltTransformContextPtr)ctx)->style;
 
     IIncludeHandler* handler = getXsltStylesheetIncludeHandler(x, xslProcessor.queryDefIncludeHandler());
-    if (!handler)
-        return originalLibXsltIncludeHandler(URI, dict, options, ctx, type);
-    bool mbContainsPath=false;
-    MemoryBuffer mb;
-    if (!handler->getInclude((const char *)URI, mb, mbContainsPath))
-        return originalLibXsltIncludeHandler(URI, dict, options, ctx, type);
-    if (mbContainsPath)
-        return originalLibXsltIncludeHandler((const xmlChar *)mb.append((char)0).toByteArray(), dict, options, ctx, type);
-    if (mb.length())
-        return xmlReadMemory(mb.toByteArray(), mb.length(), (const char *)URI, NULL, 0);
-    return NULL;
+    if (handler)
+        return libXsltIncludeHandler(URI, dict, options, handler, type);
+    return originalLibXsltIncludeHandler(URI, dict, options, ctx, type);
 }
 
 void libxsltCustomMessageHandler(StringBuffer& out, const char* in, IXslTransform* trans)

@@ -1331,53 +1331,65 @@ public:
     inline bool allFieldsReplaced() { return ok; }
 
 protected:
-    IHqlExpression * recursiveReplaceExpression(IHqlExpression * expr)
+    IHqlExpression * doRecursiveReplaceExpression(IHqlExpression * expr)
     {
-        IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
-        if (mapped)
-           return LINK(mapped);
+        IHqlExpression * body = expr->queryBody();
+        if (expr != body)
+        {
+            OwnedHqlExpr mapped = recursiveReplaceExpression(body);
+            if (mapped == body)
+                return LINK(expr);
+            return expr->cloneAllAnnotations(mapped);
+        }
 
         if (expr == self)
             ok = false;
 
-        IHqlExpression * ret;
         unsigned max = expr->numChildren();
         if (max == 0)
-            ret = LINK(expr);
-        else
-        {
-            switch (expr->getOperator())
-            {
-            case no_attr:
-            case no_attr_expr:
-            case no_left:
-            case no_right:
-            case no_field:
-            case no_record:
-                ret = LINK(expr);
-                break;
-            default:
-                {
-                    bool same = true;
-                    HqlExprArray args;
-                    for (unsigned i=0; i< max; i++)
-                    {
-                        IHqlExpression * cur = expr->queryChild(i);
-                        IHqlExpression * tr = recursiveReplaceExpression(cur);
-                        args.append(*tr);
-                        if (cur != tr)
-                            same = false;
-                    }
+            return LINK(expr);
 
-                    if (same)
-                        ret = LINK(expr);
-                    else
-                        ret = expr->clone(args);
-                }
-                break;
+        switch (expr->getOperator())
+        {
+        case no_attr:
+        case no_attr_expr:
+        case no_left:
+        case no_right:
+        case no_field:
+        case no_record:
+            return LINK(expr);
+        case no_assign:
+            {
+                //The following optimization would be required if we ever supported recursive records.
+                IHqlExpression * lhs = expr->queryChild(0);
+                IHqlExpression * rhs = expr->queryChild(1);
+                return createAssign(LINK(lhs), recursiveReplaceExpression(rhs));
             }
         }
 
+        bool same = true;
+        HqlExprArray args;
+        for (unsigned i=0; i< max; i++)
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * tr = recursiveReplaceExpression(cur);
+            args.append(*tr);
+            if (cur != tr)
+                same = false;
+        }
+
+        if (same)
+            return LINK(expr);
+        return expr->clone(args);
+    }
+
+    IHqlExpression * recursiveReplaceExpression(IHqlExpression * expr)
+    {
+        IHqlExpression * mapped = (IHqlExpression *)expr->queryTransformExtra();
+        if (mapped)
+            return LINK(mapped);
+
+        IHqlExpression * ret = doRecursiveReplaceExpression(expr);
         expr->setTransformExtra(ret);
         return ret;
     }
