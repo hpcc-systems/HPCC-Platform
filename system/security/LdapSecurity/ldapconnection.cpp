@@ -981,48 +981,69 @@ public:
             else
                 filter.append("uid=");
             filter.append(username);
-            LDAPMessage *res;
+            LDAPMessage *searchResult;
             char* attrs[] = {"cn", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
 
             TIMEVAL timeOut = {LDAPTIMEOUT,0};
-            int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &res);
+            int result = ldap_search_ext_s(sys_ld,
+                            (char*)m_ldapconfig->getUserBasedn(), //distinguished name of the entry at which to start the search
+                            LDAP_SCOPE_SUBTREE,
+                            (char*)filter.str(), //search filter
+                            attrs,
+                            0, //attribute types and values are to be returned, nonzero if only types are required
+                            NULL,
+                            NULL,
+                            &timeOut,
+                            LDAP_NO_LIMIT,
+                            &searchResult);
 
             if(result != LDAP_SUCCESS)
             {
                 DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( result ), filter.str(), m_ldapconfig->getUserBasedn());
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
 
-            unsigned entries = ldap_count_entries(sys_ld, res);
+            unsigned entries = ldap_count_entries(sys_ld, searchResult);
             if(entries == 0)
             {
+                if (searchResult)
+                    ldap_msgfree(searchResult);
+
                 TIMEVAL timeOut = {LDAPTIMEOUT,0};
-                result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &res);
+                result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult);
                 if(result != LDAP_SUCCESS)
                 {
                     DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( result ), filter.str(), m_ldapconfig->getSysUserBasedn());
+                    if (searchResult)
+                        ldap_msgfree(searchResult);
                     return false;
                 }
 
-                entries = ldap_count_entries(sys_ld, res);
+                entries = ldap_count_entries(sys_ld, searchResult);
                 if(entries == 0)
                 {
                     DBGLOG("LDAP: User %s not found", username);
+                    if (searchResult)
+                        ldap_msgfree(searchResult);
                     return false;
                 }
             }
 
-            LDAPMessage *entry = LdapFirstEntry(sys_ld, res);
+            LDAPMessage *entry = LdapFirstEntry(sys_ld, searchResult);
             if(entry == NULL)
             {
                 DBGLOG("LDAP: Can't find entry for user %s", username);
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
 
-            for ( attribute = ldap_first_attribute(sys_ld, res, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, res, ber))
+            for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
             {
                 if((stricmp(attribute, "cn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
                 {
@@ -1034,6 +1055,9 @@ public:
                 }
             }
             ber_free(ber, 0);
+
+            if (searchResult)
+                ldap_msgfree(searchResult);
 
             char *userdn = ldap_get_dn(sys_ld, entry);
             if(userdn == NULL || strlen(userdn) == 0)
@@ -1289,6 +1313,8 @@ public:
                 DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basedn);
                 ldapuser->setSudoersEnabled(false);
                 ldapuser->setInSudoers(false);
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
             
@@ -1298,6 +1324,8 @@ public:
             if(entries == 0)
             {
                 ldapuser->setInSudoers(false);
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return true;
             }
 
@@ -1305,6 +1333,8 @@ public:
             if(message == NULL)
             {
                 ldapuser->setInSudoers(false);
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return true;
             }
 
@@ -1373,6 +1403,8 @@ public:
             if ( rc != LDAP_SUCCESS )
             {
                 DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basedn);
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
 
@@ -1554,12 +1586,16 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return NULL;
         }
 
         if(ldap_count_entries(ld, searchResult) < 1)
         {
             DBGLOG("No entries are found for user with uid %0X", uid);
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return NULL;
         }
 
@@ -1638,6 +1674,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return false;
         }
 
@@ -1648,6 +1686,8 @@ public:
             {
                 rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
                 //DBGLOG("No entries are found");
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
         }
@@ -1730,6 +1770,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter, basedn);
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return;
         }
 
@@ -1859,6 +1901,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return false;
         }
 
@@ -2369,6 +2413,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return false;
         }
 
@@ -2556,6 +2602,8 @@ public:
             if ( rc != LDAP_SUCCESS )
             {
                 DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return false;
             }
 
@@ -2620,6 +2668,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return false;
         }
 
@@ -2710,6 +2760,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basednbuf.str());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return false;
         }
 
@@ -2819,6 +2871,8 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getGroupBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return;
         }
 
@@ -2978,6 +3032,8 @@ public:
             if ( rc != LDAP_SUCCESS )
             {
                 DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 return;
             }
             
@@ -2989,6 +3045,8 @@ public:
                 if ( rc != LDAP_SUCCESS )
                 {
                     DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getSysUserBasedn());
+                    if (searchResult)
+                        ldap_msgfree(searchResult);
                     return;
                 }
             }
@@ -3265,12 +3323,16 @@ public:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getBasedn());
+            if (searchResult)
+                ldap_msgfree(searchResult);
             return;
         }
         
         unsigned entries = ldap_count_entries(ld, searchResult);
         if(entries == 0)
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             throw MakeStringException(-1, "group %s not found", groupname);
         }
 
@@ -3466,6 +3528,8 @@ public:
 
         if ( rc != LDAP_SUCCESS )
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             if(rc == LDAP_SIZELIMIT_EXCEEDED)
                 return -1;
             else
@@ -3598,6 +3662,8 @@ private:
 
             if ( rc != LDAP_SUCCESS )
             {
+                if (searchResult)
+                    ldap_msgfree(searchResult);
                 throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
             }
 
@@ -3608,6 +3674,8 @@ private:
 
                 if ( rc != LDAP_SUCCESS )
                 {
+                    if (searchResult)
+                        ldap_msgfree(searchResult);
                     throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getSysUserBasedn());
                 }
             }
@@ -3674,6 +3742,8 @@ private:
 
         if ( rc != LDAP_SUCCESS )
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
         }
 
@@ -3691,8 +3761,10 @@ private:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
+        if (searchResult)
+            ldap_msgfree(searchResult);
+
     }
 
     virtual void getGroupDN(const char* groupname, StringBuffer& groupdn)
@@ -4001,6 +4073,8 @@ private:
         
         if ( rc != LDAP_SUCCESS )
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basedn);
             return;
         }
@@ -4179,6 +4253,8 @@ private:
         
         if ( rc != LDAP_SUCCESS )
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), basedn);
             return;
         }
@@ -4668,6 +4744,8 @@ private:
 
         if ( rc != LDAP_SUCCESS )
         {
+            if (searchResult)
+                ldap_msgfree(searchResult);
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
             return false;
         }
@@ -4691,8 +4769,9 @@ private:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
+        if (searchResult)
+            ldap_msgfree(searchResult);
 
         if(act_ctrl.length() == 0)
         {
