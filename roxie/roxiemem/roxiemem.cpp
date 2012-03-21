@@ -1261,8 +1261,9 @@ public:
                 logctx.CTXLOG("RoxieMemMgr: Memory leak: %d records remain linked in active dataBuffer list - addr=%p rowMgr=%p", 
                         dfinger->queryCount()-1, dfinger, this);
             dfinger->next = NULL;
-            dfinger->mgr = NULL;
-            dfinger->Release();
+            dfinger->mgr = NULL; // Avoid calling back to noteDataBufferReleased, which would be unhelpful
+            atomic_set(&dfinger->count, 0);
+            dfinger->released();
             dfinger = next;
         }
         logctx.Release();
