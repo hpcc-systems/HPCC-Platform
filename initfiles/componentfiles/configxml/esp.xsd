@@ -224,7 +224,7 @@
                         </xs:appinfo>
                     </xs:annotation>
                     <xs:complexType>
-                        <xs:attribute name="method" use="optional" default="local">
+                        <xs:attribute name="method" use="optional" default="none">
                             <xs:annotation>
                                 <xs:appinfo>
                                     <autogenforwizard>1</autogenforwizard>
