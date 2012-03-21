@@ -887,6 +887,15 @@ private:
     //int                  m_defaultWorkunitScopePermission;
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
+    class CLDAPMessage
+    {
+    public:
+        LDAPMessage *msg;
+        CLDAPMessage()       { msg = NULL; }
+        ~CLDAPMessage()      { ldapMsgFree(); }
+        inline void ldapMsgFree()  { if (msg) { ldap_msgfree(msg); msg = NULL;} }
+        inline operator LDAPMessage *() const { return msg; }
+    };
 
 public:
     IMPLEMENT_IINTERFACE
@@ -981,14 +990,24 @@ public:
             else
                 filter.append("uid=");
             filter.append(username);
-            LDAPMessage *res;
+
             char* attrs[] = {"cn", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-
+            CLDAPMessage searchResult;
             TIMEVAL timeOut = {LDAPTIMEOUT,0};
-            int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &res);
+            int result = ldap_search_ext_s(sys_ld,
+                            (char*)m_ldapconfig->getUserBasedn(), //distinguished name of the entry at which to start the search
+                            LDAP_SCOPE_SUBTREE,
+                            (char*)filter.str(), //search filter
+                            attrs,
+                            0, //attribute types and values are to be returned, nonzero if only types are required
+                            NULL,
+                            NULL,
+                            &timeOut,
+                            LDAP_NO_LIMIT,
+                            &searchResult.msg);
 
             if(result != LDAP_SUCCESS)
             {
@@ -996,18 +1015,19 @@ public:
                 return false;
             }
 
-            unsigned entries = ldap_count_entries(sys_ld, res);
+            unsigned entries = ldap_count_entries(sys_ld, searchResult);
             if(entries == 0)
             {
+                searchResult.ldapMsgFree();
                 TIMEVAL timeOut = {LDAPTIMEOUT,0};
-                result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &res);
+                result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
                 if(result != LDAP_SUCCESS)
                 {
                     DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( result ), filter.str(), m_ldapconfig->getSysUserBasedn());
                     return false;
                 }
 
-                entries = ldap_count_entries(sys_ld, res);
+                entries = ldap_count_entries(sys_ld, searchResult);
                 if(entries == 0)
                 {
                     DBGLOG("LDAP: User %s not found", username);
@@ -1015,14 +1035,14 @@ public:
                 }
             }
 
-            LDAPMessage *entry = LdapFirstEntry(sys_ld, res);
+            LDAPMessage *entry = LdapFirstEntry(sys_ld, searchResult);
             if(entry == NULL)
             {
                 DBGLOG("LDAP: Can't find entry for user %s", username);
                 return false;
             }
 
-            for ( attribute = ldap_first_attribute(sys_ld, res, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, res, ber))
+            for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
             {
                 if((stricmp(attribute, "cn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
                 {
@@ -1039,13 +1059,11 @@ public:
             if(userdn == NULL || strlen(userdn) == 0)
             {
                 DBGLOG("LDAP: dn not found for user %s", username);
-                ldap_msgfree(entry);
                 return false;
             }
 
             StringBuffer userdnbuf;
             userdnbuf.append(userdn);
-            ldap_msgfree(entry);
             ldap_memfree(userdn);
 
             StringBuffer hostbuf;
@@ -1260,7 +1278,7 @@ public:
     {
         char        *attribute, **values;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         const char* username = user.getName();
 
@@ -1282,7 +1300,8 @@ public:
             filter.append(username);
             char  *attrs[] = {"sudoHost", "sudoCommand", "sudoOption", NULL};
             const char* basedn = m_ldapconfig->getResourceBasedn(RT_SUDOERS);
-            int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult);
+            CLDAPMessage searchResult;
+            int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -1341,8 +1360,6 @@ public:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree(searchResult);
-
             return true;
         }
         else
@@ -1368,7 +1385,8 @@ public:
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
             char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", NULL};
-            int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult );
+            CLDAPMessage searchResult;
+            int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -1470,7 +1488,6 @@ public:
                 }
                 ber_free(ber, 0);
             }
-            ldap_msgfree( searchResult );
             return true;
         }
     }
@@ -1521,7 +1538,7 @@ public:
 
         char        *attribute, **values;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         StringBuffer filter;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -1549,7 +1566,8 @@ public:
         }
             
         char        *attrs[] = {"cn", act_fieldname, NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -1587,7 +1605,6 @@ public:
             }
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
         
         ldapuser->setUserID(uid);
         ldapuser->setUserSid(usersidbuf.length(), usersidbuf.toByteArray());
@@ -1608,7 +1625,7 @@ public:
     {
         char        *attribute, **values;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         char* act_fieldname;
 
@@ -1633,7 +1650,8 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         
         char  *attrs[] = {"cn", act_fieldname, "objectClass", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -1643,10 +1661,12 @@ public:
 
         if(ldap_count_entries(ld, searchResult) < 1)
         {
-            rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult );
+            searchResult.ldapMsgFree();
+            rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
             if(ldap_count_entries(ld, searchResult) < 1)
             {
-                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+                searchResult.ldapMsgFree();
+                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
                 //DBGLOG("No entries are found");
                 return false;
             }
@@ -1658,7 +1678,7 @@ public:
         // Go through the search results by checking message types
         for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
         {
-            for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
+            for ( attribute = ldap_first_attribute( ld, searchResult,&ber );
                 attribute != NULL; 
                 attribute = ldap_next_attribute( ld, searchResult,ber))
             {
@@ -1702,7 +1722,6 @@ public:
         else
             account_name.append(cnbuf.str());
 
-        ldap_msgfree( searchResult );       
         return true;
     }
 
@@ -1711,7 +1730,7 @@ public:
         char        *attribute;       
         struct berval** bvalues = NULL;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
@@ -1725,7 +1744,8 @@ public:
             fieldname = "entryid";
 
         char        *attrs[] = {fieldname, NULL};
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -1734,7 +1754,7 @@ public:
         }
 
         message = LdapFirstEntry( ld, searchResult);
-        if(searchResult != NULL)
+        if(message != NULL)
         {
             for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
                 attribute != NULL; 
@@ -1755,7 +1775,6 @@ public:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
     }
 
@@ -1821,7 +1840,7 @@ public:
         char        *attribute, **values;       
         struct berval** bvalues = NULL;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         StringBuffer filter;
         if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
@@ -1854,7 +1873,8 @@ public:
         }
 
         char        *attrs[] = {act_fieldname, sid_fieldname, "cn", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -1929,7 +1949,6 @@ public:
             ber_free(ber, 0);
             users.append(*LINK(user.get()));
         }
-        ldap_msgfree( searchResult );
         return true;
     }
 
@@ -2356,7 +2375,7 @@ public:
 
         char        *attribute, **values = NULL;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
@@ -2364,7 +2383,8 @@ public:
         filter.append("sAMAccountName=").append(username);
 
         char        *attrs[] = {"cn", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -2374,7 +2394,7 @@ public:
 
         StringBuffer userdn;
         message = LdapFirstEntry( ld, searchResult);
-        if(searchResult != NULL)
+        if(message != NULL)
         {
             for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
                 attribute != NULL; 
@@ -2391,7 +2411,6 @@ public:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
 
         if(userdn.length() == 0)
@@ -2543,7 +2562,7 @@ public:
             filter.append("uid=").append(username);
 
             char        **values = NULL;       
-            LDAPMessage *searchResult, *message;
+            LDAPMessage *message;
 
             TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
@@ -2551,7 +2570,8 @@ public:
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
             char        *attrs[] = {LDAP_NO_ATTRS, NULL};
-            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+            CLDAPMessage searchResult;
+            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -2564,8 +2584,6 @@ public:
             if(message != NULL)
                 userdn.append(ldap_get_dn(ld, message));
             
-            ldap_msgfree( searchResult );
-
             char* passwdvalue[] = { (char*)newPassword, NULL };
             LDAPMod pmod = 
             {
@@ -2597,7 +2615,7 @@ public:
         char        *attribute, **values;       
         struct berval** bvalues = NULL;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
@@ -2615,7 +2633,8 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -2673,7 +2692,6 @@ public:
             }
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
         return true;
     }
 
@@ -2682,7 +2700,7 @@ public:
         char        *attribute, **values;       
         struct berval** bvalues = NULL;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         StringBuffer basednbuf;
         LdapUtils::normalizeDn(basedn, m_ldapconfig->getBasedn(), basednbuf);
@@ -2705,7 +2723,8 @@ public:
         else
             fldname = "ou";
         char        *attrs[] = {(char*)fldname, "description", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basednbuf.str(), LDAP_SCOPE_ONELEVEL, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -2763,7 +2782,6 @@ public:
             }
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
         return true;
     }
 
@@ -2799,7 +2817,7 @@ public:
         char        *attribute, **values;       
         struct berval** bvalues = NULL;
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         StringBuffer filter;
 
@@ -2814,7 +2832,8 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char        *attrs[] = {"cn", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getGroupBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -2843,7 +2862,6 @@ public:
             
             }
         }
-        ldap_msgfree( searchResult );
     }
 
     virtual bool changePermission(CPermissionAction& action)
@@ -2960,7 +2978,7 @@ public:
         {
             char        *attribute, **values;       
             BerElement  *ber;
-            LDAPMessage *searchResult, *message;
+            LDAPMessage *message;
 
             if(user == NULL || strlen(user) == 0)
                 return;
@@ -2973,7 +2991,8 @@ public:
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
             char        *attrs[] = {"memberOf", NULL};
-            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+            CLDAPMessage searchResult;
+            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -2984,7 +3003,8 @@ public:
             unsigned entries = ldap_count_entries(ld, searchResult);
             if(entries == 0)
             {
-                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+                searchResult.ldapMsgFree();
+                rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
                 if ( rc != LDAP_SUCCESS )
                 {
@@ -3019,7 +3039,6 @@ public:
                 }
                 ber_free(ber, 0);
             }
-            ldap_msgfree( searchResult );
         }
         else
         {
@@ -3220,7 +3239,7 @@ public:
     {
         char        *attribute, **values;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         if(groupname == NULL || strlen(groupname) == 0)
             throw MakeStringException(-1, "group name can't be empty");
@@ -3260,7 +3279,8 @@ public:
         char        *attrs[] = {(char*)memfieldname, NULL};
         StringBuffer groupbasedn;
         getGroupBaseDN(groupname, groupbasedn);
-        int rc = ldap_search_ext_s(ld, (char*)groupbasedn.str(),LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)groupbasedn.str(),LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3298,8 +3318,6 @@ public:
             }
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
-
     }
     
     virtual void deleteResource(SecResourceType rtype, const char* name, const char* basedn)
@@ -3454,7 +3472,6 @@ public:
     virtual int countEntries(const char* basedn, const char* filter, int limit)
     {
         struct berval** bvalues = NULL;
-        LDAPMessage *searchResult;
 
         TIMEVAL timeOut = {LDAPTIMEOUT,0};
 
@@ -3462,7 +3479,8 @@ public:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char *attrs[] = { LDAP_NO_ATTRS, NULL };
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, limit, &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter, attrs, 0, NULL, NULL, &timeOut, limit, &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3473,7 +3491,6 @@ public:
         }
 
         int entries = ldap_count_entries(ld, searchResult);
-        ldap_msgfree( searchResult );
         return entries;
     }
 
@@ -3483,12 +3500,12 @@ public:
         {
             if(m_ldapconfig->getServerType() == IPLANET)
             {
-                LDAPMessage *msg;
                 Owned<ILdapConnection> lconn = m_connections->getConnection();
                 LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
                 
                 char* pw_attrs[] = {"nsslapd-rootpwstoragescheme", NULL};
-                int err = ldap_search_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, &msg);
+                CLDAPMessage msg;
+                int err = ldap_search_s(ld, "cn=config", LDAP_SCOPE_BASE, "objectClass=*", pw_attrs, false, &msg.msg);
                 if(err != LDAP_SUCCESS)
                 {
                     DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
@@ -3506,7 +3523,6 @@ public:
                         ldap_value_free(vals);
                     }
                 }
-                ldap_msgfree(msg);
             }
         }
         
@@ -3583,7 +3599,7 @@ private:
 
             char        *attribute, **values = NULL;       
             BerElement  *ber;
-            LDAPMessage *searchResult, *message;
+            LDAPMessage *message;
 
             TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
@@ -3594,7 +3610,8 @@ private:
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
             char        *attrs[] = {dn_fieldname, NULL};
-            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+            CLDAPMessage searchResult;
+            int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
             if ( rc != LDAP_SUCCESS )
             {
@@ -3604,7 +3621,8 @@ private:
             unsigned entries = ldap_count_entries(ld, searchResult);
             if(entries == 0)
             {
-                int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );
+                searchResult.ldapMsgFree();
+                int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getSysUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );
 
                 if ( rc != LDAP_SUCCESS )
                 {
@@ -3613,7 +3631,7 @@ private:
             }
 
             message = LdapFirstEntry( ld, searchResult);
-            if(searchResult != NULL)
+            if(message != NULL)
             {
                 attribute = ldap_first_attribute( ld,searchResult,&ber );
                 if(attribute != NULL)
@@ -3626,7 +3644,6 @@ private:
                     }
                 }
                 ber_free(ber, 0);
-                ldap_msgfree( searchResult );
             }
             if(userdn.length() == 0)
                 throw MakeStringException(-1, "user %s can't be found", username);
@@ -3660,7 +3677,7 @@ private:
 
         char        *attribute, **values = NULL;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
@@ -3670,7 +3687,8 @@ private:
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
         char        *attrs[] = {uid_fieldname, NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -3678,7 +3696,7 @@ private:
         }
 
         message = LdapFirstEntry( ld, searchResult);
-        if(searchResult != NULL)
+        if(message != NULL)
         {
             attribute = ldap_first_attribute( ld,searchResult,&ber );
             if(attribute != NULL)
@@ -3691,7 +3709,6 @@ private:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
     }
 
@@ -3959,7 +3976,7 @@ private:
         char        *attribute, **values;
         BerElement  *ber;
         struct berval** bvalues = NULL;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
         int i;
         
         const char *id_fieldname;
@@ -3997,7 +4014,8 @@ private:
         char* attrs[] = {(char*)id_fieldname, (char*)des_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );     /* returned results */
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
         
         if ( rc != LDAP_SUCCESS )
         {
@@ -4076,7 +4094,6 @@ private:
 
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
     }
 
     virtual void getSecurityDescriptorsScope(IArrayOf<CSecurityDescriptor>& sdlist, const char* basedn)
@@ -4084,7 +4101,7 @@ private:
         char        *attribute;
         BerElement  *ber;
         struct berval** bvalues = NULL;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
         int i;
 
         int len = sdlist.length();
@@ -4175,7 +4192,8 @@ private:
         char* attrs[] = {sd_fieldname, NULL};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
-        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult );     /* returned results */
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg );     /* returned results */
         
         if ( rc != LDAP_SUCCESS )
         {
@@ -4247,7 +4265,6 @@ private:
 
             ber_free(ber, 0);
         }
-        ldap_msgfree( searchResult );
     }
 
     virtual void createLdapBasedn(ISecUser* user, const char* basedn, SecPermissionType ptype)
@@ -4659,12 +4676,13 @@ private:
 
         char        *attribute, **values = NULL;       
         BerElement  *ber;
-        LDAPMessage *searchResult, *message;
+        LDAPMessage *message;
 
         TIMEVAL timeOut = {LDAPTIMEOUT,0};   
 
         char        *attrs[] = {"userAccountControl", NULL};
-        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult );
+        CLDAPMessage searchResult;
+        int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
 
         if ( rc != LDAP_SUCCESS )
         {
@@ -4674,7 +4692,7 @@ private:
 
         StringBuffer act_ctrl;
         message = LdapFirstEntry( ld, searchResult);
-        if(searchResult != NULL)
+        if(message != NULL)
         {
             for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
                 attribute != NULL; 
@@ -4691,7 +4709,6 @@ private:
                 }
             }
             ber_free(ber, 0);
-            ldap_msgfree( searchResult );
         }
 
         if(act_ctrl.length() == 0)
@@ -4947,6 +4964,8 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
     if(err != LDAP_SUCCESS)
     {
         DBGLOG("ldap_search_s error: %s", ldap_err2string( err ));
+        if (msg)
+            ldap_msgfree(msg);
         return err;
     }
     LDAPMessage* entry = LdapFirstEntry(ld, msg);
