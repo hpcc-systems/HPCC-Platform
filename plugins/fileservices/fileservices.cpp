@@ -1800,6 +1800,9 @@ FILESERVICES_API  char * FILESERVICES_CALL fsfPromoteSuperFileList(ICodeContext 
     StringBuffer lfn;
     UnsignedArray lfnofs;
     const char *s = (const char *)lsuperfns;
+    // MORE - For now, we need a local transaction
+    CheckNotInTransaction(ctx, "PromoteSuperFile");
+
     while ((size32_t)(s-(const char *)lsuperfns)<lenLsuperfns) {
         constructLogicalName(wu,s,lfn.clear());
         lfnofs.append(mb.length());

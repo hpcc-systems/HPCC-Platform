@@ -188,7 +188,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IUserDescriptor *queryUser()=0;
     virtual bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)=0; // used internally to delay deletes untill commit 
     virtual void addAction(CDFAction *action)=0; // internal
-    virtual void addSuperFile(IDistributedSuperFile *sfile)=0; // TODO: avoid this being necessary
+    virtual void addFile(IDistributedFile *file)=0; // TODO: avoid this being necessary
     virtual void clearFiles()=0; // internal
 };
 
