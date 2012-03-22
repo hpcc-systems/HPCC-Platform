@@ -141,7 +141,7 @@
                                     <colIndex>2</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
-                        </xs:attribute>              
+                        </xs:attribute>
                         <xs:attribute name="protocol" use="optional" default="http">
                             <xs:annotation>
                                 <xs:appinfo>
@@ -161,7 +161,7 @@
                             <xs:annotation>
                                 <xs:appinfo>
                                     <tooltip>Network port to install this service</tooltip>
-                                    <colIndex>4</colIndex>                  
+                                    <colIndex>4</colIndex>
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
@@ -671,7 +671,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute-->
-            <xs:attribute name="componentfilesDir" type="xs:string" use="optional" default=".">
+            <xs:attribute name="componentfilesDir" type="xs:string" use="optional" default="${COMPONENTFILES_PATH}">
                 <xs:annotation>
                     <xs:appinfo>
                         <autogenforwizard>1</autogenforwizard>
