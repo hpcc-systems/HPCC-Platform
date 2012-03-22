@@ -444,16 +444,27 @@ void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryIn
     queryInfo->setSuspended(query->getPropBool("@suspended", false));
     if (queriesOnCluster)
     {
-        VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']/@suspended", query->queryProp("@id"));
-        if (queriesOnCluster->getPropBool(xpath.str()))
+        IArrayOf<IEspClusterQueryState> clusters;
+        Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
+        clusterState->setCluster(cluster);
+
+        VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", query->queryProp("@id"));
+        IPropertyTree *aQuery = queriesOnCluster->getBranch(xpath.str());
+        if (!aQuery)
         {
-            IArrayOf<IEspClusterQueryState> clusters;
-            Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
-            clusterState->setCluster(cluster);
-            clusterState->setSuspended(true);
-            clusters.append(*clusterState.getClear());
-            queryInfo->setClusters(clusters);
+            clusterState->setState("Not Found");
         }
+        else if (aQuery->getPropBool("@suspended", false))
+        {
+            clusterState->setState("Suspended");
+        }
+        else
+        {
+            clusterState->setState("Available");
+        }
+
+        clusters.append(*clusterState.getClear());
+        queryInfo->setClusters(clusters);
     }
 }
 
@@ -463,7 +474,7 @@ void gatherQuerySetAliasDetails(IPropertyTree *alias, IEspQuerySetAlias *aliasIn
     aliasInfo->setId(alias->queryProp("@id"));
 }
 
-void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL)
+void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQuery> &queries, IArrayOf<IEspQuerySetAlias> &aliases, const char *cluster=NULL, IPropertyTree *queriesOnCluster=NULL, const char *type=NULL, const char *value=NULL)
 {
     Owned<IPropertyTreeIterator> regQueries = registry->getElements("Query");
     ForEach(*regQueries)
@@ -471,7 +482,22 @@ void retrieveAllQuerysetDetails(IPropertyTree *registry, IArrayOf<IEspQuerySetQu
         IPropertyTree &query = regQueries->query();
         Owned<IEspQuerySetQuery> q = createQuerySetQuery();
         gatherQuerySetQueryDetails(&query, q, cluster, queriesOnCluster);
-        queries.append(*q.getClear());
+
+        if (isEmpty(cluster) || isEmpty(type) || isEmpty(value) || !strieq(type, "Status"))
+            queries.append(*q.getClear());
+        else
+        {
+            IArrayOf<IConstClusterQueryState>& cs = q->getClusters();
+            ForEachItemIn(i, cs)
+            {
+                IConstClusterQueryState& c = cs.item(i);
+                if (strieq(c.getCluster(), cluster) && (strieq(value, "All") || strieq(c.getState(), value)))
+                {
+                    queries.append(*q.getClear());
+                    break;
+                }
+            }
+        }
     }
 
     Owned<IPropertyTreeIterator> regAliases = registry->getElements("Alias");
@@ -550,6 +576,8 @@ void retrieveQuerysetDetails(IPropertyTree *registry, const char *type, const ch
         return;
     if (strieq(type, "Alias"))
         return retrieveQuerysetDetailsFromAlias(registry, value, queries, aliases, cluster, queriesOnCluster);
+    if (strieq(type, "Status") && !isEmpty(cluster))
+        return retrieveAllQuerysetDetails(registry, queries, aliases, cluster, queriesOnCluster, type, value);
     return retrieveQuerysetDetailsFromQuery(registry, value, type, queries, aliases, cluster, queriesOnCluster);
 }
 
@@ -595,7 +623,6 @@ void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, c
             queriesOnCluster.setown(sendRoxieControlQuery(sock, "<control:queries/>", 5));
         }
     }
-
     SCMStringBuffer clusterQueryset;
     info->getQuerySetName(clusterQueryset);
     if (!clusterQueryset.length())
@@ -622,6 +649,25 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
 {
     resp.setQuerySetName(req.getQuerySetName());
 
+    double version = context.getClientVersion();
+    if (version > 1.36)
+    {
+        StringBuffer currentTargetClusterType;
+        Owned<IPropertyTree> queryRegistry = getQueryRegistry(req.getQuerySetName(), false);
+        queryRegistry->getProp("@targetclustertype", currentTargetClusterType);
+        if (strieq(currentTargetClusterType.str(), "roxie"))
+        {
+            StringArray clusterNames;
+            getQuerySetTargetClusters(req.getQuerySetName(), clusterNames);
+            if (!clusterNames.empty())
+                resp.setClusterNames(clusterNames);
+
+            resp.setClusterName(req.getClusterName());
+            resp.setFilter(req.getFilter());
+            resp.setFilterType(req.getFilterType());
+        }
+    }
+
     Owned<IPropertyTree> registry = getQueryRegistry(req.getQuerySetName(), true);
     if (!registry)
         return false;
@@ -629,10 +675,24 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
     IArrayOf<IEspQuerySetQuery> respQueries;
     IArrayOf<IEspQuerySetAlias> respAliases;
 
-    retrieveQuerysetDetails(registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases);
+    if (isEmpty(req.getClusterName()) || isEmpty(req.getFilterTypeAsString()) || !strieq(req.getFilterTypeAsString(), "Status") || isEmpty(req.getFilter()))
+    {
+        retrieveQuerysetDetails(registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases);
 
-    resp.setQuerysetQueries(respQueries);
-    resp.setQuerysetAliases(respAliases);
+        resp.setQuerysetQueries(respQueries);
+        resp.setQuerysetAliases(respAliases);
+    }
+    else
+    {
+        IArrayOf<IEspWUQuerySetDetail> respDetails;
+        retrieveQuerysetDetailsByCluster(respDetails, req.getClusterName(), req.getQuerySetName(), req.getFilterTypeAsString(), req.getFilter());
+        if (respDetails.ordinality())
+        {
+            IEspWUQuerySetDetail& detail = respDetails.item(0);
+            resp.setQuerysetQueries(detail.getQueries());
+            resp.setQuerysetAliases(detail.getAliases());
+        }
+    }
 
     return true;
 }

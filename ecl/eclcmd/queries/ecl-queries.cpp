@@ -150,7 +150,7 @@ public:
         ForEachItemIn(idx, query.getClusters())
         {
             IConstClusterQueryState &state = query.getClusters().item(idx);
-            if (state.getSuspended())
+            if (strieq(state.getState(), "Suspended"))
             {
                 suspendedOnCluster = true;
                 break;
