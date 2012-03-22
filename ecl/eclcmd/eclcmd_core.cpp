@@ -219,7 +219,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
                 errorCount++;
         }
         if (errorCount || warningCount)
-            fprintf(stderr, "%d error, %d warning\n\n", errorCount, warningCount);
+            fprintf(stderr, "%d error(s), %d warning(s)\n\n", errorCount, warningCount);
 
         return isCompiled;
     }
