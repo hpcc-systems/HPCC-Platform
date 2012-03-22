@@ -28250,9 +28250,10 @@ public:
     // interface IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).queryActivityId();
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).queryActivityId();
         else
         {
             //assert(false);
@@ -28261,9 +28262,10 @@ public:
     }
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).getId(out);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).getId(out);
         else
         {
             assert(false);
@@ -28273,10 +28275,11 @@ public:
     virtual void onDestroy(unsigned cacheId, void *row) const 
     {
         IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
             SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(cacheId))
-                allocator = &allAllocators.item(cacheId);
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
             else
             {
                 assert(false);

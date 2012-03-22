@@ -33,6 +33,7 @@
 #include "eclhelper.hpp"
 
 #define ALLOCATORID_CHECK_MASK  0x00300000
+#define ALLOCATORID_MASK                0x000fffff
 
 extern ROXIEHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
 extern ROXIEHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed);

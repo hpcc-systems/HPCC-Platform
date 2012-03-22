@@ -424,8 +424,8 @@ interface IRowManager : extends IInterface
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
-    virtual void addRowBuffer(IBufferedRowCallback * callback);
-    virtual void removeRowBuffer(IBufferedRowCallback * callback);
+    virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
+    virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
