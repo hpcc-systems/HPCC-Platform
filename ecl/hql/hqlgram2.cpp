@@ -1994,7 +1994,7 @@ void HqlGram::checkFoldConstant(attribute & attr)
 
 IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression * expr)
 {
-    if (expr->isConstant())
+    if (expr->isConstant() || (expr->getOperator() == no_assertconstant))
         return LINK(expr);
 
     return createValue(no_assertconstant, expr->getType(), LINK(expr), createLocationAttr(errpos));

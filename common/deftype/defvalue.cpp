@@ -1657,7 +1657,13 @@ const char *IntValue::generateCPP(StringBuffer &s, CompilerType compiler)
         break;
     case Vs6CppCompiler:
         if (val && (type->getSize() > sizeof(unsigned)))
+        {
+            if (!type->isSigned())
+                s.append("U");
             s.append("i64");
+        }
+        else if (!type->isSigned() && ((unsigned __int64)val > INT_MAX))
+            s.append("U");
         break;
     default:
         throwUnexpected();
