@@ -29,7 +29,7 @@ private:
     IHThorTempTableArg * helper;
     bool empty;
     unsigned currentRow;
-    unsigned numRows;
+    unsigned maxRow;
     size32_t maxrecsize;
     bool isLocal;
 public:
@@ -47,10 +47,25 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart("TEMPTABLE", container.queryId());
-        currentRow = 0;
         isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
+        unsigned numRows = helper->numRows();
+        IHThorTempTableExtraArg *newHelper = static_cast<IHThorTempTableExtraArg *>(helper->selectInterface(TAItemptablearg_2));
+        if (newHelper && newHelper->getFlags() & TTFdistributed != 0)
+        {
+            unsigned nodes = container.queryCodeContext()->getNodes();
+            unsigned nodeid = container.queryCodeContext()->getNodeNum();
+            currentRow = (nodeid * numRows) / nodes;
+            maxRow = ((nodeid + 1) * numRows) / nodes;
+            ActPrintLog("TEMPSLAVE: numRows = %d, nodes = %d, nodeid = %d, current = %d, last = %d",
+                        numRows, nodes, nodeid, currentRow, maxRow);
+            isLocal = true;
+        }
+        else
+        {
+            currentRow = 0;
+            maxRow = numRows;
+        }
         empty = isLocal ? false : !firstNode();
-        numRows = helper->numRows();
     }
     void stop()
     {
@@ -62,7 +77,7 @@ public:
         if (empty || abortSoon)
             return NULL;
         // Filtering empty rows, returns the next valid row
-        while (currentRow < numRows) {
+        while (currentRow < maxRow) {
             RtlDynamicRowBuilder row(queryRowAllocator());
             size32_t sizeGot = helper->getRow(row, currentRow++);
             if (sizeGot)
