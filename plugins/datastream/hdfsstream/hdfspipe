@@ -1,0 +1,82 @@
+#!/bin/bash
+
+source hadoopConfig
+
+CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
+
+for f in $HADOOP_LOCATION/*.jar ; do
+	CLASSPATH=$CLASSPATH:$f
+done
+
+for f in $HADOOP_LOCATION/lib/*.jar ; do
+	CLASSPATH=$CLASSPATH:$f
+done
+
+export CLASSPATH=$CLASSPATH
+PID=$$
+
+LOG=/tmp/HPCC-HadoopStream.log.$PID
+
+echo "Script starting"  		>> $LOG
+echo "Running as user: $USER" 	>> $LOG
+echo "Running mode: $run_mode" 	>> $LOG
+echo "Incoming params: ${@}" 	>> $LOG
+
+HPCCTMPFILE=/tmp/HPCCTMPFILE;
+
+if [ "$1" = "" ];
+then
+	echo "Running without input params" >> $LOG
+	exit 1;
+elif [ $1 = "-mf" ];
+then
+	/opt/HPCCSystems/bin/hdfsstream "${@}" 2>> $LOG;
+elif [ $1 = "-si" ];
+then
+	/opt/HPCCSystems/bin/hdfsstream  "${@}" 2>> $LOG;
+elif [ $1 = "-so" ];
+then
+	if [ -f $HPCCTMPFILE ]
+	then
+		rm "$HPCCTMPFILE" 			2>> $LOG
+		echo "deleted tmp file" 		>> $LOG
+	else
+		echo "$HPCCTMPFILE does not exist" 	>> $LOG
+	fi
+
+	echo "redirecting stdin to tmp file ... " 	>> $LOG
+	cat /dev/stdin > "$HPCCTMPFILE"
+
+	ls -l "$HPCCTMPFILE" 				>> $LOG
+
+	echo "calling hdfsstream..." 		>> $LOG
+
+	/opt/HPCCSystems/bin/hdfsstream "${@}" 	2>> $LOG
+
+	echo "write exited with: $?" 			>> $LOG
+elif [ $1 = "-sop" ];
+then
+	pipepath=/tmp/HPCCPIPE;
+	mkfifo $pipepath 2> /tmp/HPCC-FIFO.err.$PID;
+	chmod 666 $pipepath 2> /tmp/HPCC-FIFO.err.$PID;
+
+	echo "mkfifo $pipepath setup ..." 		>> $LOG
+
+	if test ! -s "/tmp/HPCC-FIFO.err.$PID"
+	then
+		rm -f /tmp/HPCC-FIFO.err.$PID 2> /dev/null
+	else
+		echo "  WARNING (hdfsstream mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
+	fi
+	/opt/HPCCSystems/bin/hdfsstream  "${@}" 	2>> $LOG &
+	echo "redirecting stdin to named pipe ... " 	>> $LOG
+	cat < /dev/stdin > "$pipepath"			2>> $LOG
+
+	echo "write exited with: $?" 			>> $LOG
+
+else
+	echo "Error: check your params." 		>> $LOG;
+	exit 1;
+fi
+
+exit 0;
