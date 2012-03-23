@@ -182,7 +182,6 @@ interface IRoxieServerContext : extends IInterface
 
 interface IRoxieInput : extends IInterface, extends IInputBase
 {
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void stop(bool aborting) = 0;
     virtual void reset() = 0;
