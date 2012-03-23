@@ -20477,7 +20477,7 @@ public:
         remote.onCreate(this, this, _ctx, _colocalParent);
     }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         accepted = 0;
         rejected = 0;
@@ -20487,11 +20487,6 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         remote.onStart(parentExtractSize, parentExtract);
         variableInfoPending = variableFileName;
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        _start(parentExtractSize, parentExtract, paused);
     }
 
     void processAllKeys()
@@ -20739,9 +20734,9 @@ public:
         delete [] seekSizes;
     }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::_start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         steppingMeta.setDistributed();
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
@@ -21579,9 +21574,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
+        done = false;
+        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         choosenLimit = countHelper.getChooseNLimit();
         if (limitHelper)
         {
@@ -21590,12 +21586,6 @@ public:
         }
         if (!paused)
             processAllKeys();
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        done = false;
-        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool processSingleKey(IKeyIndex *key, IRecordLayoutTranslator * trans)
@@ -21834,20 +21824,15 @@ public:
     {
     }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
+        done = false;
+        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         if (!paused)
             processAllKeys();
     }
 
     virtual bool needsAllocator() const { return true; }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        done = false;
-        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
-    }
 
     virtual bool processSingleKey(IKeyIndex *key, IRecordLayoutTranslator * trans)
     {
@@ -21979,23 +21964,18 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
-        groupSegCount = 0;
-        if (!paused)
-            processAllKeys();
-    }
-
-    virtual bool needsAllocator() const { return true; }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         gathered= false;
         CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         resultAggregator.start(rowAllocator);
+        groupSegCount = 0;
+        if (!paused)
+            processAllKeys();
     }
+
+    virtual bool needsAllocator() const { return true; }
 
     virtual void reset()
     {
@@ -22168,9 +22148,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::_start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         rowLimit = readHelper.getRowLimit();
         keyedLimit = readHelper.getKeyedLimit();
         if (!paused)
