@@ -16663,7 +16663,7 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
         unwindChildren(dependencies.resultsRead, resultsRead);
 
     unsigned crc = getExpressionCRC(original) + PERSIST_VERSION;
-    OwnedHqlExpr crcVal = createConstant((__int64)crc);
+    OwnedHqlExpr crcVal = getSizetConstant(crc);
     OwnedHqlExpr crcExpr = calculatePersistInputCrc(ctx, dependencies);
     HqlExprArray args;
     args.append(*LINK(resultName));

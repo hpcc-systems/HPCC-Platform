@@ -4803,7 +4803,7 @@ chooseList
 chooseItem
     : expression        {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             $$.inherit($1);
                         }
     ;
@@ -5035,25 +5035,25 @@ expr
     | expr '%' expr     {
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, false);
                             ITypeInfo * type = parser->promoteToSameType($1, $3); // MORE _ should calculate at wider width then cast down to narrower?
                             $$.setExpr(createValue(no_modulus, type, $1.getExpr(), $3.getExpr()));
                         }
     | expr DIV expr     {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, false);
                             parser->normalizeExpression($1, type_int, false);
-                            parser->normalizeExpression($3, type_int, false);
+                            //parser->normalizeExpression($3, type_int, false);
                             ITypeInfo * type = parser->promoteToSameType($1, $3);
                             $$.setExpr(createValue(no_div, type, $1.getExpr(), $3.getExpr()));
                         }
     | expr SHIFTL expr  {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * left = $1.getExpr();
@@ -5062,7 +5062,7 @@ expr
     | expr SHIFTR expr  {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, false);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * left = $1.getExpr();
@@ -5165,7 +5165,7 @@ primexpr
                             parser->normalizeExpression($2);
                             if (parser->sortDepth == 0)
                             {
-                                parser->applyDefaultPromotions($2);
+                                parser->applyDefaultPromotions($2, true);
                                 parser->normalizeExpression($2, type_numeric, false);
                             }
                             IHqlExpression *e2 = $2.getExpr();
@@ -5650,7 +5650,7 @@ primexpr1
     | SUM '(' startTopFilter ',' expression aggregateFlags ')' endTopFilter
                         {
                             parser->normalizeExpression($5);
-                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5);
+                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
                             $$.setExpr(createValue(no_sum, LINK(type), $3.getExpr(), ensureExprType(value, type), $6.getExpr()));
@@ -5658,7 +5658,7 @@ primexpr1
     | SUM '(' GROUP ',' expression optExtraFilter ')'
                         {
                             parser->normalizeExpression($5);
-                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5);
+                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
                             $$.setExpr(createValue(no_sumgroup, LINK(type), ensureExprType(value, type), $6.getExpr()));
@@ -7000,7 +7000,9 @@ dataSet
                         {
                             parser->normalizeExpression($3, type_int, false);
                             parser->normalizeExpression($5, type_int, false);
-                            Owned<ITypeInfo> type = parser->checkPromoteNumericType($3, $5);
+                            parser->applyDefaultPromotions($3, true);
+                            parser->applyDefaultPromotions($5, true);
+                            Owned<ITypeInfo> type = parser->promoteToSameType($3, $5);
                             IHqlExpression * ds = $1.getExpr();
                             IHqlExpression * from = $3.getExpr();
                             IHqlExpression * to = $5.getExpr();
@@ -10726,7 +10728,7 @@ mapItem
     : booleanExpr GOESTO expression 
                         {
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($3, true);
                             IHqlExpression *e3 = $3.getExpr();
                             $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.setPosition($3);
@@ -10771,8 +10773,8 @@ caseItem
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
                             //MORE: Should call checkType?
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10807,7 +10809,7 @@ caseDatasetItem
     : expression GOESTO dataSet
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10842,7 +10844,7 @@ caseDatarowItem
     : expression GOESTO dataRow
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10876,7 +10878,7 @@ caseActionItem
     : expression GOESTO action
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, makeVoidType(), $1.getExpr(), e3));
                             $$.clear();
