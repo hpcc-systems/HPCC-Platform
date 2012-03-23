@@ -1,10 +1,10 @@
 <Dataset name='Result 1'>
- <Row><Result_1>true</Result_1></Row>
+ <Row><Result_1>Zero Rows</Result_1></Row>
 </Dataset>
 <Dataset name='Result 2'>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><Result_3>true</Result_3></Row>
+ <Row><Result_3>Constant, 10</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
  <Row><i>0</i></Row>
@@ -19,7 +19,7 @@
  <Row><i>90</i></Row>
 </Dataset>
 <Dataset name='Result 5'>
- <Row><Result_5>true</Result_5></Row>
+ <Row><Result_5>Constant expression, 50</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
  <Row><i>0</i></Row>
@@ -74,7 +74,7 @@
  <Row><i>490</i></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>true</Result_7></Row>
+ <Row><Result_7>Variable 5, row constant</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
  <Row><i>10</i></Row>
@@ -84,7 +84,7 @@
  <Row><i>10</i></Row>
 </Dataset>
 <Dataset name='Result 9'>
- <Row><Result_9>true</Result_9></Row>
+ <Row><Result_9>Distributed 10</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
  <Row><i>0</i></Row>

@@ -1508,6 +1508,22 @@ public:
 };
 
 
+class CHThorInlineTableActivity : public CHThorSimpleActivityBase
+{
+    IHThorInlineTableArg &helper;
+    __uint64 curRow;
+    __uint64 numRows;
+
+public:
+    CHThorInlineTableActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind);
+
+    virtual void ready();
+    virtual bool needsAllocator() const { return true; }
+
+    //interface IHThorInput
+    virtual const void *nextInGroup();
+};
+
 class CHThorNullActivity : public CHThorSimpleActivityBase
 {
     IHThorArg &helper;

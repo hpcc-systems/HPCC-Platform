@@ -809,7 +809,7 @@ enum ThorActivityKind
     TAKhashdistributemerge,
     TAKselfjoinlight,
     TAKhttp_rowdataset,     // a source activity
-        TAKunused3,
+    TAKinlinetable,
     TAKcountdisk,
     TAKstreamediterator,
     TAKexternalsource,
@@ -956,7 +956,7 @@ enum ActivityInterfaceEnum
     TAIexternal_1,
     TAIpipethrougharg_2,
     TAIpipewritearg_2,
-    TAItemptablearg_2,
+    TAIinlinetablearg_1,
     TAIshuffleextra_1,
 
 //Should remain as last of all meaningful tags, but before aliases
@@ -1421,8 +1421,10 @@ struct IHThorTempTableArg : public IHThorArg
  * single method. Future-proof and should merge with the interface
  * above in the next major release.
  */
-struct IHThorTempTableExtraArg : public IHThorTempTableArg
+struct IHThorInlineTableArg : public IHThorArg
 {
+    virtual size32_t getRow(ARowBuilder & rowBuilder, __uint64 row) = 0;
+    virtual __uint64 numRows() = 0;
     virtual unsigned getFlags() = 0;
 };
 

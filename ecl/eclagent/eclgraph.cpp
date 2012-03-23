@@ -106,6 +106,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKtemptable:
     case TAKtemprow:
         return createTempTableActivity(agent, activityId, subgraphId, (IHThorTempTableArg &)arg, kind);
+    case TAKinlinetable:
+        return createInlineTableActivity(agent, activityId, subgraphId, (IHThorInlineTableArg &)arg, kind);
     case TAKnormalize:
         return createNormalizeActivity(agent, activityId, subgraphId, (IHThorNormalizeArg &)arg, kind);
     case TAKnormalizechild:

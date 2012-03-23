@@ -1299,7 +1299,7 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorTempTableArg : public CThorArg, implements IHThorTempTableExtraArg
+class CThorTempTableArg : public CThorArg, implements IHThorTempTableArg
 {
 public:
     virtual void Link() const { RtlCInterface::Link(); }
@@ -1313,14 +1313,34 @@ public:
         case TAIarg:
         case TAItemptablearg_1:
             return static_cast<IHThorTempTableArg *>(this);
-        case TAItemptablearg_2:
-            return static_cast<IHThorTempTableExtraArg *>(this);
         }
         return NULL;
     }
 
     virtual unsigned getFlags()                         { return 0; }
     virtual bool isConstant()                           { return (getFlags() & TTFnoconstant) == 0; }
+    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
+};
+
+class CThorInlineTableArg : public CThorArg, implements IHThorInlineTableArg
+{
+public:
+    virtual void Link() const { RtlCInterface::Link(); }
+    virtual bool Release() const { return RtlCInterface::Release(); }
+    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
+
+    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
+    {
+        switch (which)
+        {
+        case TAIarg:
+        case TAIinlinetablearg_1:
+            return static_cast<IHThorInlineTableArg *>(this);
+        }
+        return NULL;
+    }
+
+    virtual unsigned getFlags()                         { return 0; }
     virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
 };
 

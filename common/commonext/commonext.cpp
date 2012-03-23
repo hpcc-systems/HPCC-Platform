@@ -60,6 +60,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKfunnel] = "funnel";
     kindArray[TAKapply] = "apply";
     kindArray[TAKtemptable] = "temptable";
+    kindArray[TAKinlinetable] = "inlinetable";
     kindArray[TAKtemprow] = "temprow";
     kindArray[TAKhashdistribute] = "hashdistribute";
     kindArray[TAKhashdedup] = "hashdedup";

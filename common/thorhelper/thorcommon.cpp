@@ -625,6 +625,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKfunnel:                 return "Funnel";
     case TAKapply:                  return "Apply";
     case TAKtemptable:              return "Inline Dataset";
+    case TAKinlinetable:            return "Inline Dataset";
     case TAKtemprow:                return "Inline Row";
     case TAKhashdistribute:         return "Hash Distribute";
     case TAKhashdedup:              return "Hash Dedup";
@@ -779,6 +780,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     {
     case TAKpiperead:
     case TAKtemptable:
+    case TAKinlinetable:
     case TAKtemprow:
     case TAKworkunitread:
     case TAKnull:

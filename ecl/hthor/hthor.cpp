@@ -5863,6 +5863,39 @@ const void *CHThorTempTableActivity::nextInGroup()
 
 //=====================================================================================================
 
+CHThorInlineTableActivity::CHThorInlineTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind) :
+                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorInlineTableActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    curRow = 0;
+    numRows = helper.numRows();
+    if (helper.getFlags() & TTFdistributed != 0)
+        WARNLOG("HThor does not support distributed inline tables, using master");
+}
+
+
+const void *CHThorInlineTableActivity::nextInGroup()
+{
+    // Filtering empty rows, returns the next valid row
+    while (curRow < numRows)
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t size = helper.getRow(rowBuilder, curRow++);
+        if (size)
+        {
+            processed++;
+            return rowBuilder.finalizeRowClear(size);
+        }
+    }
+    return NULL;
+}
+
+//=====================================================================================================
+
 CHThorNullActivity::CHThorNullActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
 }
@@ -9628,6 +9661,7 @@ MAKEFACTORY(WorkUnitWrite);
 MAKEFACTORY(FirstN);
 MAKEFACTORY(Count);
 MAKEFACTORY(TempTable);
+MAKEFACTORY(InlineTable);
 MAKEFACTORY_ARG(Concat, Funnel);
 MAKEFACTORY(Apply);
 MAKEFACTORY(Sample);
