@@ -50,12 +50,9 @@
 #include "exception_util.hpp"
 
 #include "ws_dfuService.hpp"
-#include "ldapsecurity.hpp"
 
 #include "hqlerror.hpp"
 #include "eclrtl.hpp"
-
-///#define TESTDATASET 1
 
 #define     Action_Delete           "Delete"
 #define     Action_AddtoSuperfile   "Add To Superfile"

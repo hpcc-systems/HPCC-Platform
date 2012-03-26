@@ -65,7 +65,6 @@ target_link_libraries ( ws_machine
          roxiecommlib
          xmllib 
          esphttp 
-         LdapSecurity 
          mp 
          hrpc 
          remote 

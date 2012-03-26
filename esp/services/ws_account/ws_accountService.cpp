@@ -17,7 +17,9 @@
 ############################################################################## */
 
 #include "ws_accountService.hpp"
+#ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
+#endif
 #include "exception_util.hpp"
 
 const int CUTOFF_MAJOR = 533;
@@ -29,6 +31,7 @@ void Cws_accountEx::init(IPropertyTree *cfg, const char *process, const char *se
 {
 }
 
+#ifdef _USE_OPENLDAP
 bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & req, IEspUpdateUserResponse & resp)
 {
     try
@@ -160,6 +163,7 @@ bool Cws_accountEx::onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspW
     }
     return true;
 }
+#endif
 
 bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp)
 {

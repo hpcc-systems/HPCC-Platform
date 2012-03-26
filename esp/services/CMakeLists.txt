@@ -17,7 +17,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 add_subdirectory (ecldirect)
-add_subdirectory (ws_access)
+IF (USE_OPENLDAP)
+    add_subdirectory (ws_access)
+ENDIF(USE_OPENLDAP)
 add_subdirectory (ws_account)
 add_subdirectory (ws_config)
 add_subdirectory (ws_dfu)
