@@ -454,7 +454,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="autoCopyBackup" type="xs:boolean" default="true">
+      <xs:attribute name="autoCopyBackup" type="xs:boolean" default="false">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>If files at primary location are missing, copy into place from backup location</tooltip>
@@ -533,7 +533,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="monitorDaliFileServer" type="xs:boolean" default="false">
+      <xs:attribute name="monitorDaliFileServer" type="xs:boolean" default="true">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Warn if dafilesrv process is not running on computers</tooltip>
