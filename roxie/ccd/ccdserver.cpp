@@ -21969,10 +21969,10 @@ public:
         eof = false;
         gathered= false;
         CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
-        resultAggregator.start(rowAllocator);
         groupSegCount = 0;
         if (!paused)
             processAllKeys();
+        resultAggregator.start(rowAllocator);
     }
 
     virtual bool needsAllocator() const { return true; }
