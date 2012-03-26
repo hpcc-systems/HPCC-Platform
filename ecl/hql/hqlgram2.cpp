@@ -3643,20 +3643,6 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     return type.getClear();
 }
 
-ITypeInfo *HqlGram::checkPromoteNumericType(attribute &a1, attribute &a2)
-{
-    checkNumeric(a1);
-    checkNumeric(a2);
-
-    ITypeInfo *t1 = a1.queryExprType();
-    ITypeInfo *t2 = a2.queryExprType();
-
-    applyDefaultPromotions(a1);
-    applyDefaultPromotions(a2);
-    return promoteToSameType(a1, a2);
-}
-
-
 ITypeInfo * HqlGram::checkStringIndex(attribute & strAttr, attribute & idxAttr)
 {
     IHqlExpression * src = strAttr.queryExpr();
@@ -3732,12 +3718,24 @@ void HqlGram::checkOnFailRecord(IHqlExpression * expr, attribute & errpos)
     }
 }
 
-void HqlGram::applyDefaultPromotions(attribute &a1)
+void HqlGram::applyDefaultPromotions(attribute &a1, bool extendPrecision)
 {
     ITypeInfo *t1 = a1.queryExprType();
-    type_t tc = t1->getTypeCode();
-    if ((tc == type_swapint) || (tc == type_packedint) || ((tc == type_int) && (t1->getSize() < 8)) || (tc == type_bitfield))
+    switch (t1->getTypeCode())
+    {
+    case type_swapint:
+    case type_packedint:
+    case type_bitfield:
         ensureType(a1, defaultIntegralType);
+        break;
+    }
+
+    if (extendPrecision)
+    {
+        ITypeInfo * type = a1.queryExprType();
+        if ((type->getTypeCode() == type_int) && (type->getSize() < 8))
+            ensureType(a1, defaultIntegralType);
+    }
 }
 
 void HqlGram::checkSameType(attribute &a1, attribute &a2)
@@ -4566,8 +4564,8 @@ IHqlExpression * HqlGram::createArithmeticOp(node_operator op, attribute &a1, at
     case no_sub:
     case no_mul:
     case no_div:
-        applyDefaultPromotions(a1);
-        applyDefaultPromotions(a2);
+        applyDefaultPromotions(a1, true);
+        applyDefaultPromotions(a2, (op != no_div));
         break;
     }
 
@@ -5186,9 +5184,9 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
 }
 
 
-ITypeInfo *HqlGram::checkPromoteNumeric(attribute &a1)
+ITypeInfo *HqlGram::checkPromoteNumeric(attribute &a1, bool extendPrecision)
 {
-    applyDefaultPromotions(a1);
+    applyDefaultPromotions(a1, extendPrecision);
     return checkNumericGetType(a1);
 }
 
