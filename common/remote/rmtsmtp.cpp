@@ -51,14 +51,6 @@ public:
         validateDomain();
     }
 
-    void validateDomain(char const * _domain, char const * _label)
-    {
-        value = finger = _domain;
-        label = _label;
-        scanlist = false;
-        validateDomain();
-    }
-
     void scanAddressListStart(char const * _addrlist, char const * _label)
     {
         value = finger = _addrlist;
@@ -249,11 +241,11 @@ private:
         {
             if(isalnum(*finger))
                 ++charcount;
-            else if(*finger == '_')
+            else if(*finger == '_' || *finger == '-')
                 if(charcount == 0)
-                    fail("illegal _ at start of subdomain");
+                    fail("illegal character at start of subdomain");
                 else if(!*(finger+1) || (*(finger+1) == '.') || (scanlist && isListSep(*(finger+1))))
-                    fail("illegal _ at end of subdomain");
+                    fail("illegal character at end of subdomain");
                 else
                     ++charcount;
             else if(*finger == '.')
@@ -490,8 +482,6 @@ public:
     {
         warnings = _warnings;
         CSMTPValidator validator;
-        validator.validateDomain(mailServer.get(), "mail server address");
-
         if(strlen(senderHeader) + sender.length() > 998)
             throw MakeStringException(0, "email sender address too long: %u characters", sender.length());
         validator.validateAddress(sender.get(), "email sender address");

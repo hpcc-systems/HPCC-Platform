@@ -36,8 +36,12 @@
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
 
+//#define LOG_ALL_FOLDING
+
 //---------------------------------------------------------------------------
-// The following functions work purely on constant expressions - they do not attempt to process datasets.
+// The following functions do not attempt to reorder datasets, e.g., filter(project)->project(filter).
+// Those changes can inadvertently cause common code to be lost.  Those optimizations are performed by
+// hqlopt which ensures it keeps track of the number of times a dataset expression is used.
 
 IHqlExpression * createNullValue(IHqlExpression * expr)
 {
@@ -5153,6 +5157,11 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
 
     OwnedHqlExpr updated = (foldOptions & HFOpercolateconstants) ? percolateConstants(dft) : LINK(dft);
     OwnedHqlExpr transformed = doFoldTransformed(updated, expr);
+
+#ifdef LOG_ALL_FOLDING
+    if ((op != transformed->getOperator()) || (expr->numChildren() != transformed->numChildren()))
+        DBGLOG("Folding %s to %s", getOpString(updated->getOperator()), getOpString(transformed->getOperator()));
+#endif
 
 #ifdef _DEBUG
     if (expr->isConstant() && !transformed->queryValue())

@@ -182,7 +182,7 @@ void ResourceManager::addManifest(const char *filename)
     StringBuffer path;
     Owned<IPropertyTree> t = createPTree();
     t->setProp("@originalFilename", makeAbsolutePath(filename, path).str());
-    manifest->addPropTree("Include", t.getClear());
+    ensureManifestInfo()->addPropTree("Include", t.getClear());
     addManifestFile(filename);
 }
 
