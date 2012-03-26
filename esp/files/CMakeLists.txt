@@ -50,6 +50,8 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/transformDlg.html
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_app_tree.html
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_app.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/useradd.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/groupadd.html
 )
     Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files COMPONENT Runtime )
 ENDFOREACH ( iFILES )
