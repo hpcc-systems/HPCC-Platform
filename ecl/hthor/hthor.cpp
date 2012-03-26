@@ -3594,7 +3594,7 @@ void CHThorGroupSortActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     spillThreshold = (memsize_t)agent.queryWorkUnit()->getDebugValueInt64("hthorSpillThreshold", defaultHThorSpillThreshold);
-    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit() * 1024 * 1024;
+    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit();
     spillThreshold = (memsize_t)std::min(spillThreshold, totalMemoryLimit / 3);
     if(!sorter)
         createSorter();

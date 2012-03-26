@@ -33,6 +33,13 @@
  #define roxiemem_decl
 #endif
 
+//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+#ifdef _DEBUG
+#define dbgassertex(x) assertex(x)
+#else
+#define dbgassertex(x)
+#endif
+
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
 #else
@@ -57,7 +64,27 @@ interface IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const = 0;
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const = 0;
     virtual void onDestroy(unsigned cacheId, void *row) const = 0;
+    virtual void checkValid(unsigned cacheId, const void *row) const = 0;
 };
+
+//This interface allows activities that hold on to large numbers of rows to be called back to try and free up
+//memory.  E.g., sorts can spill to disk, read ahead buffers can reduce the number being readahead etc.
+//Lower priority callbacks are called before higher priority.
+//The freeBufferedRows will call all callbacks with critical=false, before calling with critical=true
+interface IBufferedRowCallback
+{
+    virtual unsigned getPriority() const = 0; // lower values get freed up first.
+    virtual bool freeBufferedRows(bool critical) = 0; // return true if and only if managed to free something.
+};
+
+//This interface is called to gain exclusive access to a memory blocks shared between processes.
+//MORE: The block size needs to be consistent for all thors on this node
+interface ILargeMemCallback: extends IInterface
+{
+    virtual bool take(memsize_t largeMemory)=0;   // called when a memory request about to be satisfied will require an extra block.
+    virtual void give(memsize_t largeMemory)=0;   // called when the memory allocated falls back below the limit
+};
+
 
 struct roxiemem_decl HeapletBase
 {
@@ -78,6 +105,8 @@ protected:
     virtual bool _isShared(const void *ptr) const = 0;
     virtual size32_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
+    virtual bool _hasDestructor(const void *ptr) const = 0;
+    virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
 
     inline static HeapletBase *findBase(const void *ptr)
@@ -125,11 +154,24 @@ public:
 
     static void setDestructorFlag(const void *ptr)
     {
-        if (ptr)
-        {
-            HeapletBase *h = findBase(ptr);
-            h->_setDestructorFlag(ptr);
-        }
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        h->_setDestructorFlag(ptr);
+    }
+
+    static bool hasDestructor(const void *ptr)
+    {
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        return h->_hasDestructor(ptr);
+    }
+
+    static unsigned getAllocatorId(const void *ptr)
+    {
+        dbgassertex(ptr);
+        HeapletBase *h = findBase(ptr);
+        unsigned id = h->_rawAllocatorId(ptr);
+        return (id & ACTIVITY_MASK);
     }
 
     static void releaseClear(const void *&ptr)
@@ -217,6 +259,8 @@ private:
     virtual void released();
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
+    virtual bool _hasDestructor(const void *ptr) const { return false; }
+    virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
 protected:
     DataBuffer()
     {
@@ -247,6 +291,8 @@ private:
     virtual bool _isShared(const void *ptr) const;
     virtual size32_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
+    virtual bool _hasDestructor(const void *ptr) const { return false; }
+    virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
 
 public:
@@ -255,10 +301,15 @@ public:
     void addToFreeChain(DataBufferBase * buffer);
 };
 
+//Actions applied to roxie rows
 #define ReleaseRoxieRow(row) roxiemem::HeapletBase::release(row)
 #define ReleaseClearRoxieRow(row) roxiemem::HeapletBase::releaseClear(row)
 #define LinkRoxieRow(row) roxiemem::HeapletBase::link(row)
+
+//Functions to determine information about roxie rows
 #define RoxieRowCapacity(row)  roxiemem::HeapletBase::capacity(row)
+#define RoxieRowHasDestructor(row)  roxiemem::HeapletBase::hasDestructor(row)
+#define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
 
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
@@ -333,7 +384,6 @@ private:
 };
 
 
-
 interface IFixedRowHeap : extends IInterface
 {
     virtual void *allocate() = 0;
@@ -352,6 +402,8 @@ enum RoxieHeapFlags
     RHFnone             = 0x0000,
     RHFpacked           = 0x0001,
     RHFhasdestructor    = 0x0002,
+    RHFunique           = 0x0004,  // create a separate fixed size allocator
+    RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
 };
 
 // Variable size aggregated link-counted Roxie (etc) row manager
@@ -360,17 +412,20 @@ interface IRowManager : extends IInterface
     virtual void *allocate(size32_t size, unsigned activityId) = 0;
     virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity) = 0;
     virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize, unsigned activityId) = 0;
-    virtual void setMemoryLimit(memsize_t size) = 0;
+    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
-    virtual unsigned pages() = 0;
+    virtual unsigned numPagesAfterCleanup() = 0; // calls releaseEmptyPages() then returns
+    virtual void releaseEmptyPages() = 0; // ensures any empty pages are freed back to the heap
     virtual unsigned getMemoryUsage() = 0;
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void setActivityTracking(bool val) = 0;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, RoxieHeapFlags flags) = 0;
-    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, RoxieHeapFlags flags) = 0;            // should this be passed the initial size?
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
+    virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
+    virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
+    virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
@@ -398,7 +453,7 @@ interface IDataBufferManager : extends IInterface
 
 extern roxiemem_decl IDataBufferManager *createDataBufferManager(size32_t size);
 extern roxiemem_decl void setMemoryStatsInterval(unsigned secs);
-extern roxiemem_decl void setTotalMemoryLimit(memsize_t max);
+extern roxiemem_decl void setTotalMemoryLimit(memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback);
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();
