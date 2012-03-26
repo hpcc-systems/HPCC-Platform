@@ -42,13 +42,6 @@ interface IPropertyTree;
 using std::string;
 using std::map;
 
-typedef enum GenOptional_
-{
-    GENOPTIONAL_ALL,
-    GENOPTIONAL_NONE,
-    GENOPTIONAL_COMPS
-} GenOptional;
-
 class CInstDetails : public CInterface, implements IInterface
 {
   public: 
@@ -132,7 +125,6 @@ private:
    StringArray m_doNotGenOptOnComps;
    StringArray m_clusterForTopology;
    MapStringToStringArray m_compForTopology; 
-   GenOptional m_genOptForAllComps;
    MapStringToStringArray m_invalidServerCombo;
    unsigned m_supportNodes;
    unsigned m_roxieNodes;

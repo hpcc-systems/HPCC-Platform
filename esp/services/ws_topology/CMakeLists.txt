@@ -77,7 +77,6 @@ target_link_libraries ( ws_topology
          deftype 
          workunit 
          SMCLib 
-         LdapSecurity 
          securesocket 
          swapnodelib
          )
