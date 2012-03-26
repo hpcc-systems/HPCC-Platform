@@ -190,6 +190,7 @@ protected:
     unsigned priority;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
+    bool dynamicFiles;
 
     static SpinLock queriesCrit;
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryMap;
@@ -722,7 +723,7 @@ public:
     unsigned channelNo;
 
     CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo) 
-        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue)
+        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), dynamicFiles(false)
     {
         package.Link();
         isSuspended = false;
@@ -1092,6 +1093,16 @@ public:
         }
     }
 
+    virtual void setDynamicFileResolution(bool flag)
+    {
+        dynamicFiles = flag;
+    }
+
+    virtual bool dynamicFileResolution() const
+    {
+        return dynamicFiles;
+    }
+
 protected:
     void checkSuspended() const
     {
@@ -1103,7 +1114,6 @@ protected:
             throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
         }
     }
-
 };
 
 CriticalSection CQueryFactory::queryCreateLock;

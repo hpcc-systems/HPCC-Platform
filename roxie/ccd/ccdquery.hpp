@@ -111,6 +111,9 @@ interface IQueryFactory : extends IInterface
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;
+
+    virtual void setDynamicFileResolution(bool flag) = 0; // resolve files on-demand
+    virtual bool dynamicFileResolution() const = 0; // resolve files on-demand
 };
 
 class ActivityArray : public CInterface
