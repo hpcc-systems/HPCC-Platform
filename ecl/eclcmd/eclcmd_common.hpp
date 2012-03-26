@@ -105,7 +105,8 @@ enum eclObjParameterType
     eclObjArchive = 0x02,
     eclObjSharedObject = 0x04,
     eclObjWuid = 0x08,
-    eclObjQuery = 0x10
+    eclObjQuery = 0x10,
+    eclObjManifest = 0x20
 };
 
 #define eclObjSourceOrArchive (eclObjSource|eclObjArchive)

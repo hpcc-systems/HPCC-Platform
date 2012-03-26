@@ -8637,11 +8637,10 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
     }
 }
 
-
-extern WORKUNIT_API bool isArchiveQuery(const char * text)
+const char * skipLeadingXml(const char * text)
 {
     if (!text)
-        return false;
+        return NULL;
 
     //skip utf8 BOM, probably excessive
     if (memcmp(text, UTF8_BOM, 3) == 0)
@@ -8651,6 +8650,20 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
     {
         if (isspace(*text))
             text++;
+        else if (text[0] == '<' && text[1] == '?')
+        {
+            text += 2;
+            loop
+            {
+                if (!*text) break;
+                if (text[0] == '?' && text[1] == '>')
+                {
+                    text += 2;
+                    break;
+                }
+                text++;
+            }
+        }
         else if (text[0] == '<' && text[1] == '!' && text[2] == '-' && text[3] == '-')
         {
             text += 4;
@@ -8669,8 +8682,25 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
             break;
     }
 
+    return text;
+}
+
+extern WORKUNIT_API bool isArchiveQuery(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
     const char * archivePrefix = "<Archive";
     return memicmp(text, archivePrefix, strlen(archivePrefix)) == 0;
+}
+
+extern WORKUNIT_API bool isQueryManifest(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
+    const char * manifestPrefix = "<Manifest";
+    return memicmp(text, manifestPrefix, strlen(manifestPrefix)) == 0;
 }
 
 //------------------------------------------------------------------------------
