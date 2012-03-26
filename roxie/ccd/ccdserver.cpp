@@ -5287,6 +5287,14 @@ IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned 
 
 //=================================================================================
 
+/*
+ * This class differ from TempTable (above) by having 64-bit number of rows
+ * and, in Thor, it's able to run distributed in the cluster. We, therefore,
+ * need to keep consistency and implement it here, too.
+ *
+ * Some optimisations [ex. NORMALIZE(ds) -> DATASET(COUNT)] will make use of
+ * this class, so you can't use TempTables.
+ */
 class CRoxieServerInlineTableActivity : public CRoxieServerActivity
 {
     IHThorInlineTableArg &helper;
@@ -5304,8 +5312,6 @@ public:
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         numRows = helper.numRows();
-        if (helper.getFlags() & TTFdistributed != 0)
-            CTXLOG("Roxie does not support distributed inline tables, using master");
     }
 
     virtual bool needsAllocator() const { return true; }

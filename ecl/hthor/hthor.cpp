@@ -5873,8 +5873,6 @@ void CHThorInlineTableActivity::ready()
     CHThorSimpleActivityBase::ready();
     curRow = 0;
     numRows = helper.numRows();
-    if (helper.getFlags() & TTFdistributed != 0)
-        WARNLOG("HThor does not support distributed inline tables, using master");
 }
 
 
