@@ -1543,7 +1543,16 @@ public:
         for (unsigned i=0;i<tempfiles.ordinality();i++) {
             if (strms&&strms[i])
                 strms[i]->Release();
-            tempfiles.item(i).remove();
+            try
+            {
+                tempfiles.item(i).remove();
+            }
+            catch (IException * e)
+            {
+                //Exceptions inside destructors are bad.
+                EXCLOG(e);
+                e->Release();
+            }
         }
         free(strms);
     }
