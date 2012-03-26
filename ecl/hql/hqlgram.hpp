@@ -399,7 +399,7 @@ public:
     void processImportAll(attribute & modulesAttr);
     void processImport(attribute & modulesAttr, _ATOM as);
     void processImport(attribute & membersAttr, attribute & modulesAttr, _ATOM as);
-    void applyDefaultPromotions(attribute &a1);
+    void applyDefaultPromotions(attribute &a1, bool extendPrecision);
     unsigned checkCompatible(ITypeInfo * a1, ITypeInfo * t2, const attribute &ea, bool complain=true);
     void checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * values, attribute & errpos);
     void checkCompatibleTransforms(HqlExprArray & values, IHqlExpression * record, attribute & errpos);
@@ -412,8 +412,7 @@ public:
     void checkScalar(attribute &atr);
     void checkUseLocation(const attribute & errpos);
     void checkCosort(IHqlExpression * sortlist, IHqlExpression * partition, const attribute & ea);
-    ITypeInfo * checkPromoteNumeric(attribute &a1);
-    ITypeInfo * checkPromoteNumericType(attribute &a1, attribute &a2);
+    ITypeInfo * checkPromoteNumeric(attribute &a1, bool extendPrecision);
     ITypeInfo * checkPromoteType(attribute &a1, attribute &a2);
     ITypeInfo * checkPromoteIfType(attribute &a1, attribute &a2);
     void checkSameType(attribute &a1, attribute &a2);
