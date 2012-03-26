@@ -31262,6 +31262,8 @@ public:
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
+        // All WorkUnits should use dynamic file resolution
+        queryFactory->setDynamicFileResolution(true);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
