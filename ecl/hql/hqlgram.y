@@ -5046,7 +5046,7 @@ expr
                             parser->applyDefaultPromotions($1, true);
                             parser->applyDefaultPromotions($3, false);
                             parser->normalizeExpression($1, type_int, false);
-                            //parser->normalizeExpression($3, type_int, false);
+                            parser->normalizeExpression($3, type_int, false);
                             ITypeInfo * type = parser->promoteToSameType($1, $3);
                             $$.setExpr(createValue(no_div, type, $1.getExpr(), $3.getExpr()));
                         }
