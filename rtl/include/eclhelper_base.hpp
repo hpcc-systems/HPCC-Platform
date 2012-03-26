@@ -1341,7 +1341,6 @@ public:
     }
 
     virtual unsigned getFlags()                         { return 0; }
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
 };
 
 class CThorTempRowArg : public CThorTempTableArg
