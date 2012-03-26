@@ -145,9 +145,9 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
     if (actval && actval.value)
     {
         if (actval.value=="esp_soap")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/soap/wuid/', $wuid, '?qset=', $queryPath, '&amp;qname=', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/soap/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="esp_json")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/json/wuid/', $wuid, '?qset=', $queryPath, '&amp;qname=', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/json/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="roxie_soap")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/roxiesoap/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="roxie_xml")
@@ -155,7 +155,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         else if (actval.value=="run_xslt")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/wuid/', $wuid, '?qset=', $queryPath, '&amp;qname=', $methodName, '&amp;view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/wuid/', $queryPath, '/', $methodName, '?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else
             actionpath= "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
     }
