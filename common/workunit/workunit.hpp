@@ -1178,7 +1178,9 @@ extern WORKUNIT_API IStringVal& createToken(const char *wuid, const char *user, 
 extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStringVal &user, IStringVal &password);
 extern WORKUNIT_API WUState getWorkUnitState(const char* state);
 extern WORKUNIT_API IWorkflowScheduleConnection * getWorkflowScheduleConnection(char const * wuid);
+extern WORKUNIT_API const char *skipLeadingXml(const char *text);
 extern WORKUNIT_API bool isArchiveQuery(const char * text);
+extern WORKUNIT_API bool isQueryManifest(const char * text);
 extern WORKUNIT_API IPropertyTree * resolveDefinitionInArchive(IPropertyTree * archive, const char * path);
 
 inline bool isLibrary(IConstWorkUnit * wu) { return wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0) != 0; }

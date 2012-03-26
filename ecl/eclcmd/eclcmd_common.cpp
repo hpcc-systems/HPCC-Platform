@@ -159,7 +159,13 @@ eclObjParameterType EclObjectParameter::finalizeContentType()
         ensureUtf8Content();
         size32_t len = mb.length();
         mb.append((byte)0);
-        type = isArchiveQuery(mb.toByteArray()) ? eclObjArchive : eclObjSource;
+        const char *root = skipLeadingXml(mb.toByteArray());
+        if (isArchiveQuery(root))
+            type = eclObjArchive;
+        else if (isQueryManifest(root))
+            type = eclObjManifest;
+        else
+            type = eclObjSource;
         mb.setLength(len);
     }
     else
@@ -227,6 +233,8 @@ const char *EclObjectParameter::queryTypeName()
         return "ECL Text";
     case eclObjArchive:
         return "ECL Archive";
+    case eclObjManifest:
+        return "ECL Manifest";
     case eclObjSharedObject:
         return "ECL Shared Object";
     default:
@@ -317,10 +325,15 @@ public:
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
         if (cmd.optAttributePath.length())
             cmdLine.append(" -main ").append(cmd.optAttributePath.get());
-        if (cmd.optManifest.length())
-            cmdLine.append(" -manifest ").append(cmd.optManifest.get());
-        if (cmd.optObj.value.get())
-            cmdLine.append(" ").append(streq(cmd.optObj.value.get(), "stdin") ? "- " : cmd.optObj.value.get());
+        if (cmd.optObj.type == eclObjManifest)
+            cmdLine.append(" -manifest ").append(cmd.optObj.value.get());
+        else
+        {
+            if (cmd.optManifest.length())
+                cmdLine.append(" -manifest ").append(cmd.optManifest.get());
+            if (cmd.optObj.value.get())
+                cmdLine.append(" ").append(streq(cmd.optObj.value.get(), "stdin") ? "- " : cmd.optObj.value.get());
+        }
         if ((int)cmd.optResultLimit > 0)
         {
             cmdLine.append(" -fapplyInstantEclTransformations=1");
@@ -368,7 +381,7 @@ public:
 
     bool process()
     {
-        if (cmd.optObj.type!=eclObjSource || cmd.optObj.value.isEmpty())
+        if ((cmd.optObj.type!=eclObjSource && cmd.optObj.type!=eclObjManifest) || cmd.optObj.value.isEmpty())
             return false;
 
         StringBuffer output;
@@ -457,16 +470,25 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
     if (!EclCmdCommon::finalizeOptions(globals))
         return false;
 
-    if (optObj.type == eclObjTypeUnknown && optAttributePath.length())
+    if (optObj.type == eclObjTypeUnknown)
     {
-        optNoArchive=true;
-        optObj.type = eclObjSource;
-        optObj.value.set(optAttributePath.get());
-        StringBuffer text(optAttributePath.get());
-        text.append("();");
-        optObj.mb.append(text.str());
+        if (optAttributePath.length())
+        {
+            optNoArchive=true;
+            optObj.type = eclObjSource;
+            optObj.value.set(optAttributePath.get());
+            StringBuffer text(optAttributePath.get());
+            text.append("();");
+            optObj.mb.append(text.str());
+        }
+        else if (optManifest.length())
+        {
+            optObj.set(optManifest.get()); //treat as stand alone manifest that must declare ecl to compile
+            optManifest.clear();
+        }
     }
-    else if (optObj.type == eclObjSource && !optNoArchive)
+
+    if (!optNoArchive && (optObj.type == eclObjSource || optObj.type == eclObjManifest))
     {
         ConvertEclParameterToArchive conversion(*this);
         if (!conversion.process())

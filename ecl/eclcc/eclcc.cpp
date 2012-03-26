@@ -193,6 +193,7 @@ public:
 
     bool parseCommandLineOptions(int argc, const char* argv[]);
     void loadOptions();
+    void loadManifestOptions();
     bool processFiles();
     void processBatchedFile(IFile & file, bool multiThreaded);
 
@@ -310,6 +311,48 @@ int main(int argc, const char *argv[])
 }
 
 //=========================================================================================
+
+void EclCC::loadManifestOptions()
+{
+    if (!optManifestFilename)
+        return;
+    Owned<IPropertyTree> mf = createPTreeFromXMLFile(optManifestFilename);
+    IPropertyTree *ecl = mf->queryPropTree("ecl");
+    if (ecl)
+    {
+        if (ecl->hasProp("@filename"))
+        {
+            StringBuffer dir, abspath;
+            splitDirTail(optManifestFilename, dir);
+            makeAbsolutePath(ecl->queryProp("@filename"), dir.str(), abspath);
+            processArgvFilename(inputFiles, abspath.str());
+        }
+        if (!optLegacy)
+            optLegacy = ecl->getPropBool("@legacy");
+        if (!optQueryRepositoryReference && ecl->hasProp("@main"))
+            optQueryRepositoryReference.set(ecl->queryProp("@main"));
+        if (ecl->hasProp("@targetClusterType"))
+        {
+            ClusterType clusterType = getClusterType(ecl->queryProp("@targetClusterType"));
+            if (clusterType != NoCluster)
+                optTargetClusterType = clusterType;
+        }
+        Owned<IPropertyTreeIterator> paths = ecl->getElements("IncludePath");
+        ForEach(*paths)
+        {
+            IPropertyTree &item = paths->query();
+            if (item.hasProp("@path"))
+                includeLibraryPath.append(ENVSEPCHAR).append(item.queryProp("@path"));
+        }
+        paths.setown(ecl->getElements("LibraryPath"));
+        ForEach(*paths)
+        {
+            IPropertyTree &item = paths->query();
+            if (item.hasProp("@path"))
+                libraryPaths.append(item.queryProp("@path"));
+        }
+    }
+}
 
 void EclCC::loadOptions()
 {
@@ -1395,6 +1438,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     // Option post processing follows:
     if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend)
         optNoCompile = true;
+
+    loadManifestOptions();
 
     if (inputFiles.ordinality() == 0)
     {
