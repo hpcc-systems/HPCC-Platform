@@ -120,6 +120,10 @@ add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp
     DEPENDS hqllex.l
 )
 
+if (WIN32)
+    set_source_files_properties (hqlgram.cpp PROPERTIES COMPILE_FLAGS "/Od")
+endif()
+
 ADD_DEFINITIONS( -D_USRDLL -DHQL_EXPORTS -DHQLFOLD_EXPORTS -DHQLTRANS_EXPORTS )
 
 HPCC_ADD_LIBRARY( hql SHARED ${SRCS} ${CMAKE_CURRENT_BINARY_DIR}/hqlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/hqllex.cpp  )
