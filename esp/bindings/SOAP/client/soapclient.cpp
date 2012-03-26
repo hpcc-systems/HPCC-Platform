@@ -131,7 +131,6 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
     if (getEspLogLevel(rpccall.queryContext())>LogNormal)
     {
         DBGLOG("Content type: %s", contenttypestr.str());
-        DBGLOG("Request content: %s", requeststr.str());
     }
 
     Owned<CSoapRequest> soap_request;
