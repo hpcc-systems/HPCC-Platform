@@ -1770,13 +1770,70 @@ bool generateHeadersFromXsd(IPropertyTree* pEnv, const char* xsdName, const char
   return obj.generateHeaders();
 }
 
-IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, bool allSubTypes, bool wizFlag, CWizardInputs* pWInputs, bool genOptional)
+IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSchema,
+                                   const char* compName, const char* buildSetName,
+                                   const IPropertyTree* pCfg, const char* servicename,
+                                   bool allSubTypes, bool wizFlag, CWizardInputs* pWInputs,
+                                   bool forceOptional)
 {
+  bool flag = true;
+
+  if (!forceOptional)
+  {
+    StringBuffer xpath, genEnvConf, prop;
+    Owned<IProperties> algProp;
+    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", servicename);
+    const char* pConfFile = pCfg->queryProp(xpath.str());
+    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", servicename);
+    const char* pEnvConfFile = pCfg->queryProp(xpath.str());
+
+    if (pConfFile && *pConfFile && pEnvConfFile && *pEnvConfFile)
+    {
+      Owned<IProperties> pParams = createProperties(pConfFile);
+      Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
+      const char* genenv = pParams->queryProp("wizardalgorithm");
+
+      if (!genenv || !*genenv)
+        genenv = "genenvrules.conf";
+
+      const char* cfgpath = pEnvParams->queryProp("configs");
+
+      if (!cfgpath || !*cfgpath)
+        cfgpath = CONFIG_DIR;
+
+      genEnvConf.clear().append(cfgpath);
+
+      if (genEnvConf.charAt(genEnvConf.length() - 1) != PATHSEPCHAR)
+        genEnvConf.append(PATHSEPCHAR);
+
+      genEnvConf.append(genenv);
+    }
+
+    if (genEnvConf.length() && checkFileExists(genEnvConf.str()))
+      algProp.setown(createProperties(genEnvConf.str()));
+
+    enum GenOptional {GENOPTIONAL_ALL, GENOPTIONAL_NONE, GENOPTIONAL_COMPS};
+    GenOptional genOpt = GENOPTIONAL_COMPS;
+    algProp->getProp("do_not_gen_optional", prop);
+    StringArray doNotGenOpt;
+    DelimToStringArray(prop.str(), doNotGenOpt, ",");
+
+    if (doNotGenOpt.length() == 0)
+      genOpt = GENOPTIONAL_ALL;
+    else if (doNotGenOpt.length() == 1 && !strcmp(doNotGenOpt.item(0), "all"))
+      genOpt = GENOPTIONAL_NONE;
+
+    if (genOpt == GENOPTIONAL_ALL || (genOpt == GENOPTIONAL_COMPS && doNotGenOpt.find(buildSetName) == NotFound ))
+      flag = true;
+    else if (genOpt == GENOPTIONAL_NONE || (genOpt == GENOPTIONAL_COMPS && doNotGenOpt.find(buildSetName) != NotFound ))
+      flag = false;
+  }
+
   Owned<IPropertyTree> pCompTree(createPTree(compName));
   CGenerateJSFromXSD obj(pEnv, pSchema, "", compName);
   obj.setCompTree(pCompTree, allSubTypes);
   obj.setWizardFlag(wizFlag);
-  obj.setGenerateOptional(genOptional);
+  obj.setGenerateOptional(flag);
   obj.setWizard(pWInputs);
   obj.generateHeaders();
   return pCompTree.getLink();
@@ -3452,7 +3509,8 @@ void mergeAttributes(IPropertyTree* pTo, IPropertyTree* pFrom)
   }
 }
 
-void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pEnvironment)
+void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, StringBuffer& sbNewName, IConstEnvironment* pEnvironment,
+                              const IPropertyTree* pCfg, const char* serviceName)
 {
   Owned<IPropertyTree> pBindings = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<EspServiceBindings/>");
   const char* type = pBindings->queryProp(XML_ATTR_TYPE);
@@ -3506,7 +3564,7 @@ void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, Strin
     }
 
     IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());  
-    IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+    IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, pCfg, serviceName);
 
     StringBuffer sb(type);
 
@@ -3531,7 +3589,7 @@ void addEspBindingInformation(const char* xmlArg, IPropertyTree* pEnvRoot, Strin
   if (!flag)
   {
     IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());  
-    IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+    IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, pCfg, serviceName);
     StringBuffer sbNewName(XML_TAG_ESPBINDING);
     xpath.clear().appendf("%s[@name='%s']/EspBinding", processName, espName);
 
