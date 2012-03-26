@@ -43,7 +43,6 @@ include_directories (
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
-
 ADD_DEFINITIONS( -D_CONSOLE )
 
 if (WIN32)
@@ -58,10 +57,11 @@ add_executable ( daserver ${SRCS} )
 install ( TARGETS daserver DESTINATION ${OSSDIR}/bin)
 target_link_libraries ( daserver 
          jlib
-         LdapSecurity 
          mp 
          hrpc 
          remote 
          dalibase 
     )
-
+IF (USE_OPENLDAP)
+target_link_libraries ( daserver LdapSecurity )
+ENDIF(USE_OPENLDAP)

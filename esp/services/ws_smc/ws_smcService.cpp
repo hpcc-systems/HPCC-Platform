@@ -18,7 +18,9 @@
 
 #pragma warning (disable : 4786)
 
+#ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
+#endif
 #include "ws_smcService.hpp"
 #include "wshelpers.hpp"
 
@@ -285,8 +287,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         double version = context.getClientVersion();
 
+#ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(req.getFromSubmitBtn() && secmgr && secmgr->isSuperUser(context.queryUser()))
+#else
+        if(req.getFromSubmitBtn())
+#endif
         {
             StringBuffer chatURLStr, bannerStr;
             const char* chatURL = req.getChatURL();
@@ -347,11 +353,14 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         if (version > 1.05)
         {
+#ifdef _USE_OPENLDAP
             int UserPermission = -1;
             CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
             if(secmgr && secmgr->isSuperUser(context.queryUser()))
                 UserPermission = 0;
-
+#else
+            int UserPermission = 0;
+#endif
             resp.setUserPermission(UserPermission);
             resp.setShowBanner(m_BannerAction);
             resp.setShowChatURL(m_EnableChatURL);
@@ -1138,10 +1147,11 @@ bool CWsSMCEx::onSetBanner(IEspContext &context, IEspSetBannerRequest &req, IEsp
 {
     try
     {
+#ifdef _USE_OPENLDAP
         CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
         if(!secmgr || !secmgr->isSuperUser(context.queryUser()))
             throw MakeStringException(ECLWATCH_SUPER_USER_ACCESS_DENIED, "access denied, administrators only.");
-
+#endif
         StringBuffer chatURLStr, bannerStr;
         const char* chatURL = req.getChatURL();
         const char* banner = req.getBannerContent();

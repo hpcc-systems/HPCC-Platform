@@ -69,7 +69,6 @@ target_link_libraries ( ws_smc
          jlib
          xmllib 
          esphttp 
-         LdapSecurity 
          mp 
          hrpc 
          remote 
@@ -97,4 +96,7 @@ target_link_libraries ( ws_smc
          roxiemanager 
          ws_workunits 
     )
+IF (USE_OPENLDAP)
+target_link_libraries ( ws_smc LdapSecurity )
+ENDIF(USE_OPENLDAP)
 
