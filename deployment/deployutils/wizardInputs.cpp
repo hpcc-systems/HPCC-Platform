@@ -152,7 +152,6 @@ void CWizardInputs::setWizardRules()
    m_roxieAgentRedType.clear().append("Circular");
    m_roxieAgentRedChannels = 2;
    m_roxieAgentRedOffset = 1;
-   m_genOptForAllComps = GENOPTIONAL_ALL;
 
    if(m_algProp)
    {
@@ -204,16 +203,6 @@ void CWizardInputs::setWizardRules()
           DelimToStringArray(prop.str(), m_doNotGenComp, ",");
        else if(!strcmp (iter->getPropKey(),"comps_on_all_nodes"))
           DelimToStringArray(prop.str(), m_compOnAllNodes, ",");
-       else if(!strcmp (iter->getPropKey(),"do_not_gen_optional"))
-       {
-          DelimToStringArray(prop.str(), m_doNotGenOptOnComps, ",");
-          if (m_doNotGenOptOnComps.length() == 0)
-            m_genOptForAllComps = GENOPTIONAL_ALL;
-          else if (m_doNotGenOptOnComps.length() == 1 && !strcmp(m_doNotGenOptOnComps.item(0), "all"))
-            m_genOptForAllComps = GENOPTIONAL_NONE;
-          else
-            m_genOptForAllComps = GENOPTIONAL_COMPS;
-       }
        else if(!strcmp(iter->getPropKey(), "topology_for_comps"))
         DelimToStringArray(prop.str(), m_clusterForTopology, ",");
        else if (!strcmp(iter->getPropKey(), "roxie_agent_redundancy"))
@@ -607,7 +596,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
   Owned<IPropertyTree> pBuildTree = createPTreeFromIPT(pNewEnvTree->queryPropTree("./"XML_TAG_PROGRAMS));
   xpath.clear().appendf("./%s/%s/", XML_TAG_BUILD, XML_TAG_BUILDSET);
   Owned<IPropertyTreeIterator> buildSetInsts = pBuildTree->getElements(xpath.str());
-  bool genOptional = true;
+
   ForEach(*buildSetInsts)
   {
     IPropertyTree* pBuildSet = &buildSetInsts->query();
@@ -619,12 +608,7 @@ void CWizardInputs::getDefaultsForWizard(IPropertyTree* pNewEnvTree)
     {
       Owned<IPropertyTree> pSchema = loadSchema(pBuildTree->queryPropTree("./"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
 
-      if (m_genOptForAllComps == GENOPTIONAL_ALL || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) == NotFound ))
-        genOptional = true;
-      else if (m_genOptForAllComps == GENOPTIONAL_NONE || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) != NotFound ))
-        genOptional = false;
-
-      Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, true, true, this, genOptional);
+      Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, buildSetName, m_cfg, m_service.str(), true, true, this);
       xpath.clear().appendf("./%s/%s/[%s=\"%s\"]", XML_TAG_SOFTWARE, processName, XML_ATTR_BUILDSET, buildSetName);
       IPropertyTree* pSWCompTree = pNewEnvTree->queryPropTree(xpath.str());
 
@@ -868,7 +852,6 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
      compName.clear().append(pEspProcess->queryProp(XML_ATTR_NAME));
      xpath.clear().appendf("./%s/%s/%s[@processName=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_TAG_ESPSERVICE);
      Owned<IPropertyTreeIterator> espServiceIter = pNewEnvTree->getElements(xpath.str());
-     bool genOptional = true;
        
      ForEach (*espServiceIter)
      {
@@ -889,16 +872,12 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
 
            const char* buildSetName = pEspService->queryProp(XML_ATTR_NAME);
            const char* processName = pEspService->queryProp(XML_ATTR_PROCESS_NAME);
-           if (m_genOptForAllComps == GENOPTIONAL_ALL || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) == NotFound ))
-             genOptional = true;
-           else if (m_genOptForAllComps == GENOPTIONAL_NONE || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) != NotFound ))
-             genOptional = false;
 
            StringBuffer buildSetPath;
            Owned<IPropertyTree> pSchema = loadSchema(pNewEnvTree->queryPropTree("./Programs/Build[1]"), pEspService, buildSetPath, NULL);
 
            xmlArg.clear().appendf("<EspServiceBindings type=\"EspBinding\" compName=\"%s\" > <Item name=\"%s\" params=\"pcType=EspProcess::pcName=%s::subType=EspBinding::subTypeKey=%s \"/></EspServiceBindings>", compName.str(), espServiceName.str(), compName.str(), espServiceName.str());
-           addEspBindingInformation(xmlArg, pNewEnvTree, sbNewName, NULL);
+           addEspBindingInformation(xmlArg, pNewEnvTree, sbNewName, NULL, m_cfg, m_service.str());
            
            xpath.clear().appendf("./%s/%s/%s/[%s=\"\"]", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPBINDING, XML_ATTR_SERVICE);
            IPropertyTree* pEspBindingInfo = pNewEnvTree->queryPropTree(xpath.str());
@@ -911,7 +890,7 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
            xpath.clear().appendf("%s/%s[%s=\"%s\"]/Properties", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, (espServiceName.toLowerCase()).str());
            IPropertyTree* pSvcProps = pNewEnvTree->queryPropTree(xpath.str());
 
-           Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, true, false, 0, genOptional);
+           Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, buildSetName, m_cfg, m_service.str(), true, false, 0);
 
            Owned<IPropertyTreeIterator> i = pSvcProps->getElements("Authenticate");
            ForEach(*i)
@@ -1122,12 +1101,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
   if (processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)
   {
     Owned<IPropertyTree> pSchema = loadSchema(m_buildSetTree->queryPropTree("./"XML_TAG_PROGRAMS"/"XML_TAG_BUILD"[1]"), pBuildSet, buildSetPath, NULL);
-    IPropertyTree* pCompTree;
-
-    if (m_genOptForAllComps == GENOPTIONAL_ALL || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) == NotFound ))
-      pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false);
-    else if (m_genOptForAllComps == GENOPTIONAL_NONE || (m_genOptForAllComps == GENOPTIONAL_COMPS && m_doNotGenOptOnComps.find(buildSetName) != NotFound ))
-      pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, false, false, 0, false);
+    IPropertyTree* pCompTree = generateTreeFromXsd(pNewEnvTree, pSchema, processName, buildSetName, m_cfg, m_service.str(), false);
 
     sbNewName.clear();
     if (strstr(buildSetName ,"my") == NULL && (strcmp(buildSetName, "topology") != 0))
