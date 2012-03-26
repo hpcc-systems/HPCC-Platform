@@ -1103,6 +1103,7 @@ class HqlLex
         IHqlExpression * parseECL(StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
+        static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);
 
         void doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int extra);
         void doApply(YYSTYPE & returnToken);
