@@ -53,7 +53,6 @@ include_directories (
          ./../../../common/deftype 
          ./../../../ecl/hql 
          ./../../../system/security/securesocket 
-         ./../../../system/security/LdapSecurity 
          ./../../../system/security/shared 
          ./../../../system/include 
          ./../../../common/workunit 
@@ -92,7 +91,6 @@ target_link_libraries ( ws_dfu
          dalift 
          SMCLib 
          dfuXRefLib 
-         LdapSecurity 
          dfuwu 
          securesocket 
          roxiecommlib 

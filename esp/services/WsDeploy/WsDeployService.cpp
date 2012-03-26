@@ -1080,7 +1080,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                 StringBuffer buildSetPath;
                 Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
 
-                Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+                Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
                 StringBuffer sbtmp(pszSubType);
                 StringBuffer sb;
                 const char* psz = strrchr(pszSubType, '/');
@@ -1537,7 +1537,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
               StringBuffer buildSetPath;
               Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
-              Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+              Owned<IPropertyTree> pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
 
               Owned<IPropertyTreeIterator> i = pSvcProps->getElements("Authenticate");
               ForEach(*i)
@@ -2959,7 +2959,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       //add any missing parameters
       Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
-      Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, true);
+      Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName(), true, false, 0, true);
 
       if (pNewCompTree)
       {
@@ -3220,7 +3220,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       else if (!strcmp(pszCompType, "RoxieCluster"))
       {
         Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xml);
-        pNewCompTree.setown(generateTreeFromXsd(pEnvRoot, pSchema, processName));
+        pNewCompTree.setown(generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName()));
 
         if (!strcmp(pszCompType, "RoxieCluster"))
         {
@@ -3987,7 +3987,7 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
       StringBuffer buildSetPath;
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
       xpath.clear().appendf("./Software/%s[@name='%s']", processName, buildSetName);
-      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, false);
+      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName(), false);
       IPropertyTree* pInstTree = pCompTree->queryPropTree(XML_TAG_INSTANCE);
 
       if (pInstTree)
@@ -4118,7 +4118,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
           pNode->addProp(attrName.str(), szAttrib);
         }
 
-        Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, true);
+        Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSet, m_pService->getCfg(), m_pService->getName(), true);
 
         if (pNewCompTree)
         {
@@ -4283,7 +4283,7 @@ bool CWsDeployFileInfo::handleEspServiceBindings(IEspContext &context, IEspHandl
       }
 
       IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());    
-      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
       StringBuffer sb(type);
 
       if (!strncmp(sb.str(), "_", 1))
@@ -4310,7 +4310,7 @@ bool CWsDeployFileInfo::handleEspServiceBindings(IEspContext &context, IEspHandl
     if (!flag)
     {
       IPropertyTree* pEspService = pEnvRoot->queryPropTree(xpath.str());    
-      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
       StringBuffer sbNewName(XML_TAG_ESPBINDING);
       xpath.clear().appendf("%s[@name='%s']/EspBinding", processName, espName);
 
@@ -4722,7 +4722,7 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
 
   StringBuffer buildSetPath;
   Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
-  IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+  IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
 
   if (!strcmp(operation, "Add"))
   {
@@ -4789,7 +4789,7 @@ bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &
         }
 
         IPropertyTree* pComponent = pEnvRoot->queryPropTree(xpath.str());   
-        IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName);
+        IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
         StringBuffer sb(rowType);
 
         if (!strncmp(sb.str(), "_", 1))
@@ -6786,7 +6786,7 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
         StringBuffer buildSetPath, sbNewName;
         Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
         xpath.clear().appendf("./Software/%s[@name='%s']", processName, compOnAllNodes.item(i));
-        pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, false);
+        pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, pBuildSet->queryProp(XML_ATTR_NAME), m_pService->getCfg(), m_pService->getName(), false);
         IPropertyTree* pInstTree = pCompTree->queryPropTree(XML_TAG_INSTANCE);
 
         if (pInstTree)

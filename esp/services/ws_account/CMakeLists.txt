@@ -61,7 +61,8 @@ target_link_libraries ( ws_account
          jlib
          xmllib 
          esphttp 
-         LdapSecurity 
          securesocket 
     )
-
+IF (USE_OPENLDAP)
+target_link_libraries ( ws_account LdapSecurity )
+ENDIF(USE_OPENLDAP)
