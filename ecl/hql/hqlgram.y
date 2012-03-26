@@ -3049,9 +3049,10 @@ outputFlag
                                 parser->normalizeExpression($1, type_string, false);
                             $$.inherit($1);
                         }
-    | FIRST '(' INTEGER_CONST ')'
+    | FIRST '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(firstAtom, createConstant($3.getInt())));
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createAttribute(firstAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | THOR              {
@@ -3281,9 +3282,10 @@ outputWuFlag
                             $$.setExpr(createAttribute(allAtom));
                             $$.setPosition($1);
                         }
-    | FIRST '(' INTEGER_CONST ')'
+    | FIRST '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(firstAtom, createConstant($3.getInt())));
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createAttribute(firstAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | THOR              {
@@ -10884,9 +10886,7 @@ caseActionItem
 
 const
     : stringConstExpr
-    | INTEGER_CONST     {
-                            $$.setExpr(createConstant(createIntValue($1.getInt(), LINK(parser->defaultIntegralType))), $1);
-                        }
+    | INTEGER_CONST
     | DATA_CONST
     | REAL_CONST
     | UNICODE_CONST
@@ -11185,12 +11185,13 @@ pattern0
                         }
     | pattern0 '*' INTEGER_CONST
                         {
+                            parser->normalizeExpression($3, type_int, true);
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
                                 parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
 
                             IHqlExpression * pattern = $1.getExpr();
-                            IHqlExpression * count = createConstant($3.getInt());
+                            IHqlExpression * count = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, count, LINK(count)));
                         }
     | '(' pattern ')'   {   $$.setExpr($2.getExpr()); }
@@ -11601,9 +11602,7 @@ featureId
 
 featureValue
     : featureCompound
-    | stringConstExpr
-    | INTEGER_CONST             
-                        {   $$.setExpr(createConstant($1.getInt())); }
+    | constExpression
     ;
 
 featureValueList
