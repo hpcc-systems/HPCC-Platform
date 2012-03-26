@@ -265,7 +265,18 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         return 0;
     node_operator op = selector->getOperator();
     if ((op != no_left) && (op != no_right))
+    {
+        switch (getChildDatasetType(expr))
+        {
+        case childdataset_dataset:
+        case childdataset_datasetleft:
+        case childdataset_top_left_right:
+            if (expr->queryChild(0)->queryBody() == selector)
+                return 1;
+            break;
+        }
         return 0;
+    }
 
     switch (getChildDatasetType(expr))
     {
