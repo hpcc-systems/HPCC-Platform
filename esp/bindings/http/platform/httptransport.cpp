@@ -159,6 +159,173 @@ bool xmlContentFromFile(const char *filepath, const char *stylesheet, StringBuff
     return true;
 }
 
+enum SOAPTag
+{
+    NONE = 0,
+    ENVELOPE = 1,
+    HEADER = 2,
+    SECURITY = 3,
+    USERNAMETOKEN = 4,
+    PASSWORD = 5,
+    BODY = 6
+};
+
+class SOAPMessageLog : public CInterface, implements IPTreeNotifyEvent
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    SOAPMessageLog() : m_readNext(true), m_foundPassword(false), m_lastTagFound(NONE), m_pPassword(NULL), m_pStart(NULL)
+    {
+        m_messageForLog.clear();
+        m_skipTag.clear();
+    };
+    void logMessage(const char* message, const char* prefix)
+    {
+        if (!message || !*message)
+            return;
+
+        m_message = message;
+        m_pStart = (char*) message;
+
+        Owned<IPullXMLReader> reader = createPullXMLStringReader(m_message, *this, xr_ignoreNameSpaces);
+        while(m_readNext && reader->next())
+        {
+            if (m_foundPassword)
+            {
+                m_pPassword = (char*) m_message + reader->queryOffset();
+                m_foundPassword = false; //for another password
+            }
+        }
+
+        if ((m_pStart == message) || (m_messageForLog.length() < 1))
+            logNow(message, prefix);
+        else
+        {
+            m_messageForLog.append(m_pStart);
+            logNow(m_messageForLog.str(), prefix);
+        }
+        return;
+    }
+    virtual void beginNode(const char *tag, offset_t startOffset)
+    {
+        if (m_skipTag.length() > 0)
+            return;
+
+        if (strieq(tag, "Body"))
+        {//no more password
+            m_readNext = false;
+            return;
+        }
+
+        switch (m_lastTagFound)
+        {
+            case NONE:
+                if (!strieq(tag, "Envelope"))
+                    m_readNext = false;
+                else
+                    m_lastTagFound = ENVELOPE;
+                break;
+            case ENVELOPE:
+                if (!strieq(tag, "Header"))
+                    m_skipTag.append(tag);
+                else
+                    m_lastTagFound = HEADER;
+                break;
+            case HEADER:
+                if (!strieq(tag, "Security"))
+                    m_skipTag.append(tag);
+                else
+                    m_lastTagFound = SECURITY;
+                break;
+            case SECURITY:
+                if (!strieq(tag, "UsernameToken"))
+                    m_skipTag.append(tag);
+                else
+                    m_lastTagFound = USERNAMETOKEN;
+                break;
+            case USERNAMETOKEN:
+                if (!strieq(tag, "Password"))
+                    m_skipTag.append(tag);
+                else
+                    m_lastTagFound = PASSWORD;
+                break;
+            default:
+                m_skipTag.append(tag);
+                break;
+        }
+    }
+    virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
+    {
+        if (m_skipTag.length() > 0)
+        {
+            if (strieq(tag, m_skipTag.str()))
+                m_skipTag.clear();
+
+            return;
+        }
+
+        switch (m_lastTagFound)
+        {
+            case SECURITY:
+                if (strieq(tag, "Security"))
+                    m_readNext = false;
+                break;
+            case USERNAMETOKEN:
+                if (strieq(tag, "UsernameToken"))
+                    m_lastTagFound = SECURITY;
+                break;
+            case PASSWORD:
+                if (!strieq(tag, "Password") || !m_pPassword || !m_pStart)
+                {//should not happen
+                    m_readNext = false;
+                    return;
+                }
+
+                m_messageForLog.append(m_pStart, 0, m_pPassword - m_pStart);
+                m_messageForLog.append("(hidden)");
+                m_pStart = m_pPassword + length; //remember the rest of message
+
+                //Go back to SuerNameToken node
+                m_lastTagFound = USERNAMETOKEN;
+                break;
+        }
+        return;
+    }
+    virtual void beginNodeContent(const char *tag)
+    {
+        if (m_skipTag.length() > 0)
+            return;
+
+        if (m_lastTagFound == PASSWORD)
+            m_foundPassword = true;
+        return;
+    }
+    virtual void newAttribute(const char *name, const char *value)
+    {
+        return;
+    }
+private:
+    void logNow(const char* message, const char* prefix)
+    {
+        if (prefix && *prefix)
+            DBGLOG("%s%s", prefix, message);
+        else
+            DBGLOG("%s", message);
+
+        return;
+    }
+private:
+    StringBuffer m_messageForLog;
+    StringBuffer m_skipTag;
+    SOAPTag m_lastTagFound;
+    const char *m_message;
+    char *m_pStart;
+    char *m_pPassword;
+    bool m_foundPassword;
+    bool m_readNext;
+};
+
 /***************************************************************************
                 CHttpMessage Implementation
 This class implements common functions shared by both CHttpRequest 
@@ -196,9 +363,6 @@ CHttpMessage::~CHttpMessage()
 
 int CHttpMessage::parseOneHeader(char* oneline)
 {
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("%s", oneline);
-
     if(!oneline)
         return -1;
     char* name = oneline;
@@ -569,12 +733,9 @@ int CHttpMessage::receive(bool alwaysReadContent, IMultiException *me)
         if (getEspLogLevel()>LogNormal)
             DBGLOG("length of content read = %d", m_content.length());
     }
-    
+
     if (getEspLogRequests() || getEspLogLevel()>LogNormal)
-    {
-        if(isTextMessage())
-            DBGLOG("received HTTP content:\n%s", m_content.str());
-    }
+        logMessage(LOGCONTENT, "HTTP content received:\n");
     return 0;
 }
 
@@ -660,6 +821,64 @@ StringBuffer& CHttpMessage::constructHeaderBuffer(StringBuffer& headerbuf, bool 
     return headerbuf;
 }
 
+void CHttpMessage::logMessage(const char* message, const char* prefix, const char* find, const char* replace)
+{
+    if (!message || !*message)
+        return;
+
+    if (!find || !*find || !replace || !*replace)
+    {
+        if (prefix && *prefix)
+            DBGLOG("%s%s", prefix, message);
+        else
+            DBGLOG("%s", message);
+
+        return;
+    }
+
+    RegExpr auth(find, true);
+    StringBuffer messageToLog = message;
+    if (auth.find(messageToLog.str()))
+        auth.replace(replace, messageToLog.length() + strlen(replace) - strlen(find));
+
+    if (prefix && *prefix)
+        DBGLOG("%s%s", prefix, messageToLog.str());
+    else
+        DBGLOG("%s", messageToLog.str());
+
+    return;
+}
+
+void CHttpMessage::logSOAPMessage(const char* message, const char* prefix)
+{
+    SOAPMessageLog messageLog;
+    messageLog.logMessage(message, prefix);
+
+    return;
+}
+
+void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
+{
+    if (((messageLogFlag == LOGHEADERS) || (messageLogFlag == LOGALL)) && (m_header.length() > 0))
+        logMessage(m_header.str(), prefix, "Authorization:[~\r\n]*", "Authorization: (hidden)");
+
+    if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (m_content.length() > 0))
+    {//log content
+        if ((m_header.length() > 0) && (startsWith(m_header.str(), "POST /ws_access/AddUser")
+            || startsWith(m_header.str(), "POST /ws_access/UserResetPass") || startsWith(m_header.str(), "POST /ws_account/UpdateUser")))
+            DBGLOG("%s<For security, ESP does not log the content of this request.>", prefix);
+        else if (isSoapMessage())
+            logSOAPMessage(m_content.str(), prefix);
+        else if(!isTextMessage())
+            DBGLOG("%s<non-text content or content type not specified>", prefix);
+        else if ((m_content_type.length() > 0) && (strieq(m_content_type, "text/css") || strieq(m_content_type, "text/javascript")))
+            DBGLOG("%s<content_type: %s>", prefix, m_content_type);
+        else
+            logMessage(m_content.str(), prefix);
+    }
+    return;
+}
+
 int CHttpMessage::send()
 {
     StringBuffer headers;
@@ -670,14 +889,9 @@ int CHttpMessage::send()
     // If m_content is empty but m_content_stream is set, the stream will not be logged here.
     if (getEspLogResponses() || getEspLogLevel(queryContext())>LogNormal)
     {
-        DBGLOG("Sending out HTTP message:\n%s", headers.str());
+        logMessage(headers.str(), "Sending out HTTP headers:\n", "Authorization:[~\r\n]*", "Authorization: (hidden)");
         if(m_content_length > 0 && m_content.length() > 0)
-        {
-            if(isTextMessage())
-                DBGLOG("sent HTTP Content:\n%s", m_content.str());
-            else
-                DBGLOG("sent HTTP <non-text content>");
-        }
+            logMessage(LOGCONTENT, "Sending out HTTP content:\n");
     }
 
     try
@@ -1673,9 +1887,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
     }
 
     if (getEspLogRequests() || getEspLogLevel()>LogNormal)
-    {
-        DBGLOG("Request Headers:\n%s", m_header.str());
-    }
+        logMessage(LOGHEADERS, "HTTP request headers received:\n");
 
     if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload()))
         throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "The request length was too long.", HTTP_STATUS_BAD_REQUEST);
@@ -2173,11 +2385,8 @@ int CHttpResponse::receive(bool alwaysReadContent, IMultiException *me)
             DBGLOG("length of content read = %d", m_content.length());
     }
     
-    if (getEspLogRequests() || getEspLogLevel()>LogNormal)
-    {
-        if(isTextMessage())
-            DBGLOG("received HTTP response = %s", m_content.str());
-    }
+    if ((getEspLogRequests() || getEspLogLevel()>LogNormal))
+        logMessage(LOGCONTENT, "HTTP response content received:\n");
     return 0;
 
 }
