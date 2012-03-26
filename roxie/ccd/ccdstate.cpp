@@ -1295,7 +1295,8 @@ public:
     {
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
         newQuerySet->setProp("@name", "_standalone");
-        newQuerySet->addPropTree("Query", standaloneDll.getLink());
+        Owned<IPropertyTree> query = newQuerySet->addPropTree("Query", standaloneDll.getLink());
+        query->setPropBool("@dynamicFiles", true);
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager();
         newServerManager->load(newQuerySet, *packages);
