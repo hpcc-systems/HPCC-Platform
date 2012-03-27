@@ -637,9 +637,6 @@ int CHttpClient::postRequest(ISoapMessage &req, ISoapMessage& resp)
     httprequest->setContentType(HTTP_TYPE_TEXT_XML);
     httprequest->setContent(requeststr);
 
-    if (getEspLogLevel()>LogNormal)
-        DBGLOG("http request content = %s", requeststr);
-
 #ifdef COOKIE_HANDLING
     ForEachItemIn(x, m_request_cookies)
     {
