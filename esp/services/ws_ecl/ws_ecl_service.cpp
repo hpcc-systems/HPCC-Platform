@@ -1583,7 +1583,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
         jsonmsg.append("\n        ]\n      }\n");
     }
 
-    xpath.clear().appendf("Body/%s/Results/Result/Dataset", element.str());
+    xpath.clear().append("Body/*[1]/Results/Result/Dataset");
     Owned<IPropertyTreeIterator> datasets = parmtree->getElements(xpath.str());
 
     ForEach(*datasets)
