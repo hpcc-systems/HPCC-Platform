@@ -107,7 +107,6 @@ private:
     __uint64 startRow;
     __uint64 currentRow;
     __uint64 maxRow;
-    bool empty;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -135,14 +134,15 @@ public:
             ActPrintLog("InlineSLAVE: numRows = %"I64F"d, nodes = %"I64F
                         "d, nodeid = %"I64F"d, start = %"I64F"d, max = %"I64F"d",
                         numRows, nodes, nodeid, startRow, maxRow);
-            empty = false;
         }
         else
         {
             startRow = 0;
-            maxRow = numRows;
             // when not distributed, only first node compute, unless local
-            empty = isLocal ? false : !firstNode();
+            if (firstNode() || isLocal)
+                maxRow = numRows;
+            else
+                maxRow = 0;
         }
         currentRow = startRow;
     }
@@ -153,7 +153,7 @@ public:
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (empty || abortSoon)
+        if (abortSoon)
             return NULL;
         while (currentRow < maxRow) {
             RtlDynamicRowBuilder row(queryRowAllocator());
