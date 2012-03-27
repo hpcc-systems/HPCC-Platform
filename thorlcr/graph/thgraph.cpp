@@ -998,6 +998,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKworkunitread:
         case TAKchilddataset:
         case TAKtemptable:
+        case TAKinlinetable:
         case TAKtemprow:
         case TAKnull:
         case TAKemptyaction:
