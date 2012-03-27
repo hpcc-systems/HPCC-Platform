@@ -8742,7 +8742,7 @@ CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_a
 
 void CHThorLocalResultWriteActivity::execute()
 {
-    IHThorGraphResult * result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     loop
     {
         const void *nextrec = input->nextInGroup();
@@ -8771,7 +8771,7 @@ CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_a
 void CHThorLocalResultSpillActivity::ready()
 {
     CHThorSimpleActivityBase::ready(); 
-    result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(outputMeta.queryOriginal(), activityId));
+    result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     nullPending = false;
 }
 
@@ -9023,7 +9023,7 @@ CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentCon
 
 void CHThorGraphLoopResultWriteActivity::execute()
 {
-    IHThorGraphResult * result = graph->createGraphLoopResult(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    IHThorGraphResult * result = graph->createGraphLoopResult(LINK(rowAllocator));
     loop
     {
         const void *nextrec = input->nextInGroup();

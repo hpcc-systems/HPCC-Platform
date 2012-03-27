@@ -2444,6 +2444,7 @@ public:
 
     CHThorLocalResultWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId);
     virtual void execute();
+    virtual bool needsAllocator() const { return true; }
 };
 
 
@@ -2568,6 +2569,7 @@ public:
 
     CHThorGraphLoopResultWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId);
     virtual void execute();
+    virtual bool needsAllocator() const { return true; }
 };
 
 
