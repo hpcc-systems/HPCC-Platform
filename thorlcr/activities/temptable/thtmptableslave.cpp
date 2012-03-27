@@ -124,7 +124,9 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart("InlineTABLE", container.queryId());
         __uint64 numRows = helper->numRows();
-        if (helper->getFlags() & TTFdistributed != 0)
+        // local when generated from a child query (the range is per node, don't split)
+        bool isLocal = container.queryOwnerId() && container.queryOwner().isLocalOnly();
+        if (!isLocal && (helper->getFlags() & TTFdistributed != 0))
         {
             __uint64 nodes = container.queryCodeContext()->getNodes();
             __uint64 nodeid = container.queryCodeContext()->getNodeNum();
@@ -139,7 +141,8 @@ public:
         {
             startRow = 0;
             maxRow = numRows;
-            empty = !firstNode();
+            // when not distributed, only first node compute, unless local
+            empty = isLocal ? false : !firstNode();
         }
         currentRow = startRow;
     }
