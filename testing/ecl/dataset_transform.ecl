@@ -31,26 +31,26 @@ r t2() := transform
 end;
 
 // zero
-output(true);
+output('Zero Rows');
 ds := DATASET(0, t1(COUNTER));
 output(ds);
 
 // plain
-output(true);
+output('Constant, 10');
 ds10 := DATASET(10, t1(COUNTER));
 output(ds10);
 
 // expr
-output(true);
+output('Constant expression, 50');
 ds50 := DATASET(5 * 10, t1(COUNTER));
 output(ds50);
 
 // variable
-output(true);
+output('Variable 5, row constant');
 ds5 := DATASET(C, t2());
 output(ds5);
 
 // distributed
-output(true);
+output('Distributed 10');
 dsd := DATASET(10, t1(COUNTER), DISTRIBUTED);
 output(dsd);

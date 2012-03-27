@@ -444,6 +444,8 @@ protected:
         case TAKtemptable:
         case TAKtemprow:
             return createRoxieServerTempTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKinlinetable:
+            return createRoxieServerInlineTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKthroughaggregate:
             throwUnexpected(); // Concept of through aggregates has been proven not to work in Roxie - codegen should not be creating them any more.
         case TAKtopn:

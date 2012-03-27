@@ -15988,13 +15988,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
     // Overriding IHThorTempTableArg
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr,"InlineTable");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
 
     // size32_t getRow()
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
@@ -16002,7 +16002,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     buildTransformBody(funcctx, transform, NULL, NULL, instance->dataset, self);
 
     // unsigned numRows() - count is guaranteed by lexer
-    doBuildUnsignedFunction(instance->startctx, "numRows", count);
+    doBuildUnsigned64Function(instance->startctx, "numRows", count);
 
     doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
 

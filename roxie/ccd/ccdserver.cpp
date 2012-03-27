@@ -5287,6 +5287,84 @@ IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned 
 
 //=================================================================================
 
+/*
+ * This class differ from TempTable (above) by having 64-bit number of rows
+ * and, in Thor, it's able to run distributed in the cluster. We, therefore,
+ * need to keep consistency and implement it here, too.
+ *
+ * Some optimisations [ex. NORMALIZE(ds) -> DATASET(COUNT)] will make use of
+ * this class, so you can't use TempTables.
+ */
+class CRoxieServerInlineTableActivity : public CRoxieServerActivity
+{
+    IHThorInlineTableArg &helper;
+    __uint64 curRow;
+    __uint64 numRows;
+
+public:
+    CRoxieServerInlineTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorInlineTableArg &) basehelper)
+    {
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        curRow = 0;
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
+    }
+
+    virtual bool needsAllocator() const { return true; }
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        // Filtering empty rows, returns the next valid row
+        while (curRow < numRows)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            unsigned outSize = helper.getRow(rowBuilder, curRow++);
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        return NULL;
+    }
+
+    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    {
+        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
+    }
+
+};
+
+class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
+{
+
+public:
+    CRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerInlineTableActivity(this, _probeManager);
+    }
+    virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
+    {
+        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() should not be called for InlineTable activity");
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerInlineTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=================================================================================
+
 class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;

@@ -123,6 +123,7 @@ public:
             case TAKnormalizelinkedchild:
             case TAKgroup:
             case TAKtemptable:
+            case TAKinlinetable:
             case TAKtemprow:
             case TAKpull:
             case TAKnull:
