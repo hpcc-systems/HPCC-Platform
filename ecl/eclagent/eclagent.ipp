@@ -717,6 +717,8 @@ protected:
     IAgentContext & agent;
     Linked<IOutputMetaData> resultMeta;
     Linked<IOutputMetaData> counterMeta;
+    Owned<IEngineRowAllocator> inputAllocator;
+    Owned<IEngineRowAllocator> counterAllocator;
     unsigned activityId;
 };
 

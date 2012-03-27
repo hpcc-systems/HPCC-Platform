@@ -1812,7 +1812,9 @@ IHThorGraphResults * EclBoundLoopGraph::execute(void * counterRow, ConstPointerA
 {
     Owned<GraphResults> results = new GraphResults(3);
 
-    IHThorGraphResult * inputResult = results->createResult(1, agent.queryCodeContext()->getRowAllocator(resultMeta, activityId));
+    if (!inputAllocator)
+        inputAllocator.setown(agent.queryCodeContext()->getRowAllocator(resultMeta, activityId));
+    IHThorGraphResult * inputResult = results->createResult(1, LINK(inputAllocator));
     ForEachItemIn(i, rows)
         inputResult->addRowOwn(rows.item(i));
     rows.kill();
@@ -1820,7 +1822,9 @@ IHThorGraphResults * EclBoundLoopGraph::execute(void * counterRow, ConstPointerA
     if (counterRow)
     {
         counterMeta.setown(new EclCounterMeta);
-        IHThorGraphResult * counterResult = results->createResult(2, agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        if (!counterAllocator)
+            counterAllocator.setown(agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        IHThorGraphResult * counterResult = results->createResult(2, LINK(counterAllocator));
         counterResult->addRowOwn(counterRow);
     }
 
@@ -1835,7 +1839,9 @@ void EclBoundLoopGraph::execute(void * counterRow, IHThorGraphResults * graphLoo
     if (counterRow)
     {
         counterMeta.setown(new EclCounterMeta);
-        IHThorGraphResult * counterResult = results->createResult(0, agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        if (!counterAllocator)
+            counterAllocator.setown(agent.queryCodeContext()->getRowAllocator(counterMeta, activityId));
+        IHThorGraphResult * counterResult = results->createResult(0, LINK(counterAllocator));
         counterResult->addRowOwn(counterRow);
     }
 
