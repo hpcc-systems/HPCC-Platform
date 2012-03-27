@@ -1408,26 +1408,26 @@ struct IHThorHashAggregateArg : public IHThorAggregateArg, public IHThorHashAggr
     COMMON_NEWTHOR_FUNCTIONS
 };
 
+/*
+ * This class has been deprecated in 3.8 in favour of IHThorInlineTableArg.
+ * CThorTempRowArg also now derives from IHThorInlineTableArg.
+ *
+ * As of 3.8, only old code will implement this interface.
+ */
 struct IHThorTempTableArg : public IHThorArg
 {
     virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) = 0;
     virtual unsigned numRows() = 0;
-    virtual bool isConstant()                           { return true; }    // deprecate in favour of getFlags
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // only valid for TAKtemprow, could be called directly
+    virtual bool isConstant()                           { return true; }    // deprecated in favour of getFlags
+    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // deprecated, TempRow derives from InlineTable
 };
 
-/*
- * New Temp table that allows flags to be set and retrieved on one
- * single method. Future-proof and should merge with the interface
- * above in the next major release.
- */
 struct IHThorInlineTableArg : public IHThorArg
 {
     virtual size32_t getRow(ARowBuilder & rowBuilder, __uint64 row) = 0;
     virtual __uint64 numRows() = 0;
     virtual unsigned getFlags() = 0;
 };
-
 
 struct IHThorSampleArg : public IHThorArg
 {

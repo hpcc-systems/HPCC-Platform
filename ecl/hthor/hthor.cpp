@@ -5832,6 +5832,11 @@ void CHThorRemoteResultActivity::execute()
 
 //=====================================================================================================
 
+/*
+ * Deprecated in 3.8, this class is being kept for backward compatibility,
+ * since now the code generator is using InlineTables (below) for all
+ * temporary tables and rows.
+ */
 CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind) :
                  CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {

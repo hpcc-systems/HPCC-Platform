@@ -1343,10 +1343,9 @@ public:
     virtual unsigned getFlags()                         { return 0; }
 };
 
-class CThorTempRowArg : public CThorTempTableArg
+class CThorTempRowArg : public CThorInlineTableArg
 {
-    virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) { if (row) return 0; return getRowSingle(rowBuilder); }
-    virtual unsigned numRows()                          { return 1; }
+    virtual __uint64 numRows()                          { return 1; }
 };
 
 class CThorSampleArg : public CThorArg, implements IHThorSampleArg
