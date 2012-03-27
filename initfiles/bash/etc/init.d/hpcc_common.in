@@ -403,6 +403,8 @@ start_dafilesrv() {
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
+      ulimit -n 8192
+      ulimit -c unlimited
       startCmd ${compName} ${noStatusCheck}
       return $?
    else 
