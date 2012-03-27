@@ -2486,7 +2486,6 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_min:
     case no_sum:
     case no_exists:
-    case no_notexists:
         doBuildAssignAggregate(ctx, target, expr);
         break;
     case no_getenv:
@@ -2799,7 +2798,6 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             doBuildExprAggregate(ctx, expr, tgt);
         return;
     case no_exists:
-    case no_notexists:
         if (!(expr->isPure() && ctx.getMatchExpr(expr, tgt)))
             doBuildExprExists(ctx, expr, tgt);
         return;

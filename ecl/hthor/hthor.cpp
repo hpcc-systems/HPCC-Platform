@@ -3083,14 +3083,18 @@ const void * CHThorAggregateActivity::nextInGroup()
         helper.processFirst(rowBuilder, next);
         releaseHThorRow(next);
         
-        loop
+        bool abortEarly = (kind == TAKexistsaggregate) && !input->isGrouped();
+        if (!abortEarly)
         {
-            next = input->nextInGroup();
-            if (!next)
-                break;
-            
-            helper.processNext(rowBuilder, next);
-            releaseHThorRow(next);
+            loop
+            {
+                next = input->nextInGroup();
+                if (!next)
+                    break;
+
+                helper.processNext(rowBuilder, next);
+                releaseHThorRow(next);
+            }
         }
     }
     

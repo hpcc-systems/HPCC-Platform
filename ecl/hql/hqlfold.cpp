@@ -3786,9 +3786,6 @@ IHqlExpression * NullFolderMixin::queryOptimizeAggregateInline(IHqlExpression * 
     case no_existsgroup:
         value.setown(createConstant(numRows != 0));
         break;
-    case no_notexistsgroup:
-        value.setown(createConstant(numRows == 0));
-        break;
     case no_countgroup:
         {
             ITypeInfo * type = assign->queryChild(0)->queryType();
@@ -4382,7 +4379,6 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             break;
         }
     case no_exists:
-    case no_notexists:
         {
             IHqlExpression * child = expr->queryChild(0);
             node_operator childOp = child->getOperator();
@@ -4392,7 +4388,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                 if (isPureInlineDataset(child))
                 {
                     bool hasChildren = (child->queryChild(0)->numChildren() != 0);
-                    return createConstant((op == no_exists) ? hasChildren : !hasChildren);
+                    return createConstant(hasChildren);
                 }
                 break;
 #if 0
@@ -4400,7 +4396,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                 {
                     OwnedHqlExpr lhs = replaceChild(expr, 0, child->queryChild(0));
                     OwnedHqlExpr rhs = replaceChild(expr, 0, child->queryChild(1));
-                    return createValue((op == no_exists) ? no_or : no_add, expr->getType(), LINK(lhs), LINK(rhs));
+                    return createValue(no_or, expr->getType(), LINK(lhs), LINK(rhs));
                 }
             case no_if:
                 {
@@ -5186,7 +5182,6 @@ IHqlExpression * CExprFolderTransformer::createTransformed(IHqlExpression * expr
             case no_min:
             case no_sum:
             case no_exists:
-            case no_notexists:
             case no_ave:
                 //Could implement this on a temp table, or at least count...
                 //not sufficient to just fix these, because functions of these also fail.

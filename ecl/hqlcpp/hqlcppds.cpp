@@ -631,7 +631,6 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
     switch (op)
     {
     case no_exists:
-    case no_notexists:
         {
             OwnedHqlExpr optimized = queryOptimizedExists(ctx, expr, dataset);
             if (optimized)
@@ -680,7 +679,15 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
     //If no_if or no_addfiles has been optimized above then the selector for the argument will have changed => map it.
     if (arg && (dataset != oldDataset))
         arg.setown(replaceSelector(arg, oldDataset, dataset));
-    bool needToBreak = (op == no_exists || op == no_notexists);
+
+    bool needToBreak = (op == no_exists);
+    if (needToBreak)
+    {
+        //if it can have at most one row (fairly strange code!) then don't add a break
+        //unless it was deliberately a choosen to restrict the number of iterations.
+        if (hasNoMoreRowsThan(dataset, 1) && (dataset->getOperator() != no_choosen))
+            needToBreak = false;
+    }
 
     BuildCtx loopctx(ctx);
     buildDatasetIterate(loopctx, dataset, needToBreak);
@@ -688,9 +695,9 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
     switch (op)
     {
     case no_exists:
-    case no_notexists:
-        buildExprAssign(loopctx, target, queryBoolExpr(op==no_exists));
-        loopctx.addBreak();
+        buildExprAssign(loopctx, target, queryBoolExpr(true));
+        if (needToBreak)
+            loopctx.addBreak();
         break;
     case no_count:
         {
@@ -748,7 +755,6 @@ bool assignAggregateDirect(const CHqlBoundTarget & target, IHqlExpression * expr
             break;
         //fall through
     case no_exists:
-    case no_notexists:
     case no_count:
         if (target.expr->getOperator() != no_variable)
             return false;
@@ -784,8 +790,7 @@ void HqlCppTranslator::doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTar
         switch (op)
         {
         case no_exists:
-        case no_notexists:
-            buildExprAssign(ctx, target, queryBoolExpr(op==no_notexists));
+            buildExprAssign(ctx, target, queryBoolExpr(false));
             break;
         default:
             {
@@ -3401,9 +3406,6 @@ void HqlCppTranslator::doBuildRowAssignAggregateClear(BuildCtx & ctx, IReference
         case no_existsgroup:
             curTarget->buildClear(ctx, 0);
             break;
-        case no_notexistsgroup:
-            curTarget->set(ctx, queryBoolExpr(true));
-            break;
         default:
             if (src->isConstant())
                 curTarget->set(ctx, src);
@@ -3484,11 +3486,10 @@ void HqlCppTranslator::doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceS
             }
             break;
         case no_existsgroup:
-        case no_notexistsgroup:
             assertex(!(arg && isVariableOffset));
             if (arg)
                 buildFilter(condctx, arg);
-            curTarget->set(condctx, queryBoolExpr(srcOp == no_existsgroup));
+            curTarget->set(condctx, queryBoolExpr(true));
             if (isSingleExists)
                 condctx.addBreak();
             break;
@@ -3535,7 +3536,6 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
             isSingleExists = false;
             break;
         case no_existsgroup:
-        case no_notexistsgroup:
             break;
         case no_mingroup:
             isSingleExists = false;

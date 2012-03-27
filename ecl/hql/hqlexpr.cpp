@@ -976,9 +976,7 @@ const char *getOpString(node_operator op)
     case no_mapto: return "=>";
     case no_constant: return "<constant>";
     case no_field: return "<field>";
-    case no_notexists: return "NOT EXISTS";
     case no_exists: case no_existslist: return "EXISTS";
-    case no_notexistsgroup: return "NOT EXISTS";
     case no_existsgroup: return "EXISTS";
     case no_select: return ".";
     case no_table: return "DATASET";
@@ -1478,8 +1476,6 @@ node_operator getInverseOp(node_operator op)
     case no_in: return no_notin;
     case no_notbetween: return no_between;
     case no_between: return no_notbetween;
-    case no_notexists: return no_exists;
-    case no_exists: return no_notexists;
 //  case no_notwithin: return no_within;
 //  case no_within: return no_notwithin;
     default:
@@ -14676,7 +14672,6 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
     case no_maxgroup:       newop = no_max; numArgs = 1; break;
     case no_sumgroup:       newop = no_sum; numArgs = 1; break;
     case no_existsgroup:    newop = no_exists; break;
-    case no_notexistsgroup: newop = no_notexists; break;
     default: 
         return NULL;
     }
@@ -14715,7 +14710,6 @@ IHqlExpression * queryAggregateFilter(IHqlExpression * expr)
     {
     case no_countgroup:
     case no_existsgroup:
-    case no_notexistsgroup:
         return queryRealChild(expr, 0);
     case no_sumgroup:
     case no_vargroup:
@@ -14774,7 +14768,6 @@ node_operator querySingleAggregate(IHqlExpression * expr, bool canFilterArg, boo
             switch (curOp)
             {
             case no_existsgroup:
-            case no_notexistsgroup:
             case no_countgroup:
                 break;
             default:

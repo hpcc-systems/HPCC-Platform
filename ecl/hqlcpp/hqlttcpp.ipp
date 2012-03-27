@@ -226,9 +226,9 @@ class CompoundSourceInfo : public NewTransformInfo
 public:
     CompoundSourceInfo(IHqlExpression * _original); 
 
-    bool canMergeLimit(IHqlExpression * expr, ClusterType targetClusterType);
+    bool canMergeLimit(IHqlExpression * expr, ClusterType targetClusterType) const;
     void ensureCompound();
-    bool isAggregate();
+    bool isAggregate() const;
     inline bool isShared() { return splitCount > 1; }
     bool inherit(const CompoundSourceInfo & other, node_operator newSourceOp = no_none);
     inline bool isNoteUsageFirst() 
@@ -238,6 +238,7 @@ public:
     }
     inline void noteUsage() { if (splitCount < 10) splitCount++; }
     inline bool isBinary() const { return mode != no_csv && mode != no_xml; }
+    inline bool hasAnyLimit() const { return isLimited || hasChoosen; }
     void reset();
 
 public:
@@ -249,6 +250,8 @@ public:
     bool isBoundary:1;
     bool isCloned:1;
     bool isLimited:1;
+    bool hasChoosen:1;
+    bool hasSkipLimit:1;
     bool isPreloaded:1;
     bool isFiltered:1;
     bool isPostFiltered:1;

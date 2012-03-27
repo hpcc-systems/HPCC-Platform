@@ -2618,6 +2618,12 @@ class CThorIndexCountArg : public CThorArg, implements IHThorIndexCountArg, impl
     virtual unsigned __int64 getKeyedLimit()                { return (unsigned __int64) -1; }
     virtual void onKeyedLimitExceeded()                     { }
 
+    virtual size32_t numValid(size32_t srcLen, const void * _src)
+    {
+        rtlFailUnexpected();
+        return 0;
+    }
+
 public:
     IThorIndexCallback * fpp;
 };
