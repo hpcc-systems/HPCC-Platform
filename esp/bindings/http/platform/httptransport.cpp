@@ -872,7 +872,7 @@ void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
         else if(!isTextMessage())
             DBGLOG("%s<non-text content or content type not specified>", prefix);
         else if ((m_content_type.length() > 0) && (strieq(m_content_type, "text/css") || strieq(m_content_type, "text/javascript")))
-            DBGLOG("%s<content_type: %s>", prefix, m_content_type);
+            DBGLOG("%s<content_type: %s>", prefix, m_content_type.get());
         else
             logMessage(m_content.str(), prefix);
     }
