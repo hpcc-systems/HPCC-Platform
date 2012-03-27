@@ -68,6 +68,13 @@ private:
 
 IEspHttpException* createEspHttpException(int code, const char *_msg, const char* _httpstatus);
 
+enum MessageLogFlag
+{
+    LOGALL = 0,
+    LOGHEADERS = 1,
+    LOGCONTENT = 2
+};
+
 class CHttpMessage : public CInterface, implements IHttpMessage
 {
 protected:
@@ -134,6 +141,9 @@ public:
     unsigned getContentLength(){return m_content_length;}
     const char *queryContent(){return m_content.str();}
     const char *queryHeader() { return m_header.str(); }
+    void logSOAPMessage(const char* message, const char* prefix = NULL);
+    void logMessage(const char *message, const char *prefix = NULL, const char *find = NULL, const char *replace = NULL);
+    void logMessage(MessageLogFlag logFlag, const char *prefix = NULL);
 
     virtual StringBuffer& getContent(StringBuffer& content);
     virtual void setContent(const char* content);

@@ -484,7 +484,7 @@ int CEspHttpServer::processRequest()
         DBGLOG("Unknown Exception - processing request");
         DBGLOG("METHOD: %s, PATH: %s, TYPE: %s, CONTENT-LENGTH: %d", m_request->queryMethod(), m_request->queryPath(), m_request->getContentType(content_type).str(), len);
         if (len)
-            DBGLOG("CONTENT: %s", (m_request->isTextMessage()) ? m_request->queryContent() : "#binary#");
+            m_request->logMessage(LOGCONTENT, "HTTP request content received:\n");
         return 0;
     }
 
