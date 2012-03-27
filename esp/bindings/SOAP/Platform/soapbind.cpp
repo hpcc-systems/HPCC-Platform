@@ -164,8 +164,6 @@ int CHttpSoapBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* re
     StringBuffer requeststr;
     request->getContent(requeststr);
     
-    if (log_level_>hsl_none)
-        DBGLOG("Received request, requestlen = %d request=\n%s", requeststr.length(), requeststr.str());
     if(requeststr.length() == 0)
         throw MakeStringException(-1, "Content read is empty");
 
