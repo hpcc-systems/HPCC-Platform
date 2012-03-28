@@ -89,8 +89,6 @@ class CFirstNSlaveLocal : public CFirstNSlaveBase
 public:
     CFirstNSlaveLocal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
-        skipCount = validRC(helper->numToSkip());
-        limit = (rowcount_t)helper->getLimit();
     }
 
 // IRowStream overrides
@@ -98,6 +96,8 @@ public:
     void start()
     {
         CFirstNSlaveBase::start();
+        skipCount = validRC(helper->numToSkip());
+        limit = (rowcount_t)helper->getLimit();
         firstget = true;
         skipped = 0;
     }
@@ -141,8 +141,6 @@ class CFirstNSlaveGrouped : public CFirstNSlaveBase
 public:
     CFirstNSlaveGrouped(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
-        skipCount = validRC(helper->numToSkip());
-        limit = (rowcount_t)helper->getLimit();
     }
 
 // IRowStream overrides
@@ -150,6 +148,8 @@ public:
     void start()
     {
         CFirstNSlaveBase::start();
+        skipCount = validRC(helper->numToSkip());
+        limit = (rowcount_t)helper->getLimit();
         countThisGroup = 0;
     }
     CATCH_NEXTROW()
@@ -233,8 +233,6 @@ protected:
 public:
     CFirstNSlaveGlobal(CGraphElementBase *container) : CFirstNSlaveBase(container)
     {
-        totallimit = (rowcount_t)helper->getLimit();
-        limit = maxres = RCUNBOUND;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -245,6 +243,8 @@ public:
     {
         CFirstNSlaveBase::start(); // adds to totalTime (common to local and global firstn)
         ActivityTimer s(totalCycles, timeActivities, NULL);
+        totallimit = (rowcount_t)helper->getLimit();
+        limit = maxres = RCUNBOUND;
         skipCount = 0;
         skipped = 0;
         firstget = true;
