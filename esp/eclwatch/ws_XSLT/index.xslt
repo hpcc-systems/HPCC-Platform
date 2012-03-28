@@ -532,7 +532,7 @@
                                     </xsl:when>
                                     <xsl:otherwise>
                                         <h3>
-                                            Existing Activity on Servers:<xsl:value-of select="SortBy"/>
+                                            Existing Activity on Servers:
                                         </h3>
                                     </xsl:otherwise>
                                 </xsl:choose>
