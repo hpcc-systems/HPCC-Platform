@@ -20,7 +20,7 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format">
 <xsl:output method="html"/>
     <xsl:output method="html"/>
-    <xsl:variable name="groupnamestr" select="/GroupDeleteResponse/Groupnames"/>
+    <xsl:variable name="groupnamestr" select="/GroupActionResponse/Groupnames"/>
     <xsl:template match="/">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
         <head>
@@ -37,7 +37,7 @@
                                     if (action < 1 || groupnamestr=='')
                                         document.location.href='/ws_access/Groups';
                                     else
-                                        document.location.href='/ws_access/GroupDelete?'+groupnamestr;
+                                        document.location.href='/ws_access/GroupAction?ActionType=Delete&'+groupnamestr;
                          }
 
                    ]]></xsl:text>
@@ -51,7 +51,7 @@
         </html>
     </xsl:template>
 
-    <xsl:template match="GroupDeleteResponse">
+    <xsl:template match="GroupActionResponse">
         <xsl:choose>
             <xsl:when test="not(Permissions/Permission[1])">
                 <table>
@@ -104,10 +104,10 @@
                     </tr>
                     <tr>
                         <td>
-                            <input type="submit" class="sbutton" id="Continue" value="ContinueDelete" onclick="btnclicked(1)"/>
+                            <input type="submit" class="sbutton" style="width: 120px;" id="Continue" value="ContinueDelete" onclick="btnclicked(1)"/>
                         </td>
                         <td>
-                            <input type="submit" class="sbutton" id="Cancel" value="CancelDelete" onclick="btnclicked(0)"/>
+                            <input type="submit" class="sbutton" style="width: 100px;" id="Cancel" value="CancelDelete" onclick="btnclicked(0)"/>
                         </td>
                     </tr>
                     <tr>
