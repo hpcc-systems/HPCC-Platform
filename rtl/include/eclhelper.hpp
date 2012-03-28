@@ -31,7 +31,7 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      138
+#define ACTIVITY_INTERFACE_VERSION      139
 #define MIN_ACTIVITY_INTERFACE_VERSION  138             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
