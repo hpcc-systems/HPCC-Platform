@@ -23,6 +23,11 @@
 #include "thorport.hpp"
 #include "thactivityutil.ipp"
 
+/*
+ * Deprecated in 3.8, this class is being kept for backward compatibility,
+ * since now the code generator is using InlineTables (below) for all
+ * temporary tables and rows.
+ */
 class CTempTableSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 private:

@@ -5216,6 +5216,11 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 
 //=================================================================================
 
+/*
+ * Deprecated in 3.8, this class is being kept for backward compatibility,
+ * since now the code generator is using InlineTables (below) for all
+ * temporary tables and rows.
+ */
 class CRoxieServerTempTableActivity : public CRoxieServerActivity
 {
     IHThorTempTableArg &helper;
@@ -5287,14 +5292,6 @@ IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned 
 
 //=================================================================================
 
-/*
- * This class differ from TempTable (above) by having 64-bit number of rows
- * and, in Thor, it's able to run distributed in the cluster. We, therefore,
- * need to keep consistency and implement it here, too.
- *
- * Some optimisations [ex. NORMALIZE(ds) -> DATASET(COUNT)] will make use of
- * this class, so you can't use TempTables.
- */
 class CRoxieServerInlineTableActivity : public CRoxieServerActivity
 {
     IHThorInlineTableArg &helper;
