@@ -1623,6 +1623,15 @@ void doWUQueryByXPath(IEspContext &context, IEspWUQueryRequest & req, IEspWUQuer
     if (!count)
         count=100;
 
+    if (wlist.getSize() < 1)
+    {
+        resp.setNumWUs(0);
+        return;
+    }
+
+    if (wlist.getSize() < count)
+        count = (int) wlist.getSize() - 1;
+
     WsWuSearch::iterator begin, end;
 
     if(notEmpty(req.getAfter()))
@@ -1657,11 +1666,10 @@ void doWUQueryByXPath(IEspContext &context, IEspWUQueryRequest & req, IEspWUQuer
     for(;begin!=end;begin++)
     {
         Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-        WsWuInfo winfo(context, req.getWuid());
+        WsWuInfo winfo(context, begin->c_str());
         winfo.getCommon(*info, 0);
-        results.append(*info);
+        results.append(*info.getClear());
     }
-
     resp.setPageSize(abs(count));
     resp.setWorkunits(results);
 

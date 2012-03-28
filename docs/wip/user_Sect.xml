@@ -5,7 +5,7 @@
   <title><emphasis role="bold">User Security Maintenance</emphasis></title>
 
   <para>Configuring an HPCC System to use LDAP security will give you greater
-  control over users and security of your HPCC system.</para>
+  control over users and the security of your HPCC system.</para>
 
   <sect2>
     <title>Introduction</title>
@@ -18,16 +18,14 @@
     systems.</para>
 
     <para>Using the Permissions interface in ECL Watch, administrators can
-    control access to features in Query Builder, ECL Watch, ECL Plus, DFU
-    Plus, and the ECL modules within the Attribute Repository. Dali server
-    also enforces access to data file folders and workunits.</para>
+    control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
+    the ECL modules within the Attribute Repository. Dali server also enforces
+    access to data file folders and workunits.</para>
 
     <para>Permissions are established by group or by user and are defined as
-    one associates those groups or users to a particular secure item. Only one
+    they are associated with a particular feature of the HPCC System. Only one
     set of permissions can be defined for each unique combination of group and
-    secure item.</para>
-
-    <para>Premissions are separated into the following
+    feature. Permissions are separated into the following
     categories:<informaltable frame="all">
         <tgroup cols="2" colsep="1">
           <colspec colwidth="185q" />
@@ -37,17 +35,24 @@
           <tbody>
             <row>
               <entry><emphasis role="bold">Esp Features for
-              EclDirectAccess</emphasis></entry>
-
-              <entry>Controls access to the ECLDirect web service</entry>
-            </row>
-
-            <row>
-              <entry><emphasis role="bold">Esp Features for
               SMC</emphasis></entry>
 
               <entry>Controls access to features in ECLWatch and similar
-              features accessed from QueryBuilder.</entry>
+              features accessed from ECL IDE.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">File Scopes</emphasis></entry>
+
+              <entry>Controls access to data files by applying permissions to
+              File scopes</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
+
+              <entry>Controls access to Workunits by applying permissions to
+              Workunit scopes</entry>
             </row>
 
             <row>
@@ -66,409 +71,1293 @@
             </row>
 
             <row>
-              <entry><emphasis role="bold">File Scopes</emphasis></entry>
+              <entry><emphasis role="bold">Esp Features for
+              EclDirectAccess</emphasis></entry>
 
-              <entry>Controls access to data files by applying permissions to
-              File scopes</entry>
-            </row>
-
-            <row>
-              <entry><emphasis role="bold">Workunit Scopes</emphasis></entry>
-
-              <entry>Controls access to Workunits by applying permissions to
-              Workunit scopes</entry>
+              <entry>Controls access to the ECLDirect web service</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para><emphasis role="bold"> </emphasis></para>
+    <para>Access to the permission settings for each of these areas is
+    available using the <emphasis role="bold">Users/Permissions</emphasis>
+    area in ECL Watch.</para>
   </sect2>
 
   <sect2>
-    <title>User Administration using ECL Watch</title>
+    <title>Security Administration using ECL Watch</title>
 
-    <para>ECL Watch provides an interface to the LDAP server.</para>
-
-    <para>Access to this feature in ECL Watch is typically only granted to
-    administrators (members of the Administrators group).</para>
-
-    <itemizedlist>
-      <listitem>
-        <para>Open ECL Watch in your browser using the following URL:</para>
-
-        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-        Server’s IP Address and pppp is the port. The default port is
-        8010)</emphasis></para>
-
-        <para>For example: http://10.150.51.27:8010/</para>
-
-        <para>The ECL Watch page displays.</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Users</emphasis> hyperlink
-        below <emphasis role="bold">Users/Permissions</emphasis> in the menu
-        on the left side.</para>
-
-        <para>The <emphasis role="bold">Users</emphasis> page displays.</para>
-
-        <figure>
-          <title>Users Page</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="images/US001b.jpg" />
-            </imageobject>
-          </mediaobject>
-        </figure>
-
-        <para>(Names and user IDs intentionally blurred)</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Edit</emphasis> hyperlink
-        next to a name to edit any user information.</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Member of</emphasis>
-        hyperlink next to a name to see the groups that user is a member or to
-        add the user to a group.</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Password</emphasis> hyperlink
-        next to a name to change a password.</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Permissions</emphasis>
-        hyperlink next to a name to edit permissions (see Editing Permissions
-        using ECL Watch).</para>
-      </listitem>
-
-      <listitem>
-        <para>Press the <emphasis role="bold">Add</emphasis> button at the
-        bottom of the page to create a new user.</para>
-      </listitem>
-    </itemizedlist>
-  </sect2>
-
-  <sect2>
-    <title>Editing Permissions using ECL Watch</title>
+    <para>Administrator access is controlled by your system administrators and
+    you should contact them if you require this level of access. Once you have
+    administrator access rights, open ECL Watch in your browser using the
+    following URL:</para>
 
     <itemizedlist>
       <listitem>
-        <para>Click on the <emphasis role="bold">Permissions</emphasis>
-        hyperlink below <emphasis role="bold">Users/Permissions</emphasis>in
-        the menu on the left side.</para>
-
-        <para>The Permissions page displays.</para>
-
-        <para><figure>
-            <title>Permissions Page</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/US002.jpg" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Edit </emphasis>hyperlink to
-        access items in the group</para>
-
-        <para>A page listing items for the selected feature displays.</para>
-      </listitem>
-
-      <listitem>
-        <para>Click on the <emphasis role="bold">Permissions</emphasis>
-        hyperlink to set permissions for users or groups.</para>
+        <para><emphasis
+        role="bold">http://nnn.nnn.nnn.nnn:pppp</emphasis><emphasis
+        role="bold">(where nnn.nnn.nnn.nnn is your ESP Server’s IP Address and
+        pppp is the port. The default port is 8010)<emphasis>.
+        </emphasis></emphasis>For example: http://10.150.51.27:8010/.</para>
       </listitem>
     </itemizedlist>
+
+    <para>Security administration is controlled using the <emphasis
+    role="bold">Users/Permissions</emphasis> area of ECL Watch. There are
+    three areas where permissions may be set:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">Users</emphasis>. Shows all the users
+        currently setup. Use this area to add or delete a user, edit a user's
+        details, set/reset a user's password and view the permissions
+        currently assigned to a user.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Groups</emphasis>. Shows all the groups
+        currently setup. Use this area to add or delete a group, view and edit
+        the member of a group, view and edit the permissions that have been
+        set for a group.</para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">Permissions</emphasis>. Shows the features
+        of the HPCC System where permissions may be set. Use this area to view
+        the permissions currently set for any area of the HPCC System, or to
+        add groups and users and set/modify their permission for a specific
+        feature</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect3>
+      <title>Setting and modifying user permissions</title>
+
+      <para>Access to ECL Watch and its features is controlled using a login
+      and password. The <emphasis role="bold">Users</emphasis> area enables
+      you to control who has access to ECL Watch and the features of your HPCC
+      System to which they have access. Permissions can be set for users based
+      on their individual needs and users can also be added to groups which
+      have already been set up. Use the <emphasis role="bold">Users</emphasis>
+      menu item to:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Add a new user</para>
+        </listitem>
+
+        <listitem>
+          <para>Delete a user who no longer requires access</para>
+        </listitem>
+
+        <listitem>
+          <para>Add a user to a group</para>
+        </listitem>
+
+        <listitem>
+          <para>Change a user's password</para>
+        </listitem>
+
+        <listitem>
+          <para>Modify the details/permissions of an individual user</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect4>
+        <title>Adding and editing users</title>
+
+        <para>In ECL Watch, go to the <emphasis
+        role="bold">Users/Permissions</emphasis> menu item and click <emphasis
+        role="bold">Users<emphasis>:</emphasis></emphasis></para>
+
+        <graphic fileref="../images/Permissions001.jpg" />
+
+        <para>All current users are identified in the list by their UserID and
+        full name.</para>
+
+        <para>To add a new user to the list of authenticated users:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Press the <emphasis role="bold">Add</emphasis> button. The
+            <emphasis role="bold">Add User</emphasis> window is
+            displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter a <emphasis role="bold">UserID</emphasis>. This is the
+            login name for using ECL Watch, ECL IDE, WSECL etc.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter the <emphasis role="bold">First Name</emphasis> and
+            <emphasis role="bold">Last Name</emphasis> of the user. This
+            information helps to easily identify the user and is displayed in
+            the <emphasis role="bold">Full Name</emphasis> field on the main
+            <emphasis role="bold">Users</emphasis> window.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter a <emphasis role="bold">Password</emphasis> for the
+            user and then confirm it in the <emphasis role="bold">Retype
+            Password</emphasis> field.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press <emphasis role="bold">Submit</emphasis>. Confirmation
+            of the request is shown.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Once added, the user is displayed in the list and you can modify
+        the user's details and set permissions as required.</para>
+
+        <para>To modifiy a user's personal details:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click the <emphasis role="bold">Edit</emphasis> link. The
+            <emphasis role="bold">User Info Edit</emphasis> window is
+            displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Change the <emphasis role="bold">First Name</emphasis> and
+            <emphasis role="bold">Last Name</emphasis> as required. (The
+            <emphasis role="bold">User Name</emphasis> cannot be
+            changed.)</para>
+          </listitem>
+
+          <listitem>
+            <para>Press <emphasis role="bold">Submit</emphasis>. Confirmation
+            of the request is shown.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To add the user to a group:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Member of</emphasis>
+            link. The list of groups the user is already associated with is
+            displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>To add the user to a group press <emphasis
+            role="bold">ADD</emphasis>. The list of available groups is
+            displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the checkbox to the left of the group(s) you want to
+            add the user to and click <emphasis
+            role="bold">ADD</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click OK to confirm. Confirmation of the request is
+            shown.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To delete the user from a group:<orderedlist>
+            <listitem>
+              <para>Click on the <emphasis role="bold">Member of</emphasis>
+              link. The list of groups the user is already associated with is
+              displayed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click the checkbox to the left of the group(s) you want to
+              remove the user from and click <emphasis
+              role="bold">DELETE</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click OK to confirm. Confirmation of the request is
+              shown.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To change a user's password:<orderedlist>
+            <listitem>
+              <para>Click on the <emphasis role="bold">Password</emphasis>
+              link. The <emphasis role="bold">Reset Password</emphasis> window
+              is displayed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Complete the <emphasis role="bold">New Password</emphasis>
+              and <emphasis role="bold">Retype New Password</emphasis> fields
+              as required. Press <emphasis role="bold">Clear</emphasis> to
+              empty these fields and start again.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click <emphasis role="bold">Submit</emphasis>.
+              Confirmation of the request is shown.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To delete a user from the list of authenticated
+        users:<orderedlist>
+            <listitem>
+              <para>Check the checkbox to the left of the user(s) you want to
+              remove. (These users will no longer have access to ECL
+              Watch.)</para>
+            </listitem>
+
+            <listitem>
+              <para>Click <emphasis role="bold">Delete</emphasis>.
+              Confirmation of the request is shown.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4>
+        <title>Setting permissions for an individual user</title>
+
+        <para>There may be occasions when you need to modify the permissions
+        for individual users. For example, users may have individual security
+        needs that are not completely covered in any group or, there may be
+        occasions when a user requires temporary access to an HPCC feature.
+        Permissions set in this area of ECL Watch only affect the user you
+        choose and any permissions you set here overwrite those set in any
+        group to which the user belongs.</para>
+
+        <para>To set new permissions for an individual user:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click the <emphasis role="bold">Users</emphasis> menu item
+            in ECL Watch</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the user in the list of authenticated users and click
+            on the <emphasis role="bold">Permissions</emphasis> link in the
+            <emphasis role="bold">Operations</emphasis> column. The list of
+            permissions currently set for this user are displayed and the
+            groups from which the user has inherited permissions are also
+            listed. <graphic fileref="../images/Permissions002.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>A drop down list showing the 6 feature areas of the HPCC is
+            provided. Select the feature area you are interested in and press
+            <emphasis role="bold">Add</emphasis>. The <emphasis
+            role="bold">Add Permissions for Authenticated Users</emphasis>
+            page is displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>There may be more than one resource setting available,
+            select the one you require from the <emphasis role="bold">Select
+            Resource</emphasis> drop down list provided.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the boxes that <emphasis role="bold">allow</emphasis>
+            and <emphasis role="bold">deny</emphasis> access as required for
+            the user.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click <emphasis role="bold">Add</emphasis>. Confirmation of
+            the request is shown.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To modify permissions for an individual user:<orderedlist>
+            <listitem>
+              <para>Click the <emphasis role="bold">Users</emphasis> menu item
+              in ECL Watch.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the user in the list of authenticated and click on
+              the <emphasis role="bold">Permissions</emphasis> link in the
+              <emphasis role="bold">Operations</emphasis> column.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the feature you want to modify.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box(es) that <emphasis
+              role="bold">allow</emphasis> and <emphasis
+              role="bold">deny</emphasis> access as required for the feature
+              and press <emphasis role="bold">Update</emphasis> or press
+              <emphasis role="bold">Delete</emphasis> if you want to remove
+              access to that feature.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press OK to confirm. Confirmation of the request is
+              shown.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+    </sect3>
+
+    <sect3>
+      <title>Setting and modifying group permissions</title>
+
+      <para>Setting up groups ensures that all users with the same permission
+      needs have the same permission settings, giving them the access they
+      require to the feature areas of HPPC they need to use. There is no limit
+      to the number of groups you can create, so you can create as many groups
+      as you need to control access for all your users regardless of their
+      tasks. Use the <emphasis role="bold">Group</emphasis> menu item
+      to:<itemizedlist>
+          <listitem>
+            <para>Add a new group</para>
+          </listitem>
+
+          <listitem>
+            <para>Delete a group</para>
+          </listitem>
+
+          <listitem>
+            <para>Add members to a groups</para>
+          </listitem>
+
+          <listitem>
+            <para>Modify the permissions for a group</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <sect4>
+        <title>Adding and editing groups</title>
+
+        <para>When adding or changing the permissions for a group, all members
+        of that group are given those settings. So it important to be sure
+        that you are giving or denying access to features appropriately for
+        the members of that group. If you need to make a change for a single
+        users (or small number of users), it is probably better to make that
+        change for each individual user as demonstrated earlier. Since
+        individual permission settings take precedence over the group
+        settings, you can safely change the individual settings for a user
+        without affecting the rest of the group(s) to which they belong.
+        <graphic fileref="../images/Permissions003.jpg" />In ECL Watch, go to
+        the <emphasis role="bold">Users/Permissions</emphasis> menu item and
+        click <emphasis role="bold">Groups</emphasis>:</para>
+
+        <para>To add a new group:</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Press the <emphasis role="bold">Add</emphasis> button. The
+              <emphasis role="bold">Add Group</emphasis> window is displayed.
+              </para>
+            </listitem>
+
+            <listitem>
+              <para>Enter a <emphasis role="bold">Group
+              Name</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press <emphasis role="bold">Submit</emphasis>.
+              Confirmation of the request is shown. <emphasis
+              role="bold">Permissions</emphasis> may now be set for this new
+              group.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To delete a group:<orderedlist>
+            <listitem>
+              <para>Locate the group in the list and check the checkbox to the
+              left.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Delete</emphasis>
+              button.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
+              Confirmation of the request is shown.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To add new members to a group:<orderedlist>
+            <listitem>
+              <para>Locate the group in the list and click on the <emphasis
+              role="bold">Members</emphasis> link in the <emphasis
+              role="bold">Operations</emphasis> column. All current members of
+              the group are listed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press <emphasis role="bold">Add</emphasis>. All
+              authenticated users are listed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box(es) to the left for all users you want to
+              add to the group and press <emphasis
+              role="bold">Add</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
+              Confirmation of the request is shown.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To delete members from a group:<orderedlist>
+            <listitem>
+              <para>Locate the group in the list and click on the <emphasis
+              role="bold">Members</emphasis> link in the <emphasis
+              role="bold">Operations</emphasis> column.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box(es) for all users you want to delete from
+              the group and press <emphasis
+              role="bold">Delete</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
+              Confirmation of the request is shown.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+
+      <sect4>
+        <title>Setting permissions for a group</title>
+
+        <para>All users are a member of the <emphasis
+        role="bold">Authenticated Users </emphasis>group, which is
+        automatically updated as you add or remove users. Those who need to be
+        able to carry out security administration must have full access to be
+        able to gain access to the <emphasis
+        role="bold">User/Permissions</emphasis> area of ECL Watch
+        (Administrators).</para>
+
+        <para>To set new permissions for a group:</para>
+
+        <orderedlist>
+          <listitem>
+            <para> Click the <emphasis role="bold">Groups</emphasis> menu item
+            in ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the group in the list and click on the <emphasis
+            role="bold">Permissions</emphasis> link in the <emphasis
+            role="bold">Operations</emphasis> column. The list of permissions
+            currently set for this group are displayed.<graphic
+            fileref="../images/Permissions004.jpg" /></para>
+          </listitem>
+
+          <listitem>
+            <para>A drop down list showing the 6 feature areas of the HPCC is
+            shown. Select the feature area you want and press <emphasis
+            role="bold">Add</emphasis>. The <emphasis role="bold">Add
+            Permissions for </emphasis><emphasis
+            role="bold">&lt;GroupName&gt;</emphasis> page is displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>There may be more than one resource setting available,
+            select the <emphasis role="bold">Resource</emphasis> you require
+            from the drop down list provided.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the boxes that <emphasis role="bold">allow</emphasis>
+            and <emphasis role="bold">deny</emphasis> access as required for
+            the group.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click <emphasis role="bold">Add</emphasis>. MORE NEEDED WHEN
+            FIXED</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To modify permissions for a group:<orderedlist>
+            <listitem>
+              <para>Click the <emphasis role="bold">Groups</emphasis> menu
+              item in ECL Watch.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the group in the list of authenticated and click on
+              the <emphasis role="bold">Permissions</emphasis> link in the
+              <emphasis role="bold">Operations</emphasis> column.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the feature you want to modify.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box(es) that <emphasis
+              role="bold">allow</emphasis> and <emphasis
+              role="bold">deny</emphasis> access as required for the feature
+              and press <emphasis role="bold">Update</emphasis> or press
+              <emphasis role="bold">Delete</emphasis> if you want to remove
+              access to that feature.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press OK to confirm. Confirmation of the request is
+              shown.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+    </sect3>
+
+    <sect3>
+      <title>Setting and modifying feature permissions</title>
+
+      <para>Access to the feature permissions area in ECL Watch is via the
+      <emphasis role="bold">User/Permissions</emphasis> area using the
+      <emphasis role="bold">Permissions</emphasis> menu item. All six feature
+      areas are listed. <graphic
+      fileref="../images/Permissions005.jpg" /></para>
+
+      <para>Use the <emphasis role="bold">Permissions</emphasis> menu item
+      to:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Edit the permissions for any feature</para>
+        </listitem>
+
+        <listitem>
+          <para>Add new resources to a feature</para>
+        </listitem>
+
+        <listitem>
+          <para>Set the permissions for users and groups for a specific
+          resource</para>
+        </listitem>
+
+        <listitem>
+          <para>Update the permissions for users and groups for a specific
+          resource</para>
+        </listitem>
+
+        <listitem>
+          <para>Delete a resource</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect4>
+        <title>Adding and editing feature permissions</title>
+
+        <para>Each feature contains a list of resources which are used to
+        control access to an HPCC feature or folders containing files or
+        workunits. The main HPCC feature permission setting are controlled
+        using the <emphasis role="bold">ESP Features for SMC</emphasis>
+        setting. When new features are added to the HPCC System, the release
+        notes inform you that new permissions may be set. This is also true
+        for <emphasis role="bold">ESP Features for ECLDirectAccess</emphasis>
+        and <emphasis role="bold">Esp Features for WsEclAccess</emphasis>.
+        Generally, all the permissions you require to control access to these
+        features are already included.</para>
+
+        <para>However, to control access to file or workunit scopes, you must
+        add the location as a resource before you can set permissions.</para>
+
+        <para>To add a scope:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click the <emphasis role="bold">Permissions</emphasis> menu
+            item in ECL Watch, locate the feature you want and click <emphasis
+            role="bold">Edit</emphasis>. The resources for that feature are
+            listed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Add</emphasis>
+            button.</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter the exact name of the scope you want to add (for
+            example a file or workunit scope) in the <emphasis
+            role="bold">Name</emphasis> field and also a short <emphasis
+            role="bold">Description<emphasis>.</emphasis></emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Click <emphasis role="bold">Submit</emphasis>. Confirmation
+            of your request is shown.</para>
+          </listitem>
+
+          <listitem>
+            <para>Go back to the features page using the link provided.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate your new scope in the list and click <emphasis
+            role="bold">Permissions</emphasis>. The <emphasis
+            role="bold">Administrator</emphasis> and <emphasis
+            role="bold">Authenticated Users</emphasis> groups are shown
+            showing the default permission settings which you can update as
+            appropriate.</para>
+          </listitem>
+
+          <listitem>
+            <para>To add more users and groups and set permissions for this
+            scope, click <emphasis role="bold">Add</emphasis>. The <emphasis
+            role="bold">Add Permissions</emphasis> window is displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select a <emphasis role="bold">User</emphasis> or <emphasis
+            role="bold">Group</emphasis> from the dropdown lists provided and
+            check the checkboxes for <emphasis role="bold">allow</emphasis>
+            and <emphasis role="bold">deny</emphasis> as appropriate.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click <emphasis role="bold">Add</emphasis>. Confirmation of
+            your request is shown.</para>
+
+            <para><emphasis role="bold">Note:</emphasis>This description shows
+            how to add a file or workunit scope, However if you do need to add
+            a new resource any other feature area, the process is the
+            same.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To edit the permissions for a feature resource:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Click the <emphasis role="bold">Permissions</emphasis> menu
+            item in ECL Watch, locate the feature you want and click <emphasis
+            role="bold">Edit</emphasis>. The resources for that feature are
+            listed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the resource you want to update and click <emphasis
+            role="bold">Permissions</emphasis>. The permissions that are
+            currently set for this resource are listed, including individual
+            users and groups.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the user or group you want. Click the checkboxes in
+            the <emphasis role="bold">allow</emphasis> and <emphasis
+            role="bold">deny</emphasis> columns as appropriate.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click Update.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click OK to confirm. Confirmation of your request is
+            shown.</para>
+
+            <para><emphasis role="bold">Note:</emphasis>You must follow this
+            process for each user or group separately.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>To delete a resource from a feature list:<orderedlist>
+            <listitem>
+              <para>Click the <emphasis role="bold">Permissions</emphasis>
+              menu item in ECL Watch, locate the feature you want and click
+              <emphasis role="bold">Edit</emphasis>. The resources for that
+              feature are listed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the resource you want to remove and check the
+              checkbox to the left.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click <emphasis
+              role="bold">Delete<emphasis>.</emphasis></emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Click OK to confirm. Confirmation of your request is
+              shown.<emphasis role="bold"></emphasis></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>To delete the resource permission settings for a user or group:
+        <orderedlist>
+            <listitem>
+              <para>Click the <emphasis role="bold">Permissions</emphasis>
+              menu item in ECL Watch, locate the feature you want and click
+              <emphasis role="bold">Edit</emphasis>. The resources for that
+              feature are listed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the resource you want to remove and click <emphasis
+              role="bold">Permissions</emphasis>. The users and groups are
+              displayed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the user or group in the list and click <emphasis
+              role="bold">Delete<emphasis>.</emphasis></emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Click OK to confirm. Confirmation of your request is
+              shown.<emphasis role="bold"></emphasis></para>
+            </listitem>
+          </orderedlist></para>
+      </sect4>
+    </sect3>
   </sect2>
 
   <sect2 role="brk">
-    <title>Ecl Watch Feature Permissions</title>
+    <title>ECL Watch Feature Permissions</title>
 
-    <para>This section describes access control to features of the HPCC
-    system. In this area you control access to functionality within ECL
-    Watch.</para>
+    <para>Access to features of the HPCC system is controlled by via the
+    <emphasis role="bold">ESP Features for SMC</emphasis> category. These
+    features are listed as <emphasis role="bold">Resources</emphasis> when
+    setting permissions using ECL Watch.</para>
 
-    <para><informaltable>
-        <tgroup cols="3">
-          <colspec colwidth="155q" />
+    <para>The following sections show the level of access required to be able
+    to use ECL Watch features:</para>
 
-          <colspec />
+    <sect3>
+      <title>Login</title>
 
-          <colspec colwidth="85q" />
+      <para>SMCAccess is required by all users to be able to successfully
+      login to ECL Watch. <informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
 
-          <thead>
-            <row>
-              <entry>LDAP Path</entry>
+            <colspec />
 
-              <entry>Description</entry>
+            <colspec colwidth="85q" />
 
-              <entry>Access</entry>
-            </row>
-          </thead>
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
 
-          <tbody>
-            <row>
-              <entry>ClusterTopologyAccess</entry>
+                <entry>Description</entry>
 
-              <entry>Access to Cluster Topology</entry>
+                <entry>Access</entry>
+              </row>
+            </thead>
 
-              <entry>Read</entry>
-            </row>
+            <tbody>
+              <row>
+                <entry>SmcAccess</entry>
 
-            <row>
-              <entry>ClusterTopologyAccess</entry>
+                <entry>Root Access to SMC Service</entry>
 
-              <entry>Set Machine Status</entry>
+                <entry>Read</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
 
-              <entry>Write</entry>
-            </row>
+    <sect3>
+      <title>Clusters</title>
 
-            <row>
-              <entry>ClusterTopologyAccess</entry>
+      <para>Users may be given access to the thor queue which can be
+      manipulated by promoting/demoting queued workunits according to
+      priority. The thor queue can also be paused or cleared and users can
+      view thor usage statistics.</para>
 
-              <entry>Swap Node</entry>
+      <para>From this page, users can also click on workunit IDs to view
+      details about the workunit. Depending on the level of access given, they
+      can view, modify and delete their own, or others workunits.</para>
 
-              <entry>Full</entry>
-            </row>
+      <para><informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
 
-            <row>
-              <entry>DfuAccess</entry>
+            <colspec />
 
-              <entry>Access to DFU Logical Files</entry>
+            <colspec colwidth="85q" />
 
-              <entry>Read</entry>
-            </row>
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
 
-            <row>
-              <entry>DfuAccess</entry>
+                <entry>Description</entry>
 
-              <entry>Delete Files, add to superfiles</entry>
+                <entry>Access</entry>
+              </row>
+            </thead>
 
-              <entry>Write</entry>
-            </row>
+            <tbody>
+              <row>
+                <entry>ThorQueueAccess</entry>
 
-            <row>
-              <entry>DfuExceptions</entry>
+                <entry>Access to Thor Job Queue Control</entry>
 
-              <entry>Access to DFU Exceptions</entry>
+                <entry>Full</entry>
+              </row>
 
-              <entry>Read</entry>
-            </row>
+              <row>
+                <entry>OwnWorkunitsAccess</entry>
 
-            <row>
-              <entry>DfuWorkunitsAccess</entry>
+                <entry>Access to View Own Workunit</entry>
 
-              <entry>Access to View DFU Workunits</entry>
+                <entry>Read</entry>
+              </row>
 
-              <entry>Read</entry>
-            </row>
+              <row>
+                <entry></entry>
 
-            <row>
-              <entry>DfuWorkunitsAccess</entry>
+                <entry>Access to Create or Modify Own Workunit</entry>
 
-              <entry>Access to Create, Delete, Update, Submit, and Abort DFU
-              Workunits</entry>
+                <entry>Write</entry>
+              </row>
 
-              <entry>Write</entry>
-            </row>
+              <row>
+                <entry></entry>
 
-            <row>
-              <entry>DfuXrefAccess</entry>
+                <entry>Access to Delete Own Workunits</entry>
 
-              <entry>Access to DFU XREF</entry>
+                <entry>Full</entry>
+              </row>
 
-              <entry>Read</entry>
-            </row>
+              <row>
+                <entry>OtherWorkunitsAccess</entry>
 
-            <row>
-              <entry>DfuXrefAccess</entry>
+                <entry>Access to View Other User's Workunits</entry>
 
-              <entry>Clean directory</entry>
+                <entry>Read</entry>
+              </row>
 
-              <entry>Write</entry>
-            </row>
+              <row>
+                <entry></entry>
 
-            <row>
-              <entry>DfuXrefAccess</entry>
+                <entry>Access to Modify or Resubmit User's Workunits</entry>
 
-              <entry>Make changes and generate XREF Reports</entry>
+                <entry>Write</entry>
+              </row>
 
-              <entry>Full</entry>
-            </row>
+              <row>
+                <entry></entry>
 
-            <row>
-              <entry>ExecuteAccess</entry>
+                <entry>Access to Delete Other User's Workunits</entry>
 
-              <entry>Access to Remote Execution in ECL Watch</entry>
+                <entry>Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
 
-              <entry>Full</entry>
-            </row>
+    <sect3>
+      <title>ECL Workunits</title>
 
-            <row>
-              <entry>FileDesprayAccess</entry>
+      <para>Workunits can also be viewed using this feature of ECL Watch. The
+      contents of the workunits list reflects whether a user has the
+      permission to view their own and others workunits.<informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
 
-              <entry>Access to De-Spraying Files</entry>
+            <colspec />
 
-              <entry>Write</entry>
-            </row>
+            <colspec colwidth="85q" />
 
-            <row>
-              <entry>FileSprayAccess</entry>
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
 
-              <entry>Access to Spraying and Copying</entry>
+                <entry>Description</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Access</entry>
+              </row>
+            </thead>
 
-            <row>
-              <entry>FileSprayAccess</entry>
+            <tbody>
+              <row>
+                <entry>OwnWorkunitsAccess</entry>
 
-              <entry>Rename files</entry>
+                <entry>Access to View Own Workunit</entry>
 
-              <entry>Write</entry>
-            </row>
+                <entry>Read</entry>
+              </row>
 
-            <row>
-              <entry>FileSprayAccess</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Delete from Drop zone</entry>
+                <entry>Access to Create or Modify Own Workunit</entry>
 
-              <entry>Full</entry>
-            </row>
+                <entry>Write</entry>
+              </row>
 
-            <row>
-              <entry>FileIO</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Access to read files in Drop zone</entry>
+                <entry>Access to Delete Own Workunits</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Full</entry>
+              </row>
 
-            <row>
-              <entry>FileIO</entry>
+              <row>
+                <entry>OtherWorkunitsAccess</entry>
 
-              <entry>Access to write to files in Drop zone</entry>
+                <entry>Access to View Other User's Workunits</entry>
 
-              <entry>Write</entry>
-            </row>
+                <entry>Read</entry>
+              </row>
 
-            <row>
-              <entry>MachineInfoAccess</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Access to machine/Preflight Information</entry>
+                <entry>Access to Modify or Resubmit User's Workunits</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Write</entry>
+              </row>
 
-            <row>
-              <entry>MetricsAccess</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Access to SNMP Metrics Information (Roxie
-              Metrics)</entry>
+                <entry>Access to Delete Other User's Workunits</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
 
-            <row>
-              <entry>OtherWorkunitsAccess</entry>
+    <sect3>
+      <title>Topology</title>
 
-              <entry>Access to View Other User's Workunits</entry>
+      <para>This section shows details about the clusters and other HPCC
+      System components. Preflight provides diagnostic information including
+      disc space, CPU usage and access to logs as well as the ability to swap
+      faulty nodes out of the cluster. <informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
 
-              <entry>Read</entry>
-            </row>
+            <colspec />
 
-            <row>
-              <entry>OtherWorkunitsAccess</entry>
+            <colspec colwidth="85q" />
 
-              <entry>Access to Modify or Resubmit User's Workunits</entry>
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
 
-              <entry>Write</entry>
-            </row>
+                <entry>Description</entry>
 
-            <row>
-              <entry>OtherWorkunitsAccess</entry>
+                <entry>Access</entry>
+              </row>
+            </thead>
 
-              <entry>Access to Delete Other User's Workunits</entry>
+            <tbody>
+              <row>
+                <entry>ClusterTopologyAccess</entry>
 
-              <entry>Full</entry>
-            </row>
+                <entry>Access to Cluster Topology</entry>
 
-            <row>
-              <entry>OwnWorkunitsAccess</entry>
+                <entry>Read</entry>
+              </row>
 
-              <entry>Access to View Own Workunit</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Set Machine Status</entry>
 
-            <row>
-              <entry>OwnWorkunitsAccess</entry>
+                <entry>Write</entry>
+              </row>
 
-              <entry>Access to Create or Modify Own Workunit</entry>
+              <row>
+                <entry></entry>
 
-              <entry>Write</entry>
-            </row>
+                <entry>Swap Node</entry>
 
-            <row>
-              <entry>OwnWorkunitsAccess</entry>
+                <entry>Full</entry>
+              </row>
 
-              <entry>Access to Delete Own Workunits</entry>
+              <row>
+                <entry>MachineInfoAccess</entry>
 
-              <entry>Full</entry>
-            </row>
+                <entry>Access to machine/Preflight Information</entry>
 
-            <row>
-              <entry>RoxieQueryAccess</entry>
+                <entry>Read</entry>
+              </row>
 
-              <entry>Access to Roxie Queries</entry>
+              <row>
+                <entry>MetricsAccess</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Access to SNMP Metrics Information (Roxie
+                Metrics)</entry>
 
-            <row>
-              <entry>SmcAccess</entry>
+                <entry>Read</entry>
+              </row>
 
-              <entry>Root Access to SMC Service</entry>
+              <row>
+                <entry>ExecuteAccess</entry>
 
-              <entry>Read</entry>
-            </row>
+                <entry>Access to Remote Execution in ECL Watch</entry>
 
-            <row>
-              <entry>ThorQueueAccess</entry>
+                <entry>Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
 
-              <entry>Access to Thor Job Queue Control</entry>
+    <sect3>
+      <title>DFU Workunits</title>
 
-              <entry>Full</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </informaltable></para>
+      <para>A user must have permission to view DFU Workunits and requires
+      other permissions to be able to manipulate them.<informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
 
-    <para></para>
+            <colspec />
+
+            <colspec colwidth="85q" />
+
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
+
+                <entry>Description</entry>
+
+                <entry>Access</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>DfuWorkunitsAccess</entry>
+
+                <entry>Access to View DFU Workunits</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Create, Delete, Update, Submit, and Abort DFU
+                Workunits</entry>
+
+                <entry>Write</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
+
+    <sect3>
+      <title>DFU Files</title>
+
+      <para>Users need permission to see files on the dropzone and also to put
+      files there. They need further permissions to be able to spray and copy
+      files from the dropzone to their cluster and also to despray files from
+      the cluster back to the dropzone.</para>
+
+      <para>XREF is used for monitoring files on the cluster(s). Reports
+      generated show where housekeeping is required on the cluster(s) and
+      users require additional permission to use this feature. <informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
+
+            <colspec />
+
+            <colspec colwidth="85q" />
+
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
+
+                <entry>Description</entry>
+
+                <entry>Access</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>DfuAccess</entry>
+
+                <entry>Access to DFU Logical Files</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete Files, add to superfiles</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>DfuExceptions</entry>
+
+                <entry>Access to DFU Exceptions</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry>DfuWorkunitsAccess</entry>
+
+                <entry>Access to View DFU Workunits</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to Create, Delete, Update, Submit, and Abort DFU
+                Workunits</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>DfuXrefAccess</entry>
+
+                <entry>Access to DFU XREF</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Clean directory</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Make changes and generate XREF Reports</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>FileDesprayAccess</entry>
+
+                <entry>Access to De-Spraying Files</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry>FileSprayAccess</entry>
+
+                <entry>Access to Spraying and Copying</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Rename files</entry>
+
+                <entry>Write</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Delete from Drop zone</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
+                <entry>FileIO</entry>
+
+                <entry>Access to read files in Drop zone</entry>
+
+                <entry>Read</entry>
+              </row>
+
+              <row>
+                <entry></entry>
+
+                <entry>Access to write to files in Drop zone</entry>
+
+                <entry>Write</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
+
+    <sect3>
+      <title>Roxie Queries</title>
+
+      <para>Additional permission is required to view roxie queries in ECL
+      Watch.<informaltable>
+          <tgroup cols="3">
+            <colspec colwidth="155q" />
+
+            <colspec />
+
+            <colspec colwidth="85q" />
+
+            <thead>
+              <row>
+                <entry>LDAP Path</entry>
+
+                <entry>Description</entry>
+
+                <entry>Access</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>RoxieQueryAccess</entry>
+
+                <entry>Access to Roxie Queries</entry>
+
+                <entry>Read</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
+
+    <sect3>
+      <title>Users/Permissions</title>
+
+      <para>To be able to view the <emphasis
+      role="bold">Users/Permissions</emphasis> area in ECL Watch, a user must
+      be setup in LDAP as an Administrator.</para>
+    </sect3>
   </sect2>
 
   <sect2>
     <title><emphasis role="bold">File Access Control</emphasis></title>
 
     <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
-    technology provides means to set secure access permissions to data file
-    folders (file scope). This is controlled by organizational units (OUs) in
-    LDAP.</para>
+    technology provides the ability to set secure access permissions to data
+    file folders (or file scopes). This is controlled by organizational units
+    (OUs) in LDAP.</para>
 
-    <para>An OU named <emphasis role="bold">Files</emphasis> is created when
-    the Dali server starts. To secure data folders, create OUs for each folder
-    level and apply rights to each folder’s OU.</para>
+    <para>An OU called <emphasis role="bold">Files</emphasis> is automatically
+    created when the Dali server starts. To secure data folders, create OUs
+    for each folder level and apply rights to each folder’s OU.</para>
 
     <para><figure>
         <title>File Scopes Page</title>
@@ -480,37 +1369,49 @@
         </mediaobject>
       </figure></para>
 
-    <para>In the graphic above, The OU named <emphasis role="bold">Files
-    </emphasis>(not shown) is the top level for file scope security in the
-    Dali Server. Below it is an OU named <emphasis role="bold">le
-    </emphasis>representing the cluster named <emphasis
-    role="bold">le</emphasis>. Below that is an OU named <emphasis
-    role="bold">specialdata</emphasis> which contains two OUs: <emphasis
+    <para><emphasis role="bold">Files </emphasis>is the top level for file
+    scope security in the Dali Server. Below it there is an OU representing
+    the cluster, for example thor (or the name that was set up for your
+    cluster). Below that is an OU named <emphasis
+    role="bold">specialdata</emphasis> which contains two OUs, <emphasis
     role="bold">public</emphasis> and <emphasis role="bold">secure.
-    </emphasis>In this example, the <emphasis role="bold">public
-    </emphasis>folder has rights granted to a large group of users and the
-    <emphasis role="bold">secure </emphasis>folder has limited access granted.
-    This allows you to prevent unauthorized users from any access to files in
-    that folder.</para>
+    </emphasis>Typically, the <emphasis role="bold">public </emphasis>folder
+    has rights granted to a large group of users and the <emphasis
+    role="bold">secure </emphasis>folder has limited access granted. This
+    allows you to prevent unauthorized users from any access to files in the
+    <emphasis role="bold">secure</emphasis> folder.</para>
 
     <para>The structure in LDAP corresponds to this logical structure in
     DFU:</para>
 
-    <para><emphasis role="bold">le::specialdata::secure </emphasis></para>
+    <para><emphasis role="bold">thor::specialdata::secure </emphasis></para>
 
-    <para>This corresponds to this physical structure:</para>
+    <para>Which corresponds to this physical structure:</para>
 
-    <para><emphasis role="bold">c:\thordata\le\specialdata\secure
+    <para><emphasis
+    role="bold">var/lib/HPCCSystems/hpcc-data/thor/specialdata/secure
     </emphasis></para>
 
-    <para>All HPCC components and tools respect LDAP file access security,
-    except Remote Execution in ECL Watch, network file access using UNCs or
-    Terminal Services, or administrative utilities such as TreeView. These
-    functions are assumed to be system level or for administrative users.
-    Attempting to access a file in a folder for which access is not granted
-    will result in one of the following errors:</para>
+    <para>All HPCC components and tools respect LDAP file access security. The
+    following exceptions are assumed to be system level or for administrative
+    users :</para>
 
-    <para></para>
+    <itemizedlist>
+      <listitem>
+        <para>Remote Execution in ECL Watch</para>
+      </listitem>
+
+      <listitem>
+        <para>Network file access using UNCs or Terminal Services</para>
+      </listitem>
+
+      <listitem>
+        <para>Administrative utilities such as TreeView</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Attempting to access a file in a folder for which access is not
+    granted will result in one of the following errors:</para>
 
     <para>DFS Exception: 4 Create access denied for scope
     &lt;filepath&gt;</para>
@@ -524,37 +1425,111 @@
 
     <para>(where &lt;filepath&gt; is the full logical file scope path)</para>
 
-    <para></para>
+    <sect3>
+      <title>File scope feature permissions</title>
 
-    <para><emphasis role="bold">LDAP permissions and their meanings for File
-    scope OUs</emphasis></para>
+      <para>There are some extra features that are available for the <emphasis
+      role="bold">File Scopes</emphasis> feature in the <emphasis
+      role="bold">Permissions</emphasis> area of ECL Watch.</para>
 
-    <para><emphasis>Read</emphasis> allows you to read files in that
-    scope</para>
+      <itemizedlist>
+        <listitem>
+          <para>Any file scope in the list may be reset to have the default
+          permission settings for your system.</para>
+        </listitem>
 
-    <para><emphasis>Write</emphasis> allows you to create or modify a file in
-    that scope</para>
+        <listitem>
+          <para>Access to the physical file may also be granted
+          separately.</para>
+        </listitem>
 
-    <para><emphasis>Full</emphasis> allows you to delete a file in that
-    scope</para>
+        <listitem>
+          <para>The <emphasis role="bold">Check File Permissions</emphasis>
+          button allows you to quickly view the permissions that have been set
+          for any scope listed.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Permissions settings for file scopes may be set as follows:</para>
+
+      <informaltable>
+        <tgroup cols="2">
+          <colspec />
+
+          <colspec colwidth="85q" />
+
+          <thead>
+            <row>
+              <entry>Description</entry>
+
+              <entry>Access</entry>
+            </row>
+          </thead>
+
+          <tbody>
+            <row>
+              <entry>Read files in that scope</entry>
+
+              <entry>Read</entry>
+            </row>
+
+            <row>
+              <entry>Create/modify a file in that scope</entry>
+
+              <entry>Write</entry>
+            </row>
+
+            <row>
+              <entry>Delete a file in that scope</entry>
+
+              <entry>Full</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect3>
   </sect2>
 
   <sect2>
     <title>Workunit Access Control</title>
 
-    <para>There are 2 aspects of Workunit security: <emphasis>Feature
-    Authentication </emphasis>and <emphasis>Workunit Scope
-    </emphasis>security</para>
+    <para>There are 2 aspects of workunit security:</para>
 
-    <para>Feature Authentication for workunits provides a means set
-    permissions to control whether users and view their own WUs and/or other
-    users’ WUs. Workunit Scope security provides the ability to set
-    permissions WU scopes. All new workunits now have a scope value.</para>
+    <itemizedlist>
+      <listitem>
+        <para>Feature Authentication for workunits allows you to set
+        permissions to control whether users can view their own WUs and/or
+        other users’ WUs.</para>
+      </listitem>
+
+      <listitem>
+        <para>Workunit Scope security provides the ability to set permissions
+        for individual WU scopes. All new workunits now have a scope
+        value.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Both methods are valid to use (either separately or together), and
+    the strictest restriction always wins.</para>
+
+    <para>In other words, if someone is granted permission to see WUs in the
+    scope <emphasis>johndoe </emphasis>but is denied permission to see other
+    users’ WUs in the Feature Authentication permissions, this user would
+    still be denied access to see one of John Doe’s WUs.</para>
+
+    <para>Conversely, if the user is allowed access to see other people’s WUs
+    but is denied access to the <emphasis>johndoe </emphasis>WU<emphasis>
+    </emphasis>scope, this user will be able to see other WUs in that
+    scope.</para>
+
+    <para><emphasis role="bold">Note:</emphasis> If you do not have access to
+    a WU, you will never be able to view it or even know of its
+    existence.</para>
 
     <para>By default, a submitted WU has a scope of the user’s ID. For
-    example, a WU JohnDoe submits has scope=”johndoe” in the WU. This value in
-    a WU allows ESP and its services to use LDAP to check for permissions and
-    enforce those permissions.</para>
+    example, a WU JohnDoe submits has <emphasis>scope=johndoe</emphasis> in
+    the WU. This value in a WU allows ESP and its services to use LDAP to
+    check for permissions and enforce those permissions.</para>
 
     <para>You can override the default scope using ECL Code:</para>
 
@@ -564,52 +1539,67 @@
     opening the WU, editing the scope field and pressing the <emphasis
     role="bold">Save</emphasis> button.</para>
 
-    <para><emphasis role="bold">Securing Workuint Scopes</emphasis></para>
+    <sect3>
+      <title>Securing workunit scopes</title>
 
-    <para>ESP (on startup) automatically creates an LDAP OU called “Workunits”
-    (unless it already exists). If this OU is automatically created, the OU is
-    made with full permissions granted to all authenticated users. All WU
-    scopes are below the <emphasis>workunits</emphasis> OU either implicitly
-    or explicitly.</para>
+      <para>ESP (on startup) automatically creates an LDAP OU called <emphasis
+      role="bold">Workunits</emphasis> (unless it already exists). If this OU
+      is automatically created, the OU is made with full permissions granted
+      to all authenticated users. All WU scopes are below the
+      <emphasis>workunits</emphasis> OU either implicitly or
+      explicitly.</para>
 
-    <para>If a specific scope OU does not exist in LDAP (e.g., the scope
-    johndoe used in earlier example), then the parent OU’s permissions are
-    used. In other words, the scope of <emphasis>johndoe</emphasis> is
-    implicitly under the <emphasis>workunits</emphasis> OU even though it
-    might not be explicitly listed in the LDAP structure and therefore it
-    would use the permissions granted for the parent: <emphasis>workunits
-    </emphasis>.</para>
+      <para>If a specific scope OU does not exist in LDAP (e.g., the scope
+      johndoe used in earlier example), then the parent OU’s permissions are
+      used. In other words, the scope of <emphasis>johndoe</emphasis> is
+      implicitly under the <emphasis>workunits</emphasis> OU even though it
+      might not be explicitly listed in the LDAP structure and therefore it
+      would use the permissions granted for the parent, <emphasis>workunits
+      .</emphasis></para>
+    </sect3>
 
-    <para><emphasis role="bold">LDAP permissions and their meanings for WU
-    scope OUs</emphasis></para>
+    <sect3>
+      <title>Workunits feature permissions</title>
 
-    <para><emphasis>Read</emphasis> allows you to view WUs in that
-    scope</para>
+      <para>Using the <emphasis role="bold">Workunit Scopes</emphasis> feature
+      in the <emphasis role="bold">Permissions</emphasis> area of ECL Watch
+      the permissions for any scope can be reset to the default permissions
+      settings for your system. Permission settings for Workunit Scopes may be
+      set as follows:<informaltable>
+          <tgroup cols="2">
+            <colspec />
 
-    <para><emphasis>Write</emphasis> allows you to create or modify a WU in
-    that scope</para>
+            <colspec colwidth="85q" />
 
-    <para><emphasis>Full</emphasis> allows you to delete a WU in that
-    scope</para>
+            <thead>
+              <row>
+                <entry>Description</entry>
 
-    <para><emphasis role="bold">Additional details</emphasis></para>
+                <entry>Access</entry>
+              </row>
+            </thead>
 
-    <para>There are two ways to restrict WU access (feature authentication and
-    WU Scope). Both methods are valid to use (either separately or together),
-    so the strictest restriction always wins.</para>
+            <tbody>
+              <row>
+                <entry>View WUs in that scope</entry>
 
-    <para>In other words, if someone is granted permission to see WUs in the
-    scope <emphasis>johndoe </emphasis>but is denied permission to see other
-    users’ WUs in the Feature Authentication permissions, then he could not
-    see one of John Doe’s WUs.</para>
+                <entry>Read</entry>
+              </row>
 
-    <para>Conversely, if he is allowed access to see other people’s WUs but is
-    denied access to the <emphasis>johndoe </emphasis>WU<emphasis>
-    </emphasis>scope, he should not be able to see WUs in that scope.</para>
+              <row>
+                <entry>Create/modify a WU in that scope</entry>
 
-    <para>If you do not have access to a WU, you will never be able to view it
-    or even know of its existence.</para>
+                <entry>Write</entry>
+              </row>
 
-    <para></para>
+              <row>
+                <entry>Delete a WU in that scope</entry>
+
+                <entry>Full</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect3>
   </sect2>
 </sect1>

@@ -213,14 +213,14 @@ set(CPACK_SOURCE_IGNORE_FILES
 ###
 set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}")
 if (USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
-    execute_process(COMMAND "${GIT_COMMAND}" describe --exact --tags --dirty
+    execute_process(COMMAND "${GIT_COMMAND}" describe --exact --tags --dirty --match ${CPACK_RPM_PACKAGE_VERSION}* 
         WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
         OUTPUT_VARIABLE GIT_BUILD_TAG
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE)
     if (CHECK_GIT_TAG)
         if(NOT "${GIT_BUILD_TAG}" STREQUAL "${BUILD_TAG}")
-            message(FATAL_ERROR "Git tag ${GIT_BUILD_TAG} does not match source version ${BUILD_TAG}" )
+            message(FATAL_ERROR "Git tag '${GIT_BUILD_TAG}' does not match source version '${BUILD_TAG}'" )
         endif()
     else()
         if ("${GIT_BUILD_TAG}" STREQUAL "")
