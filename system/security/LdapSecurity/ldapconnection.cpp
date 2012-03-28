@@ -3155,14 +3155,6 @@ public:
             oc_values
         };
 
-        char *act_values[] = {(char*)groupname, NULL};
-        LDAPMod act_attr = 
-        {
-            LDAP_MOD_ADD,
-            "sAMAccountName",
-            act_values
-        };
-
         char *member_values[] = {"", NULL};
         LDAPMod member_attr = 
         {
@@ -3176,10 +3168,6 @@ public:
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
-        if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
-        {
-            attrs[ind++] = &act_attr;
-        }
         if(m_ldapconfig->getServerType() == OPEN_LDAP)
         {
             attrs[ind++] = &member_attr;
