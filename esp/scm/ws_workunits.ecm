@@ -1238,6 +1238,23 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
     string QueryId;
 };
 
+ESPrequest RunEclRequest
+{
+    string cluster;
+    string eclText;
+    boolean includeResults;
+    boolean includeGraphs;
+};
+
+ESPresponse [http_encode(0)] RunEclResponse
+{
+	string wuid;
+    ESParray<ESPstruct ECLException> Errors;
+    EspResultSet results;
+    string graphsXGMML;
+};
+
+
 ESPservice [
     version("1.37"), default_client_version("1.37"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1304,6 +1321,8 @@ ESPservice [
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
+
+    ESPmethod RunEcl(RunEclRequest, RunEclResponse);
 };
 
 
