@@ -1307,6 +1307,22 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
         if (!strcmp(pszAttrName, "name"))
         {
+          if (!pszSubType || !*pszSubType)
+          {
+            StringBuffer rundir;
+
+            if (!getConfigurationDirectory(pEnvRoot->queryPropTree("Software/Directories"), "run", pszCompType, pszNewValue, rundir))
+              rundir.clear().appendf(RUNTIME_DIR"/%s", pszNewValue);
+
+            Owned<IPropertyTreeIterator> iterInsts = pComp->getElements(XML_TAG_INSTANCE);
+
+            ForEach (*iterInsts)
+              iterInsts->query().setProp(XML_ATTR_DIRECTORY, rundir.str());
+
+            if (!strcmp(pszCompType, XML_TAG_ROXIECLUSTER))
+              pComp->setProp(XML_ATTR_DIRECTORY, rundir);
+          }
+
           StringBuffer sbold, sbnew, sbMsg;
           bool ret = false;
           if (pszSubType && !strcmp(pszSubType, "EspBinding"))
