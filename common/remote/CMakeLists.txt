@@ -43,6 +43,13 @@ set (    SRCS
          rmtssh.hpp
          sockfile.hpp
     )
+if (USE_URIPARSER)
+  set ( SRCS
+        ${SRCS}
+        uri.cpp
+        uri.hpp
+      )
+endif(USE_URIPARSER)
 
 include_directories (
          ./../../system/hrpc 
@@ -59,4 +66,5 @@ install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( remote 
     jlib 
     mp
+    ${URIPARSER_LIBRARIES}
     )

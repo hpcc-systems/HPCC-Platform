@@ -247,7 +247,7 @@ public:
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
     inline const char * get(void) const         { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
-    inline bool isEmpty()                       { return !text||!*text; } // faster than (length==0)
+    inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
     inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
 
     void         set(const char * _text);
