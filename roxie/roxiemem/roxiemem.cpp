@@ -598,7 +598,9 @@ public:
 #define ROWCOUNT_DESTRUCTOR_FLAG 0x80000000
 #define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
 
-#define FIXEDSIZE_HEAPLET_DATA_AREA_SIZE (size32_t)(HEAP_ALIGNMENT_SIZE - offsetof(FixedSizeHeapletBase, data))
+#define CACHE_LINE_SIZE 64
+#define FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET ((size32_t) ((sizeof(FixedSizeHeapletBase) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
+#define FIXEDSIZE_HEAPLET_DATA_AREA_SIZE ((size32_t)(HEAP_ALIGNMENT_SIZE - FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET))
 
 class FixedSizeHeapletBase : public BigHeapletBase
 {
@@ -607,7 +609,12 @@ protected:
     atomic_t freeBase;
     const size32_t chunkSize;
     unsigned sharedAllocatorId;
-    char data[1];
+
+    inline char *data() const
+    {
+        return ((char *) this) + FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET;
+    }
+
     //NB: Derived classes should not contain any derived data.  The choice would be to put data[] into the derived
     //classes, but that means it is hard to common up some of the code efficiently
 
@@ -646,7 +653,7 @@ public:
         unsigned limit = atomic_read(&freeBase);
         while (leaked > 0 && base < limit)
         {
-            const char *block = data + base;
+            const char *block = data() + base;
             const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
             unsigned rowCount = atomic_read((atomic_t *) (ptr - sizeof(atomic_t)));
             if (ROWCOUNT(rowCount) != 0)
@@ -693,7 +700,7 @@ protected:
                 {
                     if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
                     {
-                        ret = data + curFreeBase;
+                        ret = data() + curFreeBase;
                         break;
                     }
                 }
@@ -821,7 +828,7 @@ public:
 
     inline static size32_t maxHeapSize()
     {
-        return HEAP_ALIGNMENT_SIZE - (offsetof(FixedSizeHeaplet, data) + chunkHeaderSize);
+        return FIXEDSIZE_HEAPLET_DATA_AREA_SIZE - chunkHeaderSize;
     }
 
     virtual unsigned _rawAllocatorId(const void *ptr) const
@@ -848,7 +855,7 @@ public:
         unsigned limit = atomic_read(&freeBase);
         while (base < limit)
         {
-            const char *block = data + base;
+            const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
             unsigned rowCount = atomic_read(&header->count);
             if (ROWCOUNT(rowCount) != 0)
@@ -872,7 +879,7 @@ public:
         unsigned lastId = 0;
         while (base < limit)
         {
-            const char *block = data + base;
+            const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
             unsigned activityId = getActivityId(header->allocatorId);
             //Potential race condition - a block could become allocated between these two lines.
@@ -991,7 +998,7 @@ public:
         unsigned limit = atomic_read(&freeBase);
         while (base < limit)
         {
-            const char *block = data + base;
+            const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
             unsigned rowCount = atomic_read(&header->count);
             if (ROWCOUNT(rowCount) != 0)
@@ -1012,7 +1019,7 @@ public:
         memsize_t running = 0;
         while (base < limit)
         {
-            const char *block = data + base;
+            const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
             unsigned rowCount = atomic_read(&header->count);
             if (ROWCOUNT(rowCount) != 0)
