@@ -122,9 +122,9 @@ public:
     {
         if (!batchWatchFeaturesOnly)
         {
-            IPropertyTree *folder = ensureNavFolder(data, "ECL Workunits", NULL, NULL, false, 2);
-            ensureNavLink(*folder, "Search Workunits", "/WsWorkunits/WUQuery?form_", "Search for ECL workunits", NULL, NULL, 1);
-            ensureNavLink(*folder, "Browse Workunits", "/WsWorkunits/WUQuery", "Browse a list of ECL workunits", NULL, NULL, 2);
+            IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);
+            ensureNavLink(*folder, "Search Workunits", "/WsWorkunits/WUQuery?form_", "Search Workunits", NULL, NULL, 1);
+            ensureNavLink(*folder, "Browse Workunits", "/WsWorkunits/WUQuery", "Browse Workunits", NULL, NULL, 2);
 
             IPropertyTree *folderQueryset = ensureNavFolder(data, "Query Sets", NULL, NULL, false, 3);
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Published Queries");

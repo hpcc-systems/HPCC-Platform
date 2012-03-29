@@ -16,10 +16,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+ESPStruct [nil_remove] ECLDirectException
+{
+    string Source;
+    string Severity;
+    int Code;
+    string Message;
+    string FileName;
+    int LineNo;
+    int Column;
+};
+
 ESPrequest RunEclRequest
 {
     string userName;
-    string password;
     string cluster;
     boolean limitResults;
     string eclText;
@@ -32,10 +42,40 @@ ESPresponse [http_encode(0)] RunEclResponse
     EspResultSet results;
 };
 
+ESPenum RunEclExFormat : string
+{
+    None("None"),
+    Table("Table"),
+    Xml("Xml"),
+    ExtendedXml("ExtendedXml")
+};
+
+ESPrequest [nil_remove] RunEclExRequest
+{
+    [rows(28), cols(80)] string eclText;
+    string cluster;
+    string snapshot;
+    boolean includeResults;
+    boolean includeGraphs;
+    ESPenum RunEclExFormat format;
+    int wait(-1);
+    int resultLimit(0);
+};
+
+
+ESPresponse [nil_remove] RunEclExResponse
+{
+    string wuid;
+    ESParray<ESPstruct ECLDirectException> Errors;
+    string results;
+    string graphsXGMML;
+};
+
 
 ESPservice EclDirect
 {
     ESPmethod RunEcl(RunEclRequest, RunEclResponse);
+    ESPmethod RunEclEx(RunEclExRequest, RunEclExResponse);
 };
 
 

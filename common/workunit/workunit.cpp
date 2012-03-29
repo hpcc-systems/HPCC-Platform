@@ -7724,6 +7724,22 @@ extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr,
         abortWorkUnit(wuid);
 }
 
+extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secSubmitWorkUnit(wuid, *secmgr, *secuser);
+    if (secuser)
+        return submitWorkUnit(wuid, secuser->getName(), secuser->credentials().getPassword());
+    submitWorkUnit(wuid, "", "");
+}
+
+extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secAbortWorkUnit(wuid, *secmgr, *secuser);
+    abortWorkUnit(wuid);
+}
+
 bool CLocalWorkUnit::hasWorkflow() const
 {
     return p->hasProp("Workflow");
