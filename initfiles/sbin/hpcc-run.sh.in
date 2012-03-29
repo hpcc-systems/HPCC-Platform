@@ -122,6 +122,24 @@ case "$action" in
         ;;
 esac
 
+if [ "${cmd}" == start ] && [ -v ${comp} ] && [ "${action}" == "hpcc-init" ]; then
+    for IP in $IPS; do
+        if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
+            echo "$IP: Host is alive."
+            CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
+            if [ "$CAN_SSH" -eq 255 ]; then
+                echo "$IP: Cannot SSH to host.";
+            else
+                buildCmd "dafilesrv" "start" ""
+                runCmd $CMD
+            fi
+        else
+            echo "$IP: Cannot Ping host? (Host Alive?)"
+        fi
+    done
+fi
+
+
 if [ "${cmd}" == "restart" ]; then
     for i in stop start; do
         cmd=$i
