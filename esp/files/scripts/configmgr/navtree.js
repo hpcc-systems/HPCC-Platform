@@ -2265,6 +2265,7 @@ function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordI
       var xmlArgs = "<XmlArgs><Setting category=\"" + category;
       xmlArgs += "\" params=\"" + params;
       xmlArgs += "\" attrName=\"" + attrName;
+      xmlArgs += "\" viewType=\"password";
       xmlArgs += "\" rowIndex=\"" + recordIndex;
       xmlArgs += "\" oldValue=\"" + escape(oldValue);
       xmlArgs += "\" newValue=\"" + escape(pwd) + "\"/></XmlArgs>";
