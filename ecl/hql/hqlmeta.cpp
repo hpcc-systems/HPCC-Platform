@@ -47,17 +47,22 @@ static IHqlExpression * cacheUnknownSortlist;
 static IHqlExpression * cacheIndeterminateSortlist;
 static IHqlExpression * cacheMatchGroupOrderSortlist;
 static IHqlExpression * cached_omitted_Attribute;
+static IHqlExpression * cacheAnyAttribute;
+static IHqlExpression * cacheAnyOrderSortlist;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     _ATOM groupedOrderAtom = createAtom("{group-order}");
+    _ATOM anyOrderAtom = createAtom("{any}");
     cacheGroupedElement = createAttribute(groupedOrderAtom);
     cacheUnknownAttribute = createAttribute(unknownAtom);
     cacheIndeterminateAttribute = createAttribute(indeterminateAtom);
+    cacheAnyAttribute = createAttribute(anyOrderAtom);
+    cached_omitted_Attribute = createAttribute(_omitted_Atom);
     cacheUnknownSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheUnknownAttribute));
     cacheIndeterminateSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheIndeterminateAttribute));
     cacheMatchGroupOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheGroupedElement));
-    cached_omitted_Attribute = createAttribute(_omitted_Atom);
+    cacheAnyOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheAnyAttribute));
     return true;
 }
 MODULE_EXIT()
@@ -245,6 +250,9 @@ IHqlExpression * queryUnknownSortlist() { return cacheUnknownSortlist; }
 IHqlExpression * getUnknownAttribute() { return LINK(cacheUnknownAttribute); }
 IHqlExpression * getMatchGroupOrderSortlist() { return LINK(cacheMatchGroupOrderSortlist); }
 IHqlExpression * getUnknownSortlist() { return LINK(cacheUnknownSortlist); }
+IHqlExpression * queryAnyOrderSortlist() { return cacheAnyOrderSortlist; }
+IHqlExpression * queryAnyDistributionAttribute() { return cacheAnyAttribute; }
+
 
 inline bool matchesGroupOrder(IHqlExpression * expr) { return expr == cacheMatchGroupOrderSortlist; }
 
@@ -348,6 +356,11 @@ IHqlExpression * getIntersectingSortlist(IHqlExpression * left, IHqlExpression *
 {
     if (!left || !right)
         return NULL;
+
+    if (left == queryAnyOrderSortlist())
+        return LINK(right);
+    if (right == queryAnyOrderSortlist())
+        return LINK(left);
 
     ForEachChild(i, left)
     {
@@ -816,8 +829,10 @@ ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType)
     IHqlExpression * leftDist = queryDistribution(leftType);
     IHqlExpression * rightDist = queryDistribution(rightType);
     OwnedHqlExpr newDistributeInfo;
-    if (leftDist == rightDist)
+    if ((leftDist == rightDist) || (rightDist == queryAnyDistributionAttribute()))
         newDistributeInfo.set(leftDist);
+    else if (leftDist == queryAnyDistributionAttribute())
+        newDistributeInfo.set(rightDist);
     else if (leftDist && rightDist)
         newDistributeInfo.set(queryUnknownAttribute());
 
@@ -1170,6 +1185,8 @@ static bool isCorrectDistributionForSort(IHqlExpression * dataset, IHqlExpressio
     if (isLocal || (isGrouped(dataset) && !ignoreGrouping))
         return true;
     IHqlExpression * distribution = queryDistribution(dataset);
+    if (distribution == queryAnyDistributionAttribute())
+        return true;
     if (!isSortDistribution(distribution))
         return false;
     IHqlExpression * previousOrder = distribution->queryChild(0);           // Already normalized when it was created.
@@ -1186,6 +1203,8 @@ static bool isCompatibleSortOrder(IHqlExpression * existingOrder, IHqlExpression
         return true;
     if (!existingOrder)
         return false;
+    if (existingOrder == queryAnyOrderSortlist())
+        return true;
     if (normalizedOrder->numChildren() > existingOrder->numChildren())
         return false;
     ForEachChild(i, normalizedOrder)

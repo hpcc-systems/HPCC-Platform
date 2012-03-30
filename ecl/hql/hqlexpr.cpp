@@ -10298,9 +10298,9 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             break;
         }
     case no_null:
+    case no_fail:
     case no_anon:
     case no_pseudods:
-    case no_fail:
     case no_skip:
     case no_all:
     case no_workunit_dataset:
@@ -10314,6 +10314,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_purevirtual:
     case no_libraryinput:
         {
+            bool matchesAnyMeta =  ((op == no_null) || (op == no_fail));
             IHqlExpression * record = &parms.item(0);
             IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
             bool linkCounted = (queryProperty(_linkCounted_Atom, parms) || recordRequiresSerialization(record));
@@ -10325,7 +10326,10 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                 ITypeInfo * recordType = createRecordType(record);
                 assertex(recordType->getTypeCode() == type_record);
                 ITypeInfo * rowType = makeRowType(recordType);
-                type.setown(makeTableType(rowType, LINK(distribution), NULL, NULL));
+                if (matchesAnyMeta)
+                    type.setown(makeTableType(rowType, LINK(queryAnyDistributionAttribute()), LINK(queryAnyOrderSortlist()), LINK(queryAnyOrderSortlist())));
+                else
+                    type.setown(makeTableType(rowType, LINK(distribution), NULL, NULL));
                 IHqlExpression * grouped = queryProperty(groupedAtom, parms);
                 if (grouped)
                 {
