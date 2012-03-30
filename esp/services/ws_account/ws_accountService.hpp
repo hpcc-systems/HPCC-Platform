@@ -49,21 +49,21 @@ public:
         const char* build_level = getBuildLevel();
         if (!stricmp(m_authType.str(), "none") || !stricmp(m_authType.str(), "local"))
         {
+            ensureNavLink(*folder, "My Account", "/Ws_Access/SecurityNotEnabled?form_", "My Account", NULL, NULL, 0, true);//Force the menu to use this setting
             ensureNavLink(*folder, "Change Password", "/Ws_Access/SecurityNotEnabled?form_", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
             if (!isFF)
                 ensureNavLink(*folder, "Relogin", "/Ws_Access/SecurityNotEnabled?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
             else
                 ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
-            ensureNavLink(*folder, "Who Am I", "/Ws_Access/SecurityNotEnabled?form_", "WhoAmI", NULL, NULL, 0, true);//Force the menu to use this setting
         }
         else
         {
+            ensureNavLink(*folder, "My Account", "/Ws_Account/MyAccount", "MyAccount", NULL, NULL, 0, true);//Force the menu to use this setting
             ensureNavLink(*folder, "Change Password", "/Ws_Account/UpdateUserInput", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
             if (!isFF)
                 ensureNavLink(*folder, "Relogin", "/Ws_Account/LogoutUser", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
             else
                 ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
-            ensureNavLink(*folder, "Who Am I", "/Ws_Account/WhoAmI", "WhoAmI", NULL, NULL, 0, true);//Force the menu to use this setting
         }
 #endif
     }
@@ -154,11 +154,11 @@ public:
 #ifdef _USE_OPENLDAP
     virtual bool onUpdateUser(IEspContext &context, IEspUpdateUserRequest &req, IEspUpdateUserResponse &resp);
     virtual bool onUpdateUserInput(IEspContext &context, IEspUpdateUserInputRequest &req, IEspUpdateUserInputResponse &resp);
-    virtual bool onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspWhoAmIResponse &resp);
+    virtual bool onMyAccount(IEspContext &context, IEspMyAccountRequest &req, IEspMyAccountResponse &resp);
 #else
     virtual bool onUpdateUser(IEspContext &context, IEspUpdateUserRequest &req, IEspUpdateUserResponse &resp) {return true;};
     virtual bool onUpdateUserInput(IEspContext &context, IEspUpdateUserInputRequest &req, IEspUpdateUserInputResponse &resp) {return true;};
-    virtual bool onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspWhoAmIResponse &resp) {return true;};
+    virtual bool onMyAccount(IEspContext &context, IEspMyAccountRequest &req, IEspMyAccountResponse &resp) {return true;};
 #endif
     virtual bool onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp);
 };
