@@ -15,6 +15,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-ADD_SUBDIRECTORY(DIR_NAME)
-ADD_SUBDIRECTORY(sshkey)
-ADD_SUBDIRECTORY(bash_completion)
+FOREACH( oFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclcc
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclplus
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclagent
+)
+    install ( FILES ${oFILES} DESTINATION ${INSTALL_DIR}/etc/bash_completion.d COMPONENT Runtime )
+ENDFOREACH ( oFILES )
