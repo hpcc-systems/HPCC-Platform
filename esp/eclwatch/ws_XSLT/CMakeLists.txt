@@ -106,6 +106,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/targetclusters.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/showresult.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/table.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/thor_status.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/topology.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/tplog.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/tplogdisplay.xslt
