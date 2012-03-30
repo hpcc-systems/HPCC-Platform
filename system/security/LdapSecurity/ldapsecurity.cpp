@@ -210,6 +210,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->credentials().setPassword(credentials().getPassword());
     dest->setUserSid(m_usersid.length(), m_usersid.toByteArray());
     dest->setUserID(m_userid);
+    dest->setPasswordExpiration(m_passwordExpiration);
 }
 
 ISecUser * CLdapSecUser::clone()

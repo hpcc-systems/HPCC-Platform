@@ -20,6 +20,7 @@
 #define _SECLIB_HPP__
 
 #include "jlib.hpp"
+#include "jtime.hpp"
 #include "jexcept.hpp"
 
 #ifndef SECLIB_API
@@ -125,6 +126,9 @@ interface ISecCredentials : extends IInterface
     virtual bool setPassword(const char * pw) = 0;
     virtual const char * getPassword() = 0;
     virtual bool addToken(unsigned type, void * data, unsigned length) = 0;
+    virtual bool setPasswordExpiration(CDateTime & expirationDate) = 0;
+    virtual CDateTime & getPasswordExpiration(CDateTime & expirationDate) = 0;
+    virtual int getPasswordDaysRemaining() = 0;
 };
 
 
@@ -154,6 +158,7 @@ interface ISecUser : extends IInterface
     virtual void copyTo(ISecUser & destination) = 0;
     virtual CDateTime & getPasswordExpiration(CDateTime & expirationDate) = 0;
     virtual bool setPasswordExpiration(CDateTime & expirationDate) = 0;
+    virtual int getPasswordDaysRemaining() = 0;
     virtual void setProperty(const char * name, const char * value) = 0;
     virtual const char * getProperty(const char * name) = 0;
     virtual void setPropertyInt(const char * name, int value) = 0;

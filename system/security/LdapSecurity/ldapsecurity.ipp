@@ -46,6 +46,7 @@ private:
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
     bool         m_isAuthenticated;
+    CDateTime    m_passwordExpiration;
     unsigned     m_userid;
     MemoryBuffer m_usersid;
     BufferArray  m_groupsids;
@@ -99,8 +100,31 @@ public:
     virtual bool setStatus(SecUserStatus Status){return false;}
 
 
-   virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate) {return expirationDate; }
-   virtual bool setPasswordExpiration(CDateTime& expirationDate){return false;}
+   virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate)
+   {
+       expirationDate.set(m_passwordExpiration);
+       return expirationDate;
+   }
+   virtual bool setPasswordExpiration(CDateTime& expirationDate)
+   {
+       m_passwordExpiration.set(expirationDate);
+       return true;
+   }
+   virtual int getPasswordDaysRemaining()
+   {
+       if (m_passwordExpiration.isNull())
+           return -2;//-2 if never expires
+       CDateTime now;
+       now.setNow();
+       int num = -1;//-1 if already expired
+       while (m_passwordExpiration >= now)
+       {
+           ++num;
+           now.adjustTime(24*60);
+       }
+       return num;
+   }
+
    ISecUser * clone();
     virtual void setProperty(const char* name, const char* value){}
     virtual const char* getProperty(const char* name){ return "";}

@@ -147,13 +147,30 @@ bool Cws_accountEx::onUpdateUserInput(IEspContext &context, IEspUpdateUserInputR
     return true;
 }
 
-bool Cws_accountEx::onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspWhoAmIResponse &resp)
+bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req, IEspMyAccountResponse &resp)
 {
     try
     {
         ISecUser* user = context.queryUser();
         if(user != NULL)
         {
+            CDateTime dt;
+            user->getPasswordExpiration(dt);
+            StringBuffer sb;
+            if (dt.isNull())
+            {
+                assertex(user->getPasswordDaysRemaining() == -2);//-1 if expired, -2 if never expires
+                sb.append("Never");
+            }
+            else
+            {
+                dt.getString(sb);
+                sb.replace('T', NULL);
+            }
+            resp.setPasswordExpiration(sb.str());
+            resp.setPasswordDaysRemaining(user->getPasswordDaysRemaining());
+            resp.setFirstName(user->getFirstName());
+            resp.setLastName(user->getLastName());
             resp.setUsername(user->getName());
         }
     }
@@ -163,6 +180,8 @@ bool Cws_accountEx::onWhoAmI(IEspContext &context, IEspWhoAmIRequest &req, IEspW
     }
     return true;
 }
+
+
 #endif
 
 bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &req, IEspVerifyUserResponse &resp)
