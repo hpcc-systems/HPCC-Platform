@@ -98,7 +98,7 @@ CEclDirectSoapBindingEx::CEclDirectSoapBindingEx(IPropertyTree* cfg, const char 
     int port = procTree->getPropInt(xpath.str());
     if (port)
     {
-        xpath.set("EspBinding[@type='ws_workunitsSoapBinding'][@port='").append(port).append("']").str();
+        xpath.set("EspBinding[@type='ws_workunitsSoapBinding'][@port='").append(port).append("']");
         redirect = procTree->hasProp(xpath.str());
     }
 
@@ -107,6 +107,21 @@ CEclDirectSoapBindingEx::CEclDirectSoapBindingEx(IPropertyTree* cfg, const char 
     ForEach(*it)
         clusters.append(it->str(s).str());
     supportRepository = false;
+}
+
+inline void deleteEclDirectWorkunit(IWorkUnitFactory *factory, const char *wuid)
+{
+    try
+    {
+        factory->deleteWorkUnit(wuid);
+    }
+    catch (IException *e)
+    {
+        DBGLOG(e, "EclDirect Failed to delete workunit");
+    }
+    catch (...)
+    {
+    }
 }
 
 bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspRunEclResponse & resp)
@@ -159,9 +174,7 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
         cw.clear();
 
         if (deleteWorkunits)
-        {
-            try { factory->deleteWorkUnit(wuid.str()); } catch (...){}
-        }
+            deleteEclDirectWorkunit(factory, wuid.str());
     }
     else
     {
@@ -279,16 +292,13 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     }
 
     if (deleteWorkunits)
-    {
-        try { factory->deleteWorkUnit(wuid.str()); } catch (...){}
-    }
+        deleteEclDirectWorkunit(factory, wuid.str());
 
     return true;
 }
 
 static void xsltTransform(const char* xml, const char* sheet, IProperties *params, StringBuffer& ret)
 {
-    StringBuffer xsl;
     if(!checkFileExists(sheet))
         throw MakeStringException(-1, "Could not find stylesheet %s.",sheet);
     Owned<IXslProcessor> proc = getXslProcessor();
