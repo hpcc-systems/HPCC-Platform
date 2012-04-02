@@ -613,7 +613,7 @@ public:
                 dfile->detach();
             else {
                 dfile->detach();
-                dfile->removePhysicalPartFiles(0,NULL,NULL);
+                dfile->removePhysicalPartFiles(NULL,NULL);
             }
             dfile.clear();
         }
@@ -689,7 +689,7 @@ public:
                 dfile->detach();
             else {
                 dfile->detach();
-                dfile->removePhysicalPartFiles(0,NULL,NULL);
+                dfile->removePhysicalPartFiles(NULL,NULL);
             }
             dfile.clear();
         }
@@ -893,7 +893,7 @@ public:
                     return;
                 }
                 dfile->detach();
-                dfile->removePhysicalPartFiles(0,NULL,NULL);
+                dfile->removePhysicalPartFiles(NULL,NULL);
             }
             dfile.clear();
         }

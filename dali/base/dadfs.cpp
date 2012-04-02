@@ -908,7 +908,7 @@ public:
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
     bool removeEntry(const char *_logicalname,IUserDescriptor *user);
-    bool removePhysical(const char *_logicalname,unsigned short port,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
+    bool removePhysical(const char *_logicalname,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
     bool renamePhysical(const char *oldname,const char *newname,unsigned short port,IMultiException *exceptions,IUserDescriptor *user);
     void removeEmptyScope(const char *name);
 
@@ -920,7 +920,7 @@ public:
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
-    bool doRemovePhysical(CDfsLogicalFileName &dlfn,unsigned short port,const char *cluster,IMultiException *mexcept,IUserDescriptor *user,bool ignoresub);
+    bool doRemovePhysical(CDfsLogicalFileName &dlfn,const char *cluster,IMultiException *mexcept,IUserDescriptor *user,bool ignoresub);
     bool doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub);
     DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user);
     bool filePhysicalVerify(const char *lfn1,bool includecrc,StringBuffer &errstr,IUserDescriptor *user);
@@ -1158,7 +1158,7 @@ public:
     {
         try {
             if (remphys) 
-                queryDistributedFileDirectory().removePhysical(lfn.get(),0,NULL,NULL,user);
+                queryDistributedFileDirectory().removePhysical(lfn.get(),NULL,NULL,user.get());
             else 
                 queryDistributedFileDirectory().removeEntry(lfn.get(),user);
         }
@@ -3153,7 +3153,7 @@ public:
         parent->removeEntry(lname.get(),udesc);
     }
 
-    bool removePhysicalPartFiles(unsigned short port,const char *cluster,IMultiException *mexcept)
+    bool removePhysicalPartFiles(const char *cluster,IMultiException *mexcept)
     {
         Owned<IGroup> grpfilter;
         if (cluster&&*cluster) {
@@ -3178,7 +3178,6 @@ public:
         class casyncfor: public CAsyncFor
         {
             IDistributedFile *file;
-            unsigned short port;
             CriticalSection &errcrit;
             IMultiException *mexcept;
             unsigned width;
@@ -3186,11 +3185,10 @@ public:
         public:
             bool ok;
             bool islazy;
-            casyncfor(IDistributedFile *_file,unsigned _width,unsigned short _port,IGroup *_grpfilter,IMultiException *_mexcept,CriticalSection &_errcrit)
+            casyncfor(IDistributedFile *_file,unsigned _width,IGroup *_grpfilter,IMultiException *_mexcept,CriticalSection &_errcrit)
                 : errcrit(_errcrit)
             {
                 file = _file;
-                port = _port;
                 ok = true;
                 mexcept = _mexcept;
                 width = _width;
@@ -3206,8 +3204,6 @@ public:
                     part->getFilename(rfn,copy);
                     if (grpfilter&&(grpfilter->rank(rfn.queryEndpoint())==RANK_NULL))
                         continue;
-                    if (port)
-                        rfn.setPort(port); // if daliservix
                     Owned<IFile> partfile = createIFile(rfn);
                     StringBuffer eps;
                     try
@@ -3238,7 +3234,7 @@ public:
                     }
                 }
             }
-        } afor(this,width,port,grpfilter,mexcept,errcrit);
+        } afor(this,width,grpfilter,mexcept,errcrit);
         afor.islazy = queryAttributes().getPropInt("@lazy")!=0;
         afor.For(width,10,false,true);
         if (cluster&&*cluster) 
@@ -4628,7 +4624,7 @@ public:
         parent->removeEntry(lname.get(),udesc);
     }
 
-    bool removePhysicalPartFiles(unsigned short port,const char *clustername,IMultiException *mexcept)
+    bool removePhysicalPartFiles(const char *clustername,IMultiException *mexcept)
     {
         throw MakeStringException(-1,"removePhysicalPartFiles not supported for SuperFiles");
         return false; 
@@ -5052,7 +5048,7 @@ private:
                     dlfn.set(subnames.item(i).text.get());
                     if (!transaction||!delayed||!transaction->addDelayedDelete(dlfn.get(),remphys,udesc)) {
                         if (remphys) 
-                            done = parent->doRemovePhysical(dlfn,0,NULL,NULL,udesc,true);
+                            done = parent->doRemovePhysical(dlfn,NULL,NULL,udesc,true);
                         else {
                             done = parent->doRemoveEntry(dlfn,udesc,true);
                         }
@@ -6796,7 +6792,7 @@ void CDistributedFileDirectory::removeEmptyScope(const char *scope)
     }
 }
 
-bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,unsigned short port,const char *cluster,IMultiException *exceptions,IUserDescriptor *user,bool ignoresub)
+bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,const char *cluster,IMultiException *exceptions,IUserDescriptor *user,bool ignoresub)
 {
     CriticalBlock block(removesect);
     const char *logicalname = dlfn.get();
@@ -6826,7 +6822,7 @@ bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,unsig
         file->detach(); 
     }
     try {
-        file->removePhysicalPartFiles(port,clustername.str(),exceptions); 
+        file->removePhysicalPartFiles(clustername.str(),exceptions);
     }
     catch (IException *e)
     {
@@ -6839,11 +6835,11 @@ bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,unsig
     return true;
 }
 
-bool CDistributedFileDirectory::removePhysical(const char *_logicalname,unsigned short port,const char *cluster,IMultiException *exceptions,IUserDescriptor *user)
+bool CDistributedFileDirectory::removePhysical(const char *_logicalname,const char *cluster,IMultiException *exceptions,IUserDescriptor *user)
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(_logicalname);
-    return doRemovePhysical(dlfn,port,cluster,exceptions,user,false);
+    return doRemovePhysical(dlfn,cluster,exceptions,user,false);
 }
 
     
@@ -9636,7 +9632,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     // MORE - once deletion of logic files are also in transaction we can move this up (and allow promote within transactions)
     if (delsub) {
         ForEachItemIn(j,outunlinked) 
-            removePhysical(outunlinked.item(j),0,NULL,NULL,user);
+            removePhysical(outunlinked.item(j),NULL,NULL,user);
     }
 }
 

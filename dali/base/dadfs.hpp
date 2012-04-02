@@ -238,7 +238,7 @@ interface IDistributedFile: extends IInterface
 
     virtual unsigned numCopies(unsigned partno) = 0;                            // number of copies
 
-    virtual bool removePhysicalPartFiles(unsigned short port=0,const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;          // removes all physical part files
+    virtual bool removePhysicalPartFiles(const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;          // removes all physical part files
                                                                                 // returns true if no major errors
 
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)
@@ -461,7 +461,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDFScopeIterator *getScopeIterator(const char *subscope=NULL,bool recursive=true,bool includeempty=false, IUserDescriptor *user=NULL)=0;
 
     virtual bool removeEntry(const char *name,IUserDescriptor *user=NULL) = 0;  // equivalent to lookup/detach/release
-    virtual bool removePhysical(const char *name,unsigned short port=0,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
+    virtual bool removePhysical(const char *name,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
     virtual bool renamePhysical(const char *oldname,const char *newname,unsigned short port=0,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
