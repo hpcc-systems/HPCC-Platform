@@ -213,7 +213,6 @@ int main(int argc, char* argv[])
 
                     try
                     {
-                        recursiveCreateDirectory(mirrorPath);
                         StringBuffer backupURL;
                         if (mirrorPath.length()<=2 || !isPathSepChar(mirrorPath.charAt(0)) || !isPathSepChar(mirrorPath.charAt(1)))
                         { // local machine path, convert to url
@@ -231,6 +230,7 @@ int main(int argc, char* argv[])
                         }
                         else
                             backupURL.append(mirrorPath);
+                        recursiveCreateDirectory(backupURL.str());
                         addPathSepChar(backupURL);
                         serverConfig->setProp("SDS/@remoteBackupLocation", backupURL.str());
                         PROGLOG("Backup URL = %s", backupURL.str());
