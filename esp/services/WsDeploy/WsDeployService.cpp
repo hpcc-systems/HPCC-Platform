@@ -929,6 +929,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
       const char* pszOldValue = pSetting->queryProp("@oldValue");
       const char* pszNewValue = pSetting->queryProp("@newValue");
       const char* pszOnChange = pSetting->queryProp("@onChange");
+      const char* pszViewType = pSetting->queryProp("@viewType");
 
       StringBuffer xpath;
       xpath.clear().appendf("%s[@name='%s']", pszCompType, pszCompName);
@@ -1293,8 +1294,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         {
           xpath.clear().appendf("@%s", pszAttrName);
 
-          String strAttrName(pszAttrName);
-          if (strAttrName.toLowerCase()->endsWith("password"))
+          if (pszViewType && *pszViewType && !strcmp(pszViewType, "password"))
           {
             encrypt(encryptedText, pszNewValue);
             pszNewValue = encryptedText.str();

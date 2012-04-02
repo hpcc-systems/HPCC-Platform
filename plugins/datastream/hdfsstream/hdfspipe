@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source hadoopConfig
+source hdfsstreamconfig 
 
 CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
 
@@ -13,16 +13,32 @@ for f in $HADOOP_LOCATION/lib/*.jar ; do
 done
 
 export CLASSPATH=$CLASSPATH
+
 PID=$$
 
-LOG=/tmp/HPCC-HadoopStream.log.$PID
+idfound=0;
+nodeid=0;
 
-echo "Script starting"  		>> $LOG
-echo "Running as user: $USER" 	>> $LOG
-echo "Running mode: $run_mode" 	>> $LOG
-echo "Incoming params: ${@}" 	>> $LOG
+for p in $*;
+ do
+#   echo "[$p]" >> $LOG;
+   if [ "$idfound" = "1" ];
+   then
+        nodeid=$p;
+        idfound=0;
+   elif [ "$p" = "-nodeid" ];
+   then
+	idfound=1;
+   fi
+done;
 
-HPCCTMPFILE=/tmp/HPCCTMPFILE;
+LOG=/tmp/HPCC-HadoopStream.log.$nodeid.$PID
+
+echo "Script starting"		>> $LOG
+echo "Running as user: $USER"   >> $LOG
+echo "Running mode: $run_mode"  >> $LOG
+echo "Incoming params: ${@}"    >> $LOG
+echo "nodeid: $nodeid" 		>> $LOG
 
 if [ "$1" = "" ];
 then
@@ -36,6 +52,8 @@ then
 	/opt/HPCCSystems/bin/hdfsstream  "${@}" 2>> $LOG;
 elif [ $1 = "-so" ];
 then
+
+	HPCCTMPFILE=/tmp/HPCCTMPFILE_$nodeid;
 	if [ -f $HPCCTMPFILE ]
 	then
 		rm "$HPCCTMPFILE" 			2>> $LOG
@@ -51,12 +69,12 @@ then
 
 	echo "calling hdfsstream..." 		>> $LOG
 
-	/opt/HPCCSystems/bin/hdfsstream "${@}" 	2>> $LOG
+	/opt/HPCCSystems/bin/hdfsstream "${@}" -pipepath $HPCCTMPFILE  	2>> $LOG
 
 	echo "write exited with: $?" 			>> $LOG
 elif [ $1 = "-sop" ];
 then
-	pipepath=/tmp/HPCCPIPE;
+	pipepath=/tmp/HPCCPIPE_$nodeid;
 	mkfifo $pipepath 2> /tmp/HPCC-FIFO.err.$PID;
 	chmod 666 $pipepath 2> /tmp/HPCC-FIFO.err.$PID;
 
@@ -68,7 +86,7 @@ then
 	else
 		echo "  WARNING (hdfsstream mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
 	fi
-	/opt/HPCCSystems/bin/hdfsstream  "${@}" 	2>> $LOG &
+	/opt/HPCCSystems/bin/hdfsstream  "${@}" -pipepath $pipepath	2>> $LOG &
 	echo "redirecting stdin to named pipe ... " 	>> $LOG
 	cat < /dev/stdin > "$pipepath"			2>> $LOG
 
