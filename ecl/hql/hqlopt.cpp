@@ -611,7 +611,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             }
             break;
         case no_fetch:
-            if (ds->queryChild(3)->isPure())
+            if (isSimpleCount && ds->queryChild(3)->isPure())
                 next = ds->queryChild(1);
             break;
         case no_group:
