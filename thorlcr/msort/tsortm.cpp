@@ -1234,20 +1234,24 @@ public:
 #ifdef USE_SAMPLE_PARTITIONING
         bool usesampling = true;        
 #endif
+        bool useAux = false; // JCSMORE using existing partioning and auxillary rowIf (only used if overflow)
         loop {
             OwnedMalloc<rowmap_t> splitMap, splitMapUpper;
             CTimer timer;
             if (numnodes>1) {
                 timer.start();
                 if (cosortfilenames) {
+                    useAux = true;
                     CalcExtPartition();
                     canoptimizenullcolumns = false;
                 }
                 if (usepartitionrow) {
+                    useAux = true;
                     CalcPreviousPartition();
                     canoptimizenullcolumns = false;
                 }
                 if (partitioninfo->IsOK()) {
+                    useAux = true;
                     splitMap.setown(UsePartitionInfo(*partitioninfo, betweensort));
                     if (betweensort) {
                         splitMapUpper.setown(UsePartitionInfo(*partitioninfo, false));
@@ -1329,7 +1333,7 @@ public:
                     for (i=0;i<numnodes;i++) {
                         CSortNode &slave = slaves.item(i);
                         if (slave.overflow) 
-                            slave.OverflowAdjustMapStart(numnodes,splitMap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE);
+                            slave.OverflowAdjustMapStart(numnodes,splitMap+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_COLLATE,useAux);
                     }
                     for (i=0;i<numnodes;i++) {
                         CSortNode &slave = slaves.item(i);
@@ -1340,7 +1344,7 @@ public:
                         for (i=0;i<numnodes;i++) {
                             CSortNode &slave = slaves.item(i);
                             if (slave.overflow) 
-                                slave.OverflowAdjustMapStart(numnodes,splitMapUpper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER);
+                                slave.OverflowAdjustMapStart(numnodes,splitMapUpper+i*numnodes,mbsk.length(),(const byte *)mbsk.bufferBase(),CMPFN_UPPER,useAux);
                         }
                         for (i=0;i<numnodes;i++) {
                             CSortNode &slave = slaves.item(i);

@@ -207,12 +207,12 @@ void SortSlaveMP::MultiBinChopStop(unsigned num,rowmap_t *pos)
     mb.read(num*sizeof(rowmap_t),pos);
 }
 
-void SortSlaveMP::OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn) /* async */
+void SortSlaveMP::OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn,bool useaux) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_OverflowAdjustMapStart);
     mb.append(mapsize).append(mapsize*sizeof(rowmap_t),map);
-    serializeblk(mb,keybuffsize,keybuff).append(cmpfn);
+    serializeblk(mb,keybuffsize,keybuff).append(cmpfn).append(useaux);
     sendRecv(mb);
 
 }
@@ -477,7 +477,9 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 deserializeblk(mb,keybuffsize,keybuff);
                 byte cmpfn;
                 mb.read(cmpfn);
-                slave.OverflowAdjustMapStart(mapsize,(rowmap_t *)map,keybuffsize,(const byte *)keybuff,cmpfn);
+                bool useaux;
+                mb.read(useaux);
+                slave.OverflowAdjustMapStart(mapsize,(rowmap_t *)map,keybuffsize,(const byte *)keybuff,cmpfn,useaux);
                 free(keybuff);
             }
             break;
