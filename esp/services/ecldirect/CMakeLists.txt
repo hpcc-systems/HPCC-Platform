@@ -45,6 +45,7 @@ include_directories (
          ./../../../system/include 
          ./../../../common/environment 
          ./../../../common/workunit 
+         ./../../../common/wuwebview
          ./../../clients 
          ./../../../common/fileview2 
          ./../../../dali/base 
@@ -61,6 +62,7 @@ target_link_libraries ( EclDirect
          jlib
          xmllib 
          esphttp 
+         LdapSecurity
          mp 
          hrpc 
          remote 
@@ -71,6 +73,7 @@ target_link_libraries ( EclDirect
          eclrtl 
          deftype 
          workunit 
+         wuwebview
          jhtree 
          hql 
          fileview2 
