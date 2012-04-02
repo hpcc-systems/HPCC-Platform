@@ -2,6 +2,7 @@ project(hdfsstream)
 
 option(USE_HDFSSTREAM "Configure use of hdstream plugin" OFF)
 if ( USE_HDFSSTREAM )
+add_subdirectory (ecl)
 	option(HADOOP_PATH "Set the Hadoop path.")
 	if( NOT HADOOP_PATH )
 		set(HADOOP_PATH "/usr/local/hadoop")
@@ -28,10 +29,11 @@ if ( USE_HDFSSTREAM )
 
 	add_executable( hdfsstream ${SRC} )
 
-#	Install ( TARGETS hdfsstream DESTINATION ${DIR_NAME}/bin COMPONENT Runtime)
-#	Install ( PROGRAMS hdfspipe DESTINATION ${DIR_NAME}/bin COMPONENT Runtime )
-#	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsstreamconfig DESTINATION ${CONFIG_DIR}/rpmnew COMPONENT Runtime )
-#	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsstreamconfig DESTINATION ${DIR_NAME}/bin COMPONENT Runtime )
+	set ( INSTALLDIR "${OSSDIR}/bin")
+	Install ( TARGETS hdfsstream DESTINATION ${INSTALLDIR} COMPONENT Runtime)
+	Install ( PROGRAMS hdfspipe DESTINATION ${INSTALLDIR} COMPONENT Runtime )
+	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsstreamconfig DESTINATION ${INSTALLDIR} COMPONENT Runtime )
+
 	target_link_libraries ( hdfsstream
 					${JAVA_JVM_LIBRARY}
 					${LIBHDFS_LIBRARIES})
