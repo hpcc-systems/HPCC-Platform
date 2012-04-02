@@ -25,7 +25,7 @@ interface ISortSlaveMP
     virtual void MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowmap_t *pos,byte cmpfn,bool useaux)=0;
     virtual void MultiBinChopStart(size32_t keybuffsize,const byte *keybuff, byte cmpfn)=0; /* async */
     virtual void MultiBinChopStop(unsigned num,rowmap_t *pos)=0;
-    virtual void OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn)=0; /* async */
+    virtual void OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn, bool useaux)=0; /* async */
     virtual rowmap_t OverflowAdjustMapStop( unsigned mapsize, rowmap_t *map)=0;
     virtual void MultiMerge(unsigned mapsize,rowmap_t *map,unsigned num,SocketEndpoint* endpoints)=0; /* async */
     virtual void MultiMergeBetween(unsigned mapsize,rowmap_t *map,rowmap_t *mapupper,unsigned num,SocketEndpoint* endpoints)=0; /* async */
@@ -62,7 +62,7 @@ public:
     void MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowmap_t *pos,byte cmpfn,bool useaux);
     void MultiBinChopStart(size32_t keybuffsize,const byte *keybuff, byte cmpfn); /* async */
     void MultiBinChopStop(unsigned num,rowmap_t *pos);
-    void OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn); /* async */
+    void OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn,bool useaux); /* async */
     rowmap_t OverflowAdjustMapStop( unsigned mapsize, rowmap_t *map);
     void MultiMerge(unsigned mapsize,rowmap_t *map,unsigned num,SocketEndpoint* endpoints); /* async */
     void MultiMergeBetween(unsigned mapsize,rowmap_t *map,rowmap_t *mapupper,unsigned num,SocketEndpoint* endpoints); /* async */
