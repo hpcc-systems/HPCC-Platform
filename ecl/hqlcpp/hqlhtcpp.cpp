@@ -15723,7 +15723,7 @@ void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * ex
 ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr)
 {
     StringBuffer s;
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr, "TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     OwnedHqlExpr values = normalizeListCasts(expr->queryChild(0));
     IHqlExpression * record = expr->queryChild(1);
@@ -15737,14 +15737,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
     OwnedHqlExpr clearAction;
 
     OwnedHqlExpr rowsExpr;
-    OwnedHqlExpr rowVar = createVariable("row", makeIntType(4, false));
+    OwnedHqlExpr rowVar = createVariable("row", makeIntType(8, false));
     if (expr->getOperator() == no_datasetfromrow)
     {
         BuildCtx subctx(funcctx);
@@ -15830,7 +15830,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
         buildReturnRecordSize(funcctx, selfCursor);
     }
 
-    doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
+    doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
     doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
@@ -15870,7 +15870,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
         valuesAreConstant = true;
     }
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemprow, expr,"TempRow");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemprow, expr, "TempRow");
     if (valueText.length())
     {
         StringBuffer graphLabel;
@@ -15885,7 +15885,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRowSingle(ARowBuilder & crSelf)");
+    // Ignoring row argument, since engines will stop at numRows(), which is 1
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
@@ -15913,7 +15914,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     //-----------------
     buildActivityFramework(instance);
@@ -15921,7 +15922,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
@@ -15970,7 +15971,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     }
 
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
-    doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
+    doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
     doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
@@ -15988,7 +15989,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
     // Overriding IHThorTempTableArg
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr,"InlineTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
 
