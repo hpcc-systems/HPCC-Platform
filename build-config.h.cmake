@@ -82,6 +82,10 @@
     #cmakedefine BUILD_TAG "${BUILD_TAG}"
 #endif
 
+#ifndef BASE_BUILD_TAG
+    #cmakedefine BASE_BUILD_TAG "${BASE_BUILD_TAG}"
+#endif
+
 #ifndef BUILD_LEVEL
     #cmakedefine BUILD_LEVEL "${BUILD_LEVEL}"
 #endif

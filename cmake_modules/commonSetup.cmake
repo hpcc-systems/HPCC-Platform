@@ -395,4 +395,19 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
   SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+  MACRO (FETCH_GIT_TAG workdir edition result)
+      execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*
+        WORKING_DIRECTORY "${workdir}"
+        OUTPUT_VARIABLE ${result}
+        ERROR_QUIET
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if ("${${result}}" STREQUAL "")
+            execute_process(COMMAND "${GIT_COMMAND}" describe --always --tags --all --abbrev=6 --dirty --long
+                WORKING_DIRECTORY "${workdir}"
+                OUTPUT_VARIABLE ${result}
+                ERROR_QUIET
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        endif()
+  ENDMACRO()
+
 endif ("${COMMONSETUP_DONE}" STREQUAL "")

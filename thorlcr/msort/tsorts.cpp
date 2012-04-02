@@ -623,7 +623,7 @@ public:
 
 
     void OverflowAdjustMapStart(unsigned mapsize, rowmap_t * map,
-                               size32_t keybufsize, const byte * keybuf, byte cmpfn)
+                               size32_t keybufsize, const byte * keybuf, byte cmpfn, bool useaux)
     {
         assertex(overflowfile);
         overflowmap = (rowmap_t *)malloc(mapsize*sizeof(rowmap_t));
@@ -636,7 +636,7 @@ public:
         for (i=0;i<mapsize;i++)
             ActPrintLog(activity, "%"RMF"d ",overflowmap[i]);
 #endif
-        VarElemArray keys(rowif,NULL);
+        VarElemArray keys(useaux?auxrowif:rowif,NULL);
         keys.deserialize(keybuf,keybufsize,false);
         for (i=0;i<mapsize-1;i++)
             AdjustOverflow(overflowmap[i],keys.item(i),cmpfn);
