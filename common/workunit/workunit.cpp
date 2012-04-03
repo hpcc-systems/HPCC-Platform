@@ -1960,6 +1960,7 @@ public:
         }
         else
             cw->cleanupAndDelete(true,true);
+        removeWorkUnitFromAllQueues(wuid); //known active workunits wouldn't make it this far
         return true;
     }
 
