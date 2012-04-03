@@ -887,6 +887,7 @@ private:
     //int                  m_defaultWorkunitScopePermission;
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
+    bool                 m_passwordNeverExpires;
     class CLDAPMessage
     {
     public:
@@ -957,11 +958,102 @@ public:
         createLdapBasedn(NULL, m_ldapconfig->getResourceBasedn(rtype), PT_DEFAULT);
     }
 
+    virtual __int64 getMaxPwdAge()
+    {
+        char* attrs[] = {"maxPwdAge", NULL};
+        CLDAPMessage searchResult;
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+        Owned<ILdapConnection> lconn = m_connections->getConnection();
+        LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
+
+        int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
+                                        attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
+        if(result != LDAP_SUCCESS)
+        {
+            DBGLOG("ldap_search_ext_s error: %s, when searching maxPwdAge", ldap_err2string( result ));
+            return 0;
+        }
+        unsigned entries = ldap_count_entries(sys_ld, searchResult);
+        if(entries == 0)
+        {
+            DBGLOG("ldap_search_ext_s error: Could not find maxPwdAge");
+            return 0;
+        }
+        char **values;
+        values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
+        assertex(values);
+        char *val = values[0];
+        if (*val == '-')
+            ++val;
+        __int64 maxAge = 0;
+        for (int x=0; val[x]; x++)
+            maxAge = maxAge * 10 + ( (int)val[x] - '0');
+        ldap_value_free(values);
+//        if (maxAge != (__int64)0x8000000000000000)//domain maxPwdAge == 0
+//            m_passwordNeverExpires = false;
+        return maxAge;
+    }
+
+#ifdef _DEBUG
+    CriticalSection dumpAttrsCrit;
+    const void dumpAttrs(int scope, LDAP* sys_ld, char * dn, char * searchStr)
+    {
+        CriticalBlock b(dumpAttrsCrit);
+        char        *attribute, **values;
+        struct berval** bvalues = NULL;
+        BerElement  *ber;
+        CLDAPMessage searchResult;
+        TIMEVAL timeOut = {LDAPTIMEOUT,0};
+
+        char* attrs[] = {searchStr, NULL};
+        int result = ldap_search_ext_s(sys_ld, dn, scope, NULL,
+                                        attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
+        if(result != LDAP_SUCCESS)
+            return;
+
+        unsigned count = ldap_count_entries(sys_ld, searchResult);
+        if(count == 0)
+            return;
+
+        if (scope == LDAP_SCOPE_BASE)
+            DBGLOG("\n--->%4.4X LDAP_SCOPE_BASE",this);
+        else if (scope == LDAP_SCOPE_ONELEVEL)
+            DBGLOG("\n--->%4.4X LDAP_SCOPE_ONELEVEL",this);
+        else if (scope == LDAP_SCOPE_SUBTREE)
+            DBGLOG("\n--->%4.4X LDAP_SCOPE_SUBTREE",this);
+        DBGLOG("\t:COUNT FOR %s \t: %d",dn, count);
+        LDAPMessage *entry = LdapFirstEntry(sys_ld, searchResult);
+        while (entry)
+        {
+            for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
+            {
+                if(values = ldap_get_values(sys_ld, entry, attribute))
+                {
+                    DBGLOG("\n--->VAL  %s\t: %s",attribute, values[0]);
+                    ldap_value_free( values );
+                }
+                else if(bvalues = ldap_get_values_len(sys_ld, entry, attribute))
+                {
+                    struct berval* val = bvalues[0];
+                    if(val != NULL)
+                    {
+                        DBGLOG("\n--->BVAL %s\t: %s",attribute, val);
+                        ldap_value_free_len(bvalues);
+                    }
+                }
+            }
+//            entry = LdapNextEntry(sys_ld, searchResult);
+        }
+        return;
+    }
+#endif
+
     virtual bool authenticate(ISecUser& user)
     {
         {
             char        *attribute, **values;       
             BerElement  *ber;
+            struct berval** bvalues = NULL;
 
             const char* username = user.getName();
             const char* password = user.credentials().getPassword();
@@ -991,7 +1083,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1042,15 +1134,88 @@ public:
                 return false;
             }
 
+            m_passwordNeverExpires = true;
             for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
             {
                 if((stricmp(attribute, "cn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
                 {
-                    //set the FullName
                     if(values[0] != NULL)
                         user.setFullName(values[0]);
                     ldap_value_free( values );
-                    break;
+                }
+                else if((stricmp(attribute, "givenName") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
+                {
+                    if(values[0] != NULL)
+                        user.setFirstName(values[0]);
+                    ldap_value_free( values );
+                }
+                else if((stricmp(attribute, "sn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
+                {
+                    if(values[0] != NULL)
+                        user.setLastName(values[0]);
+                    ldap_value_free( values );
+                }
+                else if((stricmp(attribute, "userAccountControl") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
+                {
+                    char* val = values[0];
+                    StringBuffer act_ctrl;
+                    act_ctrl.append(val);
+                    ldap_value_free( values );
+                    if(act_ctrl.length() == 0)
+                        DBGLOG("userAccountControl is empty");
+                    unsigned act_ctrl_val = atoi(act_ctrl.str());
+                    // UF_DONT_EXPIRE_PASSWD 0x10000
+                    m_passwordNeverExpires = (act_ctrl_val & 0x10000) ? true : false;
+                }
+                else if((stricmp(attribute, "pwdLastSet") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
+                {
+                    /*pwdLastSet is the date and time that the password for this account was last changed. This
+                      value is stored as a large integer that represents the number of 100 nanosecond intervals
+                      since January 1, 1601 (UTC), also known as a FILETIME value. If this value is set
+                      to 0 and the User-Account-Control attribute does not contain the UF_DONT_EXPIRE_PASSWD
+                      flag, then the user must set the password at the next logon.
+                      */
+                    __int64 maxPWAge = getMaxPwdAge();
+                    if (!m_passwordNeverExpires)
+                    {
+                        CDateTime expiry;
+                        struct berval* val = bvalues[0];
+                        if(val != NULL)
+                        {
+                            __int64 time = 0;
+                            for (int x=0; x < (int)val->bv_len; x++)
+                                time = time * 10 + ( (int)val->bv_val[x] - '0');
+                            ldap_value_free_len(bvalues);
+#ifdef _DEBUG
+                            CDateTime lastPWChange;
+                            lastPWChange.setFromFILETIME(time);
+                            StringBuffer sb;
+                            lastPWChange.getString(sb);
+#endif
+                            time += maxPWAge;
+                            expiry.setFromFILETIME(time);
+                            user.setPasswordExpiration(expiry);
+#ifdef _DEBUG
+                            CDateTime whenExpires;
+                            whenExpires.setFromFILETIME(time);
+                            StringBuffer sb2;
+                            whenExpires.getString(sb2);
+#endif
+                        }
+                        else
+                        {
+                            DBGLOG("LDAP: Can't find entry for %s pwdLastSet", username);
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        CDateTime never;
+                        never.clear();
+                        assertex(never.isNull());
+                        user.setPasswordExpiration(never);
+                        DBGLOG("LDAP: Password never expires for user %s", username);
+                    }
                 }
             }
             ber_free(ber, 0);
@@ -2368,7 +2533,7 @@ public:
         }
         catch(IException*)
         {
-            throw MakeStringException(-1, "Failed to set user %s's password because of not being able to create an SSL conenction to the ldap server. To set an Active Directory user's password from Linux, you need to enable SSL on the Active Directory ldap server", username);
+            throw MakeStringException(-1, "Failed to set user %s's password because of not being able to create an SSL connection to the ldap server. To set an Active Directory user's password from Linux, you need to enable SSL on the Active Directory ldap server", username);
         }
 
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -4711,7 +4876,8 @@ private:
         act_ctrl_val &= 0xFFFFFFFD;
         
         // UF_DONT_EXPIRE_PASSWD 0x10000
-        act_ctrl_val |= 0x10000;
+        if (m_passwordNeverExpires)
+            act_ctrl_val |= 0x10000;
 
         StringBuffer new_act_ctrl;
         new_act_ctrl.append(act_ctrl_val);
@@ -4729,7 +4895,7 @@ private:
         rc = ldap_modify_ext_s(ld, (char*)dn, cattrs, NULL, NULL);
         if ( rc != LDAP_SUCCESS )
         {
-            throw MakeStringException(-1, "error enableUser %s, ldap_modify_ext_s error: %s", username, ldap_err2string( rc ));
+            throw MakeStringException(-1, "Error enableUser %s, ldap_modify_ext_s error: %s", username, ldap_err2string( rc ));
         }
 
         // set the password.
@@ -4897,13 +5063,13 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                DBGLOG("can't add user %s, already exists", username);
+                DBGLOG("Can't add user %s, already exists", username);
                 throw MakeStringException(-1, "can't add user %s, already exists", username);
             }
             else
             {
-                DBGLOG("error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
-                throw MakeStringException(-1, "error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
+                DBGLOG("Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
+                throw MakeStringException(-1, "Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
             }
         }
 
