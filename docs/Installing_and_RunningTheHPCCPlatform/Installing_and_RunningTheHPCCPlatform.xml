@@ -1668,6 +1668,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </orderedlist>
       </sect2>
     </sect1>
+    
+     <xi:include href="Installing_and_RunningTheHPCCPlatform/hpcc_ldap.xml" xpointer="element(/1)"
+		                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    
   </chapter>
 
   <chapter>
