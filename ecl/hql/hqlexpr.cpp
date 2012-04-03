@@ -11044,8 +11044,6 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_newrow:
     case no_assert_ds:
     case no_spillgraphresult:
-    case no_loop:
-    case no_graphloop:
     case no_cluster:
     case no_forcenolocal:
     case no_thisnode:
@@ -11061,6 +11059,18 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_dataset_alias:
         type.set(datasetType);
         break;
+    case no_loop:
+        {
+            IHqlExpression & body = parms.item(4);
+            type.setown(getTypeIntersection(datasetType, body.queryChild(0)->queryType()));
+            break;
+        }
+    case no_graphloop:
+        {
+            IHqlExpression & body = parms.item(2);
+            type.setown(getTypeIntersection(datasetType, body.queryChild(0)->queryType()));
+            break;
+        }
     case no_serialize:
         type.setown(getSerializedForm(datasetType));
         break;
