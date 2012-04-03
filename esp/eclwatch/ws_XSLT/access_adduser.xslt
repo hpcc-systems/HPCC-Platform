@@ -47,7 +47,7 @@
             <xsl:when test="retcode=0">
             </xsl:when>
             <xsl:otherwise>
-            Error happened while adding user.
+            An error occurred while attempting to add the user.
             </xsl:otherwise>
         </xsl:choose>
         <xsl:value-of select="retmsg"/>
