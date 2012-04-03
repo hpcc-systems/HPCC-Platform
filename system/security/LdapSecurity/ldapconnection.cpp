@@ -4897,13 +4897,13 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                DBGLOG("can't add user %s, already exists", username);
-                throw MakeStringException(-1, "can't add user %s, already exists", username);
+                DBGLOG("Can't add user %s, already exists", username);
+                throw MakeStringException(-1, "Can't add user %s, already exists", username);
             }
             else
             {
-                DBGLOG("error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
-                throw MakeStringException(-1, "error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
+                DBGLOG("Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
+                throw MakeStringException(-1, "Error addUser %s, ldap_add_ext_s error: %s", username, ldap_err2string( rc ));
             }
         }
 
