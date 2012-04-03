@@ -26,6 +26,7 @@
 */
 
 #include "platform.h"
+#include "portlist.h"
 #include "jlib.hpp"
 #include <limits.h>
 
@@ -58,10 +59,6 @@
 #define MP_PROTOCOL_VERSIONV6   0x202                   // extended for IPV6
 
 #define CANCELTIMEOUT       1000        // 1 sec
-
-#define MP_BASE_PORT    7101 //..7999 (for Dali too) -- Thor reserves 7500+
-#define MP_PORT_RANGE    400 //
-
 
 #define CONNECT_TIMEOUT         (5*60*1000) // 5 mins
 #define CONNECT_READ_TIMEOUT    (3*60*1000) // 3 min    
