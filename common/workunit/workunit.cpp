@@ -2624,17 +2624,18 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
         throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
         break;
     }
+    if (getIsQueryService())
+    {
+        Owned<IPropertyTree> registry = getQueryRegistryRoot();
+        if (registry)
+        {
+            VStringBuffer xpath("QuerySet/Query[@wuid='%s']", p->queryName());
+            if (registry->hasProp(xpath.str()))
+                throw MakeStringException(WUERR_WorkunitPublished, "%s: Workunit is published",p->queryName());
+        }
+    }
     try
     {
-        //Move any service aliases
-        if (getIsQueryService())
-        {
-            Owned<IPropertyTree> registry = getQueryRegistry(p->queryProp("@clusterName"), false);
-            if (registry)
-                removeWuidFromNamedQueries(registry, p->queryName());
-        }
-
-
         if (deldll && !p->getPropBool("@isClone", false))
         {
             Owned<IConstWUQuery> q = getQuery();
@@ -9026,7 +9027,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
-void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
+void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
 {
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
@@ -9060,12 +9061,10 @@ void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, cons
         }
     }
 
-
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str());
     newQueryId.append(newEntry->queryProp("@id"));
-
-    //A single workunit could be published as multiple queries
-    //workunit->setDebugValue("queryId", newQueryId.str(), true);
+    workunit->setIsQueryService(true); //will check querysets before delete
+    workunit->commit();
 
     if (activateOption == ACTIVATE_SUSPEND_PREVIOUS|| activateOption == ACTIVATE_DELETE_PREVIOUS)
     {
