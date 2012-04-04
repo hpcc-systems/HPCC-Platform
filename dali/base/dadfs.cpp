@@ -2547,10 +2547,11 @@ public:
             return false;
         }
         if (!ignoresub) {
-            // And has super owners. MORE - get name of superfile
+            // And has super owners
             Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
             if (iter->isValid()) {
-                reason.appendf("Cannot remove file %s as owned by a SuperFile",logicalname);
+                const char *supername = iter->query().queryProp("@name");
+                reason.appendf("Cannot remove file %s as owned by SuperFile %s", logicalname, supername);
                 return false;
             }
         }
