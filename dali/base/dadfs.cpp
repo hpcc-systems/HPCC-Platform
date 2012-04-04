@@ -3903,8 +3903,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addFileLock(sub);
             if (lock())
                 return true;
-            else
-                unlock();
+            unlock();
             return false;
         }
         void run()
@@ -3964,8 +3963,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 addFileLock(sub);
             if (lock())
                 return true;
-            else
-                unlock();
+            unlock();
             return false;
         }
         void run()
@@ -4010,8 +4008,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 addFileLock(&file->querySubFile(i));
             if (lock())
                 return true;
-            else
-                unlock();
+            unlock();
             return false;
         }
         void run()
@@ -6543,7 +6540,7 @@ public:
             super.setown(new CDistributedSuperFile(parent, root, logicalname, user));
             created = true;
         }
-        transaction->addFile(super);
+        addFileLock(super);
     }
     virtual ~cCreateSuperFileAction() {}
     bool prepare()
@@ -6551,9 +6548,10 @@ public:
         // Attach the file to DFS, if wasn't there already
         if (created)
             parent->addEntry(logicalname,root,true,false);
-        // FIXME: This will introduce a window (until commit) that
-        // the file is accessible. Use super->attach/detach instead.
-        return true;
+        if (lock())
+            return true;
+        unlock();
+        return false;
     }
     void run()
     {
@@ -6581,7 +6579,16 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     logicalname.set(_logicalname);
     checkLogicalName(logicalname,user,true,true,false,"have a superfile with");
 
-    IDistributedSuperFile *sfile = lookupSuperFile(logicalname.get(), user, transaction, false, defaultTimeout);
+    // Create a local transaction that will be destroyed (but never touch the external transaction)
+    Linked<IDistributedFileTransaction> localtrans;
+    if (transaction) {
+        localtrans.set(transaction);
+    } else {
+        // TODO: Make it explicit in the API that a transaction is required
+        localtrans.setown(new CDistributedFileTransaction(user));
+    }
+
+    IDistributedSuperFile *sfile = localtrans->lookupSuperFile(logicalname.get());
     if (sfile) {
         if (ifdoesnotexist) {
             // Cache, since we're going to use it
@@ -6592,22 +6599,13 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
             throw MakeStringException(-1,"createSuperFile: SuperFile %s already exists",logicalname.get());
     }
 
-    // Create a local transaction that will be destroyed (but never touch the external transaction)
-    Linked<IDistributedFileTransaction> localtrans;
-    if (transaction) {
-        localtrans.set(transaction);
-    } else {
-        // TODO: Make it explicit in the API that a transaction is required
-        localtrans.setown(new CDistributedFileTransaction(user));
-    }
-
     // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
     cCreateSuperFileAction *action = new cCreateSuperFileAction(localtrans,this,user,_logicalname,_interleaved);
 
     localtrans->autoCommit();
 
     // Should have been persisted to the DFS by now
-    return lookupSuperFile(logicalname.get(), user, localtrans, false, defaultTimeout);
+    return localtrans->lookupSuperFile(logicalname.get());
 }
 
 static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,StringBuffer &reason)
