@@ -163,39 +163,46 @@
           <para>Modify the details/permissions of an individual user</para>
         </listitem>
       </itemizedlist>
+    </sect3>
+
+    <sect3>
+      <title>Adding and editing users</title>
+
+      <para>In ECL Watch, go to the <emphasis
+      role="bold">Users/Permissions</emphasis> menu item and click <emphasis
+      role="bold">Users<emphasis>:</emphasis></emphasis></para>
+
+      <graphic fileref="../images/Permissions001.jpg" />
+
+      <para>All current users are identified in the list by their UserID and
+      full name.</para>
 
       <sect4>
-        <title>Adding and editing users</title>
-
-        <para>In ECL Watch, go to the <emphasis
-        role="bold">Users/Permissions</emphasis> menu item and click <emphasis
-        role="bold">Users<emphasis>:</emphasis></emphasis></para>
-
-        <graphic fileref="../images/Permissions001.jpg" />
-
-        <para>All current users are identified in the list by their UserID and
-        full name.</para>
-
-        <para>To add a new user to the list of authenticated users:</para>
+        <title>To add a new user to the list of authenticated users:</title>
 
         <orderedlist>
           <listitem>
-            <para>Press the <emphasis role="bold">Add</emphasis> button. The
-            <emphasis role="bold">Add User</emphasis> window is
+            <para>Press the <emphasis role="bold">Add</emphasis> button.
+            </para>
+
+            <para>The <emphasis role="bold">Add User</emphasis> window is
             displayed.</para>
           </listitem>
 
           <listitem>
-            <para>Enter a <emphasis role="bold">UserID</emphasis>. This is the
-            login name for using ECL Watch, ECL IDE, WSECL etc.</para>
+            <para>Enter a <emphasis role="bold">UserID</emphasis>. </para>
+
+            <para>This is the login name for using ECL Watch, ECL IDE, WSECL
+            etc.</para>
           </listitem>
 
           <listitem>
             <para>Enter the <emphasis role="bold">First Name</emphasis> and
-            <emphasis role="bold">Last Name</emphasis> of the user. This
-            information helps to easily identify the user and is displayed in
-            the <emphasis role="bold">Full Name</emphasis> field on the main
-            <emphasis role="bold">Users</emphasis> window.</para>
+            <emphasis role="bold">Last Name</emphasis> of the user. </para>
+
+            <para>This information helps to easily identify the user and is
+            displayed in the <emphasis role="bold">Full Name</emphasis> field
+            on the main <emphasis role="bold">Users</emphasis> window.</para>
           </listitem>
 
           <listitem>
@@ -205,49 +212,61 @@
           </listitem>
 
           <listitem>
-            <para>Press <emphasis role="bold">Submit</emphasis>. Confirmation
-            of the request is shown.</para>
+            <para>Press <emphasis role="bold">Submit</emphasis>. </para>
+
+            <para>Confirmation of the request is shown.</para>
           </listitem>
         </orderedlist>
 
         <para>Once added, the user is displayed in the list and you can modify
         the user's details and set permissions as required.</para>
+      </sect4>
 
-        <para>To modifiy a user's personal details:</para>
+      <sect4>
+        <title>To modifiy a user's personal details:</title>
 
         <orderedlist>
           <listitem>
-            <para>Click the <emphasis role="bold">Edit</emphasis> link. The
-            <emphasis role="bold">User Info Edit</emphasis> window is
-            displayed.</para>
+            <para>Click the <emphasis role="bold">Edit</emphasis> link.
+            </para>
+
+            <para>The <emphasis role="bold">User Info Edit</emphasis> window
+            is displayed.</para>
           </listitem>
 
           <listitem>
             <para>Change the <emphasis role="bold">First Name</emphasis> and
-            <emphasis role="bold">Last Name</emphasis> as required. (The
-            <emphasis role="bold">User Name</emphasis> cannot be
-            changed.)</para>
+            <emphasis role="bold">Last Name</emphasis> as required. </para>
+
+            <para><emphasis role="bold">Note</emphasis>: The <emphasis
+            role="bold">User Name</emphasis> cannot be changed.</para>
           </listitem>
 
           <listitem>
-            <para>Press <emphasis role="bold">Submit</emphasis>. Confirmation
-            of the request is shown.</para>
+            <para>Press <emphasis role="bold">Submit</emphasis>. </para>
+
+            <para>Confirmation of the request is shown.</para>
           </listitem>
         </orderedlist>
+      </sect4>
 
-        <para>To add the user to a group:</para>
+      <sect4>
+        <title>To add the user to a group:</title>
 
         <orderedlist>
           <listitem>
             <para>Click on the <emphasis role="bold">Member of</emphasis>
-            link. The list of groups the user is already associated with is
+            link. </para>
+
+            <para>The list of groups the user is already associated with is
             displayed.</para>
           </listitem>
 
           <listitem>
             <para>To add the user to a group press <emphasis
-            role="bold">ADD</emphasis>. The list of available groups is
-            displayed.</para>
+            role="bold">ADD</emphasis>. </para>
+
+            <para>The list of available groups is displayed.</para>
           </listitem>
 
           <listitem>
@@ -257,15 +276,22 @@
           </listitem>
 
           <listitem>
-            <para>Click OK to confirm. Confirmation of the request is
-            shown.</para>
+            <para>Click OK to confirm. </para>
+
+            <para>Confirmation of the request is shown.</para>
           </listitem>
         </orderedlist>
+      </sect4>
 
-        <para>To delete the user from a group:<orderedlist>
+      <sect4>
+        <title>To delete the user from a group:</title>
+
+        <para><orderedlist>
             <listitem>
               <para>Click on the <emphasis role="bold">Member of</emphasis>
-              link. The list of groups the user is already associated with is
+              link. </para>
+
+              <para>The list of groups the user is already associated with is
               displayed.</para>
             </listitem>
 
@@ -276,130 +302,148 @@
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm. Confirmation of the request is
-              shown.</para>
+              <para>Click OK to confirm. </para>
+
+              <para>Confirmation of the request is shown.</para>
             </listitem>
           </orderedlist></para>
+      </sect4>
 
-        <para>To change a user's password:<orderedlist>
+      <sect4>
+        <title>To change a user's password:</title>
+
+        <para><orderedlist>
             <listitem>
               <para>Click on the <emphasis role="bold">Password</emphasis>
-              link. The <emphasis role="bold">Reset Password</emphasis> window
+              link. </para>
+
+              <para>The <emphasis role="bold">Reset Password</emphasis> window
               is displayed.</para>
             </listitem>
 
             <listitem>
               <para>Complete the <emphasis role="bold">New Password</emphasis>
               and <emphasis role="bold">Retype New Password</emphasis> fields
-              as required. Press <emphasis role="bold">Clear</emphasis> to
-              empty these fields and start again.</para>
+              as required. </para>
+
+              <para>Press <emphasis role="bold">Clear</emphasis> to empty
+              these fields and start again.</para>
             </listitem>
 
             <listitem>
-              <para>Click <emphasis role="bold">Submit</emphasis>.
-              Confirmation of the request is shown.</para>
-            </listitem>
-          </orderedlist></para>
+              <para>Click <emphasis role="bold">Submit</emphasis>. </para>
 
-        <para>To delete a user from the list of authenticated
-        users:<orderedlist>
-            <listitem>
-              <para>Check the checkbox to the left of the user(s) you want to
-              remove. (These users will no longer have access to ECL
-              Watch.)</para>
-            </listitem>
-
-            <listitem>
-              <para>Click <emphasis role="bold">Delete</emphasis>.
-              Confirmation of the request is shown.</para>
+              <para>Confirmation of the request is shown.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
 
       <sect4>
-        <title>Setting permissions for an individual user</title>
+        <title>To delete a user from the list of authenticated users:</title>
 
-        <para>There may be occasions when you need to modify the permissions
-        for individual users. For example, users may have individual security
-        needs that are not completely covered in any group or, there may be
-        occasions when a user requires temporary access to an HPCC feature.
-        Permissions set in this area of ECL Watch only affect the user you
-        choose and any permissions you set here overwrite those set in any
-        group to which the user belongs.</para>
-
-        <para>To set new permissions for an individual user:</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Click the <emphasis role="bold">Users</emphasis> menu item
-            in ECL Watch</para>
-          </listitem>
-
-          <listitem>
-            <para>Locate the user in the list of authenticated users and click
-            on the <emphasis role="bold">Permissions</emphasis> link in the
-            <emphasis role="bold">Operations</emphasis> column. The list of
-            permissions currently set for this user are displayed and the
-            groups from which the user has inherited permissions are also
-            listed. <graphic fileref="../images/Permissions002.jpg" /></para>
-          </listitem>
-
-          <listitem>
-            <para>A drop down list showing the 6 feature areas of the HPCC is
-            provided. Select the feature area you are interested in and press
-            <emphasis role="bold">Add</emphasis>. The <emphasis
-            role="bold">Add Permissions for Authenticated Users</emphasis>
-            page is displayed.</para>
-          </listitem>
-
-          <listitem>
-            <para>There may be more than one resource setting available,
-            select the one you require from the <emphasis role="bold">Select
-            Resource</emphasis> drop down list provided.</para>
-          </listitem>
-
-          <listitem>
-            <para>Check the boxes that <emphasis role="bold">allow</emphasis>
-            and <emphasis role="bold">deny</emphasis> access as required for
-            the user.</para>
-          </listitem>
-
-          <listitem>
-            <para>Click <emphasis role="bold">Add</emphasis>. Confirmation of
-            the request is shown.</para>
-          </listitem>
-        </orderedlist>
-
-        <para>To modify permissions for an individual user:<orderedlist>
+        <para><orderedlist>
             <listitem>
-              <para>Click the <emphasis role="bold">Users</emphasis> menu item
-              in ECL Watch.</para>
+              <para>Check the checkbox to the left of the user(s) you want to
+              remove. </para>
+
+              <para><emphasis role="bold">Note:</emphasis> These users will no
+              longer have access to ECL Watch.</para>
             </listitem>
 
             <listitem>
-              <para>Locate the user in the list of authenticated and click on
-              the <emphasis role="bold">Permissions</emphasis> link in the
-              <emphasis role="bold">Operations</emphasis> column.</para>
-            </listitem>
+              <para>Click <emphasis role="bold">Delete</emphasis>. </para>
 
-            <listitem>
-              <para>Locate the feature you want to modify.</para>
-            </listitem>
-
-            <listitem>
-              <para>Check the box(es) that <emphasis
-              role="bold">allow</emphasis> and <emphasis
-              role="bold">deny</emphasis> access as required for the feature
-              and press <emphasis role="bold">Update</emphasis> or press
-              <emphasis role="bold">Delete</emphasis> if you want to remove
-              access to that feature.</para>
-            </listitem>
-
-            <listitem>
-              <para>Press OK to confirm. Confirmation of the request is
-              shown.</para>
+              <para>Confirmation of the request is shown.</para>
             </listitem>
           </orderedlist></para>
+
+        <sect5>
+          <title>Setting permissions for an individual user</title>
+
+          <para>There may be occasions when you need to modify the permissions
+          for individual users. For example, users may have individual
+          security needs that are not completely covered in any group or,
+          there may be occasions when a user requires temporary access to an
+          HPCC feature. Permissions set in this area of ECL Watch only affect
+          the user you choose and any permissions you set here overwrite those
+          set in any group to which the user belongs.</para>
+
+          <para>To set new permissions for an individual user:</para>
+
+          <orderedlist>
+            <listitem>
+              <para>Click the <emphasis role="bold">Users</emphasis> menu item
+              in ECL Watch</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the user in the list of authenticated users and
+              click on the <emphasis role="bold">Permissions</emphasis> link
+              in the <emphasis role="bold">Operations</emphasis> column. The
+              list of permissions currently set for this user are displayed
+              and the groups from which the user has inherited permissions are
+              also listed. <graphic
+              fileref="../images/Permissions002.jpg" /></para>
+            </listitem>
+
+            <listitem>
+              <para>A drop down list showing the 6 feature areas of the HPCC
+              is provided. Select the feature area you are interested in and
+              press <emphasis role="bold">Add</emphasis>. The <emphasis
+              role="bold">Add Permissions for Authenticated Users</emphasis>
+              page is displayed.</para>
+            </listitem>
+
+            <listitem>
+              <para>There may be more than one resource setting available,
+              select the one you require from the <emphasis role="bold">Select
+              Resource</emphasis> drop down list provided.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the boxes that <emphasis
+              role="bold">allow</emphasis> and <emphasis
+              role="bold">deny</emphasis> access as required for the
+              user.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click <emphasis role="bold">Add</emphasis>. Confirmation
+              of the request is shown.</para>
+            </listitem>
+          </orderedlist>
+
+          <para>To modify permissions for an individual user:<orderedlist>
+              <listitem>
+                <para>Click the <emphasis role="bold">Users</emphasis> menu
+                item in ECL Watch.</para>
+              </listitem>
+
+              <listitem>
+                <para>Locate the user in the list of authenticated and click
+                on the <emphasis role="bold">Permissions</emphasis> link in
+                the <emphasis role="bold">Operations</emphasis> column.</para>
+              </listitem>
+
+              <listitem>
+                <para>Locate the feature you want to modify.</para>
+              </listitem>
+
+              <listitem>
+                <para>Check the box(es) that <emphasis
+                role="bold">allow</emphasis> and <emphasis
+                role="bold">deny</emphasis> access as required for the feature
+                and press <emphasis role="bold">Update</emphasis> or press
+                <emphasis role="bold">Delete</emphasis> if you want to remove
+                access to that feature.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press OK to confirm. Confirmation of the request is
+                shown.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect5>
       </sect4>
     </sect3>
 
@@ -451,8 +495,8 @@
         <para><orderedlist>
             <listitem>
               <para>Press the <emphasis role="bold">Add</emphasis> button. The
-              <emphasis role="bold">Add Group</emphasis> window is displayed.
-              </para>
+              <emphasis role="bold">Add Group</emphasis> window is
+              displayed.</para>
             </listitem>
 
             <listitem>
@@ -545,7 +589,7 @@
 
         <orderedlist>
           <listitem>
-            <para> Click the <emphasis role="bold">Groups</emphasis> menu item
+            <para>Click the <emphasis role="bold">Groups</emphasis> menu item
             in ECL Watch.</para>
           </listitem>
 
@@ -578,8 +622,7 @@
           </listitem>
 
           <listitem>
-            <para>Click <emphasis role="bold">Add</emphasis>. MORE NEEDED WHEN
-            FIXED</para>
+            <para>Click <emphasis role="bold">Add</emphasis>. </para>
           </listitem>
         </orderedlist>
 
