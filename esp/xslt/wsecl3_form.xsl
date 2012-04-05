@@ -155,7 +155,7 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         else if (actval.value=="run_xslt")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/wuid/', $queryPath, '/', $methodName, '?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else
             actionpath= "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
     }
