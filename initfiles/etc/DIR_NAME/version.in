@@ -1,1 +1,1 @@
-${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}
+${projname}_${version}-${stagever}
