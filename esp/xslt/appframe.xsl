@@ -28,8 +28,42 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <link rel="shortcut icon" href="/esp/files/img/favicon.ico" />
+        <script language="JavaScript1.2" id="menuhandlers">
+            var passwordDays='<xsl:value-of select="@passwordDays"/>';
+            <xsl:text disable-output-escaping="yes"><![CDATA[
+                var passwordCookie = "ESP Password Cookie";
+                function areCookiesEnabled() {
+	                var cookieEnabled = (navigator.cookieEnabled) ? true : false;
+	                if (typeof navigator.cookieEnabled == "undefined" && !cookieEnabled) {
+		                document.cookie="testcookie";
+		                cookieEnabled = (document.cookie.indexOf("testcookie") != -1) ? true : false;
+	                }
+	                return (cookieEnabled);
+                }
+                function updatePassword() {
+                    var dt = new Date();
+                    dt.setDate(dt.getDate() + 1);
+                    var exdate = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                    document.cookie = passwordCookie + "=1; expires=" + exdate.toUTCString() + "; path=/";
+
+                    var msg = 'Your password will be expired in ' + passwordDays + ' day(s). Do you want to change it now?'
+                    if (confirm(msg)) {
+                        var mywindow = window.open('/esp/updatepasswordinput', 'UpdatePassword', 'toolbar=0,location=no,titlebar=0,status=0,directories=0,menubar=0', true);
+                        if (mywindow.opener == null)
+                            mywindow.opener = window;
+                        mywindow.focus();
+                    }
+                    return true;
+                }
+                function onLoad() {
+                    if ((passwordDays > -1) && areCookiesEnabled() && (document.cookie == '' || (document.cookie.indexOf(passwordCookie) == -1))) {
+                        updatePassword();
+                    }
+                }
+            ]]></xsl:text>
+        </script>
       </head>
-      <frameset rows="62,*" FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="0">
+      <frameset rows="62,*" FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="0" onload="onLoad()">
                 <frame src="esp/titlebar" name="header" target="main" scrolling="no"/>
                 <frameset FRAMEPADDING="0" PADDING="0" SPACING="0" FRAMEBORDER="{@navResize}" BORDERCOLOR="black" FRAMESPACING="1">
                     <xsl:attribute name="cols"><xsl:value-of select="@navWidth"/>,*</xsl:attribute>

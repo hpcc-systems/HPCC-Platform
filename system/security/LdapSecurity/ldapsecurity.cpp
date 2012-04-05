@@ -540,6 +540,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
     m_permissionsCache.setCacheTimeout( 60 * cachetimeout);
     m_permissionsCache.setTransactionalEnabled(true);
+    m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
 };
 
 
