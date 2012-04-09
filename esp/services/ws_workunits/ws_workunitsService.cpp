@@ -401,7 +401,6 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                             switch (state)
                             {
                                 case WUStateWait:
-                                    throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,"Cannot delete a workunit which is in a 'Wait' status.");
                                 case WUStateAborted:
                                 case WUStateCompleted:
                                 case WUStateFailed:
@@ -416,7 +415,7 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                                 }
                             }
                             cw.clear();
-                            factory->deleteWorkUnitEx(wuid);
+                            factory->deleteWorkUnit(wuid);
                             AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
                         }
                        break;
