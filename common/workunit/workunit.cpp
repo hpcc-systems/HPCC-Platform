@@ -2619,7 +2619,7 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
             throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
         break;
     case WUStateWait:
-        throw MakeStringException(WUERR_WorkunitScheduled, "%s: Workunit is scheduled, not deleting",p->queryName());
+        throw MakeStringException(WUERR_WorkunitScheduled, "%s: Workunit is scheduled",p->queryName());
     default:
         throw MakeStringException(WUERR_WorkunitActive, "%s: Workunit is active",p->queryName());
         break;
