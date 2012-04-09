@@ -39,8 +39,6 @@ private:
     unsigned        m_userID;
     StringBuffer    m_Fqdn;
     StringBuffer    m_Peer;
-    
-    CDateTime       m_PasswordExpirationDate;
     SecUserStatus   m_status;
     Owned<IProperties> m_parameters;
 
@@ -211,16 +209,9 @@ public:
         return m_userID;
     }
 
-    virtual CDateTime& getPasswordExpiration(CDateTime& expirationDate) 
-    {
-        expirationDate.set(m_PasswordExpirationDate);
-        return expirationDate; 
-    }
-    virtual bool setPasswordExpiration(CDateTime& expirationDate)
-    {
-        m_PasswordExpirationDate.set(expirationDate);
-        return true;
-    }
+    virtual CDateTime & getPasswordExpiration(CDateTime& expirationDate){ assertex(false); return expirationDate; }
+    virtual bool setPasswordExpiration(CDateTime& expirationDate) { assertex(false);return true; }
+    virtual int getPasswordDaysRemaining() {assertex(false);return -1;}
 
     virtual void copyTo(ISecUser& destination)
     {
@@ -236,7 +227,7 @@ public:
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
-        
+
         if(m_parameters.get()==NULL)
             return;
         CriticalBlock b(crit);
