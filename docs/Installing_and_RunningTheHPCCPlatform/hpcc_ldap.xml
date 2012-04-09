@@ -53,9 +53,9 @@
         <para>Connect to the Configuration Manager web interface.</para>
 
         <para>(using the url of
-        http://<emphasis>&lt;ESP_IP_Address&gt;</emphasis>:8015, where
-        <emphasis>&lt;ESP_IP_Address&gt;</emphasis> is the IP address of your
-        ESP Server)</para>
+        http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+        <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address of
+        the node running configuration manager)</para>
       </listitem>
 
       <listitem>
@@ -63,7 +63,7 @@
       </listitem>
 
       <listitem>
-        <para>Use the drop list to select an XML file for editing.</para>
+        <para>Use the drop list to select the XML configuration file.</para>
       </listitem>
     </orderedlist>
 
@@ -153,8 +153,8 @@
   <sect2>
     <title>Adding the ldapServer component</title>
 
-    <para>After the LDAP Server component has been added to the appropriate
-    Hardware configuration, you need to configure the Software component
+    <para>After the LDAP Server box or node has been added to the Hardware
+    configuration, you need to configure the Software LDAP server
     definition.</para>
 
     <orderedlist numeration="arabic">

@@ -10,17 +10,17 @@
   <sect2>
     <title>Introduction</title>
 
-    <para>HPCC systems are designed to maintain security in a number of ways.
-    A secure set of users are created and maintained and access is controlled
-    using LDAP (Lightweight Directory Access Protocol) authentication.
-    Security rights are stored in the LDAP database and maintained by
-    Microsoft’s Active Directory on a Windows system or OpenLDAP on Linux
-    systems.</para>
+    <para>HPCC systems maintain security in a number of ways. HPCC Systems can
+    be configured to manage users' security rights by pointing either at
+    Microsoft’s Active Directory on a Windows system, or OpenLDAP on Linux
+    systems. </para>
 
     <para>Using the Permissions interface in ECL Watch, administrators can
     control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
-    the ECL modules within the Attribute Repository. Dali server also enforces
-    access to data file folders and workunits.</para>
+    the ECL modules within the Attribute Repository. Additional "file access
+    control" can be implemented over data files by configuring the Dali server
+    to point to the Active Directory/LDAP server. This is what is known as
+    enabling file security.</para>
 
     <para>Permissions are established by group or by user and are defined as
     they are associated with a particular feature of the HPCC System. Only one
@@ -88,9 +88,8 @@
   <sect2>
     <title>Security Administration using ECL Watch</title>
 
-    <para>Administrator access is controlled by your system administrators and
-    you should contact them if you require this level of access. Once you have
-    administrator access rights, open ECL Watch in your browser using the
+    <para>Administrator rights are needed to manager permissions. Once you
+    have administrator access rights, open ECL Watch in your browser using the
     following URL:</para>
 
     <itemizedlist>
@@ -148,7 +147,7 @@
         </listitem>
 
         <listitem>
-          <para>Delete a user who no longer requires access</para>
+          <para>Delete a user </para>
         </listitem>
 
         <listitem>
@@ -382,7 +381,7 @@
             <para><?dbfo keep-together="always"?>Locate the user in the list
             of authenticated users and click on the <emphasis
             role="bold">Permissions</emphasis> link in the <emphasis
-            role="bold">Operations</emphasis> column. </para>
+            role="bold">Operations</emphasis> column.</para>
 
             <para>The list of permissions currently set for this user are
             displayed and the groups from which the user has inherited
@@ -412,7 +411,7 @@
           </listitem>
 
           <listitem>
-            <para>Click <emphasis role="bold">Add</emphasis>. </para>
+            <para>Click <emphasis role="bold">Add</emphasis>.</para>
 
             <para>Confirmation of the request is shown.</para>
           </listitem>
@@ -448,7 +447,7 @@
             </listitem>
 
             <listitem>
-              <para>Press OK to confirm. </para>
+              <para>Press OK to confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -508,8 +507,8 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Press the <emphasis role="bold">Add</emphasis> button.
-              </para>
+              <para>Press the <emphasis role="bold">Add</emphasis>
+              button.</para>
 
               <para>The <emphasis role="bold">Add Group</emphasis> window is
               displayed.</para>
@@ -521,7 +520,7 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">Submit</emphasis>. </para>
+              <para>Press <emphasis role="bold">Submit</emphasis>.</para>
 
               <para>Confirmation of the request is shown. <emphasis
               role="bold">Permissions</emphasis> may now be set for this new
@@ -545,8 +544,8 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
-              </para>
+              <para>Press <emphasis role="bold">OK</emphasis> to
+              confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -560,13 +559,13 @@
             <listitem>
               <para>Locate the group in the list and click on the <emphasis
               role="bold">Members</emphasis> link in the <emphasis
-              role="bold">Operations</emphasis> column. </para>
+              role="bold">Operations</emphasis> column.</para>
 
               <para>All current members of the group are listed.</para>
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">Add</emphasis>. </para>
+              <para>Press <emphasis role="bold">Add</emphasis>.</para>
 
               <para>All authenticated users are listed.</para>
             </listitem>
@@ -578,8 +577,8 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
-              </para>
+              <para>Press <emphasis role="bold">OK</emphasis> to
+              confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -603,8 +602,8 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">OK</emphasis> to confirm.
-              </para>
+              <para>Press <emphasis role="bold">OK</emphasis> to
+              confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -615,12 +614,24 @@
     <sect3>
       <title>Setting permissions for a group</title>
 
-      <para>All users are a member of the <emphasis role="bold">Authenticated
-      Users </emphasis>group, which is automatically updated as you add or
-      remove users. Those who need to be able to carry out security
-      administration must have full access to be able to gain access to the
-      <emphasis role="bold">User/Permissions</emphasis> area of ECL Watch
-      (Administrators).</para>
+      <para>By default, all users are members of the <emphasis
+      role="bold">Authenticated Users </emphasis>group. The <emphasis
+      role="bold">Authenticated users</emphasis> group has access rights to
+      almost all controls. </para>
+
+      <para>If you intend to restrict permissions for some users, you must
+      remove <emphasis role="bold">Authenticated Users</emphasis> from the
+      sections you wish to limit. You can then create groups with only those
+      access rights you wish to grant. This approach allows the most
+      flexibility since a single User ID can have multiple group
+      memberships.</para>
+
+      <para>As a best practice, you should use <emphasis
+      role="bold">Allow</emphasis> instead of <emphasis
+      role="bold">Deny</emphasis> to control access. Denies should be used
+      only as an exception.</para>
+
+      <para> </para>
 
       <sect4>
         <title>To set new permissions for a group:</title>
@@ -634,7 +645,7 @@
           <listitem>
             <para><?dbfo keep-together="always"?>Locate the group in the list
             and click on the <emphasis role="bold">Permissions</emphasis> link
-            in the <emphasis role="bold">Operations</emphasis> column. </para>
+            in the <emphasis role="bold">Operations</emphasis> column.</para>
 
             <para>The list of permissions currently set for this group are
             displayed.<graphic
@@ -644,7 +655,7 @@
           <listitem>
             <para>A drop down list showing the 6 feature areas of the HPCC is
             shown. Select the feature area you want and press <emphasis
-            role="bold">Add</emphasis>. </para>
+            role="bold">Add</emphasis>.</para>
 
             <para>The <emphasis role="bold">Add Permissions for
             </emphasis><emphasis role="bold">&lt;GroupName&gt;</emphasis> page
@@ -698,7 +709,7 @@
             </listitem>
 
             <listitem>
-              <para>Press OK to confirm. </para>
+              <para>Press OK to confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -768,7 +779,7 @@
         <listitem>
           <para>Click the <emphasis role="bold">Permissions</emphasis> menu
           item in ECL Watch, locate the feature you want and click <emphasis
-          role="bold">Edit</emphasis>. </para>
+          role="bold">Edit</emphasis>.</para>
 
           <para>The resources for that feature are listed.</para>
         </listitem>
@@ -785,7 +796,7 @@
         </listitem>
 
         <listitem>
-          <para>Click <emphasis role="bold">Submit</emphasis>. </para>
+          <para>Click <emphasis role="bold">Submit</emphasis>.</para>
 
           <para>Confirmation of your request is shown.</para>
         </listitem>
@@ -796,7 +807,7 @@
 
         <listitem>
           <para>Locate your new scope in the list and click <emphasis
-          role="bold">Permissions</emphasis>. </para>
+          role="bold">Permissions</emphasis>.</para>
 
           <para>The <emphasis role="bold">Administrator</emphasis> and
           <emphasis role="bold">Authenticated Users</emphasis> groups are
@@ -806,7 +817,7 @@
 
         <listitem>
           <para>To add more users and groups and set permissions for this
-          scope, click <emphasis role="bold">Add</emphasis>. </para>
+          scope, click <emphasis role="bold">Add</emphasis>.</para>
 
           <para>The <emphasis role="bold">Add Permissions</emphasis> window is
           displayed.</para>
@@ -903,14 +914,14 @@
             <listitem>
               <para>Click the <emphasis role="bold">Permissions</emphasis>
               menu item in ECL Watch, locate the feature you want and click
-              <emphasis role="bold">Edit</emphasis>. </para>
+              <emphasis role="bold">Edit</emphasis>.</para>
 
               <para>The resources for that feature are listed.</para>
             </listitem>
 
             <listitem>
               <para>Locate the resource you want to remove and click <emphasis
-              role="bold">Permissions</emphasis>. </para>
+              role="bold">Permissions</emphasis>.</para>
 
               <para>The users and groups are displayed.</para>
             </listitem>
@@ -921,7 +932,7 @@
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm. </para>
+              <para>Click OK to confirm.</para>
 
               <para>Confirmation of your request is shown.<emphasis
               role="bold"></emphasis></para>
