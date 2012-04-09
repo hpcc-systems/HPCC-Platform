@@ -132,7 +132,7 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
         int passwordDaysRemaining = -1;
 #ifdef _USE_OPENLDAP
         ISecUser* user = ctx->queryUser();
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(ctx->querySecManager());
+        ISecManager* secmgr = ctx->querySecManager();
         if(user && secmgr)
         {
             passwordDaysRemaining = user->getPasswordDaysRemaining();
@@ -564,7 +564,7 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
     ISecManager* secmgr = context.querySecManager();
     if(!secmgr)
     {
-        message.append("Security manager can't be converted to LdapSecManager. Only LdapSecManager supports this function.");
+        message.append("Security manager is not found. Please check if the system authentication is set up correctly.");
         return 2;
     }
 
