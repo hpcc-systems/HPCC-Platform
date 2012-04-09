@@ -889,12 +889,14 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     }
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
-    if (!cw)
+    WorkunitUpdate wu(factory->updateWorkUnit(wuid.str()));
+    if (!wu)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
 
     StringBuffer targetQueryId;
-    addQueryToQuerySet(cw, target, targetName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), targetQueryId);
+    addQueryToQuerySet(wu, target, targetName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), targetQueryId);
+    wu.clear();
+
     resp.setQueryId(targetQueryId.str());
 
     StringArray querysetClusters;

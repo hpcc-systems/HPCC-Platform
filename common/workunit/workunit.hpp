@@ -1217,7 +1217,7 @@ extern WORKUNIT_API IPropertyTree * addNamedPackageSet(IPropertyTree * packageRe
 extern WORKUNIT_API void removeNamedPackage(IPropertyTree * packageRegistry, const char * id);
 extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, bool readonly);
 
-extern WORKUNIT_API void addQueryToQuerySet(IConstWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId);
+extern WORKUNIT_API void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId);
 extern WORKUNIT_API bool removeQuerySetAlias(const char *querySetName, const char *alias);
 extern WORKUNIT_API void addQuerySetAlias(const char *querySetName, const char *alias, const char *id);
 extern WORKUNIT_API void setSuspendQuerySetQuery(const char *querySetName, const char *id, bool suspend);
