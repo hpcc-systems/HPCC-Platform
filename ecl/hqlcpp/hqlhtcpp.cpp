@@ -10749,7 +10749,7 @@ void HqlCppTranslator::buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & 
     doCompareLeftRight(ctx, funcname, datasetL, datasetR, left, right);
 }
 
-void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight)
+void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal)
 {
     StringBuffer s, compareName;
 
@@ -10757,7 +10757,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, canRemoveSort, true);
+    bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
     
@@ -11277,12 +11277,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     bool canReuseLeft = recordTypesMatch(dataset1, dataset2) && arraysMatch(leftSorts, rightSorts);
     if (!isAllJoin)
     {
-        bool canRemoveSort = isLocalJoin || !targetThor();
+        bool isLocalSort = isLocalJoin || !targetThor();
         //Lookup join doesn't need the left sort (unless it is reused elsewhere), or the right sort unless it is deduping.
         if (canReuseLeft || !isLookupJoin)
-            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, leftSorts, canRemoveSort, noSortAttr, false, isLightweight);
+            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, leftSorts, true, noSortAttr, false, isLightweight, isLocalSort);
         if (!(isLookupJoin && isManyLookup && !couldBeKeepOne && !targetThor()))            // many lookup doesn't need to dedup the rhs
-            generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, rightSorts, canRemoveSort, noSortAttr, canReuseLeft, isLightweight);
+            generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, rightSorts, isLocalSort, noSortAttr, canReuseLeft, isLightweight, isLocalSort);
 
         bool isGlobal = !isLocalJoin && !instance->isChildActivity();
         generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, leftSorts, isGlobal, false, false);
@@ -11314,6 +11314,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFtransformmatchesleft");
     if (isLimitedSubstringJoin)
         flags.append("|JFlimitedprefixjoin");
+
+    if (isAlreadySorted(dataset1, leftSorts, true, true) || userPreventsSort(noSortAttr, no_left))
+        flags.append("|JFleftSortedLocally");
+    if (isAlreadySorted(dataset2, rightSorts, true, true) || userPreventsSort(noSortAttr, no_right))
+        flags.append("|JFrightSortedLocally");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
