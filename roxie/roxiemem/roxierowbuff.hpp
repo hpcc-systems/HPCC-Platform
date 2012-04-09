@@ -56,7 +56,11 @@ public:
         if (numRows >= maxRows)
         {
             if (!ensure(numRows+1))
-                return false;
+            {
+                flush();
+                if (numRows >= maxRows)
+                    return false;
+            }
         }
 
         rows[numRows++] = row;
