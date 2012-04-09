@@ -81,7 +81,8 @@ public:
     void setDate(unsigned year, unsigned month, unsigned day); // Sets to midnight UTC on date given
     void setTime(unsigned hour, unsigned minute, unsigned second, unsigned nano = 0, bool local = false); // Leaves the date along, set to the time given
     void set(time_t simple);
-    
+    void setFromFILETIME(__int64 fileTime);
+
     void setString(char const * str, char const * * end = NULL, bool local = false); // Sets to date and time given as yyyy-mm-ddThh:mm:ss[.nnnnnnnnn]
     void setDateString(char const * str, char const * * end = NULL); // Sets to midnight UTC on date given as yyyy-mm-dd
     void setTimeString(char const * str, char const * * end = NULL, bool local = false); // Leaves the date alone, sets to the time given as hh:mm:ss[.nnnnnnnnn]
