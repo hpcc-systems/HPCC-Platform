@@ -8388,6 +8388,19 @@ simpleDataSet
                             $$.setExpr(createDataset(no_fail, LINK(ds->queryRecord()), $4.getExpr()));
                             $$.setPosition($1);
                         }
+    | TOK_ERROR '(' recordDef failDatasetParam ')'
+                        {
+                            //Actually allow a sequence of arbitrary actions....
+                            $$.setExpr(createDataset(no_fail, $3.getExpr(), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | TOK_ERROR '(' dataSet failDatasetParam ')'
+                        {
+                            OwnedHqlExpr ds = $3.getExpr();
+                            //Actually allow a sequence of arbitrary actions....
+                            $$.setExpr(createDataset(no_fail, LINK(ds->queryRecord()), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
     | SKIP '(' recordDef ')'
                         {
                             if (!parser->curTransform)
