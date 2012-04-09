@@ -1722,7 +1722,7 @@ protected:
     void generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear);
     void generateSerializeFunction(BuildCtx & ctx, const char * funcName, bool serialize, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects);
     void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft);             //NB: sorts are ats.xyz
-    void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight);
+    void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaResource(int seq, const char * name, IHqlExpression * record);

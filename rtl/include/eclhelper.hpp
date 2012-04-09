@@ -1554,6 +1554,8 @@ enum {
     JFdynamicindexfilename       = 0x00800000,
     JFlimitedprefixjoin          = 0x01000000,
     JFindexfromactivity          = 0x02000000,
+    JFleftSortedLocally          = 0x04000000,
+    JFrightSortedLocally         = 0x08000000,
 };
 
 // FetchFlags
