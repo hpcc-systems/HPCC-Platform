@@ -81,6 +81,7 @@
                         <xsl:with-param name="ldapServer" select="@ldapServer"/>
                         <xsl:with-param name="ldapAuthMethod" select="@ldapAuthMethod"/>
                         <xsl:with-param name="ldapConnections" select="@ldapConnections"/>
+                        <xsl:with-param name="passwordExpirationWarningDays" select="@passwordExpirationWarningDays"/>
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
                 </xsl:if>
@@ -300,6 +301,7 @@
         <xsl:param name="ldapAuthMethod"/>
         <xsl:param name="ldapConnections"/>
         <xsl:param name="localDomain"/>
+        <xsl:param name="passwordExpirationWarningDays"/>
         <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServer]"/>
         <xsl:if test="not($ldapServerNode)">
            <xsl:message terminate="yes">LDAP server is either not specified or is invalid!</xsl:message>
@@ -322,6 +324,14 @@
                       <xsl:when test="string($ldapConnections) != ''"><xsl:value-of select="$ldapConnections"/></xsl:when>
                       <xsl:otherwise><xsl:value-of select="@maxConnections"/></xsl:otherwise>
                    </xsl:choose>
+                </xsl:attribute>
+                <xsl:attribute name="passwordExpirationWarningDays">
+                    <xsl:choose>
+                        <xsl:when test="string($passwordExpirationWarningDays) != ''">
+                            <xsl:value-of select="$passwordExpirationWarningDays"/>
+                        </xsl:when>
+                        <xsl:otherwise>10</xsl:otherwise>
+                    </xsl:choose>
                 </xsl:attribute>
                 <xsl:variable name="ldapAddress">
                    <xsl:for-each select="Instance[@name]">

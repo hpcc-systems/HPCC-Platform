@@ -27,6 +27,9 @@
 #include "platform.h"
 #include "espprotocol.hpp"
 #include "espbinding.hpp"
+#ifdef _USE_OPENLDAP
+#include "ldapsecurity.ipp"
+#endif
 
 typedef IXslProcessor * (*getXslProcessor_func)();
 
@@ -126,6 +129,18 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
 
     if (needRefresh || embedded_url || !appFrameHtml.length())
     {
+        int passwordDaysRemaining = -1;
+#ifdef _USE_OPENLDAP
+        ISecUser* user = ctx->queryUser();
+        ISecManager* secmgr = ctx->querySecManager();
+        if(user && secmgr)
+        {
+            passwordDaysRemaining = user->getPasswordDaysRemaining();
+            unsigned passwordExpirationDays = secmgr->getPasswordExpirationWarningDays();
+            if ((unsigned) passwordDaysRemaining > passwordExpirationDays)
+                passwordDaysRemaining = -1;
+        }
+#endif
         StringBuffer xml;
         StringBuffer encoded_inner;
         if(inner && *inner)
@@ -134,8 +149,9 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
         // replace & with &amps;
         params.replaceString("&","&amp;");
 
-        xml.appendf("<EspApplicationFrame title=\"%s\" navWidth=\"%d\" navResize=\"%d\" navScroll=\"%d\" inner=\"%s\" params=\"%s\"/>", 
-            getESPContainer()->getFrameTitle(), navWidth, navResize, navScroll, (inner&&*inner) ? encoded_inner.str() : "?main", params.str());
+        xml.appendf("<EspApplicationFrame title=\"%s\" navWidth=\"%d\" navResize=\"%d\" navScroll=\"%d\" inner=\"%s\" params=\"%s\" passwordDays=\"%d\"/>",
+            getESPContainer()->getFrameTitle(), navWidth, navResize, navScroll, (inner&&*inner) ? encoded_inner.str() : "?main", params.str(), passwordDaysRemaining);
+
         Owned<IXslTransform> xform = xslp->createXslTransform();
         xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/appframe.xsl").str());
         xform->setXmlSource(xml.str(), xml.length()+1);
@@ -149,7 +165,6 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
     modified = startup_time;
     return html;
 }
-    
 
 const StringBuffer &CEspApplicationPort::getTitleBarHtml(IEspContext& ctx, bool rawXml)
 {
@@ -510,6 +525,119 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
 void CEspBinding::getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data)
 {
 }
+
+#ifdef _USE_OPENLDAP
+void CEspApplicationPort::onUpdatePasswordInput(IEspContext &context, StringBuffer& html)
+{
+    StringBuffer xml;
+    if (context.queryUserId())
+        xml.appendf("<UpdatePassword><username>%s</username><Code>-1</Code></UpdatePassword>", context.queryUserId());
+    else
+        xml.appendf("<UpdatePassword><Code>2</Code><Massage>Can't find user in esp context. Please check if the user was properly logged in.</Massage></UpdatePassword>");
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/passwordupdate.xsl").str());
+    xform->setXmlSource(xml.str(), xml.length()+1);
+    xform->transform( html);
+    return;
+}
+
+void CEspApplicationPort::onUpdatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& html)
+{
+    StringBuffer xml, message;
+    unsigned returnCode = updatePassword(context, request, message);
+
+    if (context.queryUserId())
+        xml.appendf("<UpdatePassword><username>%s</username>", context.queryUserId());
+    else
+        xml.appendf("<UpdatePassword><username/>");
+    xml.appendf("<Code>%d</Code><Message>%s</Message></UpdatePassword>", returnCode, message.str());
+
+    Owned<IXslTransform> xform = xslp->createXslTransform();
+    xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/passwordupdate.xsl").str());
+    xform->setXmlSource(xml.str(), xml.length()+1);
+    xform->transform( html);
+    return;
+}
+
+unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage* request, StringBuffer& message)
+{
+    ISecManager* secmgr = context.querySecManager();
+    if(!secmgr)
+    {
+        message.append("Security manager is not found. Please check if the system authentication is set up correctly.");
+        return 2;
+    }
+
+    ISecUser* user = context.queryUser();
+    if(!user)
+    {
+        message.append("Can't find user in esp context. Please check if the user was properly logged in.");
+        return 2;
+    }
+
+    const char* oldpass1 = context.queryPassword();
+    if (!oldpass1)
+    {
+        message.append("Existing password missing from request.");
+        return 2;
+    }
+
+    CHttpRequest *httpRequest=dynamic_cast<CHttpRequest*>(request);
+    IProperties *params = httpRequest->getParameters();
+    if (!params)
+    {
+        message.append("No parameter is received. Please check user input.");
+        return 1;
+    }
+
+    const char* username = params->queryProp("username");
+    const char* oldpass = params->queryProp("oldpass");
+    const char* newpass1 = params->queryProp("newpass1");
+    const char* newpass2 = params->queryProp("newpass2");
+    if(!username || !streq(username, user->getName()))
+    {
+        message.append("Incorrect username has been received.");
+        return 1;
+    }
+    if(!oldpass || !streq(oldpass, oldpass1))
+    {
+        message.append("Old password doesn't match credentials in use.");
+        return 1;
+    }
+    if(!streq(newpass1, newpass2))
+    {
+        message.append("Password re-entry doesn't match.");
+        return 1;
+    }
+    if(streq(oldpass, newpass1))
+    {
+        message.append("New password can't be the same as current password.");
+        return 1;
+    }
+
+    bool returnFlag = false;
+    try
+    {
+        returnFlag = secmgr->updateUser(*user, newpass1);
+    }
+    catch(IException* e)
+    {
+        StringBuffer emsg;
+        e->errorMessage(emsg);
+        message.append(emsg.str());
+        return 2;
+    }
+
+    if(!returnFlag)
+    {
+        message.append("Failed in changing password.");
+        return 2;
+    }
+
+    message.append("Your password has been changed successfully.");
+    return 0;
+}
+#endif
 
 CEspProtocol::CEspProtocol() 
 {

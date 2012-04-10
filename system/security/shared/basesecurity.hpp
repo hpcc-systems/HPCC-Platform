@@ -120,6 +120,7 @@ private:
     MapStrToUsers              m_userList;  
     Owned<IProperties>         m_extraparams;
     CPermissionsCache          m_permissionsCache;
+    unsigned                   m_passwordExpirationWarningDays;
 
 protected:
     CriticalSection             crit;
@@ -277,6 +278,11 @@ public:
     virtual const char* getDescription()
     {
         return NULL;
+    }
+
+    virtual unsigned getPasswordExpirationWarningDays()
+    {
+        return m_passwordExpirationWarningDays;
     }
 
 protected:

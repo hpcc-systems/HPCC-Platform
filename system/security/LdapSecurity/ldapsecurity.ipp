@@ -342,6 +342,7 @@ private:
     bool m_usercache_off;
     bool authenticate(ISecUser* user);
     StringBuffer m_description;
+    unsigned m_passwordExpirationWarningDays;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -432,6 +433,11 @@ public:
     virtual const char* getDescription()
     {
         return m_description.str();
+    }
+
+    virtual unsigned getPasswordExpirationWarningDays()
+    {
+        return m_passwordExpirationWarningDays;
     }
 };
 

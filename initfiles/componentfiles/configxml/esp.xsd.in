@@ -271,6 +271,13 @@
                                 </xs:appinfo>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="passwordExpirationWarningDays" use="optional" default="10">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>In this time period, ESP displays a warning about password expiration.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="HTTPS" minOccurs="0">
