@@ -28,6 +28,7 @@
 #define XML_TAG_PROGRAMS               "Programs"
 #define XML_TAG_DATA                   "Data"
 #define XML_TAG_ENVSETTINGS            "EnvSettings"
+#define XML_TAG_DIRECTORIES            "Directories"
 
 #define XML_TAG_ATTRIBUTESERVER        "AttributeServer"
 #define XML_TAG_ATTRSERVERINSTANCE     "AttrServerInstance"
