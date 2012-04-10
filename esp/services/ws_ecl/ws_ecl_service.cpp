@@ -231,7 +231,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         StringBuffer list;
         const char *vip = NULL;
         if (vips)
-            vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", name).str());
+            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", name).str());
         if (vip && *vip)
         {
             list.append(vip);
