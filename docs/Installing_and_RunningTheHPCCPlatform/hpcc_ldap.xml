@@ -208,6 +208,14 @@
               <para>Click on the disk icon to save.</para>
             </listitem>
           </orderedlist></para>
+
+        <para>NOTE: The cacheTimeout value is the number of minutes
+        permissions are cached in ESP. Permissions are cached by LDAPSecurity
+        library which is used by both ESP and Dali server. If you change any
+        permissions in LDAP, the new settings will not take effect until ESP
+        refreshes the permissions. This could take as long as the
+        cacheTimeout. Setting this to 0 means no cache, but this has
+        performance overhead it so should not be used in production. </para>
       </listitem>
     </orderedlist>
 
@@ -303,9 +311,38 @@
       </listitem>
 
       <listitem>
-        <para>Deploy your environment settings (see <link
-        linkend="Multi-Node-System">Configuring a Multi-Node System</link>
-        section)</para>
+        <?dbfo keep-together="always"?>
+
+        <para>In order to run Roxie Queries*** when using LDAP security you
+        need to ensure that the roxie user is established.</para>
+
+        <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
+        Clusrer – myroxie </emphasis><graphic
+        fileref="../images/LDAP_007.jpg" /></para>
+
+        <para>On the <emphasis role="bold">RoxieCluster </emphasis>page on the
+        right hand side, select the <emphasis role="bold">Options</emphasis>
+        tab:</para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>Scroll down to the <emphasis
+              role="bold">ldapUser</emphasis> field and verify that there is a
+              "<emphasis>roxie</emphasis>" user.</para>
+            </listitem>
+
+            <listitem>
+              <para>You can add password security for Roxie by adding it to
+              the <emphasis role="bold">ldapPassword</emphasis> field on the
+              same tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>In the following section under adding users in Eclwatch,
+              you will need to add "<emphasis>roxie</emphasis>" as a user as
+              well.</para>
+            </listitem>
+          </orderedlist></para>
       </listitem>
     </orderedlist>
 
