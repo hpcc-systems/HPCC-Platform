@@ -758,7 +758,7 @@
             </tr>
             <tr>
                 <td>
-                    <table class="clusters"  border="1" frame="box" rules="groups">
+                    <table class="clusters"  border="1" frame="box" rules="all">
                         <colgroup>
                             <col width="250" class="cluster"/>
                         </colgroup>
@@ -892,7 +892,7 @@
                     <xsl:otherwise>/FileSpray/GetDFUWorkunit</xsl:otherwise>
                 </xsl:choose>
             </xsl:variable>
-            <a href="javascript:go('{$href-method}?wuid={Wuid}')">
+            <a href="javascript:go('{$href-method}?Wuid={Wuid}')">
                 <xsl:choose>
                     <xsl:when test="State='running'">
                         <b>
