@@ -163,6 +163,34 @@ void expandRange(IPropertyTree* pComputers)
   }
 }
 
+CComponentBuildSetVerifier::CComponentBuildSetVerifier()
+{
+}
+
+CComponentBuildSetVerifier::~CComponentBuildSetVerifier()
+{
+}
+
+void CComponentBuildSetVerifier::init(const String& build_file_name)
+{
+  m_pDefBldSet.set(createPTreeFromXMLFile(build_file_name.toCharArray()));
+}
+
+bool CComponentBuildSetVerifier::isInBuildSet(const char* comp_name) const
+{
+  StringBuffer xpath;
+  xpath.appendf("./%s/%s/%s[%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_PROCESS_NAME, comp_name);
+
+  if (strcmp(XML_TAG_DIRECTORIES,comp_name) != 0 && m_pDefBldSet->queryPropTree(xpath.str()) == NULL)
+  {
+     return false;
+  }
+  else
+  {
+     return true;
+  }
+}
+
 CWsDeployExCE::~CWsDeployExCE()
 {
     m_pCfg.clear();
@@ -2954,6 +2982,11 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+
+      if ( m_pService->m_bsVerifier.isInBuildSet(pszCompType) == false )
+      {
+        throw MakeStringException(-1, "Component '%s' named '%s' not in build set. Component may be incompatible with the current version.", pszCompType, pszCompName);
+      }
 
       StringBuffer buildSetPath;
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
@@ -5825,6 +5858,7 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
       if (dirName && *dirName)
       {
         bldSetFile.append(dirName).append("/componentfiles/configxml/").append((fileName && *fileName)? fileName : STANDARD_CONFIG_BUILDSETFILE);
+        m_pService->m_bsVerifier.init(bldSetFile.str());
 
         try
         {

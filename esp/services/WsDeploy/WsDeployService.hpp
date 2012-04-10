@@ -679,6 +679,21 @@ private:
     StringBuffer m_ip;
 };
 
+class CComponentBuildSetVerifier
+{
+public:
+
+  CComponentBuildSetVerifier();
+  virtual ~CComponentBuildSetVerifier();
+
+  void init(const String& build_file_name);
+
+  bool isInBuildSet(const char* comp_name) const;
+
+protected:
+  Owned<IPropertyTree> m_pDefBldSet;
+};
+
 class CWsDeployExCE : public CWsDeploy
 {
 public:
@@ -732,6 +747,7 @@ public:
     const char* getBackupDir() { return m_backupDir.str(); }
     const char* getProcessName() { return m_process.str(); }
     const char* getSourceDir() { return m_sourceDir.str(); }
+    CComponentBuildSetVerifier  m_bsVerifier;
 
 private:
   virtual void getWizOptions(StringBuffer& sb);
