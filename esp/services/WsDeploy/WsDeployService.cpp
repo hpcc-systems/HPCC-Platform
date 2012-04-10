@@ -34,6 +34,7 @@
 #define STANDARD_CONFIG_BACKUPDIR CONFIG_DIR"/backup"
 #define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
+#define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
 
 #define DEFAULT_DIRECTORIES "<Directories name=\""DIR_NAME"\">\
       <Category dir=\""EXEC_PREFIX"/log/[NAME]/[INST]\" name=\"log\"/>\
@@ -163,6 +164,59 @@ void expandRange(IPropertyTree* pComputers)
   }
 }
 
+CConfigHelper::CConfigHelper()
+{
+}
+
+CConfigHelper::~CConfigHelper()
+{
+}
+
+void CConfigHelper::init(const IPropertyTree *cfg, const char* esp_name)
+{
+  StringBuffer xpath;
+
+  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALCONFFILE);
+  m_strConfFile = cfg->queryProp(xpath.str());
+
+  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALENVCONFFILE);
+  m_strEnvConfFile = cfg->queryProp(xpath.str());
+
+  if (m_strConfFile.length() > 0 && m_strEnvConfFile.length() > 0)
+  {
+    Owned<IProperties> pParams = createProperties(m_strConfFile);
+    Owned<IProperties> pEnvParams = createProperties(m_strEnvConfFile);
+
+    m_strConfigXMLDir = pEnvParams->queryProp(TAG_PATH);
+
+    if ( m_strConfigXMLDir.length() == 0)
+    {
+      m_strConfigXMLDir = INSTALL_DIR;
+    }
+
+    m_strBuildSetFileName = pParams->queryProp(TAG_BUILDSET);
+
+    m_strBuildSetFilePath.append(m_strConfigXMLDir).append(STANDARD_CONFIG_CONFIGXML_DIR).append( m_strBuildSetFileName.length() > 0 ? m_strBuildSetFileName : STANDARD_CONFIG_BUILDSETFILE);
+    m_pDefBldSet.set(createPTreeFromXMLFile(m_strBuildSetFilePath.str()));
+  }
+}
+
+bool CConfigHelper::isInBuildSet(const char* comp_process_name, const char* comp_name) const
+{
+  StringBuffer xpath;
+
+  xpath.appendf("./%s/%s/%s[%s=\"%s\"][%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_PROCESS_NAME, comp_process_name, XML_ATTR_NAME, comp_name);
+
+  if (strcmp(XML_TAG_DIRECTORIES,comp_name) != 0 && m_pDefBldSet->queryPropTree(xpath.str()) == NULL)
+  {
+     return false;
+  }
+  else
+  {
+     return true;
+  }
+}
+
 CWsDeployExCE::~CWsDeployExCE()
 {
     m_pCfg.clear();
@@ -215,6 +269,8 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   m_bCloud = false;
   StringBuffer xpath;
   m_envFile.clear();
+
+  m_configHelper.init(cfg,service);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", service);
   const char* tmp = cfg->queryProp(xpath.str());
@@ -2954,6 +3010,11 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+
+      if ( m_pService->m_configHelper.isInBuildSet(pszCompType,buildSetName) == false )
+      {
+        throw MakeStringException(-1, "Component '%s' named '%s' not in build set. Component may be incompatible with the current version.", pszCompType, pszCompName);
+      }
 
       StringBuffer buildSetPath;
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
@@ -5809,26 +5870,11 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
     Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
 
-    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_pService->getName());
-    const char* pConfFile = m_pService->getCfg()->queryProp(xpath.str());
-    xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", m_pService->getName());
-    const char* pEnvConfFile = m_pService->getCfg()->queryProp(xpath.str());
-    StringBuffer bldSetFile;
-
-    if( pConfFile && *pConfFile && pEnvConfFile && *pEnvConfFile)
+    if ( strlen(m_pService->m_configHelper.getBuildSetFilePath()) > 0 )
     {
-      Owned<IProperties> pParams = createProperties(pConfFile);
-      Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
-      const char* dirName = pEnvParams->queryProp("path");
-      const char* fileName = pParams->queryProp("buildset");
-
-      if (dirName && *dirName)
-      {
-        bldSetFile.append(dirName).append("/componentfiles/configxml/").append((fileName && *fileName)? fileName : STANDARD_CONFIG_BUILDSETFILE);
-
         try
         {
-          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile(bldSetFile);
+          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile( m_pService->m_configHelper.getBuildSetFilePath() );
           pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
           pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
         }
@@ -5836,7 +5882,6 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
         {
           e->Release();
         }
-      }
     }
 
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
