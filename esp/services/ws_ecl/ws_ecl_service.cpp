@@ -175,46 +175,80 @@ static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped)
     }
 }
 
-
+static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTree &server, const char *daliAddress)
+{
+    const char *port = server.queryProp("@port");
+    if (port && streq(port, "0")) //roxie on demand
+        return;
+    const char *netAddress = server.queryProp("@netAddress");
+    if (!netAddress && server.hasProp("@computer"))
+    {
+        VStringBuffer xpath("Hardware/Computer[@name='%s']/@netAddress", server.queryProp("@computer"));
+        netAddress = env.queryProp(xpath.str());
+    }
+    if ((!netAddress || *netAddress=='.') && daliAddress && *daliAddress)
+        netAddress = daliAddress;
+    if (!netAddress || !*netAddress)
+        return;
+    if (s.length())
+        s.append('|');
+    s.append(netAddress).append(':').append(port ? port : "9876");
+}
 
 bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
 {
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
-    Owned<IPropertyTree> pRoot = &environment->getPTree();
+    StringBuffer xpath;
+    xpath.appendf("Software/EspProcess[@name='%s']", process);
+    IPropertyTree *prc = cfg->queryPropTree(xpath.str());
+    if (!prc)
+        throw MakeStringException(-1, "ESP Process %s not configured", process);
 
-    roxies.setown(createProperties());
+    auth_method.set(prc->queryProp("Authentication/@method"));
+    portal_URL.set(prc->queryProp("@protalurl"));
+
     StringBuffer daliAddress;
-    const char *daliServers = cfg->queryProp("Software/EspProcess/@daliServers");
+    const char *daliServers = prc->queryProp("@daliServers");
     if (daliServers)
     {
         while (*daliServers && !strchr(":;,", *daliServers))
             daliAddress.append(*daliServers++);
     }
 
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+    Owned<IPropertyTree> pRoot = &environment->getPTree();
+
+    xpath.clear().appendf("EspService[@name='%s']/VIPS", name);
+    IPropertyTree *vips = prc->queryPropTree(xpath.str());
+
     Owned<IPropertyTreeIterator> it = pRoot->getElements("Software/RoxieCluster");
     ForEach(*it)
     {
-        IPropertyTree &roxie = it->query();
-        const char *name = roxie.queryProp("@name");
-        IPropertyTree *server = roxie.queryPropTree("RoxieServerProcess[1]");
-        if (server)
+        const char *name = it->query().queryProp("@name");
+        if (connMap.getValue(name)) //bad config?
+            continue;
+        bool loadBalanced = false;
+        StringBuffer list;
+        const char *vip = NULL;
+        if (vips)
+            vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", name).str());
+        if (vip && *vip)
         {
-            const char *ip = server->queryProp("@netAddress");
-            if ((!ip || *ip=='.') && daliAddress.length())
-                ip = daliAddress.str();
-            const char *port = server->queryProp("@port");
-            VStringBuffer addr("%s:%s", ip, port ? port : "9876");
-            roxies->setProp(name, addr.str());
+            list.append(vip);
+            loadBalanced = true;
+        }
+        else
+        {
+            Owned<IPropertyTreeIterator> servers = it->query().getElements("RoxieServerProcess");
+            ForEach(*servers)
+                appendServerAddress(list, *pRoot, servers->query(), daliAddress.str());
+        }
+        if (list.length())
+        {
+            Owned<ISmartSocketFactory> sf = createSmartSocketFactory(list.str(), !loadBalanced);
+            connMap.setValue(name, sf.get());
         }
     }
-
-    StringBuffer xpath;
-    xpath.appendf("Software/EspProcess[@name='%s']/Authentication/@method", process);
-    auth_method.set(cfg->queryProp(xpath));
-
-    xpath.clear().appendf("Software/EspProcess[@name='%s']/@portalurl", process);
-    portal_URL.set(cfg->queryProp(xpath.str()));
 
     translator = new wsEclTypeTranslator();
     return true;
@@ -2020,6 +2054,33 @@ bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag)
     return false;
 }
 
+void CWsEclBinding::sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status)
+{
+    if (!process || !*process)
+        throw MakeStringException(-1, "process cluster matching query set not found");
+
+    ISmartSocketFactory *conn = wsecl->connMap.getValue(process);
+    if (!conn)
+        throw MakeStringException(-1, "process cluster matching query set not found: %s", process);
+
+    SocketEndpoint &ep = conn->nextEndpoint();
+
+    Owned<IHttpClientContext> httpctx = getHttpClientContext();
+    StringBuffer url("http://");
+    ep.getIpText(url).append(':').append(ep.port);
+
+    try
+    {
+        Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
+        httpclient->sendRequest("POST", "text/xml", req, resp, status);
+    }
+    catch (IException *e)
+    {
+        conn->setStatus(ep, false);
+        throw e;
+    }
+}
+
 int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *format)
 {
     StringBuffer soapmsg;
@@ -2042,21 +2103,8 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
         xmlflags |= WWV_OMIT_SCHEMAS;
     if (strieq(clustertype.str(), "roxie"))
     {
-        const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
-        if (!addr)
-            throw MakeStringException(-1, "cluster matching query set not found: %s", wsinfo.qsetname.sget());
-
-        StringBuffer content(request->queryContent());
-        SocketEndpoint ep(addr);// = wsecl->getRoxieEndpoint();
-
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        StringBuffer url("http://");
-        ep.getIpText(url);
-        url.append(':').append(ep.port);
-        Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-
         StringBuffer roxieresp;
-        httpclient->sendRequest("POST", "text/xml", soapmsg, roxieresp, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, roxieresp, status);
 
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (web.get())
@@ -2096,20 +2144,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     const char *view = context.queryRequestParameters()->queryProp("view");
     if (strieq(clustertype.str(), "roxie"))
     {
-        const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
-        if (!addr)
-            throw MakeStringException(-1, "cluster matching query set not found: %s", wsinfo.qsetname.sget());
-
-        StringBuffer content(request->queryContent());
-        SocketEndpoint ep(addr);
-
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        StringBuffer url("http://");
-        ep.getIpText(url);
-        url.append(':').append(ep.port);
-        Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-
-        httpclient->sendRequest("POST", "text/xml", soapmsg, output, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
@@ -2574,21 +2609,8 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
 
     if (strieq(clustertype.str(), "roxie"))
     {
-        const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
-        if (!addr)
-            throw MakeStringException(-1, "cluster matching query set not found: %s", wsinfo.qsetname.sget());
-
-        StringBuffer xmlfromjson(request->queryContent());
-        SocketEndpoint ep(addr);// = wsecl->getRoxieEndpoint();
-
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        StringBuffer url("http://");
-        ep.getIpText(url);
-        url.append(':').append(ep.port);
-        Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-
         StringBuffer output;
-        httpclient->sendRequest("POST", "text/xml", soapfromjson, output, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapfromjson, output, status);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (web.get())
             web->expandResults(output.str(), soapresp, xmlflags);
@@ -2676,21 +2698,9 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     if (strieq(clustertype.str(), "roxie"))
     {
-        const char *addr = wsecl->roxies->queryProp(wsinfo.qsetname.sget());
-        if (!addr)
-            throw MakeStringException(-1, "cluster matching query set not found: %s", wsinfo.qsetname.sget());
-
         StringBuffer content(request->queryContent());
-        SocketEndpoint ep(addr);// = wsecl->getRoxieEndpoint();
-
-        Owned<IHttpClientContext> httpctx = getHttpClientContext();
-        StringBuffer url("http://");
-        ep.getIpText(url);
-        url.append(':').append(ep.port);
-        Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-
         StringBuffer output;
-        httpclient->sendRequest("POST", "text/xml", content, output, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), content, output, status);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
         if (web.get())
             web->expandResults(output.str(), soapresp, xmlflags);
