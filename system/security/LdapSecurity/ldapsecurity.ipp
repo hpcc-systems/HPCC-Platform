@@ -114,17 +114,19 @@ public:
    {
        if (m_passwordExpiration.isNull())
            return -2;//-2 if never expires
+
        CDateTime expiry(m_passwordExpiration);
        expiry.setTime(0,0,0,0);
 
        CDateTime now;
        now.setNow();
-       now.setTime(0,0,0,0);
+       now.adjustTime(now.queryUtcToLocalDelta());
        if (expiry <= now)
            return -1;//-1 if already expired
+       now.setTime(23,59,59);
 
-       int numDays = -1;
-       while (expiry >= now)
+       int numDays = 0;
+       while (expiry > now)
        {
            ++numDays;
            now.adjustTime(24*60);
