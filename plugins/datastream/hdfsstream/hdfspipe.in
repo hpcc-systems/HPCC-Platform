@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source hdfsstreamconfig 
+
+source @HDFSCONFIG@/hdfsstream.conf 
 
 CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
 
