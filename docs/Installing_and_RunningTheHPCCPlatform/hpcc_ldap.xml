@@ -118,7 +118,7 @@
     <orderedlist numeration="loweralpha">
       <listitem>
         <para>Provide a <emphasis role="bold">Name Prefix</emphasis>, for
-        example: <emphasis role="bluel">ldap</emphasis>.</para>
+        example: <emphasis role="blue">ldap</emphasis>.</para>
 
         <para>This helps you to identify it in the list of computers.</para>
       </listitem>
@@ -213,12 +213,13 @@
             </listitem>
           </orderedlist></para>
 
-        <para><emphasis role="bold">Note</emphasis>: The cacheTimeout value is
-        the number of minutes permissions are cached in ESP. If you change any
-        permissions in LDAP, the new settings will not take effect until ESP
-        and Dali refresh the permissions. This could take as long as the
-        cacheTimeout. Setting this to 0 means no cache, but this has
-        performance overhead it so should not be used in production.</para>
+        <para><emphasis role="bold">Note</emphasis>: The <emphasis
+        role="bold">cacheTimeout </emphasis>value is the number of minutes
+        that permissions are cached in ESP. If you change any permissions in
+        LDAP, the new settings will not take effect until ESP and Dali refresh
+        the permissions. This could take as long as the cacheTimeout. Setting
+        this to 0 means no cache, but this has performance overhead so it
+        should not be used in production.</para>
       </listitem>
     </orderedlist>
 
@@ -354,12 +355,13 @@
             <row>
               <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
-              <entry><para>In order to run Roxie Queries when using File Scope
-              security you need to ensure that the roxie user is
-              established.</para>In the following section called <link
-              linkend="Adding_Users">Adding and editing users</link>, you will
-              need to add "<emphasis>roxie</emphasis>" as a user and a
-              password.</entry>
+              <entry><para>In order to run Roxie queries with File Scope
+              security, ensure that the roxie user is created in the list of
+              authenticated users.</para>In the following section, <link
+              linkend="Adding_Users"><emphasis>Adding and editing
+              users</emphasis></link>, add "<emphasis>roxie</emphasis>" as a
+              user and make sure the password is the same as the one entered
+              in Configuration Manager.</entry>
             </row>
           </tbody>
         </tgroup>
