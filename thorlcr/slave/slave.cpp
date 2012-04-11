@@ -462,6 +462,9 @@ public:
             case TAKtemprow:
                 ret = createTempTableSlave(this);
                 break;
+            case TAKinlinetable:
+                ret = createInlineTableSlave(this);
+                break;
             case TAKkeyeddistribute:
                 ret = createIndexDistributeSlave(this);
                 break;

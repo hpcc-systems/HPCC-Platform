@@ -262,7 +262,7 @@ protected:
                     throwUnexpected();
                     HqlExprArray parms;
                     unwindChildren(parms, oldSymbol, 1);
-                    IHqlExpression * formals = createValue(no_sortlist, makeSortListType(NULL), parms);
+                    IHqlExpression * formals = createSortList(parms);
                     newValue.setown(createFunctionDefinition(name, newValue.getClear(), formals, NULL, NULL));
                 }
 
@@ -587,7 +587,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
         IHqlExpression & cur = library->outputs.item(iout);
         OwnedHqlExpr dataset = moduleScope->lookupSymbol(cur.queryName(), LSFpublic, dummyCtx);
         assertex(dataset && dataset->queryRecord());
-        MetaInstance meta(*this, dataset);
+        MetaInstance meta(*this, dataset->queryRecord(), isGrouped(dataset));
         buildMetaInfo(meta);
         switchctx.addQuoted(s.clear().append("case ").append(iout).append(": return &").append(meta.queryInstanceObject()).append(";"));
     }

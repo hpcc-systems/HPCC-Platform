@@ -64,6 +64,9 @@ namespace ccdserver_hqlhelper
 #include "dllserver.hpp"
 #include "workflow.hpp"
 #include "nbcd.hpp"
+#include "roxiemem.hpp"
+#include "roxierowbuff.hpp"
+
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 #include "roxierow.hpp"
@@ -857,7 +860,6 @@ protected:
     IRoxieSlaveContext *ctx;
     const IRoxieServerActivityFactory *factory;
     IRoxieServerActivityCopyArray dependencies;
-    IntArray dependencyIndexes;
     IntArray dependencyControlIds;
     IArrayOf<IActivityGraph> childGraphs;
     CachedOutputMetaData meta;
@@ -1127,12 +1129,6 @@ public:
 
     virtual void serializeExtra(MemoryBuffer &out) {}
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        if (input)
-            input->prestart(parentExtractSize, parentExtract);
-    }
-
     inline void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock cb(statecrit);
@@ -1231,12 +1227,6 @@ public:
                     }
                 }
 #endif
-                // MORE - not absolutely sure that this is needed since dependency gets started and stopped by the execute
-                ForEachItemIn(idx, dependencies)
-                {
-                    if (dependencyControlIds.item(idx) == 0)
-                        dependencies.item(idx).stopSink(dependencyIndexes.item(idx));
-                }
                 if (input)
                     input->stop(aborting);
             }
@@ -1292,7 +1282,6 @@ public:
     virtual void addDependency(IRoxieServerActivity &source, unsigned sourceIdx, int controlId) 
     {
         dependencies.append(source);
-        dependencyIndexes.append(sourceIdx);
         dependencyControlIds.append(controlId);
     } 
 
@@ -1310,11 +1299,6 @@ public:
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract)
     {
         throw MakeStringException(ROXIE_SINK, "Internal error: executeChild() requires a suitable sink");
-    }
-
-    virtual void stopSink(unsigned idx)
-    {
-        throw MakeStringException(ROXIE_SINK, "Internal error: stopSink() requires a suitable sink");
     }
 
     virtual __int64 evaluate() 
@@ -1575,11 +1559,6 @@ public:
         return input;
     }
 
-    void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        input->prestart(parentExtractSize, parentExtract);
-    }
-
     void start(unsigned parentExtractSize, const byte *parentExtract, bool paused, unsigned preload, bool noThread, IRoxieSlaveContext *ctx)
     {
         eof = false;
@@ -1783,11 +1762,6 @@ public:
         return puller.queryInput()->queryIndexReadActivity();
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        puller.prestart(parentExtractSize, parentExtract);
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
@@ -1961,12 +1935,6 @@ public:
     {
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        CRoxieServerActivity::prestart(parentExtractSize, parentExtract);
-        input1->prestart(parentExtractSize, parentExtract);
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
@@ -2101,15 +2069,6 @@ public:
     {
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        CRoxieServerMultiInputBaseActivity::prestart(parentExtractSize, parentExtract);
-        for (unsigned i = 0; i < numInputs; i++)
-        {
-            inputArray[i]->prestart(parentExtractSize, parentExtract);
-        }
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerMultiInputBaseActivity::start(parentExtractSize, parentExtract, paused);
@@ -2135,31 +2094,19 @@ public:
 class CRoxieServerInternalSinkActivity : public CRoxieServerActivity
 {
 protected:
-    unsigned numOutputs;
     bool executed;
-    bool *stopped;
     CriticalSection ecrit;
     Owned<IException> exception;
 
 public:
-    CRoxieServerInternalSinkActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerActivity(_factory, _probeManager), numOutputs(_numOutputs)
+    CRoxieServerInternalSinkActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager)
     {
         executed = false;
-        stopped = new bool[numOutputs];
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
-    }
-
-    ~CRoxieServerInternalSinkActivity()
-    {
-        delete [] stopped;
     }
 
     virtual void reset()
     {
-        for (unsigned s = 0; s < numOutputs; s++)
-            stopped[s] = false;
         executed = false;
         exception.clear();
         CRoxieServerActivity::reset();
@@ -2168,18 +2115,6 @@ public:
     virtual IRoxieInput *queryOutput(unsigned idx)
     {
         return NULL;
-    }
-
-    virtual void stopSink(unsigned outputIdx)
-    {
-        if (!stopped[outputIdx])
-        {
-            stopped[outputIdx] = true;
-            for (unsigned s = 0; s < numOutputs; s++)
-                if (!stopped[s])
-                    return;
-            stop(false); // all outputs stopped - stop parent.
-        }
     }
 
     virtual const void *nextInGroup()
@@ -3762,15 +3697,6 @@ public:
         parentExtract = _parentExtract;
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-#ifdef TRACE_STARTSTOP
-        if (traceStartStop)
-            activity.queryLogCtx().CTXLOG("RRAprestart");
-#endif
-        owner->prestart(parentExtractSize, parentExtract);
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
 #ifdef TRACE_STARTSTOP
@@ -4488,7 +4414,7 @@ class CRoxieServerApplyActivity : public CRoxieServerInternalSinkActivity
 
 public:
     CRoxieServerApplyActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorApplyArg &) basehelper)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorApplyArg &) basehelper)
     {
     }
 
@@ -5290,32 +5216,37 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 
 //=================================================================================
 
+/*
+ * Deprecated in 3.8, this class is being kept for backward compatibility,
+ * since now the code generator is using InlineTables (below) for all
+ * temporary tables and rows.
+ */
 class CRoxieServerTempTableActivity : public CRoxieServerActivity
 {
     IHThorTempTableArg &helper;
-    bool eof;
     unsigned curRow;
+    unsigned numRows;
 
 public:
     CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
     {
-        eof = false;
         curRow = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        eof = false;
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
     }
 
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        if (!eof)
+        // Filtering empty rows, returns the next valid row
+        while (curRow < numRows)
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
             unsigned outSize = helper.getRow(rowBuilder, curRow++);
@@ -5325,7 +5256,6 @@ public:
                 return rowBuilder.finalizeRowClear(outSize);
             }
         }
-        eof = true;
         return NULL;
     }
 
@@ -5358,6 +5288,76 @@ public:
 IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
 {
     return new CRoxieServerTempTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+}
+
+//=================================================================================
+
+class CRoxieServerInlineTableActivity : public CRoxieServerActivity
+{
+    IHThorInlineTableArg &helper;
+    __uint64 curRow;
+    __uint64 numRows;
+
+public:
+    CRoxieServerInlineTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorInlineTableArg &) basehelper)
+    {
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        curRow = 0;
+        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        numRows = helper.numRows();
+    }
+
+    virtual bool needsAllocator() const { return true; }
+    virtual const void *nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        // Filtering empty rows, returns the next valid row
+        while (curRow < numRows)
+        {
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            unsigned outSize = helper.getRow(rowBuilder, curRow++);
+            if (outSize)
+            {
+                processed++;
+                return rowBuilder.finalizeRowClear(outSize);
+            }
+        }
+        return NULL;
+    }
+
+    virtual void setInput(unsigned idx, IRoxieInput *_in)
+    {
+        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
+    }
+
+};
+
+class CRoxieServerInlineTableActivityFactory : public CRoxieServerActivityFactory
+{
+
+public:
+    CRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerInlineTableActivity(this, _probeManager);
+    }
+    virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
+    {
+        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() should not be called for InlineTable activity");
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+{
+    return new CRoxieServerInlineTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
 }
 
 //=================================================================================
@@ -5487,11 +5487,6 @@ public:
     {
         return input->queryIndexReadActivity();
     }
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        CriticalBlock procedure(cs);
-        input->prestart(parentExtractSize, parentExtract);
-    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CriticalBlock procedure(cs);
@@ -5573,7 +5568,6 @@ public:
     }
 
     virtual IOutputMetaData * queryOutputMeta() const { throwUnexpected(); }
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract) { }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) { }
     virtual void stop(bool aborting) { }
     virtual void reset() { totalCycles = 0; }
@@ -5588,11 +5582,6 @@ class CIndirectRoxieInput : public CPseudoRoxieInput
 public:
     CIndirectRoxieInput(IRoxieInput * _input = NULL) : input(_input)
     {
-    }
-
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract) 
-    {
-        input->prestart(parentExtractSize, parentExtract);
     }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) 
     {
@@ -5688,11 +5677,6 @@ public:
     {
         savedParentExtractSize = 0;
         savedParentExtract = NULL;
-    }
-
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        // MORE - not sure what this is! Err on the side of caution and don't call parent
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -5948,13 +5932,6 @@ public:
         sequence = helper.querySequence();
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        assertex(streamInput != NULL);
-        CRoxieServerActivity::prestart(parentExtractSize, parentExtract);
-        streamInput->prestart(parentExtractSize, parentExtract);
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         assertex(streamInput != NULL);
@@ -6035,8 +6012,8 @@ class CRoxieServerLocalResultWriteActivity : public CRoxieServerInternalSinkActi
     unsigned graphId;
 
 public:
-    CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerLocalResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorLocalResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
@@ -6100,7 +6077,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLocalResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerLocalResultWriteActivity(this, _probeManager, graphId);
     }
 
 };
@@ -6266,8 +6243,8 @@ class CRoxieServerGraphLoopResultWriteActivity : public CRoxieServerInternalSink
     unsigned graphId;
 
 public:
-    CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
+    CRoxieServerGraphLoopResultWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _graphId)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorGraphLoopResultWriteArg &)basehelper), graphId(_graphId)
     {
         graph = NULL;
     }
@@ -6371,7 +6348,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerGraphLoopResultWriteActivity(this, _probeManager, graphId, usageCount);
+        return new CRoxieServerGraphLoopResultWriteActivity(this, _probeManager, graphId);
     }
 
 };
@@ -7334,6 +7311,154 @@ public:
     }
 };
 
+class CSpillingQuickSortAlgorithm : implements ISortAlgorithm, implements roxiemem::IBufferedRowCallback
+{
+    enum {
+        InitialSortElements = 0,
+        //The number of rows that can be added without entering a critical section, and therefore also the number
+        //of rows that might not get freed when memory gets tight.
+        CommitStep=32
+    };
+    roxiemem::DynamicRoxieOutputRowArray rowsToSort;
+    roxiemem::RoxieSimpleInputRowArray sorted;
+    ICompare *compare;
+    IRoxieSlaveContext * ctx;
+    Owned<IDiskMerger> diskMerger;
+    Owned<IRowStream> diskReader;
+    Owned<IOutputMetaData> rowMeta;
+    unsigned activityId;
+
+public:
+    CSpillingQuickSortAlgorithm(ICompare *_compare, IRoxieSlaveContext * _ctx, IOutputMetaData * _rowMeta, unsigned _activityId)
+        : rowsToSort(&_ctx->queryRowManager(), InitialSortElements, CommitStep), ctx(_ctx), compare(_compare), rowMeta(_rowMeta), activityId(_activityId)
+    {
+        ctx->queryRowManager().addRowBuffer(this);
+    }
+    ~CSpillingQuickSortAlgorithm()
+    {
+        ctx->queryRowManager().removeRowBuffer(this);
+        diskReader.clear();
+    }
+
+    virtual void prepare(IRoxieInput *input)
+    {
+        loop
+        {
+            const void * next = input->nextInGroup();
+            if (!next)
+                break;
+            if (!rowsToSort.append(next))
+            {
+                {
+                    roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+                    //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
+                    //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
+                    //rows first).
+                    if (rowsToSort.numCommitted() != 0)
+                    {
+                        rowsToSort.flush();
+                        spillRows();
+                    }
+                    //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                    //spillRows() cannot shift active row pointer since it can be called from any thread
+                    rowsToSort.flush();
+                }
+
+                if (!rowsToSort.append(next))
+                {
+                    ReleaseRoxieRow(next);
+                    throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+                }
+            }
+        }
+        rowsToSort.flush();
+
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        if (diskMerger)
+        {
+            spillRows();
+            rowsToSort.kill();
+            diskReader.setown(diskMerger->merge(compare));
+        }
+        else
+        {
+            unsigned numRows = rowsToSort.numCommitted();
+            if (numRows)
+            {
+                const void * * rows = rowsToSort.getBlock(numRows);
+                //MORE: Should this be parallel?  Should that be dependent on whether it is grouped?  Should be a hint.
+                qsortvec(const_cast<void * *>(rows), numRows, *compare);
+            }
+            sorted.transferFrom(rowsToSort);
+        }
+    }
+
+    virtual const void *next()
+    {
+        if(diskReader)
+            return diskReader->nextRow();
+        return sorted.dequeue();
+    }
+
+    virtual void reset()
+    {
+        //MORE: This could transfer any row pointer from sorted back to rowsToSort. It would trade
+        //fewer heap allocations with not freeing up the memory from large group sorts.
+        rowsToSort.clearRows();
+        sorted.kill();
+        //Disk reader must be cleared before the merger - or the files may still be locked.
+        diskReader.clear();
+        diskMerger.clear();
+    }
+
+//interface roxiemem::IBufferedRowCallback
+    virtual unsigned getPriority() const
+    {
+        //Spill global sorts before grouped sorts
+        if (rowMeta->isGrouped())
+            return 20;
+        return 10;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        roxiemem::RoxieOutputRowArrayLock block(rowsToSort);
+        return spillRows();
+    }
+
+protected:
+    bool spillRows()
+    {
+        unsigned numRows = rowsToSort.numCommitted();
+        if (numRows == 0)
+            return false;
+
+        const void * * rows = rowsToSort.getBlock(numRows);
+        qsortvec(const_cast<void * *>(rows), numRows, *compare);
+
+        Owned<IRowWriter> out = queryMerger()->createWriteBlock();
+        for (unsigned i= 0; i < numRows; i++)
+        {
+            out->putRow(rows[i]);
+        }
+        rowsToSort.noteSpilled(numRows);
+        return true;
+    }
+
+    IDiskMerger * queryMerger()
+    {
+        if (!diskMerger)
+        {
+            unsigned __int64 seq = (memsize_t)this ^ get_cycles_now();
+            StringBuffer spillBasename;
+            spillBasename.append(tempDirectory).append(PATHSEPCHAR).appendf("spill_sort_%"I64F"u", seq);
+            Owned<IRowLinkCounter> linker = new RoxieRowLinkCounter();
+            Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(rowMeta, activityId, ctx->queryCodeContext());
+            diskMerger.setown(createDiskMerger(rowInterfaces, linker, spillBasename));
+        }
+        return diskMerger;
+    }
+};
+
 #define INSERTION_SORT_BLOCKSIZE 1024
 
 class SortedBlock : public CInterface, implements IInterface
@@ -7757,7 +7882,7 @@ public:
     }
 };
 
-typedef enum {heapSort, insertionSort, quickSort, unknownSort } RoxieSortAlgorithm;
+typedef enum {heapSort, insertionSort, quickSort, spillingQuickSort, unknownSort } RoxieSortAlgorithm;
 
 class CRoxieServerSortActivity : public CRoxieServerActivity
 {
@@ -7776,6 +7901,16 @@ public:
         compare = helper.queryCompare();
         readInput = false;
         sorter = NULL;
+    }
+
+    ~CRoxieServerSortActivity()
+    {
+        delete sorter;
+    }
+
+    virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
+    {
+        CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         switch (sortAlgorithm)
         {
         case heapSort:
@@ -7787,6 +7922,9 @@ public:
         case quickSort:
             sorter = new CQuickSortAlgorithm(compare);
             break;
+        case spillingQuickSort:
+            sorter = new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId);
+            break;
         case unknownSort:
             sorter = NULL; // create it later....
             break;
@@ -7795,12 +7933,6 @@ public:
             break;
         }
     }
-
-    ~CRoxieServerSortActivity()
-    {
-        delete sorter;
-    }
-
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
@@ -7840,7 +7972,13 @@ public:
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sorter = new CQuickSortAlgorithm(compare);
+                        else
+                            sorter = new CHeapSortAlgorithm(compare);
+                    }
                 }
                 else
                     sorter = new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
@@ -7891,12 +8029,24 @@ public:
                             throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
                         sortAlgorithm = quickSort;
                     }
+                    else if (stricmp(useAlgorithm, "spillingquicksort")==0)
+                    {
+                        if (sortFlags & TAFstable)
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                        sortAlgorithm = spillingQuickSort;
+                    }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
                         sortAlgorithm = heapSort; // NOTE - we do allow UNSTABLE('heapsort') in order to facilitate runtime selection
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
                         sortAlgorithm = insertionSort;
                     else
-                        throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid sort algorithm %s requested", useAlgorithm);
+                    {
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        if (sortFlags & TAFunstable)
+                            sortAlgorithm = quickSort;
+                        else
+                            sortAlgorithm = heapSort;
+                    }
                 }
             }
         }
@@ -8052,7 +8202,6 @@ public:
     unsigned tailIdx;
     unsigned headIdx;
     Owned<IException> error;
-    bool prestarted;
 
     class OutputAdaptor : public CInterface, implements IRoxieInput
     {
@@ -8155,13 +8304,6 @@ public:
             return parent->queryOutputMeta();
         }
 
-        virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-        {
-            if (traceStartStop)
-                parent->CTXLOG("%p prestart Input adaptor %d stopped = %d", this, oid, stopped);
-            parent->prestart(oid, parentExtractSize, parentExtract);
-        }
-
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             // NOTE: it is tempting to move the init() of all output adaptors here. However that is not a good idea, 
@@ -8258,7 +8400,6 @@ public:
         }
         tailIdx = 0;
         headIdx = 0;
-        prestarted = false;
         activeOutputs = numOutputs;
     }
 
@@ -8333,39 +8474,6 @@ public:
         CTXLOG("standard return of %p", ret);
 #endif
         return ret;
-    }
-
-    virtual void prestart(unsigned oid, unsigned parentExtractSize, const byte *parentExtract)
-    {
-        CriticalBlock b(crit);
-        if (error)
-            throw error.getLink();
-        if (traceStartStop)
-            CTXLOG("SPLIT %p: prestart %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
-        //assertex(state != STATEstarting && state != STATEstarted);
-        if (state != STATEstarting && state != STATEstarted && !prestarted)
-        {
-            prestarted = true;
-            error.clear();
-            try
-            {
-                CRoxieServerActivity::prestart(parentExtractSize, parentExtract);
-            }
-            catch (IException *E)
-            {
-#ifdef TRACE_SPLIT
-                CTXLOG("spill %d caught exception in prestart", activityId);
-#endif
-                error.set(E);
-                throw;
-            }
-            catch (...)
-            {
-                IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception caught in CRoxieServerThroughSpillActivity::prestart");
-                error.set(E);
-                throw E;
-            }
-        }
     }
 
     virtual void start(unsigned oid, unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8450,7 +8558,6 @@ public:
 #endif
         activeOutputs = numOutputs;
         CRoxieServerActivity::stop(aborting);
-        prestarted = false;
     };
 
     void reset(unsigned oid, unsigned _processed)
@@ -8463,7 +8570,6 @@ public:
         error.clear();
         if (state != STATEreset) // make sure input is only reset once
             CRoxieServerActivity::reset();
-        prestarted = false;
     };
 
     virtual unsigned __int64 queryLocalCycles() const
@@ -8906,8 +9012,8 @@ class CRoxieServerPipeWriteActivity : public CRoxieServerInternalSinkActivity
     bool recreate;
     bool inputExhausted;
 public:
-    CRoxieServerPipeWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorPipeWriteArg &)basehelper)
+    CRoxieServerPipeWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorPipeWriteArg &)basehelper)
     {
         recreate = helper.recreateEachRow();
         firstRead = false;
@@ -9024,7 +9130,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerPipeWriteActivity(this, _probeManager, usageCount);
+        return new CRoxieServerPipeWriteActivity(this, _probeManager);
     }
 };
 
@@ -9545,8 +9651,8 @@ class CRoxieServerActionActivity : public CRoxieServerInternalSinkActivity
     IHThorActionArg &helper;
 public:
 
-    CRoxieServerActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorActionArg &)basehelper)
+    CRoxieServerActionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorActionArg &)basehelper)
     {
     }
 
@@ -9566,7 +9672,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerActionActivity(this, _probeManager, usageCount);
+        return new CRoxieServerActionActivity(this, _probeManager);
     }
 };
 
@@ -10574,7 +10680,7 @@ protected:
 
 public:
     CRoxieServerDiskWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper((IHThorDiskWriteArg &)basehelper)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorDiskWriteArg &)basehelper)
     {
         extend = ((helper.getFlags() & TDWextend) != 0);
         overwrite = ((helper.getFlags() & TDWoverwrite) != 0);
@@ -11027,7 +11133,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 
 public:
     CRoxieServerIndexWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, 0), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper(static_cast<IHThorIndexWriteArg &>(basehelper))
     {
         overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
         reccount = 0;
@@ -13379,11 +13485,6 @@ public:
         puller.setInput(this, _in);
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        puller.prestart(parentExtractSize, parentExtract);
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numProcessedLastGroup = 0;
@@ -13581,7 +13682,7 @@ class CRoxieServerLoopActivity : public CRoxieServerActivity
 protected:
     IHThorLoopArg &helper;
     ThorActivityKind activityKind;
-    int maxIterations;
+    unsigned maxIterations;
     bool finishedLooping;
     unsigned flags;
     bool eof;
@@ -13605,9 +13706,11 @@ public:
     {
         eof = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         finishedLooping = ((activityKind == TAKloopcount) && (maxIterations == 0));
+        if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
+            finishedLooping = true;
         loopExtractBuilder.clear();
         helper.createParentExtract(loopExtractBuilder);         // could possibly delay this until execution actually happens
     }
@@ -13710,20 +13813,25 @@ public:
             switch (activityKind)
             {
             case TAKloopdataset:
-                if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
                 {
-                    if (loopPending.ordinality() == 0)
+                    if (!(flags & IHThorLoopArg::LFnewloopagain))
                     {
-                        eof = true;
-                        return NULL;
-                    }
+                        if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+                        {
+                            if (loopPending.ordinality() == 0)
+                            {
+                                eof = true;
+                                return NULL;
+                            }
 
-                    arrayInput.init(&loopPending);
-                    curInput = &arrayInput;
-                    finishedLooping = true;
-                    continue;       // back to the input loop again
+                            arrayInput.init(&loopPending);
+                            curInput = &arrayInput;
+                            finishedLooping = true;
+                            continue;       // back to the input loop again
+                        }
+                    }
+                    break;
                 }
-                break;
             case TAKlooprow:
                 if (loopPending.empty())
                 {
@@ -13749,7 +13857,18 @@ public:
             checkAbort();
             try 
             {
-                resultInput.setown(executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending));
+                Owned<IRoxieGraphResults> results = executeIteration(loopExtractBuilder.size(), loopExtractBuilder.getbytes(), loopCounter, loopPending);
+                resultInput.setown(results->createIterator(0));
+
+                if (flags & IHThorLoopArg::LFnewloopagain)
+                {
+                    Owned<IRoxieInput> againResult = results->createIterator(helper.loopAgainResult());
+                    OwnedConstRoxieRow row  = againResult->nextInGroup();
+                    assertex(row);
+                    //Result is a row which contains a single boolean field.
+                    if (!((const bool *)row.get())[0])
+                        finishedLooping = true;
+                }
             }
             catch (IException *E)
             {
@@ -13764,7 +13883,7 @@ public:
         }
     }
 
-    IRoxieInput * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
+    IRoxieGraphResults * executeIteration(unsigned parentExtractSize, const byte *parentExtract, unsigned counter, ConstPointerArray & rows)
     {
         try
         {
@@ -13775,7 +13894,7 @@ public:
 
             createCounterResult(loopGraph, counter);
 
-            Owned<IRoxieInput> ret = loopGraph->execute(0, parentExtractSize, parentExtract);
+            Owned<IRoxieGraphResults> ret = loopGraph->execute(parentExtractSize, parentExtract);
             loopGraph->afterExecute();
             return ret.getClear();
         }
@@ -14296,7 +14415,7 @@ class CRoxieServerGraphLoopActivity : public CRoxieServerActivity
 {
 protected:
     IHThorGraphLoopArg &helper;
-    int maxIterations;
+    unsigned maxIterations;
     unsigned flags;
     rtlRowBuilder GraphExtractBuilder;
     unsigned loopGraphId;
@@ -14314,8 +14433,8 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        maxIterations = (int) helper.numIterations();
-        if (maxIterations < 0) maxIterations = 0;
+        int iterations = (int) helper.numIterations();
+        maxIterations = (iterations >= 0) ? iterations : 0;
         if (maxIterations > maxGraphLoopIterations)
             throw MakeStringException(ROXIE_TOO_MANY_GRAPH_LOOP, "Attempt to execute graph %u times", maxIterations);
         if (maxIterations != 0)
@@ -15043,11 +15162,6 @@ public:
     ~CRoxieServerNWayInputActivity()
     {
         delete [] inputs;
-    }
-
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        // Too complex for now
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -18322,7 +18436,6 @@ class CRoxieServerCaseActivity : public CRoxieServerActivity
     IRoxieInput **inputs;
     unsigned cond;
     bool unusedStopped;
-    bool prestarted;
     IRoxieInput *in;
     unsigned numInputs;
 
@@ -18331,7 +18444,6 @@ public:
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorCaseArg &)basehelper), numInputs(_numInputs)
     {
         unusedStopped = false;
-        prestarted = false;
         cond = 0;
         inputs = new IRoxieInput*[numInputs];
         for (unsigned i = 0; i < numInputs; i++)
@@ -18344,24 +18456,10 @@ public:
         delete [] inputs;
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        if (!dependencies.length())
-        {
-            CRoxieServerActivity::start(parentExtractSize, parentExtract, false); // i.e. need to evaluate the case condition now
-            cond = helper.getBranch();
-            assertex(cond < numInputs);
-            inputs[cond]->prestart(parentExtractSize, parentExtract);
-            in = inputs[cond];
-            prestarted = true;
-        }
-    }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        if (!prestarted)
-            cond = helper.getBranch();
+        cond = helper.getBranch();
         assertex(cond < numInputs);
         inputs[cond]->start(parentExtractSize, parentExtract, paused);
         for (unsigned idx = 0; idx < numInputs; idx++)
@@ -18390,7 +18488,6 @@ public:
             inputs[idx]->reset();
         }
         unusedStopped = false;
-        prestarted = false;
         in = NULL;
         CRoxieServerActivity::reset();
     }
@@ -18450,7 +18547,6 @@ class CRoxieServerIfActivity : public CRoxieServerActivity
     IRoxieInput *inputFalse;
     bool cond;
     bool unusedStopped;
-    bool prestarted;
 
 public:
     CRoxieServerIfActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -18459,34 +18555,13 @@ public:
         inputFalse = NULL;
         inputTrue = NULL;
         unusedStopped = false;
-        prestarted = false;
         cond = false;
-    }
-
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        if (!dependencies.length())
-        {
-            CRoxieServerActivity::start(parentExtractSize, parentExtract, false); // i.e. need to evaluate the if condition now
-            cond = helper.getCondition();
-            if (cond)
-            {
-                inputTrue->prestart(parentExtractSize, parentExtract);
-            }
-            else 
-            {
-                if (inputFalse)
-                    inputFalse->prestart(parentExtractSize, parentExtract);
-            }
-            prestarted = true;
-        }
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        if (!prestarted)
-            cond = helper.getCondition();
+        cond = helper.getCondition();
         if (cond)
         {
             inputTrue->start(parentExtractSize, parentExtract, paused);
@@ -18551,7 +18626,6 @@ public:
         if (inputFalse)
             inputFalse->reset();
         unusedStopped = false;
-        prestarted = false;
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
@@ -19121,8 +19195,8 @@ class CRoxieServerWorkUnitWriteActivity : public CRoxieServerInternalSinkActivit
     IRoxieServerContext *serverContext;
 
 public:
-    CRoxieServerWorkUnitWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
+    CRoxieServerWorkUnitWriteActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _isReread)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorWorkUnitWriteArg &)basehelper), isReread(_isReread)
     {
         grouped = (helper.getFlags() & POFgrouped) != 0;
         serverContext = NULL;
@@ -19259,7 +19333,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerWorkUnitWriteActivity(this, _probeManager, isReread, usageCount);
+        return new CRoxieServerWorkUnitWriteActivity(this, _probeManager, isReread);
     }
 
 };
@@ -19277,8 +19351,8 @@ class CRoxieServerRemoteResultActivity : public CRoxieServerInternalSinkActivity
     IHThorRemoteResultArg &helper;
 
 public:
-    CRoxieServerRemoteResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _numOutputs)
-        : CRoxieServerInternalSinkActivity(_factory, _probeManager, _numOutputs), helper((IHThorRemoteResultArg &)basehelper)
+    CRoxieServerRemoteResultActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorRemoteResultArg &)basehelper)
     {
     }
 
@@ -19302,7 +19376,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerRemoteResultActivity(this, _probeManager, usageCount);
+        return new CRoxieServerRemoteResultActivity(this, _probeManager);
     }
 
 };
@@ -20584,13 +20658,11 @@ protected:
     unsigned rawSize;
     CSkippableRemoteResultAdaptor remote;
     CIndexTransformCallback callback;
-//    bool started;
     bool sorted;
     bool variableFileName;
     bool variableInfoPending;
     bool isOpt;
     bool isLocal;
-    bool prestarted;
     unsigned __int64 rowLimit;
     unsigned __int64 keyedLimit;
     unsigned __int64 choosenLimit;
@@ -20628,7 +20700,6 @@ public:
         variableInfoPending = false;
         isOpt = (indexHelper.getFlags() & TIRoptional) != 0;
         seekGEOffset = 0;
-        prestarted = false;
 //        started = false;
         rejected = accepted = 0;
         rowLimit = choosenLimit = keyedLimit = 0;
@@ -20643,20 +20714,9 @@ public:
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         remote.onCreate(this, this, _ctx, _colocalParent);
-        prestarted = false;
     }
 
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        // MORE - could probably work out how to handle the limit cases if I tried hard enough
-        if (!dependencies.ordinality() && (indexHelper.getFlags() & (TIRlimitcreates|TIRkeyedlimitcreates)) == 0)
-        {
-            prestarted = true; // NOTE: the assumption is that in a child query, prestart will be used for all rows (if start is called at all)
-            _start(parentExtractSize, parentExtract, false);
-        }
-    }
-
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         accepted = 0;
         rejected = 0;
@@ -20666,12 +20726,6 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         remote.onStart(parentExtractSize, parentExtract);
         variableInfoPending = variableFileName;
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        if (!prestarted)
-            _start(parentExtractSize, parentExtract, paused);
     }
 
     void processAllKeys()
@@ -20883,10 +20937,11 @@ protected:
     unsigned * seekSizes;
     bool optimizeSteppedPostFilter;
     ISteppingMeta * projectedMeta;
+    unsigned maxSeekLookahead;
 
 public:
     CRoxieServerIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip)
+        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
         : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _maxRecordSize, _sorted, _isLocal, _maySkip), 
           readHelper((IHThorIndexReadArg &)basehelper)
     {
@@ -20894,6 +20949,7 @@ public:
         unsigned flags = indexHelper.getFlags();
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
         seekSizes = NULL;
+        maxSeekLookahead = _maxSeekLookahead;
 
         if (rawMeta)
         {
@@ -20917,9 +20973,9 @@ public:
         delete [] seekSizes;
     }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::_start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         steppingMeta.setDistributed();
         if (steppedExtra)
             steppingMeta.setExtra(steppedExtra);
@@ -21075,7 +21131,11 @@ public:
         IMultipleStepSeekInfo *seeks = stepExtra.queryExtraSeeks();
         if (seeks)
         {
-            seeks->ensureFilled(seek, numFields, 40000/seekLen);  // MORE - could make this configurable
+            unsigned lookahead = 40000/seekLen;
+            if (maxSeekLookahead && (lookahead > maxSeekLookahead))
+                lookahead  = maxSeekLookahead;
+            seeks->ensureFilled(seek, numFields, lookahead);
+
             unsigned serialized = 1; // rawseek is always serialized...
             unsigned patchLength = out.length();
             out.append(serialized);  // NOTE - we come back and patch with the actual value...
@@ -21602,6 +21662,7 @@ public:
     bool variableFileName;
     bool enableFieldTranslation;
     unsigned rawSize;
+    unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
     CRoxieServerSideCache *cache;
@@ -21643,6 +21704,7 @@ public:
         }
         int cacheSize = _graphNode.getPropInt("hint[@name='cachehits']/@value", serverSideCacheSize);
         cache = cacheSize ? new CRoxieServerSideCache(cacheSize) : NULL;
+        maxSeekLookahead = _graphNode.getPropInt("hint[@name='maxseeklookahead']/@value", 0);
     }
 
     ~CRoxieServerBaseIndexActivityFactory()
@@ -21687,7 +21749,7 @@ public:
         else if (isSimple && !maySkip)
             return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip);
+            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip, maxSeekLookahead);
     }
 };
 
@@ -21751,9 +21813,10 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
+        done = false;
+        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         choosenLimit = countHelper.getChooseNLimit();
         if (limitHelper)
         {
@@ -21762,13 +21825,6 @@ public:
         }
         if (!paused)
             processAllKeys();
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        done = false;
-        if (!prestarted)
-            CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual bool processSingleKey(IKeyIndex *key, IRecordLayoutTranslator * trans)
@@ -22007,21 +22063,15 @@ public:
     {
     }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
+        done = false;
+        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
         if (!paused)
             processAllKeys();
     }
 
     virtual bool needsAllocator() const { return true; }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        done = false;
-        if (!prestarted)
-            CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
-    }
 
     virtual bool processSingleKey(IKeyIndex *key, IRecordLayoutTranslator * trans)
     {
@@ -22153,24 +22203,18 @@ public:
 
     IMPLEMENT_IINTERFACE
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        CRoxieServerIndexActivity::_start(parentExtractSize, parentExtract, paused);
-        groupSegCount = 0;
-        if (!paused)
-            processAllKeys();
-    }
-
-    virtual bool needsAllocator() const { return true; }
-
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         eof = false;
         gathered= false;
-        if (!prestarted)
-            CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexActivity::start(parentExtractSize, parentExtract, paused);
+        groupSegCount = 0;
+        if (!paused)
+            processAllKeys();
         resultAggregator.start(rowAllocator);
     }
+
+    virtual bool needsAllocator() const { return true; }
 
     virtual void reset()
     {
@@ -22343,9 +22387,9 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    virtual void _start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        CRoxieServerIndexReadBaseActivity::_start(parentExtractSize, parentExtract, paused);
+        CRoxieServerIndexReadBaseActivity::start(parentExtractSize, parentExtract, paused);
         rowLimit = readHelper.getRowLimit();
         keyedLimit = readHelper.getKeyedLimit();
         if (!paused)
@@ -24823,10 +24867,6 @@ public:
     { 
         return in->queryOutputMeta(); 
     }
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract)
-    {
-        in->prestart(parentExtractSize, parentExtract);;
-    }
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) 
     {
         // NOTE: totalRowCount/maxRowSize not reset, as we want them cumulative when working in a child query.
@@ -24999,7 +25039,7 @@ public:
     }
 };
 
-class CGraphResults : public CInterface, implements IEclGraphResults
+class CGraphResults : public CInterface, implements IRoxieGraphResults
 {
     IArrayOf<IGraphResult> results;
     CriticalSection cs;
@@ -26913,10 +26953,10 @@ public:
         reset();
     }
 
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract)
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract)
     {
         doExecute(parentExtractSize, parentExtract);
-        return results->createIterator(id);
+        return LINK(results);
     }
     virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
     {
@@ -28086,9 +28126,10 @@ public:
     // interface IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).queryActivityId();
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).queryActivityId();
         else
         {
             //assert(false);
@@ -28097,9 +28138,10 @@ public:
     }
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).getId(out);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).getId(out);
         else
         {
             assert(false);
@@ -28109,17 +28151,29 @@ public:
     virtual void onDestroy(unsigned cacheId, void *row) const 
     {
         IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
             SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(cacheId))
-                allocator = &allAllocators.item(cacheId);
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
             else
             {
                 assert(false);
                 return;
             }
         }
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Give an error, but don't throw an exception!
+        }
         allocator->queryOutputMeta()->destruct((byte *) row);
+    }
+    virtual void checkValid(unsigned cacheId, const void *row) const
+    {
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Throw an exception?
+        }
     }
 
     virtual IWorkUnit *updateWorkUnit() const
@@ -32238,7 +32292,7 @@ protected:
         static bool heapInitialized = false;
         if (!heapInitialized)
         {
-            roxiemem::setTotalMemoryLimit(100 * 1024 * 1024);
+            roxiemem::setTotalMemoryLimit(100 * 1024 * 1024, 0, NULL);
             heapInitialized = true;
         }
         package.setown(createPackage(NULL));
@@ -32314,7 +32368,7 @@ protected:
             ASSERT(in.state == TestInput::STATEreset);
             ASSERT(!input2 || in2.state == TestInput::STATEreset);
             ctx->queryRowManager().reportLeaks();
-            ASSERT(ctx->queryRowManager().pages() == 0);
+            ASSERT(ctx->queryRowManager().numPagesAfterCleanup() == 0);
         }
     }
 

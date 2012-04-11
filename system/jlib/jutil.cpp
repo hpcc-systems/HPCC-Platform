@@ -1361,9 +1361,12 @@ int make_daemon(bool printpid)
         exit(EXIT_SUCCESS);
     }
 
-    freopen("/dev/null", "r", stdin);
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
+    if (!freopen("/dev/null", "r", stdin) ||
+        !freopen("/dev/null", "w", stdout) ||
+        !freopen("/dev/null", "w", stderr)) {
+        PrintLog("reopen std in/out/err failed\n");
+        return(EXIT_FAILURE);
+    }
 
     return(EXIT_SUCCESS);
 #else
@@ -2549,6 +2552,31 @@ int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvo
         mb.append(c);
     }
     return 0;
+}
+
+jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree)
+{
+    StringBuffer dir;
+    if (pTree)
+        getConfigurationDirectory(pTree->queryPropTree("Directories"),"temp",component,pTree->queryProp("@name"),dir);
+    if (!dir.length())
+    {
+#ifdef _WIN32
+        char path[_MAX_PATH+1];
+        if(GetTempPath(sizeof(path),path))
+            dir.append(path).append("HPCCSystems\\hpcc-data");
+        else
+            dir.append("c:\\HPCCSystems\\hpcc-data\\temp");
+#else
+        dir.append(getenv("TMPDIR"));
+        if (!dir.length())
+            dir.append("/var/lib");
+        dir.append("/HPCCSystems/hpcc-data/temp");
+#endif
+    }
+    dir.append(PATHSEPCHAR).append(component);
+    recursiveCreateDirectory(dir.str());
+    return target.set(dir);
 }
 
 //#define TESTURL

@@ -44,7 +44,7 @@ struct IHThorGraphResults : extends IEclGraphResults
 
 struct IHThorBoundLoopGraph : extends IInterface
 {
-    virtual IHThorGraphResult * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract) = 0;
+    virtual IHThorGraphResults * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract) = 0;
     virtual void execute(void * counterRow, IHThorGraphResults * graphLoopResults, const byte * parentExtract) = 0;
 };
 

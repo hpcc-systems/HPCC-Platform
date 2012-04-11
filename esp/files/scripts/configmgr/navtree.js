@@ -3986,7 +3986,7 @@ function populateNumberOfNode(){
   
   if( parseInt(defaultNodes) <= 1){
     document.getElementById('node4Thor').value = "1";
-    document.getElementById('node4Support').value = "1";
+    document.getElementById('node4Support').value = "0";
   }
   else{
     var supportNodes = 7;

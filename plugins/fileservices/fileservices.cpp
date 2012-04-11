@@ -978,6 +978,7 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
 {
     lsfn.clear();
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
     constructLogicalName(ctx, lsuperfn, lsfn);
     if (!allowforeign) {
         CDfsLogicalFileName dlfn;
@@ -1014,7 +1015,8 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
 static ISimpleSuperFileEnquiry *getSimpleSuperFileEnquiry(ICodeContext *ctx, const char *lsuperfn)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
-    if (transaction&&transaction->active())
+    assertex(transaction);
+    if (transaction->active())
         return NULL;
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
@@ -1024,7 +1026,8 @@ static ISimpleSuperFileEnquiry *getSimpleSuperFileEnquiry(ICodeContext *ctx, con
 static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
-    if (transaction&&transaction->active()) {
+    assertex(transaction);
+    if (transaction->active()) {
         StringBuffer s("Operation not part of transaction : ");
         s.append(fn);
         WUmessage(ctx,ExceptionSeverityWarning,fn,s.str());
@@ -1034,6 +1037,7 @@ static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)
 FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, const char *lsuperfn, bool sequentialparts, bool ifdoesnotexist)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
@@ -1132,8 +1136,8 @@ FILESERVICES_API void FILESERVICES_CALL fsStartSuperFileTransaction(IGlobalCodeC
 FILESERVICES_API void FILESERVICES_CALL fslStartSuperFileTransaction(ICodeContext *ctx)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
-    if (transaction)
-        transaction->start();
+    assertex(transaction);
+    transaction->start();
     WUmessage(ctx,ExceptionSeverityInformation,NULL,"StartSuperFileTransaction");
 }
 
@@ -1151,7 +1155,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     if (!lookupSuperFile(ctx, lsuperfn, file, strict, lsfn, false, false, addcontents)) {
         // auto create
         fsCreateSuperFile(ctx,lsuperfn,false,false);
-        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, false);
+        lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, false, addcontents);
     }
     // Never add super file to itself
     StringBuffer lfn;
@@ -1160,6 +1164,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
         throw MakeStringException(0, "AddSuperFile: Adding super file %s to itself!", file->queryLogicalName());
     }
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
     if  (strict||addcontents) {
         Owned<IDistributedSuperFile> subfile;
         subfile.setown(transaction->lookupSuperFile(lfn.str()));
@@ -1180,7 +1185,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     if (addcontents)
         s.append(", addcontents");
     s.append(") ");
-    if (transaction&&transaction->active())
+    if (transaction->active())
         s.append("trans");
     else
         s.append("done");
@@ -1200,8 +1205,9 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     StringBuffer lfn;
     if (_lfn)
         constructLogicalName(ctx, _lfn, lfn);
-    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true, false);
+    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, true, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
     file->removeSubFile(_lfn?lfn.str():NULL,del,del,remcontents,transaction);
     StringBuffer s;
     if (_lfn)
@@ -1216,7 +1222,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     if (remcontents)
         s.append(", remcontents");
     s.append(") ");
-    if (transaction&&transaction->active())
+    if (transaction->active())
         s.append("trans");
     else
         s.append("done");
@@ -1249,11 +1255,12 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
     lookupSuperFile(ctx, lsuperfn2, file2, true,lsfn2,false,false);
 
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
     file1->swapSuperFile(file2,transaction);
     StringBuffer s("SwapSuperFile ('");
     s.append(lsfn1).append("', '");
     s.append(lsfn2).append("') '");
-    if (transaction&&transaction->active())
+    if (transaction->active())
         s.append("trans");
     else
         s.append("done");
@@ -1283,7 +1290,8 @@ FILESERVICES_API void FILESERVICES_CALL fsFinishSuperFileTransaction(IGlobalCode
 FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeContext *ctx, bool rollback)
 {
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
-    if (transaction) {
+    assertex(transaction);
+    if (transaction->active()) {
         if (rollback)
             transaction->rollback();
         else
@@ -1292,7 +1300,16 @@ FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeConte
         if (rollback)
             s.append("rollback");
         else
+            s.append("commit");
+        WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    }
+    else {
+        StringBuffer s("Invalid FinishSuperFileTransaction ");
+        if (rollback)
+            s.append("rollback");
+        else
             s.append("done");
+        s.append(", transaction not active");
         WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
     }
 }
@@ -1439,8 +1456,8 @@ FILESERVICES_API void FILESERVICES_CALL fsSetFileDescription(ICodeContext *ctx, 
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (df) {
-        df->lockProperties().setProp("@description",value);
-        df->unlockProperties();
+        DistributedFilePropertyLock lock(df);
+        lock.queryAttributes().setProp("@description",value);
     }
     else
         throw MakeStringException(0, "SetFileDescription: Could not locate file %s", lfn.str());
@@ -1455,7 +1472,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsGetFileDescription(ICodeContext *ct
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
     if (!df)
         throw MakeStringException(0, "GetFileDescription: Could not locate file %s", lfn.str());
-    const char * ret = df->queryProperties().queryProp("@description");
+    const char * ret = df->queryAttributes().queryProp("@description");
     if (ret)
         return CTXSTRDUP(parentCtx, ret);
     else
@@ -1469,7 +1486,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(size32_t & __lenResult
     SocketEndpoint ep(machine);
     if (ep.isNull()){
         if (machine)
-            throw MakeStringException(-1, "GetFileDescription: Could not resolve %s", machine);
+            throw MakeStringException(-1, "RemoteDirectory: Could not resolve host '%s'", machine);
         ep.setLocalHost(0);
     }
 
@@ -1783,6 +1800,9 @@ FILESERVICES_API  char * FILESERVICES_CALL fsfPromoteSuperFileList(ICodeContext 
     StringBuffer lfn;
     UnsignedArray lfnofs;
     const char *s = (const char *)lsuperfns;
+    // MORE - For now, we need a local transaction
+    CheckNotInTransaction(ctx, "PromoteSuperFile");
+
     while ((size32_t)(s-(const char *)lsuperfns)<lenLsuperfns) {
         constructLogicalName(wu,s,lfn.clear());
         lfnofs.append(mb.length());
@@ -2069,7 +2089,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
             dt.getString(ret);
         }
         else if (strcmp(attrname,"protected")==0) {
-            IPropertyTree &attr = df->queryProperties();
+            IPropertyTree &attr = df->queryAttributes();
             Owned<IPropertyTreeIterator> piter = attr.getElements("Protect");
             ForEach(*piter) {
                 const char *name = piter->get().queryProp("@name");
@@ -2086,7 +2106,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfGetLogicalFileAttribute(ICodeContex
         else {
             StringBuffer xpath("@");
             xpath.append(attrname);
-            IPropertyTree &attr = df->queryProperties();
+            IPropertyTree &attr = df->queryAttributes();
             attr.getProp(xpath.str(),ret);
         }
     }

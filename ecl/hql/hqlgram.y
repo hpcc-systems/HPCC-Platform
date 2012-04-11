@@ -386,6 +386,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SERVICE
   SET
   SHARED
+  SHUFFLE
   SIMPLE_TYPE
   SIN
   SINGLE
@@ -2533,6 +2534,11 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createActionList(actions), $1);
                         }
+    | OUTPUT '(' action ')'
+                        {
+                            parser->reportError(ERR_EXPECTED, $3, "OUTPUT cannot be applied to an action");
+                            $$.inherit($3);
+                        }
     ;
 
 
@@ -2846,6 +2852,24 @@ expireAttr
                         }
     ;
 
+optDatasetFlags
+    :                   { $$.setNullExpr(); }
+    | ',' datasetFlags    { $$.inherit($2); }
+    ;
+
+datasetFlags
+    : datasetFlag
+    | datasetFlag ',' datasetFlags
+                        { $$.setExpr(createComma($1.getExpr(), $3.getExpr()), $1); }
+    ;
+
+datasetFlag
+    : DISTRIBUTED       {
+                            $$.setExpr(createExprAttribute(distributedAtom));
+                            $$.setPosition($1);
+                        }
+    ;
+
 optIndexFlags
     :                   { $$.setNullExpr(); $$.clearPosition(); }
     | ',' indexFlags    { $$.setExpr($2.getExpr()); $$.setPosition($1); }
@@ -3025,9 +3049,10 @@ outputFlag
                                 parser->normalizeExpression($1, type_string, false);
                             $$.inherit($1);
                         }
-    | FIRST '(' INTEGER_CONST ')'
+    | FIRST '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(firstAtom, createConstant($3.getInt())));
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createAttribute(firstAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | THOR              {
@@ -3257,9 +3282,10 @@ outputWuFlag
                             $$.setExpr(createAttribute(allAtom));
                             $$.setPosition($1);
                         }
-    | FIRST '(' INTEGER_CONST ')'
+    | FIRST '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(firstAtom, createConstant($3.getInt())));
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createAttribute(firstAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | THOR              {
@@ -4777,7 +4803,7 @@ chooseList
 chooseItem
     : expression        {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             $$.inherit($1);
                         }
     ;
@@ -5009,16 +5035,16 @@ expr
     | expr '%' expr     {
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, false);
                             ITypeInfo * type = parser->promoteToSameType($1, $3); // MORE _ should calculate at wider width then cast down to narrower?
                             $$.setExpr(createValue(no_modulus, type, $1.getExpr(), $3.getExpr()));
                         }
     | expr DIV expr     {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, false);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             ITypeInfo * type = parser->promoteToSameType($1, $3);
@@ -5027,7 +5053,7 @@ expr
     | expr SHIFTL expr  {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * left = $1.getExpr();
@@ -5036,7 +5062,7 @@ expr
     | expr SHIFTR expr  {
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, false);
                             parser->normalizeExpression($1, type_int, false);
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * left = $1.getExpr();
@@ -5139,7 +5165,7 @@ primexpr
                             parser->normalizeExpression($2);
                             if (parser->sortDepth == 0)
                             {
-                                parser->applyDefaultPromotions($2);
+                                parser->applyDefaultPromotions($2, true);
                                 parser->normalizeExpression($2, type_numeric, false);
                             }
                             IHqlExpression *e2 = $2.getExpr();
@@ -5624,7 +5650,7 @@ primexpr1
     | SUM '(' startTopFilter ',' expression aggregateFlags ')' endTopFilter
                         {
                             parser->normalizeExpression($5);
-                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5);
+                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
                             $$.setExpr(createValue(no_sum, LINK(type), $3.getExpr(), ensureExprType(value, type), $6.getExpr()));
@@ -5632,7 +5658,7 @@ primexpr1
     | SUM '(' GROUP ',' expression optExtraFilter ')'
                         {
                             parser->normalizeExpression($5);
-                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5);
+                            Owned<ITypeInfo> temp = parser->checkPromoteNumeric($5, true);
                             OwnedHqlExpr value = $5.getExpr();
                             Owned<ITypeInfo> type = getSumAggType(value);
                             $$.setExpr(createValue(no_sumgroup, LINK(type), ensureExprType(value, type), $6.getExpr()));
@@ -6974,7 +7000,9 @@ dataSet
                         {
                             parser->normalizeExpression($3, type_int, false);
                             parser->normalizeExpression($5, type_int, false);
-                            Owned<ITypeInfo> type = parser->checkPromoteNumericType($3, $5);
+                            parser->applyDefaultPromotions($3, true);
+                            parser->applyDefaultPromotions($5, true);
+                            Owned<ITypeInfo> type = parser->promoteToSameType($3, $5);
                             IHqlExpression * ds = $1.getExpr();
                             IHqlExpression * from = $3.getExpr();
                             IHqlExpression * to = $5.getExpr();
@@ -7096,7 +7124,7 @@ simpleDataSet
                             RecordSelectIterator iter(active->queryRecord(), active);
                             ForEach(iter)
                                 components.append(*iter.get());
-                            OwnedHqlExpr sortlist = createValue(no_sortlist, makeSortListType(NULL), components);
+                            OwnedHqlExpr sortlist = createSortList(components);
                             OwnedHqlExpr hash = createValue(no_hash32, makeIntType(4, false), LINK(sortlist), createAttribute(internalAtom));
                             $$.setExpr(createDataset(no_distribute, ds.getClear(), createComma(hash.getClear(), $5.getExpr())), $1);
                         }
@@ -7320,7 +7348,7 @@ simpleDataSet
                                     values.append(OLINK(cur));
                             }
                             if (values.ordinality())
-                                cond = createValue(no_sortlist, makeSortListType(NULL), values);
+                                cond = createSortList(values);
                             else
                                 cond = createConstant(true);
 
@@ -8043,14 +8071,13 @@ simpleDataSet
                             $$.setExpr(createDataset(no_workunit_dataset, $8.getExpr(), arg));
                             $$.setPosition($1);
                         }
-    | DATASET '(' thorFilenameOrList ',' beginCounterScope transform endCounterScope ')'
+    | DATASET '(' thorFilenameOrList ',' beginCounterScope transform endCounterScope optDatasetFlags ')'
                         {
-                            // TODO: use DISTRIBUTED flag
                             parser->normalizeExpression($3, type_int, false);
                             IHqlExpression * counter = $7.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter)));
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, $8.getExpr())));
                             $$.setPosition($1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'
@@ -8151,6 +8178,14 @@ simpleDataSet
                             $$.setExpr(parser->createSortExpr(no_sort, $4, $7, sortItems));
                             $$.setPosition($1);
                         }
+    | SHUFFLE '(' startSortOrder startTopFilter ',' sortListExpr ',' sortListExpr optCommonAttrs ')'  endSortOrder endTopFilter
+                        {
+                            OwnedHqlExpr options = $9.getExpr();
+                            if (isGrouped($4.queryExpr()))
+                                parser->reportError(HQLERR_CannotBeGrouped, $1, "SHUFFLE not yet supported on grouped datasets");
+                            //NB: $6 and $8 are reversed in their internal representation to make consistent with no_sort
+                            $$.setExpr(createDataset(no_shuffle, $4.getExpr(), createComma($8.getExpr(), $6.getExpr(), options.getClear())), $1);
+                        }
     | SORTED '(' startSortOrder startTopFilter ',' beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
                             HqlExprArray sortItems;
@@ -8168,7 +8203,7 @@ simpleDataSet
                             IHqlExpression * record = dataset->queryRecord();
                             unwindRecordAsSelects(sorted, record, dataset->queryNormalizedSelector());
                             args.append(*dataset.getClear());
-                            args.append(*createValue(no_sortlist, makeSortListType(NULL), sorted));
+                            args.append(*createSortList(sorted));
                             $$.setExpr(createDataset(no_sorted, args));
                             $$.setPosition($1);
                         }
@@ -8178,7 +8213,7 @@ simpleDataSet
 
                             HqlExprArray args;
                             $5.unwindCommaList(args);
-                            OwnedHqlExpr stepOrder = createValue(no_sortlist, makeSortListType(NULL), args);
+                            OwnedHqlExpr stepOrder = createSortList(args);
                             $$.setExpr(createDatasetF(no_stepped, dataset.getClear(), stepOrder.getClear(), $6.getExpr(), NULL));
                             $$.setPosition($1);
                         }
@@ -8854,6 +8889,7 @@ stepFlag
                         {
                             $$.setExpr(createExprAttribute(filteredAtom), $1);
                         }
+    | hintAttribute
     ;
 
 
@@ -10432,7 +10468,7 @@ optFieldMaps
                         {
                             HqlExprArray args;
                             parser->endList(args);
-                            $$.setExpr(createValue(no_sortlist, makeSortListType(NULL), args), $1);
+                            $$.setExpr(createSortList(args), $1);
                         }
     |                   { $$.setNullExpr(); }
     | '{' beginList error '}'
@@ -10464,7 +10500,8 @@ fieldMap
 
 sortListOptCurleys
     : sortList
-    | '{' sortList '}'  
+    | '{' sortList '}'
+    | '{' sortList '}' ',' sortList         /* Allow trailing attributes */
     ;
 
 sortList
@@ -10691,7 +10728,7 @@ mapItem
     : booleanExpr GOESTO expression 
                         {
                             parser->normalizeExpression($3);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($3, true);
                             IHqlExpression *e3 = $3.getExpr();
                             $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.setPosition($3);
@@ -10703,6 +10740,15 @@ beginList
     :                   {
                             parser->beginList();
                             $$.clear();
+                        }
+    ;
+
+sortListExpr
+    : beginList '{' sortList '}'
+                        {
+                            HqlExprArray elements;
+                            parser->endList(elements);
+                            $$.setExpr(createSortList(elements));
                         }
     ;
 
@@ -10727,8 +10773,8 @@ caseItem
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
                             //MORE: Should call checkType?
-                            parser->applyDefaultPromotions($1);
-                            parser->applyDefaultPromotions($3);
+                            parser->applyDefaultPromotions($1, true);
+                            parser->applyDefaultPromotions($3, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10763,7 +10809,7 @@ caseDatasetItem
     : expression GOESTO dataSet
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10798,7 +10844,7 @@ caseDatarowItem
     : expression GOESTO dataRow
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10832,7 +10878,7 @@ caseActionItem
     : expression GOESTO action
                         {
                             parser->normalizeExpression($1);
-                            parser->applyDefaultPromotions($1);
+                            parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
                             parser->addListElement(createValue(no_mapto, makeVoidType(), $1.getExpr(), e3));
                             $$.clear();
@@ -10842,9 +10888,7 @@ caseActionItem
 
 const
     : stringConstExpr
-    | INTEGER_CONST     {
-                            $$.setExpr(createConstant(createIntValue($1.getInt(), LINK(parser->defaultIntegralType))), $1);
-                        }
+    | INTEGER_CONST
     | DATA_CONST
     | REAL_CONST
     | UNICODE_CONST
@@ -11143,12 +11187,13 @@ pattern0
                         }
     | pattern0 '*' INTEGER_CONST
                         {
+                            parser->normalizeExpression($3, type_int, true);
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
                                 parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
 
                             IHqlExpression * pattern = $1.getExpr();
-                            IHqlExpression * count = createConstant($3.getInt());
+                            IHqlExpression * count = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, count, LINK(count)));
                         }
     | '(' pattern ')'   {   $$.setExpr($2.getExpr()); }
@@ -11559,9 +11604,7 @@ featureId
 
 featureValue
     : featureCompound
-    | stringConstExpr
-    | INTEGER_CONST             
-                        {   $$.setExpr(createConstant($1.getInt())); }
+    | constExpression
     ;
 
 featureValueList

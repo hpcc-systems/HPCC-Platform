@@ -330,6 +330,14 @@ void CContainerInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & size
     }
     calcCachedChildrenOffsets(childOffset, cachedSize);
 
+    //Ensure that a record with no fields has a meta size > 0 (can be created by implicit project code)
+    if (cachedSize.isEmpty())
+    {
+        IHqlExpression * record = column->queryRecord();
+        if (record->hasProperty(_nonEmpty_Atom))
+            cachedSize.addFixed(1);
+    }
+
     if (cachedSize.isFixedSize())
         sizeSelf.set(cachedSize);
     else
@@ -869,6 +877,7 @@ CContainerInfo::CContainerInfo(CContainerInfo * _container, CMemberInfo * _prior
     CMemberInfo(_container, _prior, _column)
 {
     fixedSize = true;
+    isDynamic = false;
 }
 
 
@@ -883,6 +892,19 @@ void CContainerInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, I
 {
     BuildCtx condctx(ctx);
     buildConditionFilter(translator, condctx, selector);
+
+    if (children.ordinality() == 0)
+    {
+        if (column->queryRecord()->hasProperty(_nonEmpty_Atom))
+        {
+            //Clear on an empty record that has the _nonEmpty_attrbute clears the implicit byte
+            Owned<ITypeInfo> dummyType = makeIntType(1, false);
+            OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, dummyType);
+            OwnedHqlExpr dummyTarget = convertAddressToValue(address, dummyType);
+            translator.buildAssignToTemp(ctx, dummyTarget, queryZero());
+        }
+        return;
+    }
 
     ForEachItemIn(idx, children)
     {
@@ -3127,7 +3149,7 @@ CMemberInfo * ColumnToOffsetMap::expandRecord(IHqlExpression * record, CContaine
 
 DynamicColumnToOffsetMap::DynamicColumnToOffsetMap(unsigned _maxRecordSize) : ColumnToOffsetMap(queryNullRecord(), 0, _maxRecordSize, false)
 {
-    root.setFixedSize(false);
+    root.setDynamic();
     fixedSizeRecord = false;
 }
 

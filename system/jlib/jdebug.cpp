@@ -1503,8 +1503,11 @@ class CExtendedStats  // Disk network and cpu stats
         if (!netfp)
             return false;
         char ln[512];
-        fgets(ln, sizeof(ln), netfp);   
-        fgets(ln, sizeof(ln), netfp);
+        // Read two lines
+        if (!fgets(ln, sizeof(ln), netfp) || !fgets(ln, sizeof(ln), netfp)) {
+            fclose(netfp);
+            return false;
+        }
         unsigned txskip = 2;
         bool hasbyt = false;
         if (strstr(ln,"compressed")) {
@@ -1851,11 +1854,12 @@ public:
 #else
         FILE* procfp;
         procfp = fopen("/proc/uptime", "r");
+        int matched = 0;
         if (procfp) {
-            fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
+            matched = fscanf(procfp, "%lf %lf\n", &OldSystemTime, &OldIdleTime);
             fclose(procfp);
         }
-        else
+        if (!procfp || matched == 0 || matched == EOF)
             OldSystemTime = 0;
         primaryfs.append("/");
 #endif

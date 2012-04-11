@@ -444,6 +444,8 @@ protected:
         case TAKtemptable:
         case TAKtemprow:
             return createRoxieServerTempTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKinlinetable:
+            return createRoxieServerInlineTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKthroughaggregate:
             throwUnexpected(); // Concept of through aggregates has been proven not to work in Roxie - codegen should not be creating them any more.
         case TAKtopn:
@@ -778,51 +780,52 @@ public:
     virtual void load(const IPropertyTree *stateInfo)
     {
         IConstWorkUnit *wu = dll->queryWorkUnit();
-        assertex(wu);
-
-        libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
-
-        // calculate priority before others since it affects the defaults of others
-        priority = wu->getDebugValueInt("@priority", 0);
-        if (stateInfo)
-            priority = stateInfo->getPropInt("@priority", priority);
-
-        memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
-        timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
-        warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
-        SCMStringBuffer bStr;
-        enableFieldTranslation = strToBool(wu->getDebugValue("layoutTranslationEnabled", bStr).str());
-
-        // MORE - does package override stateInfo, or vice versa?
-
-        if (stateInfo)
+        if (wu) // wu may be null in some unit test cases
         {
-            // info in querySets can override the defaults from workunit for some limits
-            isSuspended = stateInfo->getPropBool("@suspended", false);
-            memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
-            timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
-            warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
-        }
+            libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
 
-        Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
-        SCMStringBuffer graphNameStr;
-        ForEach(*graphs)
-        {
-            graphs->query().getName(graphNameStr);
-            const char *graphName = graphNameStr.s.str();
-            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
-            try
+            // calculate priority before others since it affects the defaults of others
+            priority = wu->getDebugValueInt("@priority", 0);
+            if (stateInfo)
+                priority = stateInfo->getPropInt("@priority", priority);
+
+            memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
+            timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
+            warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
+            SCMStringBuffer bStr;
+            enableFieldTranslation = strToBool(wu->getDebugValue("layoutTranslationEnabled", bStr).str());
+
+            // MORE - does package override stateInfo, or vice versa?
+
+            if (stateInfo)
             {
-                ActivityArray *activities = loadGraph(*graphXgmml, graphName);
-                graphMap.setValue(graphName, activities);
+                // info in querySets can override the defaults from workunit for some limits
+                isSuspended = stateInfo->getPropBool("@suspended", false);
+                memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
+                timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
+                warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
             }
-            catch (IException *E)
+
+            Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
+            SCMStringBuffer graphNameStr;
+            ForEach(*graphs)
             {
-                StringBuffer m;
-                E->errorMessage(m);
-                suspend(true, m.str(), NULL, false);
-                ERRLOG("Query %s suspended: %s", id.get(), m.str());
-                E->Release();
+                graphs->query().getName(graphNameStr);
+                const char *graphName = graphNameStr.s.str();
+                Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+                try
+                {
+                    ActivityArray *activities = loadGraph(*graphXgmml, graphName);
+                    graphMap.setValue(graphName, activities);
+                }
+                catch (IException *E)
+                {
+                    StringBuffer m;
+                    E->errorMessage(m);
+                    suspend(true, m.str(), NULL, false);
+                    ERRLOG("Query %s suspended: %s", id.get(), m.str());
+                    E->Release();
+                }
             }
         }
         SpinBlock b(queriesCrit);

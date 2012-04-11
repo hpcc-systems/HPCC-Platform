@@ -100,6 +100,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerydetails.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerygraph.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiequerygvcgraph.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/run_ecl.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/scheduledwus.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/services.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/clusterprocesses.xslt

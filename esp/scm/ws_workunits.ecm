@@ -491,6 +491,7 @@ ESPrequest WURunRequest
     string Cluster;
     int Wait(-1);
     [rows(15)] string Input;
+    bool NoRootTag(0);
 };
 
 ESPresponse [exceptions_inline] WURunResponse
@@ -1077,7 +1078,7 @@ ESPresponse [exceptions_inline] WUQuerysetsResponse
 ESPStruct ClusterQueryState
 {
     string Cluster;
-    bool Suspended;
+    string State;
 };
 
 ESPStruct QuerySetQuery
@@ -1101,13 +1102,15 @@ ESPenum WUQuerySetFilterType : string
     ALL("All"),
     ID("Id"),
     NAME("Name"),
-    ALIAS("Alias")
+    ALIAS("Alias"),
+    STATUS("Status")
 };
 
 ESPrequest WUQuerySetDetailsRequest
 {
     string  QuerySetName;
     string  Filter;
+    string  ClusterName;
     ESPenum WUQuerySetFilterType FilterType("All");
 };
 
@@ -1116,6 +1119,10 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     string  QuerySetName;
     ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
     ESParray<ESPstruct QuerySetAlias> QuerysetAliases;
+    [min_ver("1.37")] string  ClusterName;
+    [min_ver("1.37")] string  Filter;
+    [min_ver("1.37")] ESPenum WUQuerySetFilterType FilterType;
+    [min_ver("1.37")] ESParray<string> ClusterNames;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1232,7 +1239,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.36"), default_client_version("1.36"),
+    version("1.37"), default_client_version("1.37"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

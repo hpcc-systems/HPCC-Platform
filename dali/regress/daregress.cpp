@@ -300,7 +300,7 @@ static void test2()
             rfn.getRemotePath(s);
             crctot += crc32(s.str(),s.length(),0);
             np++;
-            totrows += (unsigned)(piter->query().getFileSize(false,false)/fiter->query().queryProperties().getPropInt("@recordSize",-1));
+            totrows += (unsigned)(piter->query().getFileSize(false,false)/fiter->query().queryAttributes().getPropInt("@recordSize",-1));
         }
     }
     piter.clear();
@@ -322,7 +322,7 @@ static void test2()
     crctot = 0;
     np = 0;
     totrows = 0;
-    size32_t srs = (size32_t)sfile->queryProperties().getPropInt("@recordSize",-1);
+    size32_t srs = (size32_t)sfile->queryAttributes().getPropInt("@recordSize",-1);
     if (srs!=17)
         ERROR1("Superfile does not match subfile row size %d",srs);
     piter.setown(sfile->getIterator()); 

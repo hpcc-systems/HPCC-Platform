@@ -83,6 +83,7 @@
 
 #define XML_ATTR_AGENTPORT             "@agentPort"
 #define XML_ATTR_ATTRSERVER            "@attrServer"
+#define XML_ATTR_BACKUPCOMPUTER        "@backupComputer"
 #define XML_ATTR_BLOBDIRECTORY         "@blobDirectory"
 #define XML_ATTR_BLOBNAME              "@blobName"
 #define XML_ATTR_BREAKOUTLIMIT         "@breakoutLimit"

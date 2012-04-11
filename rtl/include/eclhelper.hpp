@@ -31,7 +31,7 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      138
+#define ACTIVITY_INTERFACE_VERSION      139
 #define MIN_ACTIVITY_INTERFACE_VERSION  138             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
@@ -803,13 +803,13 @@ enum ThorActivityKind
     TAKcaseaction,
     TAKwhen_dataset,
     TAKwhen_action,
-        TAKunused2,
+    TAKshuffle,
     TAKindexgroupexists,
     TAKindexgroupcount,
     TAKhashdistributemerge,
     TAKselfjoinlight,
     TAKhttp_rowdataset,     // a source activity
-        TAKunused3,
+    TAKinlinetable,
     TAKcountdisk,
     TAKstreamediterator,
     TAKexternalsource,
@@ -956,6 +956,10 @@ enum ActivityInterfaceEnum
     TAIexternal_1,
     TAIpipethrougharg_2,
     TAIpipewritearg_2,
+    TAIinlinetablearg_1,
+    TAIshuffleextra_1,
+
+//Should remain as last of all meaningful tags, but before aliases
     TAImax,
 
 //Only aliases follow - for interfaces implemented via typedefs
@@ -998,6 +1002,7 @@ interface IHThorArg : public IInterface
 
 typedef IHThorArg * (*EclHelperFactory)();
 
+//flags for thor disk access
 enum 
 {
 //General disk access flags
@@ -1042,7 +1047,7 @@ enum
     TDWupdatecrc        = 0x80000,      // has format crc
 };
 
-
+//flags for thor index read
 enum
 {
     TIRsorted           = 0x00000001,
@@ -1078,6 +1083,13 @@ enum
     TIWnooverwrite      = 0x0200,
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
+};
+
+//flags for thor dataset/temp tables
+enum
+{
+    TTFnoconstant        = 0x0001,      // default flags is zero
+    TTFdistributed       = 0x0002,
 };
 
 struct IHThorIndexWriteArg : public IHThorArg
@@ -1396,12 +1408,25 @@ struct IHThorHashAggregateArg : public IHThorAggregateArg, public IHThorHashAggr
     COMMON_NEWTHOR_FUNCTIONS
 };
 
+/*
+ * This class has been deprecated in 3.8 in favour of IHThorInlineTableArg.
+ * CThorTempRowArg also now derives from IHThorInlineTableArg.
+ *
+ * As of 3.8, only old code will implement this interface.
+ */
 struct IHThorTempTableArg : public IHThorArg
 {
     virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) = 0;
     virtual unsigned numRows() = 0;
-    virtual bool isConstant()                           { return true; }
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // only valid for TAKtemprow, could be called directly
+    virtual bool isConstant()                           { return true; }    // deprecated in favour of getFlags
+    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // deprecated, TempRow derives from InlineTable
+};
+
+struct IHThorInlineTableArg : public IHThorArg
+{
+    virtual size32_t getRow(ARowBuilder & rowBuilder, __uint64 row) = 0;
+    virtual __uint64 numRows() = 0;
+    virtual unsigned getFlags() = 0;
 };
 
 struct IHThorSampleArg : public IHThorArg
@@ -1488,6 +1513,16 @@ struct IHThorTopNExtra : public IInterface
 };
 
 struct IHThorTopNArg : public IHThorSortArg, public IHThorTopNExtra
+{
+    COMMON_NEWTHOR_FUNCTIONS
+};
+
+struct IHThorShuffleExtra : public IInterface
+{
+    virtual bool isSameGroup(const void * _left, const void * _right) = 0;
+};
+
+struct IHThorShuffleArg : public IHThorSortArg, public IHThorShuffleExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
@@ -2382,6 +2417,7 @@ struct IHThorLoopArg : public IHThorArg
         LFparallel = 1,
         LFcounter = 2,
         LFfiltered = 4,
+        LFnewloopagain = 8,
     };
     virtual unsigned getFlags() = 0;
     virtual bool sendToLoop(unsigned counter, const void * in) = 0;         // does the input row go to output or round the loop?
@@ -2390,6 +2426,9 @@ struct IHThorLoopArg : public IHThorArg
     virtual void createParentExtract(rtlRowBuilder & builder) = 0;
     virtual unsigned defaultParallelIterations() = 0;
     virtual void numParallelIterations(size32_t & retSize, void * & retData) = 0;
+    //If new loop again is set the following should be used instead of loopAgain
+    virtual bool loopFirstTime() = 0;
+    virtual unsigned loopAgainResult() = 0;  // which result contains the indication of whether to loop again?
 };
 
 

@@ -351,8 +351,7 @@ protected:
     {
         if (node && node->getPropBool("@localFiles"))
         {
-            UNIMPLEMENTED;
-            Owned <IResolvedFileCreator> result;
+            Owned <IResolvedFileCreator> result = createResolvedFile(fileName);
             return result.getClear();
         }
         return NULL;
@@ -444,6 +443,8 @@ public:
         hash = rtlHash64Data(xml.length(), xml.str(), 9994410);
         compulsory = false;
         daliHelper.setown(connectToDali()); // MORE - should make this conditional
+        if (!daliHelper.get() || !daliHelper->connected())
+            node->setPropBool("@localFiles", true);
     }
 
     ~CRoxiePackage()
@@ -541,6 +542,15 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
+        // Dali filenames used locally
+        bool disconnected = !daliHelper->connected();
+        if (disconnected && strstr(fileName,"::"))
+        {
+            StringBuffer name;
+            bool wasDFS;
+            makeSinglePhysicalPartName(fileName, name, true, wasDFS, baseDataDirectory.str());
+            fileName.clear().append(name);
+        }
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, true);
         if (resolved)
         {
@@ -552,9 +562,9 @@ public:
             resolved->remove();
             resolved.clear();
         }
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, !daliHelper->connected(), false, true); // MORE - is onlyDFS right?
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, false, true); // MORE - is onlyDFS right?
         if (!ldFile)
-            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, invalid filename", fileName.str());
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (disconnected?"local":"DFS"));
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
@@ -2553,7 +2563,7 @@ static const char *g1 =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' value='15' type='sum'/>"
@@ -2611,7 +2621,7 @@ static const char *g2 =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' value='25' type='sum'/>"
@@ -2663,7 +2673,7 @@ static const char *expected =
                "<att name='helper' value='f2'/>"
               "</node>"
               "<node id='2a'>"
-              " <att name='_kind' value='496'>"
+              " <att name='_kind' value='1'>"   // TAKsubgraph
               "  <graph>"
               "   <node id='7696' label='Nested'>"
               "    <att name='seeks' type='sum' value='40'/>"

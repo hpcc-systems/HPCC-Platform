@@ -1583,7 +1583,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
         jsonmsg.append("\n        ]\n      }\n");
     }
 
-    xpath.clear().appendf("Body/%s/Results/Result/Dataset", element.str());
+    xpath.clear().append("Body/*[1]/Results/Result/Dataset");
     Owned<IPropertyTreeIterator> datasets = parmtree->getElements(xpath.str());
 
     ForEach(*datasets)
@@ -1639,6 +1639,18 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     return 0;
 };
 
+inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo, const char *type, const char *params)
+{
+    url.append("/WsEcl/").append(type).append('/');
+    if (wsinfo.qsetname.length() && wsinfo.queryname.length())
+        url.append("query/").append(wsinfo.qsetname.get()).append('/').append(wsinfo.queryname.get());
+    else
+        url.append("wuid/").append(wsinfo.wuid.sget());
+    if (params && *params)
+        url.append('?').append(params);
+    return url;
+}
+
 int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype)
 {
     IProperties *parms = context.queryRequestParameters();
@@ -1689,8 +1701,8 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
-    VStringBuffer url("/WsEcl/%s/wuid/%s?qset=%s&qname=%s&%s", formtype, wsinfo.wuid.sget(), wsinfo.qsetname.sget(), wsinfo.queryname.sget(), params.str());
-    xform->setStringParameter("destination", url.str());
+    StringBuffer url;
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, formtype, params.str()).str());
 
     StringBuffer page;
     xform->transform(page);
@@ -1740,8 +1752,8 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     bool inhouse = user && (user->getStatus()==SecUserStatus_Inhouse);
     xform->setParameter("inhouseUser", inhouse ? "true()" : "false()");
 
-    VStringBuffer url("/WsEcl/%s/wuid/%s?qset=%s&qname=%s&%s", formtype, wsinfo.wuid.sget(), wsinfo.qsetname.sget(), wsinfo.queryname.sget(), params.str());
-    xform->setStringParameter("destination", url.str());
+    StringBuffer url;
+    xform->setStringParameter("destination", buildWsEclTargetUrl(url, wsinfo, formtype, params.str()).str());
 
     StringBuffer page;
     xform->transform(page);

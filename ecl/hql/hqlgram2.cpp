@@ -1994,7 +1994,7 @@ void HqlGram::checkFoldConstant(attribute & attr)
 
 IHqlExpression * HqlGram::checkConstant(const attribute & errpos, IHqlExpression * expr)
 {
-    if (expr->isConstant())
+    if (expr->isConstant() || (expr->getOperator() == no_assertconstant))
         return LINK(expr);
 
     return createValue(no_assertconstant, expr->getType(), LINK(expr), createLocationAttr(errpos));
@@ -3643,20 +3643,6 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
     return type.getClear();
 }
 
-ITypeInfo *HqlGram::checkPromoteNumericType(attribute &a1, attribute &a2)
-{
-    checkNumeric(a1);
-    checkNumeric(a2);
-
-    ITypeInfo *t1 = a1.queryExprType();
-    ITypeInfo *t2 = a2.queryExprType();
-
-    applyDefaultPromotions(a1);
-    applyDefaultPromotions(a2);
-    return promoteToSameType(a1, a2);
-}
-
-
 ITypeInfo * HqlGram::checkStringIndex(attribute & strAttr, attribute & idxAttr)
 {
     IHqlExpression * src = strAttr.queryExpr();
@@ -3732,12 +3718,24 @@ void HqlGram::checkOnFailRecord(IHqlExpression * expr, attribute & errpos)
     }
 }
 
-void HqlGram::applyDefaultPromotions(attribute &a1)
+void HqlGram::applyDefaultPromotions(attribute &a1, bool extendPrecision)
 {
     ITypeInfo *t1 = a1.queryExprType();
-    type_t tc = t1->getTypeCode();
-    if ((tc == type_swapint) || (tc == type_packedint) || ((tc == type_int) && (t1->getSize() < 8)) || (tc == type_bitfield))
+    switch (t1->getTypeCode())
+    {
+    case type_swapint:
+    case type_packedint:
+    case type_bitfield:
         ensureType(a1, defaultIntegralType);
+        break;
+    }
+
+    if (extendPrecision)
+    {
+        ITypeInfo * type = a1.queryExprType();
+        if ((type->getTypeCode() == type_int) && (type->getSize() < 8))
+            ensureType(a1, defaultIntegralType);
+    }
 }
 
 void HqlGram::checkSameType(attribute &a1, attribute &a2)
@@ -4062,7 +4060,7 @@ void HqlGram::ensureTypeCanBeIndexed(attribute &a)
         setDefaultString(a);
     else
     {
-        switch (t1->getTypeCode())
+        switch (t1->queryPromotedType()->getTypeCode())
         {
         case type_string:
         case type_varstring:
@@ -4071,10 +4069,15 @@ void HqlGram::ensureTypeCanBeIndexed(attribute &a)
         case type_unicode:
         case type_varunicode:
         case type_utf8:
+        case type_any:
             break;
         default:
-            ensureString(a);
-            break;
+            {
+                StringBuffer typeName;
+                reportWarning(ERR_TYPEMISMATCH_STRING, a.pos, "substring applied to value of type %s", getFriendlyTypeStr(t1, typeName).str());
+                ensureString(a);
+                break;
+            }
         }
     }
 }
@@ -4561,8 +4564,8 @@ IHqlExpression * HqlGram::createArithmeticOp(node_operator op, attribute &a1, at
     case no_sub:
     case no_mul:
     case no_div:
-        applyDefaultPromotions(a1);
-        applyDefaultPromotions(a2);
+        applyDefaultPromotions(a1, true);
+        applyDefaultPromotions(a2, (op != no_div));
         break;
     }
 
@@ -5181,9 +5184,9 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
 }
 
 
-ITypeInfo *HqlGram::checkPromoteNumeric(attribute &a1)
+ITypeInfo *HqlGram::checkPromoteNumeric(attribute &a1, bool extendPrecision)
 {
-    applyDefaultPromotions(a1);
+    applyDefaultPromotions(a1, extendPrecision);
     return checkNumericGetType(a1);
 }
 
@@ -5500,7 +5503,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         }
     }
     if (items.ordinality())
-        return createValue(no_sortlist, makeSortListType(NULL), items);
+        return createSortList(items);
     if (op == no_list)
         return createValue(no_sortlist, makeSortListType(NULL), items);
     return NULL;
@@ -10096,6 +10099,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HTTPHEADER: msg.append("HTTPHEADER"); break;
     case PROXYADDRESS: msg.append("PROXYADDRESS"); break;
     case HTTPCALL: msg.append("HTTPCALL"); break;
+    case SHUFFLE: msg.append("SHUFFLE"); break;
     case SOAPCALL: msg.append("SOAPCALL"); break;
     case SORT: msg.append("SORT"); break;
     case SORTED: msg.append("SORTED"); break;
@@ -10289,7 +10293,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SHUFFLE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

@@ -71,16 +71,6 @@ bool endsWithDotDotDot(const StringBuffer & s)
     return (memcmp(s.str() + s.length() -3, "...", 3) == 0);
 }
 
-class StringBufferItem : public CInterface, public StringBuffer
-{
-public:
-    StringBufferItem()                                  : StringBuffer() {}
-    StringBufferItem(const char *value)                 : StringBuffer(value) {}
-    StringBufferItem(unsigned len, const char *value)   : StringBuffer(len, value) {}
-    StringBufferItem(const StringBuffer & value)        : StringBuffer(value) {}
-};
-
-typedef CIArrayOf<StringBufferItem> StringBufferArray;
 MAKEPointerArray(HqlExprArray, HqlExprArrayArray);
 
 class HqltHql
@@ -131,6 +121,7 @@ private:
     bool isServiceDefined(IHqlExpression * expr);
     bool isExportDefined(IHqlExpression * expr);
     void doFunctionDefinition(StringBuffer & newdef, IHqlExpression * funcdef, const char * name, bool inType);
+    void sortlistToEcl(IHqlExpression *expr, StringBuffer &s, bool addCurleys, bool inType);
 
     bool matchesActiveDataset(IHqlExpression * expr);
     void pushScope(IHqlExpression * expr);
@@ -1067,19 +1058,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         }
         case no_sortlist:
         {
-            bool needComma = false;
-            ForEachChild(idx, expr)
-            {
-                IHqlExpression * child = queryChild(expr, idx);
-                if (child && (expandProcessed || !isInternalAttribute(expr)))
-                {
-                    if (needComma) queryNewline(s.append(", "));
-                    if (queryAddDotDotDot(s, startLength))
-                        break;
-                    needComma = true;
-                    toECL(child, s, false, inType);
-                }
-            }
+            sortlistToEcl(expr, s, false, inType);
             break;
         }
         case no_rowvalue:
@@ -1105,7 +1084,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             ForEachChild(i2, expr)
             {
                 IHqlExpression *child = queryChild(expr, i2);
-                if (child->getOperator() == no_record)
+                if (child && child->getOperator() == no_record)
                 {
                     s.append("(");
                     if (isEclAlias(child) || !m_recurse)
@@ -1291,6 +1270,31 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             }
             break;
         }
+        case no_shuffle:
+            {
+                s.append(getEclOpString(expr->getOperator()));
+                s.append('(');
+                if (!xgmmlGraphText)
+                {
+                    toECL(child0, s, false, inType);
+                    queryNewline(s.append(", "));
+                }
+                pushScope(child0);
+                //MORE: Sortlists should always be generated using the {} syntax - then this could be simplified
+                //NOTE: child(1) and child(2) are output in a different order from their representation
+                s.append("{");
+                toECL(expr->queryChild(2), s, false, inType);
+                s.append("}");
+                queryNewline(s.append(", "));
+                s.append("{");
+                toECL(expr->queryChild(1), s, false, inType);
+                s.append("}");
+                childrenToECL(expr, s, inType, true, 3);
+                popScope();
+                s.append(')');
+                break;
+            }
+
         case no_select:
         {
             if (!expandProcessed && 
@@ -2640,6 +2644,28 @@ void HqltHql::defaultChildrenToECL(IHqlExpression *expr, StringBuffer &s, bool i
             popScope();
         s.append(')');
     }
+}
+
+void HqltHql::sortlistToEcl(IHqlExpression *expr, StringBuffer &s, bool addCurleys, bool inType)
+{
+    unsigned startLength = s.length();
+    if (addCurleys)
+        s.append("{ ");
+    bool needComma = false;
+    ForEachChild(idx, expr)
+    {
+        IHqlExpression * child = queryChild(expr, idx);
+        if (child && (expandProcessed || !isInternalAttribute(expr)))
+        {
+            if (needComma) queryNewline(s.append(", "));
+            if (queryAddDotDotDot(s, startLength))
+                break;
+            needComma = true;
+            toECL(child, s, false, inType);
+        }
+    }
+    if (addCurleys)
+        s.append(" }");
 }
 
 StringBuffer &HqltHql::getFieldTypeString(IHqlExpression * e, StringBuffer &s)

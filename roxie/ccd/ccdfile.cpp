@@ -887,7 +887,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         else
         {
             if (displayFirstFileMessage)
-                DBGLOG("Received files to copy!!!!!");
+                DBGLOG("Received files to copy");
 
             const char *targetFilename = f->queryTarget()->queryFilename();
             StringBuffer tempFile(targetFilename);
@@ -897,6 +897,10 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 recursiveCreateDirectory(destPath.str());
             else
                 destPath.append('.');
+            if (!checkDirExists(destPath.str())) {
+                ERRLOG("Dest directory %s does not exist", destPath.str());
+                return false;
+            }
             
             const char *baseIndexFilename = f->queryBaseIndexFileName();
             ILazyFileIO* patchFile = f->queryPatchFile();
@@ -1017,7 +1021,7 @@ public:
                 CriticalBlock b(crit);
                 if ( (todo.ordinality()== 0) && (fileCopiedCount)) // finished last copy
                 {
-                    DBGLOG("No more data files to copy!!!!!");
+                    DBGLOG("No more data files to copy");
                     fileCopiedCount = 0;
                 }
             }
@@ -1861,7 +1865,7 @@ public:
                 addFile(dFile->queryLogicalName(), dFile->getFileDescriptor());
             bool tsSet = dFile->getModificationTime(fileTimeStamp);
             assertex(tsSet); // per Nigel, is always set
-            properties.set(&dFile->queryProperties());
+            properties.set(&dFile->queryAttributes());
         }
     }
     virtual void beforeDispose()
@@ -2183,7 +2187,16 @@ public:
         }
         else
         {
-            throwUnexpected();
+            try
+            {
+                Owned<IFile> file = createIFile(lfn.get());
+                file->remove();
+            }
+            catch (IException *e)
+            {
+                ERRLOG(-1, "Error removing file %s",lfn.get());
+                e->Release();
+            }
         }
     }
 };
@@ -2295,7 +2308,7 @@ extern IResolvedFileCreator *createResolvedFile(const char *lfn)
 
 extern IResolvedFile *createResolvedFile(const char *lfn, IDistributedFile *dFile)
 {
-    const char *kind = dFile ? dFile->queryProperties().queryProp("@kind") : NULL;
+    const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
     return new CResolvedFile(lfn, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE);
 }
 
@@ -2670,7 +2683,7 @@ private:
 
             Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
             publishFile->setAccessedTime(modifiedTime);
-            publishFile->attach(dFile->queryLogicalName(), NULL, activity ? activity->queryUserDescriptor() : NULL);
+            publishFile->attach(dFile->queryLogicalName(), activity ? activity->queryUserDescriptor() : NULL);
             // MORE should probably write to the roxielocalstate too in case Dali is down next time I look...
         }
     }

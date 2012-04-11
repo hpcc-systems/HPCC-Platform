@@ -352,9 +352,9 @@
              processName="EspService"
              schema="esp_service_ecldirect.xsd">
     <Properties bindingType="EclDirectSoapBinding"
-                defaultPort="8008"
+                defaultPort="8010"
                 defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-                defaultSecurePort="18008"
+                defaultSecurePort="18010"
                 plugin="ecldirect"
                 type="ecldirect">
      <Authenticate access="Read"
@@ -627,7 +627,7 @@
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
                name="ecldirect"
-               port="8008"
+               port="8010"
                protocol="http"
                resourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
                service="ecldirect"
@@ -664,12 +664,6 @@
              FQDN=""
              name="s1"
              netAddress="."/>
-   <ProtocolX authTimeout="3"
-              defaultTimeout="21"
-              idleTimeout="3600"
-              maxTimeout="36"
-              minTimeout="30"
-              threadCount="2"/>
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
@@ -896,9 +890,9 @@
               description="ESP service for running raw ECL queries"
               name="ecldirect">
    <Properties bindingType="EclDirectSoapBinding"
-               defaultPort="8008"
+               defaultPort="8010"
                defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
-               defaultSecurePort="18008"
+               defaultSecurePort="18010"
                plugin="ecldirect"
                type="ecldirect">
     <Authenticate access="Read"

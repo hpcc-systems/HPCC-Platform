@@ -249,6 +249,16 @@
                 alert("Please specify a file in the Local Path field.");
                 return false;
               }
+              if ((method == 'SprayFixed') && (document.getElementById("sourceRecordSize").value == ''))
+              {
+                alert("Please specify a Record Length.");
+                return false;
+              }
+              if (document.getElementById("label").value == '')
+              {
+                alert("Please specify a name for destination file in the Destination Label field.");
+                return false;
+              }
               return true;
             }
       ]]></script>

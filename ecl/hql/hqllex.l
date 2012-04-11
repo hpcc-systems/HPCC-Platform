@@ -560,7 +560,7 @@ xpathseq      ([^}\r\n])+
                     }
 __LINE__            {
                         setupdatepos; 
-                        returnToken.setInt(lexer->yyLineNo);
+                        returnToken.setExpr(createIntegerConstant(lexer->yyLineNo, false));
                         return (INTEGER_CONST);
                     }
 #REGION[^\n]*       { 
@@ -878,6 +878,7 @@ SERVICE             { RETURNHARD(SERVICE); }
 SET                 { RETURNSYM(SET); }
 __SET_DEBUG_OPTION__ { RETURNSYM(HASH_OPTION); }
 SHARED              { RETURNHARD(SHARED); }
+SHUFFLE             { RETURNSYM(SHUFFLE); }
 SIN                 { RETURNSYM(SIN); }
 SINGLE              { RETURNSYM(SINGLE); }
 SINH                { RETURNSYM(SINH); }
@@ -954,17 +955,17 @@ __ECL_VERSION__     {
                     }
 __ECL_VERSION_MAJOR__ {
                         setupdatepos; 
-                        returnToken.setInt(LANGUAGE_VERSION_MAJOR);
+                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MAJOR, false));
                         return (INTEGER_CONST);
                     }
 __ECL_VERSION_MINOR__ {
                         setupdatepos; 
-                        returnToken.setInt(LANGUAGE_VERSION_MINOR);
+                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_MINOR, false));
                         return (INTEGER_CONST);
                     }
 __ECL_VERSION_SUBMINOR__ {
                         setupdatepos; 
-                        returnToken.setInt(LANGUAGE_VERSION_SUB);
+                        returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
                         return (INTEGER_CONST);
                     }
 __OS__              { 
@@ -1515,11 +1516,41 @@ FUNCTIONMACRO|MACRO {
 "<?>"               { setupdatepos; return(FIELD_REF) ; }
 "<??>"              { setupdatepos; return(FIELDS_REF) ; }
 
-0(x|X){hexdigit}+   { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH-2,(const char *)CUR_TOKEN_TEXT+2, 16)); return(INTEGER_CONST);}
-{digit}{hexdigit}*(x|X) { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH-1,(const char *)CUR_TOKEN_TEXT, 16)); return(INTEGER_CONST);}
-0(b|B){bindigit}+   { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH-2,(const char *)CUR_TOKEN_TEXT+2, 2)); return(INTEGER_CONST);}
-{bindigit}+(b|B)    { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH-1,(const char *)CUR_TOKEN_TEXT, 2)); return(INTEGER_CONST);}
-{digit}+            { setupdatepos; returnToken.setInt(str2int64(CUR_TOKEN_LENGTH, (const char *)CUR_TOKEN_TEXT, 10)); return(INTEGER_CONST);}
+0x{hexdigit}+U?     {
+                        setupdatepos;
+                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
+                        returnToken.setExpr(createIntegerConstant(str2int64(len,(const char *)CUR_TOKEN_TEXT+2, 16), isSigned));
+                        return(INTEGER_CONST);
+                    }
+{digit}{hexdigit}*XU? {
+                        setupdatepos;
+                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
+                        returnToken.setExpr(createIntegerConstant(str2int64(len,(const char *)CUR_TOKEN_TEXT, 16), isSigned));
+                        return(INTEGER_CONST);
+                    }
+0b{bindigit}+U?     {
+                        setupdatepos;
+                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-2 : CUR_TOKEN_LENGTH-3;
+                        returnToken.setExpr(createIntegerConstant(str2int64(len,(const char *)CUR_TOKEN_TEXT+2, 2), isSigned));
+                        return(INTEGER_CONST);
+                    }
+{bindigit}+BU?      {
+                        setupdatepos;
+                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                        unsigned len = isSigned ? CUR_TOKEN_LENGTH-1 : CUR_TOKEN_LENGTH-2;
+                        returnToken.setExpr(createIntegerConstant(str2int64(len,(const char *)CUR_TOKEN_TEXT, 2), isSigned));
+                        return(INTEGER_CONST);
+                    }
+{digit}+U?          {
+                        setupdatepos;
+                        bool isSigned = toupper(CUR_TOKEN_TEXT[CUR_TOKEN_LENGTH-1]) != 'U';
+                        unsigned len = isSigned ? CUR_TOKEN_LENGTH : CUR_TOKEN_LENGTH-1;
+                        returnToken.setExpr(createIntegerConstant(str2int64(len, (const char *)CUR_TOKEN_TEXT, 10), isSigned));
+                        return(INTEGER_CONST);
+                    }
 {digit}+(d|D)       { 
                         setupdatepos;
                         unsigned digits = CUR_TOKEN_LENGTH-1;

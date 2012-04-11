@@ -153,7 +153,7 @@ protected:
 
 static bool verifyFormatCrc(unsigned helperCrc, IDistributedFile * df, char const * super, bool isIndex, bool fail)
 {
-    IPropertyTree &props = df->queryProperties();
+    IPropertyTree &props = df->queryAttributes();
     if(props.hasProp("@formatCrc"))
     {
         unsigned dfsCrc = props.getPropInt("@formatCrc");
@@ -1495,7 +1495,7 @@ class CHThorTempTableActivity : public CHThorSimpleActivityBase
 {
     IHThorTempTableArg &helper;
     unsigned curRow;
-    bool eof;
+    unsigned numRows;
 
 public:
     CHThorTempTableActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind);
@@ -1507,6 +1507,29 @@ public:
     virtual const void *nextInGroup();
 };
 
+/*
+ * This class differ from TempTable (above) by having 64-bit number of rows
+ * and, in Thor, it's able to run distributed in the cluster. We, therefore,
+ * need to keep consistency and implement it here, too.
+ *
+ * Some optimisations [ex. NORMALIZE(ds) -> DATASET(COUNT)] will make use of
+ * this class, so you can't use TempTables.
+ */
+class CHThorInlineTableActivity : public CHThorSimpleActivityBase
+{
+    IHThorInlineTableArg &helper;
+    __uint64 curRow;
+    __uint64 numRows;
+
+public:
+    CHThorInlineTableActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind);
+
+    virtual void ready();
+    virtual bool needsAllocator() const { return true; }
+
+    //interface IHThorInput
+    virtual const void *nextInGroup();
+};
 
 class CHThorNullActivity : public CHThorSimpleActivityBase
 {
@@ -2421,6 +2444,7 @@ public:
 
     CHThorLocalResultWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId);
     virtual void execute();
+    virtual bool needsAllocator() const { return true; }
 };
 
 
@@ -2545,6 +2569,7 @@ public:
 
     CHThorGraphLoopResultWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId);
     virtual void execute();
+    virtual bool needsAllocator() const { return true; }
 };
 
 

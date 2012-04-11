@@ -298,6 +298,10 @@ void HqlLex::hex2str(char * target, const char * digits, unsigned len)
   }
 } 
 
+IHqlExpression * HqlLex::createIntegerConstant(__int64 value, bool isSigned)
+{
+    return createConstant(createIntValue(value, makeIntType(8, isSigned)));
+}
 
 void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
 {
@@ -1802,7 +1806,7 @@ void HqlLex::doMangle(YYSTYPE & returnToken, bool de)
         value->Release();
 
         StringBuffer mangled;
-        mangle(yyParser->errorHandler,str,mangled,false);
+        mangle(yyParser->errorHandler,str,mangled,de);
         pushText(mangled.str());
     }
     else

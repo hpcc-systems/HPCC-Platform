@@ -29,6 +29,7 @@
 #include "hthor.hpp"
 #include "thorxmlwrite.hpp"
 #include "workflow.hpp"
+#include "roxierow.hpp"
 #include "roxiedebug.hpp"
 #include <stdexcept> 
 #include "thorplugin.hpp"
@@ -625,8 +626,9 @@ public:
     virtual unsigned getActivityId(unsigned cacheId) const
     {
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).queryActivityId();
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).queryActivityId();
         else
         {
             //assert(false);
@@ -636,8 +638,9 @@ public:
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
     {
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).getId(out);
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).getId(out);
         else
         {
             assert(false);
@@ -647,10 +650,11 @@ public:
     virtual void onDestroy(unsigned cacheId, void *row) const 
     {
         IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
             SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(cacheId))
-                allocator = &allAllocators.item(cacheId);
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
             else
             {
                 assert(false);
@@ -659,7 +663,13 @@ public:
         }
         allocator->queryOutputMeta()->destruct((byte *) row);
     }
-    
+    virtual void checkValid(unsigned cacheId, const void *row) const
+    {
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Throw an exception?
+        }
+    }
     virtual const char *queryAllowedPipePrograms()
     {
         return allowedPipeProgs.get();
@@ -699,7 +709,7 @@ public:
     EclBoundLoopGraph(IAgentContext & _agent, IEclLoopGraph * _graph, IOutputMetaData * _resultMeta, unsigned _activityId);
     IMPLEMENT_IINTERFACE
 
-    virtual IHThorGraphResult * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract);
+    virtual IHThorGraphResults * execute(void * counterRow, ConstPointerArray & rows, const byte * parentExtract);
     virtual void execute(void * counterRow, IHThorGraphResults * graphLoopResults, const byte * parentExtract);
 
 protected:
@@ -707,6 +717,8 @@ protected:
     IAgentContext & agent;
     Linked<IOutputMetaData> resultMeta;
     Linked<IOutputMetaData> counterMeta;
+    Owned<IEngineRowAllocator> inputAllocator;
+    Owned<IEngineRowAllocator> counterAllocator;
     unsigned activityId;
 };
 

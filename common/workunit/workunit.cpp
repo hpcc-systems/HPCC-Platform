@@ -5291,9 +5291,8 @@ IConstWUResult* CLocalWorkUnit::getGlobalByName(const char *qname) const
     CriticalBlock block(crit);
     if (strcmp(p->queryName(), GLOBAL_WORKUNIT)==0)
         return getVariableByName(qname);
-    Owned <IConstWorkUnit> global = factory->openWorkUnit(GLOBAL_WORKUNIT, false);
-    if (!global)
-        global.setown(factory->createWorkUnit(NULL, NULL, NULL));
+
+    Owned <IWorkUnit> global = factory->ensureNamedWorkUnit(GLOBAL_WORKUNIT);
     return global->getVariableByName(qname);
 }
 
@@ -7725,6 +7724,22 @@ extern WORKUNIT_API void secAbortWorkUnit(const char *wuid, ISecManager &secmgr,
         abortWorkUnit(wuid);
 }
 
+extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secSubmitWorkUnit(wuid, *secmgr, *secuser);
+    if (secuser)
+        return submitWorkUnit(wuid, secuser->getName(), secuser->credentials().getPassword());
+    submitWorkUnit(wuid, "", "");
+}
+
+extern WORKUNIT_API void abortWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser)
+{
+    if (secmgr && secuser)
+        return secAbortWorkUnit(wuid, *secmgr, *secuser);
+    abortWorkUnit(wuid);
+}
+
 bool CLocalWorkUnit::hasWorkflow() const
 {
     return p->hasProp("Workflow");
@@ -8638,11 +8653,10 @@ extern WORKUNIT_API void addExceptionToWorkunit(IWorkUnit * wu, WUExceptionSever
     }
 }
 
-
-extern WORKUNIT_API bool isArchiveQuery(const char * text)
+const char * skipLeadingXml(const char * text)
 {
     if (!text)
-        return false;
+        return NULL;
 
     //skip utf8 BOM, probably excessive
     if (memcmp(text, UTF8_BOM, 3) == 0)
@@ -8652,6 +8666,20 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
     {
         if (isspace(*text))
             text++;
+        else if (text[0] == '<' && text[1] == '?')
+        {
+            text += 2;
+            loop
+            {
+                if (!*text) break;
+                if (text[0] == '?' && text[1] == '>')
+                {
+                    text += 2;
+                    break;
+                }
+                text++;
+            }
+        }
         else if (text[0] == '<' && text[1] == '!' && text[2] == '-' && text[3] == '-')
         {
             text += 4;
@@ -8670,8 +8698,25 @@ extern WORKUNIT_API bool isArchiveQuery(const char * text)
             break;
     }
 
+    return text;
+}
+
+extern WORKUNIT_API bool isArchiveQuery(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
     const char * archivePrefix = "<Archive";
     return memicmp(text, archivePrefix, strlen(archivePrefix)) == 0;
+}
+
+extern WORKUNIT_API bool isQueryManifest(const char * text)
+{
+    text = skipLeadingXml(text);
+    if (!text)
+        return false;
+    const char * manifestPrefix = "<Manifest";
+    return memicmp(text, manifestPrefix, strlen(manifestPrefix)) == 0;
 }
 
 //------------------------------------------------------------------------------

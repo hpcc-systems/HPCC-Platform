@@ -16,28 +16,55 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#ifndef _ESPWIZ_EclDirect_HPP__
-#define _ESPWIZ_EclDirect_HPP__
+#ifndef _EclDirectService_HPP__
+#define _EclDirectService_HPP__
 
 #include "ecldirect_esp.ipp"
 
 class CEclDirectEx : public CEclDirect
 {
 private:
-    StringBuffer m_clustername;
-    StringBuffer m_eclserver;
-    int m_def_timeout;
-    bool m_deleteworkunits;
+    StringBuffer defaultCluster;
+    int defaultWait;
+    bool deleteWorkunits;
 
 public:
    IMPLEMENT_IINTERFACE;
 
-    CEclDirectEx() : m_def_timeout(0){}
+    CEclDirectEx() : defaultWait(0){}
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
     bool onRunEcl(IEspContext &context, IEspRunEclRequest &req, IEspRunEclResponse &resp);
+    bool onRunEclEx(IEspContext &context, IEspRunEclExRequest &req, IEspRunEclExResponse &resp);
 };
 
-#endif //_ESPWIZ_EclDirect_HPP__
+class CEclDirectSoapBindingEx : public CEclDirectSoapBinding
+{
+private:
+    CEclDirectEx *theService;
 
+    StringArray clusters;
+    bool supportRepository;
+    bool redirect;
+
+public:
+    CEclDirectSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
+
+    void addService(const char *name, const char *host, unsigned short port, IEspService &service)
+    {
+        theService = dynamic_cast<CEclDirectEx*>(&service);
+        CEspBinding::addService(name, host, port, service);
+    }
+
+    virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
+    {
+        IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);
+        ensureNavLink(*folder, "Run Ecl", "/EclDirect/RunEclEx/Form", "Submit ECL text for execution", NULL, NULL, 3);
+    }
+
+    virtual int onGet(CHttpRequest* request, CHttpResponse* response);
+    int sendRunEclExForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
+};
+
+#endif //_EclDirectService_HPP__

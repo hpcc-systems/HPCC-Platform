@@ -189,8 +189,9 @@ int CSoapClient::postRequest(const char* contenttype, const char* soapaction, IR
         else if(retstatus == SOAP_AUTHENTICATION_ERROR)
             errmsg = "SOAP authentication error";
 
-        if (soap_response->get_err())
-            errmsg.appendf("[%s]", soap_response->get_err());
+        const char *errText = soap_response->get_err();
+        if (errText && *errText)
+            errmsg.appendf("[%s]", errText);
 
         throw MakeStringException(retstatus, "%s", errmsg.str());
     }

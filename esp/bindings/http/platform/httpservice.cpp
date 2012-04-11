@@ -617,8 +617,11 @@ typedef enum _cgi_resp_state
 
 int CEspHttpServer::onRunCGI(CHttpRequest* request, CHttpResponse* response, const char *path)
 {
-    char cwd[512]={0};
-    GetCurrentDirectory(512, cwd);
+    char cwd[1024];
+    if (!GetCurrentDirectory(1024, cwd)) {
+        ERRLOG("onRunCGI: Current directory path too big, setting local path to null");
+        cwd[0] = 0;
+    }
     StringBuffer docRoot(cwd);
     docRoot.append("/files");
     StringBuffer script(docRoot);

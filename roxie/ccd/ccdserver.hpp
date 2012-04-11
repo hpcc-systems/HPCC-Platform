@@ -182,7 +182,6 @@ interface IRoxieServerContext : extends IInterface
 
 interface IRoxieInput : extends IInterface, extends IInputBase
 {
-    virtual void prestart(unsigned parentExtractSize, const byte *parentExtract) = 0;
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused) = 0;
     virtual void stop(bool aborting) = 0;
     virtual void reset() = 0;
@@ -250,7 +249,6 @@ interface IRoxieServerActivity : extends IActivityBase
     virtual void executeChild(size32_t & retSize, void * & ret, unsigned parentExtractSize, const byte * parentExtract) = 0;
     virtual void serializeCreateStartContext(MemoryBuffer &out) = 0;
     virtual void serializeExtra(MemoryBuffer &out) = 0;
-    virtual void stopSink(unsigned idx) = 0;
 //Functions to support result streaming between parallel loop/graphloop/library implementations
     virtual IRoxieInput * querySelectOutput(unsigned id) = 0;
     virtual bool querySetStreamInput(unsigned id, IRoxieInput * _input) = 0;
@@ -315,6 +313,12 @@ interface IRoxieServerLoopResultProcessor
     virtual IRoxieInput * connectIterationOutput(unsigned whichIteration, IProbeManager *probeManager, IArrayOf<IRoxieInput> &probes, IRoxieServerActivity *targetAct, unsigned targetIdx) = 0;
 };
 
+interface IRoxieGraphResults : extends IEclGraphResults
+{
+public:
+    virtual IRoxieInput * createIterator(unsigned id) = 0;
+};
+
 class CGraphIterationInfo;
 
 interface IRoxieServerChildGraph : public IInterface
@@ -325,7 +329,7 @@ interface IRoxieServerChildGraph : public IInterface
     virtual void setInputResult(unsigned id, IGraphResult * result) = 0;
     virtual bool querySetInputResult(unsigned id, IRoxieInput * result) = 0;
     virtual void stopUnusedOutputs() = 0;
-    virtual IRoxieInput * execute(unsigned id, size32_t parentExtractSize, const byte *parentExtract) = 0;
+    virtual IRoxieGraphResults * execute(size32_t parentExtractSize, const byte *parentExtract) = 0;
     virtual void afterExecute() = 0;
 //sequential graph related helpers
     virtual void clearGraphLoopResults() = 0;
@@ -420,6 +424,7 @@ extern IRoxieServerActivityFactory *createRoxieServerNewChildGroupAggregateActiv
 extern IRoxieServerActivityFactory *createRoxieServerNewChildThroughNormalizeActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot);
 extern IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
+extern IRoxieServerActivityFactory *createRoxieServerInlineTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerWorkUnitReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerLocalResultReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned graphId);
 extern IRoxieServerActivityFactory *createRoxieServerLocalResultStreamReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);

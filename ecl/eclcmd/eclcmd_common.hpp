@@ -72,6 +72,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_INPUT "--input"
 #define ECLOPT_INPUT_S "-in"
 
+#define ECLOPT_NOROOT "--noroot"
+
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"
 #define ECLOPT_CLUSTER "--cluster"
@@ -103,7 +105,8 @@ enum eclObjParameterType
     eclObjArchive = 0x02,
     eclObjSharedObject = 0x04,
     eclObjWuid = 0x08,
-    eclObjQuery = 0x10
+    eclObjQuery = 0x10,
+    eclObjManifest = 0x20
 };
 
 #define eclObjSourceOrArchive (eclObjSource|eclObjArchive)

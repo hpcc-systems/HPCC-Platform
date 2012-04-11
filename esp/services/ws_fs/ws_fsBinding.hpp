@@ -51,22 +51,22 @@ public:
         if (m_portalURL.length() > 0)
             path.appendf("&EEPortal=%s", m_portalURL.str());
 
-        IPropertyTree *folder0 = ensureNavFolder(data, "DFU Workunits", "DFU Workunits", NULL, false, 5);
-        ensureNavLink(*folder0, "Search", "/FileSpray/DFUWUSearch", "Search Workunits", NULL, NULL, 1);
-        ensureNavLink(*folder0, "Browse", "/FileSpray/GetDFUWorkunits", "Browse Workunits", NULL, NULL, 2);
-        IPropertyTree *folder = ensureNavFolder(data, "DFU Files", "DFU Files", NULL, false, 6);
-        ensureNavLink(*folder, "Upload/download File", "/FileSpray/DropZoneFiles", "Upload/download File", NULL, NULL, 1);
-        ensureNavLink(*folder, "View Data File", "/WsDfu/DFUGetDataColumns?ChooseFile=1", "View Data File", NULL, NULL, 2);
+        IPropertyTree *folder0 = ensureNavFolder(data, "DFU Workunits", NULL, NULL, false, 5);
+        ensureNavLink(*folder0, "Search", "/FileSpray/DFUWUSearch", "Search for DFU workunits ", NULL, NULL, 1);
+        ensureNavLink(*folder0, "Browse", "/FileSpray/GetDFUWorkunits", "Browse a list of DFU workunits", NULL, NULL, 2);
+        IPropertyTree *folder = ensureNavFolder(data, "DFU Files", NULL, NULL, false, 6);
+        ensureNavLink(*folder, "Upload/download File", "/FileSpray/DropZoneFiles", "Upload or download File from a Drop Zone in the environment", NULL, NULL, 1);
+        ensureNavLink(*folder, "View Data File", "/WsDfu/DFUGetDataColumns?ChooseFile=1", "Allows you to view the contents of a logical file", NULL, NULL, 2);
         ensureNavLink(*folder, "Search File Relationships", path.str(), "Search File Relationships", NULL, NULL, 3);
-        ensureNavLink(*folder, "Browse Space Usage", "/WsDfu/DFUSpace", "Browse Space Usage", NULL, NULL, 4);
-        ensureNavLink(*folder, "Search Logical Files", "/WsDfu/DFUSearch", "Search Logical Files", NULL, NULL, 5);
-        ensureNavLink(*folder, "Browse Logical Files", "/WsDfu/DFUQuery", "Browse Logical Files", NULL, NULL, 6);
-        ensureNavLink(*folder, "Browse Files by Scope", "/WsDfu/DFUFileView", "Browse Files by Scope", NULL, NULL, 7);
-        ensureNavLink(*folder, "Spray Fixed", "/FileSpray/SprayFixedInput", "Spray Fixed", NULL, NULL, 8);
-        ensureNavLink(*folder, "Spray CSV", "/FileSpray/SprayVariableInput?submethod=csv", "Spray CSV", NULL, NULL, 9);
-        ensureNavLink(*folder, "Spray XML", "/FileSpray/SprayVariableInput?submethod=xml", "Spray XML", NULL, NULL, 10);
-        ensureNavLink(*folder, "Remote Copy", "/FileSpray/CopyInput", "Remote Copy", NULL, NULL, 11);
-        ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "XRef", NULL, NULL, 12);
+        ensureNavLink(*folder, "Browse Space Usage", "/WsDfu/DFUSpace", "View details about Space Usage", NULL, NULL, 4);
+        ensureNavLink(*folder, "Search Logical Files", "/WsDfu/DFUSearch", "Search for Logical Files using a variety of search criteria", NULL, NULL, 5);
+        ensureNavLink(*folder, "Browse Logical Files", "/WsDfu/DFUQuery", "Browse a list of Logical Files", NULL, NULL, 6);
+        ensureNavLink(*folder, "Browse Files by Scope", "/WsDfu/DFUFileView", "Browse a list of Logical Files by Scope", NULL, NULL, 7);
+        ensureNavLink(*folder, "Spray Fixed", "/FileSpray/SprayFixedInput", "Spray a fixed width file", NULL, NULL, 8);
+        ensureNavLink(*folder, "Spray CSV", "/FileSpray/SprayVariableInput?submethod=csv", "Spray a comma separated value file", NULL, NULL, 9);
+        ensureNavLink(*folder, "Spray XML", "/FileSpray/SprayVariableInput?submethod=xml", "Spray an XML File", NULL, NULL, 10);
+        ensureNavLink(*folder, "Remote Copy", "/FileSpray/CopyInput", "Copy a Logical File from one environment to another", NULL, NULL, 11);
+        ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "View Xref result details or run the Xref utility", NULL, NULL, 12);
     }
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);

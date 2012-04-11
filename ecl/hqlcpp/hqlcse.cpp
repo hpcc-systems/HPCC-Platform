@@ -241,11 +241,32 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
         extra->alreadyAliased = true;
     }
 
+    switch (op)
+    {
+    case no_assign:
+    case no_transform:
+    case no_newtransform:
+    case no_range:
+    case no_rangefrom:
+        if (expr->isConstant())
+            return;
+        break;
+    case no_constant:
+        return;
+    }
+
     if (extra->numRefs++ != 0)
     {
-        if (!spottedCandidate && extra->worthAliasing() && (op != no_alias))
+        if (op == no_alias)
+            return;
+        if (!spottedCandidate && extra->worthAliasing())
             spottedCandidate = true;
-        //if (canCreateTemporary(expr))
+        if (canCreateTemporary(expr))
+            return;
+
+        //Ugly! This is here as a temporary hack to stop branches of maps being commoned up and always
+        //evaluated.  The alias spotting and generation really needs to take conditionality into account....
+        if (op == no_mapto)
             return;
     }
 
@@ -1401,6 +1422,21 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
 
 #endif
 
+bool TableInvariantTransformer::isAlwaysAlias(IHqlExpression * expr)
+{
+    if (queryBodyExtra(expr)->createAlias)
+        return true;
+    switch (expr->getOperator())
+    {
+    case no_alias:
+    case no_getresult:      // these are commoned up in the code generator, so don't do it twice.
+    case no_getgraphresult:
+    case no_getgraphloopresult:
+        return true;
+    }
+    return false;
+}
+
 bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -1414,7 +1450,7 @@ bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
             {
                 IHqlExpression * cast = expr->queryChild(0);
                 ITypeInfo * castType = cast->queryType();
-                if (castType->isInteger() && (queryBodyExtra(cast)->createAlias || cast->getOperator() == no_alias))
+                if (castType->isInteger() && isAlwaysAlias(cast))
                 {
                     switch (type->getSize())
                     {
@@ -1428,7 +1464,7 @@ bool TableInvariantTransformer::isTrivialAlias(IHqlExpression * expr)
     case no_not:
         {
             IHqlExpression * child = expr->queryChild(0);
-            if (queryBodyExtra(child)->createAlias || child->getOperator() == no_alias)
+            if (isAlwaysAlias(child))
                 return true;
             break;
         }

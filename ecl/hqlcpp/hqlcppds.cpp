@@ -1142,9 +1142,21 @@ bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph)
 //---------------------------------------------------------------------------
 // Child dataset processing
 
-static IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
+static IHqlExpression * convertScalarToResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
 {
-    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(unsignedType), NULL, NULL);
+    OwnedHqlExpr row = convertScalarToRow(value, fieldType);
+    OwnedHqlExpr ds = createDatasetFromRow(LINK(row));
+    HqlExprArray args;
+    args.append(*LINK(ds));
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(seq));
+    args.append(*createAttribute(rowAtom));
+    return createValue(no_setgraphresult, makeVoidType(), args);
+}
+
+static IHqlExpression * createScalarFromResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr counterRecord = createRecord(counterField);
     HqlExprArray args;
     args.append(*LINK(counterRecord));
@@ -1153,8 +1165,13 @@ static IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpr
     args.append(*createAttribute(rowAtom));
     OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
     OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
-    OwnedHqlExpr cast = ensureExprType(select, counter->queryType());
+    OwnedHqlExpr cast = ensureExprType(select, scalarType);
     return createAlias(cast, internalAttrExpr);
+}
+
+static IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
+{
+    return createScalarFromResult(counter->queryType(), unsignedType, represents, seq);
 }
 
 ChildGraphBuilder::ChildGraphBuilder(HqlCppTranslator & _translator) 
@@ -1166,6 +1183,7 @@ ChildGraphBuilder::ChildGraphBuilder(HqlCppTranslator & _translator)
     instanceExpr.setown(createQuoted(instanceName, makeBoolType()));
     represents.setown(createAttribute(graphAtom, LINK(idExpr)));
     numResults = 0;
+    loopAgainResult = 0;
 
     StringBuffer s;
     resultInstanceExpr.setown(createQuoted(appendUniqueId(s.append("res"), id), makeBoolType()));
@@ -1308,9 +1326,10 @@ void ChildGraphBuilder::createBuilderAlias(BuildCtx & ctx, ParentExtract * extra
     ctx.addQuoted(s);
 }
 
-unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
+unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
 {
-    OwnedHqlExpr transformedBody = LINK(body);
+    LinkedHqlExpr transformedBody = body;
+    LinkedHqlExpr transformedAgain = again;
     numResults = 2;
 
     //Result 1 is the input dataset.
@@ -1333,6 +1352,13 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * da
     {
         OwnedHqlExpr select = createCounterAsResult(counter, represents, 2);
         transformedBody.setown(replaceExpression(transformedBody, counter, select));
+        if (transformedAgain)
+        {
+            //The COUNTER for the global termination condition is whether to execute iteration COUNTER, 1=1st iter
+            //Since we're evaluating the condition in the previous iteration it needs to be increased by 1.
+            OwnedHqlExpr nextCounter = adjustValue(select, 1);
+            transformedAgain.setown(replaceExpression(transformedAgain, counter, nextCounter));
+        }
         numResults = 3;
     }
 
@@ -1343,6 +1369,22 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * da
     transformedBody.setown(replaceExpression(transformedBody, rowsExpr, inputResult));
 
     OwnedHqlExpr result = createValue(no_setgraphresult, makeVoidType(), LINK(transformedBody), LINK(represents), getSizetConstant(0), createAttribute(_loop_Atom));
+
+    if (transformedAgain)
+    {
+        LinkedHqlExpr nextLoopDataset = transformedBody;
+        if (filter)
+        {
+            //If there is a loop filter then the global condition is applied to dataset filtered by that.
+            OwnedHqlExpr mappedFilter = replaceSelector(filter, left, nextLoopDataset);
+            nextLoopDataset.setown(createDataset(no_filter, nextLoopDataset.getClear(), LINK(mappedFilter)));
+        }
+        transformedAgain.setown(replaceExpression(transformedAgain, rowsExpr, nextLoopDataset));
+        OwnedHqlExpr againResult = convertScalarToResult(transformedAgain, queryBoolType(), represents, 3);
+        result.setown(createCompound(result.getClear(), againResult.getClear()));
+        loopAgainResult = 3;
+        numResults = 4;
+    }
 
     BuildCtx subctx(ctx);
     subctx.addGroup();
@@ -1660,12 +1702,6 @@ void HqlCppTranslator::buildChildDataset(BuildCtx & ctx, IHqlExpression * expr, 
         bestctx.associateExpr(expr, tgt);
 }
 
-
-unique_id_t HqlCppTranslator::buildLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
-{
-    ChildGraphBuilder builder(*this);
-    return builder.buildLoopBody(ctx, dataset, selSeq, rowsid, body, counter, containerId, multiInstance);
-}
 
 unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
 {

@@ -168,13 +168,11 @@ bool InternalResultTracker::noteUse(IHqlExpression * searchName, unsigned curGra
 }
 
 //---------------------------------------------------------------------------
-IHqlExpression * getMetaUniqueKey(IHqlExpression * dataset)
+IHqlExpression * getMetaUniqueKey(IHqlExpression * record, bool grouped)
 {
-    IHqlExpression * record = dataset->queryRecord();
     if (record) record = record->queryBody();
     LinkedHqlExpr search = record;
-    ITypeInfo * type = dataset->queryType();
-    if (type && type->queryGroupInfo() != NULL)
+    if (grouped)
         search.setown(createAttribute(groupedAtom, search.getClear()));
     if (!search)
         search.setown(createValue(no_null));
@@ -1105,9 +1103,14 @@ void TransformBuilder::doTransform(BuildCtx & ctx, IHqlExpression * transform, B
     }
 
     translator.filterExpandAssignments(ctx, this, assigns, transform);
-    buildTransformChildren(ctx, self->queryRecord(), self->querySelector());
+    IHqlExpression * selfRecord = self->queryRecord();
+    buildTransformChildren(ctx, selfRecord, self->querySelector());
     flush(ctx);
     checkAssigned();
+
+    //If this is a blank record with the size "fixed" to 1, clear the byte so consistent and disk writes compress well
+    if (isEmptyRecord(selfRecord) && selfRecord->hasProperty(_nonEmpty_Atom))
+        translator.buildClearRecord(ctx, self->querySelector(), selfRecord, 0);
 }
 
 
@@ -1734,23 +1737,20 @@ void GlobalFileTracker::writeToGraph()
 
 //---------------------------------------------------------------------------
 
-MetaInstance::MetaInstance(HqlCppTranslator & translator, IHqlExpression * _dataset)
+MetaInstance::MetaInstance(HqlCppTranslator & translator, IHqlExpression * _record, bool _isGrouped)
 {
-    setDataset(translator, _dataset);
+    setMeta(translator, _record, _isGrouped);
 }
 
-IHqlExpression * MetaInstance::queryRecord()
+void MetaInstance::setMeta(HqlCppTranslator & translator, IHqlExpression * _record, bool _isGrouped)
 {
-    return dataset->queryRecord();
-}
+    record = _record;
+    grouped = _isGrouped;
+    assertex(!record || record->getOperator() == no_record);
 
-void MetaInstance::setDataset(HqlCppTranslator & translator, IHqlExpression * _dataset)
-{
+    searchKey.setown(::getMetaUniqueKey(record, grouped));
+
     StringBuffer s,recordBase;
-
-    dataset = _dataset;
-    searchKey.setown(::getMetaUniqueKey(dataset));
-
     appendUniqueId(recordBase, translator.getConsistentUID(searchKey));
 
     metaName.set(s.clear().append("mi").append(recordBase).str());
@@ -1819,7 +1819,8 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     if ((op == no_setgraphresult) && translator.queryOptions().minimizeActivityClasses)
         outputDataset = dataset->queryChild(0);
 
-    meta.setDataset(translator, outputDataset);
+    IHqlExpression * record = queryRecord(outputDataset);
+    meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
 
@@ -2436,9 +2437,7 @@ void ActivityInstance::buildMetaMember()
 
     translator.buildMetaInfo(meta);
 
-    IHqlExpression * dataset = meta.dataset;
-    ITypeInfo * type = dataset->queryType();
-    if (type && type->getTypeCode() != type_void)
+    if (meta.queryRecord())
     {
         StringBuffer s;
         s.append("virtual IOutputMetaData * queryOutputMeta() { return &").append(meta.queryInstanceObject()).append("; }");
@@ -2451,8 +2450,7 @@ void ActivityInstance::addConstructorMetaParameter()
 {
     translator.buildMetaInfo(meta);
 
-    ITypeInfo * type = meta.dataset->queryType();
-    if (type && type->getTypeCode() != type_void)
+    if (meta.queryRecord())
     {
         StringBuffer s;
         s.append("&").append(meta.queryInstanceObject());
@@ -3184,7 +3182,7 @@ void HqlCppTranslator::doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const c
             HqlExprArray parameters;
             OwnedHqlExpr entrypoint = createAttribute(entrypointAtom, createConstant(name));
             OwnedHqlExpr body = createValue(no_null, LINK(type), LINK(entrypoint));
-            OwnedHqlExpr formals = createValue(no_sortlist, makeSortListType(NULL), parameters);
+            OwnedHqlExpr formals = createSortList(parameters);
             OwnedHqlExpr attrs = createAttribute(virtualAtom);
             OwnedHqlExpr function = createFunctionDefinition(NULL, LINK(body), LINK(formals), NULL, LINK(attrs));
             funcctx.addFunction(function);
@@ -4011,7 +4009,6 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 
     BuildCtx declarectx(*code, declareAtom);
 
-    IHqlExpression * dataset = instance.dataset;
     OwnedHqlExpr search = instance.getMetaUniqueKey();
 
     // stop duplicate classes being generated.
@@ -4031,13 +4028,12 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     endText.append(" ").append(instance.instanceName).append(";");
     BuildCtx metactx(declarectx);
 
-    ITypeInfo * type = dataset->queryType();
-    IHqlExpression * record = dataset->queryRecord();
+    IHqlExpression * record = instance.queryRecord();
     ColumnToOffsetMap * map = queryRecordOffsetMap(record);
     
     unsigned flags = MDFhasserialize;       // we always generate a serialize since 
     bool useTypeForXML = false;
-    if (type && type->getTypeCode() == type_groupedtable)
+    if (instance.isGrouped())
         flags |= MDFgrouped;
     if (map)
         flags |= MDFhasxml;
@@ -4052,10 +4048,9 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
         useTypeForXML = true;
     }
 
-    if (type && type->getTypeCode() == type_groupedtable)
+    if (instance.isGrouped())
     {
-        OwnedHqlExpr ungrouped = createDataset(no_group, LINK(dataset));
-        MetaInstance ungroupedMeta(*this, ungrouped);
+        MetaInstance ungroupedMeta(*this, record, false);
         buildMetaInfo(ungroupedMeta);
 
         s.append("struct ").append(instance.metaName).append(" : public ").append(ungroupedMeta.metaName);
@@ -4133,16 +4128,12 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 getctx.addQuoted(s.str());
                 getctx.addQuoted("const unsigned char * left = (const unsigned char *)data;");
 
-                LinkedHqlExpr selfDs = dataset;
-                if (!selfDs->isDataset() || !selfDs->isDatarow())
-                    selfDs.setown(createDataset(no_null, LINK(dataset->queryRecord())));
-
+                LinkedHqlExpr selfDs = createDataset(no_null, LINK(instance.queryRecord()));
                 BoundRow * selfRow = bindTableCursorOrRow(getctx, selfDs, "left");
                 OwnedHqlExpr size = getRecordSize(selfRow->querySelector());
                 buildReturn(getctx, size);
-
             }
-            assertex(!(type && type->getTypeCode() == type_groupedtable));
+            assertex(!instance.isGrouped());
 
             StringBuffer typeName;
             unsigned recordTypeFlags = buildRtlType(typeName, record->queryType());
@@ -4151,7 +4142,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 
             if (record->numChildren() != 0)
             {
-                OwnedHqlExpr anon = createDataset(no_anon, LINK(dataset->queryRecord()));
+                OwnedHqlExpr anon = createDataset(no_anon, LINK(instance.queryRecord()));
                 if (!useTypeForXML || (recordTypeFlags & (RFTMinvalidxml|RFTMhasxmlattr)))
                     buildXmlSerialize(metactx, anon, "toXML", true);
             }
@@ -4165,9 +4156,8 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             if (flags & MDFneedserialize)
             {
                 OwnedHqlExpr serializedRecord = getSerializedForm(record);
-                OwnedHqlExpr serializedDataset = createDataset(no_anon, LINK(serializedRecord));
 
-                MetaInstance serializedMeta(*this, serializedDataset);
+                MetaInstance serializedMeta(*this, serializedRecord, false);
                 buildMetaInfo(serializedMeta);
                 StringBuffer s;
                 s.append("virtual IOutputMetaData * querySerializedMeta() { return &").append(serializedMeta.queryInstanceObject()).append("; }");
@@ -4203,7 +4193,7 @@ public:
 
     void callChildFunction(BuildCtx & ctx, IHqlExpression * selected)
     {
-        MetaInstance childMeta(translator, selected);
+        MetaInstance childMeta(translator, selected->queryRecord(), false);
         translator.buildMetaInfo(childMeta);
         callChildFunction(ctx, selected, childMeta);
     }
@@ -4252,7 +4242,7 @@ public:
                             if (cur->hasProperty(_linkCounted_Atom))
                             {
                                 //releaseRowset(ctx, count, rowset)
-                                MetaInstance childMeta(translator, selected);
+                                MetaInstance childMeta(translator, selected->queryRecord(), false);
                                 translator.buildMetaInfo(childMeta);
                                 processRowset(ctx, selected, childMeta);
                             }
@@ -4395,19 +4385,14 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
 
 IHqlExpression * HqlCppTranslator::buildMetaParameter(IHqlExpression * arg)
 {
-    OwnedHqlExpr dataset = createDataset(no_anon, LINK(arg->queryRecord()));
-    MetaInstance meta(*this, dataset);
+    MetaInstance meta(*this, arg->queryRecord(), false);
     buildMetaInfo(meta);
     return createQuoted(meta.queryInstanceObject(), makeBoolType());
 }
 
-void HqlCppTranslator::buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, const char * name)
+void HqlCppTranslator::buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetOrRecord, bool grouped, const char * name)
 {
-    LinkedHqlExpr dataset = datasetOrRecord;
-    if (datasetOrRecord->getOperator() == no_record)
-        dataset.setown(createDataset(no_anon, LINK(datasetOrRecord)));
-
-    MetaInstance meta(*this, dataset);
+    MetaInstance meta(*this, ::queryRecord(datasetOrRecord), grouped);
     StringBuffer s;
 
     buildMetaInfo(meta);
@@ -4417,8 +4402,7 @@ void HqlCppTranslator::buildMetaMember(BuildCtx & ctx, IHqlExpression * datasetO
 
 void HqlCppTranslator::buildMetaForRecord(StringBuffer & name, IHqlExpression * record)
 {
-    OwnedHqlExpr dataset = createDataset(no_anon, LINK(record));
-    MetaInstance meta(*this, dataset);
+    MetaInstance meta(*this, record, false);
     buildMetaInfo(meta);
     name.append(meta.queryInstanceObject());
 }
@@ -4461,8 +4445,7 @@ void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildC
         s.append("Owned<IOutputRowDeserializer> ").append(uid).append(";");
     declarectx->addQuoted(s);
 
-    OwnedHqlExpr ds = createDataset(no_anon, LINK(record));
-    MetaInstance meta(*this, ds);
+    MetaInstance meta(*this, record, false);
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
@@ -4503,8 +4486,7 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
     s.append("Owned<ISourceRowPrefetcher> ").append(uid).append(";");
     declarectx->addQuoted(s);
 
-    OwnedHqlExpr ds = createDataset(no_anon, LINK(record));
-    MetaInstance meta(*this, ds);
+    MetaInstance meta(*this, record, false);
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
@@ -5656,6 +5638,9 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
         if (isThorCluster(cluster))
             complexity = 5;
         break;
+    case no_shuffle:
+        complexity = 1;
+        break;
     case no_sort:
         if (isLocalActivity(expr) || !isThorCluster(cluster))
             complexity = 2;
@@ -6118,6 +6103,19 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityProcess(ctx, expr);
                 break;
             case no_group:
+                //Special case group(shuffle) which will be mapped to group(group(sort(group))) to remove
+                //the redundant group
+                if (!options.supportsShuffleActivity && (expr->queryChild(0)->getOperator() == no_shuffle))
+                {
+                    IHqlExpression * shuffle = expr->queryChild(0);
+                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(shuffle);
+                    assertex(groupedSort->getOperator() == no_group);
+                    OwnedHqlExpr newGroup = replaceChild(expr, 0, groupedSort->queryChild(0));
+                    result = doBuildActivityGroup(ctx, newGroup);
+                }
+                else
+                    result = doBuildActivityGroup(ctx, expr);
+                break;
             case no_cogroup:
             case no_assertgrouped:
                 result = doBuildActivityGroup(ctx, expr);
@@ -6170,6 +6168,15 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 }
             case no_sub:
                 result = doBuildActivitySub(ctx, expr);
+                break;
+            case no_shuffle:
+                if (!options.supportsShuffleActivity)
+                {
+                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(expr);
+                    result = buildCachedActivity(ctx, groupedSort);
+                }
+                else
+                    result = doBuildActivitySort(ctx, expr);
                 break;
             case no_sort:
             case no_cosort:
@@ -6430,7 +6437,7 @@ void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpressio
     OwnedHqlExpr serializedDataset = createDataset(no_null, LINK(serializedRecord));
     OwnedHqlExpr memoryDataset = createDataset(no_anon, LINK(memoryRecord));
 
-    MetaInstance meta(*this, memoryDataset);
+    MetaInstance meta(*this, memoryRecord, false);
     buildMetaInfo(meta);
 
     if (recordTypesMatch(memoryRecord, serializedRecord))
@@ -7972,6 +7979,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
         buildReturn(funcctx, loopCond);
     }
 
+    IHqlExpression * loopFirst = queryPropertyChild(expr, _loopFirst_Atom, 0);
+    if (loopFirst)
+        doBuildBoolFunction(instance->startctx, "loopFirstTime", loopFirst);
+
     IHqlExpression * parallel = expr->queryProperty(parallelAtom);
     if (parallel && (targetHThor() || !count || loopCond))
         parallel = NULL;
@@ -8012,6 +8023,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     if (counter) flags.append("|LFcounter");
     if (parallel) flags.append("|LFparallel");
     if (filter) flags.append("|LFfiltered");
+    if (loopFirst) flags.append("|LFnewloopagain");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -8023,8 +8035,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     //output dataset is result 0
     //input dataset is fed in using result 1
     //counter (if required) is fed in using result 2[0].counter;
-    unique_id_t loopId = buildLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, instance->activityId, (parallel != NULL));
+    ChildGraphBuilder builder(*this);
+    unique_id_t loopId = builder.buildLoopBody(subctx, dataset, selSeq, rowsid, body->queryChild(0), filter, loopCond, counter, instance->activityId, (parallel != NULL));
     instance->addAttributeInt("_loopid", loopId);
+
+    unsigned loopAgainResult = builder.queryLoopConditionResult();
+    if (loopAgainResult)
+        doBuildUnsignedFunction(instance->startctx, "loopAgainResult", loopAgainResult);
 
     buildInstanceSuffix(instance);
 
@@ -9432,7 +9449,7 @@ void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpressio
 
     buildReturnRecordSize(subctx, selfCursor);
 
-    buildMetaMember(ctx, tgtDataset, "queryDiskRecordSize");
+    buildMetaMember(ctx, tgtDataset, false, "queryDiskRecordSize");
 }
 
 
@@ -9940,11 +9957,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
         buildFormatCrcFunction(instance->classctx, "getFormatCrc", dataset, NULL, 0);
 
-        LinkedHqlExpr diskDataset = dataset;
-        if (!expr->hasProperty(groupedAtom) && isGroupedActivity(dataset))
-            diskDataset.setown(createDataset(no_group, LINK(dataset), NULL));
-        if ((kind != TAKspill) || (diskDataset->queryType() != expr->queryType()))
-            buildMetaMember(instance->classctx, diskDataset, "queryDiskRecordSize");
+        bool grouped = isGrouped(dataset);
+        bool ignoreGrouped = !expr->hasProperty(groupedAtom);
+        if ((kind != TAKspill) || (dataset->queryType() != expr->queryType()) || (grouped && ignoreGrouped))
+            buildMetaMember(instance->classctx, dataset, grouped && !ignoreGrouped, "queryDiskRecordSize");
         buildClusterHelper(instance->classctx, expr);
 
         //Both csv write and pipe with csv/xml format
@@ -10126,7 +10142,7 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
 
     OwnedHqlExpr serialRecord = getSerializedForm(record);
     OwnedHqlExpr ds = createDataset(no_anon, LINK(serialRecord));
-    MetaInstance meta(*this, ds);
+    MetaInstance meta(*this, serialRecord, false);
     buildMetaInfo(meta);
     result->setResultRecordSizeEntry(meta.metaFactoryName);
 
@@ -10241,8 +10257,7 @@ void HqlCppTranslator::buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression *
 
     StringBuffer boundRowText;
     generateExprCpp(boundRowText, sourceRow->queryBound());
-    OwnedHqlExpr ds = createDataset(no_null, LINK(field->queryRecord()));
-    buildXmlSerializeUsingMeta(subctx, ds, boundRowText.str());
+    buildXmlSerializeUsingMeta(subctx, field, boundRowText.str());
 
     buildXmlSerializeEndNested(subctx, rowName);
 
@@ -10443,7 +10458,7 @@ void HqlCppTranslator::buildXmlSerialize(BuildCtx & ctx, IHqlExpression * datase
 
 void HqlCppTranslator::buildXmlSerializeUsingMeta(BuildCtx & ctx, IHqlExpression * dataset, const char * self)
 {
-    MetaInstance meta(*this, dataset);
+    MetaInstance meta(*this, dataset->queryRecord(), false);
     buildMetaInfo(meta);
 
     StringBuffer s;
@@ -10743,19 +10758,8 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
 
     assertex(dataset.querySide() == no_activetable);
     bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, canRemoveSort, true);
-    if (noSortAttr)
-    {
-        IHqlExpression * child = noSortAttr->queryChild(0);
-        if (!child)
-            noNeedToSort = true;
-        else
-        {
-            if (side == no_left)
-                noNeedToSort = child->queryName() == leftAtom;
-            else if (side == no_left)
-                noNeedToSort = child->queryName() == rightAtom;
-        }
-    }
+    if (userPreventsSort(noSortAttr, side))
+        noNeedToSort = true;
     
     if (noNeedToSort || isLightweight)
     {
@@ -10940,7 +10944,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
 
             generateSerializeFunction(classctx, "recordToKey", true, dataset, keyActiveRef, datasetSelects, keySelects);
             generateSerializeFunction(classctx, "keyToRecord", false, keyActiveRef, dataset, keySelects, datasetSelects);
-            buildMetaMember(classctx, keyDataset, "queryRecordSize");
+            buildMetaMember(classctx, keyRecord, false, "queryRecordSize");
 
             endNestedClass();
 
@@ -11124,6 +11128,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     }
     extendConditionOwn(match, no_and, fuzzy.getClear());
 
+    LinkedHqlExpr rhs = dataset2;
     if (isAllJoin)
     {
         if (leftSorts.ordinality() && allowAllToLookupConvert)
@@ -11138,6 +11143,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     {
         if (expr->hasProperty(_conditionFolded_Atom))
         {
+            //LIMIT on an ALL join is equivalent to applying a limit to the rhs of the join (since all will hard match).
+            //This could be transformed early, but uncommon enough to not be too concerned.
+            if (rowlimit)
+            {
+                HqlExprArray args;
+                args.append(*LINK(rhs));
+                unwindChildren(args, rowlimit);
+                rhs.setown(createDataset(no_limit, args));
+            }
             isAllJoin = true;
             WARNING(HQLWRN_JoinConditionFoldedNowAll);
         }
@@ -11153,7 +11167,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     Owned<ABoundActivity> boundDataset1 = buildCachedActivity(ctx, dataset1);
     Owned<ABoundActivity> boundDataset2;
     if (!joinToSelf)
-        boundDataset2.setown(buildCachedActivity(ctx, dataset2));
+        boundDataset2.setown(buildCachedActivity(ctx, rhs));
 
     const char * argName;
     ThorActivityKind kind;
@@ -11690,7 +11704,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityProcess(BuildCtx & ctx, IHqlEx
 
     buildInstancePrefix(instance);
 
-    buildMetaMember(instance->classctx, right->queryRecord(), "queryRightRecordSize");
+    buildMetaMember(instance->classctx, right->queryRecord(), false, "queryRightRecordSize");
 
     {
         BuildCtx initialctx(instance->startctx);
@@ -12732,7 +12746,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
                 associateRemoteResult(*instance, sequence, name);
             }
         }
-        buildMetaMember(instance->classctx, resultDataset, "queryAggregateRecordSize");
+        buildMetaMember(instance->classctx, resultDataset, isGrouped(resultDataset), "queryAggregateRecordSize");
     }
 
     buildInstanceSuffix(instance);
@@ -12958,7 +12972,7 @@ void optimizeGroupOrder(HqlExprArray & optimized, IHqlExpression * dataset, HqlE
 
 IHqlExpression * createOrderFromCompareArray(HqlExprArray & exprs, IHqlExpression * dataset, IHqlExpression * left, IHqlExpression * right)
 {
-    OwnedHqlExpr equalExpr = createValue(no_sortlist, makeSortListType(NULL), exprs);
+    OwnedHqlExpr equalExpr = createSortList(exprs);
     OwnedHqlExpr lhs = replaceSelector(equalExpr, dataset, left);
     OwnedHqlExpr rhs = replaceSelector(equalExpr, dataset, right);
     return createValue(no_order, LINK(signedType), lhs.getClear(), rhs.getClear());
@@ -13124,7 +13138,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         {
             if (info.equalities.ordinality() && !instance->isGrouped)
             {
-                OwnedHqlExpr order = createValue(no_sortlist, makeSortListType(NULL), info.equalities);
+                OwnedHqlExpr order = createValueSafe(no_sortlist, makeSortListType(NULL), info.equalities);
                 buildCompareMember(instance->nestedctx, "ComparePrimary", order, DatasetReference(dataset));
                 if (!targetThor())
                     equalities = &noEqualities;
@@ -13166,7 +13180,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         OwnedHqlExpr keyDataset = createDataset(no_anon, createRecordInheritMaxLength(fields, dataset));
 
         //virtual IOutputMetaData * queryKeySize()
-        buildMetaMember(instance->classctx, keyDataset, "queryKeySize");
+        buildMetaMember(instance->classctx, keyDataset, false, "queryKeySize");
 
         //virtual unsigned recordToKey(void * _key, const void * _record)
         buildDedupSerializeFunction(instance->startctx, "recordToKey", dataset, keyDataset, info.equalities, selects, selSeq);
@@ -13630,7 +13644,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
     buildInstancePrefix(instance);
 
     //Generate queryChildRecordSize();
-    buildMetaMember(instance->classctx, childDataset, "queryChildRecordSize");
+    buildMetaMember(instance->classctx, childDataset, isGrouped(childDataset), "queryChildRecordSize");
 
     // INormalizeChildIterator * queryIterator();
     { 
@@ -13658,7 +13672,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
             beginNestedClass(iterclassctx, memberName, "CNormalizeChildIterator");
             format = FormatBlockedDataset;
 
-            MetaInstance childmeta(*this, childDataset);
+            MetaInstance childmeta(*this, childDataset->queryRecord(), isGrouped(childDataset));
             buildMetaInfo(childmeta);
             s.clear().append(className).append("() : CNormalizeChildIterator(").append(childmeta.queryInstanceObject()).append(") {}");
             iterclassctx.addQuoted(s);
@@ -14895,7 +14909,7 @@ IHqlExpression * HqlCppTranslator::createOrderFromSortList(const DatasetReferenc
         }
     }
 
-    return createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftList), createValue(no_sortlist, makeSortListType(NULL), rightList));
+    return createValue(no_order, LINK(signedType), createSortList(leftList), createSortList(rightList));
 }
 
 
@@ -14910,6 +14924,97 @@ void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList
     bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
 
     doBuildReturnCompare(ctx, order, no_order, false);
+}
+
+void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * sortlist)
+{
+    BuildCtx funcctx(ctx);
+    funcctx.addQuotedCompound("virtual bool isSameGroup(const void * _left, const void * _right)");
+    if (sortlist->getOperator() == no_activetable)
+        buildReturn(funcctx, queryBoolExpr(false));
+    else
+    {
+        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+
+        OwnedHqlExpr selSeq = createSelectorSequence();
+        OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
+        OwnedHqlExpr rightSelect = createSelector(no_right, dataset, selSeq);
+        HqlExprArray args;
+        HqlExprArray leftValues, rightValues;
+        HqlExprArray compares;
+        unwindChildren(compares, sortlist);
+
+        //Optimize the grouping conditions by ordering them by the fields in the record (so the
+        //doBuildReturnCompare() can combine as many as possible),  and remove duplicates
+        if (options.optimizeGrouping && (compares.ordinality() > 1))
+        {
+            HqlExprArray equalities;
+            optimizeGroupOrder(equalities, dataset, compares);
+            ForEachItemIn(i, equalities)
+            {
+                IHqlExpression * test = &equalities.item(i);
+                leftValues.append(*replaceSelector(test, dataset, leftSelect));
+                rightValues.append(*replaceSelector(test, dataset, rightSelect));
+            }
+        }
+
+        ForEachItemIn(idx, compares)
+        {
+            IHqlExpression * test = &compares.item(idx);
+            if (containsSelector(test, leftSelect) || containsSelector(test, rightSelect))
+                args.append(*LINK(test));
+            else
+            {
+                OwnedHqlExpr lhs = replaceSelector(test, dataset, leftSelect);
+                OwnedHqlExpr rhs = replaceSelector(test, dataset, rightSelect);
+                if (lhs != rhs)
+                {
+                    leftValues.append(*lhs.getClear());
+                    rightValues.append(*rhs.getClear());
+                }
+            }
+        }
+
+        OwnedHqlExpr result;
+        OwnedHqlExpr orderResult;
+        //Use the optimized equality code for more than one element - which often combines the comparisons.
+        if (leftValues.ordinality() != 0)
+        {
+            if (leftValues.ordinality() == 1)
+                args.append(*createValue(no_eq, makeBoolType(), LINK(&leftValues.item(0)), LINK(&rightValues.item(0))));
+            else
+                orderResult.setown(createValue(no_order, LINK(signedType), createSortList(leftValues), createSortList(rightValues)));
+        }
+
+        if (args.ordinality() == 1)
+            result.set(&args.item(0));
+        else if (args.ordinality() != 0)
+            result.setown(createValue(no_and, makeBoolType(), args));
+
+        bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
+        bindTableCursor(funcctx, dataset, "right", no_right, selSeq);
+        IHqlExpression * trueExpr = queryBoolExpr(true);
+        if (result)
+        {
+            if (orderResult)
+            {
+                buildFilteredReturn(funcctx, result, trueExpr);
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+            }
+            else
+            {
+                buildReturn(funcctx, result);
+            }
+        }
+        else
+        {
+            if (orderResult)
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+            else
+                buildReturn(funcctx, trueExpr);
+        }
+    }
 }
 
 ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpression * expr)
@@ -14947,93 +15052,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpr
         buildInstancePrefix(instance);
 
         //virtual bool isSameGroup(const void *left, const void *right);
-        BuildCtx funcctx(instance->startctx);
-        funcctx.addQuotedCompound("virtual bool isSameGroup(const void * _left, const void * _right)");
-        if (sortlist->getOperator() == no_activetable)
-            buildReturn(funcctx, queryBoolExpr(false));
-        else
-        {
-            funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-            funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
-
-            OwnedHqlExpr selSeq = createSelectorSequence();
-            OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
-            OwnedHqlExpr rightSelect = createSelector(no_right, dataset, selSeq);
-            HqlExprArray args;
-            HqlExprArray leftValues, rightValues;
-            HqlExprArray compares;
-            unwindChildren(compares, sortlist);
-
-            //Optimize the grouping conditions by ordering them by the fields in the record (so the
-            //doBuildReturnCompare() can combine as many as possible),  and remove duplicates
-            if (options.optimizeGrouping && (compares.ordinality() > 1))
-            {
-                HqlExprArray equalities;
-                optimizeGroupOrder(equalities, dataset, compares);
-                ForEachItemIn(i, equalities)
-                {
-                    IHqlExpression * test = &equalities.item(i);
-                    leftValues.append(*replaceSelector(test, dataset, leftSelect));
-                    rightValues.append(*replaceSelector(test, dataset, rightSelect));
-                }
-            }
-
-            ForEachItemIn(idx, compares)
-            {
-                IHqlExpression * test = &compares.item(idx);
-                if (containsSelector(test, leftSelect) || containsSelector(test, rightSelect))
-                    args.append(*LINK(test));
-                else
-                {
-                    OwnedHqlExpr lhs = replaceSelector(test, dataset, leftSelect);
-                    OwnedHqlExpr rhs = replaceSelector(test, dataset, rightSelect);
-                    if (lhs != rhs)
-                    {
-                        leftValues.append(*lhs.getClear());
-                        rightValues.append(*rhs.getClear());
-                    }
-                }
-            }
-
-            OwnedHqlExpr result;
-            OwnedHqlExpr orderResult;
-            //Use the optimized equality code for more than one element - which often combines the comparisons.
-            if (leftValues.ordinality() != 0)
-            {
-                if (leftValues.ordinality() == 1)
-                    args.append(*createValue(no_eq, makeBoolType(), LINK(&leftValues.item(0)), LINK(&rightValues.item(0))));
-                else
-                    orderResult.setown(createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), leftValues), createValue(no_sortlist, makeSortListType(NULL), rightValues)));
-            }
-
-            if (args.ordinality() == 1)
-                result.set(&args.item(0));
-            else if (args.ordinality() != 0)
-                result.setown(createValue(no_and, makeBoolType(), args));
-
-            bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
-            bindTableCursor(funcctx, dataset, "right", no_right, selSeq);
-            IHqlExpression * trueExpr = queryBoolExpr(true);
-            if (result)
-            {
-                if (orderResult)
-                {
-                    buildFilteredReturn(funcctx, result, trueExpr);
-                    doBuildReturnCompare(funcctx, orderResult, no_eq, true);
-                }
-                else
-                {
-                    buildReturn(funcctx, result);
-                }
-            }
-            else
-            {
-                if (orderResult)
-                    doBuildReturnCompare(funcctx, orderResult, no_eq, true);
-                else
-                    buildReturn(funcctx, trueExpr);
-            }
-        }
+        doBuildFuncIsSameGroup(instance->startctx, dataset, sortlist);
 
         buildInstanceSuffix(instance);
 
@@ -15294,6 +15313,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             helper = "Sort";
             break;
         }
+    case no_shuffle:
+        actKind = TAKshuffle;
+        helper = "Shuffle";
+        break;
     default:
         {
             cosort = expr->queryChild(2);
@@ -15348,6 +15371,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     buildSkewThresholdMembers(instance->classctx, expr);
 
+    if (expr->getOperator() == no_shuffle)
+        doBuildFuncIsSameGroup(instance->startctx, dataset, expr->queryChild(2));
+
     if (limit)
     {
         OwnedHqlExpr newLimit = ensurePositiveOrZeroInt64(limit);
@@ -15373,7 +15399,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
                 maxValues.replace(*LINK(cur.queryChild(0)), i);
             }
         }
-        OwnedHqlExpr order = createValue(no_order, LINK(signedType), createValue(no_sortlist, makeSortListType(NULL), sortValues), createValue(no_sortlist, makeSortListType(NULL), maxValues));
+        OwnedHqlExpr order = createValue(no_order, LINK(signedType), createSortList(sortValues), createSortList(maxValues));
 
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual int compareBest(const void * _self)");
@@ -15401,7 +15427,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             generateExprCpp(s, source->queryChild(0)).append("; }");
             instance->startctx.addQuoted(s);
 
-            buildMetaMember(instance->classctx, cosortDataset, "querySortedRecordSize");
+            buildMetaMember(instance->classctx, cosortDataset, false, "querySortedRecordSize");
         }
         else
         {
@@ -15683,10 +15709,21 @@ void HqlCppTranslator::buildDatasetAssignXmlProject(BuildCtx & ctx, IHqlCppDatas
 //---------------------------------------------------------------------------
 //-- no_temptable [DATASET] --
 
+void HqlCppTranslator::doBuildTempTableFlags(BuildCtx & ctx, IHqlExpression * expr, bool isConstant)
+{
+    StringBuffer flags;
+    if (expr->hasProperty(distributedAtom))
+        flags.append("|TTFdistributed");
+    if (!isConstant)
+        flags.append("|TTFnoconstant");
+    if (flags.length())
+        doBuildUnsignedFunction(ctx, "getFlags", flags.str()+1);
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr)
 {
     StringBuffer s;
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr, "TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     OwnedHqlExpr values = normalizeListCasts(expr->queryChild(0));
     IHqlExpression * record = expr->queryChild(1);
@@ -15700,14 +15737,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
     OwnedHqlExpr clearAction;
 
     OwnedHqlExpr rowsExpr;
-    OwnedHqlExpr rowVar = createVariable("row", makeIntType(4, false));
+    OwnedHqlExpr rowVar = createVariable("row", makeIntType(8, false));
     if (expr->getOperator() == no_datasetfromrow)
     {
         BuildCtx subctx(funcctx);
@@ -15793,9 +15830,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
         buildReturnRecordSize(funcctx, selfCursor);
     }
 
-    doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
-    if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
+
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
     buildInstanceSuffix(instance);
 
@@ -15833,7 +15870,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
         valuesAreConstant = true;
     }
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemprow, expr,"TempRow");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemprow, expr, "TempRow");
     if (valueText.length())
     {
         StringBuffer graphLabel;
@@ -15848,7 +15885,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRowSingle(ARowBuilder & crSelf)");
+    // Ignoring row argument, since engines will stop at numRows(), which is 1
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
@@ -15859,8 +15897,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
     buildAssign(funcctx, self, expr);
     buildReturnRecordSize(funcctx, selfCursor);
 
-    if (!valuesAreConstant)
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, valuesAreConstant);
 
     buildInstanceSuffix(instance);
 
@@ -15877,7 +15914,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
         return doBuildActivityCreateRow(ctx, row, true);
     }
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
 
     //-----------------
     buildActivityFramework(instance);
@@ -15885,7 +15922,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     buildInstancePrefix(instance);
 
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
@@ -15934,10 +15971,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityInlineTable(BuildCtx & ctx, IH
     }
 
     OwnedHqlExpr rowsExpr = getSizetConstant(maxRows);
-    doBuildUnsignedFunction(instance->startctx, "numRows", rowsExpr);
+    doBuildUnsigned64Function(instance->startctx, "numRows", rowsExpr);
 
-    if (!values->isConstant())
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, values->isConstant());
 
     buildInstanceSuffix(instance);
 
@@ -15953,27 +15989,23 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
     // Overriding IHThorTempTableArg
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemptable, expr,"TempTable");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
 
     // size32_t getRow()
     BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, unsigned row)");
+    funcctx.addQuotedCompound("virtual size32_t getRow(ARowBuilder & crSelf, __uint64 row)");
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
     associateCounter(funcctx, counter, "row");
-    // FIXME: this should be fixed in the engine
-    funcctx.addQuoted("if (row == numRows()) return 0;");
     buildTransformBody(funcctx, transform, NULL, NULL, instance->dataset, self);
 
     // unsigned numRows() - count is guaranteed by lexer
-    doBuildUnsignedFunction(instance->startctx, "numRows", count);
+    doBuildUnsigned64Function(instance->startctx, "numRows", count);
 
-    // bool isConstant() - default is true
-    if (!isConstantTransform(transform))
-        doBuildBoolFunction(instance->startctx, "isConstant", false);
+    doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
 
     buildInstanceSuffix(instance);
 
@@ -16632,7 +16664,7 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
         unwindChildren(dependencies.resultsRead, resultsRead);
 
     unsigned crc = getExpressionCRC(original) + PERSIST_VERSION;
-    OwnedHqlExpr crcVal = createConstant((__int64)crc);
+    OwnedHqlExpr crcVal = getSizetConstant(crc);
     OwnedHqlExpr crcExpr = calculatePersistInputCrc(ctx, dependencies);
     HqlExprArray args;
     args.append(*LINK(resultName));
@@ -17057,8 +17089,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribution(BuildCtx & ctx, I
         HqlExprArray fields;
         fields.append(*createField(unnamedAtom, makeDataType(numFields*sizeof(void*)), NULL, NULL));
         OwnedHqlExpr tempRecord = createRecord(fields);
-        OwnedHqlExpr nullDataset = createDataset(no_anon, tempRecord.getLink());
-        buildMetaMember(instance->classctx, nullDataset, "queryInternalRecordSize");
+        buildMetaMember(instance->classctx, tempRecord, false, "queryInternalRecordSize");
     }
 
     //Generate the send Result method().

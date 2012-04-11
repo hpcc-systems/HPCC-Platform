@@ -31,6 +31,7 @@ enum
     HOOfiltersharedproject      = 0x0020,
     HOOhascompoundaggregate     = 0x0040,
     HOOfoldconstantdatasets     = 0x0080,
+    HOOalwayslocal              = 0x0100,
 };
 
 extern HQL_API IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options);

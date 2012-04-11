@@ -43,6 +43,7 @@ extern HQL_API bool isFieldSelectedFromRecord(IHqlExpression * expr);
 extern HQL_API void gatherHints(HqlExprCopyArray & target, IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryHint(IHqlExpression * expr, _ATOM name);
 extern HQL_API IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx);
+extern HQL_API void unwindHintAttrs(HqlExprArray & args, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * replaceChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild);
 extern HQL_API IHqlExpression * insertChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild);
@@ -62,6 +63,7 @@ extern HQL_API IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression *
 
 extern HQL_API void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool sortIndexPayload);
 extern HQL_API bool recordContainsBlobs(IHqlExpression * record);
+inline bool recordIsEmpty(IHqlExpression * record) { return queryLastField(record) == NULL; }
 extern HQL_API IHqlExpression * queryVirtualFileposField(IHqlExpression * record);
 
 extern HQL_API IHqlExpression * flattenListOwn(IHqlExpression * list);
@@ -168,6 +170,10 @@ extern HQL_API bool isConstantDataset(IHqlExpression * expr);
 extern HQL_API bool isSimpleTransformToMergeWith(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
+
+extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value);
+extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
+extern HQL_API bool splitResultValue(SharedHqlExpr & dataset, SharedHqlExpr & attribute, IHqlExpression * value);
 
 
 inline void extendConditionOwn(SharedHqlExpr & cond, node_operator op, IHqlExpression * r)
@@ -636,5 +642,6 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
+extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
 
 #endif

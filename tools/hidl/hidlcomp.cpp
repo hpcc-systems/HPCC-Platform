@@ -283,7 +283,11 @@ void indent(int indents)
 
 void out(const char *s,size_t l)
 {
-    write(gOutfile,s,(unsigned)l);
+    ssize_t written = write(gOutfile,s,(unsigned)l);
+    if (written < 0)
+        throw "Error while writing out";
+    if (written != l)
+        throw "Truncated write";
 }
 
 void outs(const char *s)
@@ -6072,7 +6076,7 @@ void EspServInfo::write_esp_binding()
             }
             
             
-            outs("\t\t\tif (esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
+            outs("\t\t\tif (canRedirect(*request) && esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
             outs("\t\t\t{\n");
             outs("\t\t\t\tresponse->redirect(*request, esp_response->getRedirectUrl());\n");
             outs("\t\t\t}\n");
@@ -6139,7 +6143,7 @@ void EspServInfo::write_esp_binding()
     indentReset(2);
     indentOuts("if (esp_response.get())\n");
     indentOuts("{\n");
-    indentOuts(1,"if (esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
+    indentOuts(1,"if (canRedirect(*request) && esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
     indentOuts(1,"response->redirect(*request, esp_response->getRedirectUrl());\n");
     indentOuts(-1,"else\n");
     indentOuts("{\n");

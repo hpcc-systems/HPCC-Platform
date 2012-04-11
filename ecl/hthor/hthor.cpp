@@ -673,7 +673,7 @@ void CHThorDiskWriteActivity::publish()
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
         if((helper.getFlags() & TDWpersist) && file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
-        file->attach(logicalName.get(), NULL, agent.queryCodeContext()->queryUserDescriptor());
+        file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED");
     }
 }
@@ -1005,7 +1005,7 @@ void CHThorIndexWriteActivity::execute()
         if (ldFile )
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
-            fileSize = dFile ? dFile->queryProperties().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
+            fileSize = dFile ? dFile->queryAttributes().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
         }
     }
     unsigned int fileCrc = -1;
@@ -1177,7 +1177,7 @@ void CHThorIndexWriteActivity::execute()
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
         expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
-        dfile->attach(lfn.str(),NULL, agent.queryCodeContext()->queryUserDescriptor());
+        dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
     else
@@ -3594,7 +3594,7 @@ void CHThorGroupSortActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     spillThreshold = (memsize_t)agent.queryWorkUnit()->getDebugValueInt64("hthorSpillThreshold", defaultHThorSpillThreshold);
-    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit() * 1024 * 1024;
+    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit();
     spillThreshold = (memsize_t)std::min(spillThreshold, totalMemoryLimit / 3);
     if(!sorter)
         createSorter();
@@ -3673,7 +3673,15 @@ void CHThorGroupSortActivity::createSorter()
         else
             sorter.setown(new CInsertionSorter(helper.queryCompare()));
     else
-        throw MakeStringException(0, "Requested sort algorithm %s which is not provided by hthor", algoname);
+    {
+        StringBuffer sb;
+        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname);
+        agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
+        if((flags & TAFunstable) != 0)
+            sorter.setown(new CQuickSorter(helper.queryCompare()));
+        else
+            sorter.setown(new CHeapSorter(helper.queryCompare()));
+    }
 }
 
 void CHThorGroupSortActivity::getSorted()
@@ -5824,6 +5832,11 @@ void CHThorRemoteResultActivity::execute()
 
 //=====================================================================================================
 
+/*
+ * Deprecated in 3.8, this class is being kept for backward compatibility,
+ * since now the code generator is using InlineTables (below) for all
+ * temporary tables and rows.
+ */
 CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind) :
                  CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
@@ -5832,14 +5845,15 @@ CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned
 void CHThorTempTableActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    eof = false;
     curRow = 0;
+    numRows = helper.numRows();
 }
 
 
 const void *CHThorTempTableActivity::nextInGroup()
 {
-    if (!eof)
+    // Filtering empty rows, returns the next valid row
+    while (curRow < numRows)
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         size32_t size = helper.getRow(rowBuilder, curRow++);
@@ -5849,7 +5863,37 @@ const void *CHThorTempTableActivity::nextInGroup()
             return rowBuilder.finalizeRowClear(size);
         }
     }
-    eof = true;
+    return NULL;
+}
+
+//=====================================================================================================
+
+CHThorInlineTableActivity::CHThorInlineTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &_arg, ThorActivityKind _kind) :
+                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorInlineTableActivity::ready()
+{
+    CHThorSimpleActivityBase::ready();
+    curRow = 0;
+    numRows = helper.numRows();
+}
+
+
+const void *CHThorInlineTableActivity::nextInGroup()
+{
+    // Filtering empty rows, returns the next valid row
+    while (curRow < numRows)
+    {
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t size = helper.getRow(rowBuilder, curRow++);
+        if (size)
+        {
+            processed++;
+            return rowBuilder.finalizeRowClear(size);
+        }
+    }
     return NULL;
 }
 
@@ -7538,7 +7582,7 @@ void CHThorDiskReadBaseActivity::resolve()
             IDistributedFile *dFile = ldFile->queryDistributedFile();
             if (dFile)  //only makes sense for distributed (non local) files
             {
-                persistent = dFile->queryProperties().getPropBool("@persistent");
+                persistent = dFile->queryAttributes().getPropBool("@persistent");
                 dfsParts.setown(dFile->getIterator());
                 if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
                     agent.logFileAccess(dFile, "HThor", "READ");
@@ -8439,7 +8483,7 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
     IDistributedFile * dFile = ldFile?ldFile->queryDistributedFile():NULL;
     if (dFile)  //only makes sense for distributed (non local) files
     {
-        IPropertyTree & options = dFile->queryProperties();
+        IPropertyTree & options = dFile->queryAttributes();
         quotes = options.queryProp("@csvQuote");
         separators = options.queryProp("@csvSeparate");
         terminators = options.queryProp("@csvTerminate");
@@ -8703,7 +8747,7 @@ CHThorLocalResultWriteActivity::CHThorLocalResultWriteActivity(IAgentContext &_a
 
 void CHThorLocalResultWriteActivity::execute()
 {
-    IHThorGraphResult * result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     loop
     {
         const void *nextrec = input->nextInGroup();
@@ -8732,7 +8776,7 @@ CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_a
 void CHThorLocalResultSpillActivity::ready()
 {
     CHThorSimpleActivityBase::ready(); 
-    result = graph->createResult(helper.querySequence(), agent.queryCodeContext()->getRowAllocator(outputMeta.queryOriginal(), activityId));
+    result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
     nullPending = false;
 }
 
@@ -8806,6 +8850,8 @@ void CHThorLoopActivity::ready()
     maxIterations = helper.numIterations();
     if ((int)maxIterations < 0) maxIterations = 0;
     finishedLooping = ((kind == TAKloopcount) && (maxIterations == 0));
+    if ((flags & IHThorLoopArg::LFnewloopagain) && !helper.loopFirstTime())
+        finishedLooping = true;
     extractBuilder.clear();
     helper.createParentExtract(extractBuilder);
 }
@@ -8848,20 +8894,25 @@ const void * CHThorLoopActivity::nextInGroup()
         switch (kind)
         {
         case TAKloopdataset:
-            if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
             {
-                if (loopPending.ordinality() == 0)
+                if (!(flags & IHThorLoopArg::LFnewloopagain))
                 {
-                    eof = true;
-                    return NULL;
-                }
+                    if (!helper.loopAgain(loopCounter, loopPending.ordinality(), (const void * *)loopPending.getArray()))
+                    {
+                        if (loopPending.ordinality() == 0)
+                        {
+                            eof = true;
+                            return NULL;
+                        }
 
-                arrayInput.init(&loopPending);
-                curInput = &arrayInput;
-                finishedLooping = true;
-                continue;       // back to the input loop again
+                        arrayInput.init(&loopPending);
+                        curInput = &arrayInput;
+                        finishedLooping = true;
+                        continue;       // back to the input loop again
+                    }
+                }
+                break;
             }
-            break;
         case TAKlooprow:
             if (loopPending.empty())
             {
@@ -8891,8 +8942,18 @@ const void * CHThorLoopActivity::nextInGroup()
             *((thor_loop_counter_t *)counterRow) = loopCounter;
         }
 
-        Owned<IHThorGraphResult> curResult = loopGraph->execute(counterRow, loopPending, extractBuilder.getbytes());
-        resultInput.init(curResult);
+        Owned<IHThorGraphResults> curResults = loopGraph->execute(counterRow, loopPending, extractBuilder.getbytes());
+        if (flags & IHThorLoopArg::LFnewloopagain)
+        {
+            IHThorGraphResult * result = curResults->queryResult(helper.loopAgainResult());
+            assertex(result);
+            const void * row = result->queryRow(0);
+            assertex(row);
+            //Result is a row which contains a single boolean field.
+            if (!((const bool *)row)[0])
+                finishedLooping = true;
+        }
+        resultInput.init(curResults->queryResult(0));
         curInput = &resultInput;
 
         loopCounter++;
@@ -8967,7 +9028,7 @@ CHThorGraphLoopResultWriteActivity::CHThorGraphLoopResultWriteActivity(IAgentCon
 
 void CHThorGraphLoopResultWriteActivity::execute()
 {
-    IHThorGraphResult * result = graph->createGraphLoopResult(agent.queryCodeContext()->getRowAllocator(input->queryOutputMeta(), activityId));
+    IHThorGraphResult * result = graph->createGraphLoopResult(LINK(rowAllocator));
     loop
     {
         const void *nextrec = input->nextInGroup();
@@ -9603,6 +9664,7 @@ MAKEFACTORY(WorkUnitWrite);
 MAKEFACTORY(FirstN);
 MAKEFACTORY(Count);
 MAKEFACTORY(TempTable);
+MAKEFACTORY(InlineTable);
 MAKEFACTORY_ARG(Concat, Funnel);
 MAKEFACTORY(Apply);
 MAKEFACTORY(Sample);
