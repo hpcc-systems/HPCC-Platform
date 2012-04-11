@@ -13,7 +13,7 @@
     <para>HPCC systems maintain security in a number of ways. HPCC Systems can
     be configured to manage users' security rights by pointing either at
     Microsoft’s Active Directory on a Windows system, or OpenLDAP on Linux
-    systems. </para>
+    systems.</para>
 
     <para>Using the Permissions interface in ECL Watch, administrators can
     control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
@@ -147,7 +147,7 @@
         </listitem>
 
         <listitem>
-          <para>Delete a user </para>
+          <para>Delete a user</para>
         </listitem>
 
         <listitem>
@@ -164,7 +164,7 @@
       </itemizedlist>
     </sect3>
 
-    <sect3>
+    <sect3 id="Adding_Users">
       <title>Adding and editing users</title>
 
       <para>In ECL Watch, go to the <emphasis
@@ -617,7 +617,7 @@
       <para>By default, all users are members of the <emphasis
       role="bold">Authenticated Users </emphasis>group. The <emphasis
       role="bold">Authenticated users</emphasis> group has access rights to
-      almost all controls. </para>
+      almost all controls.</para>
 
       <para>If you intend to restrict permissions for some users, you must
       remove <emphasis role="bold">Authenticated Users</emphasis> from the
@@ -631,7 +631,7 @@
       role="bold">Deny</emphasis> to control access. Denies should be used
       only as an exception.</para>
 
-      <para> </para>
+      <para></para>
 
       <sect4>
         <title>To set new permissions for a group:</title>
