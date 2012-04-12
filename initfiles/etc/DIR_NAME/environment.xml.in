@@ -683,6 +683,7 @@
               name="EclWatch"
               pluginsPath="${PLUGINS_PATH}"
               syntaxCheckQueue=""
+              filesBasedn="ou=Files,ou=ecl"
               viewTimeout="1000"
               warnIfCpuLoadOver="95"
               warnIfFreeMemoryUnder="5"
