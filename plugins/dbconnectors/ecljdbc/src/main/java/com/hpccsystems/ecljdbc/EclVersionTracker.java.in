@@ -1,0 +1,8 @@
+package org.hpccsystems.ecljdbc;
+
+public class EclVersionTracker 
+{
+	static final int ECLJDBCMajorVersion = ${majorver};
+	static final int ECLJDBCMinorVersion = ${minorver};
+	static final int ECLJDBCPatchVersion = ${point};
+}
