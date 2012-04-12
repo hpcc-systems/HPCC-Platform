@@ -5,7 +5,7 @@
   <title>HDFSPipe.PipeOut</title>
 
   <para><emphasis role="bold">HDFSPipe.PipeOut </emphasis><emphasis> (ECL_RS,
-  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
+  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort, HDFSUser
   )</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -50,6 +50,13 @@
 
             <entry>The Hadoop DFS port number.</entry>
           </row>
+
+          <row>
+            <entry>HDFSUser</entry>
+
+            <entry>HDFS username to use to login to HDFS in order to write the
+            file</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -77,14 +84,15 @@ Layout_Flat :=RECORD
   UNSIGNED1 one;
   UNSIGNED8 id;
 END;
-hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_Flat_Cert, FLAT);
+hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_Flat, FLAT);
 //piping out hpcccertrecords to a flat file in HDFS called /user/hadoop/test/cert1,
 DataStream.HDFSPipe.PipeOut(hpcccertrecords, 
                             '/user/hadoop/test/cert1',
                             Layout_Flat, 
                             FLAT, 
                             '192.168.56.120', 
-                            54310)</programlisting>
+                            54310 
+                            'hadoop' )</programlisting>
 
   <?hard-pagebreak ?>
 
@@ -110,7 +118,8 @@ DataStream.HDFSPipe.PipeOut(hpcccertrecords,
                             Layout_CSV, 
                             CSV, 
                             '192.168.56.120', 
-                            54310)</programlisting>
+                            54310 
+                            'hadoop' )</programlisting>
 
   <para></para>
 </sect1>
