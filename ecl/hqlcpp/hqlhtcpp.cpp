@@ -15817,7 +15817,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
         rowsExpr.setown(getBoundCount(bound));
         rowsExpr.setown(createTranslated(rowsExpr));
 
-        OwnedHqlExpr compare = createValue(no_ge, makeBoolType(), LINK(rowVar), LINK(rowsExpr));
+        OwnedHqlExpr compare = createValue(no_ge, makeBoolType(), LINK(rowVar), ensureExprType(rowsExpr, rowVar->queryType()));
         BuildCtx condctx(funcctx);
         buildFilter(condctx, compare);
         if (clearAction)
@@ -15875,14 +15875,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCreateRow(BuildCtx & ctx, IHql
         valuesAreConstant = true;
     }
 
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKtemprow, expr, "TempRow");
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineRow");
     if (valueText.length())
     {
         StringBuffer graphLabel;
         elideString(valueText, MAX_ROW_VALUE_TEXT_LEN);
-        graphLabel.append(getActivityText(instance->kind)).append("\n{").append(valueText).append("}");
+        graphLabel.append("Inline Row\n{").append(valueText).append("}");
         instance->graphLabel.set(graphLabel.str());
     }
+    else
+        instance->graphLabel.set("Inline Row");
+
 
     //-----------------
     buildActivityFramework(instance);
