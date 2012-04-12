@@ -197,6 +197,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void gatherWeb(const char * rootFilename, const ViewGatherOptions & options);
+    virtual void gatherWeb(const char * rootFilename, IDistributedFile * alreadyResolved, const ViewGatherOptions & options);
     virtual void gatherWebFromPattern(const char * filenamePattern, const ViewGatherOptions & options);
     virtual IViewRelatedFileIterator * getFileIterator();
     virtual IViewRelatedFile * queryFile(unsigned i);
