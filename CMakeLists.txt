@@ -57,16 +57,7 @@ ENABLE_TESTING()
 set (HPCC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
-###
-## Version Information
-###
-set ( HPCC_PROJECT "community" )
-set ( HPCC_MAJOR 3 )
-set ( HPCC_MINOR 7 )
-set ( HPCC_POINT 0 )
-set ( HPCC_MATURITY "trunk" )
-set ( HPCC_SEQUENCE 1 )
-###
+include(${HPCC_SOURCE_DIR}/version.cmake)
 
 ###
 ## Build Level
