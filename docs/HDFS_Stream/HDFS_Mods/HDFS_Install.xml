@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="InstallHDFS" role="nobrk">
+<sect1 id="InstallHDFS" role="brk">
   <title>Installation and Configuration</title>
 
   <sect2 role="nobrk">
     <title role="nobrk">Installing the Server-side components</title>
 
     <para>The installation and package that you download is different
-    depending on the operating system you plan to use. </para>
+    depending on the operating system you plan to use.</para>
 
     <orderedlist>
       <listitem>
@@ -17,8 +17,8 @@
       </listitem>
 
       <listitem>
-        <para>Use the script to install to all nodes in your environment.
-        </para>
+        <para>Use the script to install to all nodes in your
+        environment.</para>
 
         <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;packagename&gt;<emphasis></emphasis> </programlisting>Note:
         The installation packages will fail to install if their dependencies
@@ -40,17 +40,16 @@
         <programlisting>HADOOP_LOCATION=/usr/local/hadoop</programlisting>
 
         <para>Make sure the value is set to the location where Hadoop is
-        installed. </para>
+        installed.</para>
       </listitem>
 
       <listitem>
         <para>Push the configuration file to all nodes. You can use the
         push.sh script:</para>
 
-        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh <emphasis
-              role="bluebold">\
-    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf \
-<emphasis role="bluebold">    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis></emphasis></programlisting></para>
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh /
+             /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf /
+             /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</programlisting></para>
       </listitem>
     </orderedlist>
 
@@ -76,7 +75,7 @@
 
           <para>The ECL Source folder is typically located at <emphasis
           role="bluebold">C:\Users\Public\Documents\HPCC Systems\ECL\My
-          Files</emphasis>. </para>
+          Files</emphasis>.</para>
 
           <para>To locate your source folder, refer to your ECL IDE
           preference, located at <emphasis role="bold">Preferences &gt;&gt;

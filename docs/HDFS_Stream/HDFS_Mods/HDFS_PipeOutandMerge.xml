@@ -52,7 +52,7 @@
           </row>
 
           <row>
-            <entry>HDFSUser</entry>
+            <entry><emphasis>HDFSUser</emphasis></entry>
 
             <entry>HDFS username to use to login to HDFS in order to write the
             file</entry>
