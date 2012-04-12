@@ -378,6 +378,7 @@ class graph_decl CGraphTempHandler : public CInterface, implements IGraphTempHan
 protected:
     CFileUsageTable tmpFiles;
     CJobBase &job;
+    mutable CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE;
 
