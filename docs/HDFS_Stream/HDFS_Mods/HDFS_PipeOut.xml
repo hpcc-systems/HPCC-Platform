@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PIPEOUT">
+  <title>HDFSPipe.PipeOut</title>
+
+  <para><emphasis role="bold">HDFSPipe.PipeOut </emphasis><emphasis> (ECL_RS,
+  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="150pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>ECL_RS</emphasis></entry>
+
+            <entry>The ECL recordset to stream out.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HadoopFileName</emphasis></entry>
+
+            <entry>The fully qualified target HDFS file name.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Layout</emphasis></entry>
+
+            <entry>The structure which describes the ECL_RS recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HadoopFileFormat</emphasis></entry>
+
+            <entry>The Hadoop data file format : FLAT | CSV.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HDFSHost</emphasis></entry>
+
+            <entry>The Hadoop DFS host name or IP address.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HDFSPort</emphasis></entry>
+
+            <entry>The Hadoop DFS port number.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">HDFSPipe.Pipeout </emphasis>macro writes the
+  given <emphasis>ECL_RS</emphasis> recordset to the target HDFS system in
+  file parts -- one file part for each HPCC Thor node. You can then use other
+  means to merge the file parts or you can use <emphasis
+  role="bold">HDFSPipe.PipeOutAndMerge</emphasis> to do both tasks.</para>
+
+  <para>Examples:</para>
+
+  <programlisting>#OPTION('pickBestEngine', 0);  
+IMPORT std;
+IMPORT DataStream;
+Layout_Flat :=RECORD
+  STRING10 fname;
+  STRING10 lname;
+  UNSIGNED1 prange;
+  STRING10 street;
+  UNSIGNED1 zips;
+  UNSIGNED1 age;
+  STRING2 birth_state;
+  STRING3 birth_month;
+  UNSIGNED1 one;
+  UNSIGNED8 id;
+END;
+hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_Flat_Cert, FLAT);
+//piping out hpcccertrecords to a flat file in HDFS called /user/hadoop/test/cert1,
+DataStream.HDFSPipe.PipeOut(hpcccertrecords, 
+                            '/user/hadoop/test/cert1',
+                            Layout_Flat, 
+                            FLAT, 
+                            '192.168.56.120', 
+                            54310)</programlisting>
+
+  <?hard-pagebreak ?>
+
+  <programlisting>#OPTION('pickBestEngine', 0);  
+IMPORT std;
+IMPORT DataStream;
+Layout_CSV := RECORD
+  STRING10 fname;
+  STRING10 lname;
+  STRING3  prange;
+  STRING10 street;
+  STRING5  zips;
+  STRING3  age;
+  STRING2  birth_state;
+  STRING3  birth_month;
+  STRING3  one;
+  STRING20 id;
+END;
+hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_CSV, CSV);
+//piping out hpcccertrecords to a CSV file in HDFS called /user/hadoop/test/cert1,
+DataStream.HDFSPipe.PipeOut(hpcccertrecords, 
+                            '/user/hadoop/test/cert1', 
+                            Layout_CSV, 
+                            CSV, 
+                            '192.168.56.120', 
+                            54310)</programlisting>
+
+  <para></para>
+</sect1>
