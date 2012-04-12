@@ -33,7 +33,7 @@
     <orderedlist>
       <listitem>
         <para>Edit the configuration file <emphasis
-        role="boldblue">/opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis>.</para>
+        role="bluebold">/opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis>.</para>
 
         <para>The configuration file contains one line:</para>
 
@@ -48,9 +48,9 @@
         push.sh script:</para>
 
         <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh <emphasis
-              role="boldblue">\
+              role="bluebold">\
     /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf \
-<emphasis role="boldblue">    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis></emphasis></programlisting></para>
+<emphasis role="bluebold">    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis></emphasis></programlisting></para>
       </listitem>
     </orderedlist>
 
@@ -75,7 +75,7 @@
           within Zip file.</para>
 
           <para>The ECL Source folder is typically located at <emphasis
-          role="boldblue">C:\Users\Public\Documents\HPCC Systems\ECL\My
+          role="bluebold">C:\Users\Public\Documents\HPCC Systems\ECL\My
           Files</emphasis>. </para>
 
           <para>To locate your source folder, refer to your ECL IDE
