@@ -17,7 +17,7 @@
 
       <tbody>
         <row>
-          <entry><inlinegraphic fileref="images/caution.png" /></entry>
+          <entry><inlinegraphic fileref="../images/caution.png" /></entry>
 
           <entry><emphasis role="bold">You should not attempt this until you
           have already deployed, configured, and certified the environment you
