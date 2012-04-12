@@ -23,7 +23,7 @@
 
 if (NOT FOP_FOUND)
   IF (WIN32)
-    SET (fop_n "fop.exe")
+    SET (fop_n "fop.bat")
   ELSE()
     SET (fop_n "fop")
   ENDIF()

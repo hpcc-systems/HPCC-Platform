@@ -29,7 +29,7 @@
   <Switch name="Switch"/>
  </Hardware>
  <Programs>
-  <Build name="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" url="${INSTALL_DIR}">
+  <Build name="${projname}_${version}-${stagever}" url="${INSTALL_DIR}">
    <BuildSet installSet="deploy_map.xml"
              name="dafilesrv"
              path="componentfiles/dafilesrv"
@@ -371,7 +371,7 @@
   </Build>
  </Programs>
  <Software>
-  <DafilesrvProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <DafilesrvProcess build="${projname}_${version}-${stagever}"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
                     name="mydafilesrv"
@@ -381,7 +381,7 @@
              name="s1"
              netAddress="."/>
   </DafilesrvProcess>
-  <DaliServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <DaliServerProcess build="${projname}_${version}-${stagever}"
                      buildSet="dali"
                      environment="${CONFIG_DIR}/${ENV_XML_FILE}"
                      name="mydali"
@@ -392,7 +392,7 @@
              netAddress="."
              port="7070"/>
   </DaliServerProcess>
-  <DfuServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <DfuServerProcess build="${projname}_${version}-${stagever}"
                     buildSet="dfuserver"
                     daliServers="mydali"
                     description="DFU Server"
@@ -423,14 +423,14 @@
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
    <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
   </Directories>
-  <DropZone build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <DropZone build="${projname}_${version}-${stagever}"
             buildSet="DropZone"
             computer="localhost"
             description="DropZone process"
             directory="${RUNTIME_PATH}/mydropzone"
             name="mydropzone"/>
   <EclAgentProcess allowedPipePrograms="*"
-                   build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                   build="${projname}_${version}-${stagever}"
                    buildSet="eclagent"
                    daliServers="mydali"
                    defaultMemoryLimitMB="300"
@@ -445,7 +445,7 @@
              name="s1"
              netAddress="."/>
   </EclAgentProcess>
-   <EclCCServerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+   <EclCCServerProcess build="${projname}_${version}-${stagever}"
                     buildSet="eclccserver"
                     daliServers="mydali"
                     description="EclCCServer process"
@@ -458,7 +458,7 @@
              name="s1"
              netAddress="."/>
   </EclCCServerProcess>
-   <EclSchedulerProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+   <EclSchedulerProcess build="${projname}_${version}-${stagever}"
                 buildSet="eclscheduler"
                 daliServers="mydali"
                 description="EclScheduler process"
@@ -468,7 +468,7 @@
                name="s1"
                netAddress="."/>
   </EclSchedulerProcess>
-   <EspProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+   <EspProcess build="${projname}_${version}-${stagever}"
               buildSet="esp"
               componentfilesDir="${COMPONENTFILES_PATH}"
               daliServers="mydali"
@@ -673,7 +673,7 @@
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
-              build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+              build="${projname}_${version}-${stagever}"
               buildSet="espsmc"
               description="ESP services for SMC"
               disableUppercaseTranslation="false"
@@ -870,7 +870,7 @@
     </ProcessFilters>
    </Properties>
   </EspService>
-  <EspService build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <EspService build="${projname}_${version}-${stagever}"
               buildSet="ws_ecl"
               description="WS ECL Service"
               name="ws_ecl">
@@ -891,7 +891,7 @@
                          service="ws_ecl"/>
    </Properties>
   </EspService>
-  <EspService build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <EspService build="${projname}_${version}-${stagever}"
               buildSet="ecldirect"
               clusterName="hthor"
               description="ESP service for running raw ECL queries"
@@ -913,7 +913,7 @@
                          service="ecldirect"/>
    </Properties>
   </EspService>
-  <FTSlaveProcess build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+  <FTSlaveProcess build="${projname}_${version}-${stagever}"
                   buildSet="ftslave"
                   description="FTSlave process"
                   name="myftslave"
@@ -928,7 +928,7 @@
                 baseDataDir="${RUNTIME_PATH}/hpcc-data/roxie"
                 blindLogging="false"
                 blobCacheMem="0"
-                build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                build="${projname}_${version}-${stagever}"
                 buildSet="roxie"
                 callbackRetries="3"
                 callbackTimeout="500"
@@ -1108,7 +1108,7 @@
                       netAddress="."/>
   </RoxieCluster>
   <SashaServerProcess autoRestartInterval="0"
-                      build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+                      build="${projname}_${version}-${stagever}"
                       buildSet="sasha"
                       cachedWUat="* * * * *"
                       cachedWUinterval="24"
@@ -1161,7 +1161,7 @@
              port="8877"/>
   </SashaServerProcess>
   <ThorCluster autoCopyBackup="false"
-               build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}"
+               build="${projname}_${version}-${stagever}"
                buildSet="thor"
                computer="localhost"
                daliServers="mydali"
@@ -1186,7 +1186,7 @@
    <ThorMasterProcess computer="localhost" name="m1"/>
    <ThorSlaveProcess computer="localhost" name="s1"/>
   </ThorCluster>
-  <Topology build="${CPACK_RPM_PACKAGE_VERSION}_${CPACK_RPM_PACKAGE_RELEASE}" buildSet="topology" name="topology">
+  <Topology build="${projname}_${version}-${stagever}" buildSet="topology" name="topology">
    <Cluster name="hthor" prefix="hthor">
     <EclCCServerProcess process="myeclccserver"/>
     <EclSchedulerProcess process="myeclscheduler"/>

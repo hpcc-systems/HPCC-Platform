@@ -2,19 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 
 #configure_file("EclVersionTracker.java.in" "EclVersionTracker.java")
 
-###
-## Version Information keep in synch with top level hpcc versioning
-###
-set ( HPCC_PROJECT "community" )
-set ( HPCC_MAJOR 3 )
-set ( HPCC_MINOR 6 )
-set ( HPCC_POINT 2 )
-set ( HPCC_MATURITY "rc" )
-set ( HPCC_SEQUENCE 3 )
-###
-
 set ( HPCC_ECLJDBC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set ( HPCC_SOURCE_DIR ${HPCC_DATASTREAM_SOURCE_DIR}/../../../../../../../../../..)
+set ( HPCC_SOURCE_DIR ${HPCC_ECLJDBC_SOURCE_DIR}/../../../../../../../../../..)
+include(${HPCC_SOURCE_DIR}/version.cmake)
 
 set ( CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules")
 set ( EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}/bin" )
