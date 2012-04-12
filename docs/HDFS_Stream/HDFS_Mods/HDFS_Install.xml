@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="InstallHDFS" role="nobrk">
+  <title>Installation and Configuration</title>
+
+  <sect2 role="nobrk">
+    <title role="nobrk">Installing the Server-side components</title>
+
+    <para>The installation and package that you download is different
+    depending on the operating system you plan to use. </para>
+
+    <orderedlist>
+      <listitem>
+        <para>Download the appropriate package for your operating
+        system.</para>
+      </listitem>
+
+      <listitem>
+        <para>Use the script to install to all nodes in your environment.
+        </para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;packagename&gt;<emphasis></emphasis> </programlisting>Note:
+        The installation packages will fail to install if their dependencies
+        are missing from the target system.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+
+  <sect2>
+    <title>Editing and distributing the Configuration file</title>
+
+    <orderedlist>
+      <listitem>
+        <para>Edit the configuration file <emphasis
+        role="boldblue">/opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis>.</para>
+
+        <para>The configuration file contains one line:</para>
+
+        <programlisting>HADOOP_LOCATION=/usr/local/hadoop</programlisting>
+
+        <para>Make sure the value is set to the location where Hadoop is
+        installed. </para>
+      </listitem>
+
+      <listitem>
+        <para>Push the configuration file to all nodes. You can use the
+        push.sh script:</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh <emphasis
+              role="boldblue">\
+    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf \
+<emphasis role="boldblue">    /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis></emphasis></programlisting></para>
+      </listitem>
+    </orderedlist>
+
+    <para></para>
+  </sect2>
+
+  <sect2>
+    <title>Installing the ECL library to your ECL IDE source folder</title>
+
+    <para>The HDSF-to-HPCC Connector library is a single ECL file containing
+    three MACROs. These steps explain how to install to your ECL source
+    repository.</para>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Download the .ZIP file from the portal.</para>
+        </listitem>
+
+        <listitem>
+          <para>Extract the contents of the zip file to the ECL IDE source
+          folder. Make sure to enable the option to keep the folder structure
+          within Zip file.</para>
+
+          <para>The ECL Source folder is typically located at <emphasis
+          role="boldblue">C:\Users\Public\Documents\HPCC Systems\ECL\My
+          Files</emphasis>. </para>
+
+          <para>To locate your source folder, refer to your ECL IDE
+          preference, located at <emphasis role="bold">Preferences &gt;&gt;
+          Compiler &gt;&gt; ECL Folders</emphasis>.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para></para>
+
+    <para></para>
+  </sect2>
+</sect1>
