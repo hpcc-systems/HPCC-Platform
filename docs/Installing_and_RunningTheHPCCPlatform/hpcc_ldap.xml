@@ -353,7 +353,7 @@
 
           <tbody>
             <row>
-              <entry><inlinegraphic fileref="images/caution.png" /></entry>
+              <entry><inlinegraphic fileref="../images/caution.png" /></entry>
 
               <entry><para>In order to run Roxie queries with File Scope
               security, ensure that the roxie user is created in the list of
