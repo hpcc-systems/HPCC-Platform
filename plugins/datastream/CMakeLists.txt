@@ -45,17 +45,22 @@ set ( HPCC_SEQUENCE 3 )
 include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
+INCLUDE(InstallRequiredSystemLibraries)
+SET(CPACK_PACKAGE_VERSION_MAJOR ${majorver})
+SET(CPACK_PACKAGE_VERSION_MINOR ${minorver})
+SET(CPACK_PACKAGE_VERSION_PATCH ${point}${stagever})
 set ( CPACK_PACKAGE_CONTACT "HPCCSystems <ossdevelopment@lexisnexis.com>" )
-set ( CPACK_SOURCE_GENERATOR TGZ )
-set ( CPACK_RPM_PACKAGE_VERSION "${projname}" )
-
+set( CPACK_SOURCE_GENERATOR TGZ )
+set ( CPACK_RPM_PACKAGE_VERSION "${projname}")
+SET(CPACK_RPM_PACKAGE_RELEASE "${version}${stagever}")
 if ( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
 else( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
 endif ( ${ARCH64BIT} EQUAL 1 )
-
 set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
+
+
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CPACK_STRIP_FILES TRUE)
 endif()
