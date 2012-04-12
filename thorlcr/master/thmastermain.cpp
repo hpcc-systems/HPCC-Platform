@@ -116,7 +116,6 @@ class CRegistryServer : public CSimpleInterface
                     return;
                 rank_t sender = queryClusterGroup().rank(senderNode);
                 SocketEndpoint ep = senderNode->endpoint();
-                ep.port -= THOR_MP_INC;
                 StringBuffer url;
                 ep.getUrlStr(url);
                 if (RANK_NULL == sender)
@@ -184,7 +183,6 @@ public:
     void registerNode(unsigned slave)
     {
         SocketEndpoint ep = queryClusterGroup().queryNode(slave).endpoint();
-        ep.port -= THOR_MP_INC;
         StringBuffer url;
         ep.getUrlStr(url);
         if (status->test(slave-1))
@@ -337,7 +335,6 @@ public:
             {
                 status->set(i, false);
                 SocketEndpoint ep = queryClusterGroup().queryNode(i+1).endpoint();
-                ep.port -= THOR_MP_INC;
                 if (watchdog)
                     watchdog->removeSlave(ep);
                 CMessageBuffer msg;

@@ -55,7 +55,6 @@ public:
     CGraphProgressHandler() : threaded("CGraphProgressHandler")
     {
         self = queryMyNode()->endpoint();
-        self.port -= THOR_MP_INC;
         stopped = true;
 
         StringBuffer ipStr;

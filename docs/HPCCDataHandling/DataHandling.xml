@@ -32,7 +32,7 @@
       <para></para>
     </legalnotice>
 
-        <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml" xpointer="DateVer"
@@ -263,8 +263,8 @@
 
         <para><orderedlist>
             <listitem>
-              <para>Open the WinSCP tool, and login to your Virtual Machine's
-              IP address using the username and password given.</para>
+              <para>Open the WinSCP tool, and login to your Landing Zone node
+              using the username and password given.</para>
 
               <para><informaltable colsep="1" rowsep="1">
                   <tgroup cols="2">
@@ -391,7 +391,7 @@
             </listitem>
 
             <listitem>
-              <para> Provide <emphasis role="bold">Destination</emphasis>
+              <para>Provide <emphasis role="bold">Destination</emphasis>
               information.</para>
 
               <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -1309,6 +1309,203 @@
           <para></para>
         </sect3>
       </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>HPCC Data Backups</title>
+
+    <sect1 id="Introduction2" role="nobrk">
+      <title>Introduction</title>
+
+      <para>This section covers critical system data that requires regular
+      backup procedures to prevent data loss. </para>
+
+      <para>There are </para>
+
+      <itemizedlist>
+        <listitem>
+          <para>The System Data Store (Dali data)</para>
+        </listitem>
+
+        <listitem>
+          <para>Environment Configuration files</para>
+        </listitem>
+
+        <listitem>
+          <para>Data Refinery (Thor) data files</para>
+        </listitem>
+
+        <listitem>
+          <para>Rapid Data Delivery Engine (Roxie) data files</para>
+        </listitem>
+
+        <listitem>
+          <para>Attribute Repositories</para>
+        </listitem>
+
+        <listitem>
+          <para>Landing Zone files</para>
+        </listitem>
+      </itemizedlist>
+    </sect1>
+
+    <sect1>
+      <title>Dali data</title>
+
+      <para>The Dali Server data is typically mirrored to its backup node.
+      This location is specified in the environment configuration file using
+      the Configuration Manager. </para>
+
+      <para>Since the data is written simultaneously to both nodes, there is
+      no need for a manual backup procedure. </para>
+    </sect1>
+
+    <sect1>
+      <title>Environment Configuration files</title>
+
+      <para>There is only one active environment file, but you may have many
+      alternative configurations. </para>
+
+      <para>Configuration manager only works on files in the
+      /etc/HPCCSystems/source/ folder. To make a configuration active, it is
+      copied to /etc/HPCCSystems/environment.xml on all nodes. </para>
+
+      <para>Configuration Manager automatically creates backup copies in the
+      /etc/HPCCSystems/source/backup/ folder.</para>
+    </sect1>
+
+    <sect1>
+      <title>Thor data files</title>
+
+      <para>Thor clusters are normally configured to automatically replicate
+      data to a secondary location known as the mirror location. Usually, this
+      is on the second drive of the subsequent node. </para>
+
+      <para>If the data is not found at the primary location (for example, due
+      to drive failure or because a node has been swapped out), it looks in
+      the mirror directory to read the data. Any writes go to the primary and
+      then to the mirror. This provides continual redundancy and a quick means
+      to restore a system after a node swap.</para>
+
+      <para>A Thor data backup should be performed on a regularly scheduled
+      basis and on-demand after a node swap.</para>
+
+      <sect2>
+        <title>Manual backup</title>
+
+        <para>To run a backup manually, follow these steps:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Login to the Thor Master node.</para>
+
+            <para>If you don't know which node is your Thor Master node, you
+            can look it up using ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>Run this command:</para>
+
+            <programlisting>sudo su hpcc
+/opt/HPCCSystems/bin/start_backupnode &lt;thor_cluster_name&gt; </programlisting>
+
+            <para>This starts the backup process.</para>
+
+            <para></para>
+
+            <graphic fileref="images/backupnode.jpg" />
+
+            <para>Wait until completion. It will say "backupnode finished" as
+            shown above.</para>
+          </listitem>
+
+          <listitem>
+            <para>Run the XREF utility in ECL Watch to verify that there are
+            no orphan files or lost files.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2>
+        <title>Scheduled backup</title>
+
+        <para>The easiest way to schedule the backup process is to create a
+        cron job. Cron is a daemon that serves as a task scheduler. </para>
+
+        <para>Cron tab (short for CRON TABle) is a text file that contains a
+        the task list. To edit with the default editor, use the
+        command:</para>
+
+        <programlisting>sudo crontab -e</programlisting>
+
+        <para>Here is a sample cron tab entry:</para>
+
+        <para><programlisting>30 23 * * * /opt/HPCCSystems/bin/start_backupnode mythor 
+</programlisting>30 represents the minute of the hour. </para>
+
+        <para>23 represents the hour of the day </para>
+
+        <para>The asterisks (*) represent every day, month, and
+        weekday.</para>
+
+        <para>mythor is the clustername</para>
+
+        <para>To list the tasks scheduled, use the command:</para>
+
+        <programlisting>sudo crontab -l</programlisting>
+
+        <para></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Roxie-Data-Backup">
+      <title>Roxie data files</title>
+
+      <para>Roxie data is protected by three forms of redundancy:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Original Source Data File Retention: When a query is deployed,
+          the data is typically copied from a Thor cluster's hard drives.
+          Therefore, the Thor data can serve as backup, provided it is not
+          removed or altered on Thor. Thor data is typically retained for a
+          period of time sufficient to serve as a backup copy.</para>
+        </listitem>
+
+        <listitem>
+          <para>Peer-Node Redundancy: Each Slave node typically has one or
+          more peer nodes within its cluster. Each peer stores a copy of data
+          files it will read.</para>
+        </listitem>
+
+        <listitem>
+          <para>Sibling Cluster Redundancy: Although not required, Roxie
+          deployments may run multiple identically-configured Roxie clusters.
+          When two clusters are deployed for Production each node has an
+          identical twin in terms of data and queries stored on the node in
+          the other cluster.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>This provides multiple redundant copies of data files.</para>
+    </sect1>
+
+    <sect1>
+      <title>Attribute Repositories</title>
+
+      <para>Attribute repositories are stored on ECL developer's local hard
+      drives. They can contain a significant number of hours of work and
+      therefore should be regularly backed up. In addition, we suggest using
+      some form of source version control, too. </para>
+    </sect1>
+
+    <sect1>
+      <title>Landing Zone files</title>
+
+      <para>Landing Zones contain raw data for input. They can also contain
+      output files. Depending on the size or complexity of these files, you
+      may want to retain copies for redundancy.</para>
     </sect1>
   </chapter>
 </book>

@@ -1950,6 +1950,7 @@ void CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigne
 {
     assertex(temp);
     LOG(MCdebugProgress, thorJob, "registerTmpFile name=%s, usageCount=%d", name, usageCount);
+    CriticalBlock b(crit);
     if (tmpFiles.find(name))
         throw MakeThorException(TE_FileAlreadyUsedAsTempFile, "File already used as temp file (%s)", name);
     tmpFiles.replace(* new CFileUsageEntry(name, graphId, fileKind, usageCount));
@@ -1958,6 +1959,7 @@ void CGraphTempHandler::registerFile(const char *name, graph_id graphId, unsigne
 void CGraphTempHandler::deregisterFile(const char *name, bool kept)
 {
     LOG(MCdebugProgress, thorJob, "deregisterTmpFile name=%s", name);
+    CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
         throw MakeThorException(TE_FileNotFound, "File not found (%s) deregistering tmp file", name);
@@ -1979,6 +1981,7 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
 
 void CGraphTempHandler::clearTemps()
 {
+    CriticalBlock b(crit);
     Owned<IFileUsageIterator> iter = getIterator();
     ForEach(*iter)
     {

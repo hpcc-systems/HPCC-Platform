@@ -63,6 +63,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="filesBasedn" type="xs:string" use="optional" default="ou=Files,ou=ecl">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>base location for ldap file scopes</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="pluginsPath" type="relativePath" use="optional" default="${PLUGINS_PATH}">
                 <xs:annotation>
                     <xs:appinfo>
