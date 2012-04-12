@@ -324,6 +324,11 @@
        </fo:inline>
 </xsl:template>
 
+  <xsl:template match="emphasis[@role='underline']">
+      <fo:inline text-decoration="underline">
+         <xsl:apply-templates/>
+      </fo:inline>
+  </xsl:template>
 
 <xsl:template match="ulink">
      <fo:inline color="blue" text-decoration="underline">

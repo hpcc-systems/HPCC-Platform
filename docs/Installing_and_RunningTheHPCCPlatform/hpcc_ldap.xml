@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1>
+<sect1 id="ldap_config">
   <title>Configuring HPCC to use LDAP Authentication</title>
 
   <para>This section details the steps to connect your HPCC platform to an
-  existing LDAP Server.</para>
+  existing LDAP Server to enable user security.</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <?dbfo keep-together="always"?>
@@ -20,8 +20,8 @@
           <entry><inlinegraphic fileref="images/caution.png" /></entry>
 
           <entry><emphasis role="bold">You should not attempt this until you
-          have already deployed, configured, and preflighted the environment
-          you will use.</emphasis></entry>
+          have already deployed, configured, and certified the environment you
+          will use.</emphasis></entry>
         </row>
       </tbody>
     </tgroup>
@@ -30,8 +30,8 @@
   <sect2>
     <title>Connect to Configuration Manager</title>
 
-    <para>In order to change the configuration for any HPCC components, we
-    need to connect to the Configuration Manager.</para>
+    <para>In order to change the configuration for HPCC components, connect to
+    the Configuration Manager.</para>
 
     <orderedlist numeration="arabic">
       <listitem>
@@ -53,17 +53,18 @@
         <para>Connect to the Configuration Manager web interface.</para>
 
         <para>(using the url of
-        http://<emphasis>&lt;ESP_IP_Address&gt;</emphasis>:8015, where
-        <emphasis>&lt;ESP_IP_Address&gt;</emphasis> is the IP address of your
-        ESP Server)</para>
+        http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+        <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address of
+        the node running Configuration Manager)</para>
       </listitem>
 
       <listitem>
-        <para>Select the Advanced View radio button.</para>
+        <para>Select the <emphasis role="bold">Advanced View</emphasis> radio
+        button.</para>
       </listitem>
 
       <listitem>
-        <para>Use the drop list to select an XML file for editing.</para>
+        <para>Use the drop list to select the XML configuration file.</para>
       </listitem>
     </orderedlist>
 
@@ -85,13 +86,13 @@
       </listitem>
 
       <listitem>
-        <para>From the Navigator pane, select <emphasis
-        role="bold">Hardware</emphasis>.</para>
+        <para>From the <emphasis role="bold">Navigator</emphasis> pane, select
+        <emphasis role="bold">Hardware</emphasis>.</para>
       </listitem>
 
       <listitem>
         <para>Select the <emphasis role="bold">Computers</emphasis> tab from
-        the page on the right.</para>
+        the panel on the right.</para>
       </listitem>
 
       <listitem>
@@ -100,7 +101,7 @@
         <para>Rt-click on the table below computers and select <emphasis
         role="bold">New </emphasis>from the pop up menu.</para>
 
-        <para><graphic fileref="images/LDAP_001.jpg" /></para>
+        <para><graphic fileref="../images/LDAP_001.jpg" /></para>
 
         <para>The <emphasis role="bold">Add New Computers</emphasis> dialog
         displays.</para>
@@ -110,34 +111,36 @@
         <para>Fill in the values for the <emphasis role="bold">Computer
         Attributes</emphasis></para>
 
-        <para><graphic fileref="images/LDAP_002.jpg" /></para>
+        <para><graphic fileref="../images/LDAP_002.jpg" /></para>
       </listitem>
     </orderedlist>
 
     <orderedlist numeration="loweralpha">
       <listitem>
         <para>Provide a <emphasis role="bold">Name Prefix</emphasis>, for
-        example: <emphasis role="bluel">ldap</emphasis>. This helps you to
-        identify it among the list of computers.</para>
+        example: <emphasis role="blue">ldap</emphasis>.</para>
+
+        <para>This helps you to identify it in the list of computers.</para>
       </listitem>
 
       <listitem>
-        <para>Fill in Domain and type with the values of your domain name, as
-        well as the types of machines you are using, In the example above,
-        <emphasis role="bold">Domain</emphasis> is <emphasis
-        role="blue">localdomain</emphasis>, and the <emphasis
+        <para>Fill in <emphasis role="bold">Domain</emphasis> and <emphasis
+        role="bold">Type</emphasis> with the values of your domain name, as
+        well as the types of machines you are using.</para>
+
+        <para>In the example above, <emphasis role="bold">Domain</emphasis> is
+        <emphasis role="blue">localdomain</emphasis>, and the <emphasis
         role="bold">Type</emphasis> is <emphasis
         role="blue">linuxmachine</emphasis>. These should correspond to your
         domain and type.</para>
 
         <para>If you need to add a new domain or machine type to your system
-        to be able to define an existing LDAP or MySQL server, you should set
-        these up first in the other two tabs in the hardware section.</para>
+        to be able to define an existing LDAP server, you should set these up
+        first in the other two tabs in the hardware section.</para>
       </listitem>
 
       <listitem>
-        <para>Add the IP address (or IP address range) as appropriate for the
-        LDAP server.</para>
+        <para>Add the IP address as appropriate for the LDAP server.</para>
       </listitem>
 
       <listitem>
@@ -153,16 +156,15 @@
   <sect2>
     <title>Adding the ldapServer component</title>
 
-    <para>After the LDAP Server component has been added to the appropriate
-    Hardware configuration, you need to configure the Software component
-    definition.</para>
+    <para>After the LDAP Server node has been added to the Hardware
+    configuration, configure the Software LDAP server definition.</para>
 
     <orderedlist numeration="arabic">
       <listitem>
-        <para>Rt-click on Navigator Pane and choose <emphasis role="bold">New
-        Components</emphasis> from the pop up menu, then choose <emphasis
-        role="bold">ldapServer</emphasis> from the pop up menu. <graphic
-        fileref="images/LDAP_003.jpg" /></para>
+        <para>Rt-click on <emphasis role="bold">Navigator</emphasis> Pane and
+        choose <emphasis role="bold">New Components</emphasis> from the pop up
+        menu, then choose <emphasis role="bold">ldapServer</emphasis> from the
+        pop-up menu. <graphic fileref="../images/LDAP_003.jpg" /></para>
 
         <para><emphasis role="bold">Note</emphasis>: The ldapServer component
         is merely a definition that specifies an existing LDAP server. It does
@@ -175,7 +177,7 @@
         <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
         properties:</para>
 
-        <para><graphic fileref="images/LDAP_004.jpg" /><orderedlist
+        <para><graphic fileref="../images/LDAP_004.jpg" /><orderedlist
             numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
@@ -187,8 +189,10 @@
             </listitem>
 
             <listitem>
-              <para>Select the computer to use by checking the box next to it.
-              This is the computer you added in the <emphasis
+              <para>Select the computer to use by checking the box next to
+              it.</para>
+
+              <para>This is the computer you added in the <emphasis
               role="bold">Hardware</emphasis> / <emphasis role="bold">Add New
               Computers</emphasis> portion earlier.</para>
             </listitem>
@@ -208,6 +212,14 @@
               <para>Click on the disk icon to save.</para>
             </listitem>
           </orderedlist></para>
+
+        <para><emphasis role="bold">Note</emphasis>: The <emphasis
+        role="bold">cacheTimeout </emphasis>value is the number of minutes
+        that permissions are cached in ESP. If you change any permissions in
+        LDAP, the new settings will not take effect until ESP and Dali refresh
+        the permissions. This could take as long as the cacheTimeout. Setting
+        this to 0 means no cache, but this has performance overhead so it
+        should not be used in production.</para>
       </listitem>
     </orderedlist>
 
@@ -225,7 +237,7 @@
         right hand side, select the <emphasis
         role="bold">Authentication</emphasis> tab.</para>
 
-        <para><graphic fileref="images/LDAP_005.jpg" /></para>
+        <para><graphic fileref="../images/LDAP_005.jpg" /></para>
 
         <para>Fill in the appropriate values:</para>
 
@@ -271,7 +283,7 @@
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
         Server – mydali </emphasis><graphic
-        fileref="images/LDAP_006.jpg" /></para>
+        fileref="../images/LDAP_006.jpg" /></para>
 
         <para>Fill in the values as appropriate:</para>
 
@@ -303,12 +315,56 @@
       </listitem>
 
       <listitem>
-        <para>Deploy your environment settings (see <link
-        linkend="Multi-Node-System">Configuring a Multi-Node System</link>
-        section)</para>
+        <?dbfo keep-together="always"?>
+
+        <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
+        Clusrer – myroxie </emphasis><graphic
+        fileref="../images/LDAP_007.jpg" /></para>
+
+        <para><orderedlist continuation="restarts" numeration="loweralpha">
+            <listitem>
+              <para>On the <emphasis role="bold">RoxieCluster</emphasis> page
+              on the right hand side, select the <emphasis
+              role="bold">Options</emphasis> tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Scroll down to the <emphasis
+              role="bold">ldapUser</emphasis> field and verify that there is a
+              "<emphasis>roxie</emphasis>" user.</para>
+            </listitem>
+
+            <listitem>
+              <para>You can add password security for Roxie by adding it to
+              the <emphasis role="bold">ldapPassword</emphasis> field on the
+              same tab.</para>
+            </listitem>
+          </orderedlist></para>
       </listitem>
     </orderedlist>
 
-    <para></para>
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/caution.png" /></entry>
+
+              <entry><para>In order to run Roxie queries with File Scope
+              security, ensure that the roxie user is created in the list of
+              authenticated users.</para>In the following section, <link
+              linkend="Adding_Users"><emphasis>Adding and editing
+              users</emphasis></link>, add "<emphasis>roxie</emphasis>" as a
+              user and make sure the password is the same as the one entered
+              in Configuration Manager.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
   </sect2>
 </sect1>
