@@ -60,7 +60,7 @@ export THORMASTER=<xsl:call-template name="getNetAddress">
 export THORMASTERPORT=<xsl:value-of select="@masterport"/>
     </xsl:when>
     <xsl:otherwise>
-export THORMASTERPORT=6500
+export THORMASTERPORT=20000
     </xsl:otherwise>
 </xsl:choose>
 <xsl:choose>
@@ -68,7 +68,7 @@ export THORMASTERPORT=6500
 export THORSLAVEPORT=<xsl:value-of select="@slaveport"/>
     </xsl:when>
     <xsl:otherwise>
-export THORSLAVEPORT=6600
+export THORSLAVEPORT=20100
     </xsl:otherwise>
 </xsl:choose>
 <xsl:if test="string(@localThorPortInc) != ''">

@@ -78,7 +78,6 @@ void mergeCmdParams(IPropertyTree *props)
 static void replyError(const char *errorMsg)
 {
     SocketEndpoint myEp = queryMyNode()->endpoint();
-    myEp.port -= THOR_MP_INC;
     StringBuffer str("Node '");
     myEp.getUrlStr(str);
     str.append("' exception: ").append(errorMsg);
@@ -114,7 +113,6 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         setClusterGroup(group);
 
         SocketEndpoint myEp = queryMyNode()->endpoint();
-        myEp.port -= THOR_MP_INC;
         if (RANK_NULL == group->rank(queryMyNode()))
         {
             replyError("Node not part of thorgroup");
