@@ -49,9 +49,6 @@
 #define SLAVE_CONNECT_PORT              6400 //..6439    [ uses numSlaveKinds * NUM_SLAVE_CONNECT_PORT ]
 #define NUM_SLAVE_CONNECT_PORT          20   // 20 for dfu, 20 for dkc
 
-#define THOR_BASE_PORT                  6500 //..6599
-#define THOR_BASESLAVE_PORT             6600 //..6999
-
 #define WUJOBQ_BASE_PORT                6700 // ..6999  // overlapped with Thor slaves
 #define WUJOBQ_PORT_NUM                 300
 
@@ -59,10 +56,7 @@
 #define DATA_TRANSFER_PORT              7080
 #define DAFILESRV_PORT                  7100 /// aka daliservix
 #define MP_BASE_PORT                    7101 //..7999 (for Dali too)
-
-#define THOR_MP_INC                     0
-#define THOR_MP_BASE_MASTER_PORT        (THOR_BASE_PORT+THOR_MP_INC)            // 7500+
-#define THOR_MP_BASE_SLAVE_PORT         (THOR_BASE_SLAVE_PORT+THOR_MP_INC)      // 7600+
+#define MP_PORT_RANGE                   400
 
 //ESP SERVICES
 //INSECURE
@@ -127,5 +121,8 @@
 #define WS_FACTS_SECURE_PORT            18999
 #define WS_MOXIE_SECURE_PORT            18999
 #define WS_DISTRIX_SECURE_PORT          18999
+
+#define THOR_BASE_PORT                  20000 //..~20099
+#define THOR_BASESLAVE_PORT             20100 //..~20199
 
 #endif

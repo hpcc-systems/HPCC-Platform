@@ -36,7 +36,8 @@
 #include "portlist.h"
 #include "thorport.hpp"
 
-#define WATCHDOGINC        1
+#define MPPORT       0
+#define WATCHDOGPORT 1
 
 static CriticalSection *portallocsection;
 static IBitSet *portmap;
@@ -44,8 +45,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     portallocsection = new CriticalSection;
     portmap = createBitSet();
-    portmap->set(THOR_MP_INC, true);
-    portmap->set(WATCHDOGINC, true);
+    portmap->set(MPPORT, true);
+    portmap->set(WATCHDOGPORT, true);
     return true;
 }
 MODULE_EXIT()
@@ -74,9 +75,9 @@ unsigned short getExternalFixedPort(unsigned short masterBase, unsigned short ma
     if (!machineBase) machineBase = THOR_BASESLAVE_PORT;
     switch (category) {
     case TPORT_watchdog:
-        return machineBase+WATCHDOGINC;
+        return machineBase+WATCHDOGPORT;
     case TPORT_mp:
-        return machineBase+THOR_MP_INC; 
+        return machineBase+MPPORT; 
     }
     LOG(MCerror,unknownJob,"getFixedPort: Unknown Port Kind!");
     return 0;
