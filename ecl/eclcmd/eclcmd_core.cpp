@@ -319,7 +319,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000)
+    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000), optCopyFiles(false), optListFiles(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -339,7 +339,13 @@ public:
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_WAIT))
+            if (iter.matchOption(optProcess, ECLOPT_PROCESS))
+                continue;
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchFlag(optCopyFiles, ECLOPT_COPY_FILES)||iter.matchFlag(optCopyFiles, ECLOPT_COPY_FILES_S))
+                continue;
+            if (iter.matchFlag(optListFiles, ECLOPT_LIST_FILES)||iter.matchFlag(optListFiles, ECLOPT_LIST_FILES_S))
                 continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
@@ -402,6 +408,7 @@ public:
             req->setJobName(optName.get());
         if (optCluster.length())
             req->setCluster(optCluster.get());
+        req->setCopyFiles(optCopyFiles);
         req->setWait(optMsToWait);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
@@ -416,6 +423,11 @@ public:
 
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
+
+        if (optListFiles)
+            outputFileLists(resp->getClusterFiles().item(0));
+        if (optCopyFiles)
+            outputFilesBeingCopied(resp->getClusterFiles().item(0));
 
         return 0;
     }
@@ -449,10 +461,13 @@ public:
     }
 private:
     StringAttr optCluster;
+    StringAttr optProcess;
     StringAttr optName;
-    int optMsToWait;
+    unsigned optMsToWait;
     bool optActivate;
     bool activateSet;
+    bool optCopyFiles;
+    bool optListFiles;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget

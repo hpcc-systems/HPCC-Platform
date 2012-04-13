@@ -613,6 +613,7 @@ ESPresponse [exceptions_inline] WULogFileResponse
     [min_ver("1.36")] string QuerySet;
     [min_ver("1.36")] string QueryName;
     [min_ver("1.36")] string QueryId;
+    [min_ver("1.38")] string DaliServers;
     [min_ver("1.36")] string FileName;
     [http_content("application/octet-stream")] binary thefile;
 };
@@ -1022,11 +1023,11 @@ ESPStruct WULogicalFileCopyInfo
 
 ESPStruct WUCopyLogicalClusterFileSections
 {
-    string ClusterName;
+    string ProcessName;
     ESParray<ESPstruct WULogicalFileCopyInfo> OnCluster;
     ESParray<ESPstruct WULogicalFileCopyInfo> NotOnCluster;
     ESParray<ESPstruct WULogicalFileCopyInfo> Foreign;
-    ESParray<ESPstruct WULogicalFileCopyInfo> NotFound;
+    ESParray<ESPstruct WULogicalFileCopyInfo> NotLocal;
 };
 
 ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
@@ -1040,11 +1041,12 @@ ESPrequest WUPublishWorkunitRequest
 {
     string Wuid;
     string Cluster;
+    string Process;
     string JobName;
     int Activate;
     bool NotifyCluster(false);
-    bool showFiles(0);
-    bool CopyLocal(0);
+    bool ShowFiles(0);
+    bool CopyFiles(0);
     int Wait(10000);
 };
 
@@ -1229,17 +1231,21 @@ ESPrequest WUQuerySetCopyQueryRequest
     string Source;
     string Target;
     string Cluster;
+    string Process;
     int Activate;
     int Wait(10000);
+    bool ListFiles;
+    bool CopyFiles;
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 {
     string QueryId;
+    ESPStruct WUCopyLogicalClusterFileSections Files;
 };
 
 ESPservice [
-    version("1.37"), default_client_version("1.37"),
+    version("1.38"), default_client_version("1.38"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

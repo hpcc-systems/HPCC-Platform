@@ -40,6 +40,53 @@ void outputMultiExceptions(const IMultiException &me)
     fprintf(stderr, "\n");
 }
 
+void outputFileList(const char *descr, IArrayOf<IConstWULogicalFileCopyInfo> &files, bool dfu)
+{
+    if (!files.ordinality())
+        return;
+    StringBuffer list;
+    ForEachItemIn(i, files)
+    {
+        IConstWULogicalFileCopyInfo &info = files.item(i);
+        const char *name = info.getLogicalName();
+        if (!name || !*name)
+            continue;
+        const char *wuid = info.getDfuCopyWuid();
+        const char *error = info.getDfuCopyError();
+        if (dfu && (!wuid || !*wuid) && (!error || !*error))
+            continue;
+        list.append(' ').append(name);
+        if (dfu)
+        {
+            if (wuid)
+                list.append(' ').append(wuid);
+            if (error)
+                list.append(' ').append(error);
+        }
+        list.append('\n');
+    }
+    if (!list.length())
+        return;
+    fputs(descr, stdout);
+    fputs("\n", stdout);
+    fputs(list.str(), stdout);
+    fputs("\n", stdout);
+}
+
+void outputFilesBeingCopied(IConstWUCopyLogicalClusterFileSections &sections)
+{
+    outputFileList("Replicating Within Local Environment:", sections.getNotOnCluster(), true);
+    outputFileList("Copying From Remote Environment:", sections.getNotLocal(), true);
+}
+
+void outputFileLists(IConstWUCopyLogicalClusterFileSections &sections)
+{
+    outputFileList("On Cluster:", sections.getOnCluster());
+    outputFileList("Not On Cluster:", sections.getNotOnCluster());
+    outputFileList("Foreign:", sections.getForeign());
+    outputFileList("Not Local:", sections.getNotLocal());
+}
+
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix)
 {
     if (option.length())        // check if already specified via a command line option
