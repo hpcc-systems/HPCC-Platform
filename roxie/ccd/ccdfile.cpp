@@ -105,12 +105,11 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CLazyFileIO(const char *_id, RoxieFileType _fileType, IFile *_logical, offset_t size, const CDateTime *date, bool _memFileRequested, unsigned _crc, bool _isCompressed) 
+    CLazyFileIO(const char *_id, RoxieFileType _fileType, IFile *_logical, offset_t size, const CDateTime &_date, bool _memFileRequested, unsigned _crc, bool _isCompressed)
         : id(_id), 
           fileType(_fileType), logical(_logical), fileSize(size), crc(_crc), isCompressed(_isCompressed)
     {
-        if (date)
-            fileDate.set(*date);
+        fileDate.set(_date);
         currentIdx = 0;
         current.set(&failure);
         remote = false;
@@ -239,7 +238,7 @@ public:
                                 DBGLOG("Looking for file using non-cached file open");
                         }
 
-                        fileStatus = queryFileCache().fileUpToDate(f, fileType, fileSize, (!fileDate.isNull()) ? &fileDate : NULL, crc, sourceName, isCompressed);
+                        fileStatus = queryFileCache().fileUpToDate(f, fileType, fileSize, fileDate, crc, sourceName, isCompressed);
                         if (fileStatus == FileIsValid)
                         {
                             if (isCompressed)
@@ -428,7 +427,7 @@ public:
             filesTried.appendf(" %s", sourceName);
             try
             {
-                if (queryFileCache().fileUpToDate(&sources.item(currentIdx), fileType, fileSize, (fileDate.isNull()) ? NULL : &fileDate, crc, sourceName, isCompressed) == FileIsValid)
+                if (queryFileCache().fileUpToDate(&sources.item(currentIdx), fileType, fileSize, fileDate, crc, sourceName, isCompressed) == FileIsValid)
                 {
                     StringBuffer source_drive;
                     splitFilename(sourceName, &source_drive, NULL, NULL, NULL);
@@ -525,7 +524,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     Semaphore hctStarted;
 
 
-    RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime *modified, unsigned crc, const char* id, bool isCompressed)
+    RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime &modified, unsigned crc, const char* id, bool isCompressed)
     {
         if (f->exists())
         {
@@ -551,13 +550,13 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 }
             }
             CDateTime mt;
-            return (modified==NULL || (f->getTime(NULL, &mt, NULL) &&  mt.equals(*modified, false))) ? FileIsValid : FileDateMismatch;
+            return (modified.isNull() || (f->getTime(NULL, &mt, NULL) &&  mt.equals(modified, false))) ? FileIsValid : FileDateMismatch;
         }
         else
             return FileNotFound;
     }
 
-    ILazyFileIO *openFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &remoteLocationInfo, offset_t size, const CDateTime *modified, bool memFile, unsigned crc, bool isCompressed)
+    ILazyFileIO *openFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &remoteLocationInfo, offset_t size, const CDateTime &modified, bool memFile, unsigned crc, bool isCompressed)
     {
         Owned<IFile> local = createIFile(localLocation);
 
@@ -650,7 +649,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     ILazyFileIO *openPlugin(const char *id, const char *localLocation)
     {
         Owned<IFile> local = createIFile(localLocation);
-        Owned<CLazyFileIO> ret = new CLazyFileIO(id, ROXIE_PLUGIN_DLL, local.getLink(), 0, NULL, false, 0, false);
+        CDateTime nullDT;
+        Owned<CLazyFileIO> ret = new CLazyFileIO(id, ROXIE_PLUGIN_DLL, local.getLink(), 0, nullDT, false, 0, false);
 
         // MORE - should we check the version label here ?
         if (ret)
@@ -1097,7 +1097,7 @@ public:
         return aborting ? CFPcancel : CFPcontinue;
     }
 
-    virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName,  ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime *modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali)
+    virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName,  ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali)
     {
         Owned<ILazyFileIO> ret;
         try
@@ -1107,11 +1107,11 @@ public:
             if (f)
             {
                 if ((size != -1 && size != f->getSize()) ||
-                    (modified && !modified->equals(*f->queryDateTime(), false)))
+                    (!modified.isNull() && !modified.equals(*f->queryDateTime(), false)))
                 {
                     StringBuffer modifiedDt;
-                    if (modified)
-                        modified->getString(modifiedDt);
+                    if (!modified.isNull())
+                        modified.getString(modifiedDt);
                     StringBuffer fileDt;
                     f->queryDateTime()->getString(fileDt);
                     if (fileErrorList.find(id) == 0)
@@ -1224,7 +1224,8 @@ public:
                 }
                 return LINK(ret);
             }
-            ret = openFile(dllname, 1, ROXIE_WU_DLL, localLocation, remoteNames, remoteNames, -1, NULL, false, crc, false);  // make partno = 1 (second param)
+            CDateTime nullFiledate;  // null date is fine here
+            ret = openFile(dllname, 1, ROXIE_WU_DLL, localLocation, remoteNames, remoteNames, -1, nullFiledate, false, crc, false);  // make partno = 1 (second param)
             files.setValue(localLocation, ret);
             if (ret->isRemote())
             {
@@ -1486,6 +1487,12 @@ ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFile
     unsigned crc;
     if (!pdesc->getCrc(crc))
         crc = 0;
+    CDateTime fileDate;
+    if (checkFileDate)
+    {
+        const char *dateStr = partProps.queryProp("@modified");
+        fileDate.setString(dateStr);
+    }
 
     StringArray localLocations;
     StringArray remoteLocations;
@@ -1513,7 +1520,7 @@ ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFile
         r.getRemotePath(origName);
         remoteLocations.append(origName.str());
     }
-    return queryFileCache().lookupFile(id, partNo, fileType, localFileName, NULL, NULL, localLocations, remoteLocations, dfsSize, NULL, false, true, false, false, crcResources ? crc : 0, pdesc->queryOwner().isCompressed(), NULL);
+    return queryFileCache().lookupFile(id, partNo, fileType, localFileName, NULL, NULL, localLocations, remoteLocations, dfsSize, fileDate, false, true, false, false, crcResources ? crc : 0, pdesc->queryOwner().isCompressed(), NULL);
 }
 
 //====================================================================================================
@@ -2739,8 +2746,9 @@ class LazyIOTest: public CppUnit::TestFixture
         StringArray remoteNames;
         StringArray peerNames;
         remoteNames.append("cppfile_localfile2");
-        Owned<IFileIO> l1 = cache->lookupFile("cppfile_localfile1", 0, ROXIE_FILE, "cppfile_localfile1", NULL, NULL, peerNames, remoteNames, 4, NULL, false, false, true, false, 0, false, NULL);
-        Owned<IFileIO> l2 = cache->lookupFile("cppfile_localfile1", 0, ROXIE_FILE, "cppfile_localfile1", NULL, NULL, peerNames, remoteNames, 4, NULL, false, false, true, false, 0, false, NULL);
+        CDateTime nullDT;
+        Owned<IFileIO> l1 = cache->lookupFile("cppfile_localfile1", 0, ROXIE_FILE, "cppfile_localfile1", NULL, NULL, peerNames, remoteNames, 4, nullDT, false, false, true, false, 0, false, NULL);
+        Owned<IFileIO> l2 = cache->lookupFile("cppfile_localfile1", 0, ROXIE_FILE, "cppfile_localfile1", NULL, NULL, peerNames, remoteNames, 4, nullDT, false, false, true, false, 0, false, NULL);
         CPPUNIT_ASSERT(l1 == l2);
         char buf[4];
         l1->read(0, 4, buf);
