@@ -97,6 +97,7 @@ protected:
     unsigned lastAccess;
     bool copying;
     bool isCompressed;
+    const IRoxieFileCache *cached;
 
 #ifdef FAIL_20_READ
     unsigned readCount;
@@ -121,10 +122,23 @@ public:
         copyInForeground = false;
         lastAccess = msTick();
         copying = false;
+        cached = NULL;
     }
     
     ~CLazyFileIO()
     {
+    }
+
+    virtual void beforeDispose()
+    {
+        if (cached)
+            cached->removeCache(this);
+    }
+
+    void setCache(const IRoxieFileCache *cache)
+    {
+        assertex(!cached);
+        cached = cache;
     }
 
     inline void setRemote(bool _remote) { remote = _remote; }
@@ -510,8 +524,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
-    MapStringToMyClass<ILazyFileIO> files;
-    CriticalSection crit;
+    mutable CopyMapStringToMyClass<ILazyFileIO> files;
+    mutable CriticalSection crit;
     CriticalSection cpcrit;
     bool started;
     bool aborting;
@@ -642,7 +656,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         }
         else
             throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
-
+        ret->setCache(this);
+        files.setValue(localLocation, (ILazyFileIO *) ret);
         return ret.getClear();
     }
 
@@ -1097,6 +1112,17 @@ public:
         return aborting ? CFPcancel : CFPcontinue;
     }
 
+    virtual void removeCache(ILazyFileIO *file) const
+    {
+        CriticalBlock b(crit);
+        // NOTE: it's theoretically possible for the final release to happen after a replacement has been inserted into hash table.
+        // So only remove from hash table if what we find there matches the item that is being deleted.
+        const char *filename = file->queryFilename();
+        ILazyFileIO *goer = files.getValue(filename);
+        if (goer == file)
+            files.remove(filename);
+    }
+
     virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName,  ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali)
     {
         Owned<ILazyFileIO> ret;
@@ -1135,7 +1161,6 @@ public:
             }
 
             ret.setown(openFile(id, partNo, fileType, localLocation, peerRoxieCopiedLocationInfo, deployedLocationInfo, size, modified, memFile, crc, isCompressed));  // for now don't check crcs
-            files.setValue(localLocation, ret);
 
             if (baseIndexFileName)
                 ret->setBaseIndexFileName(baseIndexFileName);
@@ -1226,7 +1251,6 @@ public:
             }
             CDateTime nullFiledate;  // null date is fine here
             ret = openFile(dllname, 1, ROXIE_WU_DLL, localLocation, remoteNames, remoteNames, -1, nullFiledate, false, crc, false);  // make partno = 1 (second param)
-            files.setValue(localLocation, ret);
             if (ret->isRemote())
             {
                 try

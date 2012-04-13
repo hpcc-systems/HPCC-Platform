@@ -74,6 +74,7 @@ interface IRoxieFileCache : extends IInterface
     virtual StringAttrMapping *queryFileErrorList() = 0;  // returns list of files that could not be open
     virtual void flushUnusedDirectories(const char *origBaseDir, const char *directory, StringBuffer &info) = 0;
     virtual void start() = 0;
+    virtual void removeCache(ILazyFileIO *file) const = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface
