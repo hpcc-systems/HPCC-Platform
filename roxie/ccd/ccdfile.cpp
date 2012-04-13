@@ -2058,7 +2058,7 @@ public:
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
                             if (pdesc)
                             {
-                                part.setown(createDynamicFile(subNames.item(idx), pdesc, ROXIE_KEY, maxParts));
+                                part.setown(createDynamicFile(subNames.item(idx), pdesc, ROXIE_KEY, fdesc->numParts()));
                                 pdesc->getCrc(crc);
                             }
                         }
