@@ -1343,7 +1343,7 @@ public:
     virtual unsigned getFlags()                         { return 0; }
 };
 
-class CThorTempRowArg : public CThorInlineTableArg
+class CThorInlineRowArg : public CThorInlineTableArg
 {
     virtual __uint64 numRows()                          { return 1; }
 };
