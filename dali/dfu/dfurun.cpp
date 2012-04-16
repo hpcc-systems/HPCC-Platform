@@ -1423,7 +1423,7 @@ public:
                         newfile.clear();
                         StringBuffer fromname(srcName);
                         srcFile.clear();
-                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),0,NULL,userdesc))
+                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),NULL,userdesc))
                             throw MakeStringException(-1,"rename failed"); // could do with better error here
                         StringBuffer timetaken;
                         timetaken.appendf("%dms",msTick()-start);

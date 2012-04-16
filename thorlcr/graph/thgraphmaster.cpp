@@ -1594,7 +1594,7 @@ bool CJobMaster::go()
 
                 StringBuffer newName;
                 queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, 0, NULL, queryBaseDirectory()));
+                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
 
                 file->attach(newName);
 

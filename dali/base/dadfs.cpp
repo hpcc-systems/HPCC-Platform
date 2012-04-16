@@ -909,7 +909,7 @@ public:
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
     bool removeEntry(const char *_logicalname,IUserDescriptor *user);
     bool removePhysical(const char *_logicalname,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
-    bool renamePhysical(const char *oldname,const char *newname,unsigned short port,IMultiException *exceptions,IUserDescriptor *user);
+    bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user);
     void removeEmptyScope(const char *name);
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,bool fixmissing=false,unsigned timeout=INFINITE);
@@ -925,7 +925,7 @@ public:
     DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user);
     bool filePhysicalVerify(const char *lfn1,bool includecrc,StringBuffer &errstr,IUserDescriptor *user);
     void setDefaultPreferredClusters(const char *clusters);
-    void fixDates(IDistributedFile *fil,unsigned short port);
+    void fixDates(IDistributedFile *fil);
 
     GetFileClusterNamesType getFileClusterNames(const char *logicalname,StringArray &out); // returns 0 for normal file, 1 for
 
@@ -3304,7 +3304,6 @@ public:
 
     bool renamePhysicalPartFiles(const char *newname,
                                  const char *cluster,
-                                 unsigned short port,
                                  IMultiException *mexcept,
                                  const char *newbasedir)
     {
@@ -3382,7 +3381,6 @@ public:
             StringAttrArray &newnamesrep;
             IDistributedFile *file;
             unsigned width;
-            unsigned short port;
             IMultiException *mexcept;
             bool *ignoreprim;
             bool *ignorerep;
@@ -3392,12 +3390,11 @@ public:
             bool * donerep;
             IException *except;
 
-            casyncforbase(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,unsigned short _port,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+            casyncforbase(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
                 : newnamesprim(_newnamesprim),newnamesrep(_newnamesrep),crit(_crit)
             {
                 width = _width;
                 file = _file;
-                port = _port;
                 ok = true;
                 mexcept = _mexcept;
                 doneprim = (bool *)calloc(sizeof(bool),width);
@@ -3445,10 +3442,6 @@ public:
                         continue;
                     RemoteFilename newrfn;
                     newrfn.setPath(part->queryNode(copy)->endpoint(),newfn);
-                    if (port) {
-                        newrfn.setPort(port); // if daliservix
-                        oldrfn.setPort(port);
-                    }
                     try {
                         pok = doPart(part,copy!=0,oldrfn,newrfn,(copy==0)?doneprim[idx]:donerep[idx]);
 
@@ -3479,8 +3472,8 @@ public:
         class casyncfor1: public casyncforbase
         {
         public:
-            casyncfor1(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,unsigned short _port,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_port,_mexcept,_crit,_ignoreprim,_ignorerep)
+            casyncfor1(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -3510,7 +3503,7 @@ public:
                 return true;
             }
 
-        } afor1 (this,newnamesprim,newnamesrep,width,port,mexcept,crit,NULL,NULL);
+        } afor1 (this,newnamesprim,newnamesrep,width,mexcept,crit,NULL,NULL);
         afor1.For(width,10,false,true);
         if (afor1.except)
             throw afor1.except; // no recovery needed
@@ -3539,8 +3532,8 @@ public:
         class casyncfor2: public casyncforbase
         {
         public:
-            casyncfor2(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,unsigned short _port,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_port,_mexcept,_crit,_ignoreprim,_ignorerep)
+            casyncfor2(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -3559,7 +3552,7 @@ public:
                 return true;;
             }
 
-        } afor2 (this,newnamesprim,newnamesrep,width,port,mexcept,crit,ignoreprim,ignorerep);
+        } afor2 (this,newnamesprim,newnamesrep,width,mexcept,crit,ignoreprim,ignorerep);
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
@@ -3591,10 +3584,6 @@ public:
                             continue;
                         RemoteFilename newrfn;
                         newrfn.setPath(part->queryNode(copy)->endpoint(),newfn);
-                        if (port) {
-                            newrfn.setPort(port); // if daliservix
-                            oldrfn.setPort(port);
-                        }
                         for (unsigned t=1;t<3;t++) {    // 3 goes
                             try {
                                 StringBuffer oldfn;
@@ -4641,7 +4630,7 @@ public:
         return true; 
     }
 
-    bool renamePhysicalPartFiles(const char *newlfn,const char *cluster, unsigned short port,IMultiException *mexcept,const char *newbasedir)
+    bool renamePhysicalPartFiles(const char *newlfn,const char *cluster,IMultiException *mexcept,const char *newbasedir)
     {
         throw MakeStringException(-1,"renamePhysicalPartFiles not supported for SuperFiles");
         return false; 
@@ -6843,7 +6832,7 @@ bool CDistributedFileDirectory::removePhysical(const char *_logicalname,const ch
 }
 
     
-bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,unsigned short port,IMultiException *exceptions,IUserDescriptor *user)
+bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user)
 {
     CriticalBlock block(removesect);
     if (!user)
@@ -6905,19 +6894,17 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
         splitfrom = true;
     }
     
-    if (port!=(unsigned short)-1) {
-        try {
-            if (!file->renamePhysicalPartFiles(newlogicalname.get(),splitfrom?oldcluster.str():NULL,port,exceptions))   
-                return false;
-        }
-        catch (IException *e)
-        {
-            StringBuffer msg("Renaming ");
-            msg.append(oldname).append(" to ").append(newname);
-            EXCLOG(e,msg.str());
-            e->Release();
+    try {
+        if (!file->renamePhysicalPartFiles(newlogicalname.get(),splitfrom?oldcluster.str():NULL,exceptions))
             return false;
-        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg("Renaming ");
+        msg.append(oldname).append(" to ").append(newname);
+        EXCLOG(e,msg.str());
+        e->Release();
+        return false;
     }
     if (splitfrom) {
         oldfile->removeCluster(oldcluster.str());
@@ -6927,14 +6914,14 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
         ClusterPartDiskMapSpec mspec = file->queryPartDiskMapping(0);
         file->detach();
         newfile->addCluster(newcluster.str(),mspec);
-        fixDates(newfile,port);
+        fixDates(newfile);
     }
     else
         file->rename(newname,user);
     return true;
 }
 
-void CDistributedFileDirectory::fixDates(IDistributedFile *file,unsigned short port)
+void CDistributedFileDirectory::fixDates(IDistributedFile *file)
 {
     // should do in parallel 
     unsigned width = file->numParts();
@@ -6942,16 +6929,14 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file,unsigned short p
     class casyncfor: public CAsyncFor
     {
         IDistributedFile *file;
-        unsigned short port;
         CriticalSection &crit;
         unsigned width;
     public:
         bool ok;
-        casyncfor(IDistributedFile *_file,unsigned _width,unsigned short _port,CriticalSection &_errcrit)
+        casyncfor(IDistributedFile *_file,unsigned _width,CriticalSection &_errcrit)
             : crit(_errcrit)
         {
             file = _file;
-            port = _port;
             ok = true;
             width = _width;
             ok = true;
@@ -6967,8 +6952,6 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file,unsigned short p
             for (unsigned copy = 0; copy < nc; copy++) {
                 RemoteFilename rfn;
                 part->getFilename(rfn,copy);
-                if (port)
-                    rfn.setPort(port); // if daliservix
                 Owned<IFile> partfile = createIFile(rfn);
                 try {
                     CriticalUnblock unblock(crit);
@@ -6989,7 +6972,7 @@ void CDistributedFileDirectory::fixDates(IDistributedFile *file,unsigned short p
                 }
             }
         }
-    } afor(file,width,port,crit);
+    } afor(file,width,crit);
     afor.For(width,10,false,true);
 }
 

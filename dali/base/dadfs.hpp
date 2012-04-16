@@ -243,7 +243,7 @@ interface IDistributedFile: extends IInterface
 
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)
 
-    virtual bool renamePhysicalPartFiles(const char *newlfn,const char *cluster=NULL,unsigned short port=0,IMultiException *exceptions=NULL,const char *newbasedir=NULL) = 0;           // renames all physical part files
+    virtual bool renamePhysicalPartFiles(const char *newlfn,const char *cluster=NULL,IMultiException *exceptions=NULL,const char *newbasedir=NULL) = 0;           // renames all physical part files
                                                                                 // returns true if no major errors
 
 
@@ -462,7 +462,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual bool removeEntry(const char *name,IUserDescriptor *user=NULL) = 0;  // equivalent to lookup/detach/release
     virtual bool removePhysical(const char *name,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
-    virtual bool renamePhysical(const char *oldname,const char *newname,unsigned short port=0,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
+    virtual bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
 

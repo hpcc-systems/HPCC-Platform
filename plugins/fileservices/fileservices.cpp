@@ -463,7 +463,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IMultiException> exceptions = MakeMultiException();
 
-    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),0,exceptions,udesc)) {
+    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),exceptions,udesc)) {
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
         WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
