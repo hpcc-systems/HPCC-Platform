@@ -21,20 +21,20 @@ import std;
 
 EXPORT HDFSPipe := MODULE
 
-	/*
+    /*
    * HDFSPipe.PipeIn - this macro to be called by the user to pipe in data from the Hadoop file system (HDFS).
-	 *
-	 * @param HadoopRS        	The target recordset.
-	 * @param HadoopFile      	The Hadoop data file name as it exists in the HDFS.
-	 * @param Layout        		Layout representing the structure of the data.
-	 * @param HadoopFileFormat  The Hadoop data file format FLAT | CSV | XML.
-	 * @param Host    			    The target hadoop dfs hostname, or ip address.
-	 * @param Port		      	  The target hadoop dfs port number.
-	 * 													If targeting a local HDFS Host='default' and Port=0 will work
-	 *													As long as the local hadoop conf folder is visible to the 'hdfspipe' script
-	*/
+     *
+     * @param ECL_RS            The ECL recordset to stream out.
+     * @param HadoopFileName    The fully qualified target HDFS file name.
+     * @param Layout            The structure which describes the ECL_RS recordset.
+     * @param HadoopFileFormat  The Hadoop data file format : FLAT | CSV.
+     * @param HDFSHost          The Hadoop DFS host name or IP address.
+     * @param HDSFPort          The Hadoop DFS port number.
+     *                              If targeting a local HDFS HDFSHost='default' and HDSFPort=0 will work
+     *                              As long as the local hadoop conf folder is visible to the 'hdfspipe' script
+    */
 
-	export PipeIn(HadoopRS, HadoopFile, Layout, HadoopFileFormat, Host, Port) := MACRO
+	export PipeIn(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort) := MACRO
 	#uniquename(formatstr)
 		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
 		#IF(%formatstr%[1..3] = 'XML')
@@ -60,15 +60,15 @@ EXPORT HDFSPipe := MODULE
 			#ELSE
 				%rowtagcont% := 'Row';
 			#END
-			HadoopRS := PIPE('hdfspipe -si '
+			ECL_RS:= PIPE('hdfspipe -si '
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
-				+ ' -filename ' + HadoopFile
+				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%[1..3]
 				+ ' -rowtag ' + %rowtagcont%
 				// + ' -headertext ' + '???'
 				// + ' -footertext ' + '???'
-				+ ' -host ' + Host + ' -port ' + Port,
+				+ ' -host ' + HDFSHost + ' -port ' + HDSFPort,
 				Layout, HadoopFileFormat);
 
 		#ELSEIF (%formatstr%[1..3] = 'CSV')
@@ -81,115 +81,115 @@ EXPORT HDFSPipe := MODULE
 				%termcont% := %formatstr%[%termpos%+11..];
 				%termcont2%:= %termcont%[..STD.Str.Find(%termcont%, ')')-1];
 
-				HadoopRS := PIPE('hdfspipe -si '
+				ECL_RS:= PIPE('hdfspipe -si '
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -reclen ' + sizeof(Layout)
-				+ ' -filename ' + HadoopFile
+				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%[1..3]
 				+ ' -terminator ' + %termcont2%
 				//+ ' -outputterminator 1'
-				+ ' -host ' + Host	+ ' -port ' + Port,
+				+ ' -host ' + HDFSHost	+ ' -port ' + HDSFPort,
 				Layout, HadoopFileFormat);
 			#ELSE
-				HadoopRS := PIPE('hdfspipe -si '
+				ECL_RS:= PIPE('hdfspipe -si '
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -reclen ' + sizeof(Layout)
-				+ ' -filename ' + HadoopFile
+				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%[1..3]
-				+ ' -host ' + Host	+ ' -port ' + Port,
+				+ ' -host ' + HDFSHost	+ ' -port ' + HDSFPort,
 				Layout, HadoopFileFormat);
 			#END
 		#ELSE
-				HadoopRS := PIPE('hdfspipe -si'
+				ECL_RS:= PIPE('hdfspipe -si'
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -reclen ' + sizeof(Layout)
-				+ ' -filename ' + HadoopFile
+				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%
-				+ ' -host ' + Host 	+ ' -port ' + Port,
+				+ ' -host ' + HDFSHost 	+ ' -port ' + HDSFPort,
 				Layout);
 		#END
 	ENDMACRO;
 
-	/*
-	HadoopPipe.PipeOut - writes the given recordset 'RSToHadoop' to the target HDFS system in
-												file parts. One file part for each HPCC node.
+    /*
+    HadoopPipe.PipeOut - writes the given recordset 'ECL_RS' to the target HDFS system in
+                                                file parts. One file part for each HPCC node.
 
-	RSToHadoop 				- The recordset to stream out.
-	HadoopFile 				- The fully qualified target HDFS file name.
-	Layout						- Record layout which describes the recordset
-	HadoopFileFormat 	-	FLAT|CSV  no support for XML right now.
-	Host							- HDFS master host
-	Port							- HDFS master port
-	HDFSUser					- HDFS user name to log on to HDFS in order to the the file write.
-											must have permission to write to the target HDFS location.
+    ECL_RS              - The ECL recordset to stream out.
+    HadoopFileName      - The fully qualified target HDFS file name.
+    Layout              - The structure which describes the ECL_RS recordset.
+    HadoopFileFormat    - The Hadoop data file format : FLAT | CSV
+    HDFSHost            - The Hadoop DFS host name or IP address.
+    HDSFPort            - The Hadoop DFS port number.
+    HDFSUser            - HDFS username to use to login to HDFS in order to write the file
+                            must have permission to write to the target HDFS location.
 
-	Example:
+    Example:
 
-	HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
-	HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
-	*/
+    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
+    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
+    */
 
-	export PipeOut(RSToHadoop, HadoopFile, Layout, HadoopFileFormat, Host, Port, HDFSUser) := MACRO
+	export PipeOut(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort, HDFSUser) := MACRO
 	#uniquename(formatstr)
 	#uniquename(outpartaction)
 	#uniquename(mergepartsaction)
 		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
 		#IF(%formatstr%[1..4] != 'FLAT')
-		OUTPUT(RSToHadoop,,
+		OUTPUT(ECL_RS,,
 				PIPE('hdfspipe -sop '
-				+ ' -host ' + Host
-				+ ' -port ' + Port
-				+ ' -filename ' + HadoopFile
+				+ ' -host ' + HDFSHost
+				+ ' -port ' + HDSFPort
+				+ ' -filename ' + HadoopFileName
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -hdfsuser ' + HDFSUser, HadoopFileFormat));
 		#ELSE
-		OUTPUT(RSToHadoop,,
+		OUTPUT(ECL_RS,,
 				PIPE('hdfspipe -sop '
-				+ ' -host ' + Host
-				+ ' -port ' + Port
-				+ ' -filename ' + HadoopFile
+				+ ' -host ' + HDFSHost
+				+ ' -port ' + HDSFPort
+				+ ' -filename ' + HadoopFileName
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -hdfsuser ' + HDFSUser));
 		#END
 	ENDMACRO;
 
-	/*
-	HadoopPipe.PipeOutAndMerge - writes the given recordset 'RSToHadoop' to the target HDFS system
-															 in file parts and merges them together to form a single target file
-															 on the HDFS system.
+    /*
+    HadoopPipe.PipeOutAndMerge - writes the given recordset 'ECL_RS' to the target HDFS system
+                                                             in file parts and merges them together to form a single target file
+                                                             on the HDFS system.
 
-	RSToHadoop 				- The recordset to stream out.
-	HadoopFile 				- The fully qualified target HDFS file name.
-	Layout						- Record layout which describes the recordset
-	HadoopFileFormat 	-	FLAT|CSV  no support for XML right now.
-	Host							- HDFS master host
-	Port							- HDFS master port
-	HDFSUser					- HDFS user name to log on to HDFS in order to the the file write.
-											must have permission to write to the target HDFS location.
+    ECL_RS          - The ECL recordset to stream out.
+    HadoopFileName  - The fully qualified target HDFS file name.
+    Layout          - The structure which describes the ECL_RS recordset
+    HadoopFileFormat- The Hadoop data file format : FLAT | CSV
+    HDFSHost        - The Hadoop DFS host name or IP address.
+    Port            - The Hadoop DFS port number.
+    HDFSUser        - HDFS username to use to login to HDFS in order to write the file
+                        must have permission to write to the target HDFS location.
 
-	Example:
+    Example:
 
-	HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
-	HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
-	*/
+    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
+    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
+    */
 
-	export PipeOutAndMerge(RSToHadoop, HadoopFile, Layout, HadoopFileFormat, Host, Port, HDFSUser) := MACRO
+	export PipeOutAndMerge(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort, HDFSUser) := MACRO
 	#uniquename(formatstr)
 	#uniquename(outpartaction)
 	#uniquename(mergepartsaction)
 		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
 		#IF(%formatstr%[1..4] != 'FLAT')
-		//%mergepartsaction% :=DISTRIBUTE(RSToHadoop , 1);
-		%outpartaction%:=OUTPUT(RSToHadoop,,
+		//%mergepartsaction% :=DISTRIBUTE(ECL_RS , 1);
+		%outpartaction%:=OUTPUT(ECL_RS,,
 				PIPE('hdfspipe -sop '
-				+ ' -host ' + Host
-				+ ' -port ' + Port
-				+ ' -filename ' + HadoopFile
+				+ ' -host ' + HDFSHost
+				+ ' -port ' + HDSFPort
+				+ ' -filename ' + HadoopFileName
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -hdfsuser ' + HDFSUser, HadoopFileFormat));
@@ -197,17 +197,17 @@ EXPORT HDFSPipe := MODULE
 				%mergepartsaction%:=OUTPUT(PIPE('hdfspipe -mf'
 				 + ' -nodeid ' + STD.system.Thorlib.node()
 				 + ' -clustercount ' + STD.system.Thorlib.nodes()
-				 + ' -filename ' + HadoopFile
+				 + ' -filename ' + HadoopFileName
 				 + ' -cleanmerge  1'
 				 + ' -hdfsuser ' + HDFSUser
-				 + ' -host ' + Host 	+ ' -port ' + Port, Layout));
+				 + ' -host ' + HDFSHost 	+ ' -port ' + HDSFPort, Layout));
 				 SEQUENTIAL(%outpartaction%, %mergepartsaction%);
 		#ELSE
-		%outpartaction%:=OUTPUT(RSToHadoop,,
+		%outpartaction%:=OUTPUT(ECL_RS,,
 				PIPE('hdfspipe -sop '
-				+ ' -host ' + Host
-				+ ' -port ' + Port
-				+ ' -filename ' + HadoopFile
+				+ ' -host ' + HDFSHost
+				+ ' -port ' + HDSFPort
+				+ ' -filename ' + HadoopFileName
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
 				+ ' -hdfsuser ' + HDFSUser));
@@ -215,10 +215,10 @@ EXPORT HDFSPipe := MODULE
 				%mergepartsaction%:=OUTPUT(PIPE('hdfspipe -mf'
 				 + ' -nodeid ' + STD.system.Thorlib.node()
 				 + ' -clustercount ' + STD.system.Thorlib.nodes()
-				 + ' -filename ' + HadoopFile
+				 + ' -filename ' + HadoopFileName
 				 + ' -cleanmerge  1'
 				 + ' -hdfsuser ' + HDFSUser
-				 + ' -host ' + Host 	+ ' -port ' + Port, Layout));
+				 + ' -host ' + HDFSHost 	+ ' -port ' + HDSFPort, Layout));
 				 SEQUENTIAL(%outpartaction%, %mergepartsaction%);
 		#END
 	ENDMACRO;
