@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="PIPEIN" role="nobrk">
+  <title>HDFSPipe.PipeIn</title>
+
+  <para><emphasis role="bold">HDFSPipe.PipeIn </emphasis><emphasis>( ECL_RS,
+  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
+  )</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="150pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>ECL_RS</emphasis></entry>
+
+            <entry>The ECL recordset definition name to generate.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HadoopFileName</emphasis></entry>
+
+            <entry>The Hadoop data file name as it exists in the HDFS.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>Layout</emphasis></entry>
+
+            <entry>The ECL RECORD structure representing the structure of the
+            Hadoop data.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HadoopFileFormat</emphasis></entry>
+
+            <entry>The Hadoop data file format : FLAT | CSV.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HDFSHost</emphasis></entry>
+
+            <entry>The Hadoop DFS host name or IP address.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>HDFSPort</emphasis></entry>
+
+            <entry>The Hadoop DFS port number.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">HDFSPipe.PipeIn </emphasis>macro is called
+  to pipe in data from the Hadoop file system (HDFS) to a Thor Cluster.</para>
+
+  <para>Example:</para>
+
+  <programlisting>#OPTION('pickBestEngine', 0);
+IMPORT std;
+IMPORT DataStream;
+Layout_Flat := RECORD
+  STRING10  fname;
+  STRING10  lname;
+  UNSIGNED1 prange;
+  STRING10  street;
+  UNSIGNED1 zips;
+  UNSIGNED1 age;
+  STRING2   birth_state;
+  STRING3   birth_month;
+  UNSIGNED1 one;
+  UNSIGNED8 id;
+END;
+DataStream.HDFSPipe.PipeIn(certrecords, 
+                           '/user/hadoop/test/cert1', 
+                           Layout_Flat, 
+                           FLAT, 
+                           '192.168.56.120', 
+                           54310)
+</programlisting>
+
+  <?hard-pagebreak ?>
+
+  <programlisting>#OPTION('pickBestEngine', 0);
+IMPORT std;
+IMPORT DataStream;
+Layout_CSV := RECORD
+  STRING10 fname;
+  STRING10 lname;
+  STRING3  prange;
+  STRING10 street;
+  STRING5  zips;
+  STRING3  age;
+  STRING2  birth_state;
+  STRING3  birth_month;
+  STRING3  one;
+  STRING20 id;
+END;
+DataStream.HDFSPipe.PipeIn(certrecords, 
+                           '/user/Administrator/test/cert1', 
+                           Layout_CSV, 
+                           CSV(SEPARATOR('|')), 
+                           '192.168.56.120', 
+                           54310)
+</programlisting>
+
+  <para></para>
+</sect1>
