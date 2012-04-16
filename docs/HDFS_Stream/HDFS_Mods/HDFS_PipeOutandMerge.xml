@@ -55,7 +55,8 @@
             <entry><emphasis>HDFSUser</emphasis></entry>
 
             <entry>HDFS username to use to login to HDFS in order to write the
-            file</entry>
+            file. This user must have permission to write to the target HDFS
+            location.</entry>
           </row>
         </tbody>
       </tgroup>
