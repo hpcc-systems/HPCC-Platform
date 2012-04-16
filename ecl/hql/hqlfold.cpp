@@ -3950,6 +3950,15 @@ static bool isWorthPercolating(const HqlExprArray & exprs)
 }
 
 
+bool expressionsEquivalent(IHqlExpression * left, IHqlExpression * right)
+{
+    if (left->queryBody() == right->queryBody())
+        return true;
+    if ((left->getOperator() == no_null) && (right->getOperator() == no_null))
+        return recordTypesMatch(left, right);
+    return false;
+}
+
 class HqlConstantPercolator : public CInterface
 {
 public:
@@ -4012,7 +4021,7 @@ public:
         ForEachItemInRev(i, targets)
         {
             unsigned match = other->targets.find(targets.item(i));
-            if ((match == NotFound) || (sources.item(i).queryBody() != other->sources.item(match).queryBody()))
+            if ((match == NotFound) || !expressionsEquivalent(&sources.item(i), &other->sources.item(match)))
             {
                 sources.remove(i);
                 targets.remove(i);
@@ -4841,6 +4850,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     {
                         updated.setown(percolateConstants(updated, child, no_left));
                         updated.setown(percolateConstants(updated, rhs, no_right, 2));
+                        //MORE: Could also replace intersection of rhs constants with a NULL row
                     }
                     else if ((joinKind == rightonlyAtom) || (joinKind == rightouterAtom))
                     {
