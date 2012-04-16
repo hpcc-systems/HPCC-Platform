@@ -1033,7 +1033,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "pwdLastSet", "givenName", "sn", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1102,6 +1102,14 @@ public:
                 {
                     if(values[0] != NULL)
                         user.setLastName(values[0]);
+                    ldap_value_free( values );
+                }
+                else if((stricmp(attribute, "userAccountControl") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
+                {
+                    struct berval* val = bvalues[0];
+//                  //UF_DONT_EXPIRE_PASSWD 0x10000
+                    if (atoi(val->bv_val) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                        m_passwordNeverExpires = true;
                     ldap_value_free( values );
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
