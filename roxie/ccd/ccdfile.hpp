@@ -26,6 +26,8 @@
 enum RoxieFileStatus { FileSizeMismatch, FileDateMismatch, FileCRCMismatch, FileIsValid, FileNotFound };
 enum RoxieFileType { ROXIE_WU_DLL, ROXIE_PLUGIN_DLL, ROXIE_KEY, ROXIE_FILE, ROXIE_PATCH, ROXIE_BASEINDEX };
 interface IFileIOArray;
+interface IRoxieFileCache;
+
 interface ILazyFileIO : extends IFileIO
 {
     virtual const char *queryFilename() = 0;
@@ -58,6 +60,9 @@ interface ILazyFileIO : extends IFileIO
     virtual void setCopying(bool copying) = 0;
     virtual bool isCopying() const = 0;
     virtual IMemoryMappedFile *queryMappedFile() = 0;
+
+    virtual void setCache(const IRoxieFileCache *) = 0;
+    virtual void removeCache(const IRoxieFileCache *) = 0;
 };
 
 extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts);

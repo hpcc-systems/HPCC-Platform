@@ -141,6 +141,12 @@ public:
         cached = cache;
     }
 
+    void removeCache(const IRoxieFileCache *cache)
+    {
+        assertex(cached==cache);
+        cached = NULL;
+    }
+
     inline void setRemote(bool _remote) { remote = _remote; }
 
     virtual void setCopying(bool _copying)
@@ -657,7 +663,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         else
             throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
         ret->setCache(this);
-        files.setValue(localLocation, (ILazyFileIO *) ret);
+        files.setValue(localLocation, (ILazyFileIO *)ret);
         return ret.getClear();
     }
 
@@ -938,6 +944,18 @@ public:
         closePending[true] = false;
         needToDeleteFile = false;
         started = false;
+    }
+
+    ~CRoxieFileCache()
+    {
+        // NOTE - I assume that by the time I am being destroyed, system is single threaded.
+        // Removing any possible race between destroying of the cache and destroying of the files in it would be complex otherwise
+        HashIterator h(files);
+        ForEach(h)
+        {
+            ILazyFileIO *f = files.mapToValue(&h.query());
+            f->removeCache(this);
+        }
     }
 
     virtual void start()
