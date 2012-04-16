@@ -220,7 +220,7 @@ bool CDistributedFileSystem::remove(IDistributedFile * file,const char *cluster,
         cluster = NULL; // deleting the last cluster removes the file
         file->detach(); 
     }
-    return file->removePhysicalPartFiles(0,cluster,mexcept); // this is bit cavalier with errors - but better orphans than inconsistant DFS
+    return file->removePhysicalPartFiles(cluster,mexcept); // this is bit cavalier with errors - but better orphans than inconsistant DFS
 }
 
 bool CDistributedFileSystem::compress(IDistributedFile * file)
