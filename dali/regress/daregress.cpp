@@ -373,7 +373,7 @@ static void testDFS()
     for (i=0;i<100;i++) {
         Owned<IPropertyTree> pp = createPTree("Part");
         Owned<IFileDescriptor>fdesc = createFileDescriptor();
-        fdesc->setDefaultDir("thordata::regress");
+        fdesc->setDefaultDir("thordata/regress");
         n = 9;
         for (unsigned k=0;k<400;k++) {
             s.clear().append("192.168.").append(n/256).append('.').append(n%256);
