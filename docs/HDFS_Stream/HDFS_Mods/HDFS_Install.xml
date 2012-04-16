@@ -17,12 +17,35 @@
       </listitem>
 
       <listitem>
-        <para>Use the script to install to all nodes in your
-        environment.</para>
+        <para>You must install the package on every HPCC Thor node. To install
+        the package, follow the installation instructions for your operating
+        system:</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh &lt;packagename&gt;<emphasis></emphasis> </programlisting>Note:
-        The installation packages will fail to install if their dependencies
-        are missing from the target system.</para>
+        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+        <para>Install RPM with the -Uvh switch.</para>
+
+        <para>This is the upgrade command and will perform an automatic
+        upgrade if a previous version is installed or it will just install
+        fresh if no other version has been installed.</para>
+
+        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+
+        <blockquote>
+          <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
+          SuSe you must set a password for the hpcc user on all nodes. One way
+          to do do this is to issue the following command:</para>
+
+          <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
+          set the password on ALL nodes.</para>
+        </blockquote>
+
+        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+        <para>For Ubuntu installations a Debian package is provided. To
+        install the package, use:</para>
+
+        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
       </listitem>
     </orderedlist>
   </sect2>
@@ -30,7 +53,14 @@
   <sect2>
     <title>Editing and distributing the Configuration file</title>
 
+    <para>After you install the HDFS to HPCC Connector package, you must edit
+    the configuration file and push it out to all nodes. </para>
+
     <orderedlist>
+      <listitem>
+        <para>SSH to a node where the package has been installed.</para>
+      </listitem>
+
       <listitem>
         <para>Edit the configuration file <emphasis
         role="bluebold">/opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis>.</para>
@@ -80,11 +110,10 @@
           <para>To locate your source folder, refer to your ECL IDE
           preference, located at <emphasis role="bold">Preferences &gt;&gt;
           Compiler &gt;&gt; ECL Folders</emphasis>.</para>
+
+          <para>When you are finished, the library will be in a repository
+          folder named <emphasis role="bluebold">DataStream</emphasis>.</para>
         </listitem>
       </orderedlist></para>
-
-    <para></para>
-
-    <para></para>
   </sect2>
 </sect1>
