@@ -26,6 +26,8 @@
 enum RoxieFileStatus { FileSizeMismatch, FileDateMismatch, FileCRCMismatch, FileIsValid, FileNotFound };
 enum RoxieFileType { ROXIE_WU_DLL, ROXIE_PLUGIN_DLL, ROXIE_KEY, ROXIE_FILE, ROXIE_PATCH, ROXIE_BASEINDEX };
 interface IFileIOArray;
+interface IRoxieFileCache;
+
 interface ILazyFileIO : extends IFileIO
 {
     virtual const char *queryFilename() = 0;
@@ -58,22 +60,26 @@ interface ILazyFileIO : extends IFileIO
     virtual void setCopying(bool copying) = 0;
     virtual bool isCopying() const = 0;
     virtual IMemoryMappedFile *queryMappedFile() = 0;
+
+    virtual void setCache(const IRoxieFileCache *) = 0;
+    virtual void removeCache(const IRoxieFileCache *) = 0;
 };
 
 extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts);
 
 interface IRoxieFileCache : extends IInterface
 {
-    virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName, ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime *modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali) = 0;
+    virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName, ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali) = 0;
     virtual IFileIO *lookupDllFile(const char* dllname, const char *localLocation, const StringArray &remoteNames, unsigned crc, bool isRemote) = 0;
     virtual IFileIO *lookupPluginFile(const char* dllname, const char *localLocation) = 0;
     virtual void flushUnused(bool deleteFiles, bool cleanUpOneTimeQueries) = 0;
-    virtual RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime *modified, unsigned crc, const char* id, bool isCompressed) = 0;
+    virtual RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime &modified, unsigned crc, const char* id, bool isCompressed) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
     virtual StringAttrMapping *queryFileErrorList() = 0;  // returns list of files that could not be open
     virtual void flushUnusedDirectories(const char *origBaseDir, const char *directory, StringBuffer &info) = 0;
     virtual void start() = 0;
+    virtual void removeCache(ILazyFileIO *file) const = 0;
 };
 
 interface IDiffFileInfoCache : extends IInterface

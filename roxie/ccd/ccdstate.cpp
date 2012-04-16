@@ -1269,6 +1269,7 @@ public:
         newServerManager->load(newQuerySet, *packages);
         newSlaveManagers->load(newQuerySet, *packages);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear());
+        clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
 
 };

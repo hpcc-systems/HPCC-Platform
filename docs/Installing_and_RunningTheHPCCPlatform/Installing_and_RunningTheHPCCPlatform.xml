@@ -856,7 +856,7 @@
           <para><?hard-pagebreak ?></para>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>Running a basic ECL program</title>
 
           <para>Now that the package is installed on your Linux node and ECL
@@ -1668,13 +1668,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </orderedlist>
       </sect2>
     </sect1>
-    
-     <xi:include href="Installing_and_RunningTheHPCCPlatform/hpcc_ldap.xml" xpointer="element(/1)"
-		                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-     <xi:include href="Installing_and_RunningTheHPCCPlatform/user_Sect.xml" xpointer="element(/1)"
-		                xmlns:xi="http://www.w3.org/2001/XInclude" />
-    
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/hpcc_ldap.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/user_Sect.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter>

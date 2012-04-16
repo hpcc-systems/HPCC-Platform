@@ -565,11 +565,13 @@ protected:
 
     virtual IRoxieServerActivityFactory *getRoxieServerActivityFactory(unsigned id) const
     {
+        checkSuspended();
         return LINK(QUERYINTERFACE(findActivity(id), IRoxieServerActivityFactory));
     }
 
     virtual ISlaveActivityFactory *getSlaveActivityFactory(unsigned id) const
     {
+        checkSuspended();
         IActivityFactory *f = findActivity(id);
         return LINK(QUERYINTERFACE(f, ISlaveActivityFactory)); // MORE - don't dynamic cast yuk
     }
@@ -1089,6 +1091,19 @@ public:
             ret.append(graphName.str());
         }
     }
+
+protected:
+    void checkSuspended() const
+    {
+        if (isSuspended)
+        {
+            StringBuffer err;
+            if (errorMessage.length())
+                err.appendf(" because %s", errorMessage.str());
+            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
+        }
+    }
+
 };
 
 CriticalSection CQueryFactory::queryCreateLock;
@@ -1243,18 +1258,6 @@ public:
     virtual IPropertyTree *getQueryStats(time_t from, time_t to)
     {
         return queryStats->getStats(from, to);
-    }
-
-protected:
-    void checkSuspended() const
-    {
-        if (isSuspended)
-        {
-            StringBuffer err;
-            if (errorMessage.length())
-                err.appendf(" because %s", errorMessage.str());
-            throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
-        }
     }
 
 };
