@@ -1652,7 +1652,7 @@ const char *IntValue::generateCPP(StringBuffer &s, CompilerType compiler)
             if (!type->isSigned())
                 s.append("U");
         }
-        else if (!type->isSigned() && ((unsigned __int64)val > INT_MAX))
+        else if (!type->isSigned())
             s.append("U");
         break;
     case Vs6CppCompiler:
@@ -1662,7 +1662,7 @@ const char *IntValue::generateCPP(StringBuffer &s, CompilerType compiler)
                 s.append("U");
             s.append("i64");
         }
-        else if (!type->isSigned() && ((unsigned __int64)val > INT_MAX))
+        else if (!type->isSigned())
             s.append("U");
         break;
     default:
