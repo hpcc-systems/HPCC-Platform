@@ -863,7 +863,7 @@ public:
                     return;
                 }
                 dfile->detach();
-                dfile->removePhysicalPartFiles(0,NULL,NULL);
+                dfile->removePhysicalPartFiles(NULL,NULL);
             }
             dfile.clear();
         }
@@ -1224,7 +1224,7 @@ public:
                                     oldfile.clear();
                                     if (!options->getOverwrite())
                                         throw MakeStringException(-1,"Destination file %s already exists and overwrite not specified",tmp.str());
-                                    fdir.removePhysical(tmp.str(),0,NULL,NULL,userdesc);
+                                    fdir.removePhysical(tmp.str(),NULL,NULL,userdesc);
                                 }
                             }
                             StringBuffer jobname;
@@ -1385,7 +1385,7 @@ public:
                         if (options->getNoDelete())
                             fdir.removeEntry(tmp.str(),userdesc);
                         else
-                            fdir.removePhysical(tmp.str(),0,NULL,NULL,userdesc);
+                            fdir.removePhysical(tmp.str(),NULL,NULL,userdesc);
                         Audit("REMOVE",userdesc,tmp.clear(),NULL);
                         runningconn.clear();
                     }
@@ -1423,7 +1423,7 @@ public:
                         newfile.clear();
                         StringBuffer fromname(srcName);
                         srcFile.clear();
-                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),0,NULL,userdesc))
+                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),NULL,userdesc))
                             throw MakeStringException(-1,"rename failed"); // could do with better error here
                         StringBuffer timetaken;
                         timetaken.appendf("%dms",msTick()-start);

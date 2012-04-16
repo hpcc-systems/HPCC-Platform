@@ -349,7 +349,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removePhysical(lfn.str(),0,NULL,NULL,udesc))
+    if (queryDistributedFileDirectory().removePhysical(lfn.str(),NULL,NULL,udesc))
     {
         StringBuffer s("DeleteLogicalFile ('");         // ** TBD use removephysical (handles cluster)
         s.append(lfn).append("') done");
@@ -463,7 +463,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IMultiException> exceptions = MakeMultiException();
 
-    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),0,exceptions,udesc)) {
+    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),exceptions,udesc)) {
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
         WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
