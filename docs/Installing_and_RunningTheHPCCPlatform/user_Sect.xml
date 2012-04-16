@@ -28,10 +28,7 @@
     feature. Permissions are separated into the following
     categories:<informaltable frame="all">
         <tgroup cols="2" colsep="1">
-          <colspec colwidth="185q" />
-
-          <colspec />
-
+           
           <tbody>
             <row>
               <entry><emphasis role="bold">Esp Features for
@@ -959,12 +956,7 @@
       <para>SMCAccess is required by all users to be able to successfully
       login to ECL Watch. <informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
+ 
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1002,12 +994,7 @@
 
       <para><informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
+  
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1086,11 +1073,6 @@
       contents of the workunits list reflects whether a user has the
       permission to view their own and others workunits.<informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
 
             <thead>
               <row>
@@ -1163,12 +1145,7 @@
       disc space, CPU usage and access to logs as well as the ability to swap
       faulty nodes out of the cluster. <informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
+   
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1239,12 +1216,7 @@
       <para>A user must have permission to view DFU Workunits and requires
       other permissions to be able to manipulate them.<informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
+       
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1289,13 +1261,8 @@
       generated show where housekeeping is required on the cluster(s) and
       users require additional permission to use this feature. <informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
-            <thead>
+        
+             <thead>
               <row>
                 <entry>LDAP Path</entry>
 
@@ -1429,12 +1396,8 @@
       <para>Additional permission is required to view roxie queries in ECL
       Watch.<informaltable>
           <tgroup cols="3">
-            <colspec colwidth="155q" />
-
-            <colspec />
-
-            <colspec colwidth="85q" />
-
+      
+          
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1572,10 +1535,6 @@
 
       <informaltable>
         <tgroup cols="2">
-          <colspec />
-
-          <colspec colwidth="85q" />
-
           <thead>
             <row>
               <entry>Description</entry>
@@ -1685,10 +1644,6 @@
       settings for your system. Permission settings for Workunit Scopes may be
       set as follows:<informaltable>
           <tgroup cols="2">
-            <colspec />
-
-            <colspec colwidth="85q" />
-
             <thead>
               <row>
                 <entry>Description</entry>
