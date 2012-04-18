@@ -55,19 +55,22 @@ public:
 class CMSortActivityMaster : public CMasterActivity
 {
     IThorSorterMaster *imaster;
-    mptag_t mpTagRPC;
+    mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
+    
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
       : CMasterActivity(info)
     {
         mpTagRPC = container.queryJob().allocateMPTag();
-        barrier.setown(container.queryJob().createBarrier(container.queryJob().allocateMPTag()));
+        barrierMpTag = container.queryJob().allocateMPTag();
+        barrier.setown(container.queryJob().createBarrier(barrierMpTag));
     }
 
     ~CMSortActivityMaster()
     {
         container.queryJob().freeMPTag(mpTagRPC);
+        container.queryJob().freeMPTag(barrierMpTag);
     }
 
 protected:
@@ -85,8 +88,8 @@ protected:
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        dst.append((int)mpTagRPC);
-        dst.append((int)barrier->queryTag());
+        serializeMPtag(dst, mpTagRPC);
+        serializeMPtag(dst, barrierMpTag);
     }   
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
