@@ -998,6 +998,7 @@ public:
             char        *attribute, **values;       
             BerElement  *ber;
             struct berval** bvalues = NULL;
+            user.setAuthenticateStatus(AS_UNEXPECTED_ERROR);//assume the worst
 
             const char* username = user.getName();
             const char* password = user.credentials().getPassword();
@@ -1016,11 +1017,12 @@ public:
                 if(strcmp(password, m_ldapconfig->getSysUserPassword()) == 0)
                 {
                     user.setFullName(m_ldapconfig->getSysUserCommonName());
-                    user.setAuthenticated(true);
+                    user.setAuthenticateStatus(AS_AUTHENTICATED);
                     return true;
                 }
                 else
                 {
+                    user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     return false;
                 }
             }
@@ -1066,6 +1068,7 @@ public:
                 if(result != LDAP_SUCCESS)
                 {
                     DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( result ), filter.str(), m_ldapconfig->getSysUserBasedn());
+                    user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     return false;
                 }
 
@@ -1073,6 +1076,7 @@ public:
                 if(entries == 0)
                 {
                     DBGLOG("LDAP: User %s not found", username);
+                    user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                     return false;
                 }
             }
@@ -1104,11 +1108,10 @@ public:
                         user.setLastName(values[0]);
                     ldap_value_free( values );
                 }
-                else if((stricmp(attribute, "userAccountControl") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
+                else if((stricmp(attribute, "userAccountControl") == 0) && ( values = ldap_get_values( sys_ld, entry, attribute))  != NULL )
                 {
-                    struct berval* val = bvalues[0];
-//                  //UF_DONT_EXPIRE_PASSWD 0x10000
-                    if (atoi(val->bv_val) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                    //UF_DONT_EXPIRE_PASSWD 0x10000
+                    if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
                         m_passwordNeverExpires = true;
                     ldap_value_free( values );
                 }
@@ -1202,10 +1205,19 @@ public:
             }
             if(rc != LDAP_SUCCESS)
             {
-                DBGLOG("LDAP: Authentication for user %s failed - %s", username, ldap_err2string(rc));
+                if (user.getPasswordDaysRemaining() == -1)
+                {
+                    DBGLOG("ESP Password Expired for user %s", username);
+                    user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
+                }
+                else
+                {
+                    DBGLOG("LDAP: Authentication for user %s failed - %s", username, ldap_err2string(rc));
+                    user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
+                }
                 return false;
             }
-            user.setAuthenticated(true);
+            user.setAuthenticateStatus(AS_AUTHENTICATED);
         }
         //Always retrieve user info(SID, UID, fullname, etc) for Active Directory, when the user first logs in.
         if((m_ldapconfig->getServerType() == ACTIVE_DIRECTORY) && (m_pp != NULL))

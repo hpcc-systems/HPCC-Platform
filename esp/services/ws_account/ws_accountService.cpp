@@ -189,7 +189,7 @@ bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &re
     try
     {
         ISecUser* usr = context.queryUser();
-        if(!usr || !usr->isAuthenticated())
+        if(!usr || usr->getAuthenticateStatus() != AS_AUTHENTICATED)
         {
             resp.setRetcode(-1);
             return false;
