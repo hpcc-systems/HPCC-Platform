@@ -4773,17 +4773,14 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             }
         case no_stored:
             args.append(*createAttribute(ownedAtom));
-            args.append(*createAttribute(_noReplicate_Atom));
             args.append(*createAttribute(sequenceAtom, getStoredSequenceNumber()));
             break;
         case no_checkpoint:
             args.append(*createAttribute(ownedAtom));
-            args.append(*createAttribute(_noReplicate_Atom));
             args.append(*createAttribute(sequenceAtom, getLocalSequenceNumber()));
             break;
         case no_once:
             args.append(*createAttribute(ownedAtom));
-            args.append(*createAttribute(_noReplicate_Atom));
             args.append(*createAttribute(sequenceAtom, getOnceSequenceNumber()));
             break;
         case no_global:
@@ -4791,13 +4788,11 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
             args.append(*createAttribute(sequenceAtom, getLocalSequenceNumber()));
             args.append(*createAttribute(ownedAtom));
             args.append(*createAttribute(jobTempAtom));
-            args.append(*createAttribute(_noReplicate_Atom));
             break;
         default:
             //global, independent, success, failure, etc. etc.
             args.append(*createAttribute(ownedAtom));
             args.append(*createAttribute(jobTempAtom));
-            args.append(*createAttribute(_noReplicate_Atom));
             args.append(*createAttribute(sequenceAtom, getLocalSequenceNumber()));
             break;
         }
