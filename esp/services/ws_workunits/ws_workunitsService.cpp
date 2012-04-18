@@ -531,6 +531,8 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     }
     setPasswordsFromSDS();
 
+    daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
+
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
     wuActionTable.setValue("delete", ActionDelete);
@@ -2350,6 +2352,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             resp.setQuerySet(req.getQuerySet());
             resp.setQueryName(query->queryProp("@name"));
             resp.setQueryId(query->queryProp("@id"));
+            resp.setDaliServers(daliServers.get());
             wuid.set(query->queryProp("@wuid"));
         }
 

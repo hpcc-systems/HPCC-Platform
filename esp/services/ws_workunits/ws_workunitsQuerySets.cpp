@@ -40,7 +40,7 @@ bool isRoxieProcess(const char *process)
     return conn->queryRoot()->hasProp(xpath.str());
 }
 
-void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll)
+void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringAttr &daliServers)
 {
     Owned<IClientWsWorkunits> ws;
     ws.setown(createWsWorkunitsClient());
@@ -70,54 +70,168 @@ void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const cha
     dll.append(resp->getThefile());
     dllname.append(resp->getFileName());
     name.append(resp->getQueryName());
+    daliServers.set(resp->getDaliServers());
 }
 
-void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const char *logicalname, const char *cluster, bool isRoxie, bool supercopy)
+class WuFileHelper
 {
+public:
+    Linked<IConstWorkUnit> cw;
+    Owned<IConstWUClusterInfo> clusterInfo;
+    Owned<IClientFileSpray> fs;
+    IMultiException *exceptions;
+    SCMStringBuffer cluster;
+    SCMStringBuffer process;
+    StringAttr daliServer;
+    StringAttr username;
+    StringAttr password;
+
+    IArrayOf<IEspWULogicalFileCopyInfo> foreign;
+    IArrayOf<IEspWULogicalFileCopyInfo> onCluster;
+    IArrayOf<IEspWULogicalFileCopyInfo> notOnCluster;
+    IArrayOf<IEspWULogicalFileCopyInfo> notLocal;
+
+    WuFileHelper(IEspContext &context, IConstWorkUnit *_cw, IMultiException *me=NULL) : cw(_cw), exceptions(me)
+    {
+        username.set(context.queryUserId());
+        password.set(context.queryPassword());
+    }
+
+    inline void noteException(IException *e)
+    {
+        if (!exceptions)
+            throw e;
+        exceptions->append(*e);
+        e->Release();
+    }
+
+    void setCluster(IConstWUClusterInfo *_clusterInfo)
+    {
+        clusterInfo.set(_clusterInfo);
+        clusterInfo->getName(cluster);
+    }
+
+    void setCluster(const char *_cluster)
+    {
+        cluster.set(_cluster);
+        clusterInfo.setown(getTargetClusterInfo(cluster.str()));
+    }
+
+    void gatherFileInfo();
+    void getFileInfo(IEspWUCopyLogicalClusterFileSections &fileInfo);
+    void copyFile(IEspWULogicalFileCopyInfo &info, bool remote);
+    void copyFiles();
+    void copyFiles(IArrayOf<IEspWULogicalFileCopyInfo> &files, bool remote)
+    {
+        ForEachItemIn(i, files)
+            copyFile(files.item(i), remote);
+    }
+
+    IClientFileSpray *ensureFS()
+    {
+        if (!fs)
+        {
+            fs.setown(createFileSprayClient());
+            VStringBuffer url("http://.:%d/FileSpray", 8010);
+            fs->addServiceUrl(url.str());
+            if (username.length())
+                fs->setUsernameToken(username.get(), password.get(), NULL);
+        }
+        return fs.get();
+    }
+    bool updateProcess();
+
+};
+
+bool WuFileHelper::updateProcess()
+{
+    if (!process.length())
+    {
+        switch (clusterInfo->getPlatform())
+        {
+        case ThorLCRCluster:
+        case ThorCluster:
+            if (clusterInfo->getThorProcesses().ordinality()>1)
+                noteException(MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "mulitple process clusters found, you must specify a process to copy files."));
+            process.set(clusterInfo->getThorProcesses().item(0));
+            break;
+        case RoxieCluster:
+            clusterInfo->getRoxieProcess(process);
+            break;
+        case HThorCluster:
+            noteException(MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "can't copy files to an hthor cluster."));
+            break;
+        case NoCluster:
+        default:
+            noteException(MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "cluster %s not a known Cluster Type, can't copy files.", cluster.str()));
+        }
+    }
+    return (process.length()!=0);
+}
+
+void WuFileHelper::copyFile(IEspWULogicalFileCopyInfo &info, bool remote)
+{
+    if (remote && !daliServer.length())
+        return info.setDfuCopyError("Cannot copy, no remote dali specified");
+
     try
     {
-        Owned<IClientCopy> req = fs.createCopyRequest();
-        req->setSourceLogicalName(logicalname);
-        req->setDestLogicalName(logicalname);
-        req->setDestGroup(cluster);
-        req->setSuperCopy(supercopy);
-        if (isRoxie)
-            req->setDestGroupRoxie("Yes");
+        if (remote)
+        {
+            Owned<IClientCopy> req = ensureFS()->createCopyRequest();
+            req->setSourceLogicalName(info.getLogicalName());
+            req->setDestLogicalName(info.getLogicalName());
+            req->setDestGroup(process.str());
+            req->setSrcusername(username.get());
+            req->setSrcpassword(password.get());
+            req->setOverwrite(false);
+            req->setSuperCopy(false);
+            if (clusterInfo->getPlatform()==RoxieCluster)
+                req->setDestGroupRoxie("Yes");
+            if (remote)
+                req->setSourceDali(daliServer.get());
 
-        Owned<IClientCopyResponse> resp = fs.Copy(req);
-        info.setDfuCopyWuid(resp->getResult());
+            Owned<IClientCopyResponse> resp = ensureFS()->Copy(req);
+            info.setDfuCopyWuid(resp->getResult());
+        }
+        else
+        {
+            Owned<IClientReplicate> req = ensureFS()->createReplicateRequest();
+            req->setSourceLogicalName(info.getLogicalName());
+            req->setCluster(process.str());
+            req->setReplicateOffset(1);
+            req->setRepeatLast(false);
+            req->setOnlyRepeated(false);
+
+            Owned<IClientReplicateResponse> resp = ensureFS()->Replicate(req);
+            info.setDfuCopyWuid(resp->getWuid());
+        }
     }
     catch (IException *e)
     {
         StringBuffer msg;
         info.setDfuCopyError(e->errorMessage(msg).str());
+        e->Release();
     }
 }
 
-bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cluster, bool copyLocal, IEspWUCopyLogicalClusterFileSections &lfinfo)
+void WuFileHelper::copyFiles()
 {
-    if (isEmpty(cluster))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "copyWULogicalFiles Cluster parameter not set.");
+    if (!clusterInfo)
+        return noteException(MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "cluster not found, can't copy files."));
+    if (!updateProcess())
+        return;
 
+    copyFiles(notLocal, true);
+    copyFiles(notOnCluster, false);
+}
+
+void WuFileHelper::gatherFileInfo()
+{
     Owned<IUserDescriptor> udesc = createUserDescriptor();
-    udesc->set(context.queryUserId(), context.queryPassword());
+    udesc->set(username.get(), password.get());
 
-    IArrayOf<IEspWULogicalFileCopyInfo> foreign;
-    IArrayOf<IEspWULogicalFileCopyInfo> onCluster;
-    IArrayOf<IEspWULogicalFileCopyInfo> notOnCluster;
-    IArrayOf<IEspWULogicalFileCopyInfo> notFound;
-
-    Owned<IClientFileSpray> fs;
-    if (copyLocal)
-    {
-        fs.setown(createFileSprayClient());
-        VStringBuffer url("http://.:%d/FileSpray", 8010);
-        fs->addServiceUrl(url.str());
-    }
-
-    bool isRoxie = isRoxieProcess(cluster);
-
-    Owned<IConstWUGraphIterator> graphs = &cw.getGraphs(GraphTypeActivities);
+    Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
     ForEach(*graphs)
     {
         Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false);
@@ -140,31 +254,23 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
                     info->setIsIndex(true);
                 else
                     logicalname = node.queryProp("att[@name='_fileName']/@value");
-                info->setLogicalName(logicalname);
                 if (logicalname)
                 {
+                    info->setLogicalName(logicalname);
                     if (!strnicmp("~foreign::", logicalname, 10))
                         foreign.append(*info.getClear());
                     else
                     {
                         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalname, udesc);
                         if(!df)
-                            notFound.append(*info.getClear());
-                        else if (df->findCluster(cluster)!=NotFound)
-                        {
+                            notLocal.append(*info.getClear());
+                        else if (df->findCluster(process.str())!=NotFound)
                             onCluster.append(*info.getClear());
-                        }
                         else
                         {
                             StringArray clusters;
                             df->getClusterNames(clusters);
                             info->setClusters(clusters);
-                            if (copyLocal)
-                            {
-                                StringBuffer wuid;
-                                bool supercopy = queryDistributedFileDirectory().isSuperFile(logicalname, NULL, udesc);
-                                doWuFileCopy(*fs, *info, logicalname, cluster, isRoxie, supercopy);
-                            }
                             notOnCluster.append(*info.getClear());
                         }
                     }
@@ -172,36 +278,19 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
             }
             catch(IException *e)
             {
-                e->Release();
+                noteException(e);
             }
         }
-        lfinfo.setClusterName(cluster);
-        lfinfo.setNotOnCluster(notOnCluster);
-        lfinfo.setOnCluster(onCluster);
-        lfinfo.setForeign(foreign);
-        lfinfo.setNotFound(notFound);
     }
-
-    return true;
 }
 
-void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clusterInfo, IConstWorkUnit &cw, IArrayOf<IConstWUCopyLogicalClusterFileSections> &clusterfiles, bool doLocalCopy)
+void WuFileHelper::getFileInfo(IEspWUCopyLogicalClusterFileSections &fileInfo)
 {
-    const StringArray &thors = clusterInfo.getThorProcesses();
-    ForEachItemIn(i, thors)
-    {
-        Owned<IEspWUCopyLogicalClusterFileSections> files = createWUCopyLogicalClusterFileSections();
-        copyWULogicalFiles(context, cw, thors.item(i), doLocalCopy, *files);
-        clusterfiles.append(*files.getClear());
-    }
-    SCMStringBuffer roxie;
-    clusterInfo.getRoxieProcess(roxie);
-    if (roxie.length())
-    {
-        Owned<IEspWUCopyLogicalClusterFileSections> files = createWUCopyLogicalClusterFileSections();
-        copyWULogicalFiles(context, cw, roxie.str(), doLocalCopy, *files);
-        clusterfiles.append(*files.getClear());
-    }
+    fileInfo.setProcessName(process.str());
+    fileInfo.setNotOnCluster(notOnCluster);
+    fileInfo.setOnCluster(onCluster);
+    fileInfo.setForeign(foreign);
+    fileInfo.setNotLocal(notLocal);
 }
 
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
@@ -222,10 +311,17 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
     else
         cw->getClusterName(cluster);
 
-    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
+    WuFileHelper helper(context, cw.get(), const_cast<IMultiException*>(&resp.getExceptions()));
+    helper.setCluster(cluster.str());
+    helper.gatherFileInfo();
+    if (req.getCopyLocal())
+        helper.copyFiles();
 
-    IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
-    copyWULogicalFilesToTarget(context, *clusterInfo, *cw, clusterfiles, req.getCopyLocal());
+    Owned<IEspWUCopyLogicalClusterFileSections> fileInfo = createWUCopyLogicalClusterFileSections();
+    helper.getFileInfo(*fileInfo);
+
+    IArrayOf<IEspWUCopyLogicalClusterFileSections> clusterfiles;
+    clusterfiles.append(*fileInfo);
     resp.setClusterFiles(clusterfiles);
 
     return true;
@@ -403,10 +499,20 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     resp.setQueryName(queryName.str());
     resp.setQuerySet(queryset.str());
 
-    if (req.getCopyLocal() || req.getShowFiles())
+    if (req.getCopyFiles() || req.getShowFiles())
     {
+        WuFileHelper helper(context, cw.get(), const_cast<IMultiException*>(&resp.getExceptions()));
+        helper.process.set(req.getProcess());
+        helper.setCluster(clusterInfo.get());
+        helper.gatherFileInfo();
+        if (req.getCopyFiles())
+            helper.copyFiles();
+
+        Owned<IEspWUCopyLogicalClusterFileSections> fileInfo = createWUCopyLogicalClusterFileSections();
+        helper.getFileInfo(*fileInfo);
+
         IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
-        copyWULogicalFilesToTarget(context, *clusterInfo, *cw, clusterfiles, req.getCopyLocal());
+        clusterfiles.append(*fileInfo.getClear());
         resp.setClusterFiles(clusterfiles);
     }
 
@@ -864,6 +970,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     StringBuffer targetName;
     StringBuffer wuid;
+    StringAttr daliServers;
     if (srcAddress.length())
     {
         const char *cluster = req.getCluster();
@@ -872,7 +979,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         StringBuffer xml;
         MemoryBuffer dll;
         StringBuffer dllname;
-        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, targetName, xml, dllname, dll);
+        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, targetName, xml, dllname, dll, daliServers);
         deploySharedObject(context, wuid, dllname.str(), cluster, targetName.str(), dll, queryDirectory.str(), xml.str());
     }
     else
@@ -889,11 +996,35 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     }
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    WorkunitUpdate wu(factory->updateWorkUnit(wuid.str()));
-    if (!wu)
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+    if (!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
 
+    if (req.getListFiles()||req.getCopyFiles())
+    {
+        try
+        {
+            WuFileHelper helper(context, cw.get(), const_cast<IMultiException*>(&resp.getExceptions()));
+            helper.daliServer.set(daliServers.get());
+            helper.process.set(req.getProcess());
+            helper.setCluster(req.getCluster());
+            helper.gatherFileInfo();
+            if (req.getCopyFiles())
+                helper.copyFiles();
+
+            Owned<IEspWUCopyLogicalClusterFileSections> fileInfo = createWUCopyLogicalClusterFileSections();
+            helper.getFileInfo(resp.updateFiles());
+        }
+        catch (IException *e)
+        {
+            resp.noteException(*e);
+            e->Release();
+        }
+    }
+
     StringBuffer targetQueryId;
+
+    WorkunitUpdate wu(&cw->lock());
     addQueryToQuerySet(wu, target, targetName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), targetQueryId);
     wu.clear();
 

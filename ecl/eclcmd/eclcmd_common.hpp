@@ -19,6 +19,8 @@
 #ifndef ECLCMD_COMMON_HPP
 #define ECLCMD_COMMON_HPP
 
+#include "ws_workunits.hpp"
+
 //=========================================================================================
 
 interface IEclCommand : extends IInterface
@@ -61,6 +63,11 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
 #define ECLOPT_ECL_ONLY "--ecl-only"
 
+#define ECLOPT_LIST_FILES "--list-files"
+#define ECLOPT_LIST_FILES_S "-lf"
+#define ECLOPT_COPY_FILES "--copy-files"
+#define ECLOPT_COPY_FILES_S "-cf"
+
 #define ECLOPT_WAIT "--wait"
 #define ECLOPT_WAIT_INI "waitTimeout"
 #define ECLOPT_WAIT_ENV "ECL_WAIT_TIMEOUT"
@@ -78,6 +85,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_WUID_S "-wu"
 #define ECLOPT_CLUSTER "--cluster"
 #define ECLOPT_CLUSTER_S "-cl"
+#define ECLOPT_PROCESS "--process"
+#define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_NAME "--name"
 #define ECLOPT_NAME_S "-n"
 #define ECLOPT_QUERYSET "--queryset"
@@ -222,5 +231,9 @@ public:
 };
 
 void outputMultiExceptions(const IMultiException &me);
+
+void outputFileList(const char *descr, IArrayOf<IConstWULogicalFileCopyInfo> &files, bool dfu=false);
+void outputFilesBeingCopied(IConstWUCopyLogicalClusterFileSections &sections);
+void outputFileLists(IConstWUCopyLogicalClusterFileSections &sections);
 
 #endif

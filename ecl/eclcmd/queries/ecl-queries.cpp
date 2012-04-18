@@ -260,7 +260,7 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optMsToWait(10000)
+    EclCmdQueriesCopy() : optActivate(false), optListFiles(false), optCopyFiles(false), optMsToWait(10000)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -281,9 +281,17 @@ public:
                 }
                 continue;
             }
+            if (iter.matchFlag(optListFiles, ECLOPT_LIST_FILES)||iter.matchFlag(optListFiles, ECLOPT_LIST_FILES_S))
+                continue;
+            if (iter.matchFlag(optCopyFiles, ECLOPT_COPY_FILES)||iter.matchFlag(optCopyFiles, ECLOPT_COPY_FILES_S))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+                continue;
+            if (iter.matchOption(optProcess, ECLOPT_PROCESS))
+                continue;
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -323,12 +331,19 @@ public:
         req->setCluster(optCluster.get());
         req->setActivate(optActivate);
         req->setWait(optMsToWait);
+        req->setCopyFiles(optCopyFiles);
+        req->setListFiles(optListFiles);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
         if (resp->getQueryId() && *resp->getQueryId())
             fprintf(stdout, "%s/%s\n\n", optTargetQuerySet.sget(), resp->getQueryId());
+
+        if (optListFiles)
+            outputFileLists(resp->getFiles());
+        if (optCopyFiles)
+            outputFilesBeingCopied(resp->getFiles());
         return 0;
     }
     virtual void usage()
@@ -352,7 +367,11 @@ public:
             "                          or: queryset/query\n"
             "   <target_queryset>      name of queryset to copy the query into\n"
             "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
+            "   --process=<process>    Specific process if target cluster has more than one\n"
+            "   --daliip=<IP>          DALI IP only needed if source_query ESP is pre 3.8\n"
             "   -A, --activate         Activate the new query\n"
+            "   -lf, --list-files      List files used by the query\n"
+            "   -cf, --copy-files      Copy files not already on the given cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
@@ -362,8 +381,12 @@ private:
     StringAttr optSourceQueryPath;
     StringAttr optTargetQuerySet;
     StringAttr optCluster;
+    StringAttr optProcess;
+    StringAttr optDaliIP;
     unsigned optMsToWait;
     bool optActivate;
+    bool optListFiles;
+    bool optCopyFiles;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)
