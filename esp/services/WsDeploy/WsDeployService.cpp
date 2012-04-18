@@ -61,6 +61,7 @@ bool supportedInEEOnly()
 
 void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropertyTree* pNode, StringBuffer& result) 
 {
+  const char* xpathorig = xpath;
   while (*xpath)
   {
     if (*xpath=='$')
@@ -114,6 +115,38 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
           result.append("\"]");
         }
         xpath+=12;
+      }
+      else if (strncmp(xpath, "$./*", 4) == 0)
+      {
+        String xpath2(xpath+4);
+        StringBuffer sb(xpath2);
+        String xpath3(xpathorig);
+        String* pstr = xpath3.substring(xpath3.lastIndexOf('[', xpath3.indexOf("$./*")) + 1, xpath3.indexOf("$./*"));
+        int pos1 = xpath2.indexOf(']');
+        int pos2 = xpath2.lastIndexOf('/');
+
+        if (pos1 != -1 && pos2 != -1)
+          sb.clear().append(xpath2.substring(0, pos2)->toCharArray());
+        else if (pos1 != -1)
+          sb.clear().append(xpath2.substring(0, pos1)->toCharArray());
+
+        Owned<IPropertyTreeIterator> elems = pNode->getElements(sb.str());
+
+        if (pos2 != -1)
+          sb.clear().append(xpath2.substring(pos2+ 1, pos1)->toCharArray());
+
+        ForEach(*elems)
+        {
+          IPropertyTree* elem = &elems->query();
+          result.append('\"');
+          result.append(elem->queryProp(sb.str()));
+          result.append("\"").append("][").append(pstr->toCharArray());
+        }
+
+        result.setLength(result.length() - pstr->length() - 2);
+        delete pstr;
+
+        xpath+=pos1+4;
       }
       else if (strncmp(xpath, "$./", 3) == 0)
       {
@@ -1158,6 +1191,11 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
                 pComp = pTmpComp->queryPropTree(xpath2.str());
               }
+            }
+            else if (pszSubType && strlen(rowIndex) > 0)
+            {
+              xpath2.clear().appendf("%s[%s]", pszSubType, rowIndex);
+              pComp = pTmpComp->queryPropTree(xpath2.str());
             }
             else if (pszSubType)
             {

@@ -707,8 +707,7 @@
                                 i.<xsl:value-of select="name()"/>_required = aS.required;
                                 i.<xsl:value-of select="name()"/>_onChange = aS.onChange;
                                 i.<xsl:value-of select="name()"/>_onChangeMsg = aS.onChangeMsg;
-                                if ("<xsl:value-of select="."/>"!== "")
-                                  subTypeKey += "[@" + "<xsl:value-of select="name()"/>" + "='" + "<xsl:value-of select="."/>" + "']";
+                                subTypeKey += "[@" + "<xsl:value-of select="name()"/>" + "='" + "<xsl:value-of select="."/>" + "']";
                                 if (aS.caption)
                                   i.<xsl:value-of select="name()"/>_caption = aS.caption;
                               }
