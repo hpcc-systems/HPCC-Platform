@@ -551,7 +551,10 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     bool authenticated = m_secmgr->authorize(*user, rlist);
     if(!authenticated)
     {
-        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid", NULL);
+        if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "ESP password is expired", NULL);
+        else
+            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid", NULL);
         return false;
     }
     bool authorized = true;

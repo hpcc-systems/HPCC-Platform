@@ -32,7 +32,7 @@ private:
     StringBuffer    m_name;
     StringBuffer    m_pw;
     StringBuffer    m_encodedPw;
-    bool            m_isAuthenticated;
+    authStatus      m_authenticateStatus;
     StringBuffer    m_fullname;
     StringBuffer    m_firstname;
     StringBuffer    m_lastname;
@@ -47,17 +47,12 @@ public:
     IMPLEMENT_IINTERFACE
 
     CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_isAuthenticated(false),m_userID(0), m_status(SecUserStatus_Unknown)
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown)
     {
     }
 
     virtual ~CSecureUser()
     {
-    }
-
-    virtual void setAuthenticated(bool authenticated)
-    {
-        m_isAuthenticated = authenticated;
     }
 
 //interface ISecUser
@@ -148,11 +143,6 @@ public:
         return true;
     }
 
-    bool isAuthenticated()
-    {
-        return m_isAuthenticated;
-    }
-
     ISecCredentials & credentials()
     {
         return *this;
@@ -212,10 +202,12 @@ public:
     virtual CDateTime & getPasswordExpiration(CDateTime& expirationDate){ assertex(false); return expirationDate; }
     virtual bool setPasswordExpiration(CDateTime& expirationDate) { assertex(false);return true; }
     virtual int getPasswordDaysRemaining() {assertex(false);return -1;}
+    virtual authStatus getAuthenticateStatus() {return m_authenticateStatus;}
+    virtual void setAuthenticateStatus(authStatus status){m_authenticateStatus = status;}
 
     virtual void copyTo(ISecUser& destination)
     {
-        destination.setAuthenticated(isAuthenticated());
+        destination.setAuthenticateStatus(getAuthenticateStatus());
         destination.setName(getName());
         destination.setFullName(getFullName());
         destination.setFirstName(getFirstName());
@@ -227,7 +219,6 @@ public:
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
-
         if(m_parameters.get()==NULL)
             return;
         CriticalBlock b(crit);
