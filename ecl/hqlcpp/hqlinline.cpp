@@ -1141,6 +1141,11 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
                 //NB: Alias expansions get rebound when they are bound into the context.
                 newRow = LINK(&cur);
             }
+            else if (!cur.isBinary())
+            {
+                //CSV and xml datasets need their elements serialized into the parent extract
+                newRow = new NonLocalIndirectRow(cur, NULL, childSerialization);
+            }
             else if (serialization)
             {
                 //A cursor active in the current scope => add it to the extract, and create an alias in the
