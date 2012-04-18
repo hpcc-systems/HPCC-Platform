@@ -164,6 +164,7 @@ protected:
     UnsignedArray childQueryIndexes;
     CachedOutputMetaData meta;
     mutable StatsCollector mystats;
+    bool variableFileName;
 
 public:
     CActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
