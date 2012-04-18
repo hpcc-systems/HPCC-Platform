@@ -648,6 +648,7 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
     Owned<IRowWriter> diskout;
     Owned<IFile> tmpfile;
     unsigned readersInUse;
+    SpinLock readerLock;
 
     void diskSwitch()
     {
@@ -707,6 +708,7 @@ public:
     }
     void readerStop()
     {
+        SpinBlock b(readerLock);
         --readersInUse;
     }
     void flush()
@@ -719,6 +721,7 @@ public:
     }
     IRowStream *getReader()
     {
+        SpinBlock b(readerLock);
         flush();
         class COverflowReader : public CSimpleInterface, implements IRowStream
         {
