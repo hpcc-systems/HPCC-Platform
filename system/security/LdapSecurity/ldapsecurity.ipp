@@ -46,7 +46,7 @@ private:
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
     bool         m_isAuthenticated;
-    CDateTime    m_passwordExpiration;
+    CDateTime    m_passwordExpiration;//local time
     unsigned     m_userid;
     MemoryBuffer m_usersid;
     BufferArray  m_groupsids;
@@ -114,17 +114,14 @@ public:
    {
        if (m_passwordExpiration.isNull())
            return -2;//-2 if never expires
-
        CDateTime expiry(m_passwordExpiration);
-       expiry.setTime(0,0,0,0);
-
        CDateTime now;
        now.setNow();
        now.adjustTime(now.queryUtcToLocalDelta());
        if (expiry <= now)
            return -1;//-1 if already expired
+       expiry.setTime(0,0,0,0);
        now.setTime(23,59,59);
-
        int numDays = 0;
        while (expiry > now)
        {

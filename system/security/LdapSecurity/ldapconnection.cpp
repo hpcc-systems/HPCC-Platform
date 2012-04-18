@@ -1125,17 +1125,17 @@ public:
 #ifdef _DEBUG
                             CDateTime lastPWChange;
                             lastPWChange.setFromFILETIME(time);
+                            lastPWChange.adjustTime(lastPWChange.queryUtcToLocalDelta());
                             StringBuffer sb;
                             lastPWChange.getString(sb);
 #endif
                             time += maxPWAge;
                             expiry.setFromFILETIME(time);
+                            expiry.adjustTime(expiry.queryUtcToLocalDelta());
                             user.setPasswordExpiration(expiry);
 #ifdef _DEBUG
-                            CDateTime whenExpires;
-                            whenExpires.setFromFILETIME(time);
                             StringBuffer sb2;
-                            whenExpires.getString(sb2);
+                            expiry.getString(sb2);
 #endif
                         }
                         else
