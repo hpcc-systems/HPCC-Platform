@@ -26,6 +26,8 @@ extern HQL_API IHqlExpression * queryMatchGroupOrderSortlist();
 extern HQL_API IHqlExpression * getUnknownAttribute();
 extern HQL_API IHqlExpression * getUnknownSortlist();
 extern HQL_API IHqlExpression * getMatchGroupOrderSortlist();
+extern HQL_API IHqlExpression * queryAnyOrderSortlist();
+extern HQL_API IHqlExpression * queryAnyDistributionAttribute();
 
 extern HQL_API IHqlExpression * getExistingSortOrder(IHqlExpression * dataset, bool isLocal, bool ignoreGrouping);
 
