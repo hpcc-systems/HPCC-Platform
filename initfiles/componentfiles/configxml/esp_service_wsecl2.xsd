@@ -23,6 +23,39 @@
     <xs:include schemaLocation="environment.xsd"/>
     <xs:element name="EspService">
         <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ProcessCluster" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                  <xs:appinfo>
+                    <title>VIPS</title>
+                  </xs:appinfo>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:attribute name="name" type="xs:string" use="required" default="">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <viewType>hidden</viewType>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="roxie" type="xpathType" use="required" default="">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <colIndex>1</colIndex>
+                        <xpath>/Environment/Software/RoxieCluster[@name!=$./*ProcessCluster/@roxie]</xpath>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                  <xs:attribute name="vip" type="xs:string" use="required">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <colIndex>2</colIndex>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
             <xs:attribute name="build" type="buildType" use="required">
                 <xs:annotation>
                     <xs:appinfo>
