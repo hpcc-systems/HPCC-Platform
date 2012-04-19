@@ -270,7 +270,7 @@ public:
     void clearConnections();
     virtual void connectInput(unsigned which, CGraphElementBase *input, unsigned inputOutIdx);
     void setResultsGraph(CGraphBase *_resultsGraph) { resultsGraph = _resultsGraph; }
-    void addAssociatedChildGraph(CGraphBase *childGraph) { associatedChildGraphs.append(*LINK(childGraph)); }
+    void addAssociatedChildGraph(CGraphBase *childGraph);
     void releaseIOs();
     void addDependsOn(CGraphBase *graph, int controlId);
     IThorGraphDependencyIterator *getDependsIterator() const;
