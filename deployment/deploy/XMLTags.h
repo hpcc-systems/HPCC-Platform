@@ -28,6 +28,7 @@
 #define XML_TAG_PROGRAMS               "Programs"
 #define XML_TAG_DATA                   "Data"
 #define XML_TAG_ENVSETTINGS            "EnvSettings"
+#define XML_TAG_DIRECTORIES            "Directories"
 
 #define XML_TAG_ATTRIBUTESERVER        "AttributeServer"
 #define XML_TAG_ATTRSERVERINSTANCE     "AttrServerInstance"
@@ -80,6 +81,9 @@
 #define XML_TAG_TOPOLOGY               "Topology"
 #define XML_TAG_VERSION                "Version"
 #define XML_TAG_ROXIECLUSTER           "RoxieCluster"
+#define XML_TAG_LOCALENVFILE           "LocalEnvFile"
+#define XML_TAG_LOCALCONFFILE          "LocalConfFile"
+#define XML_TAG_LOCALENVCONFFILE       "LocalEnvConfFile"
 
 #define XML_ATTR_AGENTPORT             "@agentPort"
 #define XML_ATTR_ATTRSERVER            "@attrServer"
