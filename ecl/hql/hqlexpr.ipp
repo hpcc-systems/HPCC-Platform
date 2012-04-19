@@ -451,7 +451,12 @@ public:
     virtual int  getStartColumn() const { return startColumn; }
     virtual int getStartPos() const { return startpos; }
     virtual int getBodyPos() const { return bodypos; }
-    virtual int getEndPos() const { return endpos; }
+    virtual int getEndPos() const
+    {
+        if ((endpos == 0) && text)
+            return text->length();
+        return endpos;
+    }
 
 //interface IHqlNamedAnnotation
     virtual IFileContents * getBodyContents();
