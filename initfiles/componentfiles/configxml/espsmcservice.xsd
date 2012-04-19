@@ -39,7 +39,7 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="name" type="xs:string" use="optional" default="espsmc">
+            <xs:attribute name="name" type="xs:string" use="optional" default="eclwatch">
                 <xs:annotation>
                     <xs:appinfo>
                         <required>true</required>

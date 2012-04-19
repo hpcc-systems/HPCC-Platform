@@ -141,7 +141,9 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
             else
                 head.append(colon - bptr, bptr);
 
-            if(stricmp(head.str(), "WsAttributesAccess") == 0)
+            if(strieq(head.str(), "SMC"))
+                head.clear().append("Management Console");
+            else if(stricmp(head.str(), "WsAttributesAccess") == 0)
                 continue;
 
             Owned<IEspDnStruct> onedn = createDnStruct();
