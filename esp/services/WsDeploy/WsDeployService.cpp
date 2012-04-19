@@ -2810,6 +2810,13 @@ bool CWsDeployFileInfo::clientAlive(IEspContext &context, IEspClientAliveRequest
   StringBuffer sb(sbName);
   sb.append(sbUserIp);
 
+  if (getConfigChanged() == true)
+  {
+    m_configChanged = false;
+    m_lastSaved.clear();
+    m_lastSaved.setNow();
+  }
+
   if (!strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
   {
     CClientAliveThread* pClientAliveThread = m_keepAliveHTable.getValue(sb.str());
@@ -6527,7 +6534,12 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
 
       try
       {
+        const unsigned int uTimeOutPeriod =  6 * 1000;
+        const unsigned int uCheckInterval = 1 * 1000;
         fi->initFileInfo(createFile);
+        fi->m_configFileMonitorThread.clear();
+        fi->m_configFileMonitorThread.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(fi,uCheckInterval,uTimeOutPeriod));
+        fi->m_configFileMonitorThread->init();
       }
       catch (IException* e)
       {
