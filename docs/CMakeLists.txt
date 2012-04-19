@@ -58,7 +58,7 @@ add_subdirectory(Installing_and_RunningTheHPCCPlatform)
 add_subdirectory(RDDERef)
 add_subdirectory(RunningHPCCinaVirtualMachine)
 add_subdirectory(UsingConfigManager)
-
+add_subdirectory(HDFS_Stream)
 
 
 #WIP -  Docs
