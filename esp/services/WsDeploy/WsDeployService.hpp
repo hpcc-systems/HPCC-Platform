@@ -29,6 +29,8 @@
 #include "XMLTags.h"
 #include "httpclient.hpp"
 
+class CDirectoryDifferenceIterator;
+
 typedef enum EnvAction_
 {
     CLOUD_NONE,
@@ -41,6 +43,8 @@ typedef enum EnvAction_
 } EnvAction;
 
 #define CLOUD_SOAPCALL_TIMEOUT 10000
+#define CONFIG_MONITOR_CHECK_INTERVAL  1000
+#define CONFIG_MONITOR_TIMEOUT_PERIOD  6000
 
 class CCloudTask;
 class CCloudActionHandler;
@@ -129,6 +133,75 @@ private:
         CThreaded* m_pWorkerThread;
         Linked<CWsDeployExCE> m_pService;
         Linked<IConstEnvironment> m_constEnv;
+    };
+
+  public:
+    class CConfigFileMonitorThread
+      : public CInterface, implements IThreaded, implements IInterface
+    {
+    public:
+      CConfigFileMonitorThread(CWsDeployFileInfo* pFileInfo, unsigned int uCheckInterval, unsigned int uTimeout)
+        : m_pWorkerThread(NULL), m_pFileInfo(pFileInfo), m_quitThread(false), m_uCheckInterval(uCheckInterval), m_uTimeout(uTimeout)
+      {
+      };
+
+      virtual ~CConfigFileMonitorThread()
+      {
+        m_quitThread = true;
+        m_pWorkerThread->join();
+        delete m_pWorkerThread;
+      };
+
+      IMPLEMENT_IINTERFACE;
+
+      virtual void main()
+      {
+        StringBuffer strDrive, strPath, strTail, strExt, strFileName;
+
+        while(m_quitThread == false)
+        {
+          if (m_pFileInfo != NULL && m_pFileInfo->m_pFile != NULL)
+          {
+            splitFilename( m_pFileInfo->m_pFile->queryFilename(), &strDrive, &strPath, &strTail, &strExt);
+            strFileName.clear().appendf("%s%s",strTail.toCharArray(),strExt.toCharArray());
+
+            Owned<IFile> configFiles = createIFile(strPath);
+
+            while ( m_quitThread == false )
+            {
+              IDirectoryDifferenceIterator* diffIter = configFiles->monitorDirectory(NULL, strFileName, false, true, m_uCheckInterval, m_uTimeout);
+
+              if (diffIter != NULL && m_pFileInfo != NULL)
+              {
+                m_pFileInfo->setConfigChanged(true);
+              }
+            }
+          }
+         Sleep(0);
+        }
+      };
+
+      void init()
+      {
+        if ( m_pWorkerThread == NULL)
+        {
+          m_pWorkerThread = new CThreaded("CConfigFileMonitorThread");
+          IThreaded* pIThreaded = this;
+          m_pWorkerThread->init(pIThreaded);
+        }
+      };
+
+    protected:
+      CThreaded* m_pWorkerThread;
+      CWsDeployFileInfo* m_pFileInfo;
+
+      bool m_quitThread;
+      unsigned int m_uTimeout;
+      unsigned int m_uCheckInterval;
+
+    private:
+      CConfigFileMonitorThread() {};
+      CConfigFileMonitorThread(const CConfigFileMonitorThread& configFileThread) {};
     };
 
     class CClientAliveThread : public CInterface, implements IThreaded, implements IInterface
@@ -254,6 +327,15 @@ public:
     }
     ~CWsDeployFileInfo();
      void initFileInfo(bool createFile);
+    virtual void setConfigChanged(bool b)
+    {
+      m_configChanged = b;
+    };
+    virtual bool getConfigChanged() const
+    {
+      return m_configChanged;
+    };
+    virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool graph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
@@ -347,8 +429,12 @@ private:
     StringBuffer              m_cloudEnvId;
     short                     m_daliServerPort;
     Owned<CGenerateJSFactoryThread> m_pGenJSFactoryThread;
+public:
+    Owned<CConfigFileMonitorThread> m_configFileMonitorThread;
+private:
     bool                      m_skipEnvUpdateFromNotification;
     bool                      m_activeUserNotResp;
+    bool                      m_configChanged;
     bool                      m_bCloud;
     Owned<IFile>              m_pFile;
     Owned<IFileIO>            m_pFileIO;

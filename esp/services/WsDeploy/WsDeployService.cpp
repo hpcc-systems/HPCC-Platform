@@ -274,7 +274,7 @@ IPropertyTree* CWsDeployFileInfo::getEnvTree(IEspContext &context, IConstWsDeplo
   
   context.getPeer(sbUserIp);
 
-  if (m_userWithLock.length() && !strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
+  if (m_userWithLock.length() && !strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()) &&  m_Environment != NULL)
     return &m_Environment->getPTree();
   else
     return &m_constEnvRdOnly->getPTree();
@@ -2824,6 +2824,12 @@ bool CWsDeployFileInfo::clientAlive(IEspContext &context, IEspClientAliveRequest
   StringBuffer sb(sbName);
   sb.append(sbUserIp);
 
+  if (getConfigChanged() == true)
+  {
+    updateConfigFromFile();
+    setConfigChanged(false);
+  }
+
   if (!strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
   {
     CClientAliveThread* pClientAliveThread = m_keepAliveHTable.getValue(sb.str());
@@ -5244,6 +5250,31 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
   }
 }
 
+void CWsDeployFileInfo::updateConfigFromFile()
+{
+  StringBuffer sbxml;
+
+  if (m_pFileIO.get() != NULL)
+  {
+    m_pFileIO.clear();
+  }
+  if (m_lastSaved.isNull())
+  {
+    m_lastSaved.setNow();
+  }
+
+  m_pFileIO.setown(m_pFile->open(IFOread));
+  Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
+  toXML(pTree, sbxml.clear());
+
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+
+  m_constEnvRdOnly.clear();
+  m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sbxml.str()));
+  m_lastSaved.clear();
+  m_lastSaved.setNow();
+}
+
 bool CWsDeployFileInfo::deploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
 {
   synchronized block(m_mutex);
@@ -5465,6 +5496,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
           else
           {
             Owned<IFile> pFile(createIFile(sb.str()));
+            m_configFileMonitorThread.clear();
             copyFile(pFile, m_pFile, 0x100000);
             break;
           }
@@ -5556,6 +5588,12 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
 
       throw MakeStringException(0, "%s", sMsg.str());
     }
+  }
+
+  if (m_configFileMonitorThread.get() == NULL)
+  {
+    m_configFileMonitorThread.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(this, CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
+    m_configFileMonitorThread->init();
   }
 }
 
@@ -6046,9 +6084,9 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
   if (!fileExists)
     toXML(pEnvRoot, sbxml.clear());
-  
+
   m_Environment.clear();
-  
+
   if (m_constEnvRdOnly.get() == NULL)
   {
     if (fileExists)
@@ -6547,6 +6585,9 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
       try
       {
         fi->initFileInfo(createFile);
+        fi->m_configFileMonitorThread.clear();
+        fi->m_configFileMonitorThread.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(fi, CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
+        fi->m_configFileMonitorThread->init();
       }
       catch (IException* e)
       {
