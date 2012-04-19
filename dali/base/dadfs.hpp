@@ -286,8 +286,8 @@ interface IDistributedFile: extends IInterface
     virtual StringBuffer &getColumnMapping(StringBuffer &mapping) =0;   
     virtual void setColumnMapping(const char *mapping) =0;   
 
-    virtual bool cannotRemove(StringBuffer &reason) = 0;  // returns true if is query, external, foreign, subfile or protected
-                                                          // if returns true then reason filled in
+    virtual bool canModify(StringBuffer &reason) = 0;
+    virtual bool canRemove(StringBuffer &reason,bool ignoresub=false) = 0;
     virtual void setProtect(const char *callerid, bool protect=true, unsigned timeoutms=INFINITE) = 0;                  
                                                                                             // sets or clears deletion protection
                                                                                             // returns true if locked (by anyone) after action
@@ -336,8 +336,6 @@ interface IDistributedSuperFile: extends IDistributedFile
     virtual IDistributedFile *querySubPart(unsigned partidx,                // superfile part index
                                            unsigned &subfilepartidx)=0;     // part index in subfile
                                 // returns file for part (not linked) NULL if not found
-
-    virtual bool cannotModify(StringBuffer &reason) = 0;  // returns true if protected
 };
 
 
