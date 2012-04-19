@@ -3147,7 +3147,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
         }
 
         StringArray basednNames;
-        getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, username, 0, basednNames);
+        getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, username, bGroupAccount? 1:0, basednNames);
         if (basednNames.length() > 0)
         {
             resp.setBasednNames(basednNames);

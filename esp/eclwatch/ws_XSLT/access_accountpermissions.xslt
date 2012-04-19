@@ -212,17 +212,13 @@
     <body class="yui-skin-sam" onload="nof5();onLoad()">
             <h3>Permissions of <xsl:value-of select="AccountName"/></h3>
             <p/>
-            <xsl:choose>
-                <xsl:when test="not(Permissions/Permission[1])">
-                </xsl:when>
-                <xsl:otherwise>
-                    <!--xsl:apply-templates select="Permissions"/-->
-                    <xsl:apply-templates select="Permissions">
-                        <xsl:with-param name="AccountN" select="AccountName"/>
-                        <xsl:with-param name="AccountT" select="IsGroup"/>
-                    </xsl:apply-templates>
-                </xsl:otherwise>
-            </xsl:choose>
+            <xsl:if test="Permissions/Permission[1]">
+                <!--xsl:apply-templates select="Permissions"/-->
+                <xsl:apply-templates select="Permissions">
+                    <xsl:with-param name="AccountN" select="AccountName"/>
+                    <xsl:with-param name="AccountT" select="IsGroup"/>
+                </xsl:apply-templates>
+            </xsl:if>
             <xsl:if test="count(BasednNames/Item)">
                 <form method="POST" action="/ws_access/PermissionAddInput">
                     <input type="hidden" name="AccountName" value="{AccountName}"/>
@@ -235,13 +231,9 @@
                 </form>
             </xsl:if>
             <p/>
-            <xsl:choose>
-                <xsl:when test="not(GroupPermissions/GroupPermission[1])">
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:apply-templates select="GroupPermissions"/>
-                </xsl:otherwise>
-            </xsl:choose>
+            <xsl:if test="GroupPermissions/GroupPermission[1]">
+                <xsl:apply-templates select="GroupPermissions"/>
+            </xsl:if>
         </body>
         </html>
     </xsl:template>
@@ -267,17 +259,13 @@
             </a>
         </div>
         <span id ="{$groupDivId}" style="display:none; visibility:hidden;">
-            <xsl:choose>
-                <xsl:when test="not(Permissions/Permission[1])">
-                </xsl:when>
-                <xsl:otherwise>
-                    <!--xsl:apply-templates/-->
-                    <xsl:apply-templates select="Permissions">
-                        <xsl:with-param name="AccountN" select="GroupName"/>
-                        <xsl:with-param name="AccountT" select="1"/>
-                    </xsl:apply-templates>
-                </xsl:otherwise>
-            </xsl:choose>
+            <xsl:if test="Permissions/Permission[1]">
+                <!--xsl:apply-templates/-->
+                <xsl:apply-templates select="Permissions">
+                    <xsl:with-param name="AccountN" select="GroupName"/>
+                    <xsl:with-param name="AccountT" select="1"/>
+                </xsl:apply-templates>
+            </xsl:if>
             <xsl:if test="count(BasednNames/Item)">
                 <form method="POST" action="/ws_access/PermissionAddInput">
                     <input type="hidden" name="AccountName" value="{GroupName}"/>
