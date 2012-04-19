@@ -192,14 +192,17 @@ void CSlaveMessageHandler::main()
                         DBGLOG("%s", msg.str());
                         parentExtract = graph->setParentCtx(parentExtractSz, parentExtract);
                     }
-                    Owned<IThorActivityIterator> iter = graph->getIterator();
-                    // onCreate all
-                    ForEach (*iter)
                     {
-                        CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
-                        element.onCreate();
-                        if (isDiskInput(element.getKind()))
-                            element.onStart(parentExtractSz, parentExtract);
+                        CriticalBlock b(graph->queryCreateLock());
+                        Owned<IThorActivityIterator> iter = graph->getIterator();
+                        // onCreate all
+                        ForEach (*iter)
+                        {
+                            CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
+                            element.onCreate();
+                            if (isDiskInput(element.getKind()))
+                                element.onStart(parentExtractSz, parentExtract);
+                        }
                     }
                     msg.clear();
                     graph->serializeCreateContexts(msg);
@@ -213,16 +216,19 @@ void CSlaveMessageHandler::main()
                     Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
                     assertex(graph);
                     CGraphElementArray toSerialize;
-                    loop
                     {
-                        activity_id id;
-                        msg.read(id);
-                        if (!id)
-                            break;
-                        CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
-                        assertex(element);
-                        element->doCreateActivity();
-                        toSerialize.append(*LINK(element));
+                        CriticalBlock b(graph->queryCreateLock());
+                        loop
+                        {
+                            activity_id id;
+                            msg.read(id);
+                            if (!id)
+                                break;
+                            CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
+                            assertex(element);
+                            element->doCreateActivity();
+                            toSerialize.append(*LINK(element));
+                        }
                     }
                     msg.clear();
                     CMessageBuffer replyMsg;
