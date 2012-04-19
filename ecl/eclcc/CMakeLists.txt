@@ -41,6 +41,7 @@ include_directories (
          ./../../rtl/include 
          ./../../system/jlib 
          ./../../common/commonext 
+         ./../../common/remote
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

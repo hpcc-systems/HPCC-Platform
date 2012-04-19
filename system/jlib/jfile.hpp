@@ -261,6 +261,7 @@ extern jlib_decl IFile * createIFile(const char * filename);
 extern jlib_decl IFile * createIFile(MemoryBuffer & buffer);
 extern jlib_decl IFileIO * createIFileIO(HANDLE handle);
 extern jlib_decl IDirectoryIterator * createDirectoryIterator(const char * path = NULL, const char * wildcard = NULL);
+extern jlib_decl IDirectoryIterator * createNullDirectoryIterator();
 extern jlib_decl IFileIO * createIORange(IFileIO * file, offset_t header, offset_t length);     // restricts input/output to a section of a file.
 
 extern jlib_decl IFileIOStream * createIOStream(IFileIO * file);        // links argument
@@ -447,15 +448,23 @@ interface IReplicatedFile: extends IInterface
 extern jlib_decl IReplicatedFile *createReplicatedFile();
 
 
-interface IFileCreateHook: extends IInterface
+interface IRemoteFileCreateHook: extends IInterface
 {
     virtual IFile * createIFile(const RemoteFilename & filename)=0;
 };
-extern jlib_decl void addIFileCreateHook(IFileCreateHook *);
-extern jlib_decl void removeIFileCreateHook(IFileCreateHook *);
+extern jlib_decl void addIFileCreateHook(IRemoteFileCreateHook *);
+extern jlib_decl void removeIFileCreateHook(IRemoteFileCreateHook *);
 
 extern jlib_decl IFile * createIFile(const RemoteFilename & filename);
 
+// Hook mechanism for accessing files inside containers (eg zipfiles)
+
+interface IContainedFileHook: extends IInterface
+{
+    virtual IFile * createIFile(const char *fileName) = 0;
+};
+extern jlib_decl void addContainedFileHook(IContainedFileHook *);
+extern jlib_decl void removeContainedFileHook(IContainedFileHook *);
 
 // Useful set of path inlines that work with '/' and '\'
 
