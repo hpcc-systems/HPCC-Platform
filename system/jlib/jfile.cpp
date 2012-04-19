@@ -4927,7 +4927,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
                 }
                 if (tail == relpath)
                     break; // bail out and guess
-                head.append(tail-relpath, relpath);
+                head.clear().append(tail-relpath, relpath);
                 path = head.str();
             }
         }
