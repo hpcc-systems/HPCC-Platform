@@ -38,7 +38,7 @@ class JoinActivityMaster : public CMasterActivity
     bool islocal;
     bool rightpartition;
     unsigned selfJoinWarnLevel, lastMsgTime;
-    mptag_t mpTagRPC;
+    mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
     Owned<ProgressInfo> lhsProgress, rhsProgress;
 
@@ -91,12 +91,14 @@ public:
         selfJoinWarnLevel = INITIAL_SELFJOIN_MATCH_WARNING_LEVEL;
         lastMsgTime = 0;
         mpTagRPC = container.queryJob().allocateMPTag();
-        barrier.setown(container.queryJob().createBarrier(container.queryJob().allocateMPTag()));
+        barrierMpTag = container.queryJob().allocateMPTag();
+        barrier.setown(container.queryJob().createBarrier(barrierMpTag));
         climitedcmp = NULL;
     }
     ~JoinActivityMaster()
     {
         container.queryJob().freeMPTag(mpTagRPC);
+        container.queryJob().freeMPTag(barrierMpTag);
         delete climitedcmp;
     }
     void init()
@@ -106,8 +108,8 @@ public:
     {
         if (!islocal)
         {
-            dst.append((int)mpTagRPC);
-            dst.append((int)barrier->queryTag());
+            serializeMPtag(dst, mpTagRPC);
+            serializeMPtag(dst, barrierMpTag);
         }
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
