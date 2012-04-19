@@ -63,6 +63,7 @@ public:
 
     virtual void init();
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
+    CriticalSection &queryCreateLock() { return createdCrit; }
     void handleSlaveDone(unsigned node, MemoryBuffer &mb);
     void serializeCreateContexts(MemoryBuffer &mb);
     void serializeStartCtxs(MemoryBuffer &mb);
