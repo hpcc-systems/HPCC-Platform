@@ -812,7 +812,8 @@ processedProgress:
 
             StringBuffer localFilename;
             localTempFilename.getPath(localFilename);
-            recursiveCreateDirectoryForFile(localFilename);
+            if (!recursiveCreateDirectoryForFile(localFilename))
+                throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
 
             OwnedIFile outFile = createIFile(localFilename.str());
             OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone);
