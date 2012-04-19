@@ -349,15 +349,7 @@ void ViewFileWeb::gatherBrowseFiles(BrowseCreateInfo & info, ViewFile * file, CR
 
 void ViewFileWeb::gatherWeb(const char * rootFilename, const ViewGatherOptions & options)
 {
-    ViewWalkOptions localOptions(options);
-    if (!localOptions.kind)
-        localOptions.kind = S_LINK_RELATIONSHIP_KIND;
-    localOptions.isExplicitFile = true;
-
-    if (!walkFile(rootFilename, NULL, localOptions))
-        throwError1(FVERR_CouldNotResolveX, rootFilename);
-
-    //MORE: Should possibly percolate relations between superfiles down to files they contain.
+    gatherWeb(rootFilename, NULL, options);
 }
 
 
