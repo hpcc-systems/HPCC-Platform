@@ -1,0 +1,141 @@
+﻿/*##############################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+html, body {
+  background: white; 
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+  color: rgb(51, 51, 51); 
+  font-family: Lucida Sans,Lucida Grande,Arial !important; 
+  font-size: 13px !important;
+  padding-top:0px;
+  padding-right:0px;
+  padding-bottom:0px;
+  padding-left:0px;
+}
+button {
+	background-position: top; 
+	padding: 2px 8px 4px; 
+	border-radius: 4px; 
+	border: 1px solid rgb(118, 157, 192); 
+	font-size: 1em; 
+	background-image: url("http://ajax.googleapis.com/ajax/libs/dojo/1.7.1/dijit/themes/claro/form/images/button.png"); 
+	background-repeat: repeat-x; 
+	background-color: rgb(228, 242, 255); 
+	-webkit-transition: background-color 0.2s linear; 
+	-moz-border-radius: 4px 4px 4px 4px; 
+	-moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+button:hover {
+	color: rgb(0, 0, 0); 
+	background-color: rgb(175, 217, 255);
+}
+h1 {
+	font-size: 1.5em;
+}
+
+#eclContent {
+	height: 80%;
+}
+.CodeMirror {
+}
+.CodeMirror-scroll {
+	position: absolute;
+	height: 99%;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+#title {
+	font-weight: bold;
+	font-size: x-large;
+}
+
+#appLayout {
+	height: 100%;
+}
+.claro .demoLayout .topPanel {
+	background-color: rgb(208, 233, 252);
+}
+.claro .demoLayout .edgePanel {
+	background-color: rgb(208, 233, 252);
+}
+.pageOverlay {
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+	display: block;
+	position: absolute;
+	z-index: 1001;
+}
+#loadingOverlay {
+	background: url("/esp/files/img/loadingAnimation.gif") no-repeat 10px 23px rgb(255, 255, 255);
+}
+#loadingOverlay .loadingMessage {
+	padding: 25px 40px;
+	color: rgb(153, 153, 153);
+}
+.searchInputColumn {
+	width: 100%;
+	margin-right: -10em;
+	float: left;
+}
+.searchInputColumnInner {
+	padding-top: 2px;
+	padding-right: 11em;
+}
+.searchButtonColumn {
+	width: 10em;
+	float: left;
+}
+#searchBtn {
+	width: 100%;
+	display: block;
+}
+#searchTerms {
+	width: 100%;
+	display: block;
+}
+.demoImageList {
+	margin: 0px;
+	padding: 0px;
+	background-color: rgb(204, 204, 204);
+}
+.demoImageList li.item img {
+	overflow: hidden;
+	margin-right: 10px;
+	cursor: pointer;
+	max-height: 50px;
+}
+.demoImageList li.item {
+	margin: 0px;
+	padding: 4px 15px 3px 10px;
+	overflow: hidden;
+	border-top-color: rgb(255, 255, 255);
+	border-bottom-color: rgb(153, 153, 153);
+	border-top-width: 2px;
+	border-bottom-width: 1px;
+	border-top-style: solid;
+	border-bottom-style: solid;
+	position: relative;
+	max-height: 60px;
+	background-color: rgb(238, 238, 238);
+}
+
