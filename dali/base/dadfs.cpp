@@ -959,7 +959,7 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
-    static bool cannotRemove(CDfsLogicalFileName &name,IPropertyTree *froot,StringBuffer &reason,bool ignoresub, bool checkprotonly, unsigned timeoutms);
+    static bool cannotRemove(CDfsLogicalFileName &name,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
     void setFileProtect(CDfsLogicalFileName &dlfn, const char *owner, bool set, const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -2135,6 +2135,27 @@ static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
 
 extern bool isMulti(const char *str);
 
+static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,StringBuffer &reason)
+{
+    Owned<IPropertyTreeIterator> wpiter = froot->getElements("Attr/Protect");
+    bool prot = false;
+    ForEach(*wpiter) {
+        IPropertyTree &t = wpiter->query();
+        if (t.getPropInt("@count")) {
+            const char *wpname = t.queryProp("@name");
+            if (!wpname||!*wpname)
+                wpname = "<Unknown>";
+            if (prot)
+                reason.appendf(", %s",wpname);
+            else {
+                reason.appendf("file %s protected by %s",logicalname,wpname);
+                prot = true;
+            }
+        }
+    }
+    return prot;
+}
+
 /**
  * A template class which implements the common methods of an IDistributedFile interface.
  * The actual interface (extended from IDistributedFile) is provided as a template argument.
@@ -2358,12 +2379,6 @@ public:
         return root&&root->hasProp("SuperOwner[1]");
     }
 
-    virtual bool cannotRemove(StringBuffer &reason)
-    {
-        CriticalBlock block(sect);
-        return CDistributedFileDirectory::cannotRemove(logicalName,root,reason,false,false,defaultTimeout);
-    }
-    
     void setProtect(const char *owner, bool protect, unsigned timems)
     {
         if (logicalName.isForeign()) {
@@ -2498,6 +2513,51 @@ public:
         defaultTimeout = timems;
         return ret;
     }
+
+    // MORE - simplify this, after removing CLightWeightSuperFileConn
+    bool canModify(StringBuffer &reason)
+    {
+        return !checkProtectAttr(logicalName.get(),root,reason);
+    }
+
+    bool canRemove(StringBuffer &reason,bool ignoresub=false)
+    {
+        CriticalBlock block(sect);
+        if (!canModify(reason))
+            return false;
+        const char *logicalname = logicalName.get();
+        if (!logicalname||!*logicalname) {
+            reason.appendf("empty filename");
+            return false;
+        }
+        if (logicalName.isQuery()) {
+            reason.appendf("%s is query",logicalname);
+            return false;
+        }
+        if (logicalName.isExternal()) {
+            reason.appendf("%s is external",logicalname);
+            return false;
+        }
+        if (logicalName.isForeign()) {
+            reason.appendf("%s is foreign",logicalname);
+            return false;
+        }
+        if (logicalName.isMulti()) {
+            reason.appendf("%s is multi",logicalname);
+            return false;
+        }
+        if (!ignoresub) {
+            // And has super owners
+            Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
+            if (iter->isValid()) {
+                const char *supername = iter->query().queryProp("@name");
+                reason.appendf("Cannot remove file %s as owned by SuperFile %s", logicalname, supername);
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     virtual const char *queryDefaultDir() = 0;
     virtual unsigned numParts() = 0;
@@ -4038,9 +4098,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
     void checkModify(const char *title) 
     {
         StringBuffer reason;
-        if (cannotModify(reason)) {
+        if (!canModify(reason)) {
 #ifdef EXTRA_LOGGING
-            PROGLOG("CDistributedSuperFile::%s(cannotRemove) %s",title,reason.str());
+            PROGLOG("CDistributedSuperFile::%s(canModify) %s",title,reason.str());
 #endif
             if (reason.length())
                 throw MakeStringException(-1,"CDistributedSuperFile::%s %s",title,reason.str());
@@ -5403,15 +5463,6 @@ public:
             }       
         }
     }
-
-    bool cannotModify(StringBuffer &reason)
-    {
-        CriticalBlock block(sect);
-        return CDistributedFileDirectory::cannotRemove(logicalName,root,reason,false,true,defaultTimeout);  
-    }
-
-
-
 };
 
 
@@ -6593,85 +6644,13 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     return localtrans->lookupSuperFile(logicalname.get());
 }
 
-static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,StringBuffer &reason)
+// MORE - this should go when remove file gets into transactions
+bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,StringBuffer &reason,bool ignoresub, unsigned timeoutms)
 {
-    Owned<IPropertyTreeIterator> wpiter = froot->getElements("Attr/Protect");
-    bool prot = false;
-    ForEach(*wpiter) {
-        IPropertyTree &t = wpiter->query();
-        if (t.getPropInt("@count")) {
-            const char *wpname = t.queryProp("@name");
-            if (!wpname||!*wpname)
-                wpname = "<Unknown>";
-            if (prot)
-                reason.appendf(", %s",wpname);
-            else {
-                reason.appendf("file %s protected by %s",logicalname,wpname);
-                prot = true;
-            }
-        }
-    }
-    return prot;
-}
-
-bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IPropertyTree *froot,StringBuffer &reason,bool ignoresub, bool checkprotonly, unsigned timeoutms)
-{
-    const char *logicalname = dlfn.get();
-    if (!checkprotonly) {
-        if (!logicalname||!*logicalname) {
-            reason.appendf("empty filename");
-            return true;
-        }
-        if (dlfn.isQuery()) {
-            reason.appendf("%s is query",logicalname);
-            return true;
-        }
-        if (dlfn.isExternal()) {
-            reason.appendf("%s is external",logicalname);
-            return true;
-        }
-        if (dlfn.isForeign()) {
-            reason.appendf("%s is foreign",logicalname);
-            return true;
-        }
-        if (dlfn.isMulti()) {
-            reason.appendf("%s is multi",logicalname);
-            return true;
-        }
-    }
-    if (!froot) {
-        DfsXmlBranchKind bkind;
-        CFileConnectLock fconnlock;
-        if (fconnlock.initany("CDistributedFileDirectory::cannotRemove",dlfn,bkind,true,false,timeoutms)) 
-            froot = fconnlock.queryRoot();
-        if (!froot) {
-#ifdef EXTRA_LOGGING
-            PROGLOG("CDistributedFileDirectory::cannotRemove(%s) NOT FOUND",logicalname);
-#endif
-            reason.appendf("Cannot lock %s",logicalname);
-            return true;
-        }
-    }
-    if (checkProtectAttr(logicalname,froot,reason))
-        return true;
-    if (!checkprotonly) {
-        Owned<IPropertyTreeIterator> soiter = froot->getElements("SuperOwner");
-        ForEach(*soiter) {
-            const char *supername = soiter->query().queryProp("@name");
-            if (supername&&*supername) {
-                CDfsLogicalFileName lsfnp;
-                lsfnp.set(supername);
-                CFileConnectLock fcl("CDistributedFileDirectory::cannotRemove",lsfnp,DXB_SuperFile,false,false,timeoutms); 
-                StringBuffer fquery;
-                fquery.append("SubFile[@name=\"").append(logicalname).append("\"]");
-                if (fcl.conn()&&fcl.conn()->queryRoot()->hasProp(fquery.str())) {
-                    if (!ignoresub)
-                        reason.appendf("Cannot remove file %s as owned by SuperFile %s",logicalname,supername);
-                    return true;
-                }
-            }
-        }
-    }
+    // This is a hack while we don't move remove out of dir
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(dlfn, NULL, false, NULL, 6*1000);
+    if (file.get())
+        return !file->canRemove(reason, ignoresub);
     return false;
 }
 
@@ -6683,6 +6662,15 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
 #endif
     if (!checkLogicalName(dlfn,user,true,true,true,"remove"))
         return false;
+    StringBuffer reason;
+    if (cannotRemove(dlfn,reason,ignoresub,defaultTimeout)) {
+#ifdef EXTRA_LOGGING
+        PROGLOG("CDistributedFileDirectory::doRemoveEntry(cannotRemove) %s",reason.str());
+#endif
+        if (reason.length())
+            throw MakeStringException(-1,"CDistributedFileDirectory::removeEntry %s",reason.str());
+        return false;
+    }
     StringBuffer cname;
     dlfn.getCluster(cname);
     DfsXmlBranchKind bkind;
@@ -6715,15 +6703,6 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
                     return false;
                 }
             }           
-        }
-        StringBuffer reason;
-        if (cannotRemove(dlfn,froot,reason,ignoresub,false,defaultTimeout)) {
-#ifdef EXTRA_LOGGING
-            PROGLOG("CDistributedFileDirectory::doRemoveEntry(cannotRemove) %s",reason.str());
-#endif
-            if (reason.length())
-                throw MakeStringException(-1,"CDistributedFileDirectory::removeEntry %s",reason.str());
-            return false;
         }
         if (bkind==DXB_SuperFile) {
             Owned<IPropertyTreeIterator> iter = froot->getElements("SubFile");
@@ -6846,7 +6825,7 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     if (file->querySuperFile()) 
         throw MakeStringException(-1,"CDistributedFileDirectory::renamePhysical Cannot rename file %s as is SuperFile",oldname);
     StringBuffer reason;
-    if (file->cannotRemove(reason)) 
+    if (!file->canRemove(reason))
         throw MakeStringException(-1,"CDistributedFileDirectory::renamePhysical %s",reason.str());
     CDfsLogicalFileName newlogicalname; 
     newlogicalname.set(newname);
