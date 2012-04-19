@@ -295,7 +295,16 @@ public:
         grouped = false;
         eofHit = false;
         recsReady = 0;
-        inputsConfigured = false;
+        if (inputsConfigured)
+        {
+            // ensure old inputs cleared, to avoid being reused before re-setup on subsequent executions
+            ForEachItemIn(o, outputs)
+            {
+                CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                delayedInput->setInput(NULL);
+            }
+            inputsConfigured = false;
+        }
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
