@@ -1933,6 +1933,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             return;
         }
     case no_limit:
+        if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+            break;
         doBuildDatasetLimit(ctx, expr, tgt, format);
         return;
     case no_compound_childread:
@@ -2249,6 +2251,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     switch (op)
     {
     case no_limit:
+        assertex(!expr->hasProperty(skipAtom) && !expr->hasProperty(onFailAtom));
         //Do the limit check as a post test.  
         //It means we may read more records than we need to, but the code is inline, and the code is generally much better.
         if (target.count)
