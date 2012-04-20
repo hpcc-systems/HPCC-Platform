@@ -11932,21 +11932,7 @@ IHqlExpression * substituteClusterSize(unsigned numNodes, IHqlExpression * expr,
 
 void HqlCppTranslator::substituteClusterSize(HqlExprArray & exprs)
 {
-    unsigned numNodes = 0;
-#if 0
-    if (curCluster)
-    {
-        Owned<IConstWUClusterInfo> clusterInfo = wu()->getClusterInfo(curCluster);
-        if (clusterInfo)
-        {
-            numNodes = clusterInfo->getSize();
-            if (numNodes == 0)
-                numNodes = 1;
-        }
-    }
-    else
-#endif
-        numNodes = options.specifiedClusterSize;
+    unsigned numNodes = options.specifiedClusterSize;
 
     ClusterSubstitueTransformer transformer(numNodes, ctxCallback, wu());
     HqlExprArray transformed;

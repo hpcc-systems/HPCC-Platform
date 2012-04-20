@@ -1222,8 +1222,8 @@ public:
     void doBuildHashMd5Element(BuildCtx & ctx, IHqlExpression * elem, CHqlBoundExpr & state);
     AliasKind doBuildAliasValue(BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt);
 
-    void pushCluster(BuildCtx & ctx, IHqlExpression * cluster, StringAttr & savedCluster);
-    void popCluster(BuildCtx & ctx, const char * savedCluster);
+    void pushCluster(BuildCtx & ctx, IHqlExpression * cluster);
+    void popCluster(BuildCtx & ctx);
 
     void noteResultAccessed(BuildCtx & ctx, IHqlExpression * seq, IHqlExpression * name);
     void noteResultDefined(BuildCtx & ctx, ActivityInstance * activityInstance, IHqlExpression * seq, IHqlExpression * name, bool alwaysExecuted);
@@ -1846,8 +1846,6 @@ protected:
     Owned<IPropertyTree> graph;
     unsigned            graphSeqNumber;
     StringAttr          graphLabel;
-    StringAttr          defaultCluster;
-    StringAttr          curCluster;
     NlpParseContext *   nlpParse;               // Not linked so it can try and stay opaque.
     bool                xmlUsesContents;
     CIArrayOf<GlobalFileTracker> globalFiles;
