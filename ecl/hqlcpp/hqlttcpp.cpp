@@ -11898,8 +11898,9 @@ protected:
     IHqlExpression * createSubstitutedChild(IHqlExpression * expr, IHqlExpression * cluster)
     {
         StringBuffer clusterText;
-        cluster->queryValue()->getStringValue(clusterText);
-        ctxCallback->noteCluster(clusterText.str());
+        getStringValue(clusterText, cluster);
+        if (clusterText.length())
+            ctxCallback->noteCluster(clusterText.str());
 #if 0
         Owned<IConstWUClusterInfo> clusterInfo = wu->getClusterInfo(clusterText.str());
         if (clusterInfo)

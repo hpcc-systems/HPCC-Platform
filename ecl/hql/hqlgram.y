@@ -2494,9 +2494,14 @@ actionStmt
                             $$.setExpr(createValue(no_distribution, makeVoidType(), dataset, fields, $7.getExpr()));
                         }
     | assertAction
+    | GLOBAL '(' action ')'
+                        {
+                            $$.setExpr($3.getExpr());
+                            $$.setPosition($1);
+                        }
     | GLOBAL '(' action ',' expression ')'
                         {
-                            parser->normalizeExpression($5, type_string, false);
+                            parser->normalizeExpression($5, type_string, true);
                             if (isBlankString($5.queryExpr()))
                             {
                                 $5.release();
