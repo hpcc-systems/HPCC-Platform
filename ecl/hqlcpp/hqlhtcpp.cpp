@@ -5506,9 +5506,6 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, IHqlExpression * exprli
         unsigned time = msTick();
 
         wu()->setCodeVersion(ACTIVITY_INTERFACE_VERSION,BUILD_TAG,LANGUAGE_VERSION);
-        StringAttrAdaptor adaptor(defaultCluster);
-        wu()->getClusterName(adaptor);
-        curCluster.set(defaultCluster);
         cacheOptions();
 
         useLibrary(ECLRTL_LIB);
@@ -7119,26 +7116,23 @@ void HqlCppTranslator::doBuildAssignGetResult(BuildCtx & ctx, const CHqlBoundTar
 }
 
 
-void HqlCppTranslator::pushCluster(BuildCtx & ctx, IHqlExpression * cluster, StringAttr & savedCluster)
+void HqlCppTranslator::pushCluster(BuildCtx & ctx, IHqlExpression * cluster)
 {
-    savedCluster.set(curCluster);
-
     HqlExprArray args;
     args.append(*LINK(cluster));
-    callProcedure(ctx, selectClusterAtom, args);
+    buildFunctionCall(ctx, selectClusterAtom, args);
 
     StringBuffer clusterText;
-    cluster->queryValue()->getStringValue(clusterText);
-    ctxCallback->noteCluster(clusterText.str());
-    curCluster.set(clusterText.str());
+    getStringValue(clusterText, cluster);
+    if (clusterText.length())
+        ctxCallback->noteCluster(clusterText.str());
 }
 
 
-void HqlCppTranslator::popCluster(BuildCtx & ctx, const char * savedCluster)
+void HqlCppTranslator::popCluster(BuildCtx & ctx)
 {
     HqlExprArray args;
     callProcedure(ctx, restoreClusterAtom, args);
-    curCluster.set(savedCluster);
 }
 
 
@@ -7169,9 +7163,8 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
         graphLabel.set(text.str());
     }
 
-    StringAttr prevClusterName;
     if (cluster)
-        pushCluster(subctx, cluster->queryChild(0), prevClusterName);
+        pushCluster(subctx, cluster->queryChild(0));
 
     switch (value->queryType()->getTypeCode())
     {
@@ -7235,7 +7228,7 @@ void HqlCppTranslator::doBuildStmtSetResult(BuildCtx & ctx, IHqlExpression * exp
     }
 
     if (cluster)
-        popCluster(subctx, prevClusterName);
+        popCluster(subctx);
 
     if (matchesConstantValue(seq, ResultSequenceStored) || matchesConstantValue(seq, ResultSequencePersist))
         graphLabel.clear();
@@ -8296,10 +8289,9 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
 
 void HqlCppTranslator::doBuildStmtCluster(BuildCtx & ctx, IHqlExpression * expr)
 {
-    StringAttr prevClusterName;
-    pushCluster(ctx, expr->queryChild(1), prevClusterName);
+    pushCluster(ctx, expr->queryChild(1));
     buildStmt(ctx, expr->queryChild(0));
-    popCluster(ctx, prevClusterName);
+    popCluster(ctx);
 }
 
 //---------------------------------------------------------------------------
@@ -8746,9 +8738,6 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
 
     //Now resource the graph....
     unsigned numNodes = 0;
-//  Owned<IConstWUClusterInfo> clusterInfo = wu()->getClusterInfo(curCluster);
-//  if (clusterInfo)
-//      numNodes = clusterInfo->getSize();
     if (options.specifiedClusterSize != 0)
         numNodes = options.specifiedClusterSize;
 
