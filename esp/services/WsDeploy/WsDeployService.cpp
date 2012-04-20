@@ -981,6 +981,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     return true;
 }//onNavMenuEvent
 
+bool CWsDeployFileInfo::isAlphaNumeric(const char *pstr) const
+{
+  RegExpr expr("[A-Za-z0-9-_]+");
+
+  return (expr.find(pstr) && expr.findlen(0) == strlen(pstr));
+}
+
 bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp)
 {
   synchronized block(m_mutex);
@@ -1337,7 +1344,14 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
         //perform checks
         if (!strcmp(pszAttrName, "name"))
+        {
           ensureUniqueName(pEnvRoot, pComp, pszNewValue);
+
+          if (isAlphaNumeric(pszNewValue) == false)
+          {
+            throw MakeStringException(-1, "Invalid Character in name '%s'.", pszNewValue);
+          }
+        }
 
         //Store prev settings for use further down for esp service bindings
         const char* sPrevDefaultPort = NULL;

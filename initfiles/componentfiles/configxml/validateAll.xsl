@@ -29,6 +29,7 @@ xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
     <xsl:apply-templates select="Hardware/Computer"/>
     <xsl:apply-templates select="Software/ThorCluster"/>
     <xsl:apply-templates select="Software/Topology"/>
+    <xsl:apply-templates select="Software"/>
   </xsl:template>
 
   <xsl:template match="Environment/Software/*">
@@ -41,6 +42,12 @@ xmlns:seisint="http://seisint.com" exclude-result-prefixes="seisint">
         </xsl:call-template>        
       </xsl:if> 
     </xsl:for-each>
+    <xsl:variable select="@name" name="elem1"/>
+        <xsl:if test="(translate($elem1,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',''))" >
+      <xsl:call-template name="validationMessage">
+        <xsl:with-param name="msg" select=" concat('Invalid character[@name=' ,$elem1, ']') "/>
+      </xsl:call-template>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="Computer">
