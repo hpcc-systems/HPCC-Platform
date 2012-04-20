@@ -2163,8 +2163,8 @@ IHqlExpression * HoistingHqlTransformer::transformRoot(IHqlExpression * expr)
 
 bool HoistingHqlTransformer::analyseThis(IHqlExpression * expr)
 {
-    HoistingTransformInfo * extra = queryExtra(expr->queryBody());
-    if (alreadyVisited(expr))
+    HoistingTransformInfo * extra = queryBodyExtra(expr);
+    if (alreadyVisited(expr->queryBody()))
     {
         if ((pass != 0) || extra->isUnconditional() || (conditionDepth > 0))
             return false;

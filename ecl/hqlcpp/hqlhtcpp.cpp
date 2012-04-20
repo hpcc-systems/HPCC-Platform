@@ -364,7 +364,7 @@ public:
     {
         return CREATE_NEWTRANSFORMINFO(ChildSpotterInfo, expr);
     }
-    inline ChildSpotterInfo * queryExtra(IHqlExpression * expr)     { return static_cast<ChildSpotterInfo *>(queryTransformExtra(expr)); }
+    inline ChildSpotterInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ChildSpotterInfo *>(queryTransformExtra(expr->queryBody())); }
 
     virtual void analyseExpr(IHqlExpression * expr)
     {
@@ -406,7 +406,7 @@ public:
         }
         else
         {
-            if (!alreadyVisited(expr))
+            if (!alreadyVisited(expr->queryBody()))
                 markHoistPoints(expr);
         }
     }
@@ -453,7 +453,7 @@ public:
             if (isUsedUnconditionallyEnough(expr) && !translator.canAssignInline(&ctx, expr))
             {
                 candidate = true;
-                queryExtra(expr)->setHoist();
+                queryBodyExtra(expr)->setHoist();
                 return;
             }
             if (walkFurtherDownTree(expr))
@@ -608,7 +608,7 @@ public:
 
         if ((expr->isDataset() || expr->isDatarow()) && (expr->getOperator() != no_select))
         {
-            if (queryExtra(expr)->getHoist() && !translator.canAssignInline(&ctx, transformed))
+            if (queryBodyExtra(expr)->getHoist() && !translator.canAssignInline(&ctx, transformed))
             {
                 if (!builder)
                     builder.setown(new ChildGraphBuilder(translator));
