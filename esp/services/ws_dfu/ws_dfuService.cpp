@@ -5084,48 +5084,46 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     StringBuffer cluster;
     Owned<IUserDescriptor> userdesc;
     bool disableUppercaseTranslation = false;
+    Owned<IDistributedFile> df;
     try
     {
         userdesc.setown(createUserDescriptor());
         userdesc->set(username.str(), passwd);
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(indexName, userdesc);
-        if(df)
+        df.setown(queryDistributedFileDirectory().lookup(indexName, userdesc));
+        if(!df)
+            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Could not find file %s.", indexName);
+
+        //Check disableUppercaseTranslation
+        StringBuffer mapping;
+        df->getColumnMapping(mapping);
+        if (mapping.length() > 37 && strstr(mapping.str(), "word{set(stringlib.StringToLowerCase)}"))
+            disableUppercaseTranslation = true;
+        else if (webDisableUppercaseTranslation)
+            disableUppercaseTranslation = webDisableUppercaseTranslation;
+        else
+            disableUppercaseTranslation = m_disableUppercaseTranslation;
+
+        const char* wuid = df->queryAttributes().queryProp("@workunit");
+        if (wuid && *wuid)
         {
-            //Check disableUppercaseTranslation
-            bool bFound = false;
-            StringBuffer mapping;
-            df->getColumnMapping(mapping);
-            if (mapping.length() > 37 && strstr(mapping.str(), "word{set(stringlib.StringToLowerCase)}")) 
+            CWUWrapper wu(wuid, context);
+            if (wu)
             {
-                bFound = true;
-                disableUppercaseTranslation = true;
-            }
-
-            //if no index flag, use the flag inside esp config
-            if (!bFound)
-            {
-                disableUppercaseTranslation = m_disableUppercaseTranslation;
-                if (webDisableUppercaseTranslation)
-                {
-                    disableUppercaseTranslation = webDisableUppercaseTranslation;
-                }
-            }
-
-            const char* wuid = df->queryAttributes().queryProp("@workunit");
-            if (wuid && *wuid)
-            {
-                CWUWrapper wu(wuid, context);
-                if (wu)
-                {   
-                    SCMStringBuffer cluster0;
-                    cluster.append(wu->getClusterName(cluster0).str());
-                }
+                SCMStringBuffer cluster0;
+                cluster.append(wu->getClusterName(cluster0).str());
             }
         }
     }
+    catch (IException *e)
+    {
+        DBGLOG(e);
+        e->Release();
+    }
     catch(...)
     {
-        ;
+        StringBuffer msg;
+        msg.appendf("Unknown Exception - view data file: %s", indexName);
+        DBGLOG(msg.str());
     }
 
     Owned<IResultSetFactory> resultSetFactory;
@@ -5158,7 +5156,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     Owned<IFileTreeBrowser> browser;
     try
     {
-        web->gatherWeb(indexName0, options);
+        web->gatherWeb(indexName0, df, options);
         browser.setown(web->createBrowseTree(indexName0));
     }   
     catch(IException* e)
@@ -5172,7 +5170,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
             e->Release();
 
             indexName0 = (char *) (indexName+1);
-            web->gatherWeb(indexName0, options);
+            web->gatherWeb(indexName0, df, options);
             browser.setown(web->createBrowseTree(indexName0));
         }
     }
