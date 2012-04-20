@@ -1,0 +1,55 @@
+﻿<!doctype html>
+<html>
+  <head>
+    <title>CodeMirror: ECL mode</title>
+    <link rel="stylesheet" href="../../lib/codemirror.css">
+    <script src="../../lib/codemirror.js"></script>
+    <script src="dot.js"></script>
+    <link rel="stylesheet" href="../../theme/declarative.css">
+    <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
+    <link rel="stylesheet" href="../../doc/docs.css">
+  </head>
+  <body>
+    <h1>CodeMirror: DOT mode</h1>
+    <form><textarea id="code" name="code">
+digraph G {
+
+	subgraph cluster_0 {
+		style=filled;
+		color=lightgrey;
+		node [style=filled,color=white];
+		a0 -&gt; a1 -&gt; a2 -&gt; a3;
+		label = &quot;process #1&quot;;
+	}
+
+	subgraph cluster_1 {
+		node [style=filled];
+		b0 -&gt; b1 -&gt; b2 -&gt; b3;
+		label = &quot;process #2&quot;;
+		color=blue
+	}
+	start -&gt; a0;
+	start -&gt; b0;
+	a1 -&gt; b3;
+	b2 -&gt; a3;
+	a3 -&gt; a0;
+	a3 -&gt; end;
+	b3 -&gt; end;
+
+	start [shape=Mdiamond];
+	end [shape=Msquare];
+}
+</textarea></form>
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        tabMode: "indent",
+        lineNumbers: true,
+        matchBrackets: true
+      });
+    </script>
+
+    <p>Based on CodeMirror's ecl mode.  For more information see <a href="http://www.graphviz.org">GraphViz</a> web site.</p>
+    <p><strong>MIME types defined:</strong> <code>text/x-ecl</code>.</p>
+
+  </body>
+</html>
