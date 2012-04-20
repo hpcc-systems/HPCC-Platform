@@ -727,7 +727,7 @@ protected:
     void doBuildAggregateSelectIterator(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * expr, bool isChildIterator);
     void buildAggregateHelpers(IHqlExpression * expr, bool needMerge);
-    void buildCountHelpers(IHqlExpression * expr);
+    void buildCountHelpers(IHqlExpression * expr, bool allowMultiple);
     virtual void buildFlagsMember(IHqlExpression * expr) {}
     void buildGlobalGroupAggregateHelpers(IHqlExpression * expr);
     void buildGroupAggregateHelpers(ParentExtract * extractBuilder, IHqlExpression * aggregate);
@@ -2277,7 +2277,7 @@ void SourceBuilder::buildAggregateHelpers(IHqlExpression * expr, bool needMerge)
 }
 
 
-void SourceBuilder::buildCountHelpers(IHqlExpression * expr)
+void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
 {
     StringBuffer s;
 
@@ -2285,62 +2285,65 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr)
     if (transformCanFilter||isNormalize)
         translator.doBuildBoolFunction(instance->classctx, "hasFilter", true);
 
-    bool isExists = hasExistChoosenLimit();
-    OwnedHqlExpr one = getSizetConstant(1);
-
-    if (transformCanFilter||isNormalize)
+    if (allowMultiple)
     {
-        //virtual bool numValid(const void * src) = 0;
-        BuildCtx rowctx(instance->startctx);
-        rowctx.addQuotedCompound("virtual size32_t numValid(const void * src)");
-        rowctx.addQuoted("return valid((byte *)src);");
+        bool isExists = hasExistChoosenLimit();
+        OwnedHqlExpr one = getSizetConstant(1);
 
-        //virtual size32_t numValid(size32_t srcLen, const void * src);
-        BuildCtx rowsctx(instance->startctx);
-        rowsctx.addQuotedCompound("virtual size32_t numValid(size32_t srcLen, const void * _src)");
-        rowsctx.addQuoted("unsigned char * src = (unsigned char *)_src;");
-        OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
-        OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
-        OwnedHqlExpr fullDs = createTranslated(ds, len);
+        if (transformCanFilter||isNormalize)
+        {
+            //virtual size32_t numValid(const void * src) = 0;
+            BuildCtx rowctx(instance->startctx);
+            rowctx.addQuotedCompound("virtual size32_t numValid(const void * src)");
+            rowctx.addQuoted("return valid((byte *)src);");
 
-        if (isExists)
-        {
-            BuildCtx iterctx(rowsctx);
-            BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
-            s.clear().append("if (valid(");
-            translator.generateExprCpp(s, curRow->queryBound());
-            s.append("))");
-            iterctx.addQuotedCompound(s);
-            iterctx.addReturn(one);
-            rowsctx.addQuoted("return 0;");
-        }
-        else
-        {
-            rowsctx.addQuoted("size32_t cnt = 0;");
-            BuildCtx iterctx(rowsctx);
-            BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
-            s.clear().append("cnt += valid(");
-            translator.generateExprCpp(s, curRow->queryBound());
-            s.append(");");
-            iterctx.addQuoted(s);
-            rowsctx.addQuoted("return cnt;");
-        }
-    }
-    else
-    {
-        //virtual size32_t numValid(size32_t srcLen, const void * src);
-        BuildCtx rowsctx(instance->startctx);
-        rowsctx.addQuotedCompound("virtual size32_t numValid(size32_t srcLen, const void * _src)");
-        if (isExists)
-            rowsctx.addReturn(one);
-        else
-        {
+            //virtual size32_t numValid(size32_t srcLen, const void * src);
+            BuildCtx rowsctx(instance->startctx);
+            rowsctx.addQuotedCompound("virtual size32_t numValid(size32_t srcLen, const void * _src)");
             rowsctx.addQuoted("unsigned char * src = (unsigned char *)_src;");
-            CHqlBoundExpr bound;
-            bound.length.setown(createVariable("srcLen", LINK(sizetType)));
-            bound.expr.setown(createVariable("src", makeReferenceModifier(tableExpr->getType())));
-            OwnedHqlExpr count = translator.getBoundCount(bound);
-            rowsctx.addReturn(count);
+            OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
+            OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
+            OwnedHqlExpr fullDs = createTranslated(ds, len);
+
+            if (isExists)
+            {
+                BuildCtx iterctx(rowsctx);
+                BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
+                s.clear().append("if (valid(");
+                translator.generateExprCpp(s, curRow->queryBound());
+                s.append("))");
+                iterctx.addQuotedCompound(s);
+                iterctx.addReturn(one);
+                rowsctx.addQuoted("return 0;");
+            }
+            else
+            {
+                rowsctx.addQuoted("size32_t cnt = 0;");
+                BuildCtx iterctx(rowsctx);
+                BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
+                s.clear().append("cnt += valid(");
+                translator.generateExprCpp(s, curRow->queryBound());
+                s.append(");");
+                iterctx.addQuoted(s);
+                rowsctx.addQuoted("return cnt;");
+            }
+        }
+        else
+        {
+            //virtual size32_t numValid(size32_t srcLen, const void * src);
+            BuildCtx rowsctx(instance->startctx);
+            rowsctx.addQuotedCompound("virtual size32_t numValid(size32_t srcLen, const void * _src)");
+            if (isExists)
+                rowsctx.addReturn(one);
+            else
+            {
+                rowsctx.addQuoted("unsigned char * src = (unsigned char *)_src;");
+                CHqlBoundExpr bound;
+                bound.length.setown(createVariable("srcLen", LINK(sizetType)));
+                bound.expr.setown(createVariable("src", makeReferenceModifier(tableExpr->getType())));
+                OwnedHqlExpr count = translator.getBoundCount(bound);
+                rowsctx.addReturn(count);
+            }
         }
     }
 }
@@ -3005,7 +3008,7 @@ void DiskCountBuilder::buildMembers(IHqlExpression * expr)
     isUnfilteredCount = !(transformCanFilter||isNormalize);
     buildFilenameMember();
     DiskReadBuilderBase::buildMembers(expr);
-    buildCountHelpers(expr);
+    buildCountHelpers(expr, true);
 }
 
 
@@ -6520,7 +6523,7 @@ void IndexCountBuilder::buildMembers(IHqlExpression * expr)
 {
     buildFilenameMember();
     IndexReadBuilderBase::buildMembers(expr);
-    buildCountHelpers(expr);
+    buildCountHelpers(expr, false);
 }
 
 
@@ -6529,7 +6532,7 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
     if (transformCanFilter||isNormalize)
     {
         BuildCtx transformCtx(instance->startctx);
-        transformCtx.addQuotedCompound("size32_t valid(byte * _left)");
+        transformCtx.addQuotedCompound("virtual size32_t numValid(const void * _left)");
         transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
         OwnedHqlExpr cnt;

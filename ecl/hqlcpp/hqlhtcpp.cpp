@@ -11835,9 +11835,6 @@ void HqlCppTranslator::doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression 
         case no_existsgroup:
             buildClear(funcctx, target);
             break;
-        case no_notexistsgroup:
-            buildAssign(funcctx, target, queryBoolExpr(true));
-            break;
         default:
             if (src->isConstant())
                 buildAssign(funcctx, target, src);
@@ -11978,7 +11975,6 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
             }
             break;
         case no_existsgroup:
-        case no_notexistsgroup:
             assertex(!(arg && isVariableOffset));
             cond = arg;
             if (cond || !alwaysNextRow)
@@ -11986,7 +11982,7 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
                 //The assign is conditional because unconditionally it is done in the AggregateFirst
                 if (cond)
                     buildFilter(condctx, cond);
-                buildAssign(condctx, target, queryBoolExpr(srcOp == no_existsgroup));
+                buildAssign(condctx, target, queryBoolExpr(true));
             }
             break;
         default:
@@ -12077,13 +12073,6 @@ void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression 
                 buildAssign(condctx, target, queryBoolExpr(true));
                 break;
             }
-        case no_notexistsgroup:
-            {
-                BuildCtx condctx(funcctx);
-                buildFilter(condctx, target);
-                buildAssign(condctx, target, src);
-            }
-            break;
         default:
             //already filled in and wouldn't be legal to have an expression in this case anyway...
             break;

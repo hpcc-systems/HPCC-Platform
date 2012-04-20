@@ -3928,7 +3928,6 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
     case no_max:   newop = no_maxgroup; break;
     case no_sum:   newop = no_sumgroup; break;
     case no_exists:newop = no_existsgroup; break;
-    case no_notexists:  newop = no_notexistsgroup; break;
     case no_variance:   newop = no_vargroup; break;
     case no_covariance: newop = no_covargroup; break;
     case no_correlation:newop = no_corrgroup; break;

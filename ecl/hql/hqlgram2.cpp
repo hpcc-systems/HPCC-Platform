@@ -7302,7 +7302,6 @@ void HqlGram::checkConditionalAggregates(_ATOM name, IHqlExpression * value, con
         break;
     case no_existsgroup:
     case no_countgroup:
-    case no_notexistsgroup:
         cond = queryRealChild(value, 0);
         break;
     case no_covargroup:
