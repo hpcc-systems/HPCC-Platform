@@ -22,7 +22,7 @@ class GroupAggregateSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
 
 private:
-    bool eof;
+    bool eof, ungroupedExistsAggregate;
     IHThorAggregateArg * helper;
     IThorDataLink *input;
 
@@ -47,6 +47,7 @@ public:
         eof = false;
         input=inputs.item(0);
         startInput(input);
+        ungroupedExistsAggregate = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
         dataLinkStart("GROUPAGGREGATE", container.queryId());
     }
 
@@ -67,8 +68,8 @@ public:
         if (row)
         {
             sz = helper->processFirst(out, row);
-            bool abortEarly = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
-            if (!abortEarly)
+            // NB: if ungrouped existsAggregate, no need to look at rest of input
+            if (!ungroupedExistsAggregate)
             {
                 while (!abortSoon)
                 {
