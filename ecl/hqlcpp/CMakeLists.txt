@@ -41,6 +41,7 @@ set (    SRCS
          hqlcset.cpp 
          hqlecl.cpp 
          hqlgraph.cpp 
+         hqlhoist.cpp
          hqlhtcpp.cpp 
          hqlinline.cpp 
          hqliproj.cpp 
@@ -82,6 +83,7 @@ set (    SRCS
          hqlcset.ipp
          hqlfunc.ipp
          hqlgraph.ipp
+         hqlhoist.hpp
          hqlhtcpp.ipp
          hqliproj.ipp
          hqliter.ipp

@@ -292,6 +292,7 @@ extern HQL_API _ATOM rightAtom;
 extern HQL_API _ATOM rightonlyAtom;
 extern HQL_API _ATOM rightouterAtom;
 extern HQL_API _ATOM rollbackAtom;
+extern HQL_API _ATOM _root_Atom;
 extern HQL_API _ATOM rowAtom;
 extern HQL_API _ATOM _rowsid_Atom;
 extern HQL_API _ATOM rowLimitAtom;

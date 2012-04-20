@@ -342,6 +342,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return 0;
             return RETassign|((childLFlags|childRFlags) & HEFspillinline);
         }
+    case no_compound:
+        return getInlineFlags(ctx, expr->queryChild(1));
     default:
         return 0;
     }

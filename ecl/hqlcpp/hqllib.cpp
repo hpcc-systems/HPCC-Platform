@@ -613,7 +613,7 @@ void HqlCppTranslator::buildLibraryGraph(BuildCtx & ctx, IHqlExpression * expr, 
 {
     OwnedHqlExpr resourced = getResourcedGraph(expr->queryChild(0), NULL);
 
-    beginGraph(ctx, graphName);
+    beginGraph(graphName);
 
     traceExpression("beforeGenerate", resourced);
     BuildCtx initctx(ctx);

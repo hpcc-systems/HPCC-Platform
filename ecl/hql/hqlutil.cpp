@@ -1158,6 +1158,7 @@ IHqlExpression * replaceChild(IHqlExpression * expr, unsigned childIndex, IHqlEx
 
 IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpression * right)
 {
+    assertex(right);
     if (left->isDataset() || right->isDataset())
         return createDataset(no_if, cond, createComma(left, right));
 
@@ -4163,6 +4164,17 @@ IHqlExpression * appendLocalAttribute(IHqlExpression * expr)
 IHqlExpression * removeLocalAttribute(IHqlExpression * expr)
 {
     return removeProperty(expr, localAtom);
+}
+
+bool hasOperand(IHqlExpression * expr, IHqlExpression * child)
+{
+    expr = expr->queryBody();
+    ForEachChild(i, expr)
+    {
+        if (expr->queryChild(i) == child)
+            return true;
+    }
+    return false;
 }
 
 //-------------------------------------------------------------------------------------------------------
