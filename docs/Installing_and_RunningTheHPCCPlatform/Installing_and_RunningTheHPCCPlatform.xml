@@ -853,7 +853,7 @@
               </listitem>
             </orderedlist></para>
 
-          <para><?hard-pagebreak ?></para>
+          <para></para>
         </sect3>
 
         <sect3 role="brk">
@@ -1038,6 +1038,7 @@
                   </mediaobject>
                 </figure>
               </listitem>
+
 
               <listitem>
                 <para>Open a new <emphasis role="bold">Builder
