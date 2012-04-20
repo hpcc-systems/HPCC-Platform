@@ -177,6 +177,7 @@ public:
     }
 
     void expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins);
+    void addFile(IFile &file, bool allowPlugins);
 
 protected:
     virtual void populateChildren();
@@ -358,16 +359,12 @@ IProperties * FileSystemFile::getProperties()
 
 #define SOURCEFILE_PLUGIN         0x20000000
 
-void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins)
+void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
 {
-    ForEach (*dir)
+    const char * filename = file.queryFilename();
+    const char * tail = pathTail(filename);
+    if (tail && tail[0]!='.')
     {
-        IFile &file = dir->query();
-        const char * filename = file.queryFilename();
-        const char * tail = pathTail(filename);
-        if (!tail || tail[0]=='.')
-            continue;
-
         Owned<CEclSource> newSource;
         if (file.isFile() == foundYes)
         {
@@ -395,6 +392,16 @@ void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool all
                 WARNLOG("Duplicate module found at %s", filename);
             }
         }
+    }
+    expandedChildren = true;
+}
+
+void FileSystemDirectory::expandDirectoryTree(IDirectoryIterator * dir, bool allowPlugins)
+{
+    ForEach (*dir)
+    {
+        IFile &file = dir->query();
+        addFile(file, allowPlugins);
     }
     expandedChildren = true;
 }
@@ -444,20 +451,21 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
         if(!searchPattern.length())
             continue;
 
-        StringBuffer dirPath, dirWildcard;
-        if (!containsFileWildcard(searchPattern))
+        StringBuffer dirPath, dirTail, absolutePath;
+        splitFilename(searchPattern.str(), &dirPath, &dirPath, &dirTail, &dirTail);
+        makeAbsolutePath(dirPath.str(), absolutePath);
+        if (!containsFileWildcard(dirTail))
         {
-            Owned<IFile> file = createIFile(searchPattern.str());
+            absolutePath.append(dirTail);
+            Owned<IFile> file = createIFile(absolutePath);
             if (file->isDirectory() == foundYes)
             {
-                dirPath.append(searchPattern);
-                if (dirPath.charAt(dirPath.length() -1) != PATHSEPCHAR)
-                    dirPath.append(PATHSEPCHAR);
-                dirWildcard.append("*");
+                Owned<IDirectoryIterator> dir = file->directoryFiles(NULL, false, true);
+                root.expandDirectoryTree(dir, allowPlugins);
             }
             else if (file->isFile() == foundYes)
             {
-                splitFilename(searchPattern.str(), &dirPath, &dirPath, &dirWildcard, &dirWildcard);
+                root.addFile(*file, allowPlugins);
             }
             else
             {
@@ -472,12 +480,10 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
             }
         }
         else
-            splitFilename(searchPattern.str(), &dirPath, &dirPath, &dirWildcard, &dirWildcard);
-
-        StringBuffer absoluteDirPath;
-        makeAbsolutePath(dirPath.str(), absoluteDirPath);
-        Owned<IDirectoryIterator> dir = createDirectoryIterator(absoluteDirPath, dirWildcard.str());
-        root.expandDirectoryTree(dir, allowPlugins);
+        {
+            Owned<IDirectoryIterator> dir = createDirectoryIterator(absolutePath, dirTail);
+            root.expandDirectoryTree(dir, allowPlugins);
+        }
     }
 }
 
