@@ -22,7 +22,9 @@
     information, or other interesting material. In fact it is only here to
     serve one purpose and that is to store the chapterinfo in the blue box
     above that is being used by several other documents.</para>
-
+    
+    <para id="CHMVer">April 2012 Version 3.6.2</para>
+    
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>
 
