@@ -326,9 +326,20 @@ public:
     {
         assertex(isConnected);
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-        Owned<IWorkUnit> w = wuFactory->updateWorkUnit(wuid);
-        if (!w)
-            return NULL;
+        Owned<IWorkUnit> w;
+        StringAttr newWuid;
+        if (wuid && *wuid)
+        {
+            w.setown(wuFactory->updateWorkUnit(wuid));
+            if (!w)
+                return NULL;
+        }
+        else
+        {
+            w.setown(wuFactory->createWorkUnit(NULL, NULL, NULL));
+            w->getWuid(StringAttrAdaptor(newWuid));
+            wuid = newWuid.get();
+        }
         w->setAgentSession(myProcessSession());
         if (source)
         {

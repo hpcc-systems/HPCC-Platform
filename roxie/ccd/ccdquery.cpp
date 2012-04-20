@@ -124,10 +124,15 @@ public:
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid, NULL);
         if (wu)
         {
-            SCMStringBuffer dllName;
+            SCMStringBuffer name;
             Owned<IConstWUQuery> q = wu->getQuery();
-            q->getQueryDllName(dllName);
-            return getQueryDll(dllName.str(), false);
+            q->getQueryDllName(name);
+            if (name.length() != 0)
+                return getQueryDll(name.str(), false);
+            q->getQueryCppName(name);
+            if (name.length() != 0)
+                return getQueryDll(name.str(), true);
+            assertex(0);
         }
         else
             return NULL;
@@ -723,7 +728,8 @@ public:
     unsigned channelNo;
 
     CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo) 
-        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), dynamicFiles(false)
+        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue),
+          dynamicFiles(_dll!=NULL) // this is too broad
     {
         package.Link();
         isSuspended = false;
@@ -1093,6 +1099,16 @@ public:
         }
     }
 
+    virtual void setDynamicFileResolution(bool flag)
+    {
+        dynamicFiles = flag;
+    }
+
+    virtual bool dynamicFileResolution() const
+    {
+        return dynamicFiles;
+    }
+
 protected:
     void checkSuspended() const
     {
@@ -1103,16 +1119,6 @@ protected:
                 err.appendf(" because %s", errorMessage.str());
             throw MakeStringException(ROXIE_QUERY_SUSPENDED, "Query %s is suspended%s", id.get(), err.str());
         }
-    }
-
-    virtual void setDynamicFileResolution(bool flag)
-    {
-        dynamicFiles = flag;
-    }
-
-    virtual bool dynamicFileResolution() const
-    {
-        return dynamicFiles;
     }
 };
 
