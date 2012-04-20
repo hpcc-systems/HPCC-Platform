@@ -83,6 +83,8 @@ class Cws_accessEx : public Cws_access
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
         bool allow_access, bool allow_read, bool allow_write, bool allow_full,
         bool deny_access, bool deny_read, bool deny_write, bool deny_full);
+    void getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
+        int accountType, StringArray& basednNames);
 
 public:
     IMPLEMENT_IINTERFACE;

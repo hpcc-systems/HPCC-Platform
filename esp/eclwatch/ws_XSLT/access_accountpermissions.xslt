@@ -184,6 +184,27 @@
           return ret;
                 }
 
+                function toggleElement(ElementId)
+                {
+                    var obj = document.getElementById('group_div_' + ElementId);
+                    if (obj == null)
+                        return;
+                    explink = document.getElementById('explink_' + ElementId);
+                    if (obj.style.visibility == 'visible')
+                    {
+                        obj.style.display = 'none';
+                        obj.style.visibility = 'hidden';
+                        if (explink)
+                            explink.className = 'wusectionexpand';
+                    }
+                    else
+                    {
+                        obj.style.display = 'inline';
+                        obj.style.visibility = 'visible';
+                        if (explink)
+                            explink.className = 'wusectioncontract';
+                    }
+                }
                 var sortableTable = null;
             ]]></xsl:text>
             </script>
@@ -191,34 +212,28 @@
     <body class="yui-skin-sam" onload="nof5();onLoad()">
             <h3>Permissions of <xsl:value-of select="AccountName"/></h3>
             <p/>
-            <xsl:choose>
-                <xsl:when test="not(Permissions/Permission[1])">
-                </xsl:when>
-                <xsl:otherwise>
-                    <!--xsl:apply-templates select="Permissions"/-->
-                    <xsl:apply-templates select="Permissions">
-                        <xsl:with-param name="AccountN" select="AccountName"/>
-                        <xsl:with-param name="AccountT" select="IsGroup"/>
-                    </xsl:apply-templates>
-                </xsl:otherwise>
-            </xsl:choose>
-            <form method="POST" action="/ws_access/PermissionAddInput">
-                <input type="hidden" name="AccountName" value="{AccountName}"/>
-                <input type="hidden" name="AccountType" value="{IsGroup}"/>
-                <input type="hidden" name="prefix" value="{prefix}"/>
-                <select size="1" name="BasednName">
-                    <xsl:apply-templates select="BasednNames"/>
-                </select>
-                <input type="submit" class="sbutton" name="action" value="  Add  "/>
-            </form>
+            <xsl:if test="Permissions/Permission[1]">
+                <!--xsl:apply-templates select="Permissions"/-->
+                <xsl:apply-templates select="Permissions">
+                    <xsl:with-param name="AccountN" select="AccountName"/>
+                    <xsl:with-param name="AccountT" select="IsGroup"/>
+                </xsl:apply-templates>
+            </xsl:if>
+            <xsl:if test="count(BasednNames/Item)">
+                <form method="POST" action="/ws_access/PermissionAddInput">
+                    <input type="hidden" name="AccountName" value="{AccountName}"/>
+                    <input type="hidden" name="AccountType" value="{IsGroup}"/>
+                    <input type="hidden" name="prefix" value="{prefix}"/>
+                    <select size="1" name="BasednName">
+                        <xsl:apply-templates select="BasednNames"/>
+                    </select>
+                    <input type="submit" class="sbutton" name="action" value="  Add  "/>
+                </form>
+            </xsl:if>
             <p/>
-            <xsl:choose>
-                <xsl:when test="not(GroupPermissions/GroupPermission[1])">
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:apply-templates select="GroupPermissions"/>
-                </xsl:otherwise>
-            </xsl:choose>
+            <xsl:if test="GroupPermissions/GroupPermission[1]">
+                <xsl:apply-templates select="GroupPermissions"/>
+            </xsl:if>
         </body>
         </html>
     </xsl:template>
@@ -230,29 +245,40 @@
     </xsl:template>
 
     <xsl:template match="GroupPermission">
-        <p/>
-        <h4>Inherited Permissions from Group: <xsl:value-of select="GroupName"/> (Changes inside this section will be applied to the whole group.)</h4>
-        <p/>
-        <xsl:choose>
-            <xsl:when test="not(Permissions/Permission[1])">
-            </xsl:when>
-            <xsl:otherwise>
+        <xsl:variable name="groupDivId">
+            <xsl:value-of select="concat('group_div_', GroupName)"/>
+        </xsl:variable>
+        <xsl:variable name="explinkId">
+            <xsl:value-of select="concat('explink_', GroupName)"/>
+        </xsl:variable>
+        <br/>
+        <div>
+            <a href="javascript:void(0)" onclick="toggleElement('{GroupName}');" id="{$explinkId}" class="wusectionexpand">
+                Inherited Permissions from Group: <xsl:value-of select="GroupName"/> (Changes inside this section will be applied to the whole group.)
+                <br/><br/>
+            </a>
+        </div>
+        <span id ="{$groupDivId}" style="display:none; visibility:hidden;">
+            <xsl:if test="Permissions/Permission[1]">
                 <!--xsl:apply-templates/-->
                 <xsl:apply-templates select="Permissions">
                     <xsl:with-param name="AccountN" select="GroupName"/>
                     <xsl:with-param name="AccountT" select="1"/>
                 </xsl:apply-templates>
-            </xsl:otherwise>
-        </xsl:choose>
-        <form method="POST" action="/ws_access/PermissionAddInput">
-            <input type="hidden" name="AccountName" value="{GroupName}"/>
-            <input type="hidden" name="AccountType" value="1"/>
-            <input type="hidden" name="prefix" value="{prefix}"/>
-            <select size="1" name="BasednName">
-                <xsl:apply-templates select="/AccountPermissionsResponse/BasednNames"/>
-            </select>
-            <input type="submit" class="sbutton" name="action" value="  Add  "/>
-        </form>
+            </xsl:if>
+            <xsl:if test="count(BasednNames/Item)">
+                <form method="POST" action="/ws_access/PermissionAddInput">
+                    <input type="hidden" name="AccountName" value="{GroupName}"/>
+                    <input type="hidden" name="AccountType" value="1"/>
+                    <input type="hidden" name="prefix" value="{prefix}"/>
+                    <select size="1" name="BasednName">
+                        <xsl:apply-templates select="BasednNames"/>
+                    </select>
+                    <input type="submit" class="sbutton" name="action" value="Add To This Group"/>
+                </form>
+            </xsl:if>
+            <br/>
+        </span>
     </xsl:template>
 
     <xsl:template match="Permissions">

@@ -2051,6 +2051,81 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
     return true;
 }
 
+//For every resources inside a baseDN, if there is no permission for this account, add the baseDN name to the basednNames list
+void Cws_accessEx::getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
+                                           int accountType, StringArray& basednNames)
+{
+    if(secmgr == NULL)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+    ForEachItemIn(i, m_basedns)
+    {
+        IEspDnStruct* curbasedn = &(m_basedns.item(i));
+        const char *basednName = curbasedn->getName();
+        if (!basednName || !*basednName)
+            continue;
+
+        const char *basedn = curbasedn->getBasedn();
+        const char *rtypestr = curbasedn->getRtype();
+        if (!basedn || !*basedn || !rtypestr || !*rtypestr)
+            continue;
+
+        IArrayOf<ISecResource> resources;
+        SecResourceType rtype = str2type(rtypestr);
+        if(!secmgr->getResources(rtype, basedn, resources))
+            continue;
+
+        ForEachItemIn(j, resources)
+        {
+            ISecResource& r = resources.item(j);
+            const char* rname = r.getName();
+            if(!rname || !*rname)
+                continue;
+
+            if(prefix && *prefix)
+            {
+                int prefixlen = strlen(prefix);
+                if(strncmp(prefix, rname, prefixlen) == 0)
+                    rname += prefixlen;
+            }
+
+            StringBuffer namebuf(rname);
+            if((rtype == RT_MODULE) && !strieq(rname, "repository") && Utils::strncasecmp(rname, "repository.", 11) != 0)
+                namebuf.insert(0, "repository.");
+            if(prefix && *prefix)
+                namebuf.insert(0, prefix);
+
+            try
+            {
+                IArrayOf<CPermission> permissions;
+                secmgr->getPermissionsArray(basedn, rtype, namebuf.str(), permissions);
+
+                bool foundPermissionInThisAccount = false;
+                ForEachItemIn(k, permissions)
+                {
+                    CPermission& perm = permissions.item(k);
+                    if ((accountType == perm.getAccount_type()) && perm.getAccount_name() && streq(perm.getAccount_name(), accountName))
+                    {
+                        foundPermissionInThisAccount = true;
+                        break;
+                    }
+                }
+                if (!foundPermissionInThisAccount)
+                {
+                    basednNames.append(basednName);
+                    break;
+                }
+            }
+            catch(IException* e) //exception may be thrown when no permission for the resource
+            {
+                e->Release();
+                break;
+            }
+        }
+    }
+
+    return;
+}
 
 bool Cws_accessEx::permissionAddInputOnResource(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp)
 {
@@ -2803,31 +2878,43 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             setBasedns(context);
         }
 
+        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         StringArray groupnames;
         if (version > 1.02 && !bGroupAccount && bIncludeGroup)
         {
-            CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
             ldapsecmgr->getGroups(username, groupnames);
         }
 
         groupnames.append("Authenticated Users");
         groupnames.append("everyone");
 
-        StringArray basednNames;
         IArrayOf<IEspAccountPermission> accountPermissions;
 
         bool bAuthUsersPerm = false;
         Owned<IEspGroupAccountPermission> grouppermission1 = createGroupAccountPermission();
         grouppermission1->setGroupName("Authenticated Users");
+        if (version > 1.05)
+        {
+            StringArray basednNames;
+            getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, "Authenticated Users", 1, basednNames);
+            if (basednNames.length() > 0)
+                grouppermission1->setBasednNames(basednNames);
+        }
         IArrayOf<IConstAccountPermission>& authUsersPermissions = grouppermission1->getPermissions();
 
         bool bEveryonePerm = false;
         Owned<IEspGroupAccountPermission> grouppermission2 = createGroupAccountPermission();
         grouppermission2->setGroupName("Everyone");
+        if (version > 1.05)
+        {
+            StringArray basednNames;
+            getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, "Everyone", 1, basednNames);
+            if (basednNames.length() > 0)
+                grouppermission2->setBasednNames(basednNames);
+        }
         IArrayOf<IConstAccountPermission>& everyonePermissions = grouppermission2->getPermissions();
 
         IArrayOf<IEspGroupAccountPermission> groupAccountPermissions;
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
 
         StringBuffer moduleBasedn; //To be used by the Permission: codegenerator.cpp
         ForEachItemIn(y1, m_basedns)
@@ -2859,7 +2946,6 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
                 continue;
 
             SecResourceType rtype = str2type(aRtype);
-            basednNames.append(aName);
 
             IArrayOf<IEspResource> ResourceArray;
             //if(rtype == RT_FILE_SCOPE || rtype == RT_WORKUNIT_SCOPE)
@@ -3037,6 +3123,13 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
                                 {
                                     Owned<IEspGroupAccountPermission> grouppermission = createGroupAccountPermission();
                                     grouppermission->setGroupName(actname);
+                                    if (version > 1.05)
+                                    {
+                                        StringArray basednNames;
+                                        getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, actname, 1, basednNames);
+                                        if (basednNames.length() > 0)
+                                            grouppermission->setBasednNames(basednNames);
+                                    }
 
                                     IArrayOf<IConstAccountPermission>& g_permission = grouppermission->getPermissions();
                                     g_permission.append(*onepermission.getLink());
@@ -3053,6 +3146,8 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             }
         }
 
+        StringArray basednNames;
+        getBaseDNsForAddingPermssionToAccount(ldapsecmgr, NULL, username, bGroupAccount? 1:0, basednNames);
         if (basednNames.length() > 0)
         {
             resp.setBasednNames(basednNames);
