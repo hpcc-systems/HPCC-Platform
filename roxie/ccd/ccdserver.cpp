@@ -30996,9 +30996,10 @@ private:
 
 class RoxieWorkUnitListener : public RoxieListener
 {
+    ILoadedDllEntry *dll;
 public:
-    RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
-      : RoxieListener(_poolSize, _suspended)
+    RoxieWorkUnitListener(unsigned _poolSize, bool _suspended, ILoadedDllEntry *_dll)
+      : RoxieListener(_poolSize, _suspended), dll(_dll)
     {
     }
 
@@ -31012,10 +31013,7 @@ public:
         return 0;
     }
 
-    virtual void runOnce(const char*)
-    {
-        UNIMPLEMENTED;
-    }
+    virtual void runOnce(const char* query);
 
     virtual void stopListening()
     {
@@ -31240,9 +31238,10 @@ protected:
 
 class RoxieWorkUnitWorker : public RoxieQueryWorker
 {
+    ILoadedDllEntry *dll;
 public:
-    RoxieWorkUnitWorker(RoxieListener *_pool)
-        : RoxieQueryWorker(_pool)
+    RoxieWorkUnitWorker(RoxieListener *_pool, ILoadedDllEntry *_dll)
+        : RoxieQueryWorker(_pool), dll(_dll)
     {
     }
 
@@ -31252,12 +31251,19 @@ public:
         RoxieQueryWorker::init(_r);
     }
 
+    virtual void runOnce(const char *query)
+    {
+        main();
+    }
+
     virtual void main()
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), dll);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
+        if (!wuid.get())
+            wu->getWuid(StringAttrAdaptor(wuid));
         Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
@@ -31989,7 +31995,7 @@ IArrayOf<IRoxieListener> socketListeners;
 
 IPooledThread *RoxieWorkUnitListener::createNew()
 {
-    return new RoxieWorkUnitWorker(this);
+    return new RoxieWorkUnitWorker(this, NULL);
 }
 
 IPooledThread *RoxieSocketListener::createNew()
@@ -32003,6 +32009,12 @@ void RoxieSocketListener::runOnce(const char *query)
     p->runOnce(query);
 }
 
+void RoxieWorkUnitListener::runOnce(const char* query)
+{
+    Owned<RoxieWorkUnitWorker> p = new RoxieWorkUnitWorker(this, dll);
+    p->runOnce(query);
+}
+
 IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended)
 {
     if (traceLevel)
@@ -32010,11 +32022,11 @@ IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsi
     return new RoxieSocketListener(port, poolSize, listenQueue, suspended);
 }
 
-IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended)
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended, ILoadedDllEntry *dll)
 {
     if (traceLevel)
         DBGLOG("Creating Roxie workunit listener, pool size %d%s", poolSize, suspended?" SUSPENDED":"");
-    return new RoxieWorkUnitListener(poolSize, suspended);
+    return new RoxieWorkUnitListener(poolSize, suspended, dll);
 }
 
 bool suspendRoxieListener(unsigned port, bool suspended)

@@ -934,7 +934,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         delete [] primaries;
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
-        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
+        globalPackageSetManager = createRoxiePackageSetManager(standAloneDll);
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
         ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
@@ -949,7 +949,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         setSEHtoExceptionHandler(&abortHandler);
         if (runOnce)
         {
-            Owned <IRoxieListener> roxieServer = createRoxieSocketListener(0, 1, 0, false);
+            Owned <IRoxieListener> roxieServer;
+            if (fileNameServiceDali.length() == 0) // Local
+                roxieServer.setown(createRoxieSocketListener(0, 1, 0, false));
+            else // Dali
+            {
+                roxieServer.setown(createRoxieWorkUnitListener(1, false, standAloneDll->queryDll()));
+            }
             try
             {
                 const char *format = globals->queryProp("format");
@@ -966,7 +972,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 }
                 StringBuffer query;
                 query.appendf("<roxie format='%s'/>", format);
-                roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
+                roxieServer->runOnce(query.str());
             }
             catch (IException *E)
             {
@@ -989,7 +995,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 if (port)
                     roxieServer.setown(createRoxieSocketListener(port, numThreads, listenQueue, suspended));
                 else
-                    roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
+                    roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended, NULL));
                 Owned<IPropertyTreeIterator> accesses = serverInfo.getElements("Access");
                 ForEach(*accesses)
                 {

@@ -75,7 +75,7 @@ interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
 };
 
 IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended);
-IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended);
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended, ILoadedDllEntry *dll);
 bool suspendRoxieListener(unsigned port, bool suspended);
 extern IArrayOf<IRoxieListener> socketListeners;
 
