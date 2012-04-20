@@ -25,3 +25,5 @@
 .cm-s-default span.cm-meta {color: #004080;}
 .ErrorLine {background: #cc0000 !important;}
 .WarningLine {background: #ffff99 !important;}
+.highlightline { background: #e8f2ff !important; }
+

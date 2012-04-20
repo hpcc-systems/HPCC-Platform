@@ -21,11 +21,12 @@ define([
 		domId : "",
 		editor : null,
 		markers : [],
+		highlightLines : [],
 
 		// The constructor    
 		constructor : function(args) {
 			declare.safeMixin(this, args);
-			var _editor = this.editor = CodeMirror.fromTextArea(document.getElementById(this.domId), {
+			this.editor = CodeMirror.fromTextArea(document.getElementById(this.domId), {
 				tabMode : "indent",
 				matchBrackets : true,
 				gutter : true,
@@ -34,14 +35,14 @@ define([
 		},
 
 		clearErrors : function(errWarnings) {
-			for ( var i = 0; i < this.markers.length; ++i) {
+			for (var i = 0; i < this.markers.length; ++i) {
 				this.editor.clearMarker(this.markers[i]);
 			}
 			this.markers = [];
 		},
 
 		setErrors : function(errWarnings) {
-			for ( var i = 0; i < errWarnings.length; ++i) {
+			for (var i = 0; i < errWarnings.length; ++i) {
 				this.markers.push(this.editor.setMarker(parseInt(
 						errWarnings[i].LineNo, 10) - 1, "",
 						errWarnings[i].Severity + "Line"));
@@ -51,6 +52,16 @@ define([
 		setCursor : function(line, col) {
 			this.editor.setCursor(line - 1, col - 1);
 			this.editor.focus();
+		},
+
+		clearHighlightLines : function() {
+			for (var i = 0; i < this.highlightLines.length; ++i) {
+				this.editor.setLineClass(this.highlightLines[i], null, null);
+			}
+		},
+		
+		highlightLine : function(line) {
+			this.highlightLines.push(this.editor.setLineClass(line - 1, "highlightline"));
 		},
 
 		setText : function(ecl) {

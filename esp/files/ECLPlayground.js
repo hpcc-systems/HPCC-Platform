@@ -76,8 +76,20 @@ define([
 
 					onMouseDoubleClick : function(item) {
 						graphControl.obj.centerOnItem(item, true);
+					},
+					
+					onSelectionChanged: function(items) {
+						editorControl.clearHighlightLines();
+						for (var i = 0; i < items.length; ++i) {
+							var props = graphControl.obj.getProperties(items[i]);
+							if (props.definition) {
+								var startPos = props.definition.indexOf("(");
+								var endPos = props.definition.lastIndexOf(")");
+								var pos = props.definition.slice(startPos + 1, endPos).split(",");
+								editorControl.highlightLine(parseInt(pos[0], 10));
+							}
+						}
 					}
-
 				}, dom.byId("graphs"));
 			},
 
@@ -92,6 +104,7 @@ define([
 
 			resetPage = function() {
 				editorControl.clearErrors();
+				editorControl.clearHighlightLines();
 				graphControl.clear();
 				resultsControl.clear();
 			},
@@ -123,7 +136,7 @@ define([
 						wu.getGraphs();
 					},
 					onGetGraph : function(idx) {
-						graphControl.loadXGMML(wu.graphs[idx].xgmml);
+						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
 					},
 					onGetResult : function(idx) {
 						resultsControl.addDatasetTab(wu.results[idx].dataset);

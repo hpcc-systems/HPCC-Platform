@@ -107,11 +107,14 @@ define([
 			}
 		},
 		
-		loadXGMML: function(xgmml) {
+		loadXGMML: function(xgmml, merge) {
 			if (this.obj) {
 				this.registerEvents();
 				this.obj.setMessage("Loading Data...");
-				this.obj.loadXGMML(xgmml);
+				if (merge)
+					this.obj.mergeXGMML(xgmml);
+				else
+					this.obj.loadXGMML(xgmml);
 				this.obj.setMessage("Performing Layout...");
 				this.obj.startLayout("dot");
 			}
