@@ -94,6 +94,10 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
         </xsl:apply-templates>
+        <xsl:apply-templates select="." mode="WsPackageProcess">
+            <xsl:with-param name="bindingNode" select="$bindingNode"/>
+            <xsl:with-param name="authNode" select="$authNode"/>
+        </xsl:apply-templates>
         <xsl:apply-templates select="." mode="WsRoxieQuery">
             <xsl:with-param name="bindingNode" select="$bindingNode"/>
             <xsl:with-param name="authNode" select="$authNode"/>
@@ -380,6 +384,32 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         </EspBinding>
     </xsl:template>
 
+    <!-- WS-PACKAGEPROCESS -->
+    <xsl:template match="EspService" mode="WsPackageProcess">
+        <xsl:param name="bindingNode"/>
+        <xsl:param name="authNode"/>
+
+        <xsl:variable name="serviceType" select="'WsPackageProcess'"/>
+        <xsl:variable name="serviceName" select="concat($serviceType, '_', @name, '_', $process)"/>
+        <xsl:variable name="bindName" select="concat($serviceType, '_', $bindingNode/@name, '_', $process)"/>
+        <xsl:variable name="bindType" select="'WsPackageProcessSoapBinding'"/>
+        <xsl:variable name="servicePlugin">
+            <xsl:call-template name="defineServicePlugin">
+                <xsl:with-param name="plugin" select="'ws_packageprocess'"/>
+            </xsl:call-template>
+        </xsl:variable>
+
+
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
+        <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
+            <xsl:call-template name="bindAuthentication">
+                <xsl:with-param name="bindingNode" select="$bindingNode"/>
+                <xsl:with-param name="authMethod" select="$authNode/@method"/>
+                <xsl:with-param name="service" select="'ws_packageprocess'"/>
+            </xsl:call-template>
+        </EspBinding>
+    </xsl:template>
+    
     <!-- WS-ROXIEQUERY -->
     <xsl:template match="EspService" mode="WsRoxieQuery">
         <xsl:param name="bindingNode"/>
