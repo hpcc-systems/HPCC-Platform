@@ -224,7 +224,7 @@ enum _node_operator {
         no_comma,
         no_count,
         no_countgroup,
-        no_notexists,
+    no_unused82,
         no_exists,
         no_within,
         no_notwithin,
@@ -535,7 +535,7 @@ enum _node_operator {
         no_outputscalar,
         no_matchunicode,
         no_pat_validate,
-        no_notexistsgroup,
+   no_unused83,
         no_existsgroup,
         no_pat_use,
         no_unused13,
@@ -1743,8 +1743,7 @@ extern HQL_API void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr)
     case no_max:            \
     case no_min:            \
     case no_ave:            \
-    case no_exists:         \
-    case no_notexists
+    case no_exists
 
 #define NO_AGGREGATEGROUP   \
          no_countgroup:         \
@@ -1755,8 +1754,7 @@ extern HQL_API void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr)
     case no_maxgroup:           \
     case no_mingroup:           \
     case no_avegroup:           \
-    case no_existsgroup:        \
-    case no_notexistsgroup
+    case no_existsgroup
 
 extern HQL_API ITypeInfo * getTypedefType(IHqlExpression * expr);
 

@@ -1532,7 +1532,6 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
     case no_ave:
     case no_select:
     case no_exists:
-    case no_notexists:
     case no_field:
         // a count on a child dataset or something else - add it as it is...
         //goes wrong for count(group)*
@@ -1542,7 +1541,6 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
     case no_maxgroup:
     case no_mingroup:
     case no_existsgroup:
-    case no_notexistsgroup:
         {
             ForEachItemIn(idx, assigns)
             {
@@ -3144,9 +3142,6 @@ IHqlExpression * ThorHqlTransformer::getMergeTransform(IHqlExpression * dataset,
                 case no_existsgroup:
                     newRhs.setown(createValue(no_existsgroup, selected->getType(), LINK(selected)));
                     break;
-                case no_notexistsgroup:
-                    newRhs.setown(createValue(no_notexistsgroup, selected->getType(), getInverse(selected)));
-                    break;
                 case no_vargroup:
                 case no_covargroup:
                 case no_corrgroup:
@@ -3432,6 +3427,8 @@ void CompoundSourceInfo::reset()
     isBoundary = false;
     isPreloaded = false;
     isLimited = false;
+    hasChoosen = false;
+    hasSkipLimit = false;
     isCloned = false;
     isFiltered = false;
     isPostFiltered = false;
@@ -3439,38 +3436,47 @@ void CompoundSourceInfo::reset()
 }
 
 
-bool CompoundSourceInfo::canMergeLimit(IHqlExpression * expr, ClusterType targetClusterType)
+bool CompoundSourceInfo::canMergeLimit(IHqlExpression * expr, ClusterType targetClusterType) const
 {
-    if (!isLimited && !isAggregate() && !isChooseNAllLimit(expr->queryChild(1)) && isBinary())
-    {
-        node_operator op = expr->getOperator();
-        switch (op)
-        {
-        case no_limit:
-            //Don't merge skip and onfail limits into activities that can't implement them completely
-            if (targetClusterType != RoxieCluster)
-            {
-                if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
-                    return false;
-            }
-            else
-            {
-                //Can always limit a count/aggregate with a skip limit - just resets count to 0
-                if (expr->hasProperty(skipAtom))
-                    return true;
-            }
-            break;
-        }
+    if (isAggregate() || isChooseNAllLimit(expr->queryChild(1)) || !isBinary())
+        return false;
 
-        switch (sourceOp)
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_limit:
+        //Can't merge a limit into a choosen() because the limit will be applied first
+        if (isLimited || hasChoosen)
+            return false;
+
+        //Don't merge skip and onfail limits into activities that can't implement them completely
+        if (targetClusterType != RoxieCluster)
         {
-        case no_compound_diskread:
-        case no_compound_disknormalize:
-        case no_compound_indexread:
-        case no_compound_indexnormalize:
-            return true;
+            if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+                return false;
         }
+        else
+        {
+            //Can always limit a count/aggregate with a skip limit - just resets count to 0
+            if (expr->hasProperty(skipAtom))
+                return true;
+        }
+        break;
+    case no_choosen:
+        if (hasChoosen)
+            return false;
+        break;
     }
+
+    switch (sourceOp)
+    {
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_indexread:
+    case no_compound_indexnormalize:
+        return true;
+    }
+
     return false;
 }
 
@@ -3499,6 +3505,8 @@ void CompoundSourceInfo::ensureCompound()
 bool CompoundSourceInfo::inherit(const CompoundSourceInfo & other, node_operator newSourceOp)
 {
     isLimited = other.isLimited;
+    hasSkipLimit = other.hasSkipLimit;
+    hasChoosen = other.hasChoosen;
     isFiltered = other.isFiltered;
     isPostFiltered = other.isPostFiltered;
     isPreloaded = other.isPreloaded;
@@ -3520,7 +3528,7 @@ bool CompoundSourceInfo::inherit(const CompoundSourceInfo & other, node_operator
     return true;
 }
 
-bool CompoundSourceInfo::isAggregate()
+bool CompoundSourceInfo::isAggregate() const
 {
     switch (sourceOp)
     {
@@ -3628,7 +3636,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
         break;
     }
 
-    switch (expr->getOperator())
+    switch (op)
     {
     case no_newkeyindex:
         extra->sourceOp = no_compound_indexread;
@@ -3746,7 +3754,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
-                if (!parentExtra->isAggregate() && !parentExtra->isLimited && parentExtra->isBinary())
+                if (!parentExtra->isAggregate() && !parentExtra->hasAnyLimit() && parentExtra->isBinary())
                 {
                     node_operator newOp = no_none;
                     switch (parentExtra->sourceOp)
@@ -3813,7 +3821,16 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 if (extra->inherit(*parentExtra))
                 {
-                    extra->isLimited = true;
+                    if (op == no_choosen)
+                    {
+                        extra->hasChoosen = true;
+                    }
+                    else
+                    {
+                        extra->isLimited = true;
+                        if (expr->hasProperty(skipAtom))
+                            extra->hasSkipLimit = true;
+                    }
                     if (expr->hasProperty(onFailAtom))
                         extra->isCreateRowLimited = true;
                     extra->isCloned = cloneRequired;
@@ -3841,8 +3858,9 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                 bool isSimpleCountExists = isSimpleCountExistsAggregate(expr, true, false);
                 if (parentExtra->isCreateRowLimited)
                     break;
-                if (parentExtra->isLimited && !isSimpleCountExists)
+                if (parentExtra->hasAnyLimit() && !isSimpleCountExists)
                     break;
+
                 node_operator newOp = no_none;
                 node_operator parentOp = parentExtra->sourceOp;
                 if (queryRealChild(expr, 3))
@@ -3890,7 +3908,9 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                         break;
                     case no_compound_indexread:
                     case no_compound_indexnormalize:
-                        if (flags & CSFnewindex)
+                        //Don't create counts for (non-keyed) skip limits - little benefit, and could cause problems
+                        //correctly returning the counts - e.g. especially for exists()
+                        if ((flags & CSFnewindex) && !parentExtra->hasSkipLimit)
                         {
                             newOp = no_compound_indexaggregate;
                             //Force counts on indexes to become a new compound activity
@@ -3902,7 +3922,11 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                             //That can be logged as a future enhancement.....
 //                          if (isSimpleCountExists && !parentExtra->isPostFiltered && (parentOp == no_compound_indexread))
                             if (isSimpleCountExists && (parentOp == no_compound_indexread))
-                                extra->forceCompound = true;
+                            {
+                                //A skip limit will require everything to be read anyway - so no point splitting in two
+                                if (!parentExtra->hasSkipLimit)
+                                    extra->forceCompound = true;
+                            }
                         }
                         break;
                     case no_compound_childread:
@@ -3936,7 +3960,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
         {
             IHqlExpression * dataset = expr->queryChild(0);
             CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
-            if (!parentExtra->isLimited && !parentExtra->isAggregate())
+            if (!parentExtra->hasAnyLimit() && !parentExtra->isAggregate())
             {
                 if (extra->inherit(*parentExtra))
                 {
@@ -4321,6 +4345,42 @@ IHqlExpression * OptimizeActivityTransformer::optimizeCompare(IHqlExpression * l
     // (we definitely don't want it added to both, which happens without the second test.)
     if (looksLikeSimpleCount(rhs))
         return NULL;
+
+    //Convert count(x) >= 1 to exists(x)  (and other varients)
+    node_operator existOp = no_none;
+    switch (op)
+    {
+    case no_ne:
+    case no_gt:
+        if (matchesConstantValue(rhs, 0))
+            existOp = no_exists;
+        break;
+    case no_eq:
+    case no_le:
+        if (matchesConstantValue(rhs, 0))
+            existOp = no_not;
+        break;
+    case no_lt:
+        if (matchesConstantValue(rhs, 1))
+            existOp = no_not;
+        break;
+    case no_ge:
+        if (matchesConstantValue(rhs, 1))
+            existOp = no_exists;
+        break;
+    }
+
+    if (existOp != no_none)
+    {
+        if (lhs->getOperator() == no_count)
+        {
+            IHqlExpression * ds = lhs->queryChild(0);
+            OwnedHqlExpr ret = createValue(no_exists, makeBoolType(), LINK(ds));
+            if (existOp == no_not)
+                return createValue(no_not, makeBoolType(), ret.getClear());
+            return ret.getClear();
+        }
+    }
 
     unsigned choosenDelta =0;
     switch (op)

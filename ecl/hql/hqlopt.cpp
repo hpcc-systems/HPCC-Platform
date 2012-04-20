@@ -495,6 +495,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateUnsharedDataset(IHqlExpression
         break;
     case no_compound_indexread:
     case no_compound_diskread:
+    case no_keyedlimit:
         break;
     case no_limit:
         if (expr->hasProperty(onFailAtom))
