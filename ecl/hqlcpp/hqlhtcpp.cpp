@@ -7120,11 +7120,12 @@ void HqlCppTranslator::pushCluster(BuildCtx & ctx, IHqlExpression * cluster)
 {
     HqlExprArray args;
     args.append(*LINK(cluster));
-    callProcedure(ctx, selectClusterAtom, args);
+    buildFunctionCall(ctx, selectClusterAtom, args);
 
     StringBuffer clusterText;
-    cluster->queryValue()->getStringValue(clusterText);
-    ctxCallback->noteCluster(clusterText.str());
+    getStringValue(clusterText, cluster);
+    if (clusterText.length())
+        ctxCallback->noteCluster(clusterText.str());
 }
 
 

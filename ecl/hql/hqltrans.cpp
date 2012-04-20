@@ -2247,8 +2247,13 @@ IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr
         if (!(flags & HTFtraverseallnodes))
             return LINK(expr);
         break;
-    case no_colon:
     case no_cluster:
+        {
+            HqlExprArray args;
+            args.append(*transformIndependent(expr->queryChild(0)));
+            return completeTransform(expr, args);
+        }
+    case no_colon:
     case no_sequential:
         {
             HqlExprArray args;
