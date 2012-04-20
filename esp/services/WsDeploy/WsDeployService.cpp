@@ -6019,6 +6019,11 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
     if (modified && fileExists)
       saveEnvironment(NULL, NULL, err);
   }
+  catch (IErrnoException* e)
+  {
+    //Don't ignore file access exceptions
+    throw e;
+  }
   catch(IException* e)
   {
     //ignore any exceptions at this point like validation errors e.t.c
