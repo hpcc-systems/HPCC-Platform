@@ -108,8 +108,7 @@
           <para>Download a raw data file</para>
 
           <para>There are links to data file available at <ulink
-          url="http://hpccsystems.com/community/docs"><emphasis
-          role="bold">http://hpccsystems.com/community/docs</emphasis></ulink></para>
+          url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink></para>
 
           <para>The download is approximately 30 MB (compressed) and is
           available in either ZIP or .tar.gz format. Choose the appropriate
@@ -269,7 +268,7 @@
             portal.</para>
 
             <para>The data file is available from links found on <ulink
-            url="http://hpccsystems.com/community/docs">http://hpccsystems.com/community/docs</ulink>.
+            url="http://hpccsystems.com/community/docs/data-tutorial-guide">http://hpccsystems.com/community/docs/data-tutorial-guide</ulink>.
             The download is approximately 30 MB (compressed) and is available
             in either ZIP or tar.gz format (<emphasis
             role="bold">OriginalPerson.tar.gz</emphasis> or <emphasis
