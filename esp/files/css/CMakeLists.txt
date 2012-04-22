@@ -27,6 +27,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/rightSideBar.css
     ${CMAKE_CURRENT_SOURCE_DIR}/sortabletable.css
     ${CMAKE_CURRENT_SOURCE_DIR}/tabs.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecl.css
 )
     Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/css COMPONENT Runtime )
 ENDFOREACH ( iFILES )
