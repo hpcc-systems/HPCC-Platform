@@ -31,7 +31,8 @@ set (    SRCS
          rmtspawn.cpp 
          rmtssh.cpp 
          rmtsmtp.cpp 
-         sockfile.cpp 
+         sockfile.cpp
+         gitfile.cpp
          
          remoteerr.hpp
          rmtfile.hpp
@@ -40,6 +41,7 @@ set (    SRCS
          rmtspawn.hpp
          rmtssh.hpp
          sockfile.hpp
+         gitfile.hpp
     )
 
 include_directories ( 

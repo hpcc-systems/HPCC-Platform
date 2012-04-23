@@ -288,7 +288,7 @@ void setCanAccessDirectly(RemoteFilename & file)
     setCanAccessDirectly(file,canAccessFilesDirectly(file));
 }
 
-class CDaliEnvIntercept: public CInterface, implements IFileCreateHook
+class CDaliEnvIntercept: public CInterface, implements IRemoteFileCreateHook
 {
     bool active;
     CriticalSection crit;

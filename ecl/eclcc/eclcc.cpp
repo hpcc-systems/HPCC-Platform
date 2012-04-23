@@ -35,6 +35,7 @@
 #include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
+#include "gitfile.hpp"
 
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
@@ -273,6 +274,7 @@ protected:
 
 static int doMain(int argc, const char *argv[])
 {
+    installGitFileHook();
     EclCC processor(argv[0]);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
@@ -304,6 +306,9 @@ int main(int argc, const char *argv[])
 {
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
+    // Turn logging down (we turn it back up if -v option seen)
+    Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
+    queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
 
     unsigned exitCode = doMain(argc, argv);
     releaseAtoms();
@@ -414,12 +419,6 @@ void EclCC::loadOptions()
 
     if (!optLogfile.length() && !optBatchMode)
         extractOption(optLogfile, globals, "ECLCC_LOGFILE", "logfile", "eclcc.log", NULL);
-
-    if (!logVerbose)
-    {
-        Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error);
-        queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
-    }
 
     if (logVerbose || optLogfile)
     {
@@ -1393,6 +1392,8 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))
         {
+            Owned<ILogMsgFilter> filter = getDefaultLogMsgFilter();
+            queryLogMsgManager()->changeMonitorFilter(queryStderrLogMsgHandler(), filter);
         }
         else if (strcmp(arg, "--version")==0)
         {

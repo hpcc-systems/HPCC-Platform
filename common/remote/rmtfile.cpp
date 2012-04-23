@@ -63,7 +63,7 @@ void setLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mount
 
 
 
-class CDaliServixIntercept: public CInterface, implements IFileCreateHook
+class CDaliServixIntercept: public CInterface, implements IRemoteFileCreateHook
 {
 public:
     IMPLEMENT_IINTERFACE;
