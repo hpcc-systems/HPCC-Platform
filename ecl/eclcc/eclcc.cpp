@@ -36,6 +36,7 @@
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
 #include "gitfile.hpp"
+#include "archive.hpp"
 
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
@@ -275,6 +276,7 @@ protected:
 static int doMain(int argc, const char *argv[])
 {
     installGitFileHook();
+    installArchiveFileHook();
     EclCC processor(argv[0]);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;

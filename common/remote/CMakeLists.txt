@@ -33,6 +33,7 @@ set (    SRCS
          rmtsmtp.cpp 
          sockfile.cpp
          gitfile.cpp
+         archive.cpp
          
          remoteerr.hpp
          rmtfile.hpp
@@ -42,14 +43,19 @@ set (    SRCS
          rmtssh.hpp
          sockfile.hpp
          gitfile.hpp
+         archive.hpp
     )
 
-include_directories ( 
+include_directories (
          ./../../system/hrpc 
          ./../../system/mp 
          ./../../system/include 
          ./../../system/jlib 
     )
+
+IF (USE_LIBARCHIVE)
+include_directories ( ${LIBARCHIVE_INCLUDE_DIR} )
+ENDIF()
 
 ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
 
@@ -58,5 +64,11 @@ install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
 
 target_link_libraries ( remote 
     jlib 
-    mp 
+    mp
     )
+
+IF (USE_LIBARCHIVE)
+target_link_libraries ( remote
+    archive
+    )
+ENDIF()
