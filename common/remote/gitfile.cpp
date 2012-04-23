@@ -44,13 +44,14 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
     {
         tail++;
         const char *end = strchr(tail, '}');
-        assertex(end);
+        if (!end)
+            throw MakeStringException(0, "Invalid git repository filename - no matching } found");
         revision.set(tail, end - tail);
         tail = end+1;
         if (*tail==PATHSEPCHAR)
             tail++;
-        else
-            assertex(*tail==0);
+        else if (*tail != 0)
+            throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
     }
     else
         revision.clear();
@@ -265,8 +266,7 @@ extern REMOTE_API IFile *createGitFile(const char *gitFileName)
 {
     StringBuffer fname(gitFileName);
     assertex(fname.length());
-    if (fname.charAt(fname.length()-1)==PATHSEPCHAR)
-        fname.remove(fname.length()-1, 1);
+    removeTrailingPathSepChar(fname);
     Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
     if (dir->first())
     {
@@ -433,11 +433,11 @@ protected:
     }
 } *gitRepositoryFileHook;
 
-static CriticalSection cs;
+static CriticalSection *cs;
 
 extern REMOTE_API void installGitFileHook()
 {
-    CriticalBlock b(cs); // Probably overkill!
+    CriticalBlock b(*cs); // Probably overkill!
     if (!gitRepositoryFileHook)
     {
         gitRepositoryFileHook = new CGitRepositoryFileHook;
@@ -447,7 +447,7 @@ extern REMOTE_API void installGitFileHook()
 
 extern REMOTE_API void removeGitFileHook()
 {
-    CriticalBlock b(cs); // Probably overkill!
+    CriticalBlock b(*cs); // Probably overkill!
     if (gitRepositoryFileHook)
     {
         removeContainedFileHook(gitRepositoryFileHook);
@@ -457,6 +457,7 @@ extern REMOTE_API void removeGitFileHook()
 
 MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
 {
+    cs = new CriticalSection;
     gitRepositoryFileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
     return true;
 }
@@ -465,4 +466,5 @@ MODULE_EXIT()
 {
     removeGitFileHook();
     ::Release(gitRepositoryFileHook);
+    delete cs;
 }
