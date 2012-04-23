@@ -1130,21 +1130,11 @@ public:
                             for (int x=0; x < (int)val->bv_len; x++)
                                 time = time * 10 + ( (int)val->bv_val[x] - '0');
                             ldap_value_free_len(bvalues);
-#ifdef _DEBUG
-                            CDateTime lastPWChange;
-                            lastPWChange.setFromFILETIME(time);
-                            lastPWChange.adjustTime(lastPWChange.queryUtcToLocalDelta());
-                            StringBuffer sb;
-                            lastPWChange.getString(sb);
-#endif
+
                             time += maxPWAge;
                             expiry.setFromFILETIME(time);
                             expiry.adjustTime(expiry.queryUtcToLocalDelta());
                             user.setPasswordExpiration(expiry);
-#ifdef _DEBUG
-                            StringBuffer sb2;
-                            expiry.getString(sb2);
-#endif
                         }
                         else
                         {
