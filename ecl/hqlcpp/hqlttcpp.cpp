@@ -4024,7 +4024,7 @@ void CompoundSourceTransformer::analyseMarkBoundaries(IHqlExpression * expr)
 
 void CompoundSourceTransformer::analyseExpr(IHqlExpression * expr)
 {
-    if (alreadyVisited(expr))
+    if (alreadyVisited(expr->queryBody()))
     {
         if ((pass == 0) && !insideCompound)
         {

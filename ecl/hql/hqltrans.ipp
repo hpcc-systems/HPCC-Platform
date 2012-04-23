@@ -622,8 +622,8 @@ protected:
     virtual void doAnalyseExpr(IHqlExpression * expr);
 
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
-    inline HoistingTransformInfo * queryExtra(IHqlExpression * expr)        { return static_cast<HoistingTransformInfo *>(queryTransformExtra(expr)); }
-    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryExtra(expr->queryBody())->isUnconditional(); }
+    inline HoistingTransformInfo * queryBodyExtra(IHqlExpression * expr)        { return static_cast<HoistingTransformInfo *>(queryTransformExtra(expr->queryBody())); }
+    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryBodyExtra(expr)->isUnconditional(); }
 
     virtual void analyseExpr(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
