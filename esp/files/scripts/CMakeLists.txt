@@ -43,6 +43,12 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tree.js
     ${CMAKE_CURRENT_SOURCE_DIR}/tree_template.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ui_engine.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/EclEditorControl.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ESPBase.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ESPWorkunit.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/GraphControl.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ResultsControl.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectControl.js
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/scripts COMPONENT Runtime )
 ENDFOREACH ( iFILES )
