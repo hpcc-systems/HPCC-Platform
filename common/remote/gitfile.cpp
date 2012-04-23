@@ -164,6 +164,7 @@ public:
             modifiedTime->clear();
         if (accessedTime)
             accessedTime->clear();
+        return false;
     }
     virtual fileBool isDirectory()
     {
@@ -296,7 +297,7 @@ public:
     virtual bool isDir()
     {
         assertex(curFile);
-        return curFile->isDirectory();
+        return curFile->isDirectory()==foundYes;
     }
     virtual __int64 getFileSize()
     {
