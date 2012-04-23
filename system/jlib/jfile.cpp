@@ -4900,10 +4900,9 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
     else
     {
         // no error, will attempt to resolve(realpath) as much of relpath as possible and append rest
-        const char *end = relpath+strlen(relpath);
-        if ('/' == *end) --end;
-        if (end != relpath)
+        if (strlen(relpath))
         {
+            const char *end = relpath+strlen(relpath);
             const char *path = relpath;
             const char *tail = end;
             StringBuffer head;
@@ -4914,7 +4913,7 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
                     out.append(rPath);
                     if (tail != end)
                         out.append(tail);
-                    return out;
+                    return removeTrailingPathSepChar(out);
                 }
                 // mark next tail
                 loop
@@ -4936,11 +4935,12 @@ StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out, bool mustE
         else
         {
             appendCurrentDirectory(out, true);
-            addPathSepChar(out).append(relpath);
+            if (strlen(relpath))
+                addPathSepChar(out).append(relpath);
         }
     }
 #endif
-    return out;
+    return removeTrailingPathSepChar(out);
 }
 
 StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustExist)
