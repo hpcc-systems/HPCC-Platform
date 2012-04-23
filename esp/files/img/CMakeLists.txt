@@ -89,6 +89,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/bullet_red.png
     ${CMAKE_CURRENT_SOURCE_DIR}/bullet_white.png
     ${CMAKE_CURRENT_SOURCE_DIR}/bullet_yellow.png
+    ${CMAKE_CURRENT_SOURCE_DIR}/loadingAnimation.gif
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/img COMPONENT Runtime)
 ENDFOREACH( iFILES )
