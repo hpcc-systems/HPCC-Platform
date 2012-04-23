@@ -81,6 +81,7 @@
 #endif
 
 static IFile *createIFileByHook(const RemoteFilename & filename);
+static IFile *createContainedIFileByHook(const char *filename);
 
 static char ShareChar='$';
 
@@ -3122,6 +3123,10 @@ public:
 
 };
 
+extern jlib_decl IDirectoryIterator *createNullDirectoryIterator()
+{
+    return new CNullDirectoryIterator;
+}
 
 class CDirectoryIterator : public CInterface, implements IDirectoryIterator
 {
@@ -3872,6 +3877,9 @@ IFile * createIFile(const char * filename)
 {
     if (!filename)
         return NULL;
+    IFile *ret = createContainedIFileByHook(filename);
+    if (ret)
+        return ret;
     bool linremote=(memcmp(filename,"//",2)==0);
     if (!linremote&&(memcmp(filename,"\\\\",2)!=0)) // see if remote looking
         return new CFile(filename);
@@ -3886,7 +3894,7 @@ IFile * createIFile(const char * filename)
 #ifdef _WIN32
     StringBuffer tmplocal;
     if (linremote||(rfn.queryEndpoint().port!=0)) {
-        IFile * ret = createIFileByHook(rfn);           // use daliservix in preference
+        ret = createIFileByHook(rfn);           // use daliservix in preference
         if (ret) 
             return ret;             
         while (*filename) {                             // no daliservix so swap '/' for '\' and hope for best
@@ -3923,7 +3931,7 @@ IFile * createIFile(const char * filename)
 #else
     if (memcmp(filename,"smb://",6)==0)  // don't support samba - try remote
         return createIFile(filename+4);
-    IFile * ret = createIFileByHook(rfn);
+    ret = createIFileByHook(rfn);
     if (!ret) 
         throw MakeStringException(-1, "CreateIFile::cannot attach to %s. (remote.so not linked?)", filename);
     return ret;
@@ -4808,30 +4816,63 @@ void RemoteMultiFilename::tostr(StringArray &array,StringBuffer &out)
 
 //===================================================================================================
 
-static IArrayOf<IFileCreateHook> hooks;
-static CriticalSection hooksect;
+static IArrayOf<IContainedFileHook> containedFileHooks;
+static ReadWriteLock containedFileHookLock;
 
-void addIFileCreateHook(IFileCreateHook *hook)
+void addContainedFileHook(IContainedFileHook *hook)
 {
-    if (hook) {
+    if (hook)
+    {
         hook->Link();
-        CriticalBlock block(hooksect);
-        hooks.append(*hook);
+        WriteLockBlock block(containedFileHookLock);
+        containedFileHooks.append(*hook);
     }
 }
 
-void removeIFileCreateHook(IFileCreateHook *hook)
+void removeContainedFileHook(IContainedFileHook *hook)
 {
-    CriticalBlock block(hooksect);
-    hooks.zap(*hook);
+    WriteLockBlock block(containedFileHookLock);
+    containedFileHooks.zap(*hook);
+}
+
+static IFile *createContainedIFileByHook(const char *filename)
+{
+    ReadLockBlock block(containedFileHookLock);
+    ForEachItemIn(i, containedFileHooks)
+    {
+        IFile * ret = containedFileHooks.item(i).createIFile(filename);
+        if (ret)
+            return ret;
+    }
+    return NULL;
+}
+
+static IArrayOf<IRemoteFileCreateHook> remoteFileHooks;
+static ReadWriteLock remoteFileHookLock;
+
+void addIFileCreateHook(IRemoteFileCreateHook *hook)
+{
+    if (hook)
+    {
+        hook->Link();
+        WriteLockBlock block(remoteFileHookLock);
+        remoteFileHooks.append(*hook);
+    }
+}
+
+void removeIFileCreateHook(IRemoteFileCreateHook *hook)
+{
+    WriteLockBlock block(remoteFileHookLock);
+    remoteFileHooks.zap(*hook);
 }
 
 
 static IFile *createIFileByHook(const RemoteFilename & filename)
 {
-    CriticalBlock block(hooksect); // this may be a problem (serializing opens)
-    ForEachItemIn(i,hooks) {
-        IFile * ret = hooks.item(i).createIFile(filename);
+    ReadLockBlock block(remoteFileHookLock);
+    ForEachItemIn(i, remoteFileHooks)
+    {
+        IFile * ret = remoteFileHooks.item(i).createIFile(filename);
         if (ret)
             return ret;
     }
