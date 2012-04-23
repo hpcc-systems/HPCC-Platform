@@ -492,6 +492,20 @@ inline StringBuffer &addPathSepChar(StringBuffer &path,char sepchar=0)
     return path;
 }
 
+inline StringBuffer &removeTrailingPathSepChar(StringBuffer &path)
+{
+    if (path.length()>1 && isPathSepChar(path.charAt(path.length()-1)))
+    {
+#ifdef _WIN32
+    // In addition to not removing \ if it's the only char in the path, you should not remove it the path
+    // is of the form c:\
+        if (path.length()>3 || path.charAt(1) != ':')
+#endif
+            path.remove(path.length()-1, 1);
+    }
+    return path;
+}
+
 inline StringBuffer &addNonEmptyPathSepChar(StringBuffer &path,char sepchar=0)
 {
     size32_t len = path.length();

@@ -456,7 +456,7 @@ void FileSystemEclCollection::processFilePath(IErrorReceiver * errs, const char 
         makeAbsolutePath(dirPath.str(), absolutePath);
         if (!containsFileWildcard(dirTail))
         {
-            absolutePath.append(dirTail);
+            addPathSepChar(absolutePath).append(dirTail);
             Owned<IFile> file = createIFile(absolutePath);
             if (file->isDirectory() == foundYes)
             {
