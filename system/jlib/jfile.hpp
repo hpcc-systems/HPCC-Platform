@@ -507,7 +507,7 @@ inline StringBuffer &removeTrailingPathSepChar(StringBuffer &path)
     {
 #ifdef _WIN32
     // In addition to not removing / if it's the only char in the path, you should not remove it the path
-    // is of the form c:\
+    // is of the form "c:\"  (trailing backslash)
         if (path.length()>3 || path.charAt(1) != ':')
 #endif
             path.remove(path.length()-1, 1);
