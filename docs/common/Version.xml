@@ -35,8 +35,8 @@
     <para>DateVer is the <emphasis role="bold">id</emphasis> we provided to be
     able to reference it.</para>
 
-    <para>All content herein is but a placeholder to maintain a valid document
-    that we can use it's bookinfo/date element for our other purposes.</para>
+    <para>All content herein is but a placeholder to maintain a valid document structure
+    that we can use bookinfo/date and other elements for other purposes.</para>
     
     <para>☺</para>
   </section>
