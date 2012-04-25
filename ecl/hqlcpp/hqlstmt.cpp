@@ -376,7 +376,7 @@ IHqlStmt *  BuildCtx::addLine(const char * filename, unsigned lineNum)
     if (filename)
     {
         next->addExpr(createConstant(filename));
-        next->addExpr(getSizetConstant(lineNum));
+        next->addExpr(createConstant(createIntValue(lineNum, sizeof(int), true)));
     }
     return appendSimple(next);
 }
