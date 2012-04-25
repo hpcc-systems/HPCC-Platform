@@ -742,6 +742,7 @@ protected:
     IHqlExpression * ensureAggregateGroupingAliased(IHqlExpression * aggregate);
     void gatherSteppingMeta(IHqlExpression * expr, SourceSteppingInfo & info);
     void gatherSteppingMeta(IHqlExpression * expr, SteppingFieldSelection & outputStepping, SteppingFieldSelection & rawStepping);
+    void gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr);
     void rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset, node_operator side, IHqlExpression * selSeq, bool isLocal);
     void rebindFilepositons(BuildCtx & ctx, IHqlExpression * dataset, node_operator side, IHqlExpression * selSeq);
 
@@ -1686,6 +1687,44 @@ void SourceBuilder::extractMonitors(IHqlExpression * ds, SharedHqlExpr & unkeyed
 void SourceBuilder::analyseGraph(IHqlExpression * expr)
 {
     analyse(expr);
+    SourceFieldUsage * fieldUsage = translator.querySourceFieldUsage(tableExpr);
+    if (fieldUsage && !fieldUsage->seenAll())
+    {
+        if (expr->queryNormalizedSelector() == tableExpr->queryNormalizedSelector())
+            fieldUsage->noteAll();
+        else
+            gatherFieldUsage(fieldUsage, expr);
+    }
+}
+
+void SourceBuilder::gatherFieldUsage(SourceFieldUsage * fieldUsage, IHqlExpression * expr)
+{
+    loop
+    {
+        if (expr->queryBody() == tableExpr->queryBody())
+            return;
+        if (fieldUsage->seenAll())
+            return;
+
+        IHqlExpression * ds = expr->queryChild(0);
+        switch (expr->getOperator())
+        {
+        case no_fetch:
+            {
+                assertex(ds->queryBody() == tableExpr->queryBody());
+                IHqlExpression * selSeq = querySelSeq(expr);
+                OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
+                ::gatherFieldUsage(fieldUsage, expr, left);
+                return;
+            }
+        }
+
+        assertex(getNumChildTables(expr) == 1);
+        if (ds->queryNormalizedSelector() == tableExpr->queryNormalizedSelector())
+            gatherParentFieldUsage(fieldUsage, expr);
+
+        expr = ds;
+    }
 }
 
 inline bool useDescriptiveGraphLabel(ThorActivityKind kind)
@@ -2859,7 +2898,7 @@ protected:
 
 void DiskNormalizeBuilder::analyseGraph(IHqlExpression * expr)
 {
-    analyse(expr);
+    DiskReadBuilderBase::analyseGraph(expr);
     needDefaultTransform = (expr->queryNormalizedSelector()->getOperator() == no_select);
 }
 
@@ -2926,7 +2965,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        DiskReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
     }
 };
@@ -2995,7 +3034,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        DiskReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
         if (aggOp == no_existsgroup)
             choosenValue.setown(getSizetConstant(1));
@@ -3091,7 +3130,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        DiskReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
     }
 };
@@ -3179,7 +3218,7 @@ protected:
 
 void ChildNormalizeBuilder::analyseGraph(IHqlExpression * expr)
 {
-    analyse(expr);
+    ChildBuilderBase::analyseGraph(expr);
     needDefaultTransform = (expr->queryNormalizedSelector()->getOperator() == no_select);
 }
 
@@ -3234,7 +3273,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        ChildBuilderBase::analyseGraph(expr);
         returnIfFilterFails = false;
     }
 };
@@ -3290,7 +3329,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        ChildBuilderBase::analyseGraph(expr);
         returnIfFilterFails = false;
     }
 };
@@ -3359,7 +3398,7 @@ protected:
 
 void ChildThroughNormalizeBuilder::analyseGraph(IHqlExpression * expr)
 {
-    analyse(expr);
+    ChildBuilderBase::analyseGraph(expr);
     needDefaultTransform = (expr->queryNormalizedSelector()->getOperator() == no_select);
 }
 
@@ -6256,7 +6295,7 @@ public:
 
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        IndexReadBuilderBase::analyseGraph(expr);
         gatherSteppingMeta(expr, steppingInfo);
         if (steppedExpr && transformCanFilter && translator.queryOptions().optimizeSteppingPostfilter)
         {
@@ -6358,7 +6397,7 @@ protected:
 
 void IndexNormalizeBuilder::analyseGraph(IHqlExpression * expr)
 {
-    analyse(expr);
+    IndexReadBuilderBase::analyseGraph(expr);
     needDefaultTransform = (expr->queryNormalizedSelector()->getOperator() == no_select);
 }
 
@@ -6425,7 +6464,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        IndexReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
     }
 };
@@ -6495,7 +6534,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        IndexReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
         IHqlExpression * aggregate = expr->queryChild(0);
         if (isKeyedCountAggregate(aggregate))
@@ -6604,7 +6643,7 @@ protected:
     }
     virtual void analyseGraph(IHqlExpression * expr)
     {
-        analyse(expr);
+        IndexReadBuilderBase::analyseGraph(expr);
         returnIfFilterFails = !isNormalize;
     }
 

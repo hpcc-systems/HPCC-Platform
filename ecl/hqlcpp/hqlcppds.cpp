@@ -48,6 +48,7 @@
 #include "hqlccommon.hpp"
 #include "hqliter.ipp"
 #include "hqlinline.hpp"
+#include "hqlusage.hpp"
 
 #define MAX_FIXED_SIZE_RAW 1024
 #define INLINE_TABLE_EXPAND_LIMIT 4

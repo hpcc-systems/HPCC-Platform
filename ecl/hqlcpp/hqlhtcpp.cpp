@@ -54,6 +54,7 @@
 #include "hqlccommon.hpp"
 #include "deffield.hpp"
 #include "hqlinline.hpp"
+#include "hqlusage.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -5701,6 +5702,73 @@ double HqlCppTranslator::getComplexity(HqlExprArray & exprs)
         complexity += getComplexity(&exprs.item(idx), NoCluster);
     return complexity;
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void HqlCppTranslator::reportFieldUsage(const char * filename)
+{
+    Owned<IPropertyTree> sources = createPTree("usedsources");
+    ForEachItemIn(i, trackedSources)
+    {
+        IPropertyTree * next = trackedSources.item(i).createReport();
+        sources->addPropTree(next->queryName(), next);
+    }
+
+    saveXML(filename, sources);
+}
+
+SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr)
+{
+    if (!options.reportFieldUsage || !expr)
+        return NULL;
+
+    if (expr->hasProperty(_spill_Atom) || expr->hasProperty(jobTempAtom))
+        return NULL;
+
+    OwnedHqlExpr normalized = removeProperty(expr, _uid_Atom);
+    IHqlExpression * original = normalized->queryProperty(_original_Atom);
+    if (original)
+    {
+        OwnedHqlExpr normalTable = removeProperty(original->queryChild(0), _uid_Atom);
+        OwnedHqlExpr normalOriginal = replaceChild(original, 0, normalTable);
+        normalized.setown(replaceOwnedProperty(normalized, normalOriginal.getClear()));
+    }
+
+    ForEachItemIn(i, trackedSources)
+    {
+        SourceFieldUsage & cur = trackedSources.item(i);
+        if (cur.matches(normalized))
+            return &cur;
+    }
+    SourceFieldUsage * next = new SourceFieldUsage(normalized);
+    trackedSources.append(*next);
+    return next;
+}
+
+void HqlCppTranslator::noteAllFieldsUsed(IHqlExpression * expr)
+{
+    SourceFieldUsage * match = querySourceFieldUsage(expr);
+    if (match)
+        match->noteAll();
+}
+
+void HqlCppTranslator::generateStatistics(const char * targetDir)
+{
+    if (options.reportFieldUsage && trackedSources.ordinality())
+    {
+        StringBuffer fullname;
+        addDirectoryPrefix(fullname, targetDir).append(soName).append("_fieldusage.xml");
+
+        reportFieldUsage(fullname);
+
+        Owned<IWUQuery> query = wu()->updateQuery();
+        associateLocalFile(query, FileTypeXml, fullname, "FieldUsage", 0);
+
+        ctxCallback->registerFile(fullname.str(), "FieldUsage");
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 BoundRow * HqlCppTranslator::resolveDatasetRequired(BuildCtx & ctx, IHqlExpression * expr)
 {

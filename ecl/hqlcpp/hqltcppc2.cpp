@@ -40,6 +40,7 @@
 #include "hqlpmap.hpp"
 #include "hqlthql.hpp"
 #include "hqlattr.hpp"
+#include "hqlusage.hpp"
 
 //#define TraceExprPrintLog(x, expr)                PrintLog(x ": %s", expr->toString(StringBuffer()).str());
 

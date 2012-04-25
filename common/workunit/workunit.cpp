@@ -6132,6 +6132,7 @@ mapEnums queryFileTypes[] = {
    { FileTypeDll, "dll" },
    { FileTypeResText, "res" },
    { FileTypeHintXml, "hint" },
+   { FileTypeXml, "xml" },
    { FileTypeSize,  NULL },
 };
 

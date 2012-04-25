@@ -45,6 +45,7 @@
 #include "hqlpregex.hpp"
 #include "hqlutil.hpp"
 #include "hqltrans.ipp"
+#include "hqlusage.hpp"
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
 

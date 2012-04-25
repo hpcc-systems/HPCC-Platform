@@ -276,6 +276,7 @@ protected:
     HqlExprAttr     expandedKey;
     HqlExprAttr     file;
     HqlExprAttr     expandedFile;
+    HqlExprAttr     rawFile;
     HqlExprAttr     keyAccessDataset;
     HqlExprAttr     keyAccessTransform;
     HqlExprAttr     fileAccessDataset;
@@ -311,6 +312,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         if (!rightTable || rightTable->queryNormalizedSelector() != right->queryNormalizedSelector())
             translator.throwError(HQLERR_FullKeyedNeedsFile);
         expandedFile.setown(convertToPhysicalTable(rightTable, true));
+        rawFile.set(queryPhysicalRootTable(expandedFile));
         keyedMapper.setDataset(key);
     }
     else if (right->getOperator() == no_newkeyindex)
@@ -333,7 +335,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     counter.set(queryPropertyChild(expr, _countProject_Atom, 0));
 
     if (isFullJoin())
-        rawRhs.set(queryPhysicalRootTable(expandedFile));
+        rawRhs.set(rawFile);
     else
         rawRhs.set(rawKey);
 }
@@ -595,9 +597,17 @@ static IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpre
 
 IHqlExpression * KeyedJoinInfo::expandDatasetReferences(IHqlExpression * transform, IHqlExpression * ds)
 {
+    switch (ds->getOperator())
+    {
+    case no_newusertable:
+    case no_hqlproject:
+        break;
+    default:
+        return LINK(transform);
+    }
+
     OwnedHqlExpr oldRight = createSelector(no_right, ds, joinSeq);
     OwnedHqlExpr newRight = createSelector(no_right, ds->queryChild(0), joinSeq);
-
     return ::expandDatasetReferences(transform, ds, oldRight, newRight);
 }
 
@@ -634,10 +644,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
     else
     {
         if (isFullJoin())
-        {
-            if (expandedFile != queryPhysicalRootTable(file))
-                newTransform.setown(expandDatasetReferences(newTransform, expandedFile));
-        }
+            newTransform.setown(expandDatasetReferences(newTransform, expandedFile));
         else
             newTransform.setown(expandDatasetReferences(newTransform, expandedKey));
     }
@@ -656,6 +663,27 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 
     ctx.associateExpr(fileposExpr, fileposVar);
     translator.doBuildTransformBody(ctx, newTransform, selfCursor);
+
+    if (isFullJoin())
+    {
+        SourceFieldUsage * fileUsage = translator.querySourceFieldUsage(rawFile);
+        if (fileUsage)
+        {
+            OwnedHqlExpr rawTransform = expandDatasetReferences(transform, expandedFile);
+            OwnedHqlExpr right = createSelector(no_right, rawFile, joinSeq);
+            ::gatherFieldUsage(fileUsage, rawTransform, right);
+        }
+    }
+    else
+    {
+        SourceFieldUsage * keyUsage = translator.querySourceFieldUsage(rawKey);
+        if (keyUsage)
+        {
+            OwnedHqlExpr rawTransform = expandDatasetReferences(transform, expandedKey);
+            OwnedHqlExpr right = createSelector(no_right, rawKey, joinSeq);
+            ::gatherFieldUsage(keyUsage, rawTransform, right);
+        }
+    }
 }
 
 void KeyedJoinInfo::buildFailureTransform(BuildCtx & ctx, IHqlExpression * onFailTransform)
@@ -1091,6 +1119,25 @@ bool KeyedJoinInfo::processFilter()
     if (expr->getOperator() != no_keyeddistribute)
         optimizeExtractJoinFields();
 
+    SourceFieldUsage * keyUsage = translator.querySourceFieldUsage(rawKey);
+    if (keyUsage)
+    {
+        gatherFieldUsage(keyUsage, newFilter, rawKey->queryNormalizedSelector());
+        if (isFullJoin())
+            keyUsage->noteFilepos();
+    }
+
+    if (file && fileFilter)
+    {
+        SourceFieldUsage * fileUsage = translator.querySourceFieldUsage(rawFile);
+        if (fileUsage)
+        {
+            OwnedHqlExpr rawFilter = expandDatasetReferences(fileFilter, expandedFile);
+            OwnedHqlExpr fileRight = createSelector(no_right, rawFile, joinSeq);
+            gatherFieldUsage(fileUsage, rawFilter, fileRight);
+        }
+    }
+
     return monitors->isKeyed();
 }
 
@@ -1503,9 +1550,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
 
     //virtual const char * queryOriginalName() = 0;         // may be null
     buildRefFilenameFunction(*instance, instance->startctx, "queryOriginalName", original);
+    noteAllFieldsUsed(original);
 
     //virtual const char * queryPatchName() = 0;
     buildRefFilenameFunction(*instance, instance->startctx, "queryUpdatedName", updated);
+    noteAllFieldsUsed(updated);
 
     //virtual const char * queryOutputName() = 0;
     buildFilenameFunction(*instance, instance->startctx, "queryOutputName", output, hasDynamicFilename(expr));
@@ -1545,6 +1594,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
 
     //virtual const char * queryOriginalName() = 0;
     buildRefFilenameFunction(*instance, instance->startctx, "queryOriginalName", original);
+    noteAllFieldsUsed(original);
 
     //virtual const char * queryPatchName() = 0;
     buildFilenameFunction(*instance, instance->startctx, "queryPatchName", patch, true);
