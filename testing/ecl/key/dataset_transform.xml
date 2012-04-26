@@ -7,7 +7,6 @@
  <Row><Result_3>Constant, 10</Result_3></Row>
 </Dataset>
 <Dataset name='Result 4'>
- <Row><i>0</i></Row>
  <Row><i>10</i></Row>
  <Row><i>20</i></Row>
  <Row><i>30</i></Row>
@@ -17,12 +16,12 @@
  <Row><i>70</i></Row>
  <Row><i>80</i></Row>
  <Row><i>90</i></Row>
+ <Row><i>100</i></Row>
 </Dataset>
 <Dataset name='Result 5'>
  <Row><Result_5>Constant expression, 50</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><i>0</i></Row>
  <Row><i>10</i></Row>
  <Row><i>20</i></Row>
  <Row><i>30</i></Row>
@@ -72,6 +71,7 @@
  <Row><i>470</i></Row>
  <Row><i>480</i></Row>
  <Row><i>490</i></Row>
+ <Row><i>500</i></Row>
 </Dataset>
 <Dataset name='Result 7'>
  <Row><Result_7>Variable 5, row constant</Result_7></Row>
@@ -87,7 +87,6 @@
  <Row><Result_9>Distributed 10</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><i>0</i></Row>
  <Row><i>10</i></Row>
  <Row><i>20</i></Row>
  <Row><i>30</i></Row>
@@ -97,4 +96,5 @@
  <Row><i>70</i></Row>
  <Row><i>80</i></Row>
  <Row><i>90</i></Row>
+ <Row><i>100</i></Row>
 </Dataset>
