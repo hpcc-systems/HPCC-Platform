@@ -16,47 +16,16 @@
 ################################################################################
 
 
-# Component: remote 
+# Component: remote/hooks
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for remote
+#    Cmake Input File for remote/hooks
 #####################################################
 
-project( remote ) 
+project( hooks )
 
-add_subdirectory(hooks)
-
-set (    SRCS 
-         rmtfile.cpp 
-         rmtpass.cpp 
-         rmtspawn.cpp 
-         rmtssh.cpp 
-         rmtsmtp.cpp 
-         sockfile.cpp
-         
-         remoteerr.hpp
-         rmtfile.hpp
-         rmtpass.hpp
-         rmtsmtp.hpp
-         rmtspawn.hpp
-         rmtssh.hpp
-         sockfile.hpp
-    )
-
-include_directories (
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
-    )
-
-ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
-
-HPCC_ADD_LIBRARY( remote SHARED ${SRCS}  )
-install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
-
-target_link_libraries ( remote 
-    jlib 
-    mp
-    )
+add_subdirectory(git)
+IF (USE_LIBARCHIVE)
+  add_subdirectory(libarchive)
+ENDIF()

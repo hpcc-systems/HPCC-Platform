@@ -25,10 +25,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jregexp.hpp"
-#include "gitfile.hpp"
 #include "archive.hpp"
-
-#ifdef _USE_LIBARCHIVE
 
 #include <sys/stat.h>
 #include <archive.h>
@@ -182,7 +179,6 @@ public:
         if (pos < lastPos)
             throw MakeStringException(0, "Only sequential access to contained file %s supported", fullName.get());
         byte *data = (byte *) _data;
-        lastPos = pos;
         size32_t lenRequested = len;
         while (len > 0 & pos < fileSize)
         {
@@ -211,6 +207,7 @@ public:
                 pos += copyLen;
             }
         }
+        lastPos = pos;
         return lenRequested - len;
     }
     virtual offset_t size()
@@ -367,7 +364,7 @@ protected:
     Linked<ArchiveEntry> entry;
 };
 
-extern REMOTE_API IFile *createIFileInArchive(const char *containedFileName)
+static IFile *createIFileInArchive(const char *containedFileName)
 {
     StringBuffer fname(containedFileName);
     assertex(fname.length());
@@ -450,7 +447,6 @@ public:
                         // Strip off a trailing /, then check that there is no / in the tail
                         if (strchr(tail, PATHSEPCHAR) == NULL &&  (!mask.length() || WildMatch(tail, mask, false)))
                         {
-                            DBGLOG("found file %s %s %s", container.get(), relDir.get(), tail.str());
                             entries.append(*new ArchiveEntry(entry));
                         }
                     }
@@ -523,7 +519,7 @@ protected:
     }
 } *archiveFileHook;
 
-extern REMOTE_API void installArchiveFileHook()
+extern ARCHIVEFILE_API void installFileHook()
 {
     SpinBlock b(*lock); // Probably overkill!
     if (!archiveFileHook)
@@ -533,7 +529,7 @@ extern REMOTE_API void installArchiveFileHook()
     }
 }
 
-extern REMOTE_API void removeArchiveFileHook()
+extern ARCHIVEFILE_API void removeFileHook()
 {
     SpinBlock b(*lock); // Probably overkill!
     if (archiveFileHook)
@@ -543,7 +539,7 @@ extern REMOTE_API void removeArchiveFileHook()
     }
 }
 
-MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
+MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     lock = new SpinLock;
     signature = new RegExpr(ARCHIVE_SIGNATURE);
@@ -553,21 +549,12 @@ MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
 
 MODULE_EXIT()
 {
-    removeArchiveFileHook();
+    if (archiveFileHook)
+    {
+        removeContainedFileHook(archiveFileHook);
+        archiveFileHook = NULL;
+    }
     delete signature;
     delete lock;
     ::Release(archiveFileHook);
 }
-#else
-extern REMOTE_API void installArchiveFileHook()
-{
-}
-
-extern REMOTE_API void removeArchiveFileHook()
-{
-}
-extern REMOTE_API IFile *createIFileInArchive(const char *containedFileName)
-{
-    throw MakeStringException(0, "System was built without archive file support");
-}
-#endif

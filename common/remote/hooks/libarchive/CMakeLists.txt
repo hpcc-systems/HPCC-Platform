@@ -16,47 +16,33 @@
 ################################################################################
 
 
-# Component: remote 
+# Component: archivefile
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for remote
+#    Cmake Input File for archivefile
 #####################################################
 
-project( remote ) 
+project( archivefile )
 
-add_subdirectory(hooks)
-
-set (    SRCS 
-         rmtfile.cpp 
-         rmtpass.cpp 
-         rmtspawn.cpp 
-         rmtssh.cpp 
-         rmtsmtp.cpp 
-         sockfile.cpp
-         
-         remoteerr.hpp
-         rmtfile.hpp
-         rmtpass.hpp
-         rmtsmtp.hpp
-         rmtspawn.hpp
-         rmtssh.hpp
-         sockfile.hpp
+set (    SRCS
+         archive.cpp
+         archive.hpp
     )
 
 include_directories (
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
+include_directories ( ${LIBARCHIVE_INCLUDE_DIR} )
 
-HPCC_ADD_LIBRARY( remote SHARED ${SRCS}  )
-install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
+ADD_DEFINITIONS( -D_USRDLL -DARCHIVEFILE_EXPORTS )
 
-target_link_libraries ( remote 
-    jlib 
-    mp
+HPCC_ADD_LIBRARY( archivefile SHARED ${SRCS}  )
+install ( TARGETS archivefile DESTINATION ${OSSDIR}/filehooks )
+
+target_link_libraries ( archivefile
+    jlib
+    archive
     )

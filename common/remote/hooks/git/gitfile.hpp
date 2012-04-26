@@ -16,25 +16,26 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#ifndef ARCHIVE_FILE_HPP
-#define ARCHIVE_FILE_HPP
+#ifndef GITFILE_HPP
+#define GITFILE_HPP
 
 #include "jfile.hpp"
 
-#ifdef REMOTE_EXPORTS
-#define REMOTE_API __declspec(dllexport)
+#ifdef GITFILE_EXPORTS
+#define GITFILE_API __declspec(dllexport)
 #else
-#define REMOTE_API __declspec(dllimport)
+#define GITFILE_API __declspec(dllimport)
 #endif
 
 
 /*
- * Direct access to files in zip archives, without needing to extract them first
- * Installs hooks into createIFile, spotting filenames of the form /my/directory/myfile.zip/{password}/path/within/archive
+ * Direct access to files in git repositories, by revision, without needing to check them out first
+ * Installs hooks into createIFile, spotting filenames of the form /my/directory/.git/{revision}/path/within/git
  */
 
-extern REMOTE_API IFile * createIFileInArchive(const char * _filename); // create directly without installing createIFile hook
-extern REMOTE_API void installArchiveFileHook();
-extern REMOTE_API void removeArchiveFileHook();
+extern "C" {
+  extern GITFILE_API void installFileHook();
+  extern GITFILE_API void removeFileHook();
+};
 
 #endif
