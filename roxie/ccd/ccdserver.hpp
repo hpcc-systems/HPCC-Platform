@@ -75,7 +75,7 @@ interface IRoxieServerQueryPacket : public IInterface, public ILRUChain
 };
 
 IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended);
-IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended);
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended, ILoadedDllEntry *dll);
 bool suspendRoxieListener(unsigned port, bool suspended);
 extern IArrayOf<IRoxieListener> socketListeners;
 
@@ -299,6 +299,7 @@ interface IRoxieServerActivityFactory : extends IActivityFactory
     virtual IRoxieServerSideCache *queryServerSideCache() const = 0;
     virtual IDefRecordMeta *queryActivityMeta() const = 0;
     virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const = 0;
+    virtual bool dynamicFileResolution() const = 0;
 };
 interface IGraphResult : public IInterface
 {
