@@ -15985,16 +15985,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     ensureRowAllocated(funcctx, "crSelf");
     BoundRow * selfCursor = bindSelf(funcctx, instance->dataset, "crSelf");
     IHqlExpression * self = selfCursor->querySelector();
-    associateCounter(funcctx, counter, "row");
+    associateCounter(funcctx, counter, "(row+1)");
     buildTransformBody(funcctx, transform, NULL, NULL, instance->dataset, self);
 
     // unsigned numRows() - count is guaranteed by lexer
     doBuildUnsigned64Function(instance->startctx, "numRows", count);
 
+    // unsigned getFlags()
     doBuildTempTableFlags(instance->startctx, expr, isConstantTransform(transform));
 
     buildInstanceSuffix(instance);
-
     return instance->getBoundActivity();
 }
 

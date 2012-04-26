@@ -6641,7 +6641,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     localtrans->autoCommit();
 
     // Should have been persisted to the DFS by now
-    return localtrans->lookupSuperFile(logicalname.get());
+    return lookupSuperFile(logicalname.get(), user, localtrans, false, defaultTimeout);
 }
 
 // MORE - this should go when remove file gets into transactions
