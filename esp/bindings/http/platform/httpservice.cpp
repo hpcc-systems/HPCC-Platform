@@ -173,8 +173,19 @@ bool CEspHttpServer::rootAuth(IEspContext* ctx)
             ret=true;
         else
         {
-            DBGLOG("User authentication required");
-            m_response->sendBasicChallenge(thebinding->getChallengeRealm(), true);
+            ISecUser *user = ctx->queryUser();
+            if (user && user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+            {
+                DBGLOG("ESP password expired for %s", user->getName());
+                m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
+                m_response->setContent("Your ESP password has expired");
+                m_response->send();
+            }
+            else
+            {
+                DBGLOG("User authentication required");
+                m_response->sendBasicChallenge(thebinding->getChallengeRealm(), true);
+            }
         }
     }
 
@@ -422,16 +433,28 @@ int CEspHttpServer::processRequest()
                     
             if (authState==authRequired)
             {
-                DBGLOG("User authentication required");
-                StringBuffer realmbuf;
-                if(thebinding)
-                    realmbuf.append(thebinding->getChallengeRealm());
-                if(realmbuf.length() == 0)
-                    realmbuf.append("ESP");
-                m_response->sendBasicChallenge(realmbuf.str(), !isSoapPost);
+                ISecUser *user = ctx->queryUser();
+                if (user && user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+                {
+                    DBGLOG("ESP password expired for %s", user->getName());
+                    m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
+                    m_response->setContent("Your ESP password has expired");
+                    m_response->send();
+                }
+                else
+                {
+                    DBGLOG("User authentication required");
+                    StringBuffer realmbuf;
+                    if(thebinding)
+                        realmbuf.append(thebinding->getChallengeRealm());
+                    if(realmbuf.length() == 0)
+                        realmbuf.append("ESP");
+                    m_response->sendBasicChallenge(realmbuf.str(), !isSoapPost);
+                    break;
+                }
                 return 0;
             }
-                        
+
             // authenticate optional groups
             if (authenticateOptionalFailed(*ctx,thebinding))
                 throw createEspHttpException(401,"Unauthorized Access","Unauthorized Access");

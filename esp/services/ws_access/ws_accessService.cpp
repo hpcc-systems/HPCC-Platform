@@ -649,7 +649,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             resp.setRetmsg("username can't be empty");
             return false;
         }
-        if(strchr(username, (int)' '))
+        if(strchr(username, ' '))
         {
             resp.setRetcode(-1);
             resp.setRetmsg("Username can't contain spaces");
