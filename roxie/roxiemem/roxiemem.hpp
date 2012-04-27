@@ -448,7 +448,7 @@ interface IActivityMemoryUsageMap : public IInterface
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
-extern roxiemem_decl IRowManager *createRowManager(unsigned memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false);
+extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false);
 
 // Fixed size aggregated link-counted zero-overhead data Buffer manager
 

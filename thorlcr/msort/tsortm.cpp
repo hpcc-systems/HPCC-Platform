@@ -805,8 +805,8 @@ public:
         unsigned i;
         unsigned j;
         for(i=0;i<numsplits;i++) {
-            emin.append(mink.getClear());
-            emax.append(maxk.getClear());
+            emin.append(mink.getLink());
+            emax.append(maxk.getLink());
         }
         UnsignedArray amid;
         unsigned iter=0;

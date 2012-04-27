@@ -280,7 +280,7 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
 class CJoinHelper : public IJoinHelper, public CSimpleInterface
 {
     CActivityBase &activity;
-	ICompare *compareLR;
+    ICompare *compareLR;
     ICompare *compareL; 
     ICompare *compareR; 
 
@@ -356,7 +356,7 @@ public:
     CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
         : activity(_activity), allocator(_allocator), denormTmp(NULL), rightgroup(_activity), denormRows(_activity)
     {
-		kind = activity.queryContainer().getKind();
+        kind = activity.queryContainer().getKind();
         helper = _helper; 
         denormCount = 0;
         outSz = 0;
@@ -575,6 +575,7 @@ public:
                             denormRows.kill();
                             break;
                         case TAKjoin:
+                        case TAKselfjoin:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
                             nextR();
                             break;
@@ -623,6 +624,7 @@ public:
                         denormCount = 0;
                         break;
                     case TAKjoin:
+                    case TAKselfjoin:
                         if (!rightgroupmatched[rightidx]) 
                             gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
                         rightidx++;
@@ -645,6 +647,7 @@ public:
                         gotsz = helper->transform(ret, nextleft, NULL, 0, (const void **)NULL);
                         break;
                     case TAKjoin:
+                    case TAKselfjoin:
                         gotsz = helper->transform(ret, nextleft, defaultRight);
                         break;
                     default:
@@ -699,6 +702,7 @@ public:
                             break;
                         }
                         case TAKjoin:
+                        case TAKselfjoin:
                             gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
                         default:
@@ -1383,7 +1387,7 @@ ILimitedCompareHelper *createLimitedCompareHelper()
 class CMultiCoreJoinHelperBase: extends CInterface, implements IJoinHelper, implements IMulticoreIntercept
 {
 public:
-	CActivityBase &activity;
+    CActivityBase &activity;
     IJoinHelper *jhelper;
     bool leftouter;  
     bool rightouter;  
@@ -1413,17 +1417,17 @@ public:
 
     class cWorkItem
     {
-		CActivityBase &activity;
+        CActivityBase &activity;
     public:
         CThorExpandingRowArray lgroup;
         CThorExpandingRowArray rgroup;
         const void *row;
         inline cWorkItem(CActivityBase &_activity, CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
-			: activity(_activity), lgroup(_activity), rgroup(_activity)
+            : activity(_activity), lgroup(_activity), rgroup(_activity)
         {
             set(_lgroup,_rgroup);
         }
-		inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity), rgroup(_activity)
+        inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity), rgroup(_activity)
         {
             clear();
         }
@@ -1511,7 +1515,7 @@ public:
     CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
         : activity(_activity), allocator(_allocator)
     {
-		kind = activity.queryContainer().getKind();
+        kind = activity.queryContainer().getKind();
         jhelper = _jhelper;
         helper = _helper;
         unsigned flags = helper->getJoinFlags();
@@ -1603,7 +1607,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         Semaphore workwait;
         SimpleInterThreadQueueOf<cOutItem,false> outqueue;
 
-		cWorker(CActivityBase &activity, CMultiCoreJoinHelper *_parent)
+        cWorker(CActivityBase &activity, CMultiCoreJoinHelper *_parent)
             : Thread("CMultiCoreJoinHelper::cWorker"), parent(_parent), work(activity)
         {
         }
@@ -1658,7 +1662,7 @@ public:
         curin = 0;
         curout = 0;
         for (unsigned i=0;i<numthreads;i++)
-			workers[i] = new cWorker(activity, this);
+            workers[i] = new cWorker(activity, this);
     }
 
     ~CMultiCoreJoinHelper()

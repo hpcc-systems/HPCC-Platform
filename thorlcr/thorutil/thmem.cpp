@@ -214,6 +214,7 @@ protected:
 
     bool spillRows()
     {
+        // NB: Should always be called whilst 'rows' is locked (with CThorSpillableRowArrayLock)
         rowcount_t numRows = rows.numCommitted();
         if (0 == numRows)
             return false;
@@ -381,7 +382,6 @@ public:
             const void **toRead = rows.getBlock(fetch);
             memcpy(readRows, toRead, fetch * sizeof(void *));
             rows.noteSpilled(fetch);
-            rows.flush();
             numReadRows = fetch;
             pos = 0;
         }
@@ -588,7 +588,7 @@ void CThorExpandingRowArray::transferFrom(CThorSpillableRowArray &donor)
 void CThorExpandingRowArray::removeRows(rowcount_t start, rowcount_t n)
 {
     assertex(numRows-start >= n);
-    assertex(!n || !rows);
+    assertex(!n || rows);
     if (rows)
     {
         for (rowcount_t i = start; i < n; i++)
@@ -1036,25 +1036,11 @@ void CThorSpillableRowArray::flush()
     commitRows = numRows;
 }
 
-void CThorSpillableRowArray::transferRows(rowcount_t & outNumRows, const void * * & outRows)
-{
-    assertex(firstRow == 0);  // could allow that to be transferred as well
-    CThorSpillableRowArrayLock block(*this);
-    CThorExpandingRowArray::transferRows(outNumRows, outRows);
-    //firstRows = 0;
-    commitRows = 0;
-}
-
 void CThorSpillableRowArray::transferFrom(CThorExpandingRowArray &src)
 {
     CThorSpillableRowArrayLock block(*this);
     CThorExpandingRowArray::transferFrom(src);
     commitRows = numRows;
-}
-
-void CThorSpillableRowArray::transferFrom(CThorSpillableRowArray &donor)
-{
-	transferFrom((CThorExpandingRowArray &)donor);
 }
 
 void CThorSpillableRowArray::swap(CThorSpillableRowArray &other)
@@ -1235,7 +1221,7 @@ protected:
                 totalRows += spillableRows.numCommitted();
                 if (iCompare && (1 == outStreams))
                     spillableRows.sort(*iCompare, maxCores);
-                if (rc_allDiskOrAllMem == diskMemMix)
+                if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
                 {
                     assertex(allMemRows);
                     assertex(1 == outStreams);
@@ -1312,6 +1298,7 @@ public:
     void transferRowsOut(CThorExpandingRowArray &out, bool sort)
     {
         CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+        spillableRows.flush();
         totalRows += spillableRows.numCommitted();
         if (sort && iCompare)
             spillableRows.sort(*iCompare, maxCores);
@@ -1695,9 +1682,10 @@ public:
 // IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).queryActivityId();
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).queryActivityId();
         else
         {
             //assert(false);
@@ -1706,9 +1694,10 @@ public:
     }
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
     {
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(cacheId))
-            return allAllocators.item(cacheId).getId(out);
+        if (allAllocators.isItem(allocatorIndex))
+            return allAllocators.item(allocatorIndex).getId(out);
         else
         {
             assert(false);
@@ -1718,21 +1707,29 @@ public:
     virtual void onDestroy(unsigned cacheId, void *row) const
     {
         IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
         {
             SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(cacheId))
-                allocator = &allAllocators.item(cacheId);
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
             else
             {
                 assert(false);
                 return;
             }
         }
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Give an error, but don't throw an exception!
+        }
         allocator->queryOutputMeta()->destruct((byte *) row);
     }
     virtual void checkValid(unsigned cacheId, const void *row) const
     {
-        // JCSMORE
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Throw an exception?
+        }
     }
 // IRtlRowCallback
     virtual void releaseRow(const void * row) const

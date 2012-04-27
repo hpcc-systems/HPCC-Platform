@@ -249,7 +249,7 @@ public:
     CThorExpandingRowArray(CActivityBase &activity, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true, rowcount_t initialSize=InitialSortElements);
     CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true, rowcount_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
-	CActivityBase &queryActivity() { return activity; }
+    CActivityBase &queryActivity() { return activity; }
     // NB: throws error on OOM by default
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true);
     inline void setAllowNulls(bool b) { allowNulls = b; }
@@ -312,8 +312,8 @@ public:
         swap(from);
     }
     void transferRows(rowcount_t & outNumRows, const void * * & outRows);
-	void transferFrom(CThorExpandingRowArray &src); 
-	void transferFrom(CThorSpillableRowArray &src);
+    void transferFrom(CThorExpandingRowArray &src); 
+    void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowcount_t start, rowcount_t n);
     void clearUnused();
     void sort(ICompare &compare, unsigned maxCores);
@@ -379,7 +379,6 @@ public:
     inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
     void kill();
     void clearRows();
-    void transferRows(rowcount_t & outNumRows, const void * * & outRows);
     void flush();
     inline bool append(const void *row)
     {
@@ -441,8 +440,7 @@ public:
         kill();
         swap(from);
     }
-	void transferFrom(CThorExpandingRowArray &src); 
-    void transferFrom(CThorSpillableRowArray &src);
+    void transferFrom(CThorExpandingRowArray &src); 
 
     IRowStream *createRowStream();
 

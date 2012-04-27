@@ -55,8 +55,6 @@ CThorKeyArray::CThorKeyArray(
     ICompare *_irowkeycompare) : activity(_activity), keys(_activity, _rowif)
 {
     rowif.set(_rowif);
-    sizes = NULL;
-    filepos = NULL;
     clear();
     maxsamplesize = 0;
     divisor = 1;
@@ -73,37 +71,29 @@ CThorKeyArray::CThorKeyArray(
 void CThorKeyArray::clear()
 {
     keys.kill();
-    delete filepos;
-    filepos = NULL;
     totalserialsize = 0;
     serialrowsize = 0;
     totalfilesize = 0;
     filerecsize = 0;
     filerecnum = 0;
     index = 0;
-    delete sizes;
-    sizes = NULL;
-}
-
-CThorKeyArray::~CThorKeyArray()
-{
-    delete filepos;
-    delete sizes;
 }
 
 void CThorKeyArray::setSampling(size32_t _maxsamplesize, unsigned _divisor)
 {
     maxsamplesize = _maxsamplesize;
     serialrowsize = 0;
-    sizes = NULL;
+    sizes.clear();
     index = 0;
     divisor = _divisor?_divisor:1;
 }
 
 void CThorKeyArray::expandfpos()
 {
-    if (!filepos) {
-        filepos = new Int64Array;
+    if (!filepos)
+    {
+        filepos.setown(new Int64Array);
+        filepos->ensure(filerecnum);
         for (unsigned i=0;i<=filerecnum;i++)
             filepos->append(i*(offset_t)filerecsize);
         filerecsize = 0;
@@ -121,26 +111,31 @@ void CThorKeyArray::add(const void *row)
         filepos->append(totalfilesize);
     else if (filerecnum==0)
         filerecsize=recsz;
-    else if (filerecsize!=recsz) {
+    else if (filerecsize!=recsz)
+    {
         expandfpos();
         filepos->append(totalfilesize);
     }
     filerecnum++;
-    if (maxsamplesize&&(index%divisor!=(divisor-1))) {
+    if (maxsamplesize&&(index%divisor!=(divisor-1)))
+    {
         index++;
         return;
     }
     size32_t sz;
-    if (keyserializer) {
+    if (keyserializer)
+    {
         RtlDynamicRowBuilder k(keyif->queryRowAllocator());
         sz = keyserializer->recordToKey(k,row,recsz);
         row = k.finalizeRowClear(sz);
     }
-    else {
+    else
+    {
         sz = recsz;
         LinkThorRow(row);
     }
-    if (maxsamplesize) {
+    if (maxsamplesize)
+    {
         while (keys.ordinality()&&(totalserialsize+sz>maxsamplesize))
             split();
     }
@@ -148,8 +143,9 @@ void CThorKeyArray::add(const void *row)
        sizes->append(sz);
     else if (keys.ordinality()==0)
         serialrowsize = sz;
-    else if (serialrowsize!=sz) {
-        sizes = new UnsignedArray;
+    else if (serialrowsize!=sz)
+    {
+        sizes.setown(new UnsignedArray);
         for (unsigned i=0;i<keys.ordinality();i++)
             sizes->append(serialrowsize);
        sizes->append(sz);
@@ -166,7 +162,8 @@ void CThorKeyArray::serialize(MemoryBuffer &mb)
     unsigned i;
     mb.append(n);
     mb.append(serialrowsize);
-    if (sizes) {
+    if (sizes)
+    {
         assertex(n==sizes->ordinality());
         mb.append(n);
         for (i=0;i<n;i++)
@@ -199,27 +196,33 @@ void CThorKeyArray::deserialize(MemoryBuffer &mb,bool append)
     mb.read(rss);
     unsigned nsz;
     mb.read(nsz);
-    if (n&&(rss!=serialrowsize)) {
-        if (rss==0) {
-            if (nsz) {
-                sizes = new UnsignedArray;
+    if (n&&(rss!=serialrowsize))
+    {
+        if (rss==0)
+        {
+            if (nsz)
+            {
+                sizes.setown(new UnsignedArray);
                 for (i=0;i<keys.ordinality();i++)
                     sizes->append(serialrowsize);
                 serialrowsize = 0;
             }
         }
-        else {
+        else
+        {
             if (!sizes)
-                sizes = new UnsignedArray;
+                sizes.setown(new UnsignedArray);
             for (i=0;i<n;i++)
                 sizes->append(rss);
             rss = 0;
         }
     }
-    if (nsz) {
+    if (nsz)
+    {
         if (!sizes)
-            sizes = new UnsignedArray;
-        for (i=0;i<nsz;i++) {
+            sizes.setown(new UnsignedArray);
+        for (i=0;i<nsz;i++)
+        {
             unsigned s;
             mb.read(s);
             sizes->append(s);
@@ -268,18 +271,19 @@ void CThorKeyArray::sort()
         kcthis = this;
         qsortarray<unsigned>(ra,n,::keyCompare);
     }
-    if (sizes) {
-        UnsignedArray *newsizes = new UnsignedArray;
+    if (sizes)
+    {
+        OwnedPtr<UnsignedArray> newsizes(new UnsignedArray);
+        newsizes->ensure(n);
         for (i = 0; i<n; i++)
             newsizes->append(sizes->item(ra[i]));
-        delete sizes;
-        sizes = newsizes;
+        sizes.setown(newsizes.getClear());
     }
-    Int64Array *newpos = new Int64Array;
+    OwnedPtr<Int64Array> newpos(new Int64Array);
+    newpos->ensure(n);
     for (i = 0; i<n; i++)
         newpos->append(filepos?filepos->item(ra[i]):filerecsize*(offset_t)ra[i]);
-    delete filepos;
-    filepos = newpos;
+    filepos.setown(newpos.getClear());
     keys.reorder(0,n,ra);
     delete [] ra;
 }
@@ -288,12 +292,14 @@ void CThorKeyArray::sort()
 void CThorKeyArray::createSortedPartition(unsigned pn) 
 {   
     // reduces to pn-1 keys to split into pn equal parts
-    if (pn<=1) {
+    if (pn<=1)
+    {
         clear();
         return;
     }
     unsigned n = ordinality();
-    if (n<pn) {
+    if (n<pn)
+    {
         sort();
         return;
     }
@@ -304,24 +310,28 @@ void CThorKeyArray::createSortedPartition(unsigned pn)
     for (i = 0; i<n; i++)
         ra[i] = i;
     qsortarray<unsigned>(ra, n, ::keyCompare);
-    if (sizes) {
-        UnsignedArray *newsizes = new UnsignedArray;
+    if (sizes)
+    {
+        OwnedPtr<UnsignedArray> newsizes(new UnsignedArray);
+        newsizes->ensure(pn);
         for (i = 1; i<pn; i++) {
             unsigned p = i*n/pn;
             newsizes->append(sizes->item(ra[p]));
         }
-        delete sizes;
-        sizes = newsizes;
+        sizes.setown(newsizes.getClear());
     }
-    Int64Array *newpos = new Int64Array;
-    for (i = 0; i<pn; i++) {
+    OwnedPtr<Int64Array> newpos(new Int64Array);
+    newpos->ensure(pn);
+    for (i = 0; i<pn; i++)
+    {
         unsigned p = i*n/pn;
         newpos->append(filepos?filepos->item(ra[p]):filerecsize*(offset_t)ra[p]);
     }
-    delete filepos;
-    filepos = newpos;
+    filepos.setown(newpos.getClear());
     CThorExpandingRowArray newrows(activity);
-    for (i = 1; i<pn; i++) {
+    newrows.ensure(pn);
+    for (i = 1; i<pn; i++)
+    {
         unsigned p = i*n/pn;
         newrows.append(keys.get(ra[p]));
     }
@@ -339,13 +349,16 @@ int CThorKeyArray::binchopPartition(const void * row,bool lt)
 #ifdef _TESTING
 try {
 #endif
-    while (a<b) {
+    while (a<b)
+    {
         unsigned m = (a+b)/2;
         cmp = keyRowCompare((unsigned)m,row);
         if (cmp>0) 
             b = m;
-        else {
-            if (cmp==0) {
+        else
+        {
+            if (cmp==0)
+            {
 #ifdef _TESTING
                 a = m;
                 while ((a<n)&&(keyCompare(m,a)==0))
@@ -367,27 +380,31 @@ try {
         }
     }
 #ifdef _TESTING
-    if (lt) {
+    if (lt)
+    {
         if (a<n) 
             assertex(keyRowCompare((unsigned)a,row)>=0);
         if (a>0)
             assertex(keyRowCompare((unsigned)a-1,row)<0);
     }
-    else {
+    else
+    {
         if (a<n) 
             assertex(keyRowCompare((unsigned)a,row)>0);
         if (a>0)
             assertex(keyRowCompare((unsigned)a-1,row)<=0);
     }
 }
-catch (IException *e) {
+catch (IException *e)
+{
     EXCLOG(e,"binchopPartition");
     StringBuffer s("row: ");
     unsigned i;
     for (i=0;i<10;i++)
         s.appendf(" %02x",(int)*((const byte *)row+i));
     PROGLOG("%s",s.str());
-    for (i=0;i<(unsigned)n;i++) {
+    for (i=0;i<(unsigned)n;i++)
+    {
         s.clear().appendf("k%d:",i);
         const byte *k=(const byte *)queryKey(i);
         for (unsigned j=0;j<10;j++) 
@@ -427,19 +444,21 @@ void CThorKeyArray::calcPositions(IFile *file,CThorKeyArray &sample)
 {
     // calculates positions based on sample
     // not fast!
-    delete filepos;
-    filepos = new Int64Array;
+    filepos.setown(new Int64Array);
+    filepos->ensure(ordinality());
     for (unsigned i0=0;i0<ordinality();i0++)
         filepos->append(-1);
     filerecsize = 0;
-    ForEachItemIn(i,*filepos) {
+    ForEachItemIn(i,*filepos)
+    {
         OwnedConstThorRow row = getRow(i);
         offset_t pos = sample.findLessRowPos(row);
         if (pos==(offset_t)-1) 
             pos = 0;
         // should do bin-chop for fixed length but initially do sequential search
         Owned<IRowStream> s = createRowStream(file,rowif,pos,(offset_t)-1,RCUNBOUND,false,false);
-        loop {
+        loop
+        {
             OwnedConstThorRow rowcmp = s->nextRow();
             if (!rowcmp)
                 break;
@@ -490,30 +509,38 @@ void CThorKeyArray::split()
     // not that fast!
     unsigned n = ordinality();
     CThorExpandingRowArray newkeys(activity, rowif);
-    UnsignedArray *newsizes = sizes?new UnsignedArray:NULL;
-    Int64Array *newfilepos = filepos?new Int64Array:NULL;
+    newkeys.ensure(n);
+    OwnedPtr<UnsignedArray> newSizes;
+    OwnedPtr<Int64Array> newFilePos;
+    if (sizes)
+    {
+        newSizes.setown(new UnsignedArray);
+        newSizes->ensure(n);
+    }
+    if (filepos)
+    {
+        newFilePos.setown(new Int64Array);
+        newFilePos->ensure(n);
+    }
     unsigned newss = 0;
-    for (unsigned i=0;i<n;i+=2) {
+    for (unsigned i=0;i<n;i+=2)
+    {
         const void *k = keys.query(i);
         LinkThorRow(k);
         newkeys.append(k);
         size32_t sz = sizes?sizes->item(i):serialrowsize;
-        if (newsizes)
-            newsizes->append(sz);
+        if (newSizes)
+            newSizes->append(sz);
         newss += sz;
-        if (newfilepos)
-            newfilepos->append(filepos->item(i));
+        if (newFilePos)
+            newFilePos->append(filepos->item(i));
     }
     keys.swap(newkeys);
-    if (newsizes) {
-        delete sizes;
-        sizes = newsizes;
-    }
+    if (newSizes)
+        sizes.setown(newSizes.getClear());
     totalserialsize = newss;
-    if (newfilepos) {
-        delete filepos;
-        filepos = newfilepos;
-    }
+    if (newFilePos)
+        filepos.setown(newFilePos.getClear());
 }
 
 offset_t CThorKeyArray::getFilePos(unsigned idx)
@@ -536,5 +563,3 @@ void CThorKeyArray::traceKey(const char *prefix,unsigned idx)
     IOutputRowSerializer *serializer = keyserializer?keyif->queryRowSerializer():rowif->queryRowSerializer();
     ::traceKey(serializer,s.str(),queryKey(idx));
 }
-
-        

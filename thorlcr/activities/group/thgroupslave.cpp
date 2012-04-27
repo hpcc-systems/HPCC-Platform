@@ -101,8 +101,16 @@ public:
                         break; //always send group even when aborting
                     sentRecs++;
                     OwnedConstThorRow next2 = getNext();
-                    if (!next2 || !helper->isSameGroup(next2, next))
+                    if (!next2)
+                    {
+                        eof = true;
                         break;
+                    }
+                    else if (!helper->isSameGroup(next2, next))
+                    {
+                        next.setown(next2.getClear());
+                        break;
+                    }
                     next.setown(next2.getClear());
                 }
             }

@@ -1801,7 +1801,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CChunkingRowManager (unsigned _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
+    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
         : callbacks(this), logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
@@ -1816,7 +1816,7 @@ public:
             normalHeaps.append(*new CFixedChunkingHeap(this, _logctx, _allocatorCache, thisSize, 0));
             prevSize = thisSize;
         }
-        pageLimit = _memLimit / HEAP_ALIGNMENT_SIZE;
+        pageLimit = (unsigned) PAGES(_memLimit, HEAP_ALIGNMENT_SIZE);
         spillPageLimit = 0;
         timeLimit = _tl;
         peakPages = 0;
@@ -1832,7 +1832,7 @@ public:
         trackMemoryByActivity = false;
 #endif
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%u pageLimit=%u rowMgr=%p", _memLimit, pageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%"I64F"u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, pageLimit, this);
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
@@ -2883,7 +2883,7 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-extern IRowManager *createRowManager(unsigned memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
+extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
 {
     return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks);
 }

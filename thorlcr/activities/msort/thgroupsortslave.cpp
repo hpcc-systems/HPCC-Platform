@@ -60,7 +60,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart(activityKindStr(queryContainer().getKind()), container.queryId());
         input = inputs.item(0);
-        unsigned spillPriority = container.queryGrouped() ? 50 : 20;
+        unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
         iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, !unstable, rc_mixed, spillPriority));
         startInput(input);
         eoi = false;
@@ -93,18 +93,13 @@ public:
             }
             out.setown(iLoader->loadGroup(input, abortSoon));
             if (0 == iLoader->numRows())
-            {
                 eoi = true;
-                return NULL;
-            }
-            row.setown(out->nextRow());
-            if (!row)
-                return NULL;
+            return NULL; // eog marker
         }
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() { return container.queryGrouped(); }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);

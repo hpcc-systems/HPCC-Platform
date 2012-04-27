@@ -536,8 +536,17 @@ public:
 
 void slaveMain()
 {
-    memsize_t gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
-    roxiemem::setTotalMemoryLimit(gmemSize * 0x100000, 0, NULL);
+    unsigned masterMemMB = globals->getPropInt("@masterTotalMem");
+    HardwareInfo hdwInfo;
+    getHardwareInfo(hdwInfo);
+    if (hdwInfo.totalMemory < masterMemMB)
+        WARNLOG("Slave has less memory than master node"); // JCSMORE, error?
+    unsigned gmemSize = globals->getPropInt("@globalMemorySize");
+    if (gmemSize >= hdwInfo.totalMemory)
+    {
+        // should prob. error here
+    }
+    roxiemem::setTotalMemoryLimit(((memsize_t)gmemSize) * 0x100000, 0, NULL);
 
     CJobListener jobListener;
     CThorResourceSlave slaveResource;

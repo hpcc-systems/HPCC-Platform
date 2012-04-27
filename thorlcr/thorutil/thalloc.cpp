@@ -74,9 +74,7 @@ size32_t thorRowMemoryFootprint(IOutputRowSerializer *serializer, const void *ro
 {
     if (!row)
         return 0;
-    // JCSMORE
-    if (!serializer)
-        return 100;
+    assertex(serializer);
     CSizingSerializer ssz;
     serializer->serialize(ssz, (const byte *)row);
     return ssz.size();

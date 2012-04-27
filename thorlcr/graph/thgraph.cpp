@@ -66,7 +66,7 @@ public:
     CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _local) : activity(_activity), rowIf(_rowIf), local(_local)
     {
         init();
-        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, false, true));
+        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, true, true));
     }
 
 // IRowWriter
@@ -444,6 +444,8 @@ IGraphTempHandler *CGraphElementBase::queryTempHandler() const
 
 void CGraphElementBase::releaseIOs()
 {
+    loopGraph.clear();
+    associatedChildGraphs.kill();
     if (activity)
         activity->releaseIOs();
     connectedInputs.kill();
@@ -1077,6 +1079,9 @@ void CGraphBase::clean()
     ::Release(startBarrier);
     ::Release(waitBarrier);
     ::Release(doneBarrier);
+    localResults.clear();
+    graphLoopResults.clear();
+    childGraphs.kill();
     disconnectActivities();
     containers.kill();
     sinks.kill();

@@ -854,9 +854,6 @@ void closeThorServerStatus()
 
 void thorMain()
 {
-    memsize_t gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
-    roxiemem::setTotalMemoryLimit(gmemSize * 0x100000, 0, NULL);
-
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
     try

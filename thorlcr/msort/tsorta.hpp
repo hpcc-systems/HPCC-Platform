@@ -73,8 +73,8 @@ class CThorKeyArray
     ICompare *icompare;
     ICompare *ikeycompare;
     ICompare *irowkeycompare;
-    UnsignedArray *sizes;       // serial sizes (needed if keysize==0)
-    Int64Array *filepos;         
+    OwnedPtr<UnsignedArray> sizes;       // serial sizes (needed if keysize==0)
+    OwnedPtr<Int64Array> filepos;
     size32_t filerecsize;
     size32_t filerecnum;
     offset_t totalfilesize;
@@ -98,7 +98,6 @@ public:
         ICompare *_icompare,
         ICompare *_ikeycompare,
         ICompare *_irowkeycompare); 
-    ~CThorKeyArray();
     void clear();
     void add(const void *row);
     unsigned ordinality() { return keys.ordinality(); }

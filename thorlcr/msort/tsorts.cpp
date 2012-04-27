@@ -72,7 +72,7 @@ class CWriteIntercept : public CSimpleInterface
     Owned<IFileIO> dataFileIO, idxFileIO;
     Owned<ISerialStream> dataFileStream;
     Linked<IFileIOStream> idxFileStream;
-    CThorStreamDeserializerSource dataFileDeserialzierSource;
+    CThorStreamDeserializerSource dataFileDeserializerSource;
     unsigned interval;
     unsigned idx;
     CThorExpandingRowArray sampleRows;
@@ -99,14 +99,14 @@ class CWriteIntercept : public CSimpleInterface
                 StringBuffer tempname;
                 GetTempName(tempname.clear(),"srtidx",false);
                 idxFile.setown(createIFile(tempname.str()));
-                idxFileIO.setown(idxFile->open(IFOcreate));
+                idxFileIO.setown(idxFile->open(IFOcreaterw));
                 idxFileStream.setown(idxFileIO?createBufferedIOStream(idxFileIO,0x100000):NULL);
                 if (idxFileStream.get()==NULL)
                 {
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryFilename());
                     LOG(MCerror, thorJob, "%s", err.str());
-                    throw MakeStringException(-1, "%s", err.str());
+                    throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
                 offset_t s = 0;
                 while (s<=lastofs)
@@ -199,8 +199,8 @@ public:
                 break;
             ret++;
 
-            offset_t start = output->getPosition();
             OwnedConstThorRow row = _row;
+            offset_t start = output->getPosition();
             output->putRow(row.getLink());
             idx++;
             if (idx==interval)
@@ -225,7 +225,10 @@ public:
         offset_t end = output->getPosition();
         writeidxofs(end);
         if (idxFileStream)
+        {
             idxFileStream->flush();
+            idxFileStream.clear();
+        }
         output.clear();
         if (overflowed)
             WARNLOG("Overflowed by %"I64F"d", overflowsize);
@@ -240,7 +243,7 @@ public:
     {
         dataFileStream.clear();
         dataFileIO.clear();
-        dataFileDeserialzierSource.setStream(NULL);
+        dataFileDeserializerSource.setStream(NULL);
         idxFileIO.clear();
     }
     size32_t readOverflowPos(rowmap_t pos, unsigned n, offset_t *ofs, bool closeIO)
@@ -259,12 +262,11 @@ public:
         {
             dataFileIO.setown(dataFile->open(IFOread));
             dataFileStream.setown(createFileSerialStream(dataFileIO));
-            dataFileDeserialzierSource.setStream(dataFileStream);
+            dataFileDeserializerSource.setStream(dataFileStream);
         }
-        dataFileStream->reset(ofs[0], (offset_t)-1);
+        dataFileStream->reset(ofs[0], idxSz);
         RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
-        size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, dataFileDeserialzierSource);
-        assertex(sz == idxSz);
+        size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, dataFileDeserializerSource);
         return rowBuilder.finalizeRowClear(sz);
     }
     void transferRows(CThorExpandingRowArray &rows)

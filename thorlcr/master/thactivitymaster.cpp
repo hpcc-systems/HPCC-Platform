@@ -360,7 +360,10 @@ public:
                 throw MakeThorException(0, "Thor currently, does not support a dataset loop condition, activity id: %"ACTPF"d", queryId());
             case TAKlocalresultspill:
             case TAKlocalresultwrite:
-                ret = createLocalResultActivityMaster(this);
+                if (!queryOwner().queryOwner() || queryOwner().isGlobal()) // don't need result in master if in local child query
+                    ret = createLocalResultActivityMaster(this);
+                else
+                    ret = new CMasterActivity(this);
                 break;
             case TAKgraphloopresultwrite:
                 ret = createGraphLoopResultActivityMaster(this);
