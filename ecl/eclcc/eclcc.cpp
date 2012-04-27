@@ -35,12 +35,12 @@
 #include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
-#include "gitfile.hpp"
 
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
 
 #include "build-config.h"
+#include "rmtfile.hpp"
 
 #define INIFILE "eclcc.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
@@ -230,6 +230,7 @@ protected:
     const char * programName;
 
     StringBuffer pluginsPath;
+    StringBuffer hooksPath;
     StringBuffer templatePath;
     StringBuffer eclLibraryPath;
     StringBuffer stdIncludeLibraryPath;
@@ -244,6 +245,7 @@ protected:
     FILE * batchLog;
 
     IFileArray inputFiles;
+    StringArray inputFileNames;
     StringArray debugOptions;
     StringArray compileOptions;
     StringArray linkOptions;
@@ -274,7 +276,6 @@ protected:
 
 static int doMain(int argc, const char *argv[])
 {
-    installGitFileHook();
     EclCC processor(argv[0]);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
@@ -312,6 +313,7 @@ int main(int argc, const char *argv[])
 
     unsigned exitCode = doMain(argc, argv);
     releaseAtoms();
+    removeFileHooks();
     return exitCode;
 }
 
@@ -395,6 +397,7 @@ void EclCC::loadOptions()
     extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, ".\\cl\\lib");
     extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, ".\\cl\\include");
     extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, ".\\plugins");
+    extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, ".\\filehooks");
     extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, ".");
     extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, ".\\ecllibrary");
 #else
@@ -410,6 +413,7 @@ void EclCC::loadOptions()
     extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
     extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
     extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
+    extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
     extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
     extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
 
@@ -430,6 +434,8 @@ void EclCC::loadOptions()
                 fprintf(stdout, "Logging to '%s'\n",lf.str());
         }
     }
+    if (hooksPath.length())
+        installFileHooks(hooksPath.str());
 
     if (!optNoCompile)
         setCompilerPath(compilerPath.str(), includePath.str(), libraryPath.str(), NULL, optTargetCompiler, logVerbose);
@@ -1179,6 +1185,18 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
 bool EclCC::processFiles()
 {
     loadOptions();
+    ForEachItemIn(idx, inputFileNames)
+    {
+        processArgvFilename(inputFiles, inputFileNames.item(idx));
+    }
+    if (inputFiles.ordinality() == 0)
+    {
+        if (!optBatchMode && optQueryRepositoryReference)
+            return true;
+        ERRLOG("No input files could be opened");
+        return false;
+    }
+
 
     StringBuffer searchPath;
     searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR).append(includeLibraryPath);
@@ -1419,7 +1437,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (strcmp(arg, "-")==0) 
         {
-            processArgvFilename(inputFiles, "stdin:");
+            inputFileNames.append("stdin:");
         }
         else if (arg[0] == '-')
         {
@@ -1428,7 +1446,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             return false;
         }
         else
-            processArgvFilename(inputFiles, arg);
+            inputFileNames.append(arg);
     }
     if (showHelp)
     {
@@ -1442,11 +1460,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     loadManifestOptions();
 
-    if (inputFiles.ordinality() == 0)
+    if (inputFileNames.ordinality() == 0)
     {
         if (!optBatchMode && optQueryRepositoryReference)
             return true;
-        ERRLOG("No input files supplied");
+        ERRLOG("No input filenames supplied");
         return false;
     }
 

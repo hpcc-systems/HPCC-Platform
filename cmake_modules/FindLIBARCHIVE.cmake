@@ -15,48 +15,28 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
+# - Try to find the libarchive archive decompression library
+# Once done this will define
+#
+#  LIBARCHIVE_FOUND - system has the libarchive library
+#  LIBARCHIVE_INCLUDE_DIR - the libarchive include directory
+#  LIBARCHIVE_LIBRARIES - The libraries needed to use libarchive
 
-# Component: remote 
-#####################################################
-# Description:
-# ------------
-#    Cmake Input File for remote
-#####################################################
+IF (NOT LIBARCHIVE_FOUND)
+  IF (WIN32)
+    SET (libarchive_lib "libarchive")
+  ELSE()
+    SET (libarchive_lib "archive")
+  ENDIF()
 
-project( remote ) 
+  FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h)
+  FIND_LIBRARY (LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib})
 
-add_subdirectory(hooks)
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(libarchive DEFAULT_MSG
+    LIBARCHIVE_LIBRARIES
+    LIBARCHIVE_INCLUDE_DIR
+  )
 
-set (    SRCS 
-         rmtfile.cpp 
-         rmtpass.cpp 
-         rmtspawn.cpp 
-         rmtssh.cpp 
-         rmtsmtp.cpp 
-         sockfile.cpp
-         
-         remoteerr.hpp
-         rmtfile.hpp
-         rmtpass.hpp
-         rmtsmtp.hpp
-         rmtspawn.hpp
-         rmtssh.hpp
-         sockfile.hpp
-    )
-
-include_directories (
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
-    )
-
-ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
-
-HPCC_ADD_LIBRARY( remote SHARED ${SRCS}  )
-install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
-
-target_link_libraries ( remote 
-    jlib 
-    mp
-    )
+  MARK_AS_ADVANCED(LIBARCHIVE_INCLUDE_DIR LIBARCHIVE_LIBRARIES)
+ENDIF()

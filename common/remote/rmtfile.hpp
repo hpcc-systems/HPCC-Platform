@@ -94,5 +94,7 @@ extern REMOTE_API void setRemoteFileTimeouts(unsigned maxconnecttime,unsigned ma
                                 
 extern REMOTE_API unsigned validateNodes(const SocketEndpointArray &eps,const char *dataDir, const char *mirrorDir, bool chkver, const char *script, unsigned scripttimeout, SocketEndpointArray &failures, UnsignedArray &failedcodes, StringArray &failedmessages, const char *filename=NULL);
 
+extern REMOTE_API void installFileHooks(const char *filespec);
+extern REMOTE_API void removeFileHooks(); // Should be called before closedown
 
 #endif

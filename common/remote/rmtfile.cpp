@@ -607,6 +607,94 @@ public:
     return failures.ordinality();
 }
 
+static PointerArrayOf<SharedObject> *hookDlls;
+
+static void installFileHook(const char *hookFileSpec);
+
+extern REMOTE_API void installFileHooks(const char *hookFileSpec)
+{
+    if (!hookDlls)
+        hookDlls = new PointerArrayOf<SharedObject>;
+    const char * cursor = hookFileSpec;
+    for (;*cursor;)
+    {
+        StringBuffer file;
+        while (*cursor && *cursor != ENVSEPCHAR)
+            file.append(*cursor++);
+        if(*cursor)
+            cursor++;
+        if(!file.length())
+            continue;
+        installFileHook(file);
+    }
+}
+
+typedef void *(HookInstallFunction)();
+
+static void installFileHook(const char *hookFile)
+{
+    StringBuffer dirPath, dirTail, absolutePath;
+    splitFilename(hookFile, &dirPath, &dirPath, &dirTail, &dirTail);
+    makeAbsolutePath(dirPath.str(), absolutePath);
+    if (!containsFileWildcard(dirTail))
+    {
+        addPathSepChar(absolutePath).append(dirTail);
+        Owned<IFile> file = createIFile(absolutePath);
+        if (file->isDirectory() == foundYes)
+        {
+            installFileHooks(addPathSepChar(absolutePath).append('*'));
+        }
+        else if (file->isFile() == foundYes)
+        {
+            SharedObject *so = new SharedObject(); // MORE - this leaks! Kind-of deliberate right now...
+            if (so->load(file->queryFilename(), false))
+            {
+                HookInstallFunction *hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "installFileHook");
+                hookInstall();
+                hookDlls->append(so);
+            }
+            else
+            {
+                so->unload();
+                delete so;
+                DBGLOG("File hook library %s could not be loaded", hookFile);
+            }
+        }
+        else
+        {
+            DBGLOG("File hook library %s not found", hookFile);
+        }
+    }
+    else
+    {
+        Owned<IDirectoryIterator> dir = createDirectoryIterator(absolutePath, dirTail);
+        ForEach(*dir)
+        {
+            const char *name = dir->query().queryFilename();
+            if (name && *name && *name != '.')
+                installFileHook(name);
+        }
+    }
+}
+
+// Should be called before closedown, ideally. MODEXIT tries to mop up but may be too late to do so cleanly
+
+extern REMOTE_API void removeFileHooks()
+{
+    if (hookDlls)
+    {
+        ForEachItemIn(idx, *hookDlls)
+        {
+            SharedObject *so = hookDlls->item(idx);
+            HookInstallFunction *hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "removeFileHook");
+            if (hookInstall)
+                hookInstall();
+            delete so;
+        }
+        delete hookDlls;
+        hookDlls = NULL;
+    }
+}
 
 MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
 {
@@ -627,5 +715,6 @@ MODULE_EXIT()
         ::Release(DaliServixIntercept);
         DaliServixIntercept = NULL;
     }
+    removeFileHooks();
 }
 

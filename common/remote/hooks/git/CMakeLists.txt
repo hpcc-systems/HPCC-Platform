@@ -16,47 +16,30 @@
 ################################################################################
 
 
-# Component: remote 
+# Component: gitfile
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for remote
+#    Cmake Input File for git repository direct reading hook
 #####################################################
 
-project( remote ) 
+project( gitfile )
 
-add_subdirectory(hooks)
-
-set (    SRCS 
-         rmtfile.cpp 
-         rmtpass.cpp 
-         rmtspawn.cpp 
-         rmtssh.cpp 
-         rmtsmtp.cpp 
-         sockfile.cpp
-         
-         remoteerr.hpp
-         rmtfile.hpp
-         rmtpass.hpp
-         rmtsmtp.hpp
-         rmtspawn.hpp
-         rmtssh.hpp
-         sockfile.hpp
+set (    SRCS
+         gitfile.cpp
+         gitfile.hpp
     )
 
 include_directories (
-         ./../../system/hrpc 
-         ./../../system/mp 
-         ./../../system/include 
-         ./../../system/jlib 
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/jlib
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DREMOTE_EXPORTS )
+ADD_DEFINITIONS( -D_USRDLL -DGITFILE_EXPORTS )
 
-HPCC_ADD_LIBRARY( remote SHARED ${SRCS}  )
-install ( TARGETS remote DESTINATION ${OSSDIR}/lib )
+HPCC_ADD_LIBRARY( gitfile SHARED ${SRCS}  )
+install ( TARGETS gitfile DESTINATION ${OSSDIR}/filehooks )
 
-target_link_libraries ( remote 
-    jlib 
-    mp
+target_link_libraries ( gitfile
+    jlib
     )
