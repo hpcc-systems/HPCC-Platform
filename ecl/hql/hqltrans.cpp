@@ -1208,7 +1208,7 @@ void NewHqlTransformer::analyseExpr(IHqlExpression * expr)
 #ifdef _DEBUG
             IHqlExpression * field = expr->queryChild(1);
 #endif
-            if (expr->hasProperty(newAtom))
+            if (isNewSelector(expr))
                 analyseExpr(ds);
             else
                 analyseSelector(ds);
@@ -1266,19 +1266,8 @@ void NewHqlTransformer::analyseAssign(IHqlExpression * expr)
 
 void NewHqlTransformer::analyseSelector(IHqlExpression * expr)
 {
-    node_operator op = expr->getOperator();
-    switch (op)
-    {
-    case no_selectnth:
-        analyseExpr(expr);
-        break;
-    case no_select:
-        if (expr->hasProperty(newAtom))
-            analyseExpr(expr);
-        else
-            analyseSelector(expr->queryChild(0));
-        break;
-    }
+    if ((expr->getOperator() == no_select) && !expr->hasProperty(newAtom))
+        analyseSelector(expr->queryChild(0));
 }
 
 
@@ -1395,15 +1384,24 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
         }
         break;
     case no_select:
-        if (expr->hasProperty(newAtom))
+        if (isNewSelector(expr))
         {
             same = transformChildren(expr, children);
             IHqlExpression & ds = children.item(0);
-            if (ds.getOperator() == no_activetable)
+            node_operator dsOp = ds.getOperator();
+            if (dsOp == no_activetable)
             {
                 children.replace(*LINK(ds.queryChild(0)), 0);
                 removeProperty(children, newAtom);
             }
+            else if (!expr->hasProperty(newAtom))
+            {
+                //unusual situation x.a<new>.b; x.a<new> is converted to d, but d.b is not right, it should now be d.b<new>
+                assertex(ds.isDatarow());
+                if ((dsOp != no_select) || !isNewSelector(&ds))
+                    children.append(*LINK(queryNewSelectAttrExpr()));
+            }
+
             if ((children.ordinality() > 2) && isAlwaysActiveRow(&ds))
                 removeProperty(children, newAtom);
         }
@@ -1521,14 +1519,7 @@ IHqlExpression * NewHqlTransformer::createTransformedSelector(IHqlExpression * e
     node_operator op = expr->getOperator();
     switch (op)
     {
-//  case no_left:
-//  case no_right:
-//  case no_self:
-    case no_selectnth:
-        return transform(expr);
     case no_select:
-        if (expr->hasProperty(newAtom))
-            return transform(expr);
         return createTransformedActiveSelect(expr);
     default:
         //NB: no_if etc. should have gone down the transform branch, and then met a no_activerow if in scope.
@@ -1552,15 +1543,7 @@ IHqlExpression * NewHqlTransformer::createTransformedActiveSelect(IHqlExpression
     if (newLeft->getOperator() == no_newrow)
         return createNewSelectExpr(LINK(newLeft->queryChild(0)), LINK(newRight));
 
-    if ((left->getOperator() == no_select) && left->isDatarow() && newLeft->isDatarow())
-    {
-        //weird situation x.a<new>.b   x.a<new> is converted to d, but d.b is not right, it should now be d.b<new>
-        if ((newLeft->getOperator() != no_select) || (isNewSelector(left) && !isNewSelector(newLeft)))
-            return createNewSelectExpr(LINK(newLeft), LINK(newRight));
-    }
-
     //NOTE: In very obscure situations: ds[1].x.ds<new>.y -> z.ds<new>.y (newLeft != normalizeSelector)
-
     //NB: newLeft.get() == newLeft->queryNormalizedSelector() - asserted above
     return createSelectExpr(LINK(newLeft->queryNormalizedSelector()), LINK(newRight));
 }
@@ -2777,7 +2760,7 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
     case no_activerow:
         return NewHqlTransformer::createTransformed(expr);
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
             return createTransformedActiveSelect(expr);
         return NewHqlTransformer::createTransformed(expr);
     }
@@ -4451,56 +4434,14 @@ IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr)
     return expander.createTransformed(expr);
 }
 
-//---------------------------------------------------------------------------
-
-static HqlTransformerInfo hqlSelectorLocatorInfo("HqlSelectorLocator");
-HqlSelectorLocator::HqlSelectorLocator(IHqlExpression * _selector) : NewHqlTransformer(hqlSelectorLocatorInfo)
-{ 
-    selector.set(_selector); 
-    foundSelector = false; 
-}
-
-
-void HqlSelectorLocator::analyseExpr(IHqlExpression * expr)
-{
-    if (foundSelector || alreadyVisited(expr))
-        return;
-    unsigned numNonHidden = activityHidesSelectorGetNumNonHidden(expr, selector);
-    if (numNonHidden != 0)
-    {
-        for (unsigned i=0; i < numNonHidden; i++)
-            analyseExpr(expr->queryChild(i));
-    }
-    else
-        NewHqlTransformer::analyseExpr(expr);
-}
-
-void HqlSelectorLocator::analyseSelector(IHqlExpression * expr)
-{
-    if (expr == selector)
-    {
-        foundSelector = true;
-        return;
-    }
-    NewHqlTransformer::analyseSelector(expr);
-}
-
-bool HqlSelectorLocator::containsSelector(IHqlExpression * expr)
-{
-    foundSelector = false;
-    analyse(expr, 0);
-    return foundSelector;
-}
-
 HQL_API bool containsSelector(IHqlExpression * expr, IHqlExpression * selector)
 {
-    HqlSelectorLocator locator(selector);
-    return locator.containsSelector(expr);
+    return exprReferencesDataset(expr, selector);
 }
 
 //---------------------------------------------------------------------------
 
-static HqlTransformerInfo hqlSelectorAnywhereLocatorInfo("HqlSelectorLocator");
+static HqlTransformerInfo hqlSelectorAnywhereLocatorInfo("HqlSelectorAnywhereLocator");
 HqlSelectorAnywhereLocator::HqlSelectorAnywhereLocator(IHqlExpression * _selector) : NewHqlTransformer(hqlSelectorAnywhereLocatorInfo)
 { 
     selector.set(_selector); 

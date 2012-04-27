@@ -504,7 +504,8 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
     case no_field:
         throwUnexpected();
     case no_select:
-        return false; //expr->hasProperty(newAtom);
+        //MORE: ds[n].x would probably be worth cseing.
+        return false;
     case no_list:
     case no_datasetlist:
     case no_getresult:      // these are commoned up in the code generator, so don't do it twice.
@@ -1105,7 +1106,7 @@ IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit)
     switch (expr->getOperator())
     {
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
             return LINK(expr);
         break;
     }
@@ -1267,9 +1268,12 @@ bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
         break;
     case no_select:
         {
-            IHqlExpression * ds = expr->queryChild(0);
-            if ((expr->hasProperty(newAtom) || ds->isDatarow()) && !expr->isDataset())
-                invariant = isInvariant(ds);
+            if (!expr->isDataset())
+            {
+                IHqlExpression * ds = expr->queryChild(0);
+                if (expr->hasProperty(newAtom) || ds->isDatarow())
+                    invariant = isInvariant(ds);
+            }
             break;
         }
     case no_newaggregate:

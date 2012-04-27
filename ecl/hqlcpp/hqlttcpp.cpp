@@ -2812,7 +2812,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSelect(IHqlExpression * expr)
     a.b.xyz would need to be converted to in.parent.xyz.  It will generate very inefficient code, so not going
     to go this way at the moment.
     */
-    if (!expr->hasProperty(newAtom) || !expr->isDataset())
+    if (!isNewSelector(expr) || !expr->isDataset())
         return NULL;
 
     IHqlExpression * ds = expr->queryChild(0);
@@ -8097,7 +8097,6 @@ static IHqlExpression * splitSelector(IHqlExpression * expr, SharedHqlExpr & old
     IHqlExpression * ds = expr->queryChild(0);
     if (expr->hasProperty(newAtom))
     {
-
         oldDataset.set(ds);
         OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
         return createSelectExpr(left.getClear(), LINK(expr->queryChild(1)));
@@ -8574,7 +8573,6 @@ no_select
     attached to select node.  That may contain the following attributes:
         global  - is an outer level activity
         noTable - no other tables are active at this point      e.g., global[1].field;
-        relatedAccess - it contains access to other active tables.
         relatedTable - I think this could be deprecated in favour of the flag above.
 
 Datasets
@@ -8602,7 +8600,6 @@ void HqlScopeTagger::beginTableScope()
 void HqlScopeTagger::endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IHqlExpression * newExpr)
 {
 #if 1
-    //This is still needed because the relatedAccess test doesn't seem to work correctly for HOLe datasets
     //A quick test which is often succeeds.
     if (isDatasetRelatedToScope(ds))
         attrs.append(*createAttribute(relatedTableAtom));

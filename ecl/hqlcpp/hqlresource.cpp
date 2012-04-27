@@ -1561,7 +1561,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
                 if (options->targetClusterType == RoxieCluster)
                     return false;
 
-                if (!expr->hasProperty(newAtom))
+                if (!isNewSelector(expr))
                     return true;
                 expr = expr->queryChild(0);
                 break;
@@ -1648,7 +1648,7 @@ bool ResourcerInfo::expandRatherThanSplit()
         case no_select:
             if (options->targetClusterType == RoxieCluster)
                 return false;
-            if (!expr->hasProperty(newAtom))
+            if (!isNewSelector(expr))
             {
                 if (!options->useLinkedRawIterator || !hasLinkCountedModifier(expr))
                     return false;
@@ -2137,6 +2137,7 @@ protected:
         switch (op)
         {
         case no_select:
+            //Only interested in the leftmost no_select
             if (expr->hasProperty(newAtom))
             {
                 IHqlExpression * ds = expr->queryChild(0);
@@ -2547,7 +2548,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         {
         case no_select:
             //either a select from a setresult or use of a child-dataset
-            if (expr->hasProperty(newAtom))
+            if (isNewSelector(expr))
             {
                 info->containsActivity = findSplitPoints(expr->queryChild(0));
                 assertex(queryResourceInfo(expr->queryChild(0))->isActivity);
@@ -3373,7 +3374,7 @@ bool EclResourcer::addExprDependency(IHqlExpression * expr, ResourceGraphInfo * 
             return !filename->isConstant();
         }
     case no_select:
-        return expr->hasProperty(newAtom);
+        return isNewSelector(expr);
     case no_workunit_dataset:
         {
             IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
@@ -4175,6 +4176,20 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
             assertex(args.item(1).getOperator() == no_callsideeffect);
             unwindChildren(args, expr, 2);
             same = false;
+            break;
+        }
+    case no_select:
+        {
+            IHqlExpression * ds = expr->queryChild(0);
+            OwnedHqlExpr newDs = createResourced(ds, ownerGraph, expandInParent, false);
+            if (ds != newDs)
+            {
+                args.append(*LINK(newDs));
+                unwindChildren(args, expr, 1);
+                if (!expr->hasProperty(newAtom) && isNewSelector(expr) && (newDs->getOperator() != no_select))
+                    args.append(*LINK(queryNewSelectAttrExpr()));
+                same = false;
+            }
             break;
         }
     case no_join:

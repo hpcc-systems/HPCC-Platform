@@ -1159,21 +1159,6 @@ inline bool activityHidesSelector(IHqlExpression * expr, IHqlExpression * select
 }
 
 
-class HQL_API HqlSelectorLocator : public NewHqlTransformer
-{
-public:
-    HqlSelectorLocator(IHqlExpression * _selector);
-
-    virtual void analyseExpr(IHqlExpression * expr);
-    virtual void analyseSelector(IHqlExpression * expr);
-
-    bool containsSelector(IHqlExpression * expr);
-
-protected:
-    bool foundSelector;
-    OwnedHqlExpr selector;
-};
-
 class HQL_API HqlSelectorAnywhereLocator : public NewHqlTransformer
 {
 public:
