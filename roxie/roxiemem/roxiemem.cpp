@@ -80,7 +80,7 @@ Some thoughts on improving this memory manager:
 //================================================================================
 // Allocation of aligned blocks from os
 
-#define HEAPERROR(a) throw MakeStringException(ROXIE_HEAP_ERROR, a)
+#define HEAPERROR(a) throw MakeStringException(ROXIEMM_HEAP_ERROR, a)
 
 #ifdef _DEBUG
 const unsigned maxLeakReport = 20;
@@ -328,7 +328,7 @@ static StringBuffer &memmap(StringBuffer &stats)
 static void throwHeapExhausted(unsigned pages)
 {
     DBGLOG("RoxieMemMgr: Memory pool (%u pages) exhausted requested %u", heapTotalPages, pages);
-    throw MakeStringException(ROXIE_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
+    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
 }
 
 static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
@@ -372,7 +372,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                     if (returnNullWhenExhausted)
                         return NULL;
                     DBGLOG("RoxieMemMgr: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
-                    throw MakeStringException(ROXIE_LARGE_MEMORY_EXHAUSTED, "Memory pool exhausted");
+                    throw MakeStringException(ROXIEMM_LARGE_MEMORY_EXHAUSTED, "Memory pool exhausted");
                 }
 
                 heapLargeBlocks = largeBlocksRequired;
@@ -2244,7 +2244,7 @@ public:
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
-                        throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+                        throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
                     }
                 }
             }
@@ -2930,7 +2930,7 @@ extern void setDataAlignmentSize(unsigned size)
     if (size==0x400 || size==0x2000)
         DATA_ALIGNMENT_SIZE = size;
     else
-        throw MakeStringException(ROXIE_INVALID_MEMORY_ALIGNMENT, "Invalid parameter to setDataAlignmentSize %u", size);
+        throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "Invalid parameter to setDataAlignmentSize %u", size);
 }
 
 } // namespace roxiemem

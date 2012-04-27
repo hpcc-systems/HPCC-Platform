@@ -21,7 +21,7 @@
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
-#include "roxie.hpp"
+#include "errorlist.h"
 
 #ifdef _WIN32
  #ifdef ROXIEMEM_EXPORTS
@@ -32,6 +32,13 @@
 #else
  #define roxiemem_decl
 #endif
+
+#define ROXIEMM_MEMORY_LIMIT_EXCEEDED     ROXIEMM_ERROR_START
+#define ROXIEMM_MEMORY_POOL_EXHAUSTED     ROXIEMM_ERROR_START+1
+#define ROXIEMM_INVALID_MEMORY_ALIGNMENT  ROXIEMM_ERROR_START+2
+#define ROXIEMM_HEAP_ERROR                ROXIEMM_ERROR_START+3
+#define ROXIEMM_LARGE_MEMORY_EXHAUSTED    ROXIEMM_ERROR_START+4
+
 
 //Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
 #ifdef _DEBUG

@@ -7367,7 +7367,7 @@ public:
                 if (!rowsToSort.append(next))
                 {
                     ReleaseRoxieRow(next);
-                    throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+                    throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
                 }
             }
         }

@@ -20,6 +20,7 @@
 #include "udpsha.hpp"
 #include "jsocket.hpp"
 #include "jlog.hpp"
+#include "roxie.hpp"
 #include "roxiemem.hpp"
 
 #ifdef _WIN32
