@@ -217,7 +217,7 @@ public:
         const PtrElem *e = (const PtrElem *)r;
         size32_t ret = e->size(metasize);
         if (e->queryRow()) 
-            ret += thorRowMemoryFootprint(e->queryRow());
+            ret += thorRowMemoryFootprint(serializer, e->queryRow());
         return ret;
     }
 
@@ -463,7 +463,7 @@ public:
         irandom.setown(createRandomNumberGenerator());
         irandom->seed(self);
         pipeout.setown(new cPipeOutWrapper);
-        piperd.setown(createSmartInMemoryBuffer(activity,pullBufferSize,&ptrallocator));
+        piperd.setown(createSmartInMemoryBuffer(activity, activity, pullBufferSize, &ptrallocator));
         pipeout->init(piperd,serializer,&ptrallocator);
         pipewr.set(pipeout->piperd->queryWriter());
         connected = true;
@@ -1974,7 +1974,7 @@ protected:
     IRowStream *input;      // can be changed
     bool inputstopped;
     const char *actTxt;
-    CThorRowArray htabrows;
+    CThorExpandingRowArray htabrows;
     const void **htab;
     IHThorHashDedupArg *dedupargs;
     unsigned htsize;
@@ -1989,7 +1989,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     HashDedupSlaveActivityBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container), CThorDataLink(this), htabrows(*this, true)
     {
         htsize = 0;
         inputstopped = false;
@@ -2003,22 +2003,18 @@ public:
         IOutputMetaData* km = dedupargs->queryKeySize();
         if (km&&(km!=dedupargs->queryOutputMeta())) {
             ikeycompare = dedupargs->queryKeyCompare();
-            keyallocator.setown(createThorRowAllocator(km,queryActivityId()));
+            keyallocator.setown(queryJob().getRowAllocator(km,queryActivityId()));
             keyserializer.setown(km->createRowSerializer(queryCodeContext(),queryActivityId()));
-            htabrows.setSizing(true,true);
         }
-        else {
-            htabrows.setSizing(true,true);
+        else
             ikeycompare = NULL;
-        }
-        htabrows.setMaxTotal(queryLargeMemSize());
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         inputstopped = false;
         input = inputs.item(0);
-        htabrows.clear();
+        htabrows.kill();
         htsize = 0;
         startInput(inputs.item(0));
         dataLinkStart(actTxt, container.queryId());
@@ -2032,7 +2028,6 @@ public:
     bool addHash(const void *row)
     {
         // NB assume key size constant
-        // TBD use CThorRowArray with sizing better?
         OwnedConstThorRow key;
         if (keyallocator) {
             RtlDynamicRowBuilder krow(keyallocator);
@@ -2042,6 +2037,7 @@ public:
         }
         else
             key.set(row);
+        // JCSMORE - needs revisting, to better cope with memory/spilling
         if (htsize==0) {
             CSizingSerializer ssz;
             if (keyserializer)
@@ -2055,8 +2051,10 @@ public:
             unsigned total = (container.queryOwnerId() ? (queryLargeMemSize()/10) : queryLargeMemSize()) /(divsz+sizeof(void *)*3);
             htsize = total+10;
             ActPrintLog("%s: reserving hash table of size %d",actTxt,htsize);
-            htabrows.reserve(htsize);
-            htab = (const void **)htabrows.base();
+            if (!htabrows.ensure(htsize))
+                throw MakeActivityException(this, TE_TooMuchData, "%s: hash table could not be allocated (out of memory)", actTxt);
+            htabrows.clearUnused();
+            htab = htabrows.getRowArray();
             htremaining = htsize*9/10;
         }
         unsigned h = ihash->hash(row)%htsize;
@@ -2086,7 +2084,7 @@ public:
     void kill()
     {
         ActPrintLog("%s: kill", actTxt);
-        htabrows.clear();
+        htabrows.kill();
         CSlaveActivity::kill();
     }
     CATCH_NEXTROW()
@@ -2226,8 +2224,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, public CThorDataLink, imple
     bool eof;
     Owned<IRowStream> strmL;
     Owned<IRowStream> strmR;
-    Owned<IThorRowSortedLoader> loaderL;
-    Owned<IThorRowSortedLoader> loaderR;
     CriticalSection joinHelperCrit;
     CriticalSection stopsect;
     rowcount_t lhsProgressCount;
@@ -2237,7 +2233,6 @@ class HashJoinSlaveActivity : public CSlaveActivity, public CThorDataLink, imple
     bool leftdone;
     mptag_t mptag;
     mptag_t mptag2;
-    CThorRowArray rows;
 
 public:
 
@@ -2255,8 +2250,6 @@ public:
         strmL.clear();
         strmR.clear();
         joinhelper.clear();
-        loaderL.clear();
-        loaderR.clear();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -2287,22 +2280,21 @@ public:
         Owned<IHashDistributor> distributor;
         distributor.setown(createHashDistributor(this, container.queryJob().queryJobComm(), mptag, queryRowInterfaces(inL), abortSoon,false, this));
         Owned<IRowStream> reader = distributor->connect(inL,ihashL,icompareL);
-        loaderL.setown(createThorRowSortedLoader(rows));
-        bool isemptylhs;
-        strmL.setown(loaderL->load(reader,queryRowInterfaces(inL),icompareL,true,abortSoon,isemptylhs,"HASHJOIN(L)",true,maxCores));
+        Owned<IThorRowLoader> loaderL = createThorRowLoader(*this, ::queryRowInterfaces(inL), icompareL, true, rc_allDisk, SPILL_PRIORITY_HASHJOIN);
+        strmL.setown(loaderL->load(reader, abortSoon));
+        loaderL.clear();
         reader.clear();
         stopInputL();
         distributor->disconnect(false);
         distributor->removetemp();
         distributor->join();
         distributor.clear();
-        rows.clear();
-        loaderR.setown(createThorRowSortedLoader(rows));
         leftdone = true;
         distributor.setown(createHashDistributor(this, container.queryJob().queryJobComm(), mptag2, queryRowInterfaces(inR), abortSoon,false, this));
         reader.setown(distributor->connect(inR,ihashR,icompareR));
-        bool isemptyrhs;
-        strmR.setown(loaderR->load(reader,queryRowInterfaces(inR),icompareR,false,abortSoon,isemptyrhs,"HASHJOIN(R)",true,maxCores));
+        Owned<IThorRowLoader> loaderR = createThorRowLoader(*this, ::queryRowInterfaces(inR), icompareR, true, rc_mixed, SPILL_PRIORITY_HASHJOIN);;
+        strmR.setown(loaderR->load(reader, abortSoon));
+        loaderR.clear();
         reader.clear();
         stopInputR();
         distributor->disconnect(false);
@@ -2316,12 +2308,12 @@ public:
                     {
                         bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
                         bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
-                        joinhelper.setown(createJoinHelper(joinargs, "HASHJOIN", container.queryId(), queryRowAllocator(),hintparallelmatch,hintunsortedoutput));
+                        joinhelper.setown(createJoinHelper(*this, joinargs, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
                     }
                     break;
                 case TAKhashdenormalize:
                 case TAKhashdenormalizegroup:
-                    joinhelper.setown(createDenormalizeHelper(joinargs, "HASHDENORMALIZE", container.getKind(), container.queryId(), queryRowAllocator()));
+                    joinhelper.setown(createDenormalizeHelper(*this, joinargs, queryRowAllocator()));
                     break;
                 default:
                     throwUnexpected();
@@ -2368,7 +2360,6 @@ public:
     void kill()
     {
         ActPrintLog("HASHJOIN: kill");
-        rows.clear();
         CSlaveActivity::kill();
     }
     CATCH_NEXTROW()
@@ -2414,11 +2405,11 @@ public:
 
 //===========================================================================
 
-CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, memsize_t maxMem, bool grow, bool ordered)
+CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered)
 {
     Owned<IHashDistributor> distributor;
     Owned<IRowStream> strm;
-    Owned<CThorRowAggregator> globalAggTable = new CThorRowAggregator(activity, helperExtra, helper, maxMem, grow);
+    Owned<CThorRowAggregator> globalAggTable = new CThorRowAggregator(activity, helperExtra, helper);
     globalAggTable->start(activity.queryRowAllocator());
     __int64 readCount = 0;
     if (ordered)
@@ -2561,7 +2552,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper, queryLargeMemSize()/10, container.queryOwnerId()==0));
+        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
 
         input = inputs.item(0);
@@ -2590,7 +2581,7 @@ public:
         if (!container.queryLocal() && container.queryJob().querySlaves()>1)
         {
             bool ordered = 0 != (TAForderedmerge & helper->getAggregateFlags());
-            localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mptag, queryLargeMemSize()/10, container.queryOwnerId()==0, ordered));
+            localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mptag, ordered));
         }
         eos = false;
     }

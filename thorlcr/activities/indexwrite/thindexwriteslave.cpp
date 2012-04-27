@@ -69,7 +69,7 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
     Owned <IKeyBuilder> builder;
     Owned<IThorDataLink> input;
     Owned<IPropertyTree> metadata;
-    Linked<IThorRowAllocator> outRowAllocator;
+    Linked<IEngineRowAllocator> outRowAllocator;
 
     bool buildTlk, inputStopped, active;
     bool sizeSignalled;
@@ -295,7 +295,7 @@ public:
 
         ThorDataLinkMetaInfo info;
         inputs.item(0)->getMetaInfo(info);
-        outRowAllocator.set(createThorRowAllocator(helper->queryDiskRecordSize(), container.queryId()));
+        outRowAllocator.set(queryJob().getRowAllocator(helper->queryDiskRecordSize(), container.queryId()));
         if (refactor)
         {
             assertex(isLocal);

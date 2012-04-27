@@ -21,6 +21,7 @@
 
 #define NO_BWD_COMPAT_MAXSIZE
 #include "thorcommon.ipp"
+#include "thmem.hpp"
 
 #include "thmfilemanager.hpp"
 #include "eclhelper.hpp"
@@ -358,8 +359,7 @@ rowcount_t getCount(CActivityBase &activity, unsigned partialResults, rowcount_t
 const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowInterfaces &rowIf, IHThorCompoundAggregateExtra &aggHelper, mptag_t mpTag)
 {
     // JCSMORE - pity this isn't common routine with similar one in aggregate, but helper is not common
-    CThorRowArray slaveResults;
-    slaveResults.ensure(partialResults);
+    CThorExpandingRowArray slaveResults(activity, true, false, true, partialResults);
     unsigned _partialResults = partialResults;
     while (_partialResults--)
     {
@@ -381,13 +381,13 @@ const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowI
     _partialResults = 0;
     for (;_partialResults<partialResults; _partialResults++)
     {
-        const void *partialResult = slaveResults.item(_partialResults);
+        const void *partialResult = slaveResults.query(_partialResults);
         if (partialResult)
         {
             if (first)
             {
                 first = false;
-                sz = cloneRow(result, slaveResults.item(_partialResults), rowIf.queryRowMetaData());
+                sz = cloneRow(result, partialResult, rowIf.queryRowMetaData());
             }
             else
                 sz = aggHelper.mergeAggregate(result, partialResult);

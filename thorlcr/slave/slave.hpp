@@ -33,7 +33,6 @@
 #include "jsocket.hpp"
 #include "slavmain.hpp"
 #include "thor.hpp"
-#include "thmem.hpp"
 
 #include "eclhelper.hpp"        // for IRecordSize
 #include "thgraph.hpp"

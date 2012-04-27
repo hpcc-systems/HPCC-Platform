@@ -28,7 +28,6 @@
 #include "jhtree.hpp"
 #include "thsortu.hpp"
 #include "thactivityutil.ipp"
-#include "thmem.hpp"
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
 #include "thexception.hpp"
@@ -271,7 +270,7 @@ class CFetchSlaveBase : public CSlaveActivity, public CThorDataLink, implements 
     unsigned offsetMapSz;
     MemoryBuffer offsetMapBytes;
     Owned<IExpander> eexp;
-    Owned<IThorRowAllocator> keyRowAllocator;
+    Owned<IEngineRowAllocator> keyRowAllocator;
 
 protected:
     Owned<IRowInterfaces> fetchDiskRowIf;
@@ -343,7 +342,7 @@ public:
         {
             IOutputMetaData *keyRowMeta = QUERYINTERFACE(fetchBaseHelper->queryExtractedSize(), IOutputMetaData);
             assertex(keyRowMeta);
-            keyRowAllocator.setown(createThorRowAllocator(keyRowMeta, queryActivityId()));
+            keyRowAllocator.setown(queryJob().getRowAllocator(keyRowMeta, queryActivityId()));
         }
         appendOutputLinked(this);
     }

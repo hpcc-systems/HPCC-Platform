@@ -16,129 +16,107 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#include "thactivityutil.ipp"
+#include "tsorta.hpp"
 #include "thgroupslave.ipp"
 
-#include "thactivityutil.ipp"
-#include "thorport.hpp"
 
 class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
-
-private:
     IHThorGroupArg * helper;
     bool eogNext, prevEog, eof;
-    unsigned short transferAcceptPort;
-    Owned<CGroupTransfer> rollover;
-    bool rolloverEnabled;
+    bool rolloverEnabled, useRollover;
     IThorDataLink *input;
+    Owned<IRowStream> stream;
     OwnedConstThorRow next;
+    Owned<IRowServer> rowServer;
 
+    const void *getNext()
+    {
+        const void *row = stream->ungroupedNextRow();
+        if (row)
+            return row;
+        else if (useRollover)
+        {
+            useRollover = false;
+            // JCSMORE will generate time out log messages, while waiting for next nodes group
+            rank_t myNode = container.queryJob().queryMyRank();
+            stream.setown(createRowStreamFromNode(*this, myNode+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
+            return stream->nextRow();
+        }
+        else
+            return NULL;
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    
-    GroupSlaveActivity(CGraphElementBase *_container, bool _rollover) 
+    GroupSlaveActivity(CGraphElementBase *_container)
         : CSlaveActivity(_container), CThorDataLink(this)
     {
-        rolloverEnabled = _rollover;
-        transferAcceptPort = allocPort(1);      // for transfer 
+        helper = static_cast <IHThorGroupArg *> (queryHelper());
+        rolloverEnabled = false;
+        useRollover = false;
     }
-    ~GroupSlaveActivity()
-    {
-        if (rollover)
-            rollover->abort();
-        freePort(transferAcceptPort);
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-
-        helper = static_cast <IHThorGroupArg *> (queryHelper());
-
-        if (rolloverEnabled)
+        if (!container.queryLocalOrGrouped())
         {
-            SocketEndpoint ep;
-            ep.setLocalHost(transferAcceptPort);
-            ep.serialize(slaveData);
+            mpTag = container.queryJob().deserializeMPTag(data);
+            rolloverEnabled = true;
         }
     }
-    void start()
+    virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         ActPrintLog(rolloverEnabled ? "GROUP: is global" : "GROUP: is local");
         eogNext = prevEog = eof = false;
-        if(rolloverEnabled)
+        if (rolloverEnabled)
         {
+            useRollover = !lastNode();
 #ifdef _TESTING
             ActPrintLog("Node number = %d, Total Nodes = %d", container.queryJob().queryMyRank(), container.queryJob().querySlaves());
 #endif
-            rollover.clear(); // JCSMORE - should be able to reuse the CGroupTranser obj.
-            rollover.setown(new CGroupTransfer(&container, queryRowAllocator(), queryRowSerializer(), queryRowDeserializer(), transferAcceptPort));
         }
 
         input = inputs.item(0);
+        stream.set(input);
         startInput(input);
         dataLinkStart("GROUP", container.queryId());        
 
-        getNext(); // prime inputBuffer
+        next.setown(stream->ungroupedNextRow());
 
         if (rolloverEnabled && !firstNode())  // 1st node can have nothing to send
         {
-            CThorRowArray sendGroup;
-            sendGroup.setSizing(true,true);
             rowcount_t sentRecs = 0;
+            Owned<IThorRowCollector> collector = createThorRowCollector(*this, NULL, false, rc_mixed, SPILL_PRIORITY_SPILLABLE_STREAM);
+            Owned<IRowWriter> writer = collector->getWriter();
             if (next)
             {
                 ActPrintLog("GROUP: Sending first group to previous node(%d)", container.queryJob().queryMyRank()-1);
-                try
+                loop
                 {
-                    do                          // 1st group goes to rollover
-                    {
-                        sendGroup.append(next.getClear()); 
-                        if (abortSoon) {
-                            break; //always send group even when aborting
-                        }
-                        sentRecs++;
-                    } while (getNext() && helper->isSameGroup(sendGroup.item(sendGroup.ordinality()-1), next));
+                    writer->putRow(next.getLink());
+                    if (abortSoon)
+                        break; //always send group even when aborting
+                    sentRecs++;
+                    OwnedConstThorRow next2 = getNext();
+                    if (!next2 || !helper->isSameGroup(next2, next))
+                        break;
+                    next.setown(next2.getClear());
                 }
-                catch (IThorRowArrayException *e)
-                {
-                    IException *e2 = MakeActivityException(this, e, "Group [rollover]");
-                    e->Release();
-                    throw e2;
-                }
-            }                       
-            MemoryBuffer mb;
-            getInitializationData(container.queryJob().queryMyRank()-1-1, mb);
-            SocketEndpoint ep;
-            ep.deserialize(mb);
-            rollover->send(ep,sendGroup);   
-            ActPrintLog("GROUP: %"RCPF"d records sent", sentRecs);
+            }
+            writer.clear();
+            ActPrintLog("GROUP: %"RCPF"d records to send", collector->numRows());
+            Owned<IRowStream> strm = collector->getStream();
+            rowServer.setown(createRowServer(this, strm, container.queryJob().queryJobComm(), mpTag));
         }
     }
-
-
-    void stop()
+    virtual void stop()
     {
         stopInput(input);
         dataLinkStop();
     }
-
-
-    bool getNext()
-    {
-        next.setown(input->ungroupedNextRow());
-        if(next) 
-            return true;
-        if (rolloverEnabled && !lastNode()) {
-            next.setown(rollover->nextRow());
-            if (next) 
-                return true;
-        }
-        return false;
-    }
-
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
@@ -149,40 +127,34 @@ public:
         }
         
         OwnedConstThorRow prev = next.getClear();
-        if( getNext() && !helper->isSameGroup(prev, next)) 
+        next.setown(getNext());
+        if (next && !helper->isSameGroup(prev, next))
             eogNext = true;
         if (prev)
         {
             dataLinkIncrement();
             return prev.getClear();
         }
-        if(prevEog) 
+        if (prevEog)
             eof = true;
         prevEog = true;
         return NULL;
     }
-
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
-        if (rolloverEnabled) {
+        if (rolloverEnabled)
+        {
             info.isSequential = true;
             info.unknownRowsOutput = true; // don't know how many rolled over
         }
         calcMetaInfoSize(info,inputs.item(0));
     }
-
     virtual bool isGrouped() { return true; }
 };
 
 
 CActivityBase *createGroupSlave(CGraphElementBase *container)
 {
-    return new GroupSlaveActivity(container, true);
-}
-
-
-CActivityBase *createLocalGroupSlave(CGraphElementBase *container)
-{
-    return new GroupSlaveActivity(container, false);
+    return new GroupSlaveActivity(container);
 }

@@ -17,7 +17,6 @@
 ############################################################################## */
 
 #include "thcompressutil.hpp"
-#include "thmem.hpp"
 
 #include "jlzw.hpp"
 

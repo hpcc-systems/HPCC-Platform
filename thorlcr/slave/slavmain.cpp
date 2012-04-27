@@ -536,6 +536,9 @@ public:
 
 void slaveMain()
 {
+    memsize_t gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
+    roxiemem::setTotalMemoryLimit(gmemSize * 0x100000, 0, NULL);
+
     CJobListener jobListener;
     CThorResourceSlave slaveResource;
     setIThorResource(slaveResource);

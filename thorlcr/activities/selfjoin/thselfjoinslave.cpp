@@ -43,8 +43,6 @@ private:
     bool inputStopped;
     IThorDataLink * input;
     Owned<IRowStream> strm;     
-    CThorRowArray rows;
-    Owned<IThorRowSortedLoader> iloader;
     ICompare * compare;
     ISortKeySerializer * keyserializer;
     mptag_t mpTagRPC;
@@ -65,12 +63,11 @@ private:
 #if THOR_TRACE_LEVEL > 5
         ActPrintLog("SELFJOIN: Performing local self-join");
 #endif
-        iloader.setown(createThorRowSortedLoader(rows));
-        bool isempty;
-        IRowStream *rs = iloader->load(input,::queryRowInterfaces(input), compare, false, abortSoon, isempty, "SELFJOIN", !isUnstable(),maxCores);
+        Owned<IThorRowLoader> iLoader = createThorRowLoader(*this, ::queryRowInterfaces(input), compare, !isUnstable(), rc_mixed, SPILL_PRIORITY_SELFJOIN);
+        Owned<IRowStream> rs = iLoader->load(input, abortSoon);
         stopInput(input);
         input = NULL;
-        return rs;
+        return rs.getClear();
     }
 
     IRowStream * doGlobalSelfJoin()
@@ -161,16 +158,16 @@ public:
         if (helper->getJoinFlags()&JFlimitedprefixjoin) {
             CriticalBlock b(joinHelperCrit);
             // use std join helper (less efficient but implements limited prefix)
-            joinhelper.setown(createJoinHelper(helper,"SELFJOIN", container.queryId(), queryRowAllocator(),hintparallelmatch,hintunsortedoutput));
+            joinhelper.setown(createJoinHelper(*this, helper, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
         }
         else {
             CriticalBlock b(joinHelperCrit);
-            joinhelper.setown(createSelfJoinHelper(helper,"SELFJOIN", container.queryId(), queryRowAllocator(),hintparallelmatch,hintunsortedoutput));
+            joinhelper.setown(createSelfJoinHelper(*this, helper, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
         }
         strm.setown(isLightweight? doLightweightSelfJoin() : (isLocal ? doLocalSelfJoin() : doGlobalSelfJoin()));
         assertex(strm);
 
-        joinhelper->init(strm, NULL, ::queryRowAllocator(inputs.item(0)), ::queryRowAllocator(inputs.item(0)), ::queryRowMetaData(inputs.item(0)), &abortSoon, this);
+        joinhelper->init(strm, NULL, ::queryRowAllocator(inputs.item(0)), ::queryRowAllocator(inputs.item(0)), ::queryRowMetaData(inputs.item(0)), &abortSoon);
     }
 
     virtual void stop()
@@ -192,12 +189,6 @@ public:
         strm->stop();
         strm.clear();
         dataLinkStop();
-    }
-
-    virtual void kill()
-    {
-        rows.clear();
-        CSlaveActivity::kill();
     }
     
     CATCH_NEXTROW()

@@ -45,9 +45,14 @@
 
 #include "mptag.hpp"
 
+#include "roxiemem.hpp"
+#include "thormisc.hpp"
+#include "workunit.hpp"
+#include "thorcommon.hpp"
+
 #include "thor.hpp"
 #include "eclhelper.hpp"
-#include "thmem.hpp"
+
 #include "thorplugin.hpp"
 
 #define THORDATALINK_STOPPED            (RCMAX&~(RCMAX>>1))                         // dataLinkStop() was called
@@ -178,6 +183,7 @@ public:
 typedef CIArrayOf<CGraphDependency> CGraphDependencyArray;
 typedef IIteratorOf<CGraphDependency> IThorGraphDependencyIterator;
 
+class CGraphElementBase;
 class CIOConnection : public CInterface
 {
 public:
@@ -234,6 +240,7 @@ class CJobBase;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
 {
 protected:
+    CriticalSection crit;
     Owned<IHThorArg> baseHelper;
     ThorActivityKind kind;
     activity_id id, ownerId;
@@ -767,10 +774,12 @@ interface IGraphExecutor : extends IInterface
 
 interface ILoadedDllEntry;
 interface IConstWorkUnit;
+interface IThorAllocator;
 class CThorCodeContextBase;
 class graph_decl CJobBase : public CInterface, implements IDiskUsage, implements IExceptionHandler, implements IGraphCallback
 {
 protected:
+    Owned<IThorAllocator> thorAllocator;
     Owned<IGraphExecutor> graphExecutor;
     CriticalSection crit;
     Owned<ILoadedDllEntry> querySo;
@@ -860,6 +869,8 @@ public:
         return LINK(allGraphs.find(gid));
     }
 
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
+    roxiemem::IRowManager *queryRowManager() const;
     bool queryUseCheckpoints() const;
     const bool &queryPausing() const { return pausing; }
     const bool &queryResumed() const { return resumed; }
@@ -914,7 +925,7 @@ interface IOutputMetaData;
 
 class graph_decl CActivityBase : public CInterface, implements IExceptionHandler, implements IRowInterfaces
 {
-    Owned<IThorRowAllocator> rowAllocator;
+    Owned<IEngineRowAllocator> rowAllocator;
     Owned<IOutputRowSerializer> rowSerializer;
     Owned<IOutputRowDeserializer> rowDeserializer;
     CSingletonLock CABallocatorlock;
@@ -937,6 +948,7 @@ public:
     CActivityBase(CGraphElementBase *container);
     ~CActivityBase();
     CGraphElementBase &queryContainer() const { return container; }
+    CJobBase &queryJob() const { return container.queryJob(); }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline const bool &queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
