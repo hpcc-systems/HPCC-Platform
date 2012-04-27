@@ -5496,7 +5496,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
           else
           {
             Owned<IFile> pFile(createIFile(sb.str()));
-            m_configFileMonitorThread.clear();
+            setSkipNotification(true);
             copyFile(pFile, m_pFile, 0x100000);
             break;
           }
@@ -5590,11 +5590,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
     }
   }
 
-  if (m_configFileMonitorThread.get() == NULL)
-  {
-    m_configFileMonitorThread.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(this, CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
-    m_configFileMonitorThread->init();
-  }
+   CConfigFileMonitorThread::getInstance()->addObserver(*this);
 }
 
 void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployReqInfo *reqInfo, const char* xmlArg, StringBuffer& sbErrMsg, bool saveEnv)
@@ -6122,6 +6118,7 @@ CWsDeployFileInfo::~CWsDeployFileInfo()
     unlockCloud.start(sbMsg);
   }
 
+  CWsDeployFileInfo::CConfigFileMonitorThread::getInstance()->removeObserver(*this);
   m_pNavTree.clear();
   m_pGraphXml.clear();
   m_Environment.clear();
@@ -6585,9 +6582,7 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
       try
       {
         fi->initFileInfo(createFile);
-        fi->m_configFileMonitorThread.clear();
-        fi->m_configFileMonitorThread.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(fi, CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
-        fi->m_configFileMonitorThread->init();
+        CWsDeployFileInfo::CConfigFileMonitorThread::getInstance()->addObserver(*fi);
       }
       catch (IException* e)
       {
