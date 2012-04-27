@@ -26,6 +26,8 @@
 #include "thbuf.hpp"
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
+#include "thmem.hpp"
+
 
 PointerArray createFuncs;
 void registerCreateFunc(CreateFunc func)
@@ -41,6 +43,7 @@ void registerCreateFunc(CreateFunc func)
 
 class CThorGraphResult : public CInterface, implements IThorResult, implements IRowWriter
 {
+    CActivityBase &activity;
     rowcount_t rowStreamCount;
     IOutputMetaData *meta;
     Owned<IRowWriterMultiReader> rowBuffer;
@@ -60,10 +63,10 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorGraphResult(IRowInterfaces *_rowIf, bool _local) : rowIf(_rowIf), local(_local)
+    CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _local) : activity(_activity), rowIf(_rowIf), local(_local)
     {
         init();
-        rowBuffer.setown(createOverflowableBuffer(rowIf, LOCALRESULT_BUFFER_SIZE));
+        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, false, true));
     }
 
 // IRowWriter
@@ -142,7 +145,8 @@ public:
     {
         Owned<IRowStream> stream = getRowStream();
         countResult = 0;
-        byte **rowset = allocator->createRowset(rowStreamCount);
+        OwnedConstThorRow _rowset = allocator->createRowset(rowStreamCount);
+        const void **rowset = (const void **)_rowset.get();
         loop
         {
             OwnedConstThorRow row = stream->nextRow();
@@ -154,9 +158,9 @@ public:
                 else
                     break;
             }
-            rowset[countResult++] = (byte *)row.getClear();
+            rowset[countResult++] = row.getClear();
         }
-        result = rowset;
+        result = (byte **)_rowset.getClear();
     }
 };
 
@@ -215,7 +219,7 @@ public:
     }
     virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool local=false)
     {
-        Owned<CThorGraphResult> result = new CThorGraphResult(rowIf, local);
+        Owned<CThorGraphResult> result = new CThorGraphResult(activity, rowIf, local);
         setResult(id, result);
         return result;
     }
@@ -2357,14 +2361,10 @@ void CJobBase::init()
     pausing = false;
     resumed = false;
 
-    unsigned gmemSize = getOptInt("@globalMemorySize"); // in MB
-    // NB: gmemSize is permitted to be unset, meaning unbound
-    initThorMemoryManager(gmemSize, getOptInt("@memTraceLevel", 1), getOptInt("@memoryStatsInterval", 60));
+    unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
+    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000));
 
-    unsigned defaultMemMB = gmemSize;
-    if (!defaultMemMB)
-        defaultMemMB = 2048; // JCSMORE - should really be based on physical ram and take into account slavesPerNode.
-    defaultMemMB = defaultMemMB*3/4;
+    unsigned defaultMemMB = gmemSize*3/4;
     unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
     if (gmemSize && largeMemSize >= gmemSize)
         throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
@@ -2386,7 +2386,8 @@ CJobBase::~CJobBase()
 {
     clean();
     PROGLOG("CJobBase resetting memory manager");
-    resetThorMemoryManager();
+    thorAllocator.clear();
+
     ::Release(codeCtx);
     ::Release(userDesc);
     timeReporter->Release();
@@ -2590,6 +2591,16 @@ void CJobBase::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const by
     graph.executeSubGraph(parentExtractSz, parentExtract);
 }
 
+IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+{
+    return thorAllocator->getRowAllocator(meta, activityId);
+}
+
+roxiemem::IRowManager *CJobBase::queryRowManager() const
+{
+    return thorAllocator->queryRowManager();
+}
+
 static IThorResource *iThorResource = NULL;
 void setIThorResource(IThorResource &r)
 {
@@ -2669,7 +2680,7 @@ IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {
     if (CABallocatorlock.lock()) {
         if (!rowAllocator)
-            rowAllocator.setown(createThorRowAllocator(queryRowMetaData(),queryActivityId()));
+            rowAllocator.setown(queryJob().getRowAllocator(queryRowMetaData(),queryActivityId()));
         CABallocatorlock.unlock();
     }
     return rowAllocator;

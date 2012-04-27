@@ -35,7 +35,6 @@
 #include "thorport.hpp"
 #include "thsortu.hpp"
 #include "thactivityutil.ipp"
-#include "thmem.hpp"
 #include "thormisc.hpp"
 #include "thbufdef.hpp"
 #include "thexception.hpp"
@@ -101,8 +100,9 @@ interface IJoinGroupNotify
 class CJoinGroup : public CSimpleInterface, implements IInterface
 {
 protected:
+    CActivityBase &activity;
     OwnedConstThorRow left;
-    CThorRowArray rows;
+    CThorExpandingRowArray rows;
     Int64Array offsets;
     unsigned endMarkersPending, endEndCandidatesPending;
     IJoinProcessor *join;
@@ -114,7 +114,7 @@ public:
     CJoinGroup *prev;  // Doubly-linked list to allow us to keep track of ones that are still in use
     CJoinGroup *next;
 
-    CJoinGroup() 
+    CJoinGroup(CActivityBase &_activity) : activity(_activity), rows(_activity)
     {
         // Used for head object only
         prev = NULL;
@@ -161,7 +161,7 @@ public:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJoinGroup(const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : join(_join)
+    CJoinGroup(CActivityBase &_activity, const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : activity(_activity), join(_join), rows(_activity)
     {
 #ifdef TRACE_USAGE
         atomic_inc(&join->getdebug(0));
@@ -282,7 +282,7 @@ public:
     {
         // Single threaded by now
         fpos = offsets.item(idx);
-        return rows.item(idx);
+        return rows.query(idx);
     }
 
 #ifdef TRACE_JOINGROUPS
@@ -346,13 +346,14 @@ static int unsignedcompare(unsigned *i1, unsigned *i2)
 
 class CJoinGroupPool
 {
+    CActivityBase &activity;
     CJoinGroup *groupStart;
 public:
     CJoinGroup head;
     CriticalSection crit;
     bool preserveGroups, preserveOrder;
 
-    CJoinGroupPool()
+    CJoinGroupPool(CActivityBase &_activity) : activity(_activity), head(_activity)
     {
         head.next = &head;
         head.prev = &head;
@@ -373,9 +374,9 @@ public:
         preserveGroups = _preserveGroups;
         preserveOrder = _preserveOrder;
     }
-    CJoinGroup *createJoinGroup(const void *row, IJoinProcessor *join)
+    CJoinGroup *createJoinGroup(const void *row, CActivityBase &activity, IJoinProcessor *join)
     {
-        CJoinGroup *jg = new CJoinGroup(row, join, groupStart);
+        CJoinGroup *jg = new CJoinGroup(activity, row, join, groupStart);
         if (preserveGroups && !groupStart)
         {
             jg->notePending(); // Make sure we wait for the group end
@@ -515,6 +516,7 @@ interface IRowStreamSetInput : extends IRowStream
 {
     virtual void setInput(IRowStream *input) = 0;
 };
+
 class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements IJoinProcessor, implements IJoinGroupNotify
 {
 #ifdef TRACE_JOINGROUPS
@@ -553,7 +555,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
     __int64 lastSeeks, lastScans;
     StringAttr indexName;
     bool localKey, keyHasTlk, onFailTransform;
-    Owned<IThorRowAllocator> joinFieldsAllocator, keyLookupAllocator, fetchInputAllocator, indexInputAllocator;
+    Owned<IEngineRowAllocator> joinFieldsAllocator, keyLookupAllocator, fetchInputAllocator, indexInputAllocator;
     Owned<IEngineRowAllocator> fetchInputMetaAllocator;
     Owned<IRowInterfaces> fetchInputMetaRowIf, fetchOutputRowIf;
     MemoryBuffer rawFetchMb;
@@ -571,7 +573,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
         unsigned pendingSends, pendingReplies, nodes, minFetchSendSz, totalSz, fetchMin;
         size32_t perRowMin;
         unsigned maxRequests, blockRequestsAt;
-        CThorRowArray *dstLists;
+        PointerArrayOf<CThorExpandingRowArray> dstLists;
         CriticalSection crit, sendCrit;
         Semaphore pendingSendsSem, pendingReplySem;
         mptag_t requestMpTag, resultMpTag;
@@ -641,14 +643,14 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             unsigned count;
                             msg.read(count);
 
-                            CThorRowArray received;
+                            CThorExpandingRowArray received(owner, owner.fetchOutputRowIf);
                             size32_t recvSz = msg.remaining();
-                            received.deserialize(*owner.fetchOutputRowIf->queryRowAllocator(), owner.fetchOutputRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
+                            received.deserialize(recvSz, msg.readDirect(recvSz));
 
                             unsigned c=0, c2=0;
                             while (c<count && !aborted)
                             {
-                                OwnedConstThorRow row = received.itemClear(c++);
+                                OwnedConstThorRow row = received.getClear(c++);
                                 const byte *rowPtr = (const byte *)row.get();
                                 offset_t fpos;
                                 CJoinGroup *jg;
@@ -753,10 +755,10 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             unsigned count;
                             msg.read(count);
 
-                            CThorRowArray received, replyRows;
+                            CThorExpandingRowArray received(owner, owner.fetchInputMetaRowIf);
+                            CThorExpandingRowArray replyRows(owner, owner.fetchOutputRowIf);
                             size32_t recvSz =  msg.remaining();
-                            received.deserialize(*owner.fetchInputMetaRowIf->queryRowAllocator(), owner.fetchInputMetaRowIf->queryRowDeserializer(), recvSz, msg.readDirect(recvSz), false);
-                            replyRows.setSizing(true, true);
+                            received.deserialize(recvSz, msg.readDirect(recvSz));
                             size32_t replySz = 0;
                             unsigned c = 0;
                             while (count--)
@@ -766,7 +768,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
 #endif
                                 if (aborted)
                                     break;
-                                OwnedConstThorRow row = received.itemClear(c++);
+                                OwnedConstThorRow row = received.getClear(c++);
                                 const byte *rowPtr = (const byte *)row.get();
                                 offset_t fpos;
                                 memcpy(&fpos, rowPtr, sizeof(fpos));
@@ -849,8 +851,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                     replyMb.writeDirect(0, sizeof(unsigned), &retCount);
                                     retCount = 0;
                                     replySz = 0;
-                                    replyRows.serialize(owner.fetchOutputRowIf->queryRowSerializer(),replyMb, false);
-                                    replyRows.clear();
+                                    replyRows.serialize(replyMb);
+                                    replyRows.kill();
                                     if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
                                         throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {1} - comm send failed");
                                     replyMb.rewrite(sizeof(retCount));
@@ -860,8 +862,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             {
                                 replyMb.writeDirect(0, sizeof(unsigned), &retCount);
                                 retCount = 0;
-                                replyRows.serialize(owner.fetchOutputRowIf->queryRowSerializer(),replyMb, false);
-                                replyRows.clear();
+                                replyRows.serialize(replyMb);
+                                replyRows.kill();
                                 if (!comm.send(replyMb, sender, resultMpTag, LONGTIMEOUT))
                                     throw MakeActivityException(&owner, 0, "CKeyedFetchRequestProcessor {2} - comm send failed");
                                 replyMb.rewrite(sizeof(retCount));
@@ -886,10 +888,8 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             nodes = owner.container.queryJob().querySlaves();
             stopped = aborted = writeWaiting = replyWaiting = false;
             pendingSends = pendingReplies = 0;
-            dstLists = new CThorRowArray[nodes];
-            unsigned n=0;
-            for (; n<nodes; n++)
-                dstLists[n].setSizing(true,true);
+            for (unsigned n=0; n<nodes; n++)
+                dstLists.append(new CThorExpandingRowArray(owner));
             fetchMin = owner.helper->queryJoinFieldsRecordSize()->getMinRecordSize();
             perRowMin = NEWFETCHSENDHEADERSZ+fetchMin;
             maxRequests = NEWFETCHPRMEMLIMIT<perRowMin ? 1 : (NEWFETCHPRMEMLIMIT / perRowMin);
@@ -910,7 +910,11 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
 
             ::Release(requestProcessor);
             ::Release(resultProcessor);
-            delete [] dstLists;
+            ForEachItemIn(l, dstLists)
+            {
+                CThorExpandingRowArray *dstList = dstLists.item(l);
+                delete dstList;
+            }
         }
         bool resultsDone()
         {
@@ -960,7 +964,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             { CriticalBlock b(crit);
                 //must be easier way?
                 size32_t sz = owner.fetchInputMetaAllocator->queryOutputMeta()->getRecordSize(fetchInRow.getSelf());
-                dstLists[dstNode].append(fetchInRow.finalizeRowClear(sz));
+                dstLists.item(dstNode)->append(fetchInRow.finalizeRowClear(sz));
                 totalSz += FETCHKEY_HEADER_SIZE+sz;
                 ++pendingSends;
                 if (writeWaiting)
@@ -1033,11 +1037,11 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     return;
                 CMessageBuffer msg;
                 { CriticalBlock b(crit); // keep writer out during flush to this dstNode
-                    unsigned total = dstLists[n].ordinality();
+                    unsigned total = dstLists.item(n)->ordinality();
                     if (total)
                     {
                         assertex(!replyWaiting);
-                        CThorRowArray dstList;
+                        CThorExpandingRowArray dstList(owner);
                         unsigned dstP=0;
                         loop
                         {
@@ -1066,7 +1070,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 return;
                             if (0 == dstP) // delay detach until necessary as may have been blocked and more added.
                             {
-                                dstList.swapWith(dstLists[n]);
+                                dstList.swap(*dstLists.item(n));
                                 total = dstList.ordinality();
                             }
                             unsigned requests = maxRequests - pendingReplies;
@@ -1079,7 +1083,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             CMemoryRowSerializer s(msg);
                             for (; r<requests; r++)
                             {
-                                OwnedConstThorRow row = dstList.itemClear(dstP++);
+                                OwnedConstThorRow row = dstList.getClear(dstP++);
                                 serializer->serialize(s,(const byte *)row.get());
                             }
                             pendingSends -= requests;
@@ -1228,7 +1232,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     {
                         owner.helper->extractIndexReadFields(lhs, row);
 
-                        return owner.pool->createJoinGroup(row.getClear(), &owner);
+                        return owner.pool->createJoinGroup(row.getClear(), owner, &owner);
                     }
                     else
                     {
@@ -1241,7 +1245,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                             case JFleftouter:
                             case JFleftonly:
                             {
-                                CJoinGroup *jg = owner.pool->createJoinGroup(row.getClear(), &owner);
+                                CJoinGroup *jg = owner.pool->createJoinGroup(row.getClear(), owner, &owner);
                                 jg->noteEnd(0); // will queue on doneGroups, may be used if excl.
                                 if (!owner.preserveGroups) // if preserving groups, JG won't be complete until lhs eog hit
                                     return NULL;
@@ -1808,7 +1812,7 @@ public:
         node = container.queryJob().queryMyRank()-1;
         onFailTransform = (0 != (joinFlags & JFonfail)) && (0 == (joinFlags & JFmatchAbortLimitSkips));
 
-        joinFieldsAllocator.setown(createThorRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
+        joinFieldsAllocator.setown(queryJob().getRowAllocator(helper->queryJoinFieldsRecordSize(), queryActivityId()));
         if (onFailTransform || (joinFlags & JFleftouter))
         {
             RtlDynamicRowBuilder rr(joinFieldsAllocator);
@@ -1938,7 +1942,7 @@ public:
                 Owned<IOutputMetaData> fetchInputMeta;
                 if (0 != helper->queryFetchInputRecordSize()->getRecordSize(NULL))
                 {
-                    fetchInputAllocator.setown(createThorRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
+                    fetchInputAllocator.setown(queryJob().getRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
                     fetchInputMeta.setown(createOutputMetaDataWithChildRow(fetchInputAllocator, FETCHKEY_HEADER_SIZE));
                 }
                 else
@@ -1970,19 +1974,19 @@ public:
         if (needsDiskRead)
         {
             Owned<IOutputMetaData> meta = createFixedSizeMetaData(KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(createThorRowAllocator(meta.getClear(), queryActivityId()));
+            keyLookupAllocator.setown(queryJob().getRowAllocator(meta.getClear(), queryActivityId()));
         }
         else
         {
             Owned<IOutputMetaData> meta = createOutputMetaDataWithChildRow(joinFieldsAllocator, KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(createThorRowAllocator(meta.getClear(), queryActivityId()));
+            keyLookupAllocator.setown(queryJob().getRowAllocator(meta.getClear(), queryActivityId()));
         }
 
-        indexInputAllocator.setown(createThorRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
+        indexInputAllocator.setown(queryJob().getRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
 
         ////////////////////
 
-        pool = new CJoinGroupPool();
+        pool = new CJoinGroupPool(*this);
         if (parallelLookups > 1)
         {
             CPRowStream *seq = new CPRowStream(*this, parallelLookups, freeQSize);

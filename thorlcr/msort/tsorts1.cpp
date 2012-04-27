@@ -97,8 +97,6 @@ public:
 #endif
             eos();
         }
-        else {
-        }
         return NULL;
     }
 
@@ -472,8 +470,7 @@ public:
         rowmap_t totalrows = resnum;
         PrintLog("Output start = %"RCPF"d, num = %"RCPF"u",respos,resnum);
 
-        IRowStream **readers = (IRowStream **)calloc(numnodes,sizeof(IRowStream *));
-        unsigned numreaders=0;
+        IArrayOf<IRowStream> readers;
         IException *exc = NULL;
         try {
             for (j=0;j<numnodes;j++) {
@@ -483,11 +480,10 @@ public:
                 if (snum>0) {
                     if (i==partno) {
                         PrintLog("SORT Merge READ: Stream(%u) local, pos=%"RCPF"u len=%"RCPF"u",i,sstart,snum);
-                        readers[numreaders++] = slave.createMergeInputStream(sstart,snum);
+                        readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
-                    else {
-                        readers[numreaders++] = new CMergeReadStream(rowif,i,endpoints[i], sstart, snum);
-                    }
+                    else
+                        readers.append(*new CMergeReadStream(rowif,i,endpoints[i], sstart, snum));
                 }
             }
         }
@@ -498,7 +494,7 @@ public:
         }
         if (!exc) {
             try {
-                slave.startMerging(numreaders, readers, totalrows);
+                slave.startMerging(readers, totalrows);
             }
             catch (IException *e)
             {
@@ -506,11 +502,6 @@ public:
                 exc = e;
             }
         }
-        for (i=0;i<numreaders;i++) {
-            if (readers[i])
-                readers[i]->Release();
-        }
-        free(readers);
         if (exc)
             throw exc;
         return totalrows;

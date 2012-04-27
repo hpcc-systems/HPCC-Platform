@@ -257,8 +257,7 @@ public:
     void start()
     {
         CLimitSlaveActivityBase::start();
-        // JSCTBD: used to take IDiskUsage
-        buf.setown(createOverflowableBuffer(this, SKIPLIMIT_BUFFER_SIZE)); 
+        buf.setown(createOverflowableBuffer(*this, this, true));
     }
     CATCH_NEXTROW()
     {

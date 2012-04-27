@@ -266,8 +266,7 @@ public:
 
 #define CATCH_MEMORY_EXCEPTIONS \
 catch (IException *e) {     \
-  StringBuffer tmp; \
-  IException *ne = MakeStringException(e->errorCode(),"%s(%"ACTPF"d): %s", activityName.sget(), activityId, e->errorMessage(tmp).str()); \
+  IException *ne = MakeActivityException(&activity, e); \
   ::Release(e); \
   throw ne; \
 }
@@ -280,20 +279,21 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
 
 class CJoinHelper : public IJoinHelper, public CSimpleInterface
 {
-    ICompare *compareLR;
+    CActivityBase &activity;
+	ICompare *compareLR;
     ICompare *compareL; 
     ICompare *compareR; 
 
     ICompare *limitedCompareR;  
 
-    CThorRowArray rightgroup;
+    CThorExpandingRowArray rightgroup;
     OwnedConstThorRow prevleft;
     OwnedConstThorRow prevright;            // used for first
     OwnedConstThorRow nextright;
     OwnedConstThorRow nextleft;
     OwnedConstThorRow denormLhs;
     RtlDynamicRowBuilder denormTmp;
-    CThorRowArray denormRows;
+    CThorExpandingRowArray denormRows;
     unsigned denormCount;
     size32_t outSz;
     unsigned rightidx;
@@ -324,10 +324,8 @@ class CJoinHelper : public IJoinHelper, public CSimpleInterface
     unsigned abortlimit;
     unsigned keepremaining;
     bool betweenjoin;
-    CActivityBase *activity;
     Owned<IException> onFailException;
     ThorActivityKind kind;
-    StringAttr activityName;
     activity_id activityId;
     Owned<ILimitedCompareHelper> limitedhelper;
     Owned<CDualCache> dualcache;
@@ -355,9 +353,10 @@ class CJoinHelper : public IJoinHelper, public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJoinHelper(IHThorJoinArg *_helper, const char *_activityName, ThorActivityKind _kind, activity_id _activityId,IEngineRowAllocator *_allocator)
-        : activityName(_activityName), kind(_kind), allocator(_allocator), denormTmp(NULL)
+    CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
+        : activity(_activity), allocator(_allocator), denormTmp(NULL), rightgroup(_activity), denormRows(_activity)
     {
+		kind = activity.queryContainer().getKind();
         helper = _helper; 
         denormCount = 0;
         outSz = 0;
@@ -366,7 +365,6 @@ public:
         abortlimit = (unsigned)-1;
         keepremaining = keepmax;
         outputmetaL = NULL;
-        activityId = _activityId;
         limitedCompareR = NULL;
         nextleftgot = false;
         nextrightgot = false;
@@ -378,7 +376,6 @@ public:
         strmL.clear();
         strmR.clear();
         limitedhelper.clear();
-
     }
 
     bool init(
@@ -388,14 +385,12 @@ public:
             IEngineRowAllocator *_allocatorR,
             IOutputMetaData * _outputmeta,
             bool *_abort,
-            CActivityBase *_activity,
             IMulticoreIntercept *_mcoreintercept)
     {
         //DebugBreak();
 
         assertex(_allocatorL);
         assertex(_allocatorR);
-        activity = _activity;
         mcoreintercept = _mcoreintercept;
         eofL = false;
         eofR = false;
@@ -576,8 +571,8 @@ public:
                                 nextR();
                             }
                             while (getR()&&(0 == compareR->docompare(prevright,nextright)));
-                            gotsz = helper->transform(ret, defaultLeft, denormRows.item(0), denormRows.ordinality(), (const void **)denormRows.base());
-                            denormRows.clear();
+                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            denormRows.kill();
                             break;
                         case TAKjoin:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
@@ -598,7 +593,7 @@ public:
                         const void *lhs = defaultLeft;
                         do {
                             if (!rightgroupmatched[rightidx]) {
-                                gotsz = helper->transform(denormTmp, lhs, rightgroup.item(rightidx), ++denormCount);
+                                gotsz = helper->transform(denormTmp, lhs, rightgroup.query(rightidx), ++denormCount);
                                 if (gotsz) {
                                     swapRows(denormTmp, ret);
                                     lhs = (const void *)ret.getSelf();
@@ -616,20 +611,20 @@ public:
                         assertex(!denormRows.ordinality());
                         do {
                             if (!rightgroupmatched[rightidx])
-                                denormRows.append(rightgroup.itemClear(rightidx));
+                                denormRows.append(rightgroup.getClear(rightidx));
                             ++rightidx;
                         }
                         while (rightidx<rightgroup.ordinality());
                         if (denormRows.ordinality())
                         {
-                            gotsz = helper->transform(ret, defaultLeft, denormRows.item(0), denormRows.ordinality(), (const void **)denormRows.base());
-                            denormRows.clear();
+                            gotsz = helper->transform(ret, defaultLeft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            denormRows.kill();
                         }
                         denormCount = 0;
                         break;
                     case TAKjoin:
                         if (!rightgroupmatched[rightidx]) 
-                            gotsz = helper->transform(ret, defaultLeft, rightgroup.item(rightidx));
+                            gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
                         rightidx++;
                         break;
                     default:
@@ -663,8 +658,8 @@ public:
                     fret.setown(denormLhs.getClear()); // denormLhs holding transform progress
                 else if ((TAKdenormalizegroup == kind || TAKhashdenormalizegroup == kind) && denormRows.ordinality())
                 {
-                    gotsz = helper->transform(ret, nextleft, denormRows.item(0), denormRows.ordinality(), (const void **)denormRows.base());
-                    denormRows.clear();
+                    gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                    denormRows.kill();
                 }
             }
             nextL();            // output outer once
@@ -685,7 +680,7 @@ public:
                         case TAKdenormalize:
                         case TAKhashdenormalize:
                         {
-                            size32_t sz = helper->transform(ret, denormLhs, rightgroup.item(rightidx), ++denormCount);
+                            size32_t sz = helper->transform(ret, denormLhs, rightgroup.query(rightidx), ++denormCount);
                             if (sz)
                             {
                                 denormLhs.setown(ret.finalizeRowClear(sz));
@@ -697,14 +692,14 @@ public:
                         case TAKdenormalizegroup:
                         case TAKhashdenormalizegroup:
                         {
-                            const void *rhsRow = rightgroup.item(rightidx);
+                            const void *rhsRow = rightgroup.query(rightidx);
                             LinkThorRow(rhsRow);
                             denormRows.append(rhsRow);
                             denormGot = true;
                             break;
                         }
                         case TAKjoin:
-                            gotsz = helper->transform(ret,nextleft,rightgroup.item(rightidx));
+                            gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
                         default:
                             throwUnexpected();
@@ -729,7 +724,7 @@ public:
         {
         case TAKdenormalizegroup:
         case TAKhashdenormalizegroup:
-            denormRows.clear(); // fall through
+            denormRows.kill(); // fall through
         case TAKdenormalize:
         case TAKhashdenormalize:
             outSz = 0;
@@ -773,14 +768,14 @@ public:
                         rightgroupmatched = NULL;
                         if (betweenjoin) {
                             unsigned nr = 0;
-                            while ((nr<rightgroup.ordinality())&&(btwcompLR.upper->docompare(nextleft,rightgroup.item(nr))>0)) 
+                            while ((nr<rightgroup.ordinality())&&(btwcompLR.upper->docompare(nextleft,rightgroup.query(nr))>0))
                                 nr++;
                             rightgroup.removeRows(0,nr);
                             rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
                             memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
                         }
                         else
-                            rightgroup.clear();
+                            rightgroup.kill();
 
                         // now add new
                         bool hitatmost=false;
@@ -840,7 +835,7 @@ public:
                             }
                             rightgroupmatched = (bool *)rightgroupmatchedbuf.clear().reserve(rightgroup.ordinality());
                             memset(rightgroupmatched,rightmatched?1:0,rightgroup.ordinality());
-                            if (!hitatmost&&rightgroup.ordinality()) 
+                            if (!hitatmost&&rightgroup.ordinality())
                                 state = JSmatch;
                             else if (cmp<0)
                                 ret.setown(outrow(Onext,Oouter));
@@ -856,10 +851,10 @@ public:
                     break;
                 case JSmatch: // matching left to right group       
                     if (mcoreintercept) {
-                        CThorRowArray leftgroup;
+                        CThorExpandingRowArray leftgroup(activity);
                         while (getL()) {
                             if (leftgroup.ordinality()) {
-                                int cmp = compareL->docompare(nextleft,leftgroup.item(leftgroup.ordinality()-1));
+                                int cmp = compareL->docompare(nextleft,leftgroup.query(leftgroup.ordinality()-1));
                                 if (cmp!=0)
                                     break;
                             }
@@ -870,7 +865,7 @@ public:
                         state = JScompare;
                     }
                     else if (rightidx<rightgroup.ordinality()) {
-                        if (helper->match(nextleft,rightgroup.item(rightidx))) 
+                        if (helper->match(nextleft,rightgroup.query(rightidx)))
                             ret.setown(outrow(Onext,Ogroup));
                         rightidx++;
                     }
@@ -890,7 +885,7 @@ public:
                     break;
                 case JSrightgrouponly: 
                     // right group
-                    if (rightidx<rightgroup.ordinality()) 
+                    if (rightidx<rightgroup.ordinality())
                         ret.setown(outrow(Oouter,Ogroup));
                     else  // all done
                         state = JScompare;
@@ -911,8 +906,9 @@ public:
 
 class SelfJoinHelper: public IJoinHelper, public CSimpleInterface
 {
+    CActivityBase &activity;
     ICompare *compare;
-    CThorRowArray curgroup;
+    CThorExpandingRowArray curgroup;
     unsigned leftidx;
     unsigned rightidx;
     bool leftmatched;
@@ -937,9 +933,7 @@ class SelfJoinHelper: public IJoinHelper, public CSimpleInterface
     unsigned abortlimit;
     unsigned keepremaining;
     OwnedConstThorRow nextrow;
-    CActivityBase *activity;
     Owned<IException> onFailException;
-    StringAttr activityName;
     activity_id activityId;
     Linked<IEngineRowAllocator> allocator;
     Linked<IEngineRowAllocator> allocatorin;
@@ -948,17 +942,12 @@ class SelfJoinHelper: public IJoinHelper, public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    SelfJoinHelper(IHThorJoinArg *_helper, const char *_activityName, activity_id _activityId, IEngineRowAllocator *_allocator)
-        : activityName(_activityName), allocator(_allocator)
+    SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
+        : activity(_activity), allocator(_allocator), curgroup(_activity)
     {
         helper = _helper;       
         outputmetaL = NULL;
-        activityId = _activityId;
         mcoreintercept = NULL;
-    }
-
-    ~SelfJoinHelper()
-    {
     }
 
     bool init(
@@ -968,12 +957,10 @@ public:
             IEngineRowAllocator *,
             IOutputMetaData * _outputmeta,
             bool *_abort,
-            CActivityBase *_activity,
             IMulticoreIntercept *_mcoreintercept)
     {
         //DebugBreak();
         assertex(_allocatorL);
-        activity = _activity;
         mcoreintercept = _mcoreintercept;
         eof = false;
         strm.set(_strm);
@@ -1061,7 +1048,7 @@ retry:
                 switch (state) {
                 case JSonfail:
                     if (leftidx<curgroup.ordinality()) {
-                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), curgroup.item(leftidx), defaultRight, onFailException.get());
+                        size32_t transformedSize = helper->onFailTransform(failret.ensureRow(), curgroup.query(leftidx), defaultRight, onFailException.get());
                         leftidx++;
                         if (transformedSize) {
                             if (mcoreintercept) {
@@ -1072,7 +1059,7 @@ retry:
                         }
                         break;
                     }
-                    else if (getRow() && (compare->docompare(nextrow,curgroup.item(0))==0)) {
+                    else if (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0)) {
                         size32_t transformedSize = helper->onFailTransform(failret, nextrow, defaultRight, onFailException.get());
                         next();
                         if (transformedSize) {
@@ -1089,7 +1076,7 @@ retry:
                     // fall through
                 case JSload:                            
                     // fill group
-                    curgroup.clear();
+                    curgroup.kill();
                     rightmatchedbuf.clear();
                     rightmatched = NULL;
                     leftmatched = false;
@@ -1097,7 +1084,7 @@ retry:
                     if (eof) 
                         return NULL;
                     unsigned ng;
-                    while (getRow()&&(((ng=curgroup.ordinality())==0)||(compare->docompare(nextrow,curgroup.item(0))==0))) {
+                    while (getRow()&&(((ng=curgroup.ordinality())==0)||(compare->docompare(nextrow,curgroup.query(0))==0))) {
                         if ((ng==abortlimit)||(ng==atmost)) {
                             if ((ng==abortlimit)&&((helper->getJoinFlags()&JFmatchAbortLimitSkips)==0)) {
                                 // abort
@@ -1114,7 +1101,7 @@ retry:
                                 {
                                     if (0 == (JFonfail & helper->getJoinFlags()))
                                     {
-                                        curgroup.clear();
+                                        curgroup.kill();
                                         throw;
                                     }
                                     onFailException.setown(_e);
@@ -1129,8 +1116,8 @@ retry:
                             // throw away group
                             do { // skip group
                                 next();
-                            } while (getRow() && (compare->docompare(nextrow,curgroup.item(0))==0));
-                            curgroup.clear();
+                            } while (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0));
+                            curgroup.kill();
                             rightmatchedbuf.clear();
                             eof = !nextrow.get();
                             goto retry;
@@ -1143,11 +1130,11 @@ retry:
                         eof = 0;
                         return NULL;
                     }
-                    if (activity&&(curgroup.ordinality() > INITIAL_SELFJOIN_MATCH_WARNING_LEVEL)) {
-                        Owned<IThorException> e = MakeActivityWarning(&activity->queryContainer(), TE_SelfJoinMatchWarning, "Exceeded initial match limit");
+                    if (curgroup.ordinality() > INITIAL_SELFJOIN_MATCH_WARNING_LEVEL) {
+                        Owned<IThorException> e = MakeActivityWarning(&activity, TE_SelfJoinMatchWarning, "Exceeded initial match limit");
                         e->setAction(tea_warning);
                         e->queryData().append((unsigned)curgroup.ordinality());
-                        activity->fireException(e);
+                        activity.fireException(e);
                     }
                     leftidx = 0;
                     rightidx = 0;
@@ -1159,13 +1146,13 @@ retry:
                     }
                     break;
                 case JSmatch: {
-                        const void *l = curgroup.item(leftidx); // leftidx should be in range here
+                        const void *l = curgroup.query(leftidx); // leftidx should be in range here
                         if (mcoreintercept) {
                             mcoreintercept->addWork(&curgroup,NULL);
                             state = JSload;
                         }
                         else if ((rightidx<curgroup.ordinality())&&(!firstonlyR||(rightidx==0))) {
-                            const void *r = curgroup.item(rightidx);
+                            const void *r = curgroup.query(rightidx);
                             if (helper->match(l,r)) {
                                 if (keepremaining>0) {
                                     if (!exclude) {
@@ -1207,12 +1194,12 @@ retry:
                     // must be left outer after atmost to get here
                     if (leftidx<curgroup.ordinality()) {
                         RtlDynamicRowBuilder rtmp(allocator);
-                        size32_t sz = helper->transform(rtmp, curgroup.item(leftidx), defaultRight);
+                        size32_t sz = helper->transform(rtmp, curgroup.query(leftidx), defaultRight);
                         if (sz)
                             ret.setown(rtmp.finalizeRowClear(sz));
                         leftidx++;
                     }
-                    else if (getRow() && (compare->docompare(nextrow,curgroup.item(0))==0)) {
+                    else if (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0)) {
                         RtlDynamicRowBuilder rtmp(allocator);
                         size32_t sz = helper->transform(rtmp, nextrow, defaultRight);
                         if (sz)
@@ -1227,7 +1214,7 @@ retry:
                     if (rightouter&&(rightidx<curgroup.ordinality())) {
                         if (!rightmatched[rightidx]) {
                             RtlDynamicRowBuilder rtmp(allocator);
-                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.item(rightidx));
+                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.query(rightidx));
                             if (sz)
                                 ret.setown(rtmp.finalizeRowClear(sz));
                         }
@@ -1249,9 +1236,9 @@ retry:
     virtual rowcount_t getRhsProgress() const { return progressCount; }
 };
 
-IJoinHelper *createDenormalizeHelper(IHThorDenormalizeArg *helper, const char *activityName, ThorActivityKind kind, activity_id activityId, IEngineRowAllocator *allocator)
+IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IEngineRowAllocator *allocator)
 {
-    return new CJoinHelper(helper,activityName,kind,activityId,allocator);
+    return new CJoinHelper(activity, helper, allocator);
 }
 
 
@@ -1289,7 +1276,7 @@ public:
     }
 
 
-    bool getGroup(CThorRowArray &group,const void *left)
+    bool getGroup(CThorExpandingRowArray &group,const void *left)
     {
         // this could be improved!
 
@@ -1396,6 +1383,7 @@ ILimitedCompareHelper *createLimitedCompareHelper()
 class CMultiCoreJoinHelperBase: extends CInterface, implements IJoinHelper, implements IMulticoreIntercept
 {
 public:
+	CActivityBase &activity;
     IJoinHelper *jhelper;
     bool leftouter;  
     bool rightouter;  
@@ -1425,35 +1413,37 @@ public:
 
     class cWorkItem
     {
+		CActivityBase &activity;
     public:
-        CThorRowArray lgroup;
-        CThorRowArray rgroup;
+        CThorExpandingRowArray lgroup;
+        CThorExpandingRowArray rgroup;
         const void *row;
-        inline cWorkItem(CThorRowArray *_lgroup,CThorRowArray *_rgroup)
+        inline cWorkItem(CActivityBase &_activity, CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
+			: activity(_activity), lgroup(_activity), rgroup(_activity)
         {
             set(_lgroup,_rgroup);
         }
-        inline cWorkItem()
+		inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity), rgroup(_activity)
         {
             clear();
         }
 
-        inline void set(CThorRowArray *_lgroup,CThorRowArray *_rgroup)
+        inline void set(CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
         {
             if (_lgroup)
                 lgroup.transfer(*_lgroup);
             else
-                lgroup.clear();
+                lgroup.kill();
             if (_rgroup)
                 rgroup.transfer(*_rgroup);
             else
-                rgroup.clear();
+                rgroup.kill();
             row = NULL;
         }
         inline void set(const void *_row)
         {
-            lgroup.clear();
-            rgroup.clear();
+            lgroup.kill();
+            rgroup.kill();
             row = _row;
         }
         inline void clear()
@@ -1478,21 +1468,22 @@ public:
     void doMatch(cWorkItem &work,SimpleInterThreadQueueOf<cOutItem,false> &outqueue) 
     {
         MemoryBuffer rmatchedbuf;  
-        CThorRowArray &rgroup = (kind==TAKselfjoin)?work.lgroup:work.rgroup;
+        CThorExpandingRowArray &rgroup = (kind==TAKselfjoin)?work.lgroup:work.rgroup;
         bool *rmatched;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
             memset(rmatched,0,rgroup.ordinality());
         }
-        ForEachItemIn(leftidx,work.lgroup) {
+        ForEachItemIn(leftidx,work.lgroup)
+        {
             bool lmatched = !leftouter;
-            ForEachItemIn(rightidx,rgroup) {
-                if (helper->match(work.lgroup.item(leftidx),rgroup.item(rightidx))) {
+            for (unsigned rightidx=0; rightidx<rgroup.ordinality(); rightidx++) {
+                if (helper->match(work.lgroup.query(leftidx),rgroup.query(rightidx))) {
                     lmatched = true;
                     if (rightouter) 
                         rmatched[rightidx] = true;
                     RtlDynamicRowBuilder ret(allocator);
-                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.item(leftidx),rgroup.item(rightidx));
+                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx));
                     if (sz) 
                         outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
 
@@ -1500,7 +1491,7 @@ public:
             }
             if (!lmatched) {
                 RtlDynamicRowBuilder ret(allocator);
-                size32_t sz =  helper->transform(ret, work.lgroup.item(leftidx), defaultRight);
+                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight);
                 if (sz) 
                     outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
             }   
@@ -1509,7 +1500,7 @@ public:
             ForEachItemIn(rightidx2,rgroup) {
                 if (!rmatched[rightidx2]) {
                     RtlDynamicRowBuilder ret(allocator);
-                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.item(rightidx2));
+                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2));
                     if (sz) 
                         outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
                 }
@@ -1517,10 +1508,10 @@ public:
         }
     }
 
-    CMultiCoreJoinHelperBase(unsigned numthreads,IJoinHelper *_jhelper,IHThorJoinArg *_helper,IEngineRowAllocator *_allocator, ThorActivityKind _kind)
-        : allocator(_allocator)
+    CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
+        : activity(_activity), allocator(_allocator)
     {
-        kind = _kind;
+		kind = activity.queryContainer().getKind();
         jhelper = _jhelper;
         helper = _helper;
         unsigned flags = helper->getJoinFlags();
@@ -1538,11 +1529,10 @@ public:
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
             bool *_abort,
-            CActivityBase *activity,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!jhelper->init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,activity,this))
+        if (!jhelper->init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
             return false;
         if (rightouter) {
             RtlDynamicRowBuilder r(allocatorL);
@@ -1606,15 +1596,15 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
 
     class cWorker: public Thread
     {
+        CMultiCoreJoinHelper *parent;
     public:
         cWorkItem work;
         Semaphore workready;
         Semaphore workwait;
         SimpleInterThreadQueueOf<cOutItem,false> outqueue;
 
-        CMultiCoreJoinHelper *parent;
-        cWorker()
-            : Thread("CMultiCoreJoinHelper::cWorker")
+		cWorker(CActivityBase &activity, CMultiCoreJoinHelper *_parent)
+            : Thread("CMultiCoreJoinHelper::cWorker"), parent(_parent), work(activity)
         {
         }
 
@@ -1655,20 +1645,20 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             return 0;
 
         }
-    } *workers;
+    } **workers;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CMultiCoreJoinHelper(unsigned numthreads,IJoinHelper *_jhelper,IHThorJoinArg *_helper,IEngineRowAllocator *_allocator, ThorActivityKind _kind)
-        : CMultiCoreJoinHelperBase(numthreads,_jhelper,_helper,_allocator,_kind)
+    CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
+        : CMultiCoreJoinHelperBase(activity, numthreads, _jhelper, _helper, _allocator)
     {
         reader.parent = this;
-        workers = new cWorker[numthreads];
+        workers = new cWorker *[numthreads];
         curin = 0;
         curout = 0;
-        for (unsigned i=0;i<numthreads;i++) 
-            workers[i].parent = this;
+        for (unsigned i=0;i<numthreads;i++)
+			workers[i] = new cWorker(activity, this);
     }
 
     ~CMultiCoreJoinHelper()
@@ -1676,10 +1666,12 @@ public:
         if (!reader.join(1000*60))
             ERRLOG("~CMultiCoreJoinHelper reader join timed out");
         for (unsigned i=0;i<numworkers;i++) {
-            if (!workers[i].join(1000*60))
+            if (!workers[i]->join(1000*60))
                 ERRLOG("~CMultiCoreJoinHelper worker[%d] join timed out",i);
         }
-        delete [] workers;
+        for (unsigned i=0;i<numworkers;i++) 
+            delete workers[i];
+        delete workers;
         ::Release(jhelper);
     }
 
@@ -1691,15 +1683,14 @@ public:
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
             bool *_abort,
-            CActivityBase *activity,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,activity,this))
+        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
             return false;
         for (unsigned i=0;i<numworkers;i++) {
-            workers[i].outqueue.setLimit(1000);  // shouldn't be that large but just in case
-            workers[i].start();
+            workers[i]->outqueue.setLimit(1000);  // shouldn't be that large but just in case
+            workers[i]->start();
         }
         reader.start();
         return true;
@@ -1711,7 +1702,7 @@ public:
         loop {
             if (eos)
                 return NULL;
-            item = workers[curout].outqueue.dequeue(); 
+            item = workers[curout]->outqueue.dequeue(); 
             if (exc.get()) {
                 CriticalBlock b(sect);
                 throw exc.getClear();
@@ -1728,24 +1719,24 @@ public:
         return ret;
     }
 
-    void addWork(CThorRowArray *lgroup,CThorRowArray *rgroup)
+    void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
         if (!lgroup||!lgroup->ordinality()) {
             PROGLOG("hello");
         }
-        cWorker &worker = workers[curin];
-        worker.workready.wait();
-        workers[curin].work.set(lgroup,rgroup);
-        worker.workwait.signal();
+        cWorker *worker = workers[curin];
+        worker->workready.wait();
+        workers[curin]->work.set(lgroup,rgroup);
+        worker->workwait.signal();
         curin = (curin+1)%numworkers;
     }
 
     void addRow(const void *row)
     {
-        cWorker &worker = workers[curin];
-        worker.workready.wait();
-        workers[curin].work.set(row);
-        worker.workwait.signal();
+        cWorker *worker = workers[curin];
+        worker->workready.wait();
+        workers[curin]->work.set(row);
+        worker->workwait.signal();
         curin = (curin+1)%numworkers;
     }
 
@@ -1789,7 +1780,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
                 parent->setException(e,"CMulticoreUnorderedJoinHelper::cReader");
             }
             for (unsigned i=0;i<parent->numworkers;i++) 
-                parent->workqueue.enqueue(new cWorkItem(NULL,NULL));
+                parent->workqueue.enqueue(new cWorkItem(parent->activity, NULL, NULL));
             PROGLOG("CMulticoreUnorderedJoinHelper::cReader exit");
             return 0;
         }
@@ -1798,11 +1789,11 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
 
     class cWorker: public Thread
     {
-    public:
         CMultiCoreUnorderedJoinHelper *parent;
+    public:
         SimpleInterThreadQueueOf<cOutItem,false> outqueue;          // used in ordered
-        cWorker()
-            : Thread("CMulticoreUnorderedJoinHelper::cWorker")
+        cWorker(CMultiCoreUnorderedJoinHelper *_parent)
+            : Thread("CMulticoreUnorderedJoinHelper::cWorker"), parent(_parent)
         {
         }
         int run()
@@ -1831,19 +1822,19 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             return 0;
 
         }
-    } *workers;
+    } **workers;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CMultiCoreUnorderedJoinHelper(unsigned numthreads,IJoinHelper *_jhelper,IHThorJoinArg *_helper,IEngineRowAllocator *_allocator, ThorActivityKind _kind)
-        : CMultiCoreJoinHelperBase(numthreads,_jhelper,_helper,_allocator,_kind)
+    CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
+        : CMultiCoreJoinHelperBase(activity, numthreads, _jhelper, _helper, _allocator)
     {
         reader.parent = this;
         stoppedworkers = 0;
-        workers = new cWorker[numthreads];
+        workers = new cWorker *[numthreads];
         for (unsigned i=0;i<numthreads;i++) 
-            workers[i].parent = this;
+            workers[i] = new cWorker(this);
     }
 
     ~CMultiCoreUnorderedJoinHelper()
@@ -1851,14 +1842,16 @@ public:
         if (!reader.join(1000*60))
             ERRLOG("~CMulticoreUnorderedJoinHelper reader join timed out");
         for (unsigned i=0;i<numworkers;i++) {
-            if (!workers[i].join(1000*60))
+            if (!workers[i]->join(1000*60))
                 ERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
         }
         while (outqueue.ordinality())
             delete outqueue.dequeue();
         while (workqueue.ordinality())
             delete workqueue.dequeue();
-        delete [] workers;
+        for (unsigned i=0;i<numworkers;i++) 
+            delete workers[i];
+        delete workers;
         ::Release(jhelper);
     }
 
@@ -1870,16 +1863,15 @@ public:
             IEngineRowAllocator *allocatorR,
             IOutputMetaData * outputmetaL,   // for XML output 
             bool *_abort,
-            CActivityBase *activity,
             IMulticoreIntercept *_mcoreintercept
         )
     {
-        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,activity,this))
+        if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
             return false;
         workqueue.setLimit(numworkers+1);
         outqueue.setLimit(numworkers*1000);  // shouldn't be that large but just in case
         for (unsigned i=0;i<numworkers;i++)
-            workers[i].start();
+            workers[i]->start();
         reader.start();
         return true;
     }
@@ -1911,9 +1903,9 @@ public:
         return ret;
     }
 
-    void addWork(CThorRowArray *lgroup,CThorRowArray *rgroup)
+    void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
-        cWorkItem *item = new cWorkItem(lgroup,rgroup);
+        cWorkItem *item = new cWorkItem(activity, lgroup, rgroup);
         workqueue.enqueue(item);
     }
 
@@ -1927,7 +1919,7 @@ public:
 };
 
 
-IJoinHelper *createJoinHelper(IHThorJoinArg *helper, const char *activityName, activity_id activityId, IEngineRowAllocator *allocator,bool parallelmatch,bool unsortedoutput)
+IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator, bool parallelmatch, bool unsortedoutput)
 {
     // 
 #ifdef TEST_PARALLEL_MATCH
@@ -1936,17 +1928,17 @@ IJoinHelper *createJoinHelper(IHThorJoinArg *helper, const char *activityName, a
 #ifdef TEST_UNSORTED_OUT
     unsortedoutput = true;
 #endif
-    IJoinHelper *jhelper = new CJoinHelper(helper,activityName,TAKjoin,activityId,allocator);
+    IJoinHelper *jhelper = new CJoinHelper(activity, helper, allocator);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
     unsigned numthreads = getAffinityCpus();
     if (unsortedoutput)
-        return new CMultiCoreUnorderedJoinHelper(numthreads,jhelper,helper,allocator,TAKjoin);
-    return new CMultiCoreJoinHelper(numthreads,jhelper,helper,allocator,TAKjoin);
+        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, jhelper, helper, allocator);
+    return new CMultiCoreJoinHelper(activity, numthreads, jhelper, helper, allocator);
 }
 
 
-IJoinHelper *createSelfJoinHelper(IHThorJoinArg *helper, const char *activityName, activity_id activityId, IEngineRowAllocator *allocator,bool parallelmatch,bool unsortedoutput)
+IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator, bool parallelmatch, bool unsortedoutput)
 {
 #ifdef TEST_PARALLEL_MATCH
     parallelmatch = true;
@@ -1954,13 +1946,13 @@ IJoinHelper *createSelfJoinHelper(IHThorJoinArg *helper, const char *activityNam
 #ifdef TEST_UNSORTED_OUT
     unsortedoutput = true;
 #endif
-    IJoinHelper *jhelper = new SelfJoinHelper(helper,activityName,activityId,allocator);
+    IJoinHelper *jhelper = new SelfJoinHelper(activity, helper, allocator);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
     unsigned numthreads = getAffinityCpus();
     if (unsortedoutput)
-        return new CMultiCoreUnorderedJoinHelper(numthreads,jhelper,helper,allocator,TAKselfjoin);
-    return new CMultiCoreJoinHelper(numthreads,jhelper,helper,allocator,TAKselfjoin);
+        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, jhelper, helper, allocator);
+    return new CMultiCoreJoinHelper(activity, numthreads, jhelper, helper, allocator);
 }
 
 

@@ -23,6 +23,7 @@
 #include "commonext.hpp"
 #include "thorplugin.hpp"
 #include "thcodectx.hpp"
+#include "thmem.hpp"
 #include "thorport.hpp"
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"

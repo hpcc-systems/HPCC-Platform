@@ -17,7 +17,6 @@
 ############################################################################## */
 
 #include "thmerge.ipp"
-#include "thmem.hpp"
 #include "tsorta.hpp"
 
 #ifdef _DEBUG
@@ -60,7 +59,7 @@ public:
         CMasterActivity::process();     
         IHThorMergeArg *helper = (IHThorMergeArg *)queryHelper();   
         Owned<IRowInterfaces> rowif = createRowInterfaces(helper->queryOutputMeta(),queryActivityId(),queryCodeContext());
-        CThorKeyArray sample(rowif,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
+        CThorKeyArray sample(*this, rowif,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
 
         unsigned n = container.queryJob().querySlaves();
         mptag_t *replytags = new mptag_t[n];

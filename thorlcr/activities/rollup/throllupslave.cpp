@@ -24,17 +24,10 @@
 #include "thbufdef.hpp"
 #include "thexception.hpp"
 
-interface IDedupAllHelper : extends IInterface
+class CDedupAllHelper : public CSimpleInterface, implements IRowStream
 {
-    virtual void init(IThorDataLink * in, IHThorDedupArg * helper, bool keepLeft, bool * abort, IStopInput *iStopInput) = 0;
-    virtual bool calcNextDedupAll() = 0;
-    virtual const void *nextRow() = 0;
-};
-
-class BaseDedupAllHelper : public CSimpleInterface, implements IDedupAllHelper
-{
-protected:
     CActivityBase *activity;
+
     unsigned dedupCount;
     const void ** dedupArray;
     unsigned dedupIdx;
@@ -44,9 +37,13 @@ protected:
     bool * abort;
     IStopInput *iStopInput;
 
-    virtual void remove(unsigned idx) = 0;
-    virtual const void *getclear(unsigned idx) = 0;
+    Owned<IThorRowLoader> rowLoader;
+    CThorExpandingRowArray rows;
 
+    void remove(unsigned idx)
+    {
+        OwnedConstThorRow row = rows.getClear(idx); // discard
+    }
     void dedupAll()
     {
         unsigned idxL, idxR;
@@ -86,15 +83,15 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    BaseDedupAllHelper(CActivityBase *_activity) : activity(_activity)
+    CDedupAllHelper(CActivityBase *_activity) : activity(_activity), rows(*_activity)
     {
         in = NULL;
         helper = NULL;
         abort = NULL;
+        rowLoader.setown(createThorRowLoader(*activity, NULL, false, rc_allMem));
     }
 
-// IDedupAllHelper
-    virtual void init(IThorDataLink * _in, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
+    void init(IThorDataLink * _in, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
     {
         in = _in;
         helper = _helper;
@@ -108,127 +105,44 @@ public:
 
         dedupIdx = dedupCount = 0;
     }
-
-    const void *nextRow()
-    {
-        while(dedupIdx < dedupCount)
-        {
-            OwnedConstThorRow r = getclear(dedupIdx++);
-            if(r)
-                return r.getClear();
-        }
-        return NULL;
-    }
-};
-
-
-
-
-class DedupAllHelper : public BaseDedupAllHelper
-{
-    CThorRowArray rows;
-    bool first;
-
-protected:
-    virtual void remove(unsigned idx) { rows.setNull(idx); }
-    virtual const void *getclear(unsigned idx) { return rows.itemClear(idx); }
-
-public:
-    DedupAllHelper(CActivityBase *activity) : BaseDedupAllHelper(activity)
-    {
-        first = true;
-    }
-
-    ~DedupAllHelper()
-    {
-    }
-
-    virtual bool calcNextDedupAll()
+    bool calcNextDedupAll(bool groupOp)
     {
 #if THOR_TRACE_LEVEL >=5
         ActPrintLog(activity, "DedupAllHelper::calcNextDedupAll");
 #endif
         dedupIdx = 0;
-        if(first)           // one call only
-        {
+        rows.kill();
 
-            first = false;
-            rows.setSizing(true,true);
-            dedupCount = rows.load(*in, true, *abort, NULL); // JCSMORE should 'overflowed' be use & a setMaxTotal at least in GroupDedupAllHelper case?
-            ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
-            //if (overflowed) // JCSMORE
-            //  throw MakeActivityException(activity, TE_TooMuchData, "overflow error?");
+        // JCSMORE - could do in chunks and merge if > mem
+        Owned<IRowStream> rowStream = groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows);
+        dedupCount = rows.ordinality();
+        ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
 
-            if (iStopInput)
-                iStopInput->stopInput();
-            dedupArray = (const void **)rows.base();
-            dedupAll();
-            return true;
-        }
-        else
+        if (iStopInput)
+            iStopInput->stopInput();
+
+        if (0 == dedupCount)
         {
             dedupArray = NULL;
-            dedupCount = 0;
             return false;
         }
+        dedupArray = rows.getRowArray();
+        dedupAll();
+        return true;
     }
-};
-
-class GroupDedupAllHelper : public BaseDedupAllHelper
-{
-    CThorRowArray rows;
-    bool first;
-
-protected:
-    virtual void remove(unsigned idx) { rows.setNull(idx); }
-    virtual const void *getclear(unsigned idx) 
-    { 
-        return rows.itemClear(idx); 
-    }
-
-public:
-    GroupDedupAllHelper(CActivityBase *activity) : BaseDedupAllHelper(activity)
-    { 
-        first = true;
-    }
-    virtual bool calcNextDedupAll()
+// IRowStream
+    virtual const void *nextRow()
     {
-#if THOR_TRACE_LEVEL >= 10
-        ActPrintLog(activity, "GroupDedupAllHelper::calcNextDedupAll");
-#endif
-        dedupIdx = 0;
-        if (first) {
-            rows.setSizing(true,true);
-            first = false;
-        }
-        rows.clear();
-        try {
-            dedupCount = rows.load(*in,false);
-            ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
-            if (dedupCount) {
-                dedupArray = (const void **)rows.base();
-                dedupAll();
-                return true;
-            }
-        }
-        catch (IException *e)
+        while(dedupIdx < dedupCount)
         {
-            IThorException *e2 = MakeActivityException(activity, e, NULL);
-            e->Release();
-            throw e2;
+            OwnedConstThorRow r = rows.getClear(dedupIdx++);
+            if(r)
+                return r.getClear();
         }
-        dedupArray = NULL;
-        return false;
+        return NULL;
     }
+	virtual void stop() { }
 };
-
-IDedupAllHelper * createDedupAllHelper(CActivityBase *activity, bool grouped) 
-{ 
-    if(grouped)
-        return new GroupDedupAllHelper(activity);
-    else
-        return new DedupAllHelper(activity);
-}
 
 class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
 {
@@ -352,7 +266,7 @@ class CDedupSlaveActivity : public CDedupRollupBaseActivity, public CThorDataLin
     bool keepLeft;
     unsigned numToKeep;
     bool compareAll;
-    Linked<IDedupAllHelper> dedupHelper;
+    Owned<CDedupAllHelper> dedupHelper;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -368,7 +282,7 @@ public:
     {
         CDedupRollupBaseActivity::init(data, slaveData);
         appendOutputLinked(this);   // adding 'me' to outputs array
-        ddhelper = static_cast <IHThorDedupArg *>   (queryHelper());
+        ddhelper = static_cast <IHThorDedupArg *>(queryHelper());
         keepLeft = ddhelper->keepLeft();
         numToKeep = ddhelper->numToKeep();
         compareAll = ddhelper->compareAll();
@@ -394,12 +308,12 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDedupRollupBaseActivity::start();
-        if(compareAll)
+        if (compareAll)
         {           
             assertex(!global);      // dedup(),local,all only supported
-            dedupHelper.setown(createDedupAllHelper(this, groupOp));
-            dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, this);
-            dedupHelper->calcNextDedupAll();
+            dedupHelper.setown(new CDedupAllHelper(this));
+            dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
+            dedupHelper->calcNextDedupAll(groupOp);
         }
         dataLinkStart(id, container.queryId());
     }
@@ -419,17 +333,21 @@ public:
         if (eog())
             return NULL;
 
-        if(compareAll)
+        if (compareAll)
         {
             loop
             {
                 OwnedConstThorRow row = dedupHelper->nextRow();
-                if (row) {
+                if (row)
+                {
                     dataLinkIncrement();
                     return row.getClear();
                 }
-                if(!dedupHelper->calcNextDedupAll())
+                else if (!groupOp || !dedupHelper->calcNextDedupAll(true))
+                {
+                    eos = true;
                     return NULL;
+                }
             }
         }
 
@@ -587,7 +505,7 @@ public:
 class CRollupGroupSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
     IHThorRollupGroupArg *helper;
-    CThorRowArray group;
+    Owned<IThorRowLoader> groupLoader;
     bool eoi;
     IThorDataLink *input;
 
@@ -601,6 +519,7 @@ public:
     {
         helper = (IHThorRollupGroupArg *)queryHelper();
         appendOutputLinked(this);   // adding 'me' to outputs array
+        groupLoader.setown(createThorRowLoader(*this, NULL, false, rc_allMem));
     }
     virtual void start()
     {
@@ -620,15 +539,16 @@ public:
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (!eoi)
         {
-            unsigned count = group.load(*input, false);
+            CThorExpandingRowArray rows(*this);
+            groupLoader->loadGroup(input, abortSoon, &rows);
+            unsigned count = rows.ordinality();
             if (count)
             {
                 RtlDynamicRowBuilder row(queryRowAllocator());
-                size32_t sz = helper->transform(row, count, (const void **)group.base());
-                group.clear();
+                size32_t sz = helper->transform(row, count, rows.getRowArray());
+                rows.kill();
                 if (sz)
                 {
-
                     dataLinkIncrement();
                     return row.finalizeRowClear(sz);
                 }

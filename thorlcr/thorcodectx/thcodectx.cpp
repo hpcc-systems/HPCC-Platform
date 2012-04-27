@@ -28,7 +28,6 @@
 #include "dasess.hpp"
 #include "dadfs.hpp"
 #include "thorxmlread.hpp"
-#include "thmem.hpp"
 #include "thgraph.hpp"
 #include "thorxmlwrite.hpp"
 
@@ -114,7 +113,7 @@ char *CThorCodeContextBase::getExpandLogicalName(const char * logicalName)
 
 IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
 { 
-    return allocatorTable.lookupCreate(activityId, meta);
+    return job.getRowAllocator(meta, activityId);
 }
 
 ILocalGraph *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
