@@ -2295,7 +2295,7 @@ void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
     case no_attr_link:
         return;
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
             return;
         max = 1;        // by now there should be no default values as children of fields.
         break;
@@ -2726,8 +2726,11 @@ IHqlExpression * queryNextMultiLevelDataset(IHqlExpression * expr, bool followAc
     }
 
     IHqlExpression * root = queryRoot(expr);
-    if (!root || (root->getOperator() != no_select) || (!followActiveSelectors && !root->hasProperty(newAtom)))
+    if (!root || (root->getOperator() != no_select))
         return NULL;
+    if (!followActiveSelectors && !isNewSelector(root))
+        return NULL;
+
     IHqlExpression * ds = root->queryChild(0);
     loop
     {
@@ -4269,10 +4272,6 @@ IHqlExpression * SplitDatasetAttributeTransformer::createTransformed(IHqlExpress
     case no_globalscope:
     case no_nothor:
         return LINK(expr);
-//  case NO_AGGREGATE:
-//  case no_createset:
-        //See comment in analyse above
-//      return LINK(expr);
     }
 
     return NewHqlTransformer::createTransformed(expr);

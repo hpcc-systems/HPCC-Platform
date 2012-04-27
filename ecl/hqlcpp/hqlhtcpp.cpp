@@ -5763,7 +5763,7 @@ IReferenceSelector * HqlCppTranslator::buildReference(BuildCtx & ctx, IHqlExpres
             IHqlExpression * ds = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
             Owned<IReferenceSelector> selector;
-            if (expr->hasProperty(newAtom))
+            if (isNewSelector(expr))
             {
                 //could optimize selection from a project of an in-scope dataset.
                 if (((ds->getOperator() == no_newusertable) || (ds->getOperator() == no_hqlproject)) &&
@@ -13839,22 +13839,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNew(BuildCtx & ctx, IHql
     if (options.useLinkedNormalize)
         return doBuildActivityNormalizeLinkedChild(ctx, expr);
 
-    IHqlExpression * ds = expr->queryChild(0);
+    bool isNew;
+    IHqlExpression * ds = querySelectorDataset(expr, isNew);
 //  if (!isContextDependent(ds) && !containsActiveDataset(ds))
 //      return doBuildActivityChildDataset(ctx, expr);
     if (canEvaluateInline(&ctx, ds))
         return doBuildActivityChildDataset(ctx, expr);
 
     //Convert the ds.x to normalize(ds, left.x, transform(right));
-    IHqlExpression * field = expr->queryChild(1); 
-    OwnedHqlExpr selSeq = createDummySelectorSequence();
+    OwnedHqlExpr selSeq = createSelectorSequence();
     OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-    OwnedHqlExpr selector = createSelectExpr(LINK(left), LINK(field));
+    OwnedHqlExpr selector = replaceExpression(expr, ds, left);//createSelectExpr(LINK(left), LINK(field));
     OwnedHqlExpr transformedExpr;
-    if (field->isDatarow())
+    if (expr->isDatarow())
     {
         OwnedHqlExpr transform = createTransformFromRow(selector);
-        transformedExpr.setown(createDatasetF(no_hqlproject, LINK(ds), LINK(transform), LINK(selSeq), NULL));       // MORE: UID
+        if (ds->isDatarow())
+            transformedExpr.setown(createRowF(no_projectrow, LINK(ds), LINK(transform), LINK(selSeq), NULL));
+        else
+            transformedExpr.setown(createDatasetF(no_hqlproject, LINK(ds), LINK(transform), LINK(selSeq), NULL));
     }
     else
     {

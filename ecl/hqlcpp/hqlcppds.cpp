@@ -479,7 +479,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
             IHqlExpression * field = expr->queryChild(1);
 #endif
             Owned<IReferenceSelector> selector;
-            if (expr->hasProperty(newAtom))
+            if (isNewSelector(expr))
                 selector.setown(buildNewRow(ctx, expr->queryChild(0)));
             else
                 selector.setown(buildActiveRow(ctx, expr->queryChild(0)));
@@ -570,7 +570,7 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
 #ifdef _DEBUG
             IHqlExpression * field = expr->queryChild(1);
 #endif
-            Owned<IReferenceSelector> selector = buildNewOrActiveRow(ctx, expr->queryChild(0), expr->hasProperty(newAtom));
+            Owned<IReferenceSelector> selector = buildNewOrActiveRow(ctx, expr->queryChild(0), isNewSelector(expr));
             return selector->select(ctx, expr);
         }
     case no_id2blob:

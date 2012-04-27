@@ -500,7 +500,7 @@ public:
     ITypeInfo *promoteSetToSameType(HqlExprArray & exprs, attribute &errpos);
     ITypeInfo * queryElementType(const attribute & errpos, IHqlExpression * list);
     IHqlExpression *createINExpression(node_operator op, IHqlExpression *expr, IHqlExpression *set, attribute &errpos);
-    IHqlExpression * createLoopCondition(IHqlExpression * left, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq);
+    IHqlExpression * createLoopCondition(IHqlExpression * left, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq, IHqlExpression * rowsid);
     void setTemplateAttribute();
     void warnIfFoldsToConstant(IHqlExpression * expr, const attribute & errpos);
     void warnIfRecordPacked(IHqlExpression * expr, const attribute & errpos);

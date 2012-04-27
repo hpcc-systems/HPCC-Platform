@@ -7405,7 +7405,7 @@ simpleDataSet
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), NULL, $14.queryExpr());
+                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), NULL, $14.queryExpr(), $12.queryExpr());
                             IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $10.getExpr(), createComma($12.getExpr(), $14.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);
@@ -7422,7 +7422,7 @@ simpleDataSet
                             IHqlExpression * counter = $11.getExpr();
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), $8.getExpr(), $16.queryExpr());
+                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), $8.getExpr(), $16.queryExpr(), $14.queryExpr());
                             IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $12.getExpr(), createComma($14.getExpr(), $16.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);

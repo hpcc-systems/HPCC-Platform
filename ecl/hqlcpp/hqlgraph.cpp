@@ -312,7 +312,7 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
         dependencyKind = NULL;
         break;
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
         {
             last = first;
         }
@@ -490,8 +490,7 @@ bool LogicalGraphCreator::gatherGraphActivities(IHqlExpression * expr, HqlExprAr
     {
     case no_select:
         {
-            IHqlExpression * attr = expr->queryProperty(newAtom);
-            if (attr)
+            if (isNewSelector(expr))
             {
                 if (exprIsGlobal(expr))
                     createRootGraphActivity(expr);
