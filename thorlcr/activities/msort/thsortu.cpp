@@ -979,7 +979,6 @@ public:
         strm.set(_strm);
         assertex(strmR==NULL);
         allocatorin.set(_allocatorL);
-        strm->Link();
         state = JSload;
         unsigned flags = helper->getJoinFlags();
         assertex((flags&JFslidingmatch)==0);
