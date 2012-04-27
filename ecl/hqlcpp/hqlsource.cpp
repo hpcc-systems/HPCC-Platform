@@ -926,16 +926,19 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             break;
         }
     case no_select:
-        if (expr->hasProperty(newAtom) && isMultiLevelDatasetSelector(expr, false))
         {
-            IHqlExpression * ds = expr->queryChild(0);
-            if (!translator.resolveSelectorDataset(instance->startctx, ds))
+            bool isNew;
+            IHqlExpression * ds = querySelectorDataset(expr, isNew);
+            if (isNew && isMultiLevelDatasetSelector(expr, false))
             {
-                analyse(ds);
-                isNormalize = true;
+                if (!translator.resolveSelectorDataset(instance->startctx, ds))
+                {
+                    analyse(ds);
+                    isNormalize = true;
+                }
             }
+            break;
         }
-        break;
     case no_stepped:
         if ((translator.getTargetClusterType() == ThorCluster) && translator.queryOptions().checkThorRestrictions)
             throwError(HQLERR_ThorNotSupportStepping);
@@ -1573,7 +1576,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
 void SourceBuilder::doBuildAggregateSelectIterator(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    if (expr->hasProperty(newAtom))
+    if (isNewSelector(expr))
         buildTransformElements(ctx, ds, false);
     Owned<IHqlCppDatasetCursor> cursor = translator.createDatasetSelector(ctx, expr->queryNormalizedSelector());
     cursor->buildIterateLoop(ctx, false);

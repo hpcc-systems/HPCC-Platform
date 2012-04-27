@@ -147,13 +147,10 @@ static bool isComplexExpansion(IHqlExpression * expr)
     {
     case no_select:
         {
-            while (expr->getOperator() == no_select)
-            {
-                if (!expr->hasProperty(newAtom))
-                    return false;
-                expr = expr->queryChild(0);
-            }
-            return true;
+            bool isNew;
+            IHqlExpression * ds = querySelectorDataset(expr, isNew);
+            //A select from a create row is likely to be optimized
+            return isNew && (ds->getOperator() != no_createrow);
         }
     case NO_AGGREGATE:
     case no_call:
@@ -410,9 +407,12 @@ IHqlExpression * CTreeOptimizer::swapIntoAddFiles(IHqlExpression * expr, bool fo
 IHqlExpression * CTreeOptimizer::moveFilterOverSelect(IHqlExpression * expr)
 {
     IHqlExpression * select = expr->queryChild(0);
-    if (!select->hasProperty(newAtom))
+    if (!isNewSelector(select))
         return NULL;
     IHqlExpression * ds = select->queryChild(0);
+    //MORE: If ds is a row then the filter needs to be moved to the root dataset
+    if (!ds->isDataset())
+        return NULL;
     IHqlExpression * newScope = select->queryNormalizedSelector();
     HqlExprArray args, hoisted, notHoisted;
     HqlExprCopyArray inScope;
@@ -1776,7 +1776,7 @@ bool CTreeOptimizer::childrenAreShared(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
             return false;
         return isShared(expr->queryChild(0));
     case NO_AGGREGATE:
@@ -2388,6 +2388,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 cur = cur->queryChild(0);
                             switch (cur->getOperator())
                             {
+                            case no_createrow:
                             case no_constant:
                             case no_select:
                             case no_null:

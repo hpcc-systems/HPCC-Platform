@@ -1491,6 +1491,7 @@ extern HQL_API IHqlExpression * createUniqueSelectorSequence();
 extern HQL_API IHqlExpression * createDummySelectorSequence();
 extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);
+extern HQL_API bool isAlwaysNewRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * ensureActiveRow(IHqlExpression * expr);
 extern HQL_API bool isIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool isActivityIndependentOfScope(IHqlExpression * expr);
@@ -1624,6 +1625,7 @@ inline IHqlExpression * querySelSeq(IHqlExpression * expr)
 extern HQL_API IHqlExpression * createGroupedAttribute(ITypeInfo * type);
 extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API bool isSameFullyUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
+extern HQL_API IHqlExpression * queryNewSelectAttrExpr();
 
 //The following are wrappers for the code generator specific getInfoFlags()
 //inline bool isTableInvariant(IHqlExpression * expr)       { return (expr->getInfoFlags() & HEFtableInvariant) != 0; }

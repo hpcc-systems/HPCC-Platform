@@ -5243,7 +5243,7 @@ static void gatherConstantFilterMappings(HqlConstantPercolator & mappings, IHqlE
         {
             IHqlExpression * lhs = expr->queryChild(0);
             //MORE: Should also handle subselects now that the constant percolator does
-            if ((lhs->getOperator() != no_select) || lhs->hasProperty(newAtom) || lhs->queryChild(0) != selector)
+            if ((lhs->getOperator() != no_select) || isNewSelector(lhs) || lhs->queryChild(0) != selector)
                 break;
 
             IHqlExpression * rhs = expr->queryChild(1);
@@ -5782,7 +5782,7 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
     case no_attr:
         return LINK(expr);
     case no_select:
-        if (!expr->hasProperty(newAtom))
+        if (!isNewSelector(expr))
             return LINK(expr);
         break;
     }

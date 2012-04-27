@@ -486,7 +486,9 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
         assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(cur)), createSelectExpr(LINK(left), LINK(cur))));
     }
     IHqlExpression * transform = createValue(no_transform, makeTransformType(newOutputRecord->getType()), assigns);
-    return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
+    if (ds->isDataset())
+        return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
+    return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
 }
 
 

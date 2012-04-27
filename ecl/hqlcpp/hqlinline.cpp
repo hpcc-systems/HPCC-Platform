@@ -112,7 +112,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     {
     case no_select:
         //MORE: What about child datasets in nested records?
-        if (expr->hasProperty(newAtom))
+        if (isNewSelector(expr))
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if ((childFlags & HEFevaluateinline) && isMultiLevelDatasetSelector(expr, false))

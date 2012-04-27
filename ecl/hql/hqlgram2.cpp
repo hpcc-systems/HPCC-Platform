@@ -5536,7 +5536,7 @@ IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpr
     return cond;
 }
 
-IHqlExpression * HqlGram::createLoopCondition(IHqlExpression * leftDs, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq)
+IHqlExpression * HqlGram::createLoopCondition(IHqlExpression * leftDs, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq, IHqlExpression * rowsid)
 {
     IHqlExpression * count = NULL;
     IHqlExpression * filter = NULL;
@@ -5553,14 +5553,11 @@ IHqlExpression * HqlGram::createLoopCondition(IHqlExpression * leftDs, IHqlExpre
         {
             //if refers to fields in LEFT then must be a row filter
             OwnedHqlExpr left = createSelector(no_left, leftDs, seq);
-            if (containsSelector(arg1, left))
-            {
-                filter = arg1;
-            }
-            else
-            {
+            OwnedHqlExpr rows = createDataset(no_rows, LINK(left), LINK(rowsid));
+            if (containsExpression(arg1, rows) || !containsSelector(arg1, left))
                 loopCond = arg1;
-            }
+            else
+                filter = arg1;
         }
     }
     else

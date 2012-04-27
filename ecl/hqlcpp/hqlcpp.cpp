@@ -7819,11 +7819,7 @@ IHqlExpression * HqlCppTranslator::querySimpleOrderSelector(IHqlExpression * exp
     if (expr->getOperator() != no_select)
         return NULL;
 
-    bool isNew;
-    IHqlExpression * ds = querySelectorDataset(expr, isNew);
-    if (isNew)
-        return NULL;
-    return ds;
+    return queryDatasetCursor(expr);
 }
 
 static unsigned getMemcmpSize(IHqlExpression * left, IHqlExpression * right, bool isEqualityCompare)
@@ -11671,7 +11667,15 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
             return true;
         }
     case no_select:
-        return expr->hasProperty(newAtom);
+        if (expr->hasProperty(newAtom))
+        {
+            IHqlExpression * ds= expr->queryChild(0);
+            if (!ds->isPure() || !ds->isDatarow())
+                return true;
+            if (!ctx.queryAssociation(ds, AssocRow, NULL))
+                return true;
+        }
+        return false;
     case no_field:
         throwUnexpected();
         return false;       // more, depends on whether conditional etc.
