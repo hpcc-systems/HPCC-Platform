@@ -1689,25 +1689,56 @@ extern HQL_API unsigned queryCurrentTransformDepth();                   // debug
 extern HQL_API bool isExternalFunction(IHqlExpression * funcdef);
 
 typedef enum { 
-    childdataset_none,
-    childdataset_dataset_noscope, // single dataset but this operation doesn't use any fields from it.
-    childdataset_dataset,  // single dataset, fields are referenced by <dataset>.field
-    childdataset_datasetleft,  // single dataset, fields are referenced by <dataset>|LEFT.field
-    childdataset_left,  // single dataset, fields are referenced by LEFT.field
-    childdataset_leftright,   // two datasets, fields are referenced by LEFT|RIGHT.field
-    childdataset_same_left_right,  // single dataset, fields are referenced by LEFT|RIGHT.field
-    childdataset_top_left_right,  // single dataset, fields are referenced by <dataset>|LEFT|RIGHT.field
-    childdataset_many_noscope, // multiple input files, no reference to any fields.
-    childdataset_many,  // multiple input files, fields reference by <active>.field
-    childdataset_nway_left_right, // set of files for first parameter, fields accessed via LEFT and RIGHT
+    //Flags to indicate which datasets are available in scope
+    childdataset_hasnone    = 0x0000,   // dataset->queryNormalizedSelector()
+    childdataset_hasdataset = 0x0001,   // dataset->queryNormalizedSelector()
+    childdataset_hasleft    = 0x0002,   // no_left
+    childdataset_hasright   = 0x0004,   // no_right
+    childdataset_hasactive  = 0x0008,   // no_activetable
+    childdataset_hasevaluate= 0x0010,   // weird!
+
+    //Flags that indicate the number/type of the dataset parameters to the operator
+    childdataset_dsmask     = 0xFF00,
+    childdataset_dsnone     = 0x0000,   // No datasets
+    childdataset_ds         = 0x0100,   // A single dataset
+    childdataset_dsds       = 0x0200,   // two datasets
+    childdataset_dschild    = 0x0300,   // a dataset with second dependent on the first (normalize)
+    childdataset_dsmany     = 0x0400,   // many datasetes
+    childdataset_dsset      = 0x0500,   // [set-of-datasets]
+    childdataset_dsif       = 0x0600,   // IF(<cond>, ds, ds)
+    childdataset_dscase     = 0x0700,   // CASE
+    childdataset_dsmap      = 0x0800,   // MAP
+
+    //Combinations of the two sets of flags above for the cases which are currently used.
+    childdataset_none               = childdataset_dsnone|childdataset_hasnone,
+    childdataset_dataset_noscope    = childdataset_ds|childdataset_none,
+    childdataset_dataset            = childdataset_ds|childdataset_hasdataset,
+    childdataset_datasetleft        = childdataset_ds|childdataset_hasdataset|childdataset_hasleft,
+    childdataset_left               = childdataset_ds|childdataset_hasleft,
+    childdataset_leftright          = childdataset_dsds|childdataset_hasleft|childdataset_hasright,
+    childdataset_same_left_right    = childdataset_ds|childdataset_hasleft|childdataset_hasright,
+    childdataset_top_left_right     = childdataset_ds|childdataset_hasdataset|childdataset_hasleft|childdataset_hasright,
+    childdataset_many_noscope       = childdataset_dsmany|childdataset_none,
+    childdataset_many               = childdataset_dsmany|childdataset_hasactive,
+    childdataset_nway_left_right    = childdataset_dsset|childdataset_hasleft|childdataset_hasright,
+
     //weird exceptions
-    childdataset_evaluate, // EVALUATE
-    childdataset_if, // IF - second and third are datasets
-    childdataset_case, // CASE
-    childdataset_map, // MAP
+    childdataset_evaluate           = childdataset_ds|childdataset_hasevaluate,
+    childdataset_if                 = childdataset_dsif|childdataset_none,
+    childdataset_case               = childdataset_dscase|childdataset_none,
+    childdataset_map                = childdataset_dsmap|childdataset_none,
     childdataset_max
 } childDatasetType;
 extern HQL_API childDatasetType getChildDatasetType(IHqlExpression * expr);
+inline bool hasLeft(childDatasetType value) { return (value & childdataset_hasleft) != 0; }
+inline bool hasRight(childDatasetType value) { return (value & childdataset_hasright) != 0; }
+inline bool hasLeftRight(childDatasetType value) { return (value & (childdataset_hasleft|childdataset_hasright)) == (childdataset_hasleft|childdataset_hasright); }
+inline bool hasSameLeftRight(childDatasetType value)
+{
+    return hasLeftRight(value) &&
+        (((value & childdataset_dsmask) == childdataset_ds) ||
+         ((value & childdataset_dsmask) == childdataset_dsset));
+}
 
 // To improve error message.
 extern HQL_API StringBuffer& getFriendlyTypeStr(IHqlExpression* e, StringBuffer& s);
