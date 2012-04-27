@@ -263,7 +263,7 @@ protected:
     bool isExisting;
 };
 
-extern REMOTE_API IFile *createGitFile(const char *gitFileName)
+static IFile *createGitFile(const char *gitFileName)
 {
     StringBuffer fname(gitFileName);
     assertex(fname.length());
@@ -436,7 +436,7 @@ protected:
 
 static CriticalSection *cs;
 
-extern REMOTE_API void installGitFileHook()
+extern GITFILE_API void installFileHook()
 {
     CriticalBlock b(*cs); // Probably overkill!
     if (!gitRepositoryFileHook)
@@ -446,7 +446,7 @@ extern REMOTE_API void installGitFileHook()
     }
 }
 
-extern REMOTE_API void removeGitFileHook()
+extern GITFILE_API void removeFileHook()
 {
     CriticalBlock b(*cs); // Probably overkill!
     if (gitRepositoryFileHook)
@@ -456,7 +456,7 @@ extern REMOTE_API void removeGitFileHook()
     }
 }
 
-MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
+MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     cs = new CriticalSection;
     gitRepositoryFileHook = NULL;  // Not really needed, but you have to have a modinit to match a modexit
@@ -465,7 +465,11 @@ MODULE_INIT(INIT_PRIORITY_REMOTE_RMTFILE)
 
 MODULE_EXIT()
 {
-    removeGitFileHook();
+    if (gitRepositoryFileHook)
+    {
+        removeContainedFileHook(gitRepositoryFileHook);
+        gitRepositoryFileHook = NULL;
+    }
     ::Release(gitRepositoryFileHook);
     delete cs;
 }
