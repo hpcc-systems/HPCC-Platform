@@ -1680,6 +1680,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupHashAggregate,"implicitGroupHashAggregate",false),
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
         DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
+        DebugOption(options.projectNestedTables,"projectNestedTables",true),
     };
 
     //get options values from workunit
