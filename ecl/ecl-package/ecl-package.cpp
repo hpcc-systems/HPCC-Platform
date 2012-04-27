@@ -400,8 +400,6 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
-        StringBuffer pkgInfo;
-        pkgInfo.loadFile(optFileName);
 
         fprintf(stdout, "\n ... deleting package %s now\n\n", optFileName.sget());
 
