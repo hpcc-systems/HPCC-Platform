@@ -17,6 +17,7 @@
 ############################################################################## */
 
 #include "jexcept.hpp"
+#include "roxie.hpp"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 
