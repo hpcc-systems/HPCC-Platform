@@ -68,7 +68,7 @@
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSITENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vQ8"
+//#define SEARCH_NAME1   "vL6R"
 //#define SEARCH_NAME2   "v19"
 //#define SEARCH_IEXPR 0x03289048
 //#define CHECK_SELSEQ_CONSISTENCY
@@ -269,6 +269,8 @@ extern HQL_API void clearCacheCounts()
     _clear(commonUpClash);
 #endif
 }
+
+static IHqlExpression * doCreateSelectExpr(HqlExprArray & args);
 
 //==============================================================================================================
 
@@ -3278,29 +3280,17 @@ void CHqlExpression::updateFlagsAfterOperands()
         {
             IHqlExpression * left = queryChild(0);
             node_operator lOp = left->getOperator();
-#if 0
-            //I think the following are correct, but cause problems.., probably because newAtom isn't handled correctly in all places
-            if ((lOp == no_select) && left->isDatarow())
+            infoFlags = (infoFlags & HEFretainedByActiveSelect);
+            infoFlags |= HEFcontainsActiveDataset;
+            switch (lOp)
             {
-                IHqlExpression * right = queryChild(1);
-                //inherit from parent... whether or not this is a new selector or not.
-                right = right;
-            }
-            else
-#endif
-            {
-                infoFlags = (infoFlags & HEFretainedByActiveSelect);
-                infoFlags |= HEFcontainsActiveDataset;
-                switch (lOp)
-                {
-                case no_self:
-                case no_left:
-                case no_right:
-                    break;
-                default:
-                    infoFlags |= HEFcontainsActiveNonSelector;
-                    break;
-                }
+            case no_self:
+            case no_left:
+            case no_right:
+                break;
+            default:
+                infoFlags |= HEFcontainsActiveNonSelector;
+                break;
             }
         }
         else
@@ -3557,6 +3547,22 @@ switch (op)
             break;
         }
     }
+
+#ifdef _DEBUG
+    if (op == no_select)
+    {
+        IHqlExpression * ds = queryChild(0);
+        if ((ds->getOperator() == no_select) && !ds->isDataset())
+        {
+            if (hasProperty(newAtom) && isNewSelector(ds))
+            {
+                IHqlExpression * root = queryDatasetCursor(ds);
+                if (root->isDataset())
+                    throwUnexpected();
+            }
+        }
+    }
+#endif
 
 #if 0
     //Useful code for detecting when types get messed up for comparisons
@@ -4744,7 +4750,7 @@ void CHqlExpression::cacheTablesUsed()
             case no_select:
                 {
                     IHqlExpression * ds = queryChild(0);
-                    if (hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()) || (ds->getOperator() == no_selectnth))
+                    if (hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
                         ds->gatherTablesUsed(&newScopeTables, &inScopeTables);
                     else
                         addActiveTable(inScopeTables, ds);
@@ -4758,10 +4764,8 @@ void CHqlExpression::cacheTablesUsed()
                 }
             case no_rows:
             case no_rowset:
+                //MORE: This is a bit strange!
                 addActiveTable(inScopeTables, queryChild(0));
-                break;
-                //first child is no_rows, use the grand child
-                addActiveTable(inScopeTables, queryChild(0)->queryChild(0));
                 break;
             case no_left:
             case no_right:
@@ -4928,7 +4932,7 @@ IHqlExpression * CHqlExpression::calcNormalizedSelector() const
         appendArray(args, operands);
         args.replace(*LINK(normalizedLeft), 0);
         removeProperty(args, newAtom);
-        return createSelectExpr(args);
+        return doCreateSelectExpr(args);
     }
     return NULL;
 }
@@ -4941,8 +4945,6 @@ CHqlSelectExpression::CHqlSelectExpression(IHqlExpression * left, IHqlExpression
 #ifdef _DEBUG
     assertex(!isDataset());
     assertex(left->getOperator() != no_activerow);
-//  if ((left->getOperator() == no_select) && left->isDatarow())
-//      assertex(left->hasProperty(newAtom) == hasProperty(newAtom));
 #endif
     normalized.setown(calcNormalizedSelector());
 }
@@ -4954,8 +4956,6 @@ CHqlSelectExpression::CHqlSelectExpression(HqlExprArray & _ownedOperands)
 #ifdef _DEBUG
     assertex(!isDataset());
     assertex(left->getOperator() != no_activerow);
-//  if ((left->getOperator() == no_select) && left->isDatarow())
-//      assertex(left->hasProperty(newAtom) == hasProperty(newAtom));
 #endif
     normalized.setown(calcNormalizedSelector());
 }
@@ -11629,6 +11629,14 @@ inline IHqlExpression * normalizeSelectLhs(IHqlExpression * lhs, bool & isNew)
             if (isNew && isAlwaysActiveRow(lhs))
                 isNew = false;
             return lhs;
+        case no_selectnth:
+        case no_createrow:
+            assertex(isAlwaysNewRow(lhs));
+            //Ensure selects of these expressions always have new set - it saves problems when an
+            //unnormalized tree is walked or transformed.
+            //IF/PROJECTROW are not includes since they could be folded to an active selector
+            isNew = true;
+            return lhs;
         default:
             return lhs;
         }
@@ -11662,6 +11670,21 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
     return ret->closeExpr();
 }
 
+static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
+{
+    IHqlExpression * rhs = &args.item(1);
+    checkRhsSelect(rhs);
+
+    type_t t = rhs->queryType()->getTypeCode();
+    if (t == type_table || t == type_groupedtable)
+        return createDataset(no_select, args);
+    if (t == type_row)
+        return createRow(no_select, args);
+
+    IHqlExpression * ret = new CHqlSelectExpression(args);
+    return ret->closeExpr();
+}
+
 extern IHqlExpression * createSelectExpr(HqlExprArray & args)
 {
     IHqlExpression * lhs = &args.item(0);
@@ -11682,17 +11705,7 @@ extern IHqlExpression * createSelectExpr(HqlExprArray & args)
     if (isNew)
         args.append(*LINK(newSelectAttrExpr));
 
-    IHqlExpression * rhs = &args.item(1);
-    checkRhsSelect(rhs);
-
-    type_t t = rhs->queryType()->getTypeCode();
-    if (t == type_table || t == type_groupedtable)
-        return createDataset(no_select, args);
-    if (t == type_row)
-        return createRow(no_select, args);
-
-    IHqlExpression * ret = new CHqlSelectExpression(args);
-    return ret->closeExpr();
+    return doCreateSelectExpr(args);
 }
 
 IHqlExpression * ensureDataset(IHqlExpression * expr)
@@ -11707,6 +11720,17 @@ IHqlExpression * ensureDataset(IHqlExpression * expr)
     return createNullDataset();
 }
 
+
+extern bool isAlwaysNewRow(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_createrow:
+    case no_selectnth:
+        return true;
+    }
+    return false;
+}
 
 extern bool isAlwaysActiveRow(IHqlExpression * expr)
 {
@@ -12714,7 +12738,7 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
     case no_select:
         {
             IHqlExpression * ds = expr->queryChild(0);
-            if (expr->hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()) || (ds->getOperator() == no_selectnth))
+            if (expr->hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
                 return exprContainsCounter(checker, ds, counter);
             return false;
         }
@@ -14479,6 +14503,11 @@ IHqlExpression * createSelectorSequence()
 IHqlExpression * createDummySelectorSequence()
 {
     return LINK(defaultSelectorSequenceExpr);
+}
+
+IHqlExpression * queryNewSelectAttrExpr()
+{
+    return newSelectAttrExpr;
 }
 
 //Follow inheritance structure when getting property value.
