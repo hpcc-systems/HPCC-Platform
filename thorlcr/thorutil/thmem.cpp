@@ -1235,7 +1235,7 @@ protected:
                 totalRows += spillableRows.numCommitted();
                 if (iCompare && (1 == outStreams))
                     spillableRows.sort(*iCompare, maxCores);
-                if (rc_allDiskOrAllMem == diskMemMix)
+                if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
                 {
                     assertex(allMemRows);
                     assertex(1 == outStreams);
