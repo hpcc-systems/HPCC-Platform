@@ -253,7 +253,7 @@ public:
     unsigned __int64 queryTotalCycles() const;
 
     ChooseSetsPlusActivity & activity;
-    IThorRowAllocator *queryRowAllocator();
+    IEngineRowAllocator *queryRowAllocator();
 };
 
 

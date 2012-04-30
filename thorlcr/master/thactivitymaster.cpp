@@ -77,6 +77,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 #include "soapcall/thsoapcall.ipp"
 #include "loop/thloop.ipp"
 
+CActivityBase *createGroupActivityMaster(CMasterGraphElement *container);
+
 class CGenericMasterGraphElement : public CMasterGraphElement
 {
 public:
@@ -121,7 +123,6 @@ public:
             case TAKnormalize:
             case TAKnormalizechild:
             case TAKnormalizelinkedchild:
-            case TAKgroup:
             case TAKtemptable:
             case TAKinlinetable:
             case TAKtemprow:
@@ -205,6 +206,9 @@ public:
                 break;
             case TAKsort:
                 ret = createSortActivityMaster(this);
+                break;
+            case TAKgroup:
+                ret = createGroupActivityMaster(this);
                 break;
             case TAKprocess:
             case TAKiterate:

@@ -41,6 +41,7 @@ set (    SRCS
          filter/thfilter.cpp 
          firstn/thfirstn.cpp 
          funnel/thfunnel.cpp 
+         group/thgroup.cpp
          hashdistrib/thhashdistrib.cpp 
          indexread/thindexread.cpp 
          indexwrite/thindexwrite.cpp 

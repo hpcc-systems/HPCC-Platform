@@ -55,6 +55,7 @@ include_directories (
          ./../../common/commonext 
          ./../../rtl/eclrtl 
          ./../../common/thorhelper 
+         ./../../roxie/roxiemem
     )
 
 HPCC_ADD_LIBRARY( graph_lcr SHARED ${SRCS} )
@@ -75,6 +76,7 @@ target_link_libraries ( graph_lcr
          workunit 
          commonext 
          thorhelper
+         roxiemem
     )
 
 

@@ -55,6 +55,7 @@ include_directories (
          ./../master 
          ./../../common/thorhelper 
          ./../../tools/swapnode
+         ./../../roxie/roxiemem
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

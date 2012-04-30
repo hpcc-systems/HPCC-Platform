@@ -23,6 +23,7 @@
 
 #include "eclhelper.hpp"
 
+#include "thmem.hpp"
 #include "thexception.hpp"
 #include "thresult.ipp"
 #include "deftype.hpp"

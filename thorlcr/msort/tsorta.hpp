@@ -28,6 +28,7 @@
 #include "jlib.hpp"
 #include "jio.hpp"
 #include "jlzw.hpp"
+#include "thbuf.hpp"
 #include "thmem.hpp"
 
 
@@ -35,43 +36,6 @@ class BytePointerArray;
 interface ICompare;
 interface IRecordSize;
 interface ISortKeySerializer;
-
-class VarElemArray
-{ // simple expanding array for variable sized elements
-  // note space not reclaimed and rows stored serialized (if serializer supplied)
-  // only intended for relatively small arrays
-public:
-    VarElemArray(IRowInterfaces *rowif,ISortKeySerializer *_serializer);
-    ~VarElemArray();
-    void appendLink(const void *row);
-    void appendLink(VarElemArray &from,unsigned idx);
-    void appendNull();
-
-    void clear();
-    void serialize(MemoryBuffer &mb); // mallocs data
-    void deserialize(const void *data,size32_t sz,bool append);
-    void serializeCompress(MemoryBuffer &mb); // mallocs data
-    void deserializeExpand(const void *data,size32_t sz,bool append);
-    const byte *item(unsigned i);
-    unsigned ordinality();
-    void transfer(VarElemArray &from);
-    bool equal(ICompare *icmp,VarElemArray &to);
-    void sort(ICompare *icmp,unsigned maxcores);
-    int compare(ICompare *icmp,unsigned i,unsigned j);
-    int compare(ICompare *icmp,unsigned i,VarElemArray &other,unsigned j);
-    bool isNull(unsigned idx);
-    bool checksorted(ICompare *icmp);
-    size32_t totalSize();
-private:
-    CThorRowArray rows;
-    Linked<ICompressor> compressor;
-    Linked<IExpander> expander;
-    ISortKeySerializer *keyserializer;
-    Linked<IEngineRowAllocator> allocator;
-    Linked<IOutputRowSerializer> serializer;
-    Linked<IOutputRowDeserializer> deserializer;
-};
-
 
 interface IThorRowSortedLoader: extends IInterface
 {
@@ -92,14 +56,14 @@ interface IThorRowSortedLoader: extends IInterface
     virtual unsigned numOverflowFiles()=0;
     virtual unsigned numOverflows()=0;
     virtual unsigned overflowScale()=0;
-
 };
 
 class CThorKeyArray
 {
+    CActivityBase &activity;
     Linked<IRowInterfaces> rowif;
     Linked<IRowInterfaces> keyif;
-    CThorRowArray keys;
+    CThorExpandingRowArray keys;
     size32_t maxsamplesize;
     offset_t totalserialsize;
     size32_t serialrowsize;     // 0 when not known
@@ -122,12 +86,13 @@ class CThorKeyArray
     offset_t findLessRowPos(const void * row);
     int keyRowCompare(unsigned keyidx,const void *row);
     void expandfpos();
-    const void *queryKey(unsigned idx) { return keys.item(idx); }
+    const void *queryKey(unsigned idx) { return keys.query(idx); }
     const void *getRow(unsigned idx);
     int binchopPartition(const void * row,bool lt);
 public:
 
     CThorKeyArray(
+        CActivityBase &activity,
         IRowInterfaces *_rowif,
         ISortKeySerializer *_serializer,
         ICompare *_icompare,
@@ -148,10 +113,7 @@ public:
     void traceKey(const char *prefix,unsigned idx);
 };
 
-
 extern void traceKey(IOutputRowSerializer *serializer,const char *prefix,const void *key);
-
-IThorRowSortedLoader *createThorRowSortedLoader(CThorRowArray &rows); // NB only contains all rows if hasOverflowed false
 
 
 #endif

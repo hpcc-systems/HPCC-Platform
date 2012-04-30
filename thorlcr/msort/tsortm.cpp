@@ -37,10 +37,9 @@
 #include "jthread.hpp"
 #include "jlib.hpp"
 #include "jsort.hpp"
+
 #include "thexception.hpp"
 #include "thgraph.hpp"
-
-#define PROGNAME "tsort"
 
 #include "tsorts.hpp"
 #include "tsortmp.hpp"
@@ -87,7 +86,7 @@ public:
     mptag_t         mpTagRPC;
     unsigned        beat;
     rowmap_t        numrecs;
-    memsize_t       memsize;
+    offset_t        slavesize;
     bool            overflow;
     unsigned        scale;     // num times overflowed
     
@@ -106,7 +105,7 @@ public:
         overflow = false;
         scale = 1;
         numrecs = 0;
-        memsize = 0;
+        slavesize = 0;
         assertex(_rank!=RANK_NULL);
         SortSlaveMP::init(comm,_rank,mpTagRPC);
     }
@@ -191,8 +190,8 @@ struct PartitionInfo
 {
     size32_t guard;
     Linked<IRowInterfaces> prowif;
-    PartitionInfo(IRowInterfaces *rowif)
-        : splitkeys(rowif,NULL), prowif(rowif)
+    PartitionInfo(CActivityBase *_activity, IRowInterfaces *rowif)
+        : splitkeys(*_activity, rowif, true), prowif(rowif)
     {
         nodes = NULL;
         mpports = NULL;
@@ -209,12 +208,12 @@ struct PartitionInfo
     SocketEndpoint  *nodes;
     unsigned short  *mpports;
     mptag_t mpTagRPC;
-    VarElemArray    splitkeys;
+    CThorExpandingRowArray splitkeys;
     void init() 
     {
         nodes = NULL;
         mpports = NULL;
-        splitkeys.clear();
+        splitkeys.kill();
         numnodes = 0;
     }
     void kill()
@@ -261,7 +260,8 @@ struct PartitionInfo
         mb.read(dsguard);
         if (guard!=dsguard)
             throw MakeStringException(-1,"SORT: PartitionInfo meta info mismatch(%d,%d)",guard,dsguard);
-        splitkeys.deserialize(mb.readDirect(left),left,false);
+        splitkeys.kill();
+        splitkeys.deserialize(left, mb.readDirect(left));
     }   
 };
     
@@ -421,10 +421,10 @@ public:
         if (!partitioninfo) { // if cosort use aux
             if (cosort) {
                 ActPrintLog(activity, "Cosort with no prior partition");
-                partitioninfo = new PartitionInfo(auxrowif);
+                partitioninfo = new PartitionInfo(activity, auxrowif);
             }
             else
-                partitioninfo = new PartitionInfo(rowif);
+                partitioninfo = new PartitionInfo(activity, rowif);
         }
         free(partitioninfo->nodes);
         free(partitioninfo->mpports);
@@ -542,7 +542,7 @@ public:
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs==0)
                 continue;
-            VarElemArray minmax(rowif,keyserializer) ;
+            CThorExpandingRowArray minmax(*activity, rowif, true);
             void *p = NULL;
             size32_t retlen = 0;
             size32_t avrecsize=0;
@@ -553,12 +553,12 @@ public:
             }
             tot += num;
             if (num>0) {
-                minmax.deserialize(p,retlen,false);
+                minmax.deserialize(retlen, p);
                 free(p);
-                const void *p = minmax.item(0);
+                const void *p = minmax.query(0);
                 if (!min.get()||(icompare->docompare(min,p)>0)) 
                     min.set(p);
-                p = minmax.item(1);
+                p = minmax.query(1);
                 if (!max.get()||(icompare->docompare(max,p)<0)) 
                     max.set(p);
             }
@@ -587,11 +587,11 @@ public:
 
 
     static CriticalSection ECFcrit;
-    static VarElemArray *ECFarray;
+    static CThorExpandingRowArray *ECFarray;
     static ICompare *ECFcompare;
     static int elemCompareFunc(unsigned *p1, unsigned *p2)
     {
-        return ECFarray->compare(ECFcompare,*p1,*p2);
+        return ECFcompare->docompare(ECFarray->query(*p1), ECFarray->query(*p2));
     }
 
 
@@ -610,17 +610,17 @@ public:
         unsigned averagesamples = OVERSAMPLE*numnodes;  
         rowmap_t averagerecspernode = (rowmap_t)(total/numnodes);
         CriticalSection asect;
-        VarElemArray sample(rowif,keyserializer);
+        CThorExpandingRowArray sample(*activity, rowif, true);
 #ifdef ASYNC_PARTIONING
         class casyncfor1: public CAsyncFor
         {
             NodeArray &slaves;
-            VarElemArray &sample;
+            CThorExpandingRowArray &sample;
             CriticalSection &asect;
             unsigned averagesamples;
             rowmap_t averagerecspernode;
         public:
-            casyncfor1(NodeArray &_slaves,VarElemArray &_sample,unsigned _averagesamples,rowmap_t _averagerecspernode,CriticalSection &_asect)
+            casyncfor1(NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowmap_t _averagerecspernode, CriticalSection &_asect)
                 : slaves(_slaves), sample(_sample), asect(_asect)
             { 
                 averagesamples = _averagesamples;
@@ -634,9 +634,9 @@ public:
                 if (slavesamples) {
                     size32_t samplebufsize;
                     void *samplebuf=NULL;
-                    slave.GetMultiNthRow(slavesamples,samplebufsize,samplebuf);
+                    slave.GetMultiNthRow(slavesamples, samplebufsize, samplebuf);
                     CriticalBlock block(asect);
-                    sample.deserializeExpand(samplebuf,samplebufsize,true);
+                    sample.deserializeExpand(samplebufsize, samplebuf);
                     free(samplebuf);
                 }
             }
@@ -653,7 +653,7 @@ public:
             size32_t samplebufsize;
             void *samplebuf=NULL;
             slave.GetMultiNthRow(slavesamples,samplebufsize,samplebuf);
-            sample.deserializeExpand(samplebuf,true);
+            sample.deserializeExpand(samplebufsize, samplebuf);
             free(samplebuf);
         }   
 #endif
@@ -661,7 +661,7 @@ public:
         {
             ActPrintLog(activity, "partition points");
             for (unsigned i=0;i<sample.ordinality();i++) {
-                const byte *k = sample.item(i);
+                const byte *k = sample.query(i);
                 StringBuffer str;
                 str.appendf("%d: ",i);
                 traceKey(rowif->queryRowSerializer(),str.str(),k);
@@ -669,25 +669,25 @@ public:
         }
 #endif
         unsigned numsamples = sample.ordinality();
-        size32_t ts=sample.totalSize();
-        estrecsize = numsamples?(ts/numsamples):100;
-        sample.sort(icompare,activity->queryMaxCores());
-        VarElemArray mid(rowif,keyserializer);
+        offset_t ts=sample.serializedSize();
+        estrecsize = numsamples?((size32_t)(ts/numsamples)):100;
+        sample.sort(*icompare, activity->queryMaxCores());
+        CThorExpandingRowArray mid(*activity, rowif, true);
         if (numsamples) { // could shuffle up empty nodes here
             for (unsigned i=0;i<numsplits;i++) {
                 unsigned pos = (unsigned)(((count_t)numsamples*(i+1))/((count_t)numsplits+1));
-                const byte *r = sample.item(pos);
-                mid.appendLink(r);
+                const void *r = sample.get(pos);
+                mid.append(r);
             }
         }
 #ifdef TRACE_PARTITION2
         {
             ActPrintLog(activity, "merged partitions");
             for (unsigned i=0;i<mid.ordinality();i++) {
-                const byte *k = mid.item(i);
+                const void *k = mid.query(i);
                 StringBuffer str;
                 str.appendf("%d: ",i);
-                traceKey(rowif->queryRowSerializer(),str.str(),k);
+                traceKey(rowif->queryRowSerializer(),str.str(),(const byte *)k);
             }
         }
 #endif
@@ -796,17 +796,17 @@ public:
             return splitmap.getClear();
         }
         unsigned numsplits=numnodes-1;
-        VarElemArray emin(rowif,keyserializer);
-        VarElemArray emax(rowif,keyserializer);
-        VarElemArray totmid(rowif,keyserializer);
+        CThorExpandingRowArray emin(*activity, rowif, true);
+        CThorExpandingRowArray emax(*activity, rowif, true);
+        CThorExpandingRowArray totmid(*activity, rowif, true);
         ECFarray = &totmid;
         ECFcompare = icompare;
-        VarElemArray mid(rowif,keyserializer);
+        CThorExpandingRowArray mid(*activity, rowif, true);
         unsigned i;
         unsigned j;
         for(i=0;i<numsplits;i++) {
-            emin.appendLink(mink);
-            emax.appendLink(maxk);
+            emin.append(mink.getClear());
+            emax.append(maxk.getClear());
         }
         UnsignedArray amid;
         unsigned iter=0;
@@ -819,8 +819,8 @@ public:
                 iter++;
                 ActPrintLog(activity, "Split: %d",iter);
 #endif
-                emin.serializeCompress(mbmn.clear());       
-                emax.serializeCompress(mbmx.clear());       
+                emin.serializeCompress(mbmn.clear());
+                emax.serializeCompress(mbmx.clear());
 #ifdef ASYNC_PARTIONING
                 class casyncfor: public CAsyncFor
                 {
@@ -851,16 +851,16 @@ public:
                 Semaphore *nextsem = new Semaphore[numnodes];
                 CriticalSection nextsect;
 
-                totmid.clear();
+                totmid.kill();
                 class casyncfor2: public CAsyncFor
                 {
                     NodeArray &slaves;
-                    VarElemArray &totmid;
+                    CThorExpandingRowArray &totmid;
                     Semaphore *nextsem;
                     unsigned numsplits;
                 public:
-                    casyncfor2(NodeArray &_slaves,VarElemArray &_totmid,unsigned _numsplits,Semaphore *_nextsem) 
-                        : slaves(_slaves),totmid(_totmid)
+                    casyncfor2(NodeArray &_slaves, CThorExpandingRowArray &_totmid, unsigned _numsplits, Semaphore *_nextsem)
+                        : slaves(_slaves), totmid(_totmid)
                     { 
                         nextsem = _nextsem;
                         numsplits = _numsplits;
@@ -876,14 +876,14 @@ public:
                             nextsem[i-1].wait();
                         unsigned base = totmid.ordinality();
                         if (p) {
-                            totmid.deserializeExpand(p,retlen,true);
+                            totmid.deserializeExpand(retlen, p);
                             free(p);
                         }
                         while (totmid.ordinality()-base<numsplits)
-                            totmid.appendNull();
+                            totmid.append(NULL);
                         nextsem[i].signal();
                     }
-                } afor2(slaves,totmid,numsplits,nextsem);
+                } afor2(slaves, totmid, numsplits, nextsem);
                 afor2.For(numnodes, 20);
                 delete [] nextsem;
 #else
@@ -894,24 +894,24 @@ public:
                         void *p = NULL;
                         size32_t retlen = 0;
                         slave.GetMultiMidPointStop(retlen,p);               
-                        totmid.deserializeExpand(p,retlen,true);
+                        totmid.deserializeExpand(retlen, p);
                         free(p);
 #ifdef _DEBUG
                         if (logging) {
                             MemoryBuffer buf;
                             for (j=0;j<numsplits;j++) {
-                                ActPrintLog(activity, "Min(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emin.item(j));
-                                ActPrintLog(activity, "Mid(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",totmid.item(j+base));
-                                ActPrintLog(activity, "Max(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emax.item(j));
+                                ActPrintLog(activity, "Min(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emin.query(j));
+                                ActPrintLog(activity, "Mid(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",totmid.query(j+base));
+                                ActPrintLog(activity, "Max(%d): ",j); traceKey(rowif->queryRowSerializer(),"    ",emax.query(j));
                             }
                         }
 #endif
                     }
                     while (totmid.ordinality()-base<numsplits)
-                        totmid.appendNull();
+                        totmid.append(NULL);
                 }
 #endif
-                mid.clear();        
+                mid.kill();
                 mbmn.clear();
                 mbmx.clear();
                 for (i=0;i<numsplits;i++) {
@@ -919,29 +919,30 @@ public:
                     unsigned k;
                     unsigned t = i;
                     for (k=0;k<numsplits;k++) {
-                        if (!totmid.isNull(t))
+                        const void *row = totmid.query(t);
+                        if (row)
                             amid.append(t);
                         t += numsplits;
                     }
                     amid.sort(elemCompareFunc);
-                    while (amid.ordinality()&&(emin.compare(icompare,i,totmid,amid.item(0))>=0))
+                    while (amid.ordinality() && (icompare->docompare(emin.query(i), totmid.query(amid.item(0)))>=0))
                         amid.remove(0);
-                    while (amid.ordinality()&&(emax.compare(icompare,i,totmid,amid.item(amid.ordinality()-1))<=0))
+                    while (amid.ordinality()&&(icompare->docompare(emax.query(i),totmid.query(amid.item(amid.ordinality()-1)))<=0))
                         amid.remove(amid.ordinality()-1);
                     if (amid.ordinality()) {
                         unsigned mi = amid.item(amid.ordinality()/2);
 #ifdef _DEBUG
                         if (logging) {
                             MemoryBuffer buf;
-                            const void *b =totmid.item(mi);
+                            const void *b =totmid.query(mi);
                             ActPrintLog(activity, "%d: %d %d",i,mi,amid.ordinality()/2);
                             traceKey(rowif->queryRowSerializer(),"mid",b);
                         }
 #endif
-                        mid.appendLink(totmid,mi);
+                        mid.append(totmid.get(mi));
                     }
                     else
-                        mid.appendLink(emin,i);
+                        mid.append(emin.get(i));
                 }
 
                 // calculate split map
@@ -961,8 +962,8 @@ public:
                     }
                 }
 
-                VarElemArray newmin(rowif,keyserializer);
-                VarElemArray newmax(rowif,keyserializer);
+                CThorExpandingRowArray newmin(*activity, rowif, true);
+                CThorExpandingRowArray newmax(*activity, rowif, true);
                 unsigned __int64 maxerror=0;
                 unsigned __int64 nodewanted = (stotal/numnodes); // Note scaled total
                 unsigned __int64 variancelimit = estrecsize?maxdeviance/estrecsize:0;
@@ -990,16 +991,16 @@ public:
                     if (error>maxerror)
                         maxerror = error;
                     if (wanted<tot) {
-                        newmin.appendLink(emin,i);
-                        newmax.appendLink(mid,i);
+                        newmin.append(emin.get(i));
+                        newmax.append(mid.get(i));
                     }
                     else if (wanted>tot) {
-                        newmin.appendLink(mid,i);
-                        newmax.appendLink(emax,i);
+                        newmin.append(mid.get(i));
+                        newmax.append(emax.get(i));
                     }
                     else {
-                        newmin.appendLink(emin,i);
-                        newmax.appendLink(emax,i);
+                        newmin.append(emin.get(i));
+                        newmax.append(emax.get(i));
                     }
                 }
                 if (emin.equal(icompare,newmin)&&emax.equal(icompare,newmax)) {
@@ -1026,7 +1027,7 @@ public:
         partitioninfo->numnodes = numnodes;
 #ifdef _DEBUG
         if (logging) {
-            for (i=0;i<numnodes;i++) {
+            for (unsigned i=0;i<numnodes;i++) {
                 StringBuffer str;
                 str.appendf("%d: ",i);
                 for (j=0;j<numnodes;j++) {
@@ -1049,7 +1050,7 @@ public:
         for (i=0;i<pi.splitkeys.ordinality();i++) {
             StringBuffer s;
             s.appendf("%d: ",i);
-            traceKey(pi.prowif->queryRowSerializer(),s.str(),pi.splitkeys.item(i));
+            traceKey(pi.prowif->queryRowSerializer(), s.str(), pi.splitkeys.query(i));
         }
 #endif
 #endif
@@ -1110,7 +1111,7 @@ public:
         // I think this dependant on row being same format as meta
 
         unsigned numsplits=numnodes-1;
-        VarElemArray splits(rowif,NULL);
+        CThorExpandingRowArray splits(*activity, rowif, true);
         char *s=cosortfilenames;
         unsigned i;
         for(i=0;i<numnodes;i++) {
@@ -1127,7 +1128,7 @@ public:
                     return;
                 OwnedConstThorRow row;
                 row.deserialize(auxrowif,rowsize,rowmem);
-                splits.appendLink(row);
+                splits.append(row.getClear());
                 free(rowmem);
             }
             s = s+strlen(s)+1;
@@ -1142,7 +1143,7 @@ public:
     {
         ActPrintLog(activity, "Previous partition");
         unsigned numsplits=numnodes-1;
-        VarElemArray splits(rowif,NULL);
+        CThorExpandingRowArray splits(*activity, rowif, true);
         unsigned i;
         for(i=1;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
@@ -1157,7 +1158,7 @@ public:
                 n.append(i).append(": ");
                 traceKey(auxrowif->queryRowSerializer(),n,row);
             }
-            splits.appendLink(row);
+            splits.append(row.getClear());
             free(rowmem);
         }
         partitioninfo->splitkeys.transfer(splits);
@@ -1198,8 +1199,9 @@ public:
     void Sort(unsigned __int64 threshold, double skewWarning, double skewError, size32_t _maxdeviance,bool canoptimizenullcolumns, bool usepartitionrow, bool betweensort, unsigned minisortthresholdmb)
     {
         memsize_t minisortthreshold = 1024*1024*(memsize_t)minisortthresholdmb;
-        if ((minisortthreshold>0)&&(ThorRowMemoryAvailable()/2<minisortthreshold))
-            minisortthreshold = ThorRowMemoryAvailable()/2;
+        // JCSMORE - size a bit arbitary
+        if ((minisortthreshold>0)&&(roxiemem::getTotalMemoryLimit()/2<minisortthreshold))
+            minisortthreshold = roxiemem::getTotalMemoryLimit()/2;
         if (skewError>0.0 && skewWarning > skewError)
         {
             ActPrintLog(activity, "WARNING: Skew warning %f > skew error %f", skewWarning, skewError);
@@ -1210,23 +1212,23 @@ public:
         maxdeviance = _maxdeviance;
         unsigned i;
         bool overflowed = false;
+        unsigned numnodes = slaves.ordinality();
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
-            slave.GetGatherInfo(slave.numrecs,slave.memsize,slave.scale,keyserializer!=NULL);
+            slave.GetGatherInfo(slave.numrecs,slave.slavesize,slave.scale,keyserializer!=NULL);
             assertex(slave.scale);
             slave.overflow = slave.scale>1;
             if (slave.overflow)
                 overflowed = true;
             total += slave.numrecs;
             stotal += slave.numrecs*slave.scale;
-            totalmem += slave.memsize;
+            totalmem += slave.slavesize;
             if (slave.numrecs>maxrecsonnode)
                 maxrecsonnode = slave.numrecs;
             if (slave.numrecs<minrecsonnode)
                 minrecsonnode = slave.numrecs;
         }
         ActPrintLog(activity,"Total recs in mem = %"RCPF"d scaled recs= %"RCPF"d size = %"CF"d bytes, minrecsonnode = %"RCPF"d, maxrecsonnode = %"RCPF"d",total,stotal,totalmem,minrecsonnode,maxrecsonnode);
-        unsigned numnodes = slaves.ordinality();
         if (!usepartitionrow&&!betweensort&&(totalmem<minisortthreshold)&&!overflowed) {
             sorted = MiniSort(total);
             return;
@@ -1282,9 +1284,9 @@ public:
                             splitMap.setown(CalcPartition(false));
 #endif
                     }
-                    if (!partitioninfo->splitkeys.checksorted(icompare)) {
+                    if (!partitioninfo->splitkeys.checkSorted(icompare)) {
                         ActPrintLog(activity, "ERROR: Split keys out of order!");
-                        partitioninfo->splitkeys.sort(icompare,activity->queryMaxCores());
+                        partitioninfo->splitkeys.sort(*icompare, activity->queryMaxCores());
                     }
                 }
                 timer.stop("Calculating split map");
@@ -1447,7 +1449,7 @@ public:
     }
 };
 
-VarElemArray *CSortMaster::ECFarray;
+CThorExpandingRowArray *CSortMaster::ECFarray;
 ICompare *CSortMaster::ECFcompare;
 CriticalSection CSortMaster::ECFcrit; 
 

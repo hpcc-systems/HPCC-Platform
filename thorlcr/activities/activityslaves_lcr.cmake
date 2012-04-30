@@ -108,6 +108,7 @@ include_directories (
          ./../../common/commonext 
          ./../activities 
          ./../../rtl/eclrtl 
+         ./../../roxie/roxiemem
     )
 
 HPCC_ADD_LIBRARY( activityslaves_lcr SHARED ${SRCS} )
@@ -132,6 +133,7 @@ target_link_libraries ( activityslaves_lcr
          jhtree 
          graph_lcr 
          graphslave_lcr 
+         roxiemem
     )
 
 

@@ -49,7 +49,7 @@ IHashDistributor *createHashDistributor(
     bool dedup,
     IStopInput *istop);
 
-CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, memsize_t maxMem, bool grow, bool ordered);
+CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered);
 
 activityslaves_decl CActivityBase *createHashDistributeSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createHashDistributeMergeSlave(CGraphElementBase *container);

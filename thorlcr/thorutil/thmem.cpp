@@ -23,6 +23,7 @@
 #include "jsort.hpp"
 #include "jsorta.hpp"
 #include "jvmem.hpp"
+#include "jflz.hpp"
 
 #include "thbufdef.hpp"
 #include "thor.hpp"
@@ -33,8 +34,11 @@
 #define NO_BWD_COMPAT_MAXSIZE
 #include "thorcommon.ipp"
 #include "eclrtl.hpp"
+#include "roxiemem.hpp"
+#include "roxierow.hpp"
 
 #include "thmem.hpp"
+#include "thgraph.hpp"
 
 #include "thalloc.hpp"
 
@@ -54,7 +58,7 @@
 #else
 #define ASSERTEX(c)
 #endif
-static IThorRowManager *ThorMemoryManager;
+
 static memsize_t MTthreshold=0; 
 static CriticalSection MTcritsect;  // held when blocked 
 static Owned<ILargeMemLimitNotify> MTthresholdnotify;
@@ -80,41 +84,17 @@ public:
     MessageAudience errorAudience() const { return MSGAUD_user; }
 };
 
-class ThorEngineRowAllocator;
-
-static class CThorRowAllocatorCache : implements IThorRowAllocatorCache
+IThorRowArrayException *createRowArrayException(size32_t sz)
 {
-    PointerArray ThorRowAllocators; 
-    mutable SpinLock ThorMMsect;
-
-public:
-    inline ThorEngineRowAllocator &item(unsigned cacheId) const
-    {
-        SpinBlock block(ThorMMsect);
-        ASSERTEX(cacheId<ThorRowAllocators.ordinality());
-        ThorEngineRowAllocator *ret = ((ThorEngineRowAllocator *)ThorRowAllocators.item(cacheId));
-        ASSERTEX(ret);
-        return *ret;
-    }
-
-    unsigned append(ThorEngineRowAllocator &a);
-    unsigned getActivityId(unsigned cacheId) const;
-    StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const;
-    void onDestroy(unsigned cacheId, void *row) const;
-    virtual void checkValid(unsigned cacheId, const void *row) const;
-
-    void reset();  // resets allocators
-    void clear();
-    size32_t subSize(unsigned cacheId,const void *row) const;
-
-} ThorAllocatorCache;
+    return new CThorRowArrayException(sz);
+}
 
 
 void checkMultiThorMemoryThreshold(bool inc)
 {
-    if (MTthresholdnotify.get())    {
+    if (MTthresholdnotify.get()) {
         CriticalBlock block(MTcritsect);
-        memsize_t used = ThorMemoryManager->allocated();
+        memsize_t used = 0; // JCSMORE - might work via callback in new scheme
         if (MTlocked) {
             if (used<MTthreshold/2) {
                 DBGLOG("Multi Thor threshold lock released: %"I64F"d",(offset_t)used);
@@ -165,235 +145,700 @@ memsize_t queryLargeMemSize()
 }
 
 
-CThorRowArray::CThorRowArray()
-{
-    numelem = 0;
-    totalsize = 0;
-    overhead = 0;
-    sizing = false;
-    raiseexceptions = false;
-    memsize_t tmp = queryLargeMemSize();
+// =================================
 
-    if (tmp>0xffffffff)
-        maxtotal = 0xffffffff;
-    else
-        maxtotal = (unsigned)tmp;
-    if (maxtotal<0x100000)
-        maxtotal = 0x100000;
-}
-
-void CThorRowArray::adjSize(const void *row, bool inc)
+StringBuffer &getRecordString(const void *key, IOutputRowSerializer *serializer, const char *prefix, StringBuffer &out)
 {
-    if (!row)
-        return;
-    size32_t size = thorRowMemoryFootprint(row);
-    size32_t prevtot = totalsize;
-    if (inc) {
-        if (raiseexceptions) {
-            size32_t tot = size+totalMem()+PERROWOVERHEAD;
-            if (tot>maxtotal)
-                throw new CThorRowArrayException(tot);
-        }
-        totalsize += size;
-        overhead += PERROWOVERHEAD;  // more - take into acount memory manager granularity?
+    MemoryBuffer mb;
+    const byte *k = (const byte *)key;
+    size32_t sz = 0;
+    if (serializer&&k) {
+        CMemoryRowSerializer mbsz(mb);
+        serializer->serialize(mbsz,(const byte *)k);
+        k = (const byte *)mb.bufferBase();
+        sz = mb.length();
     }
+    if (sz)
+        out.appendf("%s(%d): ",prefix,sz);
     else {
-        totalsize -= size;
-        overhead -= PERROWOVERHEAD;  // more - take into acount memory manager granularity?
+        out.append(prefix).append(": ");
+        if (k)
+            sz = 16;
+        else
+            out.append("NULL");
     }
-    if (!prevtot||!totalsize||(prevtot/0x100000!=totalsize/0x100000)) { // just check on transitions or when 0
-        checkMultiThorMemoryThreshold(inc);
-    }
-}
-
-void CThorRowArray::setNull(unsigned idx)
-{
-    OwnedConstThorRow row = itemClear(idx);
-}
-
-void CThorRowArray::removeRows(unsigned i,unsigned n)
-{
-    unsigned o = ordinality();
-    if (i>=o)
-        return;
-    if (i+n>o) 
-        n = o-i;
-    if (n==0)
-        return;
-    if (n==o) {
-        reset(false);
-        return;
-    }
-    const byte **from = ((const byte **)ptrbuf.toByteArray())+i;
-    for (unsigned j=0; j<n; j++) {
-        if (sizing)
-            adjSize(from[j],false);
-        ReleaseThorRow(from[j]);
-    }
-    memmove(&from[0],&from[n],(o-n-i)*sizeof(const void *));
-    ptrbuf.setLength(ptrbuf.length()-n*sizeof(const void *));
-    numelem -= n;
-}
-
-        
-
-unsigned CThorRowArray::load(IRowStream &stream,bool ungrouped)
-{
-    unsigned n = 0;
-    loop {
-        OwnedConstThorRow row = stream.nextRow();
-        if (!row) {
-            if (ungrouped)
-                row.setown(stream.nextRow());
-            if (!row)
-                break;
+    bool first=false;
+    while (sz) {
+        if (first)
+            first=false;
+        else
+            out.append(',');
+        if ((sz>=3)&&isprint(k[0])&&isprint(k[1])&&isprint(k[2])) {
+            out.append('"');
+            do {
+                out.append(*k);
+                sz--;
+                if (sz==0)
+                    break;
+                if (out.length()>1024)
+                    break;
+                k++;
+            } while (isprint(*k));
+            out.append('"');
         }
-        append(row.getLink());      // use getLink incase throws exception
-        n++;
-    }       
-    return n;
-}
-
-unsigned CThorRowArray::load(IRowStream &stream, bool ungrouped, bool &abort, bool *overflowed)
-{
-    unsigned n = 0;
-    if (overflowed)
-        *overflowed = false;
-    loop {
-        OwnedConstThorRow row = stream.nextRow();
-        if (!row) {
-            if (ungrouped)
-                row.setown(stream.nextRow());
-            if (!row)
-                break;
-        }
-        append(row.getLink());      // use getLink incase throws exception
-        n++;
-        if (overflowed&&isFull()) {
-            *overflowed=true; 
+        if (out.length()>1024) {
+            out.append("...");
             break;
         }
-    }       
-    return n;
-}
-
-unsigned CThorRowArray::load2(IRowStream &stream, bool ungrouped, CThorRowArray &prev, IFile &savefile, IOutputRowSerializer *prevserializer, IEngineRowAllocator *prevallocator, bool &prevsaved, bool &overflowed)
-{
-    overflowed = false;
-    prevsaved = false;
-    size32_t prevsz = prev.totalMem();
-    unsigned n = 0;
-    loop {
-        if (totalMem()+prevsz>maxtotal) {
-            Owned<IExtRowWriter> writer = createRowWriter(&savefile,prevserializer,prevallocator,false,false,false); 
-            prev.save(writer);
-            writer->flush();
-            prev.clear();
-            prevsaved = true;
+        if (sz) {
+            out.appendf("%2x",(unsigned)*k);
+            k++;
+            sz--;
         }
-        OwnedConstThorRow row = stream.nextRow();
-        if (!row) {
-            if (ungrouped)
-                row.setown(stream.nextRow());
-            if (!row)
-                break;
-        }
-        append(row.getLink());      // use getLink incase throws exception
-        n++;
-        if (isFull()) {
-            overflowed=true; 
-            break;
-        }
-    }       
-    return n;
-    
+    }
+    return out;
 }
 
+//====
 
-void CThorRowArray::transfer(CThorRowArray &from)
+class CSpillableStreamBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
 {
-    clear();
-    swapWith(from);
+protected:
+    CActivityBase &activity;
+    rowcount_t pos;
+    IRowInterfaces *rowIf;
+    bool preserveNulls, ownsRows;
+    CThorSpillableRowArray rows;
+    OwnedIFile spillFile;
+    Owned<IRowStream> spillStream;
 
-}
+    bool spillRows()
+    {
+        rowcount_t numRows = rows.numCommitted();
+        if (0 == numRows)
+            return false;
 
-void CThorRowArray::swapWith(CThorRowArray &from)
+        StringBuffer tempname;
+        GetTempName(tempname,"streamspill", true);
+        spillFile.setown(createIFile(tempname.str()));
+
+        rows.save(*spillFile); // saves committed rows
+        rows.noteSpilled(numRows);
+        return true;
+    }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CSpillableStreamBase(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf, _preserveNulls), preserveNulls(_preserveNulls)
+    {
+        rows.swap(inRows);
+        pos = 0;
+
+        activity.queryJob().queryRowManager()->addRowBuffer(this);
+    }
+    ~CSpillableStreamBase()
+    {
+        activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        spillStream.clear();
+        if (spillFile)
+            spillFile->remove();
+    }
+
+// IBufferedRowCallback
+    virtual unsigned getPriority() const
+    {
+        return SPILL_PRIORITY_SPILLABLE_STREAM;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        CThorSpillableRowArray::CThorSpillableRowArrayLock block(rows);
+        return spillRows();
+    }
+};
+
+// NB: Shared/spillable, hols all rows in mem until needs to spill.
+// spills all to disk, and stream continue reading from row in file
+class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterface
 {
-    ptrbuf.swapWith(from.ptrbuf);
-    unsigned t = numelem;
-    numelem = from.numelem;
-    from.numelem = t;
-    size32_t ts = totalsize;
-    totalsize = from.totalsize; 
-    from.totalsize = ts;
-    ts = overhead;
-    overhead = from.overhead;
-    from.overhead = ts;
-    ts = maxtotal;
-    maxtotal = from.maxtotal;
-    from.maxtotal = ts;
-    IOutputRowSerializer *sz = serializer.getClear();
-    serializer.setown(from.serializer.getClear());
-    from.serializer.setown(sz);
+    class CStream : public CSimpleInterface, implements IRowStream, implements IWritePosCallback
+    {
+        rowcount_t pos;
+        offset_t outputOffset;
+        Owned<IRowStream> spillStream;
+        Linked<CSharedSpillableRowSet> owner;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CStream(CSharedSpillableRowSet &_owner) : owner(&_owner)
+        {
+            pos = 0;
+            outputOffset = (offset_t)-1;
+            owner->rows.registerWriteCallback(*this);
+        }
+        ~CStream()
+        {
+            spillStream.clear(); // NB: clear stream 1st
+            owner->rows.unregisterWriteCallback(*this);
+            owner.clear();
+        }
+    // IRowStream
+        virtual const void *nextRow()
+        {
+            if (spillStream)
+                return spillStream->nextRow();
+            CThorSpillableRowArray::CThorSpillableRowArrayLock block(owner->rows);
+            if (pos == owner->rows.numCommitted())
+                return NULL;
+            else if (owner->spillFile) // i.e. has spilt
+            {
+                assertex(((offset_t)-1) != outputOffset);
+                spillStream.setown(::createRowStream(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, false, owner->preserveNulls));
+                return spillStream->nextRow();
+            }
+            return owner->rows.get(pos++);
+        }
+        virtual void stop() { }
+    // IWritePosCallback
+        virtual rowcount_t queryRecordNumber()
+        {
+            return pos;
+        }
+        virtual void filePosition(offset_t pos)
+        {
+            // Called via spilling save, stream will continue reading from file @ pos
+            outputOffset = pos;
+        }
+    };
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
+        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls)
+    {
+    }
+    IRowStream *createRowStream()
+    {
+        {
+            // already spilled?
+            CThorSpillableRowArray::CThorSpillableRowArrayLock block(rows);
+            if (spillFile)
+                return ::createRowStream(spillFile, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, false, preserveNulls);
+        }
+        return new CStream(*this);
+    }
+};
+
+// NB: A single unshared spillable stream
+class CSpillableStream : public CSpillableStreamBase, implements IRowStream
+{
+    rowcount_t numReadRows, granularity;
+    const void **readRows;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CSpillableStream(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
+        : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls)
+    {
+        numReadRows = 0;
+        granularity = 500; // JCSMORE - rows
+
+        // a small amount of rows to read from swappable rows
+        roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
+        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+    }
+    ~CSpillableStream()
+    {
+        while (pos < numReadRows)
+        {
+            ReleaseThorRow(readRows[pos++]);
+        }
+        ReleaseThorRow(readRows);
+    }
+
+// IRowStream
+    virtual const void *nextRow()
+    {
+        if (spillStream)
+            return spillStream->nextRow();
+        if (pos == numReadRows)
+        {
+            CThorSpillableRowArray::CThorSpillableRowArrayLock block(rows);
+            if (spillFile)
+            {
+                spillStream.setown(createRowStream(spillFile, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, false, preserveNulls));
+                return spillStream->nextRow();
+            }
+            rowcount_t fetch = rows.numCommitted();
+            if (0 == fetch)
+                return NULL;
+            if (fetch >= granularity)
+                fetch = granularity;
+            // consume 'fetch' rows
+            const void **toRead = rows.getBlock(fetch);
+            memcpy(readRows, toRead, fetch * sizeof(void *));
+            rows.noteSpilled(fetch);
+            rows.flush();
+            numReadRows = fetch;
+            pos = 0;
+        }
+        const void *row = readRows[pos];
+        readRows[pos] = NULL;
+        ++pos;
+        return row;
+    }
+    virtual void stop() { }
+};
+
+//====
+
+void CThorExpandingRowArray::init(rowcount_t initialSize, bool _stableSort)
+{
+    rowManager = activity.queryJob().queryRowManager();
+    stableSort = _stableSort;
+    throwOnOom = false;
+    stableSortTmp = NULL;
+    if (initialSize)
+    {
+        rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
+        maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+        memset(rows, 0, maxRows * sizeof(void *));
+        if (stableSort)
+            stableSortTmp = static_cast<void **>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
+    }
+    else
+    {
+        rows = NULL;
+        maxRows = 0;
+    }
+    numRows = 0;
 }
 
+const void *CThorExpandingRowArray::allocateNewRows(rowcount_t requiredRows, OwnedConstThorRow &newStableSortTmp)
+{
+    unsigned newSize = maxRows;
+    //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
+    if (newSize <= 4)
+        newSize = requiredRows;
+    else
+    {
+        //What algorithm should we use to increase the size?  Trading memory usage against copying row pointers.
+        // adding 50% would reduce the number of allocations.
+        // anything below 32% would mean that blocks n,n+1 when freed have enough space for block n+3 which might
+        //   reduce fragmentation.
+        //Use 25% for the moment.  It should possibly be configurable - e.g., higher for thor global sort.
+        while (newSize < requiredRows)
+            newSize += newSize/4;
+    }
+    OwnedConstThorRow newRows;
+    try
+    {
+        newRows.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
+        if (!newRows)
+            return NULL;
+        if (stableSort)
+        {
+            newStableSortTmp.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
+            if (!newStableSortTmp)
+                return NULL;
+        }
+    }
+    catch (IException * e)
+    {
+        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
+        unsigned code = e->errorCode();
+        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
+        {
+            e->Release();
+            return NULL;
+        }
+        throw;
+    }
+    return newRows.getClear();
+}
 
-void CThorRowArray::serialize(IOutputRowSerializer *serializer,IRowSerializerTarget &out)
+void CThorExpandingRowArray::doSort(unsigned n, void **const rows, ICompare &compare, unsigned maxCores)
+{
+    if (stableSort)
+    {
+        void **_rows = rows;
+        memcpy(stableSortTmp, _rows, n*sizeof(void **));
+        parqsortvecstable(stableSortTmp, n, compare, (void ***)_rows, maxCores);
+        while (n--)
+        {
+            *_rows = **((void ***)_rows);
+            _rows++;
+        }
+    }
+    else
+        parqsortvec((void **const)rows, n, compare, maxCores);
+}
+
+CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, bool _allowNulls, bool _stableSort, bool _throwOnOom, rowcount_t initialSize) : activity(_activity)
+{
+    init(initialSize, _stableSort);
+    setup(&_activity, _allowNulls, _stableSort, _throwOnOom);
+}
+
+CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _allowNulls, bool _stableSort, bool _throwOnOom, rowcount_t initialSize) : activity(_activity)
+{
+    init(initialSize, _stableSort);
+    setup(_rowIf, _allowNulls, _stableSort, _throwOnOom);
+}
+
+CThorExpandingRowArray::~CThorExpandingRowArray()
+{
+    clearRows();
+    ReleaseThorRow(rows);
+    ReleaseThorRow(stableSortTmp);
+}
+
+void CThorExpandingRowArray::setup(IRowInterfaces *_rowIf, bool _allowNulls, bool _stableSort, bool _throwOnOom)
+{
+    rowIf = _rowIf;
+    stableSort = _stableSort;
+    throwOnOom = _throwOnOom;
+    allowNulls = _allowNulls;
+    if (rowIf)
+    {
+        allocator = rowIf->queryRowAllocator();
+        deserializer = rowIf->queryRowDeserializer();
+        serializer = rowIf->queryRowSerializer();
+    }
+    else
+    {
+        allocator = NULL;
+        deserializer = NULL;
+        serializer = NULL;
+    }
+}
+
+void CThorExpandingRowArray::clearRows()
+{
+    for (rowcount_t i = 0; i < numRows; i++)
+        ReleaseThorRow(rows[i]);
+    numRows = 0;
+}
+
+void CThorExpandingRowArray::kill()
+{
+    clearRows();
+    maxRows = 0;
+    ReleaseThorRow(rows);
+    ReleaseThorRow(stableSortTmp);
+    rows = NULL;
+    stableSortTmp = NULL;
+}
+
+void CThorExpandingRowArray::swap(CThorExpandingRowArray &other)
+{
+    roxiemem::IRowManager *otherRowManager = other.rowManager;
+    IRowInterfaces *otherRowIf = other.rowIf;
+    const void **otherRows = other.rows;
+    void **otherStableSortTmp = other.stableSortTmp;
+    bool otherAllowNulls = other.allowNulls;
+    bool otherStableSort = other.stableSort;
+    bool otherThrowOnOom = other.throwOnOom;
+    rowcount_t otherMaxRows = other.maxRows;
+    rowcount_t otherNumRows = other.numRows;
+
+    other.rowManager = rowManager;
+    other.setup(rowIf, allowNulls, stableSort, throwOnOom);
+    other.rows = rows;
+    other.stableSortTmp = stableSortTmp;
+    other.maxRows = maxRows;
+    other.numRows = numRows;
+
+    rowManager = otherRowManager;
+    setup(otherRowIf, otherAllowNulls, otherStableSort, otherThrowOnOom);
+    rows = otherRows;
+    stableSortTmp = otherStableSortTmp;
+    maxRows = otherMaxRows;
+    numRows = otherNumRows;
+}
+
+void CThorExpandingRowArray::transferRows(rowcount_t & outNumRows, const void * * & outRows)
+{
+    outNumRows = numRows;
+    outRows = rows;
+    numRows = 0;
+    maxRows = 0;
+    rows = NULL;
+    ReleaseThorRow(stableSortTmp);
+    stableSortTmp = NULL;
+}
+
+void CThorExpandingRowArray::transferFrom(CThorExpandingRowArray &donor)
+{
+    kill();
+    donor.transferRows(numRows, rows);
+    maxRows = numRows;
+    if (stableSort && maxRows)
+        ensure(maxRows);
+}
+
+void CThorExpandingRowArray::transferFrom(CThorSpillableRowArray &donor)
+{
+	transferFrom((CThorExpandingRowArray &)donor);
+}
+
+void CThorExpandingRowArray::removeRows(rowcount_t start, rowcount_t n)
+{
+    assertex(numRows-start >= n);
+    assertex(!n || rows);
+    if (rows)
+    {
+        for (rowcount_t i = start; i < n; i++)
+            ReleaseThorRow(rows[i]);
+        //firstRow = 0;
+        numRows -= n;
+        const void **from = rows+start;
+        memmove(from, from+n, n * sizeof(void *));
+    }
+}
+
+void CThorExpandingRowArray::clearUnused()
+{
+    if (rows)
+        memset(rows+numRows, 0, (maxRows-numRows) * sizeof(void *));
+}
+
+bool CThorExpandingRowArray::ensure(rowcount_t requiredRows)
+{
+    OwnedConstThorRow newStableSortTmp;
+    OwnedConstThorRow newRows = allocateNewRows(requiredRows, newStableSortTmp);
+    if (!newRows)
+        throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RCPF"d, trying to allocate %"RCPF"d elements", ordinality(), requiredRows);
+
+    const void **oldRows = rows;
+    void **oldStableSortTmp = stableSortTmp;
+
+    memcpy((void *)newRows.get(), rows, numRows * sizeof(void*));
+
+    rows = (const void **)newRows.getClear();
+    maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+    stableSortTmp = (void **)newStableSortTmp.getClear();
+    ReleaseThorRow(oldRows);
+    ReleaseThorRow(oldStableSortTmp);
+
+    return true;
+}
+
+void CThorExpandingRowArray::sort(ICompare &compare, unsigned maxCores)
+{
+    if (numRows>1)
+        doSort(numRows, (void **const)rows, compare, maxCores);
+}
+
+void CThorExpandingRowArray::reorder(rowcount_t start, rowcount_t num, unsigned *neworder)
+{
+    if (start>=numRows)
+        return;
+    if (start+num>numRows)
+        num = numRows-start;
+    if (!num)
+        return;
+    MemoryAttr ma;
+    void **tmp = (void **)ma.allocate(num*sizeof(void *));
+    const void **p = rows + start;
+    memcpy(tmp, p, num*sizeof(void *));
+    for (unsigned i=0; i<num; i++)
+        p[i] = tmp[neworder[i]];
+}
+
+bool CThorExpandingRowArray::equal(ICompare *icmp, CThorExpandingRowArray &other)
+{
+    // slow but better than prev!
+    unsigned n = other.ordinality();
+    if (n!=ordinality())
+        return false;
+    for (unsigned i=0;i<n;i++)
+    {
+        const void *p1 = rows[i];
+        const void *p2 = other.query(i);
+        if (0 != icmp->docompare(p1, p2))
+            return false;
+    }
+    return true;
+}
+
+bool CThorExpandingRowArray::checkSorted(ICompare *icmp)
+{
+    unsigned i;
+    unsigned n=ordinality();
+    for (i=1; i<n; i++)
+    {
+        if (icmp->docompare(rows[i-1], rows[i])>0)
+            return false;
+    }
+    return true;
+}
+
+IRowStream *CThorExpandingRowArray::createRowStream(rowcount_t start, rowcount_t num, bool streamOwns)
+{
+    class CStream : public CSimpleInterface, implements IRowStream
+    {
+        rowcount_t pos;
+        CThorExpandingRowArray &parent;
+        bool owns;
+        rowcount_t lastRow;
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CStream(CThorExpandingRowArray &_parent, rowcount_t firstRow, rowcount_t _lastRow, bool _owns)
+            : parent(_parent), pos(firstRow), lastRow(_lastRow), owns(_owns)
+        {
+        }
+
+    // IRowStream
+        virtual const void *nextRow()
+        {
+            if (pos >= lastRow)
+                return NULL;
+            if (owns)
+                return parent.getClear(pos++);
+            else
+                return parent.get(pos++);
+        }
+        virtual void stop() { }
+    };
+
+    if (start>ordinality())
+        start = ordinality();
+    rowcount_t lastRow;
+    if ((num==(rowcount_t)-1)||(start+num>ordinality()))
+        lastRow = ordinality();
+    else
+        lastRow = start+num;
+
+    return new CStream(*this, start, lastRow, streamOwns);
+}
+
+void CThorExpandingRowArray::partition(ICompare &compare, unsigned num, UnsignedArray &out)
+{
+    unsigned p=0;
+    unsigned n = ordinality();
+    while (num)
+    {
+        out.append(p);
+        if (p<n)
+        {
+            unsigned q = p+(n-p)/num;
+            if (p==q){ // skip to next group
+                while (q<n)
+                {
+                    q++;
+                    if ((q<n)&&(compare.docompare(rows[p],rows[q])!=0)) // ensure at next group
+                        break;
+                }
+            }
+            else
+            {
+                while ((q<n)&&(q!=p)&&(compare.docompare(rows[q-1],rows[q])==0)) // ensure at start of group
+                    q--;
+            }
+            p = q;
+        }
+        num--;
+    }
+    out.append(n);
+}
+
+offset_t CThorExpandingRowArray::serializedSize()
+{
+    rowcount_t c = ordinality();
+    assertex(serializer);
+    offset_t total = 0;
+    for (unsigned i=0; i<c; i++)
+    {
+        CSizingSerializer ssz;
+        serializer->serialize(ssz, (const byte *)rows[i]);
+        total += ssz.size();
+    }
+    return total;
+}
+
+void CThorExpandingRowArray::serialize(IRowSerializerTarget &out)
 {
     bool warnnull = true;
     assertex(serializer);
-    for (unsigned i=0;i<numelem;i++) {
-        const void *row = item(i); 
-        if (row)
-            serializer->serialize(out,(const byte *)row);
-        else if (warnnull) {
-            WARNLOG("CThorRowArray::serialize ignoring NULL row");
-            warnnull = false;
+    rowcount_t n = ordinality();
+    if (n)
+    {
+        for (rowcount_t i = 0; i < n; i++)
+        {
+            const void *row = query(i);
+            if (row)
+                serializer->serialize(out, (const byte *)row);
+            else if (warnnull)
+            {
+                WARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
+                warnnull = false;
+            }
         }
-
     }
-
 }
 
-void CThorRowArray::serialize(IOutputRowSerializer *serializer,MemoryBuffer &mb,bool hasnulls)
+void CThorExpandingRowArray::serialize(MemoryBuffer &mb)
 {
     assertex(serializer);
     CMemoryRowSerializer s(mb);
-    if (!hasnulls)
-        serialize(serializer,s);
-    else {
+    if (!allowNulls)
+        serialize(s);
+    else
+    {
         unsigned short guard = 0x7631;
         mb.append(guard);
-        for (unsigned i=0;i<numelem;i++) {
-            const void *row = item(i); 
-            bool isnull = (row==NULL);
-            mb.append(isnull);
-            if (!isnull) 
-                serializer->serialize(s,(const byte *)row);
+        rowcount_t n = ordinality();
+        if (n)
+        {
+            for (rowcount_t i = 0; i < n; i++)
+            {
+                const void *row = query(i);
+                bool isnull = (row==NULL);
+                mb.append(isnull);
+                if (!isnull)
+                    serializer->serialize(s, (const byte *)row);
+            }
         }
     }
 }
 
-unsigned CThorRowArray::serializeblk(IOutputRowSerializer *serializer,MemoryBuffer &mb,size32_t dstmax, unsigned idx, unsigned count)
+void CThorExpandingRowArray::serializeCompress(MemoryBuffer &mb)
+{
+    MemoryBuffer exp;
+    serialize(exp);
+    fastLZCompressToBuffer(mb,exp.length(), exp.toByteArray());
+}
+
+unsigned CThorExpandingRowArray::serializeBlock(MemoryBuffer &mb, size32_t dstmax, unsigned idx, unsigned count)
 {
     assertex(serializer);
     CMemoryRowSerializer out(mb);
     bool warnnull = true;
-    if (idx>=numelem)
+    unsigned num=ordinality();
+    if (idx>=num)
         return 0;
-    if (numelem-idx<count)
-        count = numelem-idx;
+    if (num-idx<count)
+        count = num-idx;
     unsigned ret = 0;
-    for (unsigned i=0;i<count;i++) {
+    for (unsigned i=0;i<count;i++)
+    {
         size32_t ln = mb.length();
-        const void *row = item(i+idx); 
+        const void *row = query(i+idx);
         if (row)
             serializer->serialize(out,(const byte *)row);
-        else if (warnnull) {
-            WARNLOG("CThorRowArray::serialize ignoring NULL row");
+        else if (warnnull)
+        {
+            WARNLOG("CThorExpandingRowArray::serialize ignoring NULL row");
             warnnull = false;
         }
-        if (mb.length()>dstmax) {
+        if (mb.length()>dstmax)
+        {
             if (ln)
                 mb.setLength(ln);   // make sure one row
             break;
@@ -403,132 +848,646 @@ unsigned CThorRowArray::serializeblk(IOutputRowSerializer *serializer,MemoryBuff
     return ret;
 }
 
-
-void CThorRowArray::deserializerow(IEngineRowAllocator &allocator,IOutputRowDeserializer *deserializer,IRowDeserializerSource &in)
+void CThorExpandingRowArray::deserializeRow(IRowDeserializerSource &in)
 {
-    RtlDynamicRowBuilder rowBuilder(&allocator);
+    RtlDynamicRowBuilder rowBuilder(allocator);
     size32_t sz = deserializer->deserialize(rowBuilder,in);
     append(rowBuilder.finalizeRowClear(sz));
 }
 
-
-void CThorRowArray::deserialize(IEngineRowAllocator &allocator,IOutputRowDeserializer *deserializer,size32_t sz,const void *buf, bool hasnulls)
+void CThorExpandingRowArray::deserialize(size32_t sz, const void *buf)
 {
-    if (hasnulls) {
+    if (allowNulls)
+    {
         ASSERTEX((sz>=sizeof(short))&&(*(unsigned short *)buf==0x7631)); // check for mismatch
         buf = (const byte *)buf+sizeof(unsigned short);
         sz -= sizeof(unsigned short);
     }
     CThorStreamDeserializerSource d(sz,buf);
-    while (!d.eos()) {
-        if (hasnulls) {
+    while (!d.eos())
+    {
+        if (allowNulls)
+        {
             bool nullrow;
             d.read(sizeof(bool),&nullrow);
-            if (nullrow) {
+            if (nullrow)
+            {
                 append(NULL);
                 continue;
             }
         }
-        deserializerow(allocator,deserializer,d);
+        deserializeRow(d);
     }
 }
 
-
-
-IRowStream *CThorRowArray::createRowStream(unsigned start,unsigned num, bool streamowns)
+void CThorExpandingRowArray::deserializeExpand(size32_t sz, const void *data)
 {
-    class cStream: public CSimpleInterface, implements IRowStream
+    MemoryBuffer mb;
+    fastLZDecompressToBuffer(mb, data);
+    deserialize(mb.length(), mb.bufferBase());
+}
+
+//////////////////
+
+void CThorSpillableRowArray::registerWriteCallback(IWritePosCallback &cb)
+{
+    CThorSpillableRowArrayLock block(*this);
+    writeCallbacks.append(cb); // NB not linked to avoid circular dependency
+}
+void CThorSpillableRowArray::unregisterWriteCallback(IWritePosCallback &cb)
+{
+    CThorSpillableRowArrayLock block(*this);
+    writeCallbacks.zap(cb);
+}
+
+CThorSpillableRowArray::CThorSpillableRowArray(CThorSpillableRowArray &other)
+    : CThorExpandingRowArray(other.activity), commitDelta(CommitStep)
+{
+    transferFrom(other);
+}
+
+CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity, bool allowNulls, bool stable, rowcount_t initialSize, size32_t _commitDelta)
+    : CThorExpandingRowArray(activity, &activity, false, stable, false, initialSize), commitDelta(_commitDelta)
+{
+    commitRows = 0;
+    firstRow = 0;
+}
+
+CThorSpillableRowArray::CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls, bool stable, rowcount_t initialSize, size32_t _commitDelta)
+    : CThorExpandingRowArray(activity, rowIf, false, stable, false, initialSize), commitDelta(_commitDelta)
+{
+    commitRows = 0;
+    firstRow = 0;
+}
+
+CThorSpillableRowArray::~CThorSpillableRowArray()
+{
+    clearRows();
+}
+
+void CThorSpillableRowArray::clearRows()
+{
+    for (rowcount_t i = firstRow; i < numRows; i++)
+        ReleaseThorRow(rows[i]);
+    numRows = 0;
+    firstRow = 0;
+    commitRows = 0;
+}
+
+void CThorSpillableRowArray::kill()
+{
+    clearRows();
+    CThorExpandingRowArray::kill();
+}
+
+bool CThorSpillableRowArray::ensure(rowcount_t requiredRows)
+{
+    //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
+
+    OwnedConstThorRow newStableSortTmp;
+    OwnedConstThorRow newRows = allocateNewRows(requiredRows, newStableSortTmp);
+    if (!newRows)
+        return false;
+
+    const void **oldRows;
+    void **oldStableSortTmp;
     {
-    public:
-        unsigned pos;
-        unsigned num;
-        bool owns;
-        CThorRowArray* parent;
+        CThorSpillableRowArrayLock block(*this);
 
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        const void *nextRow()
-        {
-            if (!num) 
-                return NULL;
-            num--;
-            if (owns)
-                return parent->itemClear(pos++);
-            const void *ret = parent->item(pos++);
-            LinkThorRow(ret);
-            return ret;
-        }
+        oldRows = rows;
+        oldStableSortTmp = stableSortTmp;
+        memcpy((void *)newRows.get(), rows+firstRow, (numRows - firstRow) * sizeof(void*));
+        numRows -= firstRow;
+        commitRows -= firstRow;
+        firstRow = 0;
 
-        void stop()
-        {
-            num = 0;
-            // could remove rest possibly
-        }
-
-    } *ret = new cStream();
-    if (start>ordinality()) {
-        start = ordinality();
-        num = 0;
+        rows = (const void **)newRows.getClear();
+        maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+        stableSortTmp = (void **)newStableSortTmp.getClear();
     }
-    else if ((num==(unsigned)-1)||(start+num>ordinality()))
-        num = ordinality()-start;
-    ret->pos = start;
-    ret->num = num;
-    ret->owns = streamowns;
-    ret->parent = this;
-    return ret;
+    ReleaseThorRow(oldRows);
+    ReleaseThorRow(oldStableSortTmp);
+	return true;
 }
 
-unsigned CThorRowArray::save(IRowWriter *writer, unsigned pos,unsigned num, bool owns)
+void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
 {
-    if (pos>ordinality()) {
-        pos = ordinality();
-        num = 0;
+    unsigned n = numCommitted();
+    if (n>1)
+    {
+        void **const rows = (void **const)getBlock(n);
+        doSort(n, rows, compare, maxCores);
     }
-    else if ((num==(unsigned)-1)||(pos+num>ordinality()))
-        num = ordinality()-pos;
-    if (!num) 
+}
+
+unsigned CThorSpillableRowArray::save(IFile &iFile, rowcount_t watchRecNum, offset_t *watchFilePosResult)
+{
+    rowcount_t n = numCommitted();
+    if (0 == n)
         return 0;
-    PROGLOG("CThorRowArray::save %d rows",num);
-    unsigned ret = 0; 
-    while (num--) {
-        OwnedConstThorRow row;
-        if (owns) 
-            row.setown(itemClear(pos++));
-        else 
-            row.set(item(pos++));
-        writer->putRow(row.getClear());
-        ret++;
+    const void **rows = getBlock(n);
+    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf->queryRowSerializer(), rowIf->queryRowAllocator(), allowNulls, false, true);
+    ActPrintLog(&activity, "CThorSpillableRowArray::save %"RCPF"d rows", numRows);
+    offset_t startPos = writer->getPosition();
+    for (rowcount_t i=0; i < n; i++)
+    {
+        const void *row = rows[i];
+        assertex(row || allowNulls);
+        writer->putRow(row);
+        rows[i] = NULL;
+        ForEachItemIn(c, writeCallbacks)
+        {
+            IWritePosCallback &callback = writeCallbacks.item(c);
+            if (i == callback.queryRecordNumber())
+            {
+                writer->flush();
+                callback.filePosition(writer->getPosition());
+            }
+        }
     }
-    PROGLOG("CThorRowArray::save done");
-    return ret;
+    writer->flush();
+    offset_t bytesWritten = writer->getPosition() - startPos;
+    writer.clear();
+    ActPrintLog(&activity, "CThorSpillableRowArray::save done, bytes = %"I64F"d", (__int64)bytesWritten);
+    return n;
 }
 
-void CThorRowArray::reorder(unsigned start,unsigned num, unsigned *neworder)
+
+// JCSMORE - these methods are essentially borrowed from RoxieOutputRowArray, would be good to unify
+const void **CThorSpillableRowArray::getBlock(rowcount_t readRows)
 {
-    if (start>=ordinality())
-        return;
-    if (start+num>ordinality())
-        num = ordinality()-start;
-    if (!num)
-        return;
-    MemoryAttr ma;
-    byte **tmp = (byte **)ma.allocate(num*sizeof(void *));
-    byte **p = ((byte **)ptrbuf.toByteArray())+start;
-    memcpy(tmp,p,num*sizeof(void *));
-    for (unsigned i=0;i<num;i++) 
-        p[i] = tmp[neworder[i]];
+    dbgassertex(firstRow+readRows <= commitRows);
+    return rows + firstRow;
 }
 
-void CThorRowArray::reserve(unsigned n)
+void CThorSpillableRowArray::flush()
 {
-    size32_t sz = sizeof(const byte *)*n;
-    if (raiseexceptions) {
-        size32_t tot = sz+totalMem();
-        if (tot>maxtotal)
-            throw new CThorRowArrayException(tot);
+    CThorSpillableRowArrayLock block(*this);
+    dbgassertex(numRows >= commitRows);
+    //This test could be improved...
+    if (firstRow != 0 && firstRow == commitRows)
+    {
+        //A block of rows was removed - copy these rows to the start of the block.
+        memmove(rows, rows+firstRow, (numRows-firstRow) * sizeof(void *));
+        numRows -= firstRow;
+        firstRow = 0;
     }
-    memset(ptrbuf.reserve(sz),0,sz);
-    numelem+=n;
+
+    commitRows = numRows;
+}
+
+void CThorSpillableRowArray::transferRows(rowcount_t & outNumRows, const void * * & outRows)
+{
+    assertex(firstRow == 0);  // could allow that to be transferred as well
+    CThorSpillableRowArrayLock block(*this);
+    CThorExpandingRowArray::transferRows(outNumRows, outRows);
+    //firstRows = 0;
+    commitRows = 0;
+}
+
+void CThorSpillableRowArray::transferFrom(CThorExpandingRowArray &src)
+{
+    CThorSpillableRowArrayLock block(*this);
+    CThorExpandingRowArray::transferFrom(src);
+    commitRows = numRows;
+}
+
+void CThorSpillableRowArray::transferFrom(CThorSpillableRowArray &donor)
+{
+	transferFrom((CThorExpandingRowArray &)donor);
+}
+
+void CThorSpillableRowArray::swap(CThorSpillableRowArray &other)
+{
+    CThorSpillableRowArrayLock block(*this);
+    CThorExpandingRowArray::swap(other);
+    rowcount_t otherFirstRow = other.firstRow;
+    rowcount_t otherCommitRows = other.commitRows;
+
+    other.firstRow = firstRow;
+    other.commitRows = commitRows;
+
+    firstRow = otherFirstRow;
+    commitRows = otherCommitRows;
+}
+
+IRowStream *CThorSpillableRowArray::createRowStream()
+{
+    return new CSpillableStream(activity, *this, rowIf, allowNulls);
+}
+
+
+
+class CThorRowCollectorBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
+{
+    class CFileOwner : public CSimpleInterface, implements IInterface
+    {
+        IFile *iFile;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+        CFileOwner(IFile *_iFile) : iFile(_iFile)
+        {
+        }
+        ~CFileOwner()
+        {
+            iFile->remove();
+        }
+        IFile &queryIFile() const { return *iFile; }
+    };
+protected:
+    CActivityBase &activity;
+    CThorSpillableRowArray spillableRows;
+    PointerIArrayOf<CFileOwner> spillFiles;
+    Owned<IOutputRowSerializer> serializer;
+    RowCollectorFlags diskMemMix;
+    unsigned spillPriority;
+    unsigned totalRows;
+    unsigned overflowCount;
+    unsigned maxCores;
+    unsigned outStreams;
+    ICompare *iCompare;
+    bool isStable, preserveGrouping;
+    IRowInterfaces *rowIf;
+    SpinLock readerLock;
+    bool mmRegistered;
+    Owned<CSharedSpillableRowSet> spillableRowSet;
+
+    bool spillRows()
+    {
+        if (rc_allMem == diskMemMix)
+            return false;
+        rowcount_t numRows = spillableRows.numCommitted();
+        if (numRows == 0)
+            return false;
+
+        totalRows += numRows;
+        if (iCompare)
+            spillableRows.sort(*iCompare, maxCores); // sorts committed rows
+
+        StringBuffer tempname;
+        GetTempName(tempname,"srtspill",true);
+        Owned<IFile> iFile = createIFile(tempname.str());
+        spillFiles.append(new CFileOwner(iFile.getLink()));
+        spillableRows.save(*iFile); // saves committed rows
+        spillableRows.noteSpilled(numRows);
+
+        ++overflowCount;
+
+        return true;
+    }
+    void setPreserveGrouping(bool _preserveGrouping)
+    {
+        preserveGrouping = _preserveGrouping;
+        spillableRows.setAllowNulls(preserveGrouping);
+    }
+    void putRow(const void *row)
+    {
+        if (!spillableRows.append(row))
+        {
+            bool oom = false;
+            if (rc_allMem != diskMemMix)
+            {
+                CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+                //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
+                //the problem is global memory is exhausted) - in which case force a spill here (but add any pending
+                //rows first).
+                if (spillableRows.numCommitted() != 0)
+                {
+                    spillableRows.flush();
+                    spillRows();
+                }
+                //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                //spillRows() cannot shift active row pointer since it can be called from any thread
+                spillableRows.flush();
+                if (!spillableRows.append(row))
+                    oom = true;
+            }
+            else
+                oom = true;
+            if (oom)
+            {
+                ReleaseThorRow(row);
+                throw MakeActivityException(&activity, ROXIEMM_MEMORY_LIMIT_EXCEEDED, "Insufficient memory to append sort row");
+            }
+        }
+    }
+    IRowStream *getStream(CThorExpandingRowArray *allMemRows, bool shared)
+    {
+        SpinBlock b(readerLock);
+        if (0 == outStreams)
+        {
+            spillableRows.flush();
+            if ((rc_allDisk == diskMemMix) || ((rc_allDiskOrAllMem == diskMemMix) && overflowCount))
+            {
+                CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+                if (spillableRows.numCommitted())
+                {
+                    spillRows();
+                    spillableRows.kill();
+                }
+            }
+        }
+        ++outStreams;
+
+        class CStreamFileOwner : public CSimpleInterface, implements IExtRowStream
+        {
+            Linked<CFileOwner> fileOwner;
+            IExtRowStream *stream;
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+            CStreamFileOwner(CFileOwner *_fileOwner, IExtRowStream *_stream) : fileOwner(_fileOwner)
+            {
+                stream = LINK(_stream);
+            }
+            ~CStreamFileOwner()
+            {
+                stream->Release();
+            }
+        // IExtRowStream
+            virtual const void *nextRow() { return stream->nextRow(); }
+            virtual void stop() { stream->stop(); }
+            virtual offset_t getOffset() { return stream->getOffset(); }
+            virtual void stop(CRC32 *crcout=NULL) { stream->stop(); }
+            virtual const void *prefetchRow(size32_t *sz=NULL) { return stream->prefetchRow(sz); }
+            virtual void prefetchDone() { stream->prefetchDone(); }
+            virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows)
+            {
+                stream->reinit(offset, len, maxRows);
+            }
+        };
+
+        // NB: CStreamFileOwner, shares reference so CFileOwner, last usage, will auto delete file
+        // which may be one of these streams of CThorRowCollectorBase itself
+        IArrayOf<IRowStream> instrms;
+        ForEachItemIn(f, spillFiles)
+        {
+            CFileOwner *fileOwner = spillFiles.item(f);
+            Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, 0, (offset_t) -1, (unsigned __int64)-1, false, preserveGrouping);
+            instrms.append(* new CStreamFileOwner(fileOwner, strm));
+        }
+
+        {
+            CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+            if (spillableRowSet)
+                instrms.append(*spillableRowSet->createRowStream());
+            else if (spillableRows.numCommitted())
+            {
+                totalRows += spillableRows.numCommitted();
+                if (iCompare && (1 == outStreams))
+                    spillableRows.sort(*iCompare, maxCores);
+                if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
+                {
+                    assertex(allMemRows);
+                    assertex(1 == outStreams);
+                    allMemRows->transferFrom(spillableRows);
+                    // stream cannot be used
+                    return NULL;
+                }
+                if (!shared)
+                    instrms.append(*spillableRows.createRowStream()); // NB: stream will take ownership of rows in spillableRows
+                else
+                {
+                    spillableRowSet.setown(new CSharedSpillableRowSet(activity, spillableRows, rowIf, preserveGrouping));
+                    instrms.append(*spillableRowSet->createRowStream());
+                }
+            }
+        }
+        if (0 == instrms.ordinality())
+            return createNullRowStream();
+        else if (1 == instrms.ordinality())
+            return LINK(&instrms.item(0));
+        else if (iCompare)
+        {
+            Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
+            return createRowStreamMerger(instrms.ordinality(), instrms.getArray(), iCompare, false, linkcounter);
+        }
+        else
+            return createConcatRowStream(instrms.ordinality(),instrms.getArray());
+    }
+    void reset()
+    {
+        spillableRows.kill();
+        spillFiles.kill();
+        totalRows = overflowCount = outStreams = 0;
+    }
+public:
+    CThorRowCollectorBase(CActivityBase &_activity)
+        : activity(_activity),
+          spillableRows(_activity)
+    {
+        rowIf = NULL;
+        iCompare = NULL;
+        preserveGrouping = isStable = false;
+        totalRows = 0;
+        overflowCount = 0;
+        diskMemMix = rc_mixed;
+        spillPriority = 50;
+        outStreams = 0;
+        activity.queryJob().queryRowManager()->addRowBuffer(this);
+        mmRegistered = true;
+        maxCores = activity.queryMaxCores();
+    }
+    ~CThorRowCollectorBase()
+    {
+        reset();
+        if (mmRegistered)
+            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+    }
+    void setup(IRowInterfaces *_rowIf, ICompare *_iCompare, bool _isStable, RowCollectorFlags _diskMemMix, unsigned _spillPriority)
+    {
+        rowIf = _rowIf;
+        iCompare = _iCompare;
+        isStable = _isStable;
+        diskMemMix = _diskMemMix;
+        spillPriority = _spillPriority;
+        if (rc_allMem == diskMemMix)
+            spillPriority = UINT_MAX; // all mem, implies no spilling
+        if (mmRegistered && (UINT_MAX == spillPriority))
+        {
+            mmRegistered = false;
+            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        }
+        spillableRows.setup(rowIf, false, isStable);
+    }
+    void transferRowsOut(CThorExpandingRowArray &out, bool sort)
+    {
+        CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+        totalRows += spillableRows.numCommitted();
+        if (sort && iCompare)
+            spillableRows.sort(*iCompare, maxCores);
+        out.transferFrom(spillableRows);
+    }
+    bool hasOverflowed() const
+    {
+        return 0 != overflowCount;
+    }
+    rowcount_t numRows() const
+    {
+        return totalRows;
+    }
+    unsigned numOverflows() const
+    {
+        return overflowCount;
+    }
+    unsigned overflowScale() const
+    {
+        // 1 if no spill
+        if (!overflowCount)
+            return 1;
+        return overflowCount*2+3; // bit arbitrary
+    }
+    void transferRowsIn(CThorExpandingRowArray &src)
+    {
+        reset();
+        spillableRows.transferFrom(src);
+    }
+// IBufferedRowCallback
+    virtual unsigned getPriority() const
+    {
+        return spillPriority;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        if (UINT_MAX == spillPriority)
+            return false;
+        CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+        return spillRows();
+    }
+};
+
+enum TRLGroupFlag { trl_ungroup, trl_preserveGrouping, trl_stopAtEog };
+class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
+{
+    IRowStream *load(IRowStream *in, const bool &abort, TRLGroupFlag grouping, CThorExpandingRowArray *allMemRows)
+    {
+        reset();
+        setPreserveGrouping(trl_preserveGrouping == grouping);
+        while (!abort)
+        {
+            const void *next = in->nextRow();
+            if (!next)
+            {
+                if (grouping == trl_stopAtEog)
+                    break;
+                else
+                {
+                    next = in->nextRow();
+                    if (!next)
+                        break;
+                    if (grouping == trl_preserveGrouping)
+                        putRow(NULL);
+                }
+            }
+            putRow(next);
+        }
+        return getStream(allMemRows, false);
+    }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CThorRowLoader(CActivityBase &activity) : CThorRowCollectorBase(activity)
+    {
+    }
+// IThorRowCollectorCommon
+    virtual void setup(IRowInterfaces *rowIf, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority)
+    {
+        CThorRowCollectorBase::setup(rowIf, iCompare, isStable, diskMemMix, spillPriority);
+    }
+    virtual rowcount_t numRows() const { return CThorRowCollectorBase::numRows(); }
+    virtual unsigned numOverflows() const { return CThorRowCollectorBase::numOverflows(); }
+    virtual unsigned overflowScale() const { return CThorRowCollectorBase::overflowScale(); }
+    virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
+    virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+// IThorRowLoader
+    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows)
+    {
+        assertex(!iCompare || !preserveGrouping); // can't sort if group preserving
+        return load(in, abort, preserveGrouping?trl_preserveGrouping:trl_ungroup, allMemRows);
+    }
+    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows)
+    {
+        return load(in, abort, trl_stopAtEog, allMemRows);
+    }
+};
+
+IThorRowLoader *createThorRowLoader(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority)
+{
+    Owned<IThorRowLoader> loader = new CThorRowLoader(activity);
+    loader->setup(rowIf, iCompare, isStable, diskMemMix, spillPriority);
+    return loader.getClear();
+}
+
+IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority)
+{
+    return createThorRowLoader(activity, &activity, iCompare, isStable, diskMemMix, spillPriority);
+}
+
+
+
+class CThorRowCollector : public CThorRowCollectorBase, implements IThorRowCollector
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CThorRowCollector(CActivityBase &activity) : CThorRowCollectorBase(activity)
+    {
+    }
+// IThorRowCollectorCommon
+    virtual void setup(IRowInterfaces *rowIf, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority, bool preserveGrouping)
+    {
+        assertex(!iCompare || !preserveGrouping); // can't sort if group preserving
+        CThorRowCollectorBase::setup(rowIf, iCompare, isStable, diskMemMix, spillPriority);
+        setPreserveGrouping(preserveGrouping);
+    }
+    virtual rowcount_t numRows() const { return CThorRowCollectorBase::numRows(); }
+    virtual unsigned numOverflows() const { return CThorRowCollectorBase::numOverflows(); }
+    virtual unsigned overflowScale() const { return CThorRowCollectorBase::overflowScale(); }
+    virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort) { CThorRowCollectorBase::transferRowsOut(dst, sort); }
+    virtual void transferRowsIn(CThorExpandingRowArray &src) { CThorRowCollectorBase::transferRowsIn(src); }
+// IThorRowCollector
+    virtual IRowWriter *getWriter()
+    {
+        class CWriter : public CSimpleInterface, implements IRowWriter
+        {
+            Linked<CThorRowCollector> parent;
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CWriter(CThorRowCollector *_parent) : parent(_parent)
+            {
+            }
+        // IRowWriter
+            virtual void putRow(const void *row)
+            {
+                parent->putRow(row);
+            }
+            virtual void flush()
+            {
+            }
+        };
+        return new CWriter(this);
+    }
+    virtual void reset()
+    {
+        CThorRowCollectorBase::reset();
+    }
+    virtual IRowStream *getStream(bool shared)
+    {
+        return CThorRowCollectorBase::getStream(NULL, shared);
+    }
+};
+
+IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority, bool preserveGrouping)
+{
+    Owned<IThorRowCollector> collector = new CThorRowCollector(activity);
+    collector->setup(rowIf, iCompare, isStable, diskMemMix, spillPriority, preserveGrouping);
+    return collector.getClear();
+}
+
+IThorRowCollector *createThorRowCollector(CActivityBase &activity, ICompare *iCompare, bool isStable, RowCollectorFlags diskMemMix, unsigned spillPriority, bool preserveGrouping)
+{
+    return createThorRowCollector(activity, &activity, iCompare, isStable, diskMemMix, spillPriority, preserveGrouping);
 }
 
 
@@ -692,21 +1651,90 @@ public:
 };
 
 
-
-
-
 ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServerStatus *_status)
 {
     return new cMultiThorResourceMutex(grpname,_status);
 }
 
 
-
-
-
-static class CThorRowCallbackHook : implements IRtlRowCallback
+class CThorAllocator : public CSimpleInterface, implements roxiemem::IRowAllocatorCache, implements IRtlRowCallback, implements IThorAllocator
 {
+    mutable IArrayOf<IEngineRowAllocator> allAllocators;
+    mutable SpinLock allAllocatorsLock;
+    Owned<roxiemem::IRowManager> rowManager;
 public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CThorAllocator(memsize_t memSize)
+    {
+        rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
+        rtlSetReleaseRowHook(this);
+    }
+    ~CThorAllocator()
+    {
+        rowManager.clear();
+        allAllocators.kill();
+        rtlSetReleaseRowHook(NULL); // nothing should use it beyond this point anyway
+    }
+
+// IThorAllocator
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    {
+        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
+        SpinBlock b(allAllocatorsLock);
+        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        LINK(ret);
+        allAllocators.append(*ret);
+        return ret;
+    }
+    virtual roxiemem::IRowManager *queryRowManager() const
+    {
+        return rowManager;
+    }
+
+// IRowAllocatorCache
+    virtual unsigned getActivityId(unsigned cacheId) const
+    {
+        SpinBlock b(allAllocatorsLock);
+        if (allAllocators.isItem(cacheId))
+            return allAllocators.item(cacheId).queryActivityId();
+        else
+        {
+            //assert(false);
+            return 12345678; // Used for tracing, better than a crash...
+        }
+    }
+    virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
+    {
+        SpinBlock b(allAllocatorsLock);
+        if (allAllocators.isItem(cacheId))
+            return allAllocators.item(cacheId).getId(out);
+        else
+        {
+            assert(false);
+            return out.append("unknown"); // Used for tracing, better than a crash...
+        }
+    }
+    virtual void onDestroy(unsigned cacheId, void *row) const
+    {
+        IEngineRowAllocator *allocator;
+        {
+            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
+            if (allAllocators.isItem(cacheId))
+                allocator = &allAllocators.item(cacheId);
+            else
+            {
+                assert(false);
+                return;
+            }
+        }
+        allocator->queryOutputMeta()->destruct((byte *) row);
+    }
+    virtual void checkValid(unsigned cacheId, const void *row) const
+    {
+        // JCSMORE
+    }
+// IRtlRowCallback
     virtual void releaseRow(const void * row) const
     {
         ReleaseThorRow(row);
@@ -715,8 +1743,7 @@ public:
     {
         if (rowset)
         {
-            /// NB not thread safe!
-            if (!isThorRowShared(rowset))
+            if (!roxiemem::HeapletBase::isShared(rowset))
             {
                 byte * * finger = rowset;
                 while (count--)
@@ -725,7 +1752,7 @@ public:
             ReleaseThorRow(rowset);
         }
     }
-    virtual void * linkRow(const void * row) const
+    virtual void *linkRow(const void * row) const
     {
         if (row) 
             LinkThorRow(row);
@@ -737,26 +1764,11 @@ public:
             LinkThorRow(rowset);
         return const_cast<byte * *>(rowset);
     }
-} ThorRowCallbackHook;
+};
 
-static memsize_t ThorMemoryManagerMaxSize;
-
-void initThorMemoryManager(size32_t szMB, unsigned memtracelevel, unsigned memstatinterval)
+IThorAllocator *createThorAllocator(memsize_t memSize)
 {
-    ASSERTEX(!ThorMemoryManager);
-    ThorMemoryManagerMaxSize = 1024*1024*(memsize_t)szMB;
-    ThorMemoryManager = createThorRowManager(ThorMemoryManagerMaxSize, &ThorAllocatorCache, false);
-    rtlSetReleaseRowHook(&ThorRowCallbackHook);
-}
-
-void resetThorMemoryManager()
-{
-    ThorAllocatorCache.reset(); // clears cached rows
-    if (ThorMemoryManager) {
-        ThorMemoryManager->Release();
-        ThorMemoryManager = NULL;
-    }
-    ThorAllocatorCache.clear(); // do after so that act ids still around
+    return new CThorAllocator(memSize);
 }
 
 
@@ -1034,246 +2046,6 @@ IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t s
     return new COutputMetaWithExtra(meta, sz);
 }
 
-// mirroring MemoryBuffer 
-#define FIRST_CHUNK_SIZE     8
-
-
-class ThorEngineRowAllocator : public CSimpleInterface, implements IThorRowAllocator
-{
-protected:
-    IThorRowManager & rowManager;
-    CachedOutputMetaData meta;
-    unsigned activityId;
-    unsigned allocatorId;
-    size32_t minSize;
-    size32_t initSize;
-    unsigned destructmask;
-
-    void * doFinalizeRow(size32_t newSize, void * row)
-    {
-        if (newSize) {
-#ifdef _DEBUG
-            size32_t actualsize = meta.getRecordSize(row);
-            if (actualsize!=newSize) {
-                PrintStackReport();
-                ERRLOG("finalizeRow(%p) actual=%u newSize=%u",row,actualsize,newSize);
-                ASSERTEX(actualsize==newSize);
-            }
-#endif
-            unsigned id = allocatorId | ACTIVITY_FLAG_ISREGISTERED | destructmask;
-            assertex(newSize>=minSize);
-            void * ret = rowManager.finalizeRow(row, newSize, id, meta.isVariableSize()); 
-            if ((ret!=row)&&meta.isVariableSize())
-                ReleaseThorRow(row);
-            return ret;
-        }
-        if (row) 
-            ReleaseThorRow(row);
-        return NULL;
-    }
-
-
-public:
-    ThorEngineRowAllocator(IThorRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId) 
-        : rowManager(_rowManager), meta(_meta) 
-    {
-        activityId = _activityId;
-        allocatorId = ThorAllocatorCache.append(*this);
-        initSize = meta.getInitialSize();
-        minSize = meta.getMinRecordSize();
-        destructmask = meta.needsDestruct()?ACTIVITY_FLAG_NEEDSDESTRUCTOR:0;
-    }
-    ~ThorEngineRowAllocator() 
-    {
-    }
-
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface)
-
-//interface IEngineRowsetAllocator
-    virtual byte * * createRowset(unsigned count)
-    {
-        if (count == 0)
-            return NULL;
-        return (byte **) rowManager.allocate(count * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-    }
-
-    virtual void releaseRowset(unsigned count, byte * * rowset)
-    {
-        rtlReleaseRowset(count, rowset);
-    }
-
-    virtual byte * * linkRowset(byte * * rowset)
-    {
-        return rtlLinkRowset(rowset);
-    }
-
-    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
-    {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-            rowset = (byte * *)rowManager.resizeRow(rowset, (newRowCount-1) * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-
-        rowset[newRowCount-1] = (byte *)row;
-        return rowset;
-    }
-
-    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
-    {
-        if (!rowset)
-            rowset = createRowset(newRowCount);
-        else
-            rowset = (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-
-        //New rows (if any) aren't cleared....
-        return rowset;
-    }
-//interface IEngineAnyRowAllocator
-    virtual void * createRow()
-    {
-        return rowManager.allocate(initSize<sizeof(void *)?sizeof(void*):initSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED);
-    }
-
-    virtual void * createRow(size32_t & allocatedSize)
-    {
-        if (meta.isFixedSize())
-        {
-            allocatedSize = initSize;
-            return createRow();
-        }
-        // extensible row
-        return rowManager.allocateExt(initSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED, allocatedSize);
-    }
-
-    virtual void releaseRow(const void * row)
-    {
-        ReleaseThorRow(row);
-    }
-
-    virtual void * linkRow(const void * row)
-    {
-        LinkThorRow(row);
-        return const_cast<void *>(row);
-    }
-
-    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize)
-    {
-        return doFinalizeRow(newSize, row);
-    }
-
-    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) // NB in 'size' == max
-    {
-        // assertex(!meta.isFixedSize()); // JCSMORE - cloneRow calls ensureCapacity->resizeRow....
-        // assertex(newSize >= size); // JCSMORE - if variable, this should always be true, but can be called from fixed (cloneRow again)
-        // this is used to extend row with slack
-        return rowManager.extendRow(row,newSize,allocatorId | ACTIVITY_FLAG_ISREGISTERED,size);
-    }
-
-    virtual IOutputMetaData * queryOutputMeta()
-    {
-        return meta.queryOriginal();
-    }
-    virtual unsigned queryActivityId()
-    {
-        return activityId;
-    }
-    virtual StringBuffer &getId(StringBuffer &idStr)
-    {
-        return idStr.append(activityId); // MORE - may want more context info in here
-    }
-    virtual IOutputRowSerializer *createRowSerializer(ICodeContext *ctx)
-    {
-        return meta.createRowSerializer(ctx, activityId);
-    }
-
-    virtual IOutputRowDeserializer *createRowDeserializer(ICodeContext *ctx)
-    {
-        return meta.createRowDeserializer(ctx, activityId);
-    }
-
-};
-
-unsigned CThorRowAllocatorCache::getActivityId(unsigned cacheId) const
-{
-    return item(cacheId).queryActivityId();
-}
-StringBuffer & CThorRowAllocatorCache::getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
-{
-    return item(cacheId).getId(out);
-}
-void CThorRowAllocatorCache::onDestroy(unsigned cacheId, void *row) const
-{
-    item(cacheId).queryOutputMeta()->destruct((byte *) row); 
-}
-void CThorRowAllocatorCache::checkValid(unsigned cacheId, const void *row) const
-{
-}
-
-
-size32_t CThorRowAllocatorCache::subSize(unsigned cacheId, const void *row) const
-{
-    class cRowSubSizer: public IIndirectMemberVisitor
-    {
-    public:
-        size32_t size;
-        inline cRowSubSizer()
-        {
-            size = 0;
-        }
-        virtual void visitRowset(size32_t count, byte * * rows)
-        {
-            size += thorRowMemoryFootprint(rows);
-            while (count--) {
-                size += thorRowMemoryFootprint(*rows);
-                rows++;
-            }
-        }
-        virtual void visitRow(const byte * row)
-        {
-            size += thorRowMemoryFootprint(row);
-        }
-
-    } rss;
-    item(cacheId).queryOutputMeta()->walkIndirectMembers((const byte *)row,rss);
-    return rss.size;
-}
-
-unsigned CThorRowAllocatorCache::append(ThorEngineRowAllocator &a)
-{
-    a.Link();
-    SpinBlock block(ThorMMsect);
-    unsigned allocatorId = ThorRowAllocators.ordinality();
-    assertex(allocatorId<MAX_ACTIVITY_ID);
-    ForEachItemIn(i,ThorRowAllocators) 
-        if (ThorRowAllocators.item(i)==NULL) {
-            allocatorId = i;
-            break;
-        }
-    if (allocatorId==ThorRowAllocators.ordinality())
-        ThorRowAllocators.append(&a);
-    else
-        ThorRowAllocators.replace(&a,allocatorId);
-    return allocatorId;
-}
-
-void CThorRowAllocatorCache::clear()
-{
-    SpinBlock block(ThorMMsect);
-    ForEachItemIn(i,ThorRowAllocators) {
-        ((ThorEngineRowAllocator *)ThorRowAllocators.item(i))->Release();
-    }
-    ThorRowAllocators.kill();
-}
-
-void CThorRowAllocatorCache::reset()
-{
-}
-
-IThorRowAllocator *createThorRowAllocator(IOutputMetaData * _meta, unsigned _activityId)
-{
-    assertex(_activityId);
-    return new ThorEngineRowAllocator(*ThorMemoryManager,_meta,_activityId);
-}
 
 
 IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
@@ -1281,17 +2053,7 @@ IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
     return LINK(chain);
 }
 
- memsize_t ThorRowMemoryAvailable()
-{
-    return ThorMemoryManager->remaining();
- }
-
 void setLCRrowCRCchecking(bool on)
 {
-    ThorMemoryManager->setLCRrowCRCchecking(on);
+    // JCSMORE!
 }
-
-
-
-
-

@@ -52,6 +52,7 @@ include_directories (
          ./../../common/thorhelper 
          ./../thorcrc 
          ./../../common/dllserver 
+         ./../../roxie/roxiemem
          ${CMAKE_CURRENT_BINARY_DIR}
     )
 
@@ -74,6 +75,7 @@ else ()
          mp
          dalibase
          graph_lcr
+         roxiemem
     )
 endif (WIN32)
 
