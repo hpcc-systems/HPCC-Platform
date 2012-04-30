@@ -160,7 +160,11 @@ public:
             return rlist->queryResource(0)->getAccessFlags();
         else
             return -1;
-    }   
+    }
+    virtual bool logout(ISecUser& sec_user)
+    {
+        UNIMPLEMENTED;
+    }
     virtual int getAccessFlagsEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename)
     {
         UNIMPLEMENTED;

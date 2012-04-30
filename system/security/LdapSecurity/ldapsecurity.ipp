@@ -359,6 +359,7 @@ public:
     bool authorize(ISecUser& sec_user, ISecResourceList * Resources);
     bool authorizeEx(SecResourceType rtype, ISecUser& sec_user, ISecResourceList * Resources);
     int authorizeEx(SecResourceType rtype, ISecUser& sec_user, const char* resourcename);
+    virtual bool logout(ISecUser& sec_user);
     virtual int authorizeFileScope(ISecUser & user, const char * filescope);
     virtual bool authorizeFileScope(ISecUser & user, ISecResourceList * resources);
     virtual int authorizeWorkunitScope(ISecUser & user, const char * wuscope);
