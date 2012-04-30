@@ -45,7 +45,7 @@ private:
     StringAttr   m_pw;
     StringAttr   m_Fqdn;
     StringAttr   m_Peer;
-    bool         m_isAuthenticated;
+    authStatus   m_authenticateStatus;
     CDateTime    m_passwordExpiration;//local time
     unsigned     m_userid;
     MemoryBuffer m_usersid;
@@ -70,7 +70,6 @@ public:
     virtual ~CLdapSecUser();
 
 //non-interfaced functions
-    virtual void setAuthenticated(bool authenticated);
     void setUserID(unsigned userid);
     void setUserSid(int sidlen, const char* sid);
     MemoryBuffer& getUserSid();
@@ -85,7 +84,6 @@ public:
     virtual bool setLastName(const char * lname);
     const char * getRealm();
     bool setRealm(const char * name);
-    bool isAuthenticated();
     ISecCredentials & credentials();
     virtual unsigned getUserID();
     virtual void copyTo(ISecUser& source);
@@ -130,6 +128,9 @@ public:
        }
        return numDays;
    }
+
+   authStatus getAuthenticateStatus()           { return m_authenticateStatus; }
+   void setAuthenticateStatus(authStatus status){ m_authenticateStatus = status; }
 
    ISecUser * clone();
     virtual void setProperty(const char* name, const char* value){}
