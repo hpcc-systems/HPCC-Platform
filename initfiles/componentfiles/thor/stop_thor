@@ -44,7 +44,7 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-masterproc="thormaster_$THORNAME"
+masterproc="$instancedir/thormaster_$THORNAME"
 while [ "`${PIDOF} $masterproc`" != "" ]
 do
   echo --------------------------
@@ -58,7 +58,7 @@ done
 echo --------------------------
 echo stopping thor slaves 
 
-slaveproc="thorslave_$THORNAME"
+slaveproc="$instancedir/thorslave_$THORNAME"
 if [ "$localthor" = "true" ]; then
     killall -9 $slaveproc
 else
