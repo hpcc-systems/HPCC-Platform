@@ -450,7 +450,6 @@ int CEspHttpServer::processRequest()
                     if(realmbuf.length() == 0)
                         realmbuf.append("ESP");
                     m_response->sendBasicChallenge(realmbuf.str(), !isSoapPost);
-                    break;
                 }
                 return 0;
             }
