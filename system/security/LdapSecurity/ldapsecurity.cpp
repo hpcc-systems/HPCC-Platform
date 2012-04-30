@@ -29,9 +29,9 @@
  *     CLdapSecUser                                       *
  **********************************************************/
 CLdapSecUser::CLdapSecUser(const char *name, const char *pw) : 
-    m_pw(pw), m_isAuthenticated(false)
+    m_pw(pw), m_authenticateStatus(AS_UNKNOWN)
 {
-    setName(name);  
+    setName(name);
 }
 
 CLdapSecUser::~CLdapSecUser()
@@ -39,10 +39,6 @@ CLdapSecUser::~CLdapSecUser()
 }
 
 //non-interfaced functions
-void CLdapSecUser::setAuthenticated(bool authenticated)
-{
-    m_isAuthenticated = authenticated;
-}
 void CLdapSecUser::setUserID(unsigned userid)
 {
     m_userid = userid;
@@ -156,12 +152,6 @@ bool CLdapSecUser::setPeer(const char *Peer)
 }
 
 
-bool CLdapSecUser::isAuthenticated()
-{
-    return m_isAuthenticated;
-}
-
-
 ISecCredentials & CLdapSecUser::credentials()
 {
     return *this;
@@ -201,7 +191,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     if(!dest)
         return;
 
-    dest->setAuthenticated(isAuthenticated());
+    dest->setAuthenticateStatus(getAuthenticateStatus());
     dest->setName(getName());
     dest->setFullName(getFullName());
     dest->setFirstName(getFirstName());
@@ -585,12 +575,12 @@ bool CLdapSecManager::authenticate(ISecUser* user)
     if(!user)
         return false;
 
-    if(user->isAuthenticated())
+    if(user->getAuthenticateStatus() == AS_AUTHENTICATED)
         return true;
 
     if(m_permissionsCache.isCacheEnabled() && !m_usercache_off && m_permissionsCache.lookup(*user))
     {
-        user->setAuthenticated(true);
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
         return true;
     }
 
@@ -600,7 +590,7 @@ bool CLdapSecManager::authenticate(ISecUser* user)
         if(m_permissionsCache.isCacheEnabled() && !m_usercache_off)
             m_permissionsCache.add(*user);
 
-        user->setAuthenticated(true);
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
     }
 
     return ok;

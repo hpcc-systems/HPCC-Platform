@@ -138,7 +138,7 @@ bool CBaseSecurityManager::unsubscribe(ISecAuthenticEvents & events)
 
 bool CBaseSecurityManager::authorize(ISecUser & sec_user, ISecResourceList * Resources)
 {   
-    if(!sec_user.isAuthenticated())
+    if(sec_user.getAuthenticateStatus() != AS_AUTHENTICATED)
     {
         bool bOk = ValidateUser(sec_user);
         if(bOk == false)
@@ -389,7 +389,7 @@ bool CBaseSecurityManager::ValidateUser(ISecUser & sec_user)
             {
                 //we seem to be coming from a different peer... this is not good
                 WARNLOG("Found user %d in cache, but have to re-validate IP, because it was coming from %s but is now coming from %s",sec_user.getUserID(), cachedclientip, clientip.str());
-                sec_user.setAuthenticated(false);
+                sec_user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                 sec_user.setPeer(clientip.str());
                 m_permissionsCache.removeFromUserCache(sec_user);
                 bReturn =  false;
@@ -411,7 +411,7 @@ bool CBaseSecurityManager::ValidateUser(ISecUser & sec_user)
 
         if(bReturn)
         {
-            sec_user.setAuthenticated(true);
+            sec_user.setAuthenticateStatus(AS_AUTHENTICATED);
             return true;
         }
     }
@@ -428,13 +428,13 @@ bool CBaseSecurityManager::ValidateUser(ISecUser & sec_user)
             if(ValidateSourceIP(sec_user,m_safeIPList)==false)
             {
                 ERRLOG("IP check failed for user:%s coming from %s",sec_user.getName(),sec_user.getPeer());
-                sec_user.setAuthenticated(false);
+                sec_user.setAuthenticateStatus(AS_INVALID_CREDENTIALS);
                 return false;
             }
         }
         if(m_permissionsCache.isCacheEnabled())
             m_permissionsCache.add(sec_user);
-        sec_user.setAuthenticated(true);
+        sec_user.setAuthenticateStatus(AS_AUTHENTICATED);
     }
     return true;
 }
