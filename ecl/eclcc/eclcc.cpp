@@ -1471,7 +1471,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     if (optDebugMemLeak)
     {
         StringBuffer title;
-        title.append(inputFiles.item(0).queryFilename()).newline();
+        title.append(inputFileNames.item(0)).newline();
         initLeakCheck(title);
     }
 
