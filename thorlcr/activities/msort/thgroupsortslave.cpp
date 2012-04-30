@@ -60,7 +60,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         dataLinkStart(activityKindStr(queryContainer().getKind()), container.queryId());
         input = inputs.item(0);
-        unsigned spillPriority = container.queryGrouped() ? 50 : 20;
+        unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
         iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, !unstable, rc_mixed, spillPriority));
         startInput(input);
         eoi = false;
