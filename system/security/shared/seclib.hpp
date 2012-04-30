@@ -131,6 +131,15 @@ interface ISecCredentials : extends IInterface
     virtual int getPasswordDaysRemaining() = 0;
 };
 
+//LDAP authentication status
+enum authStatus
+{
+    AS_AUTHENTICATED = 0,
+    AS_UNKNOWN = 1,//have not attempted to authenticate
+    AS_UNEXPECTED_ERROR = 2,
+    AS_INVALID_CREDENTIALS = 3,
+    AS_PASSWORD_EXPIRED = 4
+};
 
 class CDateTime;
 interface ISecUser : extends IInterface
@@ -151,8 +160,8 @@ interface ISecUser : extends IInterface
     virtual bool setPeer(const char * Peer) = 0;
     virtual SecUserStatus getStatus() = 0;
     virtual bool setStatus(SecUserStatus Status) = 0;
-    virtual bool isAuthenticated() = 0;
-    virtual void setAuthenticated(bool authenticated) = 0;
+    virtual authStatus getAuthenticateStatus() = 0;
+    virtual void setAuthenticateStatus(authStatus status) = 0;
     virtual ISecCredentials & credentials() = 0;
     virtual unsigned getUserID() = 0;
     virtual void copyTo(ISecUser & destination) = 0;
