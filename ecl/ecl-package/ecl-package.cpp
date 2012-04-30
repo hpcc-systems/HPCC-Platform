@@ -73,7 +73,7 @@ public:
             return false;
         if (optQuerySetName.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing package name\n\n");
+            fprintf(stdout, "\n ... Missing query set name\n\n");
             usage();
             return false;
         }
@@ -128,6 +128,8 @@ public:
                 optQuerySetName.set(arg);
                 break;
             }
+            if (iter.matchOption(optPackageMap, ECLOPT_PACKAGEMAP))
+                continue;
             switch (EclCmdCommon::matchCommandLineOption(iter))
             {
                 case EclCmdOptionNoMatch:
@@ -147,7 +149,7 @@ public:
             return false;
         if (optQuerySetName.isEmpty())
         {
-            fprintf(stdout, "\n ... Missing package name\n\n");
+            fprintf(stdout, "\n ... Missing query set name\n\n");
             usage();
             return false;
         }
