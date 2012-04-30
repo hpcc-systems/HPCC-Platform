@@ -588,7 +588,7 @@ void CThorExpandingRowArray::transferFrom(CThorSpillableRowArray &donor)
 void CThorExpandingRowArray::removeRows(rowcount_t start, rowcount_t n)
 {
     assertex(numRows-start >= n);
-    assertex(!n || !rows);
+    assertex(!n || rows);
     if (rows)
     {
         for (rowcount_t i = start; i < n; i++)
