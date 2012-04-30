@@ -66,7 +66,7 @@ public:
     CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _local) : activity(_activity), rowIf(_rowIf), local(_local)
     {
         init();
-        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, false, true));
+        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, true, true));
     }
 
 // IRowWriter
