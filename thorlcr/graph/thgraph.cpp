@@ -585,12 +585,10 @@ void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
 
 void CGraphElementBase::onCreate()
 {
-    {
-        CriticalBlock b(crit);
-        if (onCreateCalled)
-            return;
-        onCreateCalled = true;
-    }
+    CriticalBlock b(crit);
+    if (onCreateCalled)
+        return;
+    onCreateCalled = true;
     baseHelper.setown(helperFactory());
     if (!nullAct)
     {
@@ -749,12 +747,10 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
 
 void CGraphElementBase::initActivity()
 {
-    {
-        CriticalBlock b(crit);
-        if (activity)
-            return;
-        activity.setown(factory());
-    }
+    CriticalBlock b(crit);
+    if (activity)
+        return;
+    activity.setown(factory());
     switch (getKind())
     {
         case TAKlooprow:
