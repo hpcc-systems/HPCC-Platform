@@ -444,6 +444,8 @@ IGraphTempHandler *CGraphElementBase::queryTempHandler() const
 
 void CGraphElementBase::releaseIOs()
 {
+    loopGraph.clear();
+    associatedChildGraphs.kill();
     if (activity)
         activity->releaseIOs();
     connectedInputs.kill();
@@ -1081,6 +1083,9 @@ void CGraphBase::clean()
     ::Release(startBarrier);
     ::Release(waitBarrier);
     ::Release(doneBarrier);
+    localResults.clear();
+    graphLoopResults.clear();
+    childGraphs.kill();
     disconnectActivities();
     containers.kill();
     sinks.kill();

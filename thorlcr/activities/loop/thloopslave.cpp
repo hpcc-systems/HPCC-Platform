@@ -211,7 +211,12 @@ public:
         helper = (IHThorLoopArg *) queryHelper();
         flags = helper->getFlags();
     }
-
+    virtual void kill()
+    {
+        CLoopSlaveActivityBase::kill();
+        loopPending.clear();
+        curInput.clear();
+    }
 // IThorDataLink
     virtual void start()
     {
@@ -368,6 +373,11 @@ public:
         helper = (IHThorGraphLoopArg *)queryHelper();
         flags = helper->getFlags();
     }
+    virtual void kill()
+    {
+        CLoopSlaveActivityBase::kill();
+        finalResultStream.clear();
+    }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
@@ -473,6 +483,7 @@ public:
     }
     virtual void kill()
     {
+        CSlaveActivity::kill();
         resultStream.clear();
     }
     CATCH_NEXTROW()
