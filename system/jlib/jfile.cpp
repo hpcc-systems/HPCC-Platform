@@ -37,6 +37,11 @@
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
+#include <sys/inotify.h>
+
+#define EVENT_SIZE (sizeof (struct inotify_event))
+#define BUF_LEN    (1024 * (EVENT_SIZE + 16))
+
 #endif
 
 #include "time.h"
@@ -217,11 +222,25 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
 }
 
 
+#ifdef __linux__
+CFile::CFile(const char * _filename) : inotify_queue(0)
+#else
 CFile::CFile(const char * _filename)
+#endif //__linux__
 {
     filename.set(_filename);
     flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
 }
+
+#ifdef __linux__
+CFile::~CFile()
+{
+  if (inotify_queue > 0)
+  {
+    ::close(inotify_queue);
+  }
+}
+#endif // __linux__
 
 void CFile::setCreateFlags(unsigned cflags)
 {
@@ -3732,7 +3751,83 @@ public:
     }
 };
 
+#ifdef __linux__
 
+int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *dirIter)
+{
+  StringBuffer strfile;
+  struct timeval tvTimeout;
+  int retVal = 0;
+  fd_set rfds;
+
+  if (inotify_queue == 0)  // attempt init only once
+  {
+    inotify_queue = inotify_init();
+  }
+
+  if (inotify_queue < 0) // check for error
+  {
+    return -1;
+  }
+
+  memset(&tvTimeout,0,sizeof(tvTimeout));
+  strfile.clear();
+  strfile.appendf("%s%s",this->queryFilename(),mask ? mask : "");
+
+  if (inotify_add_watch(inotify_queue, strfile.toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT) == -1)
+  {
+    return -1;
+  }
+
+  if (dirIter != NULL)
+  {
+    StringBuffer temp;
+    temp.clear();
+
+    if (dirIter->first())
+    {
+      inotify_add_watch(inotify_queue, dirIter->getName(temp).toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
+    }
+    while (dirIter->next())
+    {
+      inotify_add_watch(inotify_queue, dirIter->getName(temp).toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
+    }
+  }
+
+  FD_ZERO(&rfds);
+  FD_SET(inotify_queue,&rfds);
+
+  if (timeout != (unsigned)-1)
+  {
+    tvTimeout.tv_sec = timeout/1000;
+  }
+
+  retVal = select(inotify_queue+1, &rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
+
+  if (retVal < 0) //error
+  {
+    return -1;
+  }
+  else if (retVal == 0) //timeout
+  {
+    return 0;
+  }
+  else if (FD_ISSET(inotify_queue, &rfds))
+  {
+    char buf[BUF_LEN];
+
+    //flush the queue
+    ::read(inotify_queue,buf,BUF_LEN);
+
+    return 1;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+#endif //__linux__
 
 IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,            // in
                              const char *mask,
@@ -3750,15 +3845,36 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     if (!prev)
         return NULL;
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
-    prev.clear(); // not needed now
+#ifndef __linux__
+    prev.clear();
+#endif //__linux__
     unsigned start=msTick();
     loop {
         if (abortsem) {
             if (abortsem->wait(checkinterval))
                 break;
         }
-        else
+#ifdef __linux__
+        else if (inotify_queue >= 0)
+        {
+          int retVal = useINotify(mask, timeout, prev);
+
+          if (retVal ==  0) // check for timeout
+          {
+            break;
+          }
+          else if (retVal == -1) // check for error
+          {
+            // honor the check interval even if inotify fails
             Sleep(checkinterval);
+          }
+        }
+#endif //__linux__
+        else
+        {
+            Sleep(checkinterval);
+        }
+
         Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
         if (!current)
             break;
