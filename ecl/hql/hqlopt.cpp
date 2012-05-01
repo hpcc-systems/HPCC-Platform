@@ -2209,6 +2209,12 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
         }
         break;
     case no_hqlproject:
+        {
+            IHqlExpression * counterAttr = transformed->queryProperty(_countProject_Atom);
+            if (counterAttr && !transformContainsCounter(transformed->queryChild(1), counterAttr->queryChild(0)))
+                return removeProperty(transformed, _countProject_Atom);
+            //fallthrough
+        }
     case no_newusertable:
         if (transformed->hasProperty(keyedAtom))
         {

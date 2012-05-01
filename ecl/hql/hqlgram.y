@@ -7614,12 +7614,7 @@ simpleDataSet
                             IHqlExpression *ds = $3.getExpr();
                             OwnedHqlExpr counter = $7.getExpr();
                             if (counter)
-                            {
-                                if (!transformContainsCounter(te, counter))
-                                    parser->reportWarning(WRN_COUNTER_NOT_USED,$6.pos,"COUNTER not used inside the transform");
-                                else
-                                    te = createComma(te, createAttribute(_countProject_Atom, LINK(counter)));
-                            }
+                                te = createComma(te, createAttribute(_countProject_Atom, LINK(counter)));
                             $$.setExpr(createDataset(no_hqlproject, ds, te));
                             $$.setPosition($1);
                         }
