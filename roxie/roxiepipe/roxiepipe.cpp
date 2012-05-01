@@ -457,14 +457,6 @@ int main(int argc, char *argv[])
     StringBuffer query;
     StringBuffer resultName;
     StringBuffer logFile;
-#ifdef _WIN32
-    logFile.append(".\\roxiepipe");
-#else   
-    logFile.append("/c$/roxiepipe");
-#endif
-    addFileTimestamp(logFile, true);
-    logFile.append(".log");
-
     unsigned numThreads = 2;
     bool retryMode = true;
 
@@ -589,8 +581,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    queryLogMsgManager()->changeMonitorFilterOwn(queryStderrLogMsgHandler(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_disaster | MSGCLS_error | MSGCLS_warning, DefaultDetail, true));
-    attachStandardFileLogMsgMonitor(logFile.str(), NULL, MSGFIELD_STANDARD, MSGAUD_all, MSGCLS_all, TopDetail, false, true);
+    //Build logfile from component properties settings
+    Owned<IComponentLogFileCreator> lf;
+    lf.setown(createComponentLogFileCreator(".", "roxiepipe"));
+    if (logFile.length())
+        lf->setCompleteFilespec(logFile.str());
+    lf->setCreateAliasFile(false);
+    lf->beginLogging();
+    PROGLOG("Logging to %s",lf->queryLogFileSpec());
     queryLogMsgManager()->removeMonitor(queryStderrLogMsgHandler()); // only want fprintf(stderr)
 
     if (!fatalError.length())
