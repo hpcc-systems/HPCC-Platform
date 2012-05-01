@@ -143,7 +143,7 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
             if(strieq(head.str(), "SMC"))
                 head.clear().append("Management Console");
-            else if(stricmp(head.str(), "WsAttributesAccess") == 0)
+            else if(strieq(head.str(), "WsAttributesAccess"))
                 continue;
 
             Owned<IEspDnStruct> onedn = createDnStruct();
@@ -1738,6 +1738,10 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
         resp.setName(req.getName());
         resp.setPrefix(req.getPrefix());
         resp.setPermissions(parray);
+
+        double version = context.getClientVersion();
+        if (version > 1.06)
+            resp.setDescription(req.getDescription());
     }
     catch(IException* e)
     {
