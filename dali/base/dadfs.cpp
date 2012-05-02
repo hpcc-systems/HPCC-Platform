@@ -4441,7 +4441,7 @@ public:
                 const char *name = ait->queryName();
                 if ((stricmp(name,"@size")!=0)&&(stricmp(name,"@recordCount")!=0)) {
                     const char *v = ait->queryValue();
-                    if (!v||!*v)
+                    if (!v)
                         continue;
                     bool ok = true;
                     for (unsigned i=1;i<subfiles.ordinality();i++) {
