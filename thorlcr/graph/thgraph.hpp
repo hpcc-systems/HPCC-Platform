@@ -234,6 +234,7 @@ class CJobBase;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
 {
 protected:
+    CriticalSection crit;
     Owned<IHThorArg> baseHelper;
     ThorActivityKind kind;
     activity_id id, ownerId;
