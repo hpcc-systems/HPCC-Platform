@@ -2625,7 +2625,7 @@ private:
 
     //available after logging started
     StringBuffer logDir;        //access via queryLogDir()
-    StringBuffer aliasFileSpec; //access via queryLogDir()
+    StringBuffer aliasFileSpec; //access via queryAliasFileSpec()
     StringBuffer expandedLogSpec;//access via queryLogFileSpec()
 
 private:
@@ -2671,7 +2671,7 @@ public:
     void setExtension(const char * _ext)     { extension.set(_ext); }
     void setPrefix(const char * _prefix)     { prefix.set(_prefix); }
     void setName(const char * _name)         { name.set(_name); }
-    void setCompleteFilespec(const char * _fs){ fullFileSpec.set(_fs); }
+    void setCompleteFilespec(const char * _fs){fullFileSpec.set(_fs); setExtension(NULL); setRolling(false);}
     void setPostfix(const char * _postfix)   { postfix.set(_postfix); }
     void setCreateAliasFile(bool _create)    { createAlias = _create; }
     void setAliasName(const char * _aliasName)   { aliasName.set(_aliasName); }
@@ -2734,7 +2734,9 @@ public:
 
         ILogMsgHandler * lmh;
         if (rolling)
+        {
             lmh = getRollingFileLogMsgHandler(logFileSpec.str(), extension, msgFields, append, flushes, NULL, aliasFileSpec.str(), true);
+        }
         else
         {
             StringBuffer lfs;
