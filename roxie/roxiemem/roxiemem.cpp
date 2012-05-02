@@ -29,6 +29,12 @@
 #define _CLEAR_ALLOCATED_ROW
 #endif
 
+#ifdef _WIN32
+//Visual studio complains that the constructors for heaplets could throw exceptions, so there should be a matching
+//operator delete otherwise there will be leaks.  The constructors can't throw exceptions, so disable the warning.
+#pragma warning(disable:4291)
+#endif
+
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
@@ -574,12 +580,6 @@ public:
 #endif
 #endif
 
-public:
-    void * operator new (memsize_t len)
-    {
-        return suballoc_aligned(1, true);
-    }
-
     void operator delete(void * p)
     {
         subfree_aligned(p, 1);
@@ -1074,12 +1074,6 @@ public:
         return (offsetof(HugeHeaplet, data));
     }
 
-    void * operator new (memsize_t len, unsigned _hugeSize)
-    {
-        unsigned sizeInPages = ((_hugeSize + offsetof(HugeHeaplet, data) + HEAP_ALIGNMENT_SIZE - 1) / HEAP_ALIGNMENT_SIZE);
-        return suballoc_aligned(sizeInPages, true);
-    }
-
     void operator delete(void * p)
     {
         // MORE: Depending on the members/methods of an Object in the delete operator 
@@ -1093,11 +1087,6 @@ public:
         //      with HeapletBase::findbase() called from release. Might want to put at end
         //      of alloc space !!!! Future work/design...
         subfree_aligned(p, ((HugeHeaplet*)p)->_sizeInPages());
-    }
-    void operator delete(void * p, unsigned _hugeSize)  
-    {
-        unsigned sizeInPages = ((_hugeSize + offsetof(HugeHeaplet, data) + HEAP_ALIGNMENT_SIZE - 1) / HEAP_ALIGNMENT_SIZE);
-        subfree_aligned(p, sizeInPages);
     }
 
     virtual void noteReleased(const void *ptr)
@@ -2466,9 +2455,9 @@ HugeHeaplet * CHugeChunkingHeap::allocateHeaplet(size32_t _size, unsigned alloca
         rowManager->checkLimit(numPages);
         //If the allocation fails, then try and free some memory by calling the callbacks
 
-        HugeHeaplet * heaplet = new (_size) HugeHeaplet(allocatorCache, _size, allocatorId);
-        if (heaplet)
-            return heaplet;
+        void * memory = suballoc_aligned(numPages, true);
+        if (memory)
+            return new (memory) HugeHeaplet(allocatorCache, _size, allocatorId);
 
         rowManager->restoreLimit(numPages);
         if (!rowManager->releaseCallbackMemory(true))
@@ -2553,7 +2542,10 @@ void * CNormalChunkingHeap::doAllocate(unsigned activityId)
 
 BigHeapletBase * CFixedChunkingHeap::allocateHeaplet()
 {
-    return new FixedSizeHeaplet(allocatorCache, chunkSize);
+    void * memory = suballoc_aligned(1, true);
+    if (!memory)
+        return NULL;
+    return new (memory) FixedSizeHeaplet(allocatorCache, chunkSize);
 }
 
 void * CFixedChunkingHeap::allocate(unsigned activityId)
@@ -2565,7 +2557,10 @@ void * CFixedChunkingHeap::allocate(unsigned activityId)
 
 BigHeapletBase * CPackedChunkingHeap::allocateHeaplet()
 {
-    return new PackedFixedSizeHeaplet(allocatorCache, chunkSize, allocatorId);
+    void * memory = suballoc_aligned(1, true);
+    if (!memory)
+        return NULL;
+    return new (memory) PackedFixedSizeHeaplet(allocatorCache, chunkSize, allocatorId);
 }
 
 void * CPackedChunkingHeap::allocate()
