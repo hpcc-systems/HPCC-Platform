@@ -5121,9 +5121,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
     }
     catch(...)
     {
-        StringBuffer msg;
-        msg.appendf("Unknown Exception - view data file: %s", indexName);
-        DBGLOG(msg.str());
+        DBGLOG("Unknown Exception - view data file: %s", indexName);
     }
 
     Owned<IResultSetFactory> resultSetFactory;
