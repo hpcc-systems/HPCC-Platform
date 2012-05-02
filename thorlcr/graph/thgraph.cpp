@@ -585,14 +585,16 @@ void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
 
 void CGraphElementBase::onCreate()
 {
-    if (onCreateCalled) return;
+    CriticalBlock b(crit);
+    if (onCreateCalled)
+        return;
+    onCreateCalled = true;
     baseHelper.setown(helperFactory());
     if (!nullAct)
     {
         CGraphElementBase *ownerActivity = owner->queryOwner() ? owner->queryOwner()->queryElement(ownerId) : NULL;
         baseHelper->onCreate(queryCodeContext(), ownerActivity ? ownerActivity->queryHelper() : NULL, haveCreateCtx?&createCtxMb:NULL);
     }
-    onCreateCalled = true;
 }
 
 void CGraphElementBase::onStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -745,6 +747,7 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
 
 void CGraphElementBase::initActivity()
 {
+    CriticalBlock b(crit);
     if (activity)
         return;
     activity.setown(factory());
