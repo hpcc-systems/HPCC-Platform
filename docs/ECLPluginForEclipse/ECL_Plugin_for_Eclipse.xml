@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book>
+<book xml:base="../">
   <bookinfo>
     <title>ECL Plug-in for the Eclipse IDE</title>
 
@@ -30,15 +30,17 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para><emphasis role="redbold">DRAFT 001</emphasis></para>
+      <para>
+        <emphasis role="redbold">DRAFT 002</emphasis>
+      </para>
     </legalnotice>
 
- <xi:include href="Version.xml" xpointer="FooterInfo"
+    <xi:include href="Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
- <!--Release Info makes a running page footer:now an include from version.xml-->
+    <!--Release Info makes a running page footer:now an include from version.xml-->
 
-   <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--The include statement pulls in the date_ver from version.xml-->
@@ -49,7 +51,6 @@
 
     <xi:include href="Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 
     <!--Copyright tag now gets copyright from version.xml-->
 
@@ -231,12 +232,11 @@
           </listitem>
 
           <listitem>
-            <para>Enter <ulink
-            url="hpccsystems.com">https://gordon.homeserver.com/eclipse/</ulink>
-            in the <emphasis role="bold">Location</emphasis> field </para>
+            <para>Enter one of the locations below in the <emphasis
+            role="bold">Location</emphasis> field</para>
 
-            <para><emphasis role="bold">NOTE: This is a temporary URL, when we
-            go live the following URLs will be valid. </emphasis></para>
+            <para><emphasis role="bold">NOTE: We recommend the latest stable
+            build for production work. </emphasis></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <tgroup cols="2">
@@ -246,13 +246,13 @@
 
                   <tbody>
                     <row>
-                      <entry>tbd</entry>
+                      <entry>http://eclipse.hpccsystems.com/stable</entry>
 
                       <entry>The latest stable build.</entry>
                     </row>
 
                     <row>
-                      <entry>tbd</entry>
+                      <entry>http://eclipse.hpccsystems.com/develop</entry>
 
                       <entry>The cutting edge untested development
                       build.</entry>
@@ -291,8 +291,8 @@
             <?dbfo keep-together="always"?>
 
             <para>Select the <emphasis role="bold">ECL Language</emphasis> box
-            then press the <emphasis role="bold">Next &gt;</emphasis> button.
-            </para>
+            then press the <emphasis role="bold">Next &gt;</emphasis>
+            button.</para>
 
             <para>Note: This can take a while before it appears.<figure>
                 <title>Select ECL Language</title>
