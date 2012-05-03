@@ -30,9 +30,7 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para>
-        <emphasis role="redbold">DRAFT 002</emphasis>
-      </para>
+      <para><emphasis role="redbold">DRAFT 002</emphasis></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -83,8 +81,8 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>The ECL IDE (this is a temporary requirement to install
-              the ECL compiler, eclcc, and related components).</para>
+              <para>The HPCC CLient Tools (this installs the ECL compiler,
+              eclcc, command line tools, and related components).</para>
             </listitem>
 
             <listitem>
@@ -135,13 +133,12 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>HPCC-Platform package (this is a temporary requirement to
-              install the ECL compiler, eclcc, and related components, but is
-              also useful as a local server).</para>
+              <para>HPCC-Client Tools package (this installs the ECL compiler,
+              eclcc, command line tools, and related components).</para>
             </listitem>
 
             <listitem>
-              <para>64-bit desktop edition of Linux</para>
+              <para>64-bit desktop edition of Linux* </para>
             </listitem>
 
             <listitem>
