@@ -607,6 +607,10 @@ public:
         mystats.noteStatistic(statCode, value, count);
     }
 
+    virtual bool dynamicFileResolution() const
+    {
+        return variableFileName;
+    }
 };
 
 class CRoxieServerMultiInputInfo
@@ -874,6 +878,7 @@ protected:
     activityState state;
     bool createPending;
     bool debugging;
+    bool variableFileName;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -895,6 +900,7 @@ public:
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
         colocalParent = NULL;
         createPending = true;
+        variableFileName = _factory->dynamicFileResolution();
     }
     
     CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, IHThorArg &_helper)
@@ -19539,7 +19545,6 @@ protected:
     Owned<ISourceRowPrefetcher> prefetcher;
     bool eof;
     bool isKeyed;
-    bool variableFileName;
     bool isOpt;
     bool maySkip;
     bool isLocal;
@@ -19568,7 +19573,7 @@ public:
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
         diskSize.set(helper.queryDiskRecordSize());
-        variableFileName = (helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = variableFileName || (helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
 
@@ -20563,7 +20568,6 @@ public:
     bool isLocal;
     bool sorted;
     bool maySkip;
-    bool variableFileName;
     Owned<IFilePartMap> map;
     Owned<IFileIOArray> files;
     Owned<IInMemoryIndexManager> manager;
@@ -20578,7 +20582,7 @@ public:
         isLocal = _graphNode.getPropBool("att[@name='local']/@value");
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         sorted = (helper->getFlags() & TDRunsorted) == 0;
-        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
+        variableFileName = variableFileName || (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         maySkip = (helper->getFlags() & (TDRkeyedlimitskips|TDRkeyedlimitcreates|TDRlimitskips|TDRlimitcreates)) != 0;
         quotes = separators = terminators = NULL;
         if (!variableFileName)
@@ -20659,7 +20663,6 @@ protected:
     CSkippableRemoteResultAdaptor remote;
     CIndexTransformCallback callback;
     bool sorted;
-    bool variableFileName;
     bool variableInfoPending;
     bool isOpt;
     bool isLocal;
@@ -20696,7 +20699,7 @@ public:
     {
         indexHelper.setCallback(&callback);
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
-        variableFileName = (indexHelper.getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0;
+        variableFileName = variableFileName || (indexHelper.getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0;
         variableInfoPending = false;
         isOpt = (indexHelper.getFlags() & TIRoptional) != 0;
         seekGEOffset = 0;
@@ -21271,7 +21274,6 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
     Owned<const IResolvedFile> varFileInfo;
     const RemoteActivityId &remoteId;
     bool firstRead;
-    bool variableFileName;
     bool variableInfoPending;
     bool isOpt;
     bool isLocal;
@@ -21338,7 +21340,7 @@ public:
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
         unsigned flags = indexHelper.getFlags();
-        variableFileName = (flags & (TIRvarfilename|TIRdynamicfilename)) != 0;
+        variableFileName = variableFileName || (flags & (TIRvarfilename|TIRdynamicfilename)) != 0;
         variableInfoPending = false;
         isOpt = (flags & TIRoptional) != 0;
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
@@ -21659,7 +21661,6 @@ public:
     bool isLocal;
     bool maySkip;
     bool sorted;
-    bool variableFileName;
     bool enableFieldTranslation;
     unsigned rawSize;
     unsigned maxSeekLookahead;
@@ -21683,7 +21684,7 @@ public:
         activityMeta.setown(deserializeRecordMeta(m, true));
         enableFieldTranslation = queryFactory.getEnableFieldTranslation();
         translatorArray.setown(new TranslatorArray);
-        variableFileName = (flags & (TIRvarfilename|TIRdynamicfilename)) != 0;
+        variableFileName = variableFileName || (flags & (TIRvarfilename|TIRdynamicfilename)) != 0;
         if (!variableFileName)
         {
             bool isOpt = (flags & TIRoptional) != 0;
@@ -22587,15 +22588,13 @@ class CRoxieServerCountDiskActivityFactory : public CRoxieServerActivityFactory
 {
 public:
     unsigned __int64 answer;
-    bool variableFileName;
     Owned<const IResolvedFile> datafile;
 
     CRoxieServerCountDiskActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         Owned<IHThorCountFileArg> helper = (IHThorCountFileArg *) helperFactory();
-        variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
-        assertex(helper->queryRecordSize()->isFixedSize());
+        variableFileName = variableFileName || (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         if (!variableFileName)
         {
             unsigned recsize = helper->queryRecordSize()->getFixedSize();
@@ -22652,7 +22651,6 @@ class CRoxieServerFetchActivity : public CRoxieServerActivity, implements IRecor
     CRemoteResultAdaptor remote;
     RecordPullerThread puller;
     bool needsRHS;
-    bool variableFileName;
     bool isOpt;
     Owned<const IResolvedFile> varFileInfo;
 
@@ -22662,7 +22660,7 @@ public:
     {
         fetchContext = static_cast<IHThorFetchContext *>(helper.selectInterface(TAIfetchcontext_1));
         needsRHS = helper.transformNeedsRhs();
-        variableFileName = (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
+        variableFileName = variableFileName || (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
     }
 
@@ -22799,7 +22797,6 @@ class CRoxieServerFetchActivityFactory : public CRoxieServerActivityFactory
 {
     RemoteActivityId remoteId;
     Owned<IFilePartMap> map;
-    bool variableFileName;
     Owned<const IResolvedFile> datafile;
 public:
     CRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
@@ -22807,7 +22804,7 @@ public:
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
         IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        variableFileName = (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
+        variableFileName = variableFileName || (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         if (!variableFileName)
         {
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(), (fetchContext->getFetchFlags() & FFdatafileoptional) != 0, true));
@@ -23987,7 +23984,7 @@ public:
           map(_map)
     {
         CRoxieServerKeyedJoinBase::setInput(0, head.queryOutput(0));
-        variableFetchFileName = (helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
+        variableFetchFileName =  variableFileName || (helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
     }
     
     virtual const IResolvedFile *queryVarFileInfo() const
@@ -24354,8 +24351,8 @@ public:
         enableFieldTranslation = queryFactory.getEnableFieldTranslation();
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
-        variableIndexFileName = (joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0;
-        variableFetchFileName = (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
+        variableIndexFileName = variableFileName || (joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0;
+        variableFetchFileName = variableFileName || (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         if (!variableIndexFileName)
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
@@ -30999,9 +30996,10 @@ private:
 
 class RoxieWorkUnitListener : public RoxieListener
 {
+    ILoadedDllEntry *dll;
 public:
-    RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
-      : RoxieListener(_poolSize, _suspended)
+    RoxieWorkUnitListener(unsigned _poolSize, bool _suspended, ILoadedDllEntry *_dll)
+      : RoxieListener(_poolSize, _suspended), dll(_dll)
     {
     }
 
@@ -31015,10 +31013,7 @@ public:
         return 0;
     }
 
-    virtual void runOnce(const char*)
-    {
-        UNIMPLEMENTED;
-    }
+    virtual void runOnce(const char* query);
 
     virtual void stopListening()
     {
@@ -31243,9 +31238,10 @@ protected:
 
 class RoxieWorkUnitWorker : public RoxieQueryWorker
 {
+    ILoadedDllEntry *dll;
 public:
-    RoxieWorkUnitWorker(RoxieListener *_pool)
-        : RoxieQueryWorker(_pool)
+    RoxieWorkUnitWorker(RoxieListener *_pool, ILoadedDllEntry *_dll)
+        : RoxieQueryWorker(_pool), dll(_dll)
     {
     }
 
@@ -31255,12 +31251,19 @@ public:
         RoxieQueryWorker::init(_r);
     }
 
+    virtual void runOnce(const char *query)
+    {
+        main();
+    }
+
     virtual void main()
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), dll);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
+        if (!wuid.get())
+            wu->getWuid(StringAttrAdaptor(wuid));
         Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
@@ -31992,7 +31995,7 @@ IArrayOf<IRoxieListener> socketListeners;
 
 IPooledThread *RoxieWorkUnitListener::createNew()
 {
-    return new RoxieWorkUnitWorker(this);
+    return new RoxieWorkUnitWorker(this, NULL);
 }
 
 IPooledThread *RoxieSocketListener::createNew()
@@ -32006,6 +32009,12 @@ void RoxieSocketListener::runOnce(const char *query)
     p->runOnce(query);
 }
 
+void RoxieWorkUnitListener::runOnce(const char* query)
+{
+    Owned<RoxieWorkUnitWorker> p = new RoxieWorkUnitWorker(this, dll);
+    p->runOnce(query);
+}
+
 IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsigned listenQueue, bool suspended)
 {
     if (traceLevel)
@@ -32013,11 +32022,11 @@ IRoxieListener *createRoxieSocketListener(unsigned port, unsigned poolSize, unsi
     return new RoxieSocketListener(port, poolSize, listenQueue, suspended);
 }
 
-IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended)
+IRoxieListener *createRoxieWorkUnitListener(unsigned poolSize, bool suspended, ILoadedDllEntry *dll)
 {
     if (traceLevel)
         DBGLOG("Creating Roxie workunit listener, pool size %d%s", poolSize, suspended?" SUSPENDED":"");
-    return new RoxieWorkUnitListener(poolSize, suspended);
+    return new RoxieWorkUnitListener(poolSize, suspended, dll);
 }
 
 bool suspendRoxieListener(unsigned port, bool suspended)
