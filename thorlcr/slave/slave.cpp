@@ -321,9 +321,7 @@ public:
                 ret = createDiskWriteSlave(this);
                 break;
             case TAKsort:
-                if (queryGrouped())
-                    ret = createGroupSortSlave(this);
-                else if (queryLocal())
+                if (queryGrouped() || queryLocal())
                     ret = createLocalSortSlave(this);
                 else
                     ret = createMSortSlave(this);
@@ -438,10 +436,7 @@ public:
                 ret = createKeyedJoinSlave(this);
                 break;
             case TAKgroup:
-                if (queryLocalOrGrouped())
-                    ret = createLocalGroupSlave(this);
-                else
-                    ret = createGroupSlave(this);
+                ret = createGroupSlave(this);
                 break;
             case TAKworkunitwrite:
                 ret = createWorkUnitWriteSlave(this);

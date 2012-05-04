@@ -17,7 +17,6 @@
 ############################################################################## */
 
 
-#include "thmem.hpp"
 #include "jiface.hpp"
 #include "slave.hpp"
 #include "thbufdef.hpp"
@@ -211,7 +210,7 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorProcessArg *> (queryHelper());
-        rightRowAllocator.setown(createThorRowAllocator(helper->queryRightRecordSize(),queryActivityId()));
+        rightRowAllocator.setown(queryJob().getRowAllocator(helper->queryRightRecordSize(),queryActivityId()));
         IterateSlaveActivityBase::init(data,slaveData);
     }
 

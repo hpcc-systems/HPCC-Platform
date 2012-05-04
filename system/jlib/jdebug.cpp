@@ -2209,10 +2209,13 @@ void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char
 
     ULARGE_INTEGER diskAvailStruct;
     ULARGE_INTEGER diskTotalStruct;
-    diskTotalStruct.QuadPart = 0;
-    GetDiskFreeSpaceEx(primDiskPath, &diskAvailStruct, &diskTotalStruct, 0);
-    hdwInfo.primDiskSize = (unsigned)(diskTotalStruct.QuadPart / (1024*1024*1024));  // in GB
-    hdwInfo.primFreeSize = (unsigned)(diskAvailStruct.QuadPart / (1024*1024*1024));  // in GB
+    if (primDiskPath)
+    {
+        diskTotalStruct.QuadPart = 0;
+        GetDiskFreeSpaceEx(primDiskPath, &diskAvailStruct, &diskTotalStruct, 0);
+        hdwInfo.primDiskSize = (unsigned)(diskTotalStruct.QuadPart / (1024*1024*1024));  // in GB
+        hdwInfo.primFreeSize = (unsigned)(diskAvailStruct.QuadPart / (1024*1024*1024));  // in GB
+    }
     if (secDiskPath)
     {
         diskTotalStruct.QuadPart = 0;
@@ -2224,16 +2227,18 @@ void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char
     // MORE: Find win32 call for NIC speed
 
 #else  // linux
-
     unsigned memUsed, memActive, memSwap, memSwapUsed; 
-    unsigned __int64 diskSize;
-    unsigned __int64 diskUsed;
-
     getMemUsage(memUsed, memActive, hdwInfo.totalMemory, memSwap, memSwapUsed);
     hdwInfo.totalMemory /= 1024; // in MB
-    getDiskUsage(primDiskPath, diskSize, diskUsed);
-    hdwInfo.primDiskSize = diskSize / (1024*1024*1024);   // in GB
-    hdwInfo.primFreeSize = (diskSize - diskUsed) / (1024*1024*1024);   // in GB
+
+    unsigned __int64 diskSize;
+    unsigned __int64 diskUsed;
+    if (primDiskPath)
+    {
+        getDiskUsage(primDiskPath, diskSize, diskUsed);
+        hdwInfo.primDiskSize = diskSize / (1024*1024*1024);   // in GB
+        hdwInfo.primFreeSize = (diskSize - diskUsed) / (1024*1024*1024);   // in GB
+    }
     if (secDiskPath)
     {
         getDiskUsage(secDiskPath, diskSize, diskUsed);

@@ -59,8 +59,7 @@ protected:
         if (1 == numPartialResults)
             return firstRow;
 
-        CThorRowArray partialResults;
-        partialResults.reserve(numPartialResults);
+        CThorExpandingRowArray partialResults(*this, true, false, true, numPartialResults);
         partialResults.setRow(0, firstRow);
         --numPartialResults;
 
@@ -76,7 +75,7 @@ protected:
             msg.read(sz);
             if (sz)
             {
-                assertex(NULL == partialResults.item(sender-1));
+                assertex(NULL == partialResults.query(sender-1));
                 CThorStreamDeserializerSource mds(sz, msg.readDirect(sz));
                 RtlDynamicRowBuilder rowBuilder(queryRowAllocator());
                 size32_t sz = queryRowDeserializer()->deserialize(rowBuilder, mds);
@@ -89,13 +88,13 @@ protected:
         unsigned p=0;
         for (;p<numPartialResults; p++)
         {
-            const void *row = partialResults.item(p);
+            const void *row = partialResults.query(p);
             if (row)
             {
                 if (first)
                 {
                     first = false;
-                    sz = cloneRow(rowBuilder, partialResults.item(p), queryRowMetaData());
+                    sz = cloneRow(rowBuilder, row, queryRowMetaData());
                 }
                 else
                     sz = helper->mergeAggregate(rowBuilder, row);

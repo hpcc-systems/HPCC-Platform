@@ -15,7 +15,7 @@ interface ISortSlaveMP
 {
     virtual bool Connect(unsigned _part, unsigned _numnodes)=0;
     virtual void StartGather()=0;
-    virtual void GetGatherInfo(rowmap_t &numlocal, memsize_t &totalsize, unsigned &overflowscale, bool hasserializer)=0;
+    virtual void GetGatherInfo(rowmap_t &numlocal, offset_t &totalsize, unsigned &overflowscale, bool hasserializer)=0;
     virtual rowmap_t GetMinMax(size32_t &keybuffsize,void *&keybuff, size32_t &avrecsizesize)=0;
     virtual bool GetMidPoint     (size32_t lkeysize, const byte * lkey, size32_t hkeysize, const byte * hkey, size32_t &mkeysize, byte * &mkey)=0;
     virtual void GetMultiMidPoint(size32_t lkeybuffsize, const void * lkeybuff, size32_t hkeybuffsize, const void * hkeybuff, size32_t &mkeybuffsize, void * &mkeybuf)=0;
@@ -52,7 +52,7 @@ public:
     void init(ICommunicator *_comm, rank_t _rank,mptag_t _tag);
     bool Connect(unsigned _part, unsigned _numnodes);
     void StartGather();
-    void GetGatherInfo(rowmap_t &numlocal, memsize_t &totalsize, unsigned &overflowscale, bool hasserializer);
+    void GetGatherInfo(rowmap_t &numlocal, offset_t &totalsize, unsigned &overflowscale, bool hasserializer);
     rowmap_t GetMinMax(size32_t &keybuffsize,void *&keybuff, size32_t &avrecsizesize);
     bool GetMidPoint     (size32_t lkeysize, const byte * lkey, size32_t hkeysize, const byte * hkey, size32_t &mkeysize, byte * &mkey);
     void GetMultiMidPoint(size32_t lkeybuffsize, const void * lkeybuff, size32_t hkeybuffsize, const void * hkeybuff, size32_t &mkeybuffsize, void * &mkeybuf);

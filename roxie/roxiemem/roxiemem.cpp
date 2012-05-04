@@ -80,7 +80,7 @@ Some thoughts on improving this memory manager:
 //================================================================================
 // Allocation of aligned blocks from os
 
-#define HEAPERROR(a) throw MakeStringException(ROXIE_HEAP_ERROR, a)
+#define HEAPERROR(a) throw MakeStringException(ROXIEMM_HEAP_ERROR, a)
 
 #ifdef _DEBUG
 const unsigned maxLeakReport = 20;
@@ -328,7 +328,7 @@ static StringBuffer &memmap(StringBuffer &stats)
 static void throwHeapExhausted(unsigned pages)
 {
     DBGLOG("RoxieMemMgr: Memory pool (%u pages) exhausted requested %u", heapTotalPages, pages);
-    throw MakeStringException(ROXIE_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
+    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
 }
 
 static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
@@ -372,7 +372,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                     if (returnNullWhenExhausted)
                         return NULL;
                     DBGLOG("RoxieMemMgr: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
-                    throw MakeStringException(ROXIE_LARGE_MEMORY_EXHAUSTED, "Memory pool exhausted");
+                    throw MakeStringException(ROXIEMM_LARGE_MEMORY_EXHAUSTED, "Memory pool exhausted");
                 }
 
                 heapLargeBlocks = largeBlocksRequired;
@@ -1801,7 +1801,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CChunkingRowManager (unsigned _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
+    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
         : callbacks(this), logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
@@ -1816,7 +1816,7 @@ public:
             normalHeaps.append(*new CFixedChunkingHeap(this, _logctx, _allocatorCache, thisSize, 0));
             prevSize = thisSize;
         }
-        pageLimit = _memLimit / HEAP_ALIGNMENT_SIZE;
+        pageLimit = (unsigned) PAGES(_memLimit, HEAP_ALIGNMENT_SIZE);
         spillPageLimit = 0;
         timeLimit = _tl;
         peakPages = 0;
@@ -1832,7 +1832,7 @@ public:
         trackMemoryByActivity = false;
 #endif
         if (memTraceLevel >= 2)
-            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%u pageLimit=%u rowMgr=%p", _memLimit, pageLimit, this);
+            logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager c-tor memLimit=%"I64F"u pageLimit=%u rowMgr=%p", (unsigned __int64)_memLimit, pageLimit, this);
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
@@ -2244,7 +2244,7 @@ public:
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
-                        throw MakeStringException(ROXIE_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+                        throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
                     }
                 }
             }
@@ -2883,7 +2883,7 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-extern IRowManager *createRowManager(unsigned memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
+extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
 {
     return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks);
 }
@@ -2930,7 +2930,7 @@ extern void setDataAlignmentSize(unsigned size)
     if (size==0x400 || size==0x2000)
         DATA_ALIGNMENT_SIZE = size;
     else
-        throw MakeStringException(ROXIE_INVALID_MEMORY_ALIGNMENT, "Invalid parameter to setDataAlignmentSize %u", size);
+        throw MakeStringException(ROXIEMM_INVALID_MEMORY_ALIGNMENT, "Invalid parameter to setDataAlignmentSize %u", size);
 }
 
 } // namespace roxiemem

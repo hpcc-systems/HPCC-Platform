@@ -812,7 +812,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper, queryLargeMemSize()/10, 0==container.queryOwnerId()));
+        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
         dataLinkStart("INDEXGROUPAGGREGATE", container.queryId());
@@ -850,7 +850,7 @@ public:
             {
                 BooleanOnOff tf(merging);
                 bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, queryLargeMemSize()/10, container.queryOwnerId()==0, ordered));
+                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, ordered));
             }
         }       
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();

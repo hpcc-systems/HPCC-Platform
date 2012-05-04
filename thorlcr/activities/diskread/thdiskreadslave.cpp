@@ -946,7 +946,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
         gathered = eoi = false;
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper, queryLargeMemSize()/10, container.queryOwnerId()==0));
+        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
         dataLinkStart("DISKGROUPAGGREGATE", container.queryId());
     }
@@ -990,7 +990,7 @@ public:
             {
                 BooleanOnOff onOff(merging);
                 bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, queryLargeMemSize()/10, container.queryOwnerId()==0, ordered));
+                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, ordered));
             }
         }
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();

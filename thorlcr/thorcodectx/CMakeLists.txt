@@ -44,6 +44,7 @@ include_directories (
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
          ./../../thorlcr/shared 
+         ./../../roxie/roxiemem
     )
 
 ADD_DEFINITIONS( -DTHORCODECTX_EXPORTS -D_USRDLL )

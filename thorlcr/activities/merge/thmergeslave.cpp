@@ -216,7 +216,7 @@ public:
         mptag_t *intertags = new mptag_t[width];
         mb.read(sizeof(mptag_t)*width,intertags);
 
-        CThorKeyArray partition(queryRowInterfaces(this),helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
+        CThorKeyArray partition(*this, queryRowInterfaces(this),helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
         partition.deserialize(mb,false);
         partition.calcPositions(tmpfile,sample);
         partitionpos = new offset_t[width];
@@ -318,7 +318,7 @@ public:
         GetTempName(tmpname,"merge",true); // use alt temp dir
         tmpfile.setown(createIFile(tmpname.str()));
         Owned<IRowWriter> writer =  createRowWriter(tmpfile,queryRowSerializer(),queryRowAllocator()); 
-        CThorKeyArray sample(this,helper->querySerialize(),helper->queryCompare(),helper->queryCompareKey(),helper->queryCompareRowKey());
+        CThorKeyArray sample(*this, this, helper->querySerialize(), helper->queryCompare(), helper->queryCompareKey(), helper->queryCompareRowKey());
         sample.setSampling(MERGE_TRANSFER_BUFFER_SIZE);
         ActPrintLog("MERGE: start gather");
         loop {
