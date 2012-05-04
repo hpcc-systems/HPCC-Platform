@@ -53,6 +53,7 @@ include_directories (
          ./../master 
          ./../graph 
          ./../../common/thorhelper 
+         ./../../roxie/roxiemem
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

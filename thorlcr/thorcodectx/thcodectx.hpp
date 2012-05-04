@@ -38,31 +38,6 @@ interface ILoadedDllEntry;
 interface IConstWUResult;
 interface IWUResult;
 
-struct MetaActId
-{
-    MetaActId(IOutputMetaData *_meta, activity_id _activityId) : meta(_meta), activityId(_activityId) { }
-    IOutputMetaData *meta;
-    activity_id activityId;
-    bool operator==(MetaActId const &other) const { return meta==other.meta && activityId==other.activityId; }
-};
-typedef LinkedHTMapping<IEngineRowAllocator, MetaActId> CEngineRowAllocatorMapping;
-class CEngineRowAllocatorTable : public OwningSimpleHashTableOf<CEngineRowAllocatorMapping, MetaActId>
-{
-    SpinLock allocatorLock;
-public:
-    IEngineRowAllocator *lookupCreate(activity_id activityId, IOutputMetaData *meta)
-    {
-        SpinBlock b(allocatorLock);
-        MetaActId metaActId(meta, activityId);
-        CEngineRowAllocatorMapping *allocatorMapping = find(metaActId);
-        if (allocatorMapping)
-            return LINK(&(allocatorMapping->queryElement()));
-        Owned<IEngineRowAllocator> allocator = createThorRowAllocator(meta, activityId);
-        allocatorMapping = new CEngineRowAllocatorMapping(*allocator, metaActId);
-        replace(*allocatorMapping);
-        return allocator.getClear();
-    }
-};
 class CJobBase;
 class thcodectx_decl CThorCodeContextBase : public CSimpleInterface, implements ICodeContextExt
 {
@@ -70,7 +45,6 @@ protected:
     Linked<IUserDescriptor> userDesc;
     ILoadedDllEntry &querySo;
     CJobBase &job;
-    mutable CEngineRowAllocatorTable allocatorTable;
 
     void expandLogicalName(StringBuffer & fullname, const char * logicalName);
     IConstWUResult * getResult(const char * name, unsigned sequence);

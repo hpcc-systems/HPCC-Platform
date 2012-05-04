@@ -17,19 +17,27 @@
 ############################################################################## */
 
 
-#ifndef _thgroupsortslave_ipp
-#define _thgroupsortslave_ipp
-
-#include "platform.h"
-#include "eclhelper.hpp"        // for IHThorGroupSortArg
-#include "slave.ipp"
+#include "thactivitymaster.ipp"
 
 
-activityslaves_decl CActivityBase *createLocalSortSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createSortedSlave(CGraphElementBase *container);
-;
+class CGroupActivityMaster : public CMasterActivity
+{
+public:
+    CGroupActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
+    {
+        mpTag = container.queryJob().allocateMPTag();
+    }
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    {
+        dst.append((int)mpTag);
+    }
+};
 
-
-#endif
-
+CActivityBase *createGroupActivityMaster(CMasterGraphElement *container)
+{
+    if (container->queryLocalOrGrouped())
+        return new CMasterActivity(container);
+    else
+        return new CGroupActivityMaster(container);
+}
 

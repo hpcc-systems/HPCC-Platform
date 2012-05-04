@@ -24,6 +24,7 @@
 #include "eclhelper.hpp"
 #include "jlzw.hpp"
 
+#include "thmem.hpp"
 #include "thdiskread.ipp"
 
 class CDiskReadMasterVF : public CDiskReadMasterBase

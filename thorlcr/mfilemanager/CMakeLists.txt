@@ -51,6 +51,7 @@ include_directories (
          ./../mfilemanager 
          ./../../common/commonext 
          ./../../common/thorhelper 
+         ./../../roxie/roxiemem
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )

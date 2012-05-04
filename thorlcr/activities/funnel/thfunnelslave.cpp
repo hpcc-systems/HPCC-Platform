@@ -142,7 +142,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
         CriticalBlock b2(fullCrit); // exclusivity for totSize / full
         if (stopped) return;
         rows.enqueue(row);
-        totSize += thorRowMemoryFootprint(row);
+        totSize += thorRowMemoryFootprint(serializer, row);
         while (totSize > FUNNEL_MIN_BUFF_SIZE)
         {
             full = true;
@@ -251,7 +251,7 @@ public:
             rows.stop();
             return NULL;
         }
-        size32_t sz = thorRowMemoryFootprint(row.get());
+        size32_t sz = thorRowMemoryFootprint(serializer, row.get());
         {
             CriticalBlock b(fullCrit);
             assertex(totSize>=sz);
@@ -528,16 +528,15 @@ class CombineSlaveActivity : public CSlaveActivity, public CThorDataLink
     bool grouped;
     bool eogNext;
     MemoryBuffer recbuf;
-    CThorRowArray rows;
+    CThorExpandingRowArray rows;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
 
     CombineSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this)
+        : CSlaveActivity(_container), CThorDataLink(this), rows(*this)
     {
-        rows.setSizing(true,true);
         grouped = container.queryGrouped();
     }
     void init()
@@ -587,7 +586,7 @@ public:
                         err = true;
                         break;
                     }
-                    rows.append((void *)row.getClear());
+                    rows.append(row.getClear());
                 }
                 else {
                     if (i&&!eog) {
@@ -599,20 +598,20 @@ public:
             }
             if (err) {
                 eog = true;
-                rows.clear();
+                rows.kill();
                 throw MakeActivityException(this, -1, "mismatched input row count for Combine");
             }
             if (eog) 
                 break;
             RtlDynamicRowBuilder row(queryRowAllocator());
-            size32_t sizeGot = helper->transform(row, rows.ordinality(), (const void * *)rows.base());
-            rows.clear();
+            size32_t sizeGot = helper->transform(row, rows.ordinality(), rows.getRowArray());
+            rows.kill();
             if (sizeGot) {
                 dataLinkIncrement();
                 return row.finalizeRowClear(sizeGot);
             }
         }
-        rows.clear();
+        rows.kill();
         return NULL;
     }
     bool isGrouped()

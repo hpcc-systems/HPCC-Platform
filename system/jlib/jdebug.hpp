@@ -253,7 +253,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
  #define USE_JLIB_ALLOC_HOOK
 #endif
 
-extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath, const char *secDiskPath = NULL);
+extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl unsigned getAffinityCpus();
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);

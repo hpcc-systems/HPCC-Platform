@@ -25,21 +25,23 @@
 project( roxiemem ) 
 
 set (    SRCS 
+         roxierow.cpp
          roxiemem.cpp 
          roxierowbuff.cpp
     )
          
 set (    INCLUDES
-         roxiemem.hpp 
+         roxierow.hpp
+         roxiemem.hpp
          roxierowbuff.hpp
     )
 
-include_directories ( 
-         ./../../system/include 
-         ./../../system/jlib 
-         ./../../roxie/roxie 
-         ./../../roxie/ccd
-         ./../../rtl/include 
+include_directories (
+         ./../../system/include
+         ./../../system/jlib
+         ./../../rtl/include
+         ./../../rtl/eclrtl
+         ./../../common/thorhelper
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DROXIEMEM_EXPORTS)
@@ -49,8 +51,10 @@ endif (${CMAKE_COMPILER_IS_GNUCXX})
 
 HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
 install ( TARGETS roxiemem DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( roxiemem 
-         jlib 
+target_link_libraries ( roxiemem
+         jlib
+         thorhelper
+         eclrtl
          ${CPPUNIT_LIBRARIES}
     )
 

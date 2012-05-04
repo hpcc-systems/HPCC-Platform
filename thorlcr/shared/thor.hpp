@@ -20,7 +20,7 @@
 #define __THOR__
 
 #define THOR_VERSION_MAJOR 4
-#define THOR_VERSION_MINOR 0
+#define THOR_VERSION_MINOR 1
 
 typedef unsigned activity_id;
 typedef unsigned graph_id;

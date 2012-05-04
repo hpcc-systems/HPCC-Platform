@@ -20,145 +20,25 @@
 #include "jiface.hpp"
 #include "slave.hpp"
 #include "jsort.hpp"
-#include "thmem.hpp"
 #include "thbufdef.hpp"
 #include "tsorta.hpp"
 
+#include "commonext.hpp"
 #include "thgroupsortslave.ipp"
 #include "thactivityutil.ipp"
-//#define TRACE_UNIQUE
 
 #include "jsort.hpp"
 #include "thactivityutil.ipp"
 
-class CCGroupSortSlaveActivity : public CSlaveActivity, public CThorDataLink
-{
-private:
-    IHThorSortArg * helper;
-    ICompare      * icompare;
-    bool eogNext;
-    unsigned index;
-    bool refill;
-    bool eof;
-    CThorRowArray group;
-
-    IThorDataLink *input;
-    bool unstable;
-
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CCGroupSortSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
-    {
-        unstable = false;
-    }
-    ~CCGroupSortSlaveActivity()
-    {
-    }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        appendOutputLinked(this);   // adding 'me' to outputs array
-        helper = static_cast <IHThorSortArg *> (queryHelper());
-        IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
-        unstable = (algo&&algo->getAlgorithmFlags()&TAFunstable);
-    }
-    void start()
-    {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
-        eogNext = false;
-        refill = true;
-        input = inputs.item(0);
-        startInput(input);
-        dataLinkStart();
-        icompare = helper->queryCompare();              
-        index = 0;
-        eof = false;
-        group.setSizing(true,false);
-    }
-    void stop()
-    {
-        stopInput(input);
-        dataLinkStop();
-    }
-    CATCH_NEXTROW()
-    {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
-        if(abortSoon || eof || eogNext)
-        {
-            eogNext = false;
-            return NULL;
-        }
-        if (refill) {
-            refill=false;
-            index=0;
-            try
-            {
-                group.reset(false);
-                loop {
-                    OwnedConstThorRow row = input->nextRow();
-                    if (!row)
-                        break;
-                    group.append(row.getClear());
-                    if (group.isFull()) {
-                        StringBuffer errStr("GROUPSORT");
-                        errStr.append("(").append(container.queryId()).append(") ");
-                        errStr.append("exceeded available memory. records=").append(group.ordinality()).append(", memory usage=").append((unsigned)(group.totalSize()/1024)).append('k');
-                        IException *e = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
-                        EXCLOG(e, NULL);
-                        throw e;
-                    }
-                }
-                if (group.ordinality()==0) {
-                    eof = true;
-                    return NULL;
-                }
-                group.sort(*icompare,!unstable,maxCores);
-            }
-            catch (IOutOfMemException *e)
-            {
-                StringBuffer errStr("GROUPSORT");
-                errStr.append("(").append(container.queryId()).append(") ");
-                errStr.append("exceeded available memory. records=").append(group.ordinality()).append(", memory usage=").append((unsigned)(group.totalSize()/1024)).append('k');
-                errStr.append(": ").append(e->errorCode()).append(", ");
-                e->errorMessage(errStr);
-                e->Release();
-                IException *e2 = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
-                EXCLOG(e2, NULL);
-                throw e2;
-            }
-        }
-        if(index >= group.ordinality())
-        {
-            refill = true;
-            return NULL;    // eog
-        }   
-        const void *row = group.itemClear(index++);
-        assertex(row);
-        dataLinkIncrement();
-        return row;
-    }
-
-    bool isGrouped() { return true; }
-
-    void getMetaInfo(ThorDataLinkMetaInfo &info)
-    {
-        initMetaInfo(info);
-        info.fastThrough = true; // ish
-        calcMetaInfoSize(info,inputs.item(0));
-    }
-};
-
-// Local Sort
 
 class CLocalSortSlaveActivity : public CSlaveActivity, public CThorDataLink 
 {
     IThorDataLink *input;
     IHThorSortArg *helper;
-    ICompare *icompare;
-    Owned<IThorRowSortedLoader> iloader;
-    CThorRowArray rows;
+    ICompare *iCompare;
+    Owned<IThorRowLoader> iLoader;
     Owned<IRowStream> out;
-    bool unstable;
+    bool unstable, eoi;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -167,14 +47,10 @@ public:
         : CSlaveActivity(_container), CThorDataLink(this)
     {
     }
-    ~CLocalSortSlaveActivity()
-    {
-    }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        ActPrintLog("CLocalSortSlaveActivity::init");
         helper = (IHThorSortArg *)queryHelper();
-        icompare = helper->queryCompare();
+        iCompare = helper->queryCompare();
         IHThorAlgorithm * algo = helper?(static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1))):NULL;
         unstable = (algo&&algo->getAlgorithmFlags()&TAFunstable);
         appendOutputLinked(this);
@@ -182,38 +58,48 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("LOCALSORT", container.queryId());
-        iloader.setown(createThorRowSortedLoader(rows));
+        dataLinkStart(activityKindStr(queryContainer().getKind()), container.queryId());
         input = inputs.item(0);
+        unsigned spillPriority = container.queryGrouped() ? SPILL_PRIORITY_GROUPSORT : SPILL_PRIORITY_LARGESORT;
+        iLoader.setown(createThorRowLoader(*this, queryRowInterfaces(input), iCompare, !unstable, rc_mixed, spillPriority));
         startInput(input);
-        bool isempty;
-        out.setown(iloader->load(input,queryRowInterfaces(input), icompare,false,abortSoon,isempty,"LOCALSORT",!unstable,maxCores));
+        eoi = false;
+        if (container.queryGrouped())
+            out.setown(iLoader->loadGroup(input, abortSoon));
+        else
+            out.setown(iLoader->load(input, abortSoon));
+        if (0 == iLoader->numRows())
+            eoi = true;
     }
     void stop()
     {
         out.clear();
         stopInput(input);
         dataLinkStop();
-        iloader.clear();
-    }
-    void kill()
-    {
-        ActPrintLog("CLocalSortSlaveActivity::kill");
-        CSlaveActivity::kill();
+        iLoader.clear();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (abortSoon) 
+        if (abortSoon || eoi)
             return NULL;
         OwnedConstThorRow row = out->nextRow();
-        if (row) {
-            dataLinkIncrement();
-            return row.getClear();
+        if (!row)
+        {
+            if (!container.queryGrouped())
+            {
+                eoi = true;
+                return NULL;
+            }
+            out.setown(iLoader->loadGroup(input, abortSoon));
+            if (0 == iLoader->numRows())
+                eoi = true;
+            return NULL; // eog marker
         }
-        return NULL;
+        dataLinkIncrement();
+        return row.getClear();
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() { return container.queryGrouped(); }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
@@ -319,12 +205,6 @@ public:
     }
     virtual IInputSteppingMeta *querySteppingMeta() { return CThorSteppable::inputStepping; }
 };
-
-
-CActivityBase *createGroupSortSlave(CGraphElementBase *container)
-{
-    return new CCGroupSortSlaveActivity(container);
-}
 
 
 CActivityBase *createLocalSortSlave(CGraphElementBase *container)

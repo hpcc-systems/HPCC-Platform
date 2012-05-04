@@ -20,13 +20,13 @@
 #define _ROXIEROW_INCL
 
 #ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
+ #ifdef ROXIEMEM_EXPORTS
+  #define roxiemem_decl __declspec(dllexport)
  #else
-  #define ROXIEHELPER_API __declspec(dllimport)
+  #define roxiemem_decl __declspec(dllimport)
  #endif
 #else
- #define ROXIEHELPER_API
+ #define roxiemem_decl
 #endif
 
 #include "roxiemem.hpp"
@@ -35,10 +35,10 @@
 #define ALLOCATORID_CHECK_MASK  0x00300000
 #define ALLOCATORID_MASK                0x000fffff
 
-extern ROXIEHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
-extern ROXIEHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed);
+extern roxiemem_decl IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
+extern roxiemem_decl IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed);
 
-extern ROXIEHELPER_API bool isRowCheckValid(unsigned allocatorId, const void * row);
+extern roxiemem_decl bool isRowCheckValid(unsigned allocatorId, const void * row);
 
 //Inline call which avoids the call if no row checking is enabled.
 inline bool RoxieRowCheckValid(unsigned allocatorId, const void * row)

@@ -39,10 +39,12 @@
 #include "thormisc.hpp"
 #include "thgraph.hpp"
 #include "thbufdef.hpp"
+#include "thmem.hpp"
 
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlread_imp.hpp"
 #include "rtlfield_imp.hpp"
 #include "rtlds_imp.hpp"
 

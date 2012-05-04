@@ -26,7 +26,7 @@ interface ICompare;
 
 interface ISortKeySerializer;
 interface IRecordSize;
-interface IRowInterfaces;;
+interface IRowInterfaces;
 
 interface IThorSorterMaster: public IInterface
 {

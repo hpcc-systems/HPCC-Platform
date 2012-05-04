@@ -167,7 +167,7 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
     {
         //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
         unsigned code = e->errorCode();
-        if ((code == ROXIE_MEMORY_LIMIT_EXCEEDED) || (code == ROXIE_MEMORY_POOL_EXHAUSTED))
+        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
         {
             e->Release();
             return false;

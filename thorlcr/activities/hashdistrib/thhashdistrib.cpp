@@ -26,7 +26,6 @@
 
 #include "thorport.hpp"
 #include "thbufdef.hpp"
-#include "thmem.hpp"
 #include "thexception.hpp"
 
 #define NUMINPARALLEL 16

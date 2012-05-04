@@ -196,13 +196,13 @@ class NSplitterSlaveActivity : public CSlaveActivity
     class CDelayedInput : public CSimpleInterface, public CThorDataLink
     {
         Owned<CSplitterOutputBase> input;
-        NSplitterSlaveActivity &activity;
+        Linked<NSplitterSlaveActivity> activity;
         unsigned id;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(_activity), id(0) { }
+        CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(&_activity), id(0) { }
         void setInput(CSplitterOutputBase *_input, unsigned _id=0)
         {
             input.setown(_input);
@@ -223,19 +223,19 @@ class NSplitterSlaveActivity : public CSlaveActivity
     // IThorDataLink impl.
         virtual void start()
         {
-            activity.ensureInputsConfigured();
+            activity->ensureInputsConfigured();
             input->start();
-            dataLinkStart("SPLITTEROUTPUT", activity.queryContainer().queryId(), id);
+            dataLinkStart("SPLITTEROUTPUT", activity->queryContainer().queryId(), id);
         }
-        virtual bool isGrouped() { return activity.inputs.item(0)->isGrouped(); }
+        virtual bool isGrouped() { return activity->inputs.item(0)->isGrouped(); }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
         {
             initMetaInfo(info);
             if (input)
                 input->getMetaInfo(info);
             else
-                activity.inputs.item(0)->getMetaInfo(info);
-            info.canStall = !activity.spill;
+                activity->inputs.item(0)->getMetaInfo(info);
+            info.canStall = !activity->spill;
         }
     };
 public:
