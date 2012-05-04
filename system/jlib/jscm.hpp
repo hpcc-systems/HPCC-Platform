@@ -41,6 +41,38 @@ template <class X> inline void Release(X * ptr) { if (ptr) ptr->Release(); }
 
 #define QUERYINTERFACE(ptr, TYPE)   (dynamic_cast<TYPE *>(ptr))
 
+//A simple object container/smart pointer
+template <class CLASS> class OwnedPtr
+{
+public:
+    inline OwnedPtr()                        { ptr = NULL; }
+    inline OwnedPtr(CLASS * _ptr)            { ptr = _ptr; }
+    inline ~OwnedPtr()                       { delete ptr; }
+
+    void operator = (CLASS * _ptr)
+    {
+        if (ptr)
+            delete ptr;
+        ptr = _ptr;
+    }
+    inline CLASS * operator -> () const         { return ptr; }
+    inline operator CLASS *() const             { return ptr; }
+
+    inline void clear()                         { CLASS *temp=ptr; ptr=NULL; delete temp; }
+    inline CLASS * get() const                  { return ptr; }
+    inline CLASS * getClear()                   { CLASS * temp = ptr; ptr = NULL; return temp; }
+    inline void setown(CLASS * _ptr)            { CLASS * temp = ptr; ptr = _ptr; delete temp; }
+
+private:
+    inline OwnedPtr(const OwnedPtr<CLASS> & other);
+    void operator = (const OwnedPtr<CLASS> & other);
+    void setown(const OwnedPtr<CLASS> &other);
+
+private:
+    CLASS * ptr;
+};
+
+
 //This base class implements a shared pointer based on a link count held in the object.
 //The two derived classes Owned and Linked should be used as the concrete types to construct a shared object
 //from a pointer.

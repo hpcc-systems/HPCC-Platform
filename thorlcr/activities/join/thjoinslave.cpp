@@ -68,10 +68,6 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
     StringBuffer tempname;
 
     bool islocal;
-    CThorRowArray rowsL; // for local
-    CThorRowArray rowsR; // for local
-    Owned<IThorRowSortedLoader> iloaderL; // for local
-    Owned<IThorRowSortedLoader> iloaderR; // for local
     Owned<IBarrier> barrier;
     SocketEndpoint server;
     StringBuffer activityName;
@@ -142,9 +138,6 @@ public:
     JoinSlaveActivity(CGraphElementBase *_container, bool local)
         : CSlaveActivity(_container), CThorDataLink(this)
     {
-        if (local)
-            activityName.append("LOCAL");
-        activityName.append(activityKindStr(container.getKind()));
         islocal = local;
         portbase = 0;
 #ifdef _TESTING
@@ -241,11 +234,11 @@ public:
         dataLinkStart(activityName, container.queryId());
         CriticalBlock b(joinHelperCrit);
         if (denorm)
-            joinhelper.setown(createDenormalizeHelper(helperdn, activityName, container.getKind(), container.queryId(), queryRowAllocator()));
+            joinhelper.setown(createDenormalizeHelper(*this, helperdn, queryRowAllocator()));
         else {
             bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
             bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
-            joinhelper.setown(createJoinHelper(helperjn, activityName, container.queryId(), queryRowAllocator(),hintparallelmatch,hintunsortedoutput));
+            joinhelper.setown(createJoinHelper(*this, helperjn, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
         }
     }
 
@@ -341,7 +334,7 @@ public:
         if (!strm1.get()||!strm2.get()) {
             throw MakeThorException(TE_FailedToStartJoinStreams, "Failed to start join streams");
         }
-        joinhelper->init (strm1, strm2, ::queryRowAllocator(inputs.item(0)),::queryRowAllocator(inputs.item(1)),::queryRowMetaData(inputs.item(0)), &abortSoon, NULL);
+        joinhelper->init(strm1, strm2, ::queryRowAllocator(inputs.item(0)),::queryRowAllocator(inputs.item(1)),::queryRowMetaData(inputs.item(0)), &abortSoon);
     }
     void stopInput1()
     {
@@ -396,8 +389,6 @@ public:
         sorter.clear();
         input1.clear();
         input2.clear();
-        rowsL.clear();
-        rowsR.clear();
         CSlaveActivity::kill();
     }
 
@@ -423,8 +414,9 @@ public:
     }
     void dolocaljoin()
     {
-        iloaderL.setown(createThorRowSortedLoader(rowsL));
-        iloaderR.setown(createThorRowSortedLoader(rowsR));
+        // NB: old version used to force both sides all to disk
+        Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(input1), compare1, true, rc_mixed, SPILL_PRIORITY_JOIN);
+        Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(input2), compare2, true, rc_mixed, SPILL_PRIORITY_JOIN);
         bool isemptylhs = false;
         if (helper->isLeftAlreadySorted()) {
             ThorDataLinkMetaInfo info;
@@ -438,15 +430,8 @@ public:
         }
         else {
             StringBuffer tmpStr;
-            strm1.setown(iloaderL->load(
-                input1,
-                ::queryRowInterfaces(input1),
-                compare1,
-                true,
-                abortSoon,
-                isemptylhs,
-                tmpStr.append(activityName).append("(L)").str(),
-                true,maxCores));
+            strm1.setown(iLoaderL->load(input1, abortSoon));
+            isemptylhs = 0 == iLoaderL->numRows();
             stopInput1();
         }
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0)) {
@@ -462,17 +447,7 @@ public:
                 strm2.set(input2.get()); // already ungrouped
         }
         else {
-            StringBuffer tmpStr;
-            bool isemptyrhs;
-            strm2.setown(iloaderR->load(
-                input2,
-                ::queryRowInterfaces(input2),
-                compare2,
-                true,
-                abortSoon,
-                isemptyrhs,
-                tmpStr.append(activityName).append("(R)").str(),
-                true,maxCores));
+            strm2.setown(iLoaderR->load(input2, abortSoon));
             stopInput2();
         }
     }
@@ -593,6 +568,9 @@ public:
                 ActPrintLog("JOIN barrier.1 raised");
                 Owned<IRowStream> rstrm1 = sorter->startMerge(totalrows);
 
+                // JCSMORE - spill whole of sorted input1 to disk.
+                // it could keep in memory until needed to spill..
+
                 GetTempName(tempname.clear(),"joinspill",false); // don't use alt temp dir
                 Owned<IFile> tempf = createIFile(tempname.str());
                 Owned<IRowWriter> tmpstrm = createRowWriter(tempf,rowif1->queryRowSerializer(),rowif1->queryRowAllocator());
@@ -662,7 +640,7 @@ public:
 class CMergeJoinSlaveBaseActivity : public CThorNarySlaveActivity, public CThorDataLink, public CThorSteppable
 {
     IHThorNWayMergeJoinArg *helper;
-    Owned<IThorRowAllocator> inputAllocator, outputAllocator;
+    Owned<IEngineRowAllocator> inputAllocator, outputAllocator;
 
 protected:
     CMergeJoinProcessor &processor;
@@ -676,8 +654,8 @@ public:
     CMergeJoinSlaveBaseActivity(CGraphElementBase *container, CMergeJoinProcessor &_processor) : CThorNarySlaveActivity(container), CThorDataLink(this), CThorSteppable(this), processor(_processor)
     {
         helper = (IHThorNWayMergeJoinArg *)queryHelper();
-        inputAllocator.setown(createThorRowAllocator(helper->queryInputMeta(), queryActivityId()));
-        outputAllocator.setown(createThorRowAllocator(helper->queryOutputMeta(), queryActivityId()));
+        inputAllocator.setown(queryJob().getRowAllocator(helper->queryInputMeta(), queryActivityId()));
+        outputAllocator.setown(queryJob().getRowAllocator(helper->queryOutputMeta(), queryActivityId()));
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

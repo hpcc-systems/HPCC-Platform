@@ -27,7 +27,6 @@
 #include "jsort.hpp"
 #include "mptag.hpp"
 #include "mpbase.hpp"
-#include "thmem.hpp"
 
 typedef rowcount_t rowmap_t;
 
@@ -66,6 +65,7 @@ interface ISocketRowWriter: extends IRowWriter
     virtual void stop()=0;
 };
 
+class CActivityBase;
 IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC);
 IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowmap_t numrecs);
 ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowmap_t &numrecs);
@@ -84,11 +84,10 @@ interface ISortedInput: extends IInterface // reads rows from sorted local data 
 
 interface ISortSlaveBase  // for global merging 
 {
-    virtual IRowStream *createMergeInputStream(rowmap_t sstart,rowcount_t _snum) = 0;
+    virtual IRowStream *createMergeInputStream(rowmap_t sstart, rowcount_t _snum) = 0;
     virtual size32_t getTransferBlockSize() = 0;
     virtual unsigned getTransferPort() = 0;
-    virtual void startMerging(unsigned numreaders,IRowStream **readers,rowcount_t _totalrows) = 0;
-    virtual IGroup &queryNodeGroup() = 0;
+    virtual void startMerging(IArrayOf<IRowStream> &readers, rowcount_t _totalrows) = 0;
 };
 
 

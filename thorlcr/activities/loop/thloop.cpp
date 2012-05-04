@@ -22,6 +22,7 @@
 #include "eclrtl_imp.hpp"
 #include "thdemonserver.hpp"
 #include "thcompressutil.hpp"
+#include "thmem.hpp"
 
 #include "thloop.ipp"
 
@@ -214,6 +215,8 @@ CActivityBase *createGraphLoopActivityMaster(CMasterGraphElement *container)
 
 class CLocalResultActivityMasterBase : public CMasterActivity
 {
+    PointerArrayOf<CThorExpandingRowArray> results;
+
 protected:
     Owned<IRowInterfaces> inputRowIf;
 
@@ -221,6 +224,17 @@ public:
     CLocalResultActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
         mpTag = container.queryJob().allocateMPTag();
+        for (unsigned n=0; n<container.queryJob().querySlaves(); n++)
+            results.append(new CThorExpandingRowArray(*this));
+    }
+    ~CLocalResultActivityMasterBase()
+    {
+        ForEachItemIn(r, results)
+        {
+            CThorExpandingRowArray *result = results.item(r);
+            delete result;
+        }
+        results.kill();
     }
     virtual void init()
     {
@@ -243,105 +257,91 @@ public:
         if (!result->isLocal())
         {
             Owned<IRowWriter> resultWriter = result->getWriter();
-            PointerArray results;
-            Owned<IException> e;
-            try
+            unsigned todo = container.queryJob().querySlaves();
+            for (unsigned n=0; n<todo; n++)
+                results.item(n)->kill();
+            rank_t sender;
+            MemoryBuffer mb;
+            CMessageBuffer msg;
+            Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+            CThorStreamDeserializerSource rowSource(stream);
+            loop
             {
-                rank_t sender;
-                unsigned todo = container.queryJob().querySlaves();
-                unsigned n=0;
-                for (; n<todo; n++)
-                    results.append(new CThorRowArray());
-                MemoryBuffer mb;
-                CMessageBuffer msg;
-                Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
-                CThorStreamDeserializerSource rowSource(stream);
                 loop
                 {
-                    loop
-                    {
-                        if (abortSoon)
-                            return;
-                        msg.clear();
-                        if (receiveMsg(msg, RANK_ALL, mpTag, &sender, 60*1000))
-                            break;
-                        ActPrintLog("WARNING: tag %d timedout, retrying", (unsigned)mpTag);
-                    }
-                    sender = sender - 1; // 0 = master
-                    if (!msg.length())
-                    {
-                        --todo;
-                        if (0 == todo)
-                            break; // done
-                    }
-                    else
-                    {
-                        ThorExpand(msg, mb.clear());
+                    if (abortSoon)
+                        return;
+                    msg.clear();
+                    if (receiveMsg(msg, RANK_ALL, mpTag, &sender, 60*1000))
+                        break;
+                    ActPrintLog("WARNING: tag %d timedout, retrying", (unsigned)mpTag);
+                }
+                sender = sender - 1; // 0 = master
+                if (!msg.length())
+                {
+                    --todo;
+                    if (0 == todo)
+                        break; // done
+                }
+                else
+                {
+                    ThorExpand(msg, mb.clear());
 
-                        CThorRowArray *slaveResults = (CThorRowArray *)results.item(sender);
-                        while (!rowSource.eos()) 
-                        {
-                            RtlDynamicRowBuilder rowBuilder(inputRowIf->queryRowAllocator());
-                            size32_t sz = inputRowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
-                            slaveResults->append(rowBuilder.finalizeRowClear(sz));
-                        }
+                    CThorExpandingRowArray *slaveResults = results.item(sender);
+                    while (!rowSource.eos())
+                    {
+                        RtlDynamicRowBuilder rowBuilder(inputRowIf->queryRowAllocator());
+                        size32_t sz = inputRowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                        slaveResults->append(rowBuilder.finalizeRowClear(sz));
                     }
                 }
-                mb.clear();
-                CMemoryRowSerializer mbs(mb);
-                CThorRowArray *slaveResult = (CThorRowArray *)results.item(0);
-                unsigned rowNum=0;
-                unsigned resultNum=1;
-                loop
+            }
+            mb.clear();
+            CMemoryRowSerializer mbs(mb);
+            CThorExpandingRowArray *slaveResult = results.item(0);
+            unsigned rowNum=0;
+            unsigned resultNum=1;
+            loop
+            {
+                while (resultNum)
                 {
-                    while (resultNum)
+                    if (rowNum == slaveResult->ordinality())
                     {
-                        if (rowNum == slaveResult->ordinality())
+                        loop
                         {
-                            loop
+                            if (resultNum == results.ordinality())
                             {
-                                if (resultNum == results.ordinality())
-                                {
-                                    resultNum = 0; // eos
-                                    break;
-                                }
-                                slaveResult = (CThorRowArray *)results.item(resultNum++);
-                                if (slaveResult->ordinality())
-                                {
-                                    rowNum = 0;
-                                    break;
-                                }
-                            }
-                            if (!resultNum) // eos
+                                resultNum = 0; // eos
                                 break;
+                            }
+                            slaveResult = results.item(resultNum++);
+                            if (slaveResult->ordinality())
+                            {
+                                rowNum = 0;
+                                break;
+                            }
                         }
-                        const byte *row = slaveResult->item(rowNum++);
-                        inputRowIf->queryRowSerializer()->serialize(mbs, row);
-                        LinkThorRow(row);
-                        resultWriter->putRow(row);
-                        if (mb.length() > 0x80000)
+                        if (!resultNum) // eos
                             break;
                     }
-                    msg.clear();
-                    if (mb.length())
-                    {
-                        ThorCompress(mb.toByteArray(), mb.length(), msg);
-                        mb.clear();
-                    }
-                    BooleanOnOff onOff(receiving);
-                    ((CJobMaster &)container.queryJob()).broadcastToSlaves(msg, mpTag, LONGTIMEOUT, NULL, NULL, true);
-                    if (0 == msg.length())
+                    const void *row = slaveResult->query(rowNum++);
+                    inputRowIf->queryRowSerializer()->serialize(mbs, (const byte *)row);
+                    LinkThorRow(row);
+                    resultWriter->putRow(row);
+                    if (mb.length() > 0x80000)
                         break;
                 }
+                msg.clear();
+                if (mb.length())
+                {
+                    ThorCompress(mb.toByteArray(), mb.length(), msg);
+                    mb.clear();
+                }
+                BooleanOnOff onOff(receiving);
+                ((CJobMaster &)container.queryJob()).broadcastToSlaves(msg, mpTag, LONGTIMEOUT, NULL, NULL, true);
+                if (0 == msg.length())
+                    break;
             }
-            catch (IException *_e) { e.setown(_e); }
-            ForEachItemIn(r, results)
-            {
-                CThorRowArray *result = (CThorRowArray *)results.item(r);
-                delete result;
-            }
-            if (e)
-                throw e.getClear();
         }
     }
     virtual void abort()

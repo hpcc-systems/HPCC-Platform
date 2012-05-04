@@ -606,6 +606,37 @@ int main( int argc, char *argv[]  )
             return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
         }
         
+        HardwareInfo hdwInfo;
+        getHardwareInfo(hdwInfo);
+        globals->setPropInt("@masterTotalMem", hdwInfo.totalMemory);
+        unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
+        if (0 == gmemSize)
+        {
+            unsigned maxMem = hdwInfo.totalMemory;
+#ifdef _WIN32
+            if (maxMem > 2048)
+                maxMem = 2048;
+#else
+#ifndef __64BIT__
+            if (maxMem > 4096)
+                maxMem = 4096;
+#endif
+#endif
+            gmemSize = maxMem * 3 / 4; // default to 75% of total
+            unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
+            if (slavesPerNode>1)
+            {
+                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave. %d MB each", gmemSize, slavesPerNode, gmemSize / slavesPerNode);
+                gmemSize /= slavesPerNode;
+            }
+            globals->setPropInt("@globalMemorySize", gmemSize);
+        }
+        else if (gmemSize >= hdwInfo.totalMemory)
+        {
+            // should prob. error here
+        }
+        roxiemem::setTotalMemoryLimit(((memsize_t)gmemSize) * 0x100000, 0, NULL);
+
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");
         StringBuffer datadir;

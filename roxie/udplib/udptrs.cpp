@@ -21,6 +21,7 @@
 #include "udptrs.hpp"
 #include "jsocket.hpp"
 #include "jlog.hpp"
+#include "roxie.hpp"
 #ifdef _WIN32
 #include <winsock.h>
 #else

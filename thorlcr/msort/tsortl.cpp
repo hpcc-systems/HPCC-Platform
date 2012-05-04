@@ -26,11 +26,13 @@
 #include <process.h>
 #endif
 
+#include "jfile.hpp"
 #include "jio.hpp"
 #include "jsocket.hpp"
 
 #include "tsorts.hpp"
 #include "thbuf.hpp"
+#include "thmem.hpp"
 
 #ifdef _DEBUG
 //#define _FULL_TRACE

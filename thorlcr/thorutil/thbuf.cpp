@@ -31,6 +31,7 @@
 #include "jset.hpp"
 #include "jqueue.tpp"
 
+#include "thmem.hpp"
 #include "thalloc.hpp"
 #include "thbuf.hpp"
 #include "eclrtl.hpp"
@@ -289,7 +290,7 @@ public:
     void putRow(const void *row)
     {
         REENTRANCY_CHECK(putrecheck)
-        size32_t sz = thorRowMemoryFootprint(row);
+        size32_t sz = thorRowMemoryFootprint(serializer, row);
         SpinBlock block(lock);
         if (eoi) {
             ReleaseThorRow(row);
@@ -367,7 +368,7 @@ public:
                     if (in->ordinality()) {
                         ret = in->dequeue();
                         if (ret) {
-                            size32_t sz = thorRowMemoryFootprint(ret);
+                            size32_t sz = thorRowMemoryFootprint(serializer, ret);
                             assertex(insz>=sz);
                             insz -= sz;
                         }
@@ -428,6 +429,7 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
 {
     // NB must *not* call LinkThorRow or ReleaseThorRow (or Owned*ThorRow) if deallocator set
     CActivityBase *activity;
+    IRowInterfaces *rowIf;
     ThorRowQueue *in;
     size32_t insz;
     SpinLock lock;
@@ -446,8 +448,8 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSmartRowInMemoryBuffer(CActivityBase *_activity, size32_t bufsize,ISRBRowInterface *_srbrowif)
-        : activity(_activity), srbrowif(_srbrowif)
+    CSmartRowInMemoryBuffer(CActivityBase *_activity, IRowInterfaces *_rowIf, size32_t bufsize,ISRBRowInterface *_srbrowif)
+        : activity(_activity), rowIf(_rowIf), srbrowif(_srbrowif)
     {
 #ifdef _DEBUG
         putrecheck = false;
@@ -480,7 +482,7 @@ public:
             if (srbrowif)
                 sz = srbrowif->rowMemSize(row);
             else
-                sz = thorRowMemoryFootprint(row);
+                sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), row);
 #ifdef _DEBUG
             assertex(sz<0x1000000);
 #endif
@@ -538,7 +540,7 @@ public:
                     if (srbrowif)
                         sz = srbrowif->rowMemSize(ret);
                     else
-                        sz = thorRowMemoryFootprint(ret);
+                        sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), ret);
 #ifdef _TRACE_SMART_PUTGET
                     ActPrintLog(activity, "***dequeueRow(%x) %d insize=%d {%x}",(unsigned)ret,sz,insz,*(const unsigned *)ret);
 #endif
@@ -623,7 +625,6 @@ public:
     {
         return this;
     }
-
 };
 
 ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempname, size32_t buffsize, IRowInterfaces *rowif) 
@@ -632,168 +633,56 @@ ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempna
     return new CSmartRowBuffer(activity,file,buffsize,rowif);
 }
 
-ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity, size32_t buffsize, ISRBRowInterface *srbrowif) 
+ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity, IRowInterfaces *rowIf, size32_t buffsize, ISRBRowInterface *srbrowif)
 {
-    return new CSmartRowInMemoryBuffer(activity,buffsize,srbrowif);
+    return new CSmartRowInMemoryBuffer(activity, rowIf, buffsize, srbrowif);
 }
-
 
 class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiReader
 {
-    IRowInterfaces *rowif;
-    CThorRowArray rows;
-    bool lastnull;
-    rowcount_t total;
-    bool eoi;
-    Owned<IRowWriter> diskout;
-    Owned<IFile> tmpfile;
-    unsigned readersInUse;
-    SpinLock readerLock;
-
-    void diskSwitch()
-    {
-        StringBuffer temp;
-        GetTempName(temp,"bufovf",true);
-        tmpfile.setown(createIFile(temp));
-        diskout.setown(createRowWriter(tmpfile,rowif->queryRowSerializer(),rowif->queryRowAllocator(),true,false, false));
-    }
+    CActivityBase &activity;
+    IRowInterfaces *rowIf;
+    Owned<IThorRowCollector> collector;
+    Owned<IRowWriter> writer;
+    bool eoi, grouped, shared;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(IRowInterfaces *_rowif, size32_t sizebuf)
-        : rowif(_rowif)
+    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared)
+        : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
     {
-        rows.setSizing(true,false);
-        rows.setMaxTotal(sizebuf);
-        total = 0;
-        eoi = false;
-        lastnull = false;
-        readersInUse = 0;
+        collector.setown(createThorRowCollector(activity, rowIf, NULL, false, rc_mixed, SPILL_PRIORITY_OVERFLOWABLE_BUFFER, grouped));
+		writer.setown(collector->getWriter());
+		eoi = false;
     }
     ~COverflowableBuffer()
     {
-        assertex(!readersInUse); // readers have link to parent, so shouldn't destruct unless they have released
-        doStop();
+        writer.clear();
+        collector.clear();
     }
-    void putRow(const void *row)
+
+// IRowWriterMultiReader
+    virtual IRowStream *getReader()
     {
-        assertex(!eoi); 
-        if (row==NULL) {
-            if (lastnull) {
-                flush();
-                return;
-            }
-            lastnull = true;
-        }
-        else
-            lastnull = false;
-        if (diskout)
-            diskout->putRow(row);
-        else {
-            rows.append(row);
-            if (rows.isFull()) 
-                diskSwitch();
-        }
-        total++;
+        flush();
+        return collector->getStream(shared);
     }
-    void doStop()
+// IRowWriter
+    virtual void putRow(const void *row)
     {
-        flush(); // unless no readers, will have been already
+        assertex(!eoi);
+        writer->putRow(row);
     }
-    void reset()
-    {
-        rows.clear();
-        total = 0;
-    }
-    void readerStop()
-    {
-        SpinBlock b(readerLock);
-        --readersInUse;
-    }
-    void flush()
+    virtual void flush()
     {
         eoi = true;
-        if (diskout) {
-            diskout->flush();
-            diskout.clear();
-        }
     }
-    IRowStream *getReader()
-    {
-        SpinBlock b(readerLock);
-        flush();
-        class COverflowReader : public CSimpleInterface, implements IRowStream
-        {
-            Linked<COverflowableBuffer> owner;
-            IRowInterfaces *rowIf;
-            CThorRowArray &rows;
-            IFile *file;
-            Owned<IRowStream> diskin;
-            rowcount_t pos;
-            bool eog;
-
-        public:
-            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-            COverflowReader(COverflowableBuffer *_owner, CThorRowArray &_rows, IFile *_file, IRowInterfaces *_rowIf) : owner(_owner), rows(_rows), file(_file), rowIf(_rowIf)
-            {
-                if (file)
-                    diskin.setown(createRowStream(file,rowIf,0,(offset_t)-1,RCUNBOUND,false,true)); // NH->JCS: always grouped?
-                pos = 0;
-            }
-            ~COverflowReader()
-            {
-                stop();
-            }
-            const void *nextRow()
-            {
-                const void *ret;
-                if (pos<rows.ordinality())
-                {
-                    ret = rows.item((unsigned)(pos++));
-                    if (ret)
-                        LinkThorRow(ret);
-                }
-                else if (diskin)
-                    ret = diskin->nextRow();
-                else
-                    return NULL;
-                if (ret)
-                    return ret;
-                else if (eog)
-                {
-                    // eof
-                    diskin.clear();
-                    return NULL;
-                }
-                eog = true;
-                return NULL;
-            }
-            void stop()
-            {
-                diskin.clear();
-                owner->readerStop();
-            }
-        };
-        ++readersInUse;
-        return new COverflowReader(this, rows, tmpfile, rowif); // NB: holds link to COverflowReader
-    }
-
-//  offset_t getPosition()
-//  {
-//      offset_t ret = rows.totalSize();
-//      if (diskout)
-//          ret += diskout->getPosition();
-//      return ret;
-//  }
-
-    void cancel() {}
 };
 
-IRowWriterMultiReader *createOverflowableBuffer(IRowInterfaces *_rowif,size32_t sizebuf)
+IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowIf, bool grouped, bool shared)
 {
-    return new COverflowableBuffer(_rowif,sizebuf);
+    return new COverflowableBuffer(activity, rowIf, grouped, shared);
 }
 
 
@@ -804,25 +693,22 @@ IRowWriterMultiReader *createOverflowableBuffer(IRowInterfaces *_rowif,size32_t 
 class CRowSet : public CSimpleInterface
 {
     unsigned chunk;
-    CThorRowArray rows;
+    CThorExpandingRowArray rows;
 public:
-    CRowSet(unsigned _chunk) : chunk(_chunk)
+    CRowSet(CActivityBase &activity, unsigned _chunk) : rows(activity, true), chunk(_chunk)
     {
     }
     void reset(unsigned _chunk)
     {
         chunk = _chunk;
-        rows.clear();
+        rows.kill();
     }
     inline unsigned queryChunk() const { return chunk; }
     inline unsigned getRowCount() const { return rows.ordinality(); }
     inline void addRow(const void *row) { rows.append(row); }
     inline const void *getRow(unsigned r)
     {
-        const void *row = rows.item(r);
-        if (row)
-            LinkThorRow(row);
-        return row;
+        return rows.get(r);
     }
 };
 
@@ -1152,7 +1038,7 @@ public:
         {
             outputs.append(* new COutput(*this, c));
         }
-        inMemRows.setown(new CRowSet(0));
+        inMemRows.setown(new CRowSet(*activity, 0));
     }
     ~CSharedWriteAheadBase()
     {
@@ -1194,7 +1080,7 @@ public:
             unsigned reader=anyReaderBehind();
             if (NotFound != reader)
                 flushRows();
-            inMemRows.setown(new CRowSet(++totalChunksOut));
+            inMemRows.setown(new CRowSet(*activity, ++totalChunksOut));
 #ifdef TRACE_WRITEAHEAD
             totalOutChunkSize = sizeof(unsigned);
 #else
@@ -1464,7 +1350,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         VALIDATEEQ(diskChunkNum, currentChunkNum);
 #endif
         CThorStreamDeserializerSource ds(stream);
-        Owned<CRowSet> rowSet = new CRowSet(currentChunkNum);
+        Owned<CRowSet> rowSet = new CRowSet(*activity, currentChunkNum);
         loop
         {   
             byte b;

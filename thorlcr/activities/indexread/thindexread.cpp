@@ -21,6 +21,7 @@
 #include "dasess.hpp"
 #include "dadfs.hpp"
 
+#include "thmem.hpp"
 #include "thdiskbase.ipp"
 #include "thindexread.ipp"
 

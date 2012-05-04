@@ -240,15 +240,16 @@ public:
 
 class CFilterGroupSlaveActivity : public CFilterSlaveActivityBase, public CThorSteppable
 {
-    unsigned nextIndex;
-    CThorRowArray group;
     IHThorFilterGroupArg *helper;
+    Owned<IThorRowLoader> groupLoader;
+    Owned<IRowStream> groupStream;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
+        groupLoader.setown(createThorRowLoader(*this, NULL, false, rc_allMem));
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -259,7 +260,6 @@ public:
     {   
         ActivityTimer s(totalCycles, timeActivities, NULL);
         abortSoon = !helper->canMatchAny();
-        nextIndex = 0;
         CFilterSlaveActivityBase::start("FILTERGROUP");
     }
     CATCH_NEXTROW()
@@ -267,23 +267,29 @@ public:
         ActivityTimer t(totalCycles, timeActivities, NULL);
         while (!abortSoon)
         {
-            if (group.ordinality())
+            if (groupStream)
             {
-                if (nextIndex < group.ordinality())
+                OwnedConstThorRow row = groupStream->nextRow();
+                if (row)
                 {
-                    OwnedConstThorRow itm = group.itemClear(nextIndex++);
                     dataLinkIncrement();
-                    return itm.getClear();
+                    return row.getClear();
                 }
-                nextIndex = 0;
-                group.clear();
+                groupStream.clear();
                 return NULL;
             }
-            unsigned num = group.load(*input, false);
-            if (num)
+            CThorExpandingRowArray rows(*this);
+            groupLoader->loadGroup(input, abortSoon, &rows);
+            if (rows.ordinality())
             {
-                if (!helper->isValid(num, (const void **)group.base()))
-                    group.clear(); // read next group
+                // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.
+                if (helper->isValid(rows.ordinality(), rows.getRowArray()))
+                {
+                    CThorSpillableRowArray spillableRows(*this);
+                    spillableRows.transferFrom(rows);
+                    groupStream.setown(spillableRows.createRowStream());
+                }
+                // else read next group
             }
             else
                 abortSoon = true; // eof
@@ -301,19 +307,20 @@ public:
         if (abortSoon)
             return NULL;
 
-        if (group.ordinality())
+        if (groupStream)
         {
-            while (nextIndex < group.ordinality())
-            {
-                OwnedConstThorRow ret = group.itemClear(nextIndex++);
-                if (stepCompare->docompare(ret, seek, numFields) >= 0)
+			loop
+			{
+				OwnedConstThorRow row = groupStream->nextRow();
+				if (!row)
+					break;
+                if (stepCompare->docompare(row, seek, numFields) >= 0)
                 {
                     dataLinkIncrement();
-                    return ret.getClear();
+                    return row.getClear();
                 }
             }
-            nextIndex = 0;
-            group.clear();
+            groupStream.clear();
             //nextRowGE never returns an end of group marker. JCSMORE - Is this right?
         }
 
@@ -338,18 +345,13 @@ public:
                 ret.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
 #endif
 
-        OwnedConstThorRow ret = input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-        while (ret)
+        CThorExpandingRowArray rows(*this);
+        groupStream.setown(groupLoader->loadGroup(input, abortSoon, &rows));
+        if (rows.ordinality())
         {
-            group.append(ret.getClear());
-            ret.setown(input->nextRow());
-        }
-
-        unsigned num = group.ordinality();
-        if (num)
-        {
-            if (!helper->isValid(num, (const void **)group.base()))
-                group.clear();
+            // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.
+            if (!helper->isValid(rows.ordinality(), rows.getRowArray()))
+                groupStream.clear();
         }
         else
             abortSoon = true; // eof
@@ -363,12 +365,12 @@ public:
     void resetEOF() 
     { 
         abortSoon = false;
-        group.clear();
+        groupStream.clear();
         input->resetEOF(); 
     }
     void stop()
     {
-        group.clear();
+        groupStream.clear();
         stopInput(input);
         dataLinkStop();
     }

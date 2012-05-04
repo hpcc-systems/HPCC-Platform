@@ -17,8 +17,11 @@
 ############################################################################## */
 
 #include "jexcept.hpp"
+#include "jcrc.hpp"
+
+#include "thorcommon.ipp" // for CachedOutputMetaData
+
 #include "roxierow.hpp"
-#include "thorcommon.ipp"
 
 //Classes can be used to configure the allocator, and add extra data to the end.
 //The checking needs to be done by setting a bit in the allocatorid

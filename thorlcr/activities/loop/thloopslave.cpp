@@ -44,7 +44,7 @@ public:
     CNextRowFeeder(CActivityBase *_activity, IRowStream *_in) : in(_in), threaded("CNextRowFeeder"), activity(_activity), rowInterfaces(_activity)
     {
         stopped = true;
-        smartbuf.setown(createSmartInMemoryBuffer(activity, SMALL_SMART_BUFFER_SIZE));
+        smartbuf.setown(createSmartInMemoryBuffer(activity, activity, SMALL_SMART_BUFFER_SIZE));
         threaded.init(this);
     }
     ~CNextRowFeeder()
@@ -211,7 +211,12 @@ public:
         helper = (IHThorLoopArg *) queryHelper();
         flags = helper->getFlags();
     }
-
+    virtual void kill()
+    {
+        CLoopSlaveActivityBase::kill();
+        loopPending.clear();
+        curInput.clear();
+    }
 // IThorDataLink
     virtual void start()
     {
@@ -221,7 +226,7 @@ public:
         helper->createParentExtract(extractBuilder);
         maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
-        loopPending.setown(createOverflowableBuffer(this, LOOP_SMART_BUFFER_SIZE));
+        loopPending.setown(createOverflowableBuffer(*this, this, false, true));
         loopPendingCount = 0;
         finishedLooping = ((container.getKind() == TAKloopcount) && (maxIterations == 0));
         curInput.set(input);
@@ -330,7 +335,7 @@ public:
                 sendLoopingCount(loopCounter);
                 loopPending->flush();
                 curInput.setown(queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes()));
-                loopPending.setown(createOverflowableBuffer(this, LOOP_SMART_BUFFER_SIZE));
+                loopPending.setown(createOverflowableBuffer(*this, this, false, true));
                 loopPendingCount = 0;
                 ++loopCounter;
                 if ((container.getKind() == TAKloopcount) && (loopCounter > maxIterations))
@@ -367,6 +372,11 @@ public:
     {
         helper = (IHThorGraphLoopArg *)queryHelper();
         flags = helper->getFlags();
+    }
+    virtual void kill()
+    {
+        CLoopSlaveActivityBase::kill();
+        finalResultStream.clear();
     }
     virtual void start()
     {
@@ -447,7 +457,6 @@ public:
         input = NULL;
         curRow = 0;
     }
-
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
@@ -471,6 +480,11 @@ public:
     {
         abortSoon = true;
         dataLinkStop();
+    }
+    virtual void kill()
+    {
+        CSlaveActivity::kill();
+        resultStream.clear();
     }
     CATCH_NEXTROW()
     {
@@ -978,7 +992,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         gathered = eos = false;
         aggregated.clear();
-        aggregated.setown(new CThorRowAggregator(*this, *helper, *helper, queryLargeMemSize()/10, 0==container.queryOwnerId()));
+        aggregated.setown(new CThorRowAggregator(*this, *helper, *helper));
         aggregated->start(queryRowAllocator());
         dataLinkStart("CHILDGROUPAGGREGATE", container.queryId());
     }
