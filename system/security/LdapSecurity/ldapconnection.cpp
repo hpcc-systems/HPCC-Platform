@@ -4820,10 +4820,11 @@ private:
 
         // UF_ACCOUNTDISABLE 0x0002
         act_ctrl_val &= 0xFFFFFFFD;
-        
+#ifdef _DONT_EXPIRE_PASSWORD
         // UF_DONT_EXPIRE_PASSWD 0x10000
         if (m_passwordNeverExpires)
             act_ctrl_val |= 0x10000;
+#endif
 
         StringBuffer new_act_ctrl;
         new_act_ctrl.append(act_ctrl_val);
