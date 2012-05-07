@@ -41,6 +41,8 @@
 
 #define EVENT_SIZE (sizeof (struct inotify_event))
 #define BUF_LEN    (1024 * (EVENT_SIZE + 16))
+#define INOTIFY_CHANGE_EVENT_ONE_SHOT (IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT)
+#define CLOSE_INOTIFY_QUEUE(q) if (q > 0); ::close(q); q=-1;
 
 #endif
 
@@ -221,26 +223,11 @@ static StringBuffer &getLocalOrRemoteName(StringBuffer &name,const RemoteFilenam
     return name;
 }
 
-
-#ifdef __linux__
-CFile::CFile(const char * _filename) : inotify_queue(0)
-#else
 CFile::CFile(const char * _filename)
-#endif //__linux__
 {
     filename.set(_filename);
     flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
 }
-
-#ifdef __linux__
-CFile::~CFile()
-{
-  if (inotify_queue > 0)
-  {
-    ::close(inotify_queue);
-  }
-}
-#endif // __linux__
 
 void CFile::setCreateFlags(unsigned cflags)
 {
@@ -3753,19 +3740,14 @@ public:
 
 #ifdef __linux__
 
-int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *dirIter)
+int CFile::useINotify(int inotify_queue, const char *mask, unsigned timeout, IDirectoryIterator *dirIter)
 {
   StringBuffer strfile;
   struct timeval tvTimeout;
   int retVal = 0;
-  fd_set rfds;
+  T_FD_SET rfds;
 
-  if (inotify_queue == 0)  // attempt init only once
-  {
-    inotify_queue = inotify_init();
-  }
-
-  if (inotify_queue < 0) // check for error
+  if (inotify_queue <= 0) // check for error
   {
     return -1;
   }
@@ -3774,7 +3756,7 @@ int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *di
   strfile.clear();
   strfile.appendf("%s%s",this->queryFilename(),mask ? mask : "");
 
-  if (inotify_add_watch(inotify_queue, strfile.toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT) == -1)
+  if (inotify_add_watch(inotify_queue, strfile.toCharArray(), INOTIFY_CHANGE_EVENT_ONE_SHOT) == -1)
   {
     return -1;
   }
@@ -3784,17 +3766,21 @@ int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *di
     StringBuffer temp;
     temp.clear();
 
-    if (dirIter->first())
+    ForEach(*dirIter)
     {
-      inotify_add_watch(inotify_queue, dirIter->getName(temp).toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
+      temp.clear();
+      strfile.clear();
+
+      if (dirIter->isDir())
+      {
+        strfile.appendf("%s%s",this->queryFilename(),dirIter->getName(temp).toCharArray());
+        inotify_add_watch(inotify_queue,strfile.toCharArray(), INOTIFY_CHANGE_EVENT_ONE_SHOT);
+      }
     }
-    while (dirIter->next())
-    {
-      inotify_add_watch(inotify_queue, dirIter->getName(temp).toCharArray(), IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT);
-    }
+
   }
 
-  FD_ZERO(&rfds);
+  XFD_ZERO(&rfds);
   FD_SET(inotify_queue,&rfds);
 
   if (timeout != (unsigned)-1)
@@ -3802,7 +3788,9 @@ int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *di
     tvTimeout.tv_sec = timeout/1000;
   }
 
-  retVal = select(inotify_queue+1, &rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
+  bool c = false;
+
+  retVal = select(inotify_queue+1, (fd_set *)&rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
 
   if (retVal < 0) //error
   {
@@ -3812,18 +3800,80 @@ int CFile::useINotify(const char *mask, unsigned timeout, IDirectoryIterator *di
   {
     return 0;
   }
-  else if (FD_ISSET(inotify_queue, &rfds))
+  else if (findfds(rfds, inotify_queue, c))
   {
-    char buf[BUF_LEN];
-
-    //flush the queue
-    ::read(inotify_queue,buf,BUF_LEN);
-
-    return 1;
+      if (flushINotifyQueue(inotify_queue) > 0)
+      {
+        return 1;
+      }
+      else
+      {
+        return -1; // return error if the event queue is empty
+      }
   }
   else
   {
     return -1;
+  }
+}
+
+int CFile::flushINotifyQueue(int inotify_queue)
+{
+  unsigned int queue_length = getINotifyQueueLength(inotify_queue);
+  int bytes_read_successfully = 0;
+
+  if (queue_length > 0)
+  {
+    char *buf = new char[queue_length];
+
+    //flush the queue
+    bytes_read_successfully = ::read(inotify_queue, buf, queue_length);
+
+    delete[] buf;
+  }
+
+  if ( bytes_read_successfully != queue_length)
+  {
+    return -1;
+  }
+  else
+  {
+    return bytes_read_successfully;
+  }
+}
+
+unsigned int CFile::getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const
+{
+  unsigned int num_events = 0;
+
+  if (buffer_length > 0 && buffer && *buffer)
+  {
+      unsigned int offset =  EVENT_SIZE + ((struct inotify_event*)(buffer))->len;
+      num_events = getNumberOfINotifyEventsInBuffer(buffer + offset, buffer_length-offset) + 1;
+  }
+
+  return num_events;
+}
+
+unsigned int CFile::getINotifyQueueLength(int inotify_queue) const
+{
+  unsigned int queue_length = 0;
+  int ret_val = -1;
+
+  if (inotify_queue <= 0)
+  {
+    return 0;
+  }
+
+  ret_val = ioctl(inotify_queue, FIONREAD, &queue_length);
+
+  if (ret_val < 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return queue_length;
   }
 }
 
@@ -3845,9 +3895,11 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     if (!prev)
         return NULL;
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
-#ifndef __linux__
+#ifdef __linux__
+    int inotify_queue = inotify_init();
+#else
     prev.clear();
-#endif //__linux__
+#endif
     unsigned start=msTick();
     loop {
         if (abortsem) {
@@ -3857,7 +3909,7 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
 #ifdef __linux__
         else if (inotify_queue >= 0)
         {
-          int retVal = useINotify(mask, timeout, prev);
+          int retVal = useINotify(inotify_queue, mask, timeout, prev);
 
           if (retVal ==  0) // check for timeout
           {
@@ -3881,10 +3933,18 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
         Owned<CDirectoryDifferenceIterator> cmp = new CDirectoryDifferenceIterator(current,base);
         current.clear();
         if (cmp->numChanges())
-            return cmp.getClear();
+        {
+#ifdef __linux__
+          CLOSE_INOTIFY_QUEUE(inotify_queue)
+#endif // __linux__
+          return cmp.getClear();
+        }
         if (msTick()-start>timeout)
             break;
     }
+#ifdef __linux__
+    CLOSE_INOTIFY_QUEUE(inotify_queue)
+#endif
     return NULL; // timed out
 }
 

@@ -35,9 +35,7 @@ class jlib_decl CFile : public CInterface, implements IFile
     HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh=-1);
 public:
     CFile(const char * _filename);
-#ifdef __linux__
-    virtual ~CFile();
-#endif // __linux__
+
     IMPLEMENT_IINTERFACE
 
     virtual bool exists();
@@ -96,8 +94,11 @@ protected:
     unsigned flags;
 #ifdef __linux__
 private:
-    int useINotify(const char *mask = NULL, unsigned timeout = (unsigned)-1, IDirectoryIterator* dirrIter = NULL);
-    int inotify_queue;
+
+    int useINotify(int inotify_queue, const char *mask = NULL, unsigned timeout = (unsigned)-1, IDirectoryIterator* dirrIter = NULL);
+    unsigned int getINotifyQueueLength(int inotify_queue) const;
+    unsigned int getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const;
+    int flushINotifyQueue(int inotify_queue);
 #endif //__linux__
 };
 
