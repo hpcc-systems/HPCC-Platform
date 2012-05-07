@@ -7507,7 +7507,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             {
                 IHqlScope * previousScope = previousMatch->queryScope();
                 mergeScope.setown(new CHqlMergedScope(searchName, previousScope->queryFullName()));
-                mergeScope->addScope(LINK(previousScope));
+                mergeScope->addScope(previousScope);
             }
 
             //Not so sure about this....
@@ -7515,7 +7515,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             if (mergeScope)
             {
                 IHqlScope * scope = matched->queryScope();
-                mergeScope->addScope(LINK(scope));
+                mergeScope->addScope(scope);
             }
             else
                 previousMatch.setown(matched.getClear());

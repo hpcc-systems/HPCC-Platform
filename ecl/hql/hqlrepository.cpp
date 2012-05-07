@@ -348,14 +348,14 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
         {
             //Slightly ugly create a "delayed" nested scope instead.  But with a NULL owner - so will never be called back
             //Probably should be a difference class instance
-            IProperties * props = source->getProperties();
+            Owned<IProperties> props = source->getProperties();
             Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), NULL, props, contents, true, source);
             body.set(queryExpression(childScope->queryScope()));
             break;
         }
     case ESTcontainer:
         {
-            IProperties * props = source->getProperties();
+            Owned<IProperties> props = source->getProperties();
             Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), this, props, NULL, true, source);
             body.set(queryExpression(childScope->queryScope()));
             break;
