@@ -41,6 +41,10 @@ define([
 				//  ActiveX will flicker if created before initial layout
 				setTimeout(function(){
 					initGraph();
+					var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["wuid"];
+					if (wuid) {
+						doLoad(wuid);
+					}
 				}, 1);
 			},
 
@@ -107,6 +111,37 @@ define([
 				editorControl.clearHighlightLines();
 				graphControl.clear();
 				resultsControl.clear();
+			},
+
+			doLoad = function (wuid) {
+				wu = new Workunit({
+					wuid: wuid,
+
+					onMonitor: function () {
+						dom.byId("status").innerHTML = wu.state;
+						if (wu.isComplete())
+							wu.getInfo();
+					},
+					onGetText: function () {
+						editorControl.setText(wu.getText());
+					},
+					onGetInfo: function () {
+						if (wu.errors.length) {
+							editorControl.setErrors(wu.errors);
+							resultsControl.addExceptionTab(wu.errors);
+						}
+						wu.getResults();
+						wu.getGraphs();
+					},
+					onGetGraph: function (idx) {
+						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
+					},
+					onGetResult: function (idx) {
+						resultsControl.addDatasetTab(wu.results[idx].dataset);
+					}
+				});
+				wu.getText();
+				wu.monitor();
 			},
 
 			doSubmit = function(evt) {
