@@ -68,7 +68,9 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 MODULE_EXIT()
 {
     cached_omitted_Attribute->Release();
+    cacheAnyOrderSortlist->Release();
     cacheMatchGroupOrderSortlist->Release();
+    cacheAnyAttribute->Release();
     cacheIndeterminateSortlist->Release();
     cacheUnknownSortlist->Release();
     cacheIndeterminateAttribute->Release();

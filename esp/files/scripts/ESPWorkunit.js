@@ -21,8 +21,11 @@ define([
 	"hpcc/ESPBase"], function(baseConfig, declare, baseXhr, ESPBase) {
 	return declare(ESPBase, {
 		wuid : "",
+
 		stateID : 0,
 		state : "",
+
+		text: "",
 
 		resultCount : 0,
 		results : [],
@@ -43,6 +46,8 @@ define([
 		onMonitor : function() {
 		},
 		onComplete : function() {
+		},
+		onGetText: function () {
 		},
 		onGetInfo : function() {
 		},
@@ -150,42 +155,53 @@ define([
 				}
 			});
 		},
-		getInfo : function(_sync) {
+		getInfoEx: function (_sync, func, IncludeExceptions, IncludeGraphs, IncludeSourceFiles, IncludeResults, IncludeResultsViewNames, IncludeVariables, IncludeTimers, IncludeDebugValues, IncludeApplicationValues, IncludeWorkflows, IncludeResultSchemas) {
 			var request = {};
 			request['Wuid'] = this.wuid;
-			request['IncludeExceptions'] = true;
-			request['IncludeGraphs'] = true;
-			request['IncludeSourceFiles'] = false;
-			request['IncludeResults'] = true;
-			request['IncludeResultsViewNames'] = false;
-			request['IncludeVariables'] = false;
-			request['IncludeTimers'] = true;
-			request['IncludeDebugValues'] = false;
-			request['IncludeApplicationValues'] = false;
-			request['IncludeWorkflows'] = false;
-			request['SuppressResultSchemas'] = true;
+			request['IncludeExceptions'] = IncludeExceptions;
+			request['IncludeGraphs'] = IncludeGraphs;
+			request['IncludeSourceFiles'] = IncludeSourceFiles;
+			request['IncludeResults'] = IncludeResults;
+			request['IncludeResultsViewNames'] = IncludeResultsViewNames;
+			request['IncludeVariables'] = IncludeVariables;
+			request['IncludeTimers'] = IncludeTimers;
+			request['IncludeDebugValues'] = IncludeDebugValues;
+			request['IncludeApplicationValues'] = IncludeApplicationValues;
+			request['IncludeWorkflows'] = IncludeWorkflows;
+			request['SuppressResultSchemas'] = !IncludeResultSchemas;
 			request['rawxml_'] = "1";
 
-			var context = this;
 			baseXhr.post({
-				url : this.getBaseURL() + "/WUInfo",
-				handleAs : "xml",
-				content : request,
-				sync : _sync,
-				load : function(xmlDom) {
-					context.exceptions = context.parseRows(xmlDom, "Exception");
-					context.errors = context.parseRows(xmlDom, "ECLException");
-					context.timers = context.parseRows(xmlDom, "ECLTimer");
-					context.graphs = context.parseRows(xmlDom, "ECLGraph");
-					for(var i = 0; i < context.graphs.length; ++i) {
-						context.graphNameIndex[context.graphs[i].Name] = i;						
-					}
-					context.results = context.parseRows(xmlDom, "ECLResult");
-					context.onGetInfo();
-				},
-				error : function() {
+				url: this.getBaseURL() + "/WUInfo",
+				handleAs: "xml",
+				content: request,
+				sync: _sync,
+				load: func,
+				error: function () {
 				}
 			});
+		},
+		getText: function () {
+			var context = this;
+			this.getInfoEx(false, function (xmlDom) {
+				context.text = context.parseKeyValue(xmlDom, "Text");
+				context.onGetText();
+			});
+			return wu.text;
+		},
+		getInfo: function (_sync) {
+			var context = this;
+			this.getInfoEx(_sync, function (xmlDom) {
+				context.exceptions = context.parseRows(xmlDom, "Exception");
+				context.errors = context.parseRows(xmlDom, "ECLException");
+				context.timers = context.parseRows(xmlDom, "ECLTimer");
+				context.graphs = context.parseRows(xmlDom, "ECLGraph");
+				for (var i = 0; i < context.graphs.length; ++i) {
+					context.graphNameIndex[context.graphs[i].Name] = i;
+				}
+				context.results = context.parseRows(xmlDom, "ECLResult");
+				context.onGetInfo();
+			}, true, true, false, true, false, false, true, false, false, false, false);
 		},
 		getGraphs : function() {
 			for(var i = 0; i < this.graphs.length; ++i) {
