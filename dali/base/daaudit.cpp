@@ -55,13 +55,6 @@ enum MAuditRequestKind {
 #define DATEEND     10
 #define TIMEEND     19
 
-unsigned get2dig(const char *s)
-{
-    if (!isdigit(*s)||!isdigit(s[1]))
-        return 0;
-    return (*s-'0')*10+s[1]-'0';
-}
-
 class CDaliAuditServer: public IDaliServer, public Thread
 {  // Server side
 
@@ -155,11 +148,11 @@ public:
         StringBuffer fname;
         ForEach(*files) {
             files->getName(fname.clear());
-            unsigned fday = get2dig(fname.str()+11);
-            unsigned fmonth = get2dig(fname.str()+8);
-            unsigned fyear = get2dig(fname.str()+14);
+            unsigned fyear = atoi(fname.str()+8);
+            unsigned fmonth = atoi(fname.str()+13);
+            unsigned fday = atoi(fname.str()+16);
             if (fday&&fmonth&&fyear) {
-                dt.setDate(fyear+2000,fmonth,fday);
+                dt.setDate(fyear,fmonth,fday);
                 if ((dt.compareDate(to)<=0)&&(dt.compareDate(from)>=0)) {
                     IInterface *e = &files->get();
                     bool added;
