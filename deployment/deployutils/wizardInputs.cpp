@@ -901,8 +901,15 @@ void CWizardInputs::getEspBindingInformation(IPropertyTree* pNewEnvTree)
          IPropertyTree* pEspServiceInSWTree = pNewEnvTree->queryPropTree(xpath.str());
          if(pEspServiceInSWTree)
          {
-           xpath.clear().append("./Properties/@defaultPort");
+           xpath.clear().append("./Properties/@defaultWizardPort");
            const char* port = pEspService->queryProp(xpath.str());
+
+           if (!port || !*port)
+           {
+             xpath.clear().append("./Properties/@defaultPort");
+             port = pEspService->queryProp(xpath.str());
+           }
+
            xpath.clear().append("./Properties/@defaultResourcesBasedn");
            const char* resourceBasedn = pEspService->queryProp(xpath.str());
 
