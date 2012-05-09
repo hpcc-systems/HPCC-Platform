@@ -73,7 +73,8 @@ enum msgids
     Shutdown,
     GraphInit,
     GraphEnd,
-    GraphAbort
+    GraphAbort,
+    GraphGetResult
 };
 
 interface ICodeContextExt : extends ICodeContext
@@ -114,8 +115,10 @@ interface IThorResult : extends IInterface
     virtual IRowWriter *getWriter() = 0;
     virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) = 0;
     virtual IRowStream *getRowStream() = 0;
-    virtual IOutputMetaData *queryMeta() = 0;
-    virtual bool isLocal() const = 0;
+    virtual IRowInterfaces *queryRowInterfaces() = 0;
+    virtual CActivityBase *queryActivity() = 0;
+    virtual bool isDistributed() const = 0;
+    virtual void serialize(MemoryBuffer &mb) = 0;
     virtual void getResult(size32_t & retSize, void * & ret) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
 };
@@ -125,10 +128,10 @@ class CActivityBase;
 interface IThorGraphResults : extends IEclGraphResults
 {
     virtual void clear() = 0;
-    virtual IThorResult *queryResult(unsigned id) = 0;
-    virtual IThorResult *getResult(unsigned id) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool local=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool local=false) = 0;
+    virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed) = 0;
+    virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
 };
@@ -432,12 +435,11 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
     CriticalSection evaluateCrit;
     CGraphElementTable containers;
     CGraphElementArray sinks;
-    bool sink, complete, global;
+    bool sink, complete, global, localChild;
     mutable int localOnly;
     activity_id parentActivityId;
     IPropertyTree *xgmml;
     CGraphTable childGraphs;
-    Owned<IThorGraphResults> localResults, graphLoopResults;
     Owned<IGraphTempHandler> tmpHandler;
 
     void clean();
@@ -527,6 +529,7 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
     } graphCodeContext;
 
 protected:
+    Owned<IThorGraphResults> localResults, graphLoopResults;
     CGraphBase *owner, *parent;
     Owned<IException> abortException;
     CGraphElementArrayCopy ifs;
@@ -619,7 +622,9 @@ public:
     bool isCreated() const { return created; }
     bool isStarted() const { return started; }
     bool isLocalOnly() const; // this graph and all upstream dependencies
+    bool isLocalChild() const { return localChild; }
     void setCompleteEx(bool tf=true) { complete = tf; }
+    void setGlobal(bool tf=true);
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
         parentExtractSz = _parentExtractSz;
@@ -729,16 +734,15 @@ public:
     virtual void done();
     virtual void end();
     virtual void abort(IException *e);
+    virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
     virtual bool fireException(IException *e);
 
-    virtual IThorResult *queryResult(unsigned id);
-    virtual IThorResult *getResult(unsigned id);
-    virtual IThorResult *queryGraphLoopResult(unsigned id);
-    virtual IThorResult *getGraphLoopResult(unsigned id);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool local=false);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf);
+    virtual IThorResult *getResult(unsigned id, bool distributed=false);
+    virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
 
 // ILocalGraph
     virtual void getResult(size32_t & len, void * & data, unsigned id);
@@ -949,6 +953,7 @@ public:
     ~CActivityBase();
     CGraphElementBase &queryContainer() const { return container; }
     CJobBase &queryJob() const { return container.queryJob(); }
+    CGraphBase &queryGraph() const { return container.queryOwner(); }
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline const bool &queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
@@ -1037,11 +1042,91 @@ public:
     virtual IFileInProgressHandler &queryFileInProgressHandler() { UNIMPLEMENTED; return *((IFileInProgressHandler *)NULL); }
 };
 
+class graph_decl CThorGraphResults : public CInterface, implements IThorGraphResults
+{
+protected:
+    class CThorUninitializedGraphResults : public CInterface, implements IThorResult
+    {
+        unsigned id;
+
+    public:
+        IMPLEMENT_IINTERFACE
+
+        CThorUninitializedGraphResults(unsigned _id) { id = _id; }
+        virtual IRowWriter *getWriter() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual IRowStream *getRowStream() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual IRowInterfaces *queryRowInterfaces() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual CActivityBase *queryActivity() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual bool isDistributed() const { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+    };
+    IArrayOf<IThorResult> results;
+    CriticalSection cs;
+    void ensureAtLeast(unsigned id)
+    {
+        while (results.ordinality() < id)
+            results.append(*new CThorUninitializedGraphResults(results.ordinality()));
+    }
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CThorGraphResults(unsigned _numResults) { ensureAtLeast(_numResults); }
+    virtual void clear()
+    {
+        CriticalBlock procedure(cs);
+        results.kill();
+    }
+    virtual IThorResult *getResult(unsigned id, bool distributed)
+    {
+        CriticalBlock procedure(cs);
+        ensureAtLeast(id+1);
+        // NB: stream static after this, i.e. nothing can be added to this result
+        return LINK(&results.item(id));
+    }
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+    {
+        return createResult(activity, results.ordinality(), rowIf, distributed);
+    }
+    virtual unsigned addResult(IThorResult *result)
+    {
+        CriticalBlock procedure(cs);
+        unsigned id = results.ordinality();
+        setResult(id, result);
+        return id;
+    }
+    virtual void setResult(unsigned id, IThorResult *result)
+    {
+        CriticalBlock procedure(cs);
+        ensureAtLeast(id);
+        if (results.isItem(id))
+            results.replace(*LINK(result), id);
+        else
+            results.append(*LINK(result));
+    }
+    virtual unsigned count() { return results.ordinality(); }
+    virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
+    {
+        Owned<IThorResult> result = getResult(id, true);
+        result->getResult(retSize, ret);
+    }
+    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    {
+        Owned<IThorResult> result = getResult(id, true);
+        result->getLinkedResult(count, ret);
+    }
+};
+
+extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
+
+
 class CGraphElementBase;
 typedef CGraphElementBase *(*CreateFunc)(IPropertyTree &node, CGraphBase &owner, CGraphBase *resultsGraph);
 extern graph_decl void registerCreateFunc(CreateFunc func);
 extern graph_decl CGraphElementBase *createGraphElement(IPropertyTree &node, CGraphBase &owner, CGraphBase *resultsGraph);
-extern graph_decl IThorGraphResults *createThorGraphResults(unsigned num);
 extern graph_decl IThorBoundLoopGraph *createBoundLoopGraph(CGraphBase *graph, IOutputMetaData *resultMeta, unsigned activityId);
 extern graph_decl bool isDiskInput(ThorActivityKind kind);
 

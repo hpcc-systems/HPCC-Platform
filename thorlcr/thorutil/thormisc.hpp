@@ -300,7 +300,7 @@ extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IExcep
 
 extern graph_decl IPropertyTree *globals;
 extern graph_decl mptag_t masterSlaveMpTag;
-enum SlaveMsgTypes { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg };
+enum SlaveMsgTypes { smt_errorMsg=1, smt_initGraphReq, smt_initActDataReq, smt_dataReq, smt_getPhysicalName, smt_getFileOffset, smt_actMsg, smt_getresult };
 // Logging
 extern graph_decl const LogMsgJobInfo thorJob;
 
@@ -339,6 +339,9 @@ extern graph_decl IRowStream *createRowStreamFromNode(CActivityBase &activity, u
 extern graph_decl IRowServer *createRowServer(CActivityBase *activity, IRowStream *seq, ICommunicator &comm, mptag_t mpTag);
 
 extern graph_decl IRowStream *createUngroupStream(IRowStream *input);
+
+interface IRowInterfaces;
+extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
 
 #endif
 
