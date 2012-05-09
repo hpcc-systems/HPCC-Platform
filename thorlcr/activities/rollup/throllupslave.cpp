@@ -83,7 +83,7 @@ class CDedupAllHelper : public CSimpleInterface, implements IRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CDedupAllHelper(CActivityBase *_activity) : activity(_activity), rows(*_activity)
+    CDedupAllHelper(CActivityBase *_activity) : activity(_activity), rows(*_activity, _activity)
     {
         in = NULL;
         helper = NULL;
@@ -539,7 +539,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (!eoi)
         {
-            CThorExpandingRowArray rows(*this);
+            CThorExpandingRowArray rows(*this, queryRowInterfaces(input));
             groupLoader->loadGroup(input, abortSoon, &rows);
             unsigned count = rows.ordinality();
             if (count)

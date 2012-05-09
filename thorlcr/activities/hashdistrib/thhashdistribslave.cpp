@@ -1989,7 +1989,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     HashDedupSlaveActivityBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this), htabrows(*this, true)
+        : CSlaveActivity(_container), CThorDataLink(this), htabrows(*this, this, true)
     {
         htsize = 0;
         inputstopped = false;

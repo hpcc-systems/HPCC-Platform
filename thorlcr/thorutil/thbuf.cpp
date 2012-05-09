@@ -653,8 +653,8 @@ public:
         : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
     {
         collector.setown(createThorRowCollector(activity, rowIf, NULL, false, rc_mixed, SPILL_PRIORITY_OVERFLOWABLE_BUFFER, grouped));
-		writer.setown(collector->getWriter());
-		eoi = false;
+        writer.setown(collector->getWriter());
+        eoi = false;
     }
     ~COverflowableBuffer()
     {
@@ -695,7 +695,7 @@ class CRowSet : public CSimpleInterface
     unsigned chunk;
     CThorExpandingRowArray rows;
 public:
-    CRowSet(CActivityBase &activity, unsigned _chunk) : rows(activity, true), chunk(_chunk)
+    CRowSet(CActivityBase &activity, unsigned _chunk) : rows(activity, &activity, true), chunk(_chunk)
     {
     }
     void reset(unsigned _chunk)
