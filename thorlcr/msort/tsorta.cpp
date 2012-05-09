@@ -330,7 +330,7 @@ void CThorKeyArray::createSortedPartition(unsigned pn)
         newpos->append(filepos?filepos->item(ra[p]):filerecsize*(offset_t)ra[p]);
     }
     filepos.setown(newpos.getClear());
-    CThorExpandingRowArray newrows(activity);
+    CThorExpandingRowArray newrows(activity, rowif);
     newrows.ensure(pn);
     for (i = 1; i<pn; i++)
     {

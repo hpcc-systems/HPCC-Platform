@@ -262,7 +262,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CLookupJoinActivity(CGraphElementBase *_container, joinkind_t _joinKind) 
-        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(this, abortSoon), rhs(*this, true)
+        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(this, abortSoon), rhs(*this, NULL, true)
     {
         gotRHS = false;
         joinType = JT_Undefined;
