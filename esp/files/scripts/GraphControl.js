@@ -18,7 +18,7 @@ define([
 	"dojo/_base/declare",
 	"dojo/_base/sniff",
 	"dojo/dom"
-], function (declare, has, dom) {
+], function (declare, sniff, dom) {
 	return declare(null, {
 		id: "gvc",
 		width: "",
@@ -48,7 +48,7 @@ define([
 		constructor: function (args, parentNode) {
 			declare.safeMixin(this, args);
 
-			if (has("ie")) {
+			if (sniff("ie")) {
 				this.installed = (function () {
 					try {
 						var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
@@ -160,7 +160,7 @@ define([
 
 		registerEvent: function (evt, func) {
 			if (this.obj) {
-				if (has("ie")) {
+				if (sniff("ie")) {
 					this.obj.attachEvent("on" + evt, func);
 				} else {
 					this.obj.addEventListener(evt, func, false);

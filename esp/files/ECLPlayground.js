@@ -15,37 +15,72 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 define([
-	"dojo/_base/config",
 	"dojo/_base/fx",
 	"dojo/_base/window",
 	"dojo/dom",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
 	"dojo/on",
+	"dojo/ready",
+	"dijit/registry",
 	"hpcc/EclEditorControl",
 	"hpcc/GraphControl",
 	"hpcc/ResultsControl",
 	"hpcc/SampleSelectControl",
 	"hpcc/ESPWorkunit"
-], function (baseConfig, baseFx, baseWindow, dom, domStyle, domGeometry, on, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
-	var editorControl = null,
+], function (fx, baseWindow, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
+	var		wu = null,
+			editorControl = null,
 			graphControl = null,
 			resultsControl = null,
 			sampleSelectControl = null,
 
 			initUi = function () {
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
 				on(dom.byId("submitBtn"), "click", doSubmit);
-				initSamples();
+
+				if (wuid) {
+					dojo.destroy("topPane");
+					registry.byId("appLayout").resize();
+				} else {
+					initSamples();
+				}
 				initEditor();
 				initResultsControl();
+
 				//  ActiveX will flicker if created before initial layout
 				setTimeout(function () {
 					initGraph();
-					var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["wuid"];
 					if (wuid) {
-						doLoad(wuid);
+						wu = new Workunit({
+							wuid: wuid
+						});
+						wu.fetchText(function (text) {
+							editorControl.setText(text);
+						});
+						wu.monitor(monitorEclPlayground);
 					}
 				}, 1);
+			},
+
+			initUiResults = function () {
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
+				var sequence = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Sequence"];
+				initResultsControl(sequence);
+				if (wuid) {
+					wu = new Workunit({
+						wuid: wuid
+					});
+					var monitorCount = 4;
+					wu.monitor(function () {
+						dom.byId("loadingMessage").innerHTML = wu.state;
+						if (wu.isComplete() || ++monitorCount % 5 == 0) {
+							wu.getInfo({
+								onGetResults: displayResults
+							});
+						}
+					});
+				}
 			},
 
 			initSamples = function () {
@@ -90,16 +125,20 @@ define([
 								var startPos = props.definition.indexOf("(");
 								var endPos = props.definition.lastIndexOf(")");
 								var pos = props.definition.slice(startPos + 1, endPos).split(",");
-								editorControl.highlightLine(parseInt(pos[0], 10));
+								var lineNo = parseInt(pos[0], 10);
+								editorControl.highlightLine(lineNo);
+								editorControl.setCursor(lineNo, 0);
 							}
 						}
+
 					}
 				}, dom.byId("graphs"));
 			},
 
-			initResultsControl = function () {
-				var _resultsControl = resultsControl = new ResultsControl({
-					resultsSheetID: "bottomPane",
+			initResultsControl = function (sequence) {
+				resultsControl = new ResultsControl({
+					resultsSheetID: "resultsPane",
+					sequence: sequence,
 					onErrorClick: function (line, col) {
 						editorControl.setCursor(line, col);
 					}
@@ -113,42 +152,39 @@ define([
 				resultsControl.clear();
 			},
 
-			doLoad = function (wuid) {
-				wu = new Workunit({
-					wuid: wuid,
+			monitorEclPlayground = function () {
+				dom.byId("status").innerHTML = wu.state;
+				if (wu.isComplete()) {
+					wu.getInfo({
+						onGetExceptions: displayExceptions,
+						onGetResults: displayResults,
+						onGetGraphs: displayGraphs
+					});
+				}
+			},
 
-					onMonitor: function () {
-						dom.byId("status").innerHTML = wu.state;
-						if (wu.isComplete())
-							wu.getInfo();
-					},
-					onGetText: function () {
-						editorControl.setText(wu.getText());
-					},
-					onGetInfo: function () {
-						if (wu.errors.length) {
-							editorControl.setErrors(wu.errors);
-							resultsControl.addExceptionTab(wu.errors);
-						}
-						wu.getResults();
-						wu.getGraphs();
-					},
-					onGetGraph: function (idx) {
-						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
-					},
-					onGetResult: function (idx) {
-						resultsControl.addDatasetTab(wu.results[idx].dataset);
-					}
-				});
-				wu.getText();
-				wu.monitor();
+			displayExceptions = function (exceptions) {
+				if (exceptions.length) {
+					editorControl.setErrors(wu.exceptions);
+					resultsControl.addExceptionTab(wu.exceptions);
+				}
+			},
+
+			displayResults = function (results) {
+				resultsControl.refreshResults(wu);
+			},
+
+			displayGraphs = function (graphs) {
+				for (var i = 0; i < graphs.length; ++i) {
+					wu.fetchGraphXgmml(i, function (xgmml) {
+						graphControl.loadXGMML(xgmml, true);
+					});
+				}
 			},
 
 			doSubmit = function (evt) {
 				resetPage();
 				wu = new Workunit({
-					wuid: "",
-
 					onCreate: function () {
 						wu.update(editorControl.getText());
 					},
@@ -156,25 +192,7 @@ define([
 						wu.submit("hthor");
 					},
 					onSubmit: function () {
-					},
-					onMonitor: function () {
-						dom.byId("status").innerHTML = wu.state;
-						if (wu.isComplete())
-							wu.getInfo();
-					},
-					onGetInfo: function () {
-						if (wu.errors.length) {
-							editorControl.setErrors(wu.errors);
-							resultsControl.addExceptionTab(wu.errors);
-						}
-						wu.getResults();
-						wu.getGraphs();
-					},
-					onGetGraph: function (idx) {
-						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
-					},
-					onGetResult: function (idx) {
-						resultsControl.addDatasetTab(wu.results[idx].dataset);
+						wu.monitor(monitorEclPlayground);
 					}
 				});
 			},
@@ -192,8 +210,9 @@ define([
 			},
 
 			endLoading = function () {
-				baseFx.fadeOut({
+				fx.fadeOut({
 					node: dom.byId("loadingOverlay"),
+					duration: 175,
 					onEnd: function (node) {
 						domStyle.set(node, "display", "none");
 					}
@@ -203,8 +222,17 @@ define([
 	return {
 		init: function () {
 			startLoading();
-			initUi();
-			endLoading();
+			ready(function () {
+				initUi();
+				endLoading();
+			});
+		},
+		initResults: function () {
+			startLoading();
+			ready(function () {
+				initUiResults();
+				endLoading();
+			});
 		}
 	};
 });

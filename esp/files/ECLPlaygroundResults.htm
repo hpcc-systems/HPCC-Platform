@@ -20,7 +20,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>HPCC: ECL Playground</title>
+    <title>HPCC: ECL Playground (Results)</title>
     <link href="CodeMirror2/lib/codemirror.css" rel="stylesheet">
     <script src="CodeMirror2/lib/codemirror.js"></script>
     <script src="CodeMirror2/mode/ecl/ecl.js"></script>
@@ -57,66 +57,19 @@
     <script src="dojo/dojo.js"></script>
     <script>
         require(["main/ECLPlayground", "dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/layout/TabContainer", "dojo/domReady!"], function (app) {
-            app.init();
+            app.initResults();
         });
     </script>
 </head>
 <body class="claro">
     <!-- overlay -->
     <div id="loadingOverlay" class="pageOverlay">
-        <div class="loadingMessage">
+        <div id="loadingMessage" class="loadingMessage">
             Loading...</div>
     </div>
     <!-- application -->
     <div id="appLayout" class="demoLayout" data-dojo-props="design: 'headline'" data-dojo-type="dijit.layout.BorderContainer">
-        <div id="topPane" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
-            <div id="title" style="display: inline-block; vertical-align: middle">
-                ECL Playground</div>
-            <div style="float: right; display: inline-block; vertical-align: middle">
-                <label id="sampleSelectLabel" for="sampleSelect">Sample:</label>
-                <div id="sampleSelect" style="overflow: visible !important;">
-                </div>
-            </div>
-        </div>
-        <div id="tabs" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
-            <div id="eclContent">
-                <textarea id="eclCode">
-/*
-    Example code - use without restriction.  
-*/
-Layout_Person := RECORD
-  UNSIGNED1 PersonID;
-  STRING15  FirstName;
-  STRING25  LastName;
-END;
-
-allPeople := DATASET([ {1,'Fred','Smith'},
-                       {2,'Joe','Blow'},
-                       {3,'Jane','Smith'}],Layout_Person);
-
-somePeople := allPeople(LastName = 'Smith');
-
-//  Outputs  ---
-somePeople;
-			</textarea>
-            </div>
-        </div>
-        <div id="rightPane" class="edgePanel" data-dojo-props="minSize:120, region: 'right', splitter:true"
-            data-dojo-type="dijit.layout.TabContainer" style="width: 240px;">
-            <div id="graphs" style="width: 100%; height: 100%; overflow: hidden">
-            </div>
-        </div>
-        <div id="resultsPane" class="edgePanel" data-dojo-props="minSize:120, region: 'bottom', splitter:true, tabPosition: 'bottom'"
-            data-dojo-type="dijit.layout.TabContainer" style="height: 240px">
-        </div>
-        <div id="submitPane" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
-            <div style="display: inline-block; vertical-align: middle">
-                <button id="submitBtn">
-                    Submit</button></div>
-            <div style="float: right; display: inline-block; vertical-align: middle">
-                <div id="status">
-                    ...</div>
-            </div>
+        <div id="resultsPane" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.TabContainer">
         </div>
     </div>
 </body>

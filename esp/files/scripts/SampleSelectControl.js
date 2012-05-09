@@ -19,7 +19,7 @@ define([
 	"dojo/_base/xhr",
 	"dojo/data/ItemFileReadStore",
 	"dijit/form/Select"
-], function (declare, baseXhr, ItemFileReadStore, Select) {
+], function (declare, xhr, ItemFileReadStore, Select) {
 	return declare(null, {
 		id: null,
 		samplesURL: null,
@@ -38,10 +38,14 @@ define([
 				name: this.id,
 				store: sampleStore,
 				value: "default.ecl",
-				//maxHeight: -1 // tells _HasDropDown to fit menu within viewport
+				maxHeight: -1,
+				style: {
+					overflow: "overflow: visible !important",
+					padding: 0
+				},
 				onChange: function () {
 					var filename = dijit.byId(this.id).get("value");
-					baseXhr.get({
+					xhr.get({
 						url: "ecl/" + filename,
 						handleAs: "text",
 						load: function (eclText) {

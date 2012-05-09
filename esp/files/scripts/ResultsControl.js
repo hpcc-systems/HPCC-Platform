@@ -16,16 +16,23 @@
 ############################################################################## */
 define([
 	"dojo/_base/declare",
-	"dojo/dom",
 	"dojo/store/Memory",
 	"dojo/data/ObjectStore",
 	"dojox/grid/DataGrid",
+	"dojox/grid/EnhancedGrid",
+	"dojox/grid/enhanced/plugins/Pagination",
+	"dojox/grid/enhanced/plugins/Filter",
+	"dojox/grid/enhanced/plugins/NestedSorting",
 	"dijit/registry",
 	"dijit/layout/ContentPane"
-], function (declare, dom, Memory, ObjectStore, DataGrid, registry, ContentPane) {
+], function (declare, Memory, ObjectStore, DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting, registry, ContentPane) {
 	return declare(null, {
+		workunit: null,
 		paneNum: 0,
 		resultsSheetID: "",
+		resultSheet: {},
+		sequenceResultStoreMap: [],
+		delayLoad: [],
 
 		//  Callbacks
 		onErrorClick: function (line, col) {
@@ -34,60 +41,103 @@ define([
 		// The constructor    
 		constructor: function (args) {
 			declare.safeMixin(this, args);
+
+			this.resultSheet = registry.byId(this.resultsSheetID);
+			var context = this;
+			this.resultSheet.watch("selectedChildWidget", function (name, oval, nval) {
+				if (nval.id in context.delayLoad) {
+					context.delayLoad[nval.id].placeAt(nval.containerNode, "last");
+					context.delayLoad[nval.id].startup();
+					delete context.delayLoad[nval.id];
+				}
+			});
 		},
 
 		clear: function () {
-			var resultSheet = registry.byId(this.resultsSheetID);
-			var tabs = resultSheet.getChildren();
+			this.delayLoad = [];
+			this.sequenceResultStoreMap = [];
+			var tabs = this.resultSheet.getChildren();
 			for (var i = 0; i < tabs.length; ++i) {
-				resultSheet.removeChild(tabs[i]);
+				this.resultSheet.removeChild(tabs[i]);
 			}
 		},
 
-		addTab: function (label) {
-			var resultSheet = registry.byId(this.resultsSheetID);
-			var paneID = "Pane_" + ++this.paneNum;
+		getNextPaneID: function () {
+			return "Pane_" + ++this.paneNum;
+		},
+
+		addTab: function (label, paneID) {
+			if (paneID == null) {
+				paneID = this.getNextPaneID();
+			}
 			var pane = new ContentPane({
 				title: label,
 				id: paneID,
-				closable: "true",
-				style: { padding: "0px" },
-				content: "<div id=\"Div_" + paneID + "\"></div>"
+				closable: true,
+				style: {
+					overflow: "hidden",
+					padding: 0
+				}
 			});
-			resultSheet.addChild(pane);
-			return dom.byId(pane.id);
+			this.resultSheet.addChild(pane);
+			return pane;
 		},
 
-		addDatasetTab: function (dataset) {
-			var resultNode = this.addTab(dataset.name);
+		addResultTab: function (result) {
+			var paneID = this.getNextPaneID();
+			var grid = EnhancedGrid({
+				store: result.getObjectStore(),
+				query: { id: "*" },
+				structure: result.getStructure(),
+				canSort: function (col) {
+					return false;
+				},
+				loadingMessage: result.isComplete() ? "<span class=\'dojoxGridLoading\'>Loading...</span>" : "<span class=\'dojoxGridLoading\'>Calculating...</span>",
+				plugins: {
+					//					nestedSorting: true,
+					pagination: {
+						pageSizes: [25, 50, 100, "All"],
+						defaultPageSize: 50,
+						description: true,
+						sizeSwitch: true,
+						pageStepper: true,
+						gotoButton: true,
+						maxPageStep: 4,
+						position: "bottom"
+					}
+				}
+			});
+			this.delayLoad[paneID] = grid;
+			this.sequenceResultStoreMap[result.Sequence] = result.store;
+			return this.addTab(result.getName(), paneID);
+		},
 
-			var gridLayout = [];
-			for (var h = 0; h < dataset.header.length; ++h) {
-				gridLayout.push({
-					name: dataset.header[h],
-					field: dataset.header[h],
-					width: "auto"
-				});
+		refreshResults: function (wu) {
+			if (this.workunit != wu) {
+				this.clear();
+				this.workunit = wu;
 			}
-			store = new Memory({ data: dataset.rows });
-			dataStore = new ObjectStore({ objectStore: store });
-
-			grid = new DataGrid({
-				store: dataStore,
-				query: {},
-				structure: gridLayout
-			}, "Div_" + resultNode.id);
-			grid.startup();
+			for (var i = 0; i < this.workunit.results.length; ++i) {
+				var result = this.workunit.results[i];
+				if (result.Sequence in this.sequenceResultStoreMap) {
+					this.sequenceResultStoreMap[result.Sequence].isComplete = result.isComplete();
+				} else {
+					pane = this.addResultTab(result);
+					if (this.sequence && this.sequence == result.Sequence) {
+						this.resultSheet.selectChild(pane);
+					}
+				}
+			}
 		},
 
-		addExceptionTab: function (errors) {
-			var resultNode = this.addTab("Error(s)");
-			store = new Memory({ data: errors });
+		addExceptionTab: function (exceptions) {
+			var resultNode = this.addTab("Error/Warning(s)");
+			store = new Memory({ data: exceptions });
 			dataStore = new ObjectStore({ objectStore: store });
 
 			grid = new DataGrid({
 				store: dataStore,
-				query: {},
+				query: { id: "*" },
 				structure: [
 					{ name: "Severity", field: "Severity" },
 					{ name: "Line", field: "LineNo" },
@@ -95,7 +145,8 @@ define([
 					{ name: "Code", field: "Code" },
 					{ name: "Message", field: "Message", width: "auto" }
 					]
-			}, "Div_" + resultNode.id);
+			});
+			grid.placeAt(resultNode.containerNode, "last");
 			grid.startup();
 
 			var context = this;

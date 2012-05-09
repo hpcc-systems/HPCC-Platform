@@ -15,11 +15,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 define([
-	"dojo/_base/config",
 	"dojo/_base/declare",
+	"dojo/_base/lang",
 	"dojo/_base/xhr",
+	"hpcc/ESPResult",
 	"hpcc/ESPBase"
-], function (baseConfig, declare, baseXhr, ESPBase) {
+], function (declare, lang, xhr, ESPResult, ESPBase) {
 	return declare(ESPBase, {
 		wuid: "",
 
@@ -31,11 +32,9 @@ define([
 		resultCount: 0,
 		results: [],
 
-		graphNameIndex: [],
 		graphs: [],
 
 		exceptions: [],
-		errors: [],
 		timers: [],
 
 		onCreate: function () {
@@ -43,16 +42,6 @@ define([
 		onUpdate: function () {
 		},
 		onSubmit: function () {
-		},
-		onMonitor: function () {
-		},
-		onComplete: function () {
-		},
-		onGetText: function () {
-		},
-		onGetInfo: function () {
-		},
-		onGetGraph: function (name) {
 		},
 		constructor: function (args) {
 			declare.safeMixin(this, args);
@@ -75,23 +64,27 @@ define([
 			}
 			return false;
 		},
-		monitor: function () {
+		monitor: function (callback) {
 			var request = {};
 			request['Wuid'] = this.wuid;
 			request['rawxml_'] = "1";
 
 			var context = this;
-			baseXhr.post({
+			xhr.post({
 				url: this.getBaseURL() + "/WUQuery",
 				handleAs: "xml",
 				content: request,
 				load: function (xmlDom) {
-					context.stateID = context.parseKeyValue(xmlDom, "StateID");
-					context.state = context.parseKeyValue(xmlDom, "State");
-					context.onMonitor();
+					var workunit = context.getValue(xmlDom, "ECLWorkunit");
+					context.stateID = workunit.StateID;
+					context.state = workunit.State;
+					if (callback) {
+						callback(context);
+					}
+
 					if (!context.isComplete()) {
 						setTimeout(function () {
-							context.monitor();
+							context.monitor(callback);
 						}, 200);
 					}
 				},
@@ -100,35 +93,34 @@ define([
 				}
 			});
 		},
-		create: function (ecl, _sync) {
+		create: function (ecl) {
 			var request = {};
 			request['rawxml_'] = "1";
 
 			var context = this;
-			baseXhr.post({
+			xhr.post({
 				url: this.getBaseURL() + "/WUCreate",
 				handleAs: "xml",
 				content: request,
 				load: function (xmlDom) {
-					context.wuid = context.parseKeyValue(xmlDom, "Wuid");
+					context.wuid = context.getValue(xmlDom, "Wuid");
 					context.onCreate();
 				},
 				error: function () {
 				}
 			});
 		},
-		update: function (ecl, _sync) {
+		update: function (ecl) {
 			var request = {};
 			request['Wuid'] = this.wuid;
 			request['QueryText'] = ecl;
 			request['rawxml_'] = "1";
 
 			var context = this;
-			baseXhr.post({
+			xhr.post({
 				url: this.getBaseURL() + "/WUUpdate",
 				handleAs: "xml",
 				content: request,
-				sync: _sync,
 				load: function (xmlDom) {
 					context.onUpdate();
 				},
@@ -136,147 +128,126 @@ define([
 				}
 			});
 		},
-		submit: function (target, _sync) {
+		submit: function (target) {
 			var request = {};
 			request['Wuid'] = this.wuid;
 			request['Cluster'] = target;
 			request['rawxml_'] = "1";
 
 			var context = this;
-			baseXhr.post({
+			xhr.post({
 				url: this.getBaseURL() + "/WUSubmit",
 				handleAs: "xml",
 				content: request,
-				sync: _sync,
 				load: function (xmlDom) {
 					context.onSubmit();
-					context.monitor();
 				},
 				error: function () {
 				}
 			});
 		},
-		getInfoEx: function (_sync, func, IncludeExceptions, IncludeGraphs, IncludeSourceFiles, IncludeResults, IncludeResultsViewNames, IncludeVariables, IncludeTimers, IncludeDebugValues, IncludeApplicationValues, IncludeWorkflows, IncludeResultSchemas) {
-			var request = {};
-			request['Wuid'] = this.wuid;
-			request['IncludeExceptions'] = IncludeExceptions;
-			request['IncludeGraphs'] = IncludeGraphs;
-			request['IncludeSourceFiles'] = IncludeSourceFiles;
-			request['IncludeResults'] = IncludeResults;
-			request['IncludeResultsViewNames'] = IncludeResultsViewNames;
-			request['IncludeVariables'] = IncludeVariables;
-			request['IncludeTimers'] = IncludeTimers;
-			request['IncludeDebugValues'] = IncludeDebugValues;
-			request['IncludeApplicationValues'] = IncludeApplicationValues;
-			request['IncludeWorkflows'] = IncludeWorkflows;
-			request['SuppressResultSchemas'] = !IncludeResultSchemas;
-			request['rawxml_'] = "1";
+		getInfo: function (args) {
+			var request = {
+				Wuid: this.wuid,
+				IncludeExceptions: args.onGetExceptions ? true : false,
+				IncludeGraphs: args.onGetGraphs ? true : false,
+				IncludeSourceFiles: false,
+				IncludeResults: args.onGetResults ? true : false,
+				IncludeResultsViewNames: false,
+				IncludeVariables: false,
+				IncludeTimers: args.onGetTimers ? true : false,
+				IncludeDebugValues: false,
+				IncludeApplicationValues: false,
+				IncludeWorkflows: false,
+				SuppressResultSchemas: args.onGetResults ? false : true,
+				rawxml_: true
+			};
 
-			baseXhr.post({
+			var context = this;
+			xhr.post({
 				url: this.getBaseURL() + "/WUInfo",
 				handleAs: "xml",
 				content: request,
-				sync: _sync,
-				load: func,
+				load: function (xmlDom) {
+					var workunit = context.getValue(xmlDom, "Workunit", ["ECLException", "ECLResult", "ECLGraph", "ECLTimer", "ECLSchemaItem"]);
+					if (workunit.Query.Text && args.onGetText) {
+						context.text = workunit.Query.Text;
+						args.onGetText(context.text);
+					}
+					if (workunit.Exceptions && args.onGetExceptions) {
+						context.exceptions = workunit.Exceptions;
+						args.onGetExceptions(context.exceptions);
+					}
+					if (workunit.Results && args.onGetResults) {
+						context.results = [];
+						var results = workunit.Results;
+						for (var i = 0; i < results.length; ++i) {
+							context.results.push(new ESPResult(lang.mixin({ wuid: context.wuid }, results[i])));
+						}
+						args.onGetResults(context.results);
+					}
+					if (workunit.Timers && args.onGetTimers) {
+						context.timers = workunit.Timers;
+						args.onGetTimers(context.timers);
+					}
+					if (workunit.Graphs && args.onGetGraphs) {
+						context.graphs = workunit.Graphs;
+						args.onGetGraphs(context.graphs)
+					}
+					if (args.onGetAll) {
+						args.onGetAll(workunit);
+					}
+				},
 				error: function () {
 				}
 			});
 		},
-		getText: function () {
-			var context = this;
-			this.getInfoEx(false, function (xmlDom) {
-				context.text = context.parseKeyValue(xmlDom, "Text");
-				context.onGetText();
-			});
-			return wu.text;
-		},
-		getInfo: function (_sync) {
-			var context = this;
-			this.getInfoEx(_sync, function (xmlDom) {
-				context.exceptions = context.parseRows(xmlDom, "Exception");
-				context.errors = context.parseRows(xmlDom, "ECLException");
-				context.timers = context.parseRows(xmlDom, "ECLTimer");
-				context.graphs = context.parseRows(xmlDom, "ECLGraph");
-				for (var i = 0; i < context.graphs.length; ++i) {
-					context.graphNameIndex[context.graphs[i].Name] = i;
-				}
-				context.results = context.parseRows(xmlDom, "ECLResult");
-				context.onGetInfo();
-			}, true, true, false, true, false, false, true, false, false, false, false);
-		},
-		getGraphs: function () {
-			for (var i = 0; i < this.graphs.length; ++i) {
-				this.getGraph(i);
+		fetchText: function (onFetchText) {
+			if (this.text) {
+				onFetchText(this.text);
+				return;
 			}
+
+			this.getInfo({
+				onGetText: onFetchText
+			});
 		},
-		getGraph: function (idx, _sync) {
+		fetchResults: function (onFetchResults) {
+			if (this.results && this.results.length) {
+				onFetchResults(this.results);
+				return;
+			}
+
+			this.getInfo({
+				onGetResults: onFetchResults
+			});
+		},
+		fetchGraphs: function (onFetchGraphs) {
+			if (this.graphs && this.graphs.length) {
+				onFetchGraphs(this.graphs);
+				return;
+			}
+
+			this.getInfo({
+				onGetGraphs: onFetchGraphs
+			});
+		},
+		fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
 			var request = {};
 			request['Wuid'] = this.wuid;
 			request['GraphName'] = this.graphs[idx].Name;
 			request['rawxml_'] = "1";
 
 			var context = this;
-			baseXhr.post({
+			xhr.post({
 				url: this.getBaseURL() + "/WUGetGraph",
 				handleAs: "xml",
 				content: request,
-				sync: _sync,
 				load: function (xmlDom) {
-					context.graphs[idx].xgmml = context.parseKeyValue(xmlDom, "Graph");
-					context.onGetGraph(idx);
+					context.graphs[idx].xgmml = context.getValue(xmlDom, "Graph");
+					onFetchGraphXgmml(context.graphs[idx].xgmml);
 				},
 				error: function () {
-				}
-			});
-		},
-		getResults: function () {
-			for (var i = 0; i < this.results.length; ++i) {
-				this.getResult(i);
-			}
-		},
-		getResult: function (idx, _sync) {
-			var request = {};
-			request['Wuid'] = this.wuid;
-			request['Sequence'] = this.results[idx].Sequence;
-			request['Start'] = 0;
-			request['Count'] = 999;
-			request['rawxml_'] = "1";
-
-			var context = this;
-			baseXhr.post({
-				url: this.getBaseURL() + "/WUResult",
-				handleAs: "xml",
-				content: request,
-				sync: _sync,
-				load: function (xmlDom) {
-					var name = context.parseKeyValue(xmlDom, "Name");
-					var resultDom = xmlDom.getElementsByTagName("Result");
-					if (resultDom.length) {
-						context.results[idx].dataset = context.parseDataset(resultDom[0], name, "Row");
-					}
-					context.onGetResult(idx);
-				},
-				error: function () {
-				}
-			});
-		},
-		getInfoFast: function (_sync) {
-			var request = {};
-			request['Wuid'] = this.wuid;
-			request['rawxml_'] = "1";
-
-			var context = this;
-			baseXhr.post({
-				url: this.getBaseURL() + "/WUQuery",
-				handleAs: "xml",
-				content: request,
-				sync: _sync,
-				load: function (xmlDom) {
-					context.stateID = context.parseKeyValue(xmlDom, "StateID");
-					context.state = context.parseKeyValue(xmlDom, "State");
-				},
-				error: function () {
-					done = true;
 				}
 			});
 		}
