@@ -24,7 +24,7 @@ EXPORT HDFSPipe := MODULE
     /*
    * HDFSPipe.PipeIn - this macro to be called by the user to pipe in data from the Hadoop file system (HDFS).
      *
-     * @param ECL_RS            The ECL recordset to stream out.
+     * @param ECL_RS            The ECL recordset to pipe into.
      * @param HadoopFileName    The fully qualified target HDFS file name.
      * @param Layout            The structure which describes the ECL_RS recordset.
      * @param HadoopFileFormat  The Hadoop data file format : FLAT | CSV.
@@ -117,7 +117,7 @@ EXPORT HDFSPipe := MODULE
     HadoopPipe.PipeOut - writes the given recordset 'ECL_RS' to the target HDFS system in
                                                 file parts. One file part for each HPCC node.
 
-    ECL_RS              - The ECL recordset to stream out.
+    ECL_RS              - The ECL recordset to pipe out.
     HadoopFileName      - The fully qualified target HDFS file name.
     Layout              - The structure which describes the ECL_RS recordset.
     HadoopFileFormat    - The Hadoop data file format : FLAT | CSV
@@ -163,7 +163,7 @@ EXPORT HDFSPipe := MODULE
                                                              in file parts and merges them together to form a single target file
                                                              on the HDFS system.
 
-    ECL_RS          - The ECL recordset to stream out.
+    ECL_RS          - The ECL recordset to pipe out.
     HadoopFileName  - The fully qualified target HDFS file name.
     Layout          - The structure which describes the ECL_RS recordset
     HadoopFileFormat- The Hadoop data file format : FLAT | CSV
