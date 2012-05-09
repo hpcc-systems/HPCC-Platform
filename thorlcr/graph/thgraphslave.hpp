@@ -107,6 +107,7 @@ public:
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);
     void serializeDone(MemoryBuffer &mb);
+    IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     virtual void serializeStats(MemoryBuffer &mb);
@@ -117,6 +118,7 @@ public:
     virtual void abort(IException *e);
     virtual void done();
     virtual void end();
+    virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
     virtual bool fireException(IException *e)
