@@ -591,7 +591,7 @@ void CThorExpandingRowArray::removeRows(rowcount_t start, rowcount_t n)
     assertex(!n || rows);
     if (rows)
     {
-        for (rowcount_t i = start; i < n; i++)
+        for (rowcount_t i = start; i < start+n; i++)
             ReleaseThorRow(rows[i]);
         //firstRow = 0;
         numRows -= n;
@@ -1126,6 +1126,10 @@ protected:
         preserveGrouping = _preserveGrouping;
         spillableRows.setAllowNulls(preserveGrouping);
     }
+    void flush()
+    {
+        spillableRows.flush();
+    }
     void putRow(const void *row)
     {
         if (!spillableRows.append(row))
@@ -1310,7 +1314,7 @@ public:
     }
     rowcount_t numRows() const
     {
-        return totalRows;
+        return totalRows+spillableRows.numCommitted();
     }
     unsigned numOverflows() const
     {
@@ -1444,6 +1448,10 @@ public:
             CWriter(CThorRowCollector *_parent) : parent(_parent)
             {
             }
+            ~CWriter()
+            {
+                flush();
+            }
         // IRowWriter
             virtual void putRow(const void *row)
             {
@@ -1451,6 +1459,7 @@ public:
             }
             virtual void flush()
             {
+                parent->flush();
             }
         };
         return new CWriter(this);
