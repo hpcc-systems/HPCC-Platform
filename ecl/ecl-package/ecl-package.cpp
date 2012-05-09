@@ -57,8 +57,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optQuerySetName.set(arg);
-                return true;
+                if (optQuerySetName.isEmpty())
+                    optQuerySetName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optPackageMap, ECLOPT_PACKAGEMAP))
                 continue;
@@ -125,8 +131,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optQuerySetName.set(arg);
-                break;
+                if (optQuerySetName.isEmpty())
+                    optQuerySetName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optPackageMap, ECLOPT_PACKAGEMAP))
                 continue;
@@ -200,8 +212,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optCluster.set(arg);
-                return true;
+                if (optCluster.isEmpty())
+                    optCluster.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
                 continue;
@@ -289,8 +307,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optPkgName.set(arg);
-                return true;
+                if (optPkgName.isEmpty())
+                    optPkgName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             else if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
                 continue;
@@ -368,8 +392,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optFileName.set(arg);
-                return true;
+                if (optFileName.isEmpty())
+                    optFileName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
                 continue;
@@ -446,8 +476,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optFileName.set(arg);
-                return true;
+                if (optFileName.isEmpty())
+                    optFileName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
                 continue;
@@ -541,8 +577,14 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optFileName.set(arg);
-                return true;
+                if (optFileName.isEmpty())
+                    optFileName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nargument is already defined %s\n", arg);
+                    return false;
+                }
+                continue;
             }
             if (iter.matchOption(optProcess, ECLOPT_PROCESS))
                 continue;
