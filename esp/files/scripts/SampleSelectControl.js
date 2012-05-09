@@ -14,49 +14,49 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-define([    
+define([
 	"dojo/_base/declare",
 	"dojo/_base/xhr",
 	"dojo/data/ItemFileReadStore",
 	"dijit/form/Select"
-], function(declare, baseXhr, ItemFileReadStore, Select) {
+], function (declare, baseXhr, ItemFileReadStore, Select) {
 	return declare(null, {
 		id: null,
 		samplesURL: null,
-	
-		onNewSelection: function(eclText) {
+
+		onNewSelection: function (eclText) {
 		},
-	
-		constructor: function(args){
+
+		constructor: function (args) {
 			declare.safeMixin(this, args);
 			var sampleStore = new dojo.data.ItemFileReadStore({
 				url: this.samplesURL
 			});
-			
+
 			var context = this;
 			var select = new dijit.form.Select({
 				name: this.id,
 				store: sampleStore,
 				value: "default.ecl",
 				//maxHeight: -1 // tells _HasDropDown to fit menu within viewport
-				onChange: function(){
+				onChange: function () {
 					var filename = dijit.byId(this.id).get("value");
 					baseXhr.get({
 						url: "ecl/" + filename,
-						handleAs: "text",				
-						load: function(eclText) {
+						handleAs: "text",
+						load: function (eclText) {
 							context.onNewSelection(eclText);
 						},
-						error: function() {
+						error: function () {
 						}
 					});
 				}
 			}, this.id);
 			try {
 				select.startup();
-			} catch(e) {
+			} catch (e) {
 			}
 		}
-		
+
 	});
 });

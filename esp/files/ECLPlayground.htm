@@ -18,73 +18,73 @@
 ##############################################################################
 -->
 <html>
-
 <head>
-<meta charset="utf-8">
-<title>Demo: Graph Control</title>
-<link href="CodeMirror2/lib/codemirror.css" rel="stylesheet">
-<script src="CodeMirror2/lib/codemirror.js"></script>
-<script src="CodeMirror2/mode/ecl/ecl.js"></script>
-<link href="css/ecl.css" rel="stylesheet">
-<link href="ECLPlayground.css" media="screen" rel="stylesheet">
-<link href="dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
-<link href="dojox/grid/resources/Grid.css" rel="stylesheet">
-<link href="dojox/grid/resources/claroGrid.css" rel="stylesheet">
-<!-- load dojo and provide config via dojoConfig global -->
-<script>
-	var dojoConfig = (function(){
-		var base = location.href.split("/");
-		var developerMode = base[0] == "file:";	//  If URL is local then we are in web developer mode!
-		base.pop();
-		base = base.join("/");
-		
-		return {
-			async: true,
-			isDebug: developerMode,
-			parseOnLoad: true,
-			urlBase: base,
-			serverIP:  developerMode ? "192.168.2.68" : "",	//IP of any ESP server
-			packages: [{
-				name: "main",
-				location: base + "/"  
-			}, {
-				name: "hpcc",
-				location: base + "/scripts/"
-			}]
-		};
-	})();
-	</script>
-<script src="dojo/dojo.js"></script>
-<script>
-	require(["dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/layout/TabContainer", "dijit/layout/AccordionContainer", "dijit/layout/AccordionPane", 
+    <meta charset="utf-8">
+    <title>Demo: Graph Control</title>
+    <link href="CodeMirror2/lib/codemirror.css" rel="stylesheet">
+    <script src="CodeMirror2/lib/codemirror.js"></script>
+    <script src="CodeMirror2/mode/ecl/ecl.js"></script>
+    <link href="css/ecl.css" rel="stylesheet">
+    <link href="ECLPlayground.css" media="screen" rel="stylesheet">
+    <link href="dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
+    <link href="dojox/grid/resources/Grid.css" rel="stylesheet">
+    <link href="dojox/grid/resources/claroGrid.css" rel="stylesheet">
+    <!-- load dojo and provide config via dojoConfig global -->
+    <script>
+        var dojoConfig = (function () {
+            var base = location.href.split("/");
+            var developerMode = base[0] == "file:"; //  If URL is local then we are in web developer mode!
+            base.pop();
+            base = base.join("/");
+
+            return {
+                async: true,
+                isDebug: developerMode,
+                parseOnLoad: true,
+                urlBase: base,
+                serverIP: developerMode ? "192.168.2.68" : "", //IP of any ESP server
+                packages: [{
+                    name: "main",
+                    location: base + "/"
+                }, {
+                    name: "hpcc",
+                    location: base + "/scripts/"
+                }]
+            };
+        })();
+    </script>
+    <script src="dojo/dojo.js"></script>
+    <script>
+        require(["dijit/layout/BorderContainer", "dijit/layout/ContentPane", "dijit/layout/TabContainer", "dijit/layout/AccordionContainer", "dijit/layout/AccordionPane",
 	"dojo/domReady!"]);
-</script>
-<script>
-	require(["main/ECLPlayground", "dojo/domReady!"], function(app) {
-		app.init();
-	});
-</script>
+    </script>
+    <script>
+        require(["main/ECLPlayground", "dojo/domReady!"], function (app) {
+            app.init();
+        });
+    </script>
 </head>
-
 <body class="claro">
-
-<!-- overlay -->
-<div id="loadingOverlay" class="pageOverlay">
-	<div class="loadingMessage">
-		Loading...</div>
-</div>
-<!-- application -->
-<div id="appLayout" class="demoLayout" data-dojo-props="design: 'headline'" data-dojo-type="dijit.layout.BorderContainer">
-	<div id="topPane" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
-		<div id="title" style="display:inline-block; vertical-align:middle">ECL Playground</div>
-		<div style="float: right;display :inline-block; vertical-align:middle">
-			<label for="sampleSelect">Sample:</label>
-			<div id="sampleSelect"></div>
-		</div>
-	</div>
-	<div id="tabs" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
-		<div id="eclContent">
-			<textarea id="eclCode">
+    <!-- overlay -->
+    <div id="loadingOverlay" class="pageOverlay">
+        <div class="loadingMessage">
+            Loading...</div>
+    </div>
+    <!-- application -->
+    <div id="appLayout" class="demoLayout" data-dojo-props="design: 'headline'" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="topPane" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="title" style="display: inline-block; vertical-align: middle">
+                ECL Playground</div>
+            <div style="float: right; display: inline-block; vertical-align: middle">
+                <label for="sampleSelect">
+                    Sample:</label>
+                <div id="sampleSelect">
+                </div>
+            </div>
+        </div>
+        <div id="tabs" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="eclContent">
+                <textarea id="eclCode">
 /*
     Example code - use without restriction.  
 */
@@ -102,21 +102,26 @@ somePeople := allPeople(LastName = 'Smith');
 
 //  Outputs  ---
 somePeople;
-			</textarea> 
-		</div>
-	</div>
-	<div id="rightPane" class="edgePanel" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="dijit.layout.TabContainer" style="width: 240px;">
-		<div id="graphs" style="width:  100%; height: 100%"></div>
-	</div>
-	<div id="bottomPane" class="edgePanel" data-dojo-props="minSize:120, region: 'bottom', splitter:true, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer" style="height: 240px">
-	</div>
-	<div id="submitPane" class="edgePanel"  data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
-		<div style="display:inline-block; vertical-align:middle"><button id="submitBtn">Submit</button></div>
-		<div style="float: right;display :inline-block; vertical-align:middle">
-			<div id="status">...</div>
-		</div>
-	</div>
-</div>
+			</textarea>
+            </div>
+        </div>
+        <div id="rightPane" class="edgePanel" data-dojo-props="minSize:120, region: 'right', splitter:true"
+            data-dojo-type="dijit.layout.TabContainer" style="width: 240px;">
+            <div id="graphs" style="width: 100%; height: 100%">
+            </div>
+        </div>
+        <div id="bottomPane" class="edgePanel" data-dojo-props="minSize:120, region: 'bottom', splitter:true, tabPosition: 'bottom'"
+            data-dojo-type="dijit.layout.TabContainer" style="height: 240px">
+        </div>
+        <div id="submitPane" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
+            <div style="display: inline-block; vertical-align: middle">
+                <button id="submitBtn">
+                    Submit</button></div>
+            <div style="float: right; display: inline-block; vertical-align: middle">
+                <div id="status">
+                    ...</div>
+            </div>
+        </div>
+    </div>
 </body>
-
 </html>
