@@ -1,7 +1,6 @@
 #!/bin/bash
 
-
-source @HDFSCONFIG@/hdfsstream.conf 
+source @HDFSCONFIG@/hdfsconnector.conf 
 
 CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
 
@@ -33,7 +32,7 @@ for p in $*;
    fi
 done;
 
-LOG=/tmp/HPCC-HadoopStream.log.$nodeid.$PID
+LOG=/tmp/HPCC-HDFSCONNECTOR.log.$nodeid.$PID
 
 echo "Script starting"		>> $LOG
 echo "Running as user: $USER"   >> $LOG
@@ -47,10 +46,10 @@ then
 	exit 1;
 elif [ $1 = "-mf" ];
 then
-	/opt/HPCCSystems/bin/hdfsstream "${@}" 2>> $LOG;
+	/opt/HPCCSystems/bin/hdfsconnector "${@}" 2>> $LOG;
 elif [ $1 = "-si" ];
 then
-	/opt/HPCCSystems/bin/hdfsstream  "${@}" 2>> $LOG;
+	/opt/HPCCSystems/bin/hdfsconnector  "${@}" 2>> $LOG;
 elif [ $1 = "-so" ];
 then
 
@@ -68,9 +67,9 @@ then
 
 	ls -l "$HPCCTMPFILE" 				>> $LOG
 
-	echo "calling hdfsstream..." 		>> $LOG
+	echo "calling hdfsconnector..." 		>> $LOG
 
-	/opt/HPCCSystems/bin/hdfsstream "${@}" -pipepath $HPCCTMPFILE  	2>> $LOG
+	/opt/HPCCSystems/bin/hdfsconnector "${@}" -pipepath $HPCCTMPFILE  	2>> $LOG
 
 	echo "write exited with: $?" 			>> $LOG
 elif [ $1 = "-sop" ];
@@ -85,9 +84,9 @@ then
 	then
 		rm -f /tmp/HPCC-FIFO.err.$PID 2> /dev/null
 	else
-		echo "  WARNING (hdfsstream mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
+		echo "  WARNING (hdfsconnector mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
 	fi
-	/opt/HPCCSystems/bin/hdfsstream  "${@}" -pipepath $pipepath	2>> $LOG &
+	/opt/HPCCSystems/bin/hdfsconnector  "${@}" -pipepath $pipepath	2>> $LOG &
 	echo "redirecting stdin to named pipe ... " 	>> $LOG
 	cat < /dev/stdin > "$pipepath"			2>> $LOG
 

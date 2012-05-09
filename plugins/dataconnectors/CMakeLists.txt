@@ -1,8 +1,8 @@
-project (hpccsystems-datastream)
+project (hpccsystems-dataconnector)
 cmake_minimum_required (VERSION 2.6)
 
-set ( HPCC_DATASTREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set ( HPCC_SOURCE_DIR ${HPCC_DATASTREAM_SOURCE_DIR}/../../)
+set ( HPCC_DATACONNECTOR_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set ( HPCC_SOURCE_DIR ${HPCC_DATACONNECTOR_SOURCE_DIR}/../../)
 include(${HPCC_SOURCE_DIR}/version.cmake)
 
 set ( CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules")
@@ -55,7 +55,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CPACK_STRIP_FILES TRUE)
 endif()
 
-set ( CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};hdfsstream;ALL;/")
+set ( CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_CURRENT_BINARY_DIR};hdfsconnector;ALL;/")
 
 if ( CMAKE_SYSTEM MATCHES Linux )
     EXECUTE_PROCESS (
@@ -137,6 +137,6 @@ else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
 endif()
 
-add_subdirectory (hdfsstream)
+add_subdirectory (hdfsconnector)
 
 INCLUDE(CPack)
