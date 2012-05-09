@@ -40,7 +40,6 @@
 #include <sys/inotify.h>
 
 #define EVENT_SIZE (sizeof (struct inotify_event))
-#define BUF_LEN    (1024 * (EVENT_SIZE + 16))
 #define INOTIFY_CHANGE_EVENT_ONE_SHOT (IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT)
 #define CLOSE_INOTIFY_QUEUE(q) if (q > 0); ::close(q); q=-1;
 
