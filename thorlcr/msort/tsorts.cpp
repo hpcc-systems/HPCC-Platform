@@ -100,14 +100,14 @@ class CWriteIntercept : public CSimpleInterface
                 GetTempName(tempname.clear(),"srtidx",false);
                 idxFile.setown(createIFile(tempname.str()));
                 idxFileIO.setown(idxFile->open(IFOcreaterw));
-                idxFileStream.setown(idxFileIO?createBufferedIOStream(idxFileIO,0x100000):NULL);
-                if (idxFileStream.get()==NULL)
+                if (!idxFileIO.get())
                 {
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryFilename());
                     LOG(MCerror, thorJob, "%s", err.str());
                     throw MakeActivityException(&activity, -1, "%s", err.str());
                 }
+                idxFileStream.setown(createBufferedIOStream(idxFileIO,0x100000));
                 offset_t s = 0;
                 while (s<=lastofs)
                 {
@@ -223,16 +223,17 @@ public:
         }
         output->flush();
         offset_t end = output->getPosition();
+        output.clear();
         writeidxofs(end);
-        if (idxFileStream)
+        if (idxFileIO)
         {
             idxFileStream->flush();
             idxFileStream.clear();
+            idxFileIO.clear();
         }
-        output.clear();
         if (overflowed)
             WARNLOG("Overflowed by %"I64F"d", overflowsize);
-        ActPrintLog(&activity, "Local Overflow Merge done: overflow file %s size %"I64F"d", dataFile->queryFilename(), dataFile->size());
+        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %"I64F"d", dataFile->queryFilename(), dataFile->size());
         return end;
     }
     IRowStream *getStream(offset_t startOffset, unsigned __int64 max)
@@ -295,10 +296,10 @@ class CMiniSort
         loop
         {
             size32_t ln = mb.length();
-            const void *row = stream.nextRow();
+            OwnedConstThorRow row = stream.nextRow();
             if (!row)
                 break;
-            serializer->serialize(out, (const byte *)row);
+            serializer->serialize(out, (const byte *)row.get());
             if (mb.length() > dstMax)
                 break;
             ret++;
@@ -468,8 +469,8 @@ public:
             collector->setup(&rowIf);
             Owned<IRowWriter> writer = collector->getWriter();
             appendFromPrimaryNode(*writer); // will be sorted, may spill
-            rowCount = collector->numRows();
             writer.clear();
+            rowCount = collector->numRows();
             return collector->getStream();
         }
         else
