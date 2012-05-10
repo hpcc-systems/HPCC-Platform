@@ -2385,7 +2385,7 @@ public:
             {
                 if(rc == LDAP_ALREADY_EXISTS)
                 {
-                    throw MakeStringException(-1, "can't add %s to sudoers, already exists", username);
+                    throw MakeStringException(-1, "can't add %s to sudoers, an LDAP object with this name already exists", username);
                 }
                 else
                 {
@@ -3293,7 +3293,7 @@ public:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                throw MakeStringException(-1, "can't add group %s, already exists", groupname);
+                throw MakeStringException(-1, "can't add group %s, an LDAP object with this name already exists", groupname);
             }
             else
             {
@@ -3678,7 +3678,7 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                throw MakeStringException(-1, "can't add dc %s, already exists", dc);
+                throw MakeStringException(-1, "can't add dc %s, an LDAP object with this name already exists", dc);
             }
             else
             {
@@ -4470,7 +4470,7 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                //WARNLOG("Can't insert ou=%s,%s to Ldap Server, already exists", name, basedn);
+                //WARNLOG("Can't insert ou=%s,%s to Ldap Server, an LDAP object with this name already exists", name, basedn);
                 return false;
             }
             else
@@ -4751,11 +4751,11 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                //WARNLOG("Can't insert %s to Ldap Server, already exists", resourcename);
+                //WARNLOG("Can't insert %s to Ldap Server, an LDAP object with this name already exists", resourcename);
                 if(lessException)
                     return false;
                 else
-                    throw MakeStringException(-1, "Can't insert %s, already exists", resourcename);
+                    throw MakeStringException(-1, "Can't insert %s, an LDAP object with this name already exists", resourcename);
             }
             else
             {
@@ -5009,8 +5009,8 @@ private:
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
-                DBGLOG("Can't add user %s, already exists", username);
-                throw MakeStringException(-1, "Can't add user %s, already exists", username);
+                DBGLOG("Can't add user %s, an LDAP object with this name already exists", username);
+                throw MakeStringException(-1, "Can't add user %s, an LDAP object with this name already exists", username);
             }
             else
             {

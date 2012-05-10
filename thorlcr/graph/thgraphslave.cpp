@@ -27,6 +27,7 @@
 #include "thorport.hpp"
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
+#include "thcompressutil.hpp"
 
 //////////////////////////////////
 
@@ -757,6 +758,112 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
     GraphPrintLog("Leaving getDone");
     getDoneSem.signal();
 }
+
+
+class CThorSlaveGraphResults : public CThorGraphResults
+{
+    CSlaveGraph &graph;
+    IArrayOf<IThorResult> globalResults;
+    PointerArrayOf<CriticalSection> globalResultCrits;
+    void ensureAtLeastGlobals(unsigned id)
+    {
+        while (globalResults.ordinality() < id)
+        {
+            globalResults.append(*new CThorUninitializedGraphResults(globalResults.ordinality()));
+            globalResultCrits.append(new CriticalSection);
+        }
+    }
+public:
+    CThorSlaveGraphResults(CSlaveGraph &_graph,unsigned numResults) : CThorGraphResults(numResults), graph(_graph)
+    {
+    }
+    virtual void clear()
+    {
+        CriticalBlock procedure(cs);
+        results.kill();
+        globalResults.kill();
+        ForEachItemIn(i, globalResultCrits)
+            delete globalResultCrits.item(i);
+        globalResultCrits.kill();
+    }
+    IThorResult *getResult(unsigned id, bool distributed)
+    {
+        Linked<IThorResult> result;
+        {
+            CriticalBlock procedure(cs);
+            ensureAtLeast(id+1);
+
+            result.set(&results.item(id));
+            if (!distributed || !result->isDistributed())
+                return result.getClear();
+            ensureAtLeastGlobals(id+1);
+        }
+        CriticalBlock b(*globalResultCrits.item(id)); // block other global requests for this result
+        IThorResult *globalResult = &globalResults.item(id);
+        if (!QUERYINTERFACE(globalResult, CThorUninitializedGraphResults))
+            return LINK(globalResult);
+        Owned<IThorResult> gr = graph.getGlobalResult(*result->queryActivity(), result->queryRowInterfaces(), id);
+        globalResults.replace(*gr.getLink(), id);
+        return gr.getClear();
+    }
+};
+
+IThorGraphResults *CSlaveGraph::createThorGraphResults(unsigned num)
+{
+    return new CThorSlaveGraphResults(*this, num);
+}
+
+IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, unsigned id)
+{
+    mptag_t replyTag = createReplyTag();
+    CMessageBuffer msg;
+    msg.setReplyTag(replyTag);
+    msg.append(smt_getresult);
+    msg.append(graphId);
+    msg.append(id);
+    msg.append(replyTag);
+
+    if (!queryJob().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
+        throwUnexpected();
+
+    Owned<IThorResult> result = ::createResult(activity, rowIf, false);
+    Owned<IRowWriter> resultWriter = result->getWriter();
+
+    MemoryBuffer mb;
+    Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+    CThorStreamDeserializerSource rowSource(stream);
+
+    loop
+    {
+        loop
+        {
+            if (activity.queryAbortSoon())
+                return NULL;
+            msg.clear();
+            if (activity.receiveMsg(msg, 0, replyTag, NULL, 60*1000))
+                break;
+            ActPrintLog(&activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+        }
+        if (!msg.length())
+            break; // done
+        else
+        {
+            bool error;
+            msg.read(error);
+            if (error)
+                throw deserializeThorException(msg);
+            ThorExpand(msg, mb.clear());
+            while (!rowSource.eos())
+            {
+                RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
+                size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                resultWriter->putRow(rowBuilder.finalizeRowClear(sz));
+            }
+        }
+    }
+    return result.getClear();
+}
+
 
 ///////////////////////////
 

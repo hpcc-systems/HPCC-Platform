@@ -44,6 +44,8 @@
 #include "eclhelper.hpp"
 #include "thexception.hpp"
 #include "thactivitymaster.ipp"
+#include "thmem.hpp"
+#include "thcompressutil.hpp"
 
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -286,7 +288,7 @@ void CSlaveMessageHandler::main()
                 }
                 case smt_actMsg:
                 {
-                    LOG(MCdebugProgress, unknownJob, "smt_podata called from slave %d", sender-1);
+                    LOG(MCdebugProgress, unknownJob, "smt_actMsg called from slave %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
                     activity_id id;
@@ -298,6 +300,21 @@ void CSlaveMessageHandler::main()
                     CMasterActivity *activity = (CMasterActivity *)container->queryActivity();
                     assertex(activity);
                     activity->handleSlaveMessage(msg); // don't block
+                    break;
+                }
+                case smt_getresult:
+                {
+                    LOG(MCdebugProgress, unknownJob, "smt_getresult called from slave %d", sender-1);
+                    graph_id gid;
+                    msg.read(gid);
+                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    unsigned resultId;
+                    msg.read(resultId);
+                    mptag_t replyTag = graph->queryJob().deserializeMPTag(msg);
+                    assertex(graph);
+                    Owned<IThorResult> result = graph->getResult(resultId);
+                    Owned<IRowStream> resultStream = result->getRowStream();
+                    sendInChunks(graph->queryJob().queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
                     break;
                 }
             }
@@ -1734,6 +1751,154 @@ bool CJobMaster::fireException(IException *e)
 
 ///////////////////
 
+class CCollatedResult : public CSimpleInterface, implements IThorResult
+{
+    CMasterGraph &graph;
+    CActivityBase &activity;
+    IRowInterfaces *rowIf;
+    unsigned id;
+    CriticalSection crit;
+    PointerArrayOf<CThorExpandingRowArray> results;
+    Owned<IThorResult> result;
+    unsigned spillPriority;
+
+    void ensure()
+    {
+        CriticalBlock b(crit);
+        if (result)
+            return;
+        mptag_t replyTag = createReplyTag();
+        CMessageBuffer msg;
+        msg.append(GraphGetResult);
+        msg.append(activity.queryJob().queryKey());
+        msg.append(graph.queryGraphId());
+        msg.append(id);
+        msg.append(replyTag);
+        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, NULL, NULL, true);
+
+        unsigned numSlaves = graph.queryJob().querySlaves();
+        for (unsigned n=0; n<numSlaves; n++)
+            results.item(n)->kill();
+        rank_t sender;
+        MemoryBuffer mb;
+        Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+        CThorStreamDeserializerSource rowSource(stream);
+        unsigned todo = numSlaves;
+
+        loop
+        {
+            loop
+            {
+                if (activity.queryAbortSoon())
+                    return;
+                msg.clear();
+                if (activity.receiveMsg(msg, RANK_ALL, replyTag, &sender, 60*1000))
+                    break;
+                ActPrintLog(&activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+            }
+            sender = sender - 1; // 0 = master
+            if (!msg.length())
+            {
+                --todo;
+                if (0 == todo)
+                    break; // done
+            }
+            else
+            {
+                bool error;
+                msg.read(error);
+                if (error)
+                {
+                    Owned<IThorException> e = deserializeThorException(msg);
+                    e->setSlave(sender);
+                    throw e.getClear();
+                }
+                ThorExpand(msg, mb.clear());
+
+                CThorExpandingRowArray *slaveResults = results.item(sender);
+                while (!rowSource.eos())
+                {
+                    RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
+                    size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                    slaveResults->append(rowBuilder.finalizeRowClear(sz));
+                }
+            }
+        }
+        Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
+        Owned<IRowWriter> resultWriter = _result->getWriter();
+        for (unsigned s=0; s<numSlaves; s++)
+        {
+            CThorExpandingRowArray *slaveResult = results.item(s);
+            ForEachItemIn(r, *slaveResult)
+            {
+                const void *row = slaveResult->query(r);
+                LinkThorRow(row);
+                resultWriter->putRow(row);
+            }
+        }
+        result.setown(_result.getClear());
+    }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, unsigned _spillPriority) : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), spillPriority(_spillPriority)
+    {
+        for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
+            results.append(new CThorExpandingRowArray(activity, rowIf));
+    }
+    ~CCollatedResult()
+    {
+        ForEachItemIn(l, results)
+        {
+            CThorExpandingRowArray *result = results.item(l);
+            delete result;
+        }
+    }
+    void setId(unsigned _id)
+    {
+        id = _id;
+    }
+
+// IThorResult
+    virtual IRowWriter *getWriter() { throwUnexpected(); }
+    virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count)
+    {
+        throwUnexpected();
+    }
+    virtual IRowStream *getRowStream()
+    {
+        ensure();
+        return result->getRowStream();
+    }
+    virtual IRowInterfaces *queryRowInterfaces()
+    {
+        return rowIf;
+    }
+    virtual CActivityBase *queryActivity()
+    {
+        return &activity;
+    }
+    virtual bool isDistributed() const { return false; }
+    virtual void serialize(MemoryBuffer &mb)
+    {
+        ensure();
+        result->serialize(mb);
+    }
+    virtual void getResult(size32_t & retSize, void * & ret)
+    {
+        ensure();
+        return result->getResult(retSize, ret);
+    }
+    virtual void getLinkedResult(unsigned & count, byte * * & ret)
+    {
+        ensure();
+        return result->getLinkedResult(count, ret);
+    }
+};
+
+///////////////////
+
 //
 // CMasterGraph impl.
 //
@@ -2410,6 +2575,22 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     }
     return true;
 }
+
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+{
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, spillPriority);
+    localResults->setResult(id, result);
+    return result;
+}
+
+IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+{
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, spillPriority);
+    unsigned id = graphLoopResults->addResult(result);
+    result->setId(id);
+    return result;
+}
+
 
 ///////////////////////////////////////////////////
 

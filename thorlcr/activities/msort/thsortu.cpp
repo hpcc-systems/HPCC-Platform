@@ -354,7 +354,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : activity(_activity), allocator(_allocator), denormTmp(NULL), rightgroup(_activity), denormRows(_activity)
+        : activity(_activity), allocator(_allocator), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL)
     {
         kind = activity.queryContainer().getKind();
         helper = _helper; 
@@ -855,7 +855,7 @@ public:
                     break;
                 case JSmatch: // matching left to right group       
                     if (mcoreintercept) {
-                        CThorExpandingRowArray leftgroup(activity);
+                        CThorExpandingRowArray leftgroup(activity, NULL);
                         while (getL()) {
                             if (leftgroup.ordinality()) {
                                 int cmp = compareL->docompare(nextleft,leftgroup.query(leftgroup.ordinality()-1));
@@ -947,7 +947,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : activity(_activity), allocator(_allocator), curgroup(_activity)
+        : activity(_activity), allocator(_allocator), curgroup(_activity, &_activity)
     {
         helper = _helper;       
         outputmetaL = NULL;
@@ -1423,11 +1423,11 @@ public:
         CThorExpandingRowArray rgroup;
         const void *row;
         inline cWorkItem(CActivityBase &_activity, CThorExpandingRowArray *_lgroup, CThorExpandingRowArray *_rgroup)
-            : activity(_activity), lgroup(_activity), rgroup(_activity)
+            : activity(_activity), lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
             set(_lgroup,_rgroup);
         }
-        inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity), rgroup(_activity)
+        inline cWorkItem(CActivityBase &_activity) : activity(_activity), lgroup(_activity, &_activity), rgroup(_activity, &_activity)
         {
             clear();
         }
