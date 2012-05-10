@@ -361,9 +361,9 @@
   </xsl:template>
 
   <xsl:template match="PhysicalFileStruct">
+    <xsl:param name="dirs" select="1"/>
     <xsl:variable name="size" select="number(filesize)"/>
     <xsl:variable name="dir" select="number(isDir)"/>
-    <xsl:param name="dirs" select="1"/>
     <xsl:choose>
       <xsl:when test="$dir">
         <tr onmouseenter="this.bgColor = '#F0F0FF'">
@@ -409,16 +409,7 @@
             <input type="checkbox" name="Names_i{position()}" value="{name}" onclick="return checkSelected(this)"/>
           </td>
           <td align="left">
-            <!--xsl:choose>
-              <xsl:when test="$size > 8000000">
-                <xsl:value-of select="name"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <a href="javascript:go('/FileSpray/DownloadFile?Name={name}&amp;NetAddress={../../NetAddress}&amp;Path={../../Path}&amp;OS={../../OS}')">
-                  <xsl:value-of select="name"/>
-                </a>
-              </xsl:otherwise>
-            </xsl:choose-->
+
             <a title="Download file..." href="javascript:go('/FileSpray/DownloadFile?Name={name}&amp;NetAddress={../../NetAddress}&amp;Path={../../Path}&amp;OS={../../OS}')">
               <xsl:value-of select="name"/>
             </a>
