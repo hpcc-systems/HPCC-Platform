@@ -649,10 +649,10 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared)
+    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared, unsigned spillPriority)
         : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
     {
-        collector.setown(createThorRowCollector(activity, rowIf, NULL, false, rc_mixed, SPILL_PRIORITY_OVERFLOWABLE_BUFFER, grouped));
+        collector.setown(createThorRowCollector(activity, rowIf, NULL, false, rc_mixed, spillPriority, grouped));
         writer.setown(collector->getWriter());
         eoi = false;
     }
@@ -680,9 +680,9 @@ public:
     }
 };
 
-IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowIf, bool grouped, bool shared)
+IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowIf, bool grouped, bool shared, unsigned spillPriority)
 {
-    return new COverflowableBuffer(activity, rowIf, grouped, shared);
+    return new COverflowableBuffer(activity, rowIf, grouped, shared, spillPriority);
 }
 
 

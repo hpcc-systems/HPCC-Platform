@@ -474,7 +474,7 @@ public:
         }
         else
         {
-            collector->setup(&iCompare, isStable, rc_mixed, UINT_MAX); // must not spill
+            collector->setup(&iCompare, isStable, rc_mixed, SPILL_PRIORITY_DISABLE); // must not spill
             collector->transferRowsIn(localRows);
 
             // JCSMORE - very odd, threaded, but semaphores ensuring sequential writes, why?
