@@ -75,7 +75,7 @@ long getRecordCount(long fsize, int clustersize, int reclen, int nodeid)
 	if ((fsize / reclen) % clustersize >= nodeid + 1)
 	{
 		readSize += 1;
-		fprintf(stderr, "\nThis node will stream one extra rec\n");
+		fprintf(stderr, "\nThis node will pipe one extra rec\n");
 	}
 	return readSize;
 }
@@ -325,7 +325,7 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 					firstRowfound = strcmp(currentTag.c_str(),
 							openRowTag.c_str()) == 0;
 					if (firstRowfound)
-						fprintf(stderr, "--start streaming tag %s at %lu--\n",
+						fprintf(stderr, "--start piping tag %s at %lu--\n",
 								currentTag.c_str(), currentPos);
 				}
 
@@ -360,7 +360,7 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 						&& strcmp(currentTag.c_str(), closeRowTag.c_str()) == 0)
 				{
 					fprintf(stdout, "%s", currentTag.c_str());
-					fprintf(stderr, "--stop streaming at %s %lu--\n",
+					fprintf(stderr, "--stop piping at %s %lu--\n",
 							currentTag.c_str(), currentPos);
 					bytesLeft = 0;
 					break;
@@ -514,7 +514,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 						currentPos = currentPos + eolseqlen - 1;
 						bytesLeft = bytesLeft - eolseqlen;
 
-						fprintf(stderr, "\n--Start streaming: %ld--\n", currentPos);
+						fprintf(stderr, "\n--Start reading: %ld--\n", currentPos);
 
 						firstEOLfound = true;
 						continue;
@@ -534,7 +534,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 					//fprintf(stderr, "\nrecsfound: %ld", recsFound);
 					if (stopAtNextEOL)
 					{
-						fprintf(stderr, "\n--Stop streaming: %ld--\n", currentPos);
+						fprintf(stderr, "\n--Stop piping: %ld--\n", currentPos);
 						//fprintf(stdout, "%s", eolseq);
 						bytesLeft = 0;
 						break;
@@ -555,7 +555,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 				}
 			}
 
-			//don't stream until we're beyond the first EOL (if offset = 0 start streaming ASAP)
+			//don't pipe until we're beyond the first EOL (if offset = 0 start piping ASAP)
 			if (firstEOLfound)
 			{
 				fprintf(stdout, "%c", currChar);
@@ -575,7 +575,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 			if (stopAtNextEOL)
 				fprintf(stderr, "%c", currChar);
 
-			// ok, so if bytesLeft <= 0 at this point, we need to keep reading
+			// ok, so if bytesLeft <= 0 at this point, we need to keep piping
 			// IF the last char read was not an EOL char
 			if (bytesLeft <= 0	&& currChar != eolseq[0])
 			{
@@ -623,7 +623,7 @@ int readFileOffset(hdfsFS * fs, const char * filename, tOffset seekPos,
 
 	unsigned long currentPos = seekPos;
 
-	fprintf(stderr, "\n--Start streaming: %ld--\n", currentPos);
+	fprintf(stderr, "\n--Start piping: %ld--\n", currentPos);
 
 	unsigned long bytesLeft = readlen;
 	while(hdfsAvailable(*fs, readFile) && bytesLeft >0)
