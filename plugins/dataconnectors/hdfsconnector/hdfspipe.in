@@ -1,6 +1,9 @@
 #!/bin/bash
 
-source @HDFSCONFIG@/hdfsconnector.conf 
+source @HPCC_ETC_DIR@/init.d/hpcc_common
+set_environmentvars
+
+source @HPCC_CONF_DIR@/@HDFSCONN_CONF_FILE@ 
 
 CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
 
@@ -21,7 +24,6 @@ nodeid=0;
 
 for p in $*;
  do
-#   echo "[$p]" >> $LOG;
    if [ "$idfound" = "1" ];
    then
         nodeid=$p;
@@ -32,7 +34,17 @@ for p in $*;
    fi
 done;
 
-LOG=/tmp/HPCC-HDFSCONNECTOR.log.$nodeid.$PID
+#the log variable is read from the HPCC Platform config
+LOGS_LOCATION=$log
+HDFSCONNLOGLOC=$LOGS_LOCATION/mydataconnectors
+LOG=$HDFSCONNLOGLOC/HDFSCONNECTOR.$nodeid.$PID.log
+
+if [ -e $HDFSCONNLOGLOC ]
+  then
+    echo "log file found"	>> $LOG
+  else
+    mkdir $HDFSCONNLOGLOC
+fi
 
 echo "Script starting"		>> $LOG
 echo "Running as user: $USER"   >> $LOG

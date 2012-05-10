@@ -10,7 +10,6 @@ using namespace std;
 using std::string;
 using std::vector;
 
-//#define EOL "\n\r"
 #define EOL "\n"
 
 tOffset getBlockSize(hdfsFS * filefs, const char * filename)
@@ -821,7 +820,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
 	size_t totalbytesread = 0;
 	size_t totalbyteswritten = 0;
 
-	fprintf(stderr, "Writing %s to HDFS [.", filepartname);
+	fprintf(stderr, "Writing %s to HDFS.", filepartname);
  	while(!in.eof())
  	{
  		memset(&char_ptr[0], 0, sizeof(char_ptr));
@@ -831,7 +830,6 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
  		tSize num_written_bytes = hdfsWrite(*fs, writeFile, (void*)char_ptr, bytesread);
  		totalbyteswritten += num_written_bytes;
 
- 		fprintf(stderr, ".");
  		//Need to figure out how often this should be done
  		//if(totalbyteswritten % )
 
@@ -850,7 +848,6 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
  		fprintf(stderr, "Failed to 'flush' %s\n", filepartname);
 		exit(-1);
 	}
- 	fprintf(stderr, "]");
 
 	fprintf(stderr,"\n total read: %lu, total written: %lu\n", totalbytesread, totalbyteswritten);
 
