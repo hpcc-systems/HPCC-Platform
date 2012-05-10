@@ -575,6 +575,7 @@ public:
                             denormRows.kill();
                             break;
                         case TAKjoin:
+                        case TAKhashjoin:
                         case TAKselfjoin:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
                             nextR();
@@ -624,6 +625,7 @@ public:
                         denormCount = 0;
                         break;
                     case TAKjoin:
+                    case TAKhashjoin:
                     case TAKselfjoin:
                         if (!rightgroupmatched[rightidx]) 
                             gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
@@ -647,6 +649,7 @@ public:
                         gotsz = helper->transform(ret, nextleft, NULL, 0, (const void **)NULL);
                         break;
                     case TAKjoin:
+                    case TAKhashjoin:
                     case TAKselfjoin:
                         gotsz = helper->transform(ret, nextleft, defaultRight);
                         break;
@@ -702,6 +705,7 @@ public:
                             break;
                         }
                         case TAKjoin:
+                        case TAKhashjoin:
                         case TAKselfjoin:
                             gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
