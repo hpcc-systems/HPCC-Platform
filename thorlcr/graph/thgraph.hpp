@@ -624,7 +624,7 @@ public:
     bool isLocalOnly() const; // this graph and all upstream dependencies
     bool isLocalChild() const { return localChild; }
     void setCompleteEx(bool tf=true) { complete = tf; }
-    void setGlobal(bool tf=true);
+    void setGlobal(bool tf) { global = tf; }
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
         parentExtractSz = _parentExtractSz;
