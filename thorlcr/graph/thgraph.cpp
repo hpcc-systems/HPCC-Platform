@@ -1603,6 +1603,14 @@ void CGraphBase::GraphPrintLog(IException *e, const char *format, ...)
     va_end(args);
 }
 
+void CGraphBase::setGlobal(bool tf)
+{
+    global = tf;
+    Owned<IThorGraphIterator> iter = getChildGraphs();
+    ForEach(*iter)
+        iter->query().setGlobal(tf);
+}
+
 void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGraphBase *_parent, CGraphBase *resultsGraph)
 {
     owner = _owner;
@@ -1629,7 +1637,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
         tmpHandler.setown(queryJob().createTempHandler());
     }
 
-    bool localChild = false;
+    localChild = false;
     if (owner && parentActivityId)
     {
         CGraphElementBase *parentElement = owner->queryElement(parentActivityId);
@@ -1641,9 +1649,11 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
             case TAKloopdataset:
             case TAKgraphloop:
             case TAKparallelgraphloop:
-                if (!parentElement->queryLocal())
-                    global = true;
+            {
+                if (parentElement->queryOwner().isLocalChild())
+                    localChild = true;
                 break;
+            }
             default:
                 localChild = true;
                 break;
@@ -1678,6 +1688,35 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
                 global = isGlobalActivity(*act);
         }
     }
+
+    if (!localChild)
+    {
+        ForEach(*nodes)
+        {
+            IPropertyTree &e = nodes->query();
+            ThorActivityKind kind = (ThorActivityKind) e.getPropInt("att[@name=\"_kind\"]/@value");
+            switch (kind)
+            {
+                case TAKlooprow:
+                case TAKloopcount:
+                case TAKloopdataset:
+                case TAKgraphloop:
+                case TAKparallelgraphloop:
+                {
+                    unsigned loopId = e.getPropInt("att[@name=\"_loopid\"]/@value");
+                    // if any need sub graph or dependency if subgraphs need global execution,
+                    // then all loop subgraphs must be executed globally (sync'd with master)
+                    Owned<CGraphBase> loopGraph = getChildGraph(loopId);
+                    if (!loopGraph->isLocalOnly())
+                        loopGraph->setGlobal();
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
+
     Owned<IPropertyTreeIterator> edges = xgmml->getElements("edge");
     ForEach(*edges)
     {
