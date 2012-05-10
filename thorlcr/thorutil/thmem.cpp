@@ -259,7 +259,7 @@ public:
     }
 };
 
-// NB: Shared/spillable, hols all rows in mem until needs to spill.
+// NB: Shared/spillable, holds all rows in mem until needs to spill.
 // spills all to disk, and stream continue reading from row in file
 class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterface
 {
@@ -1250,8 +1250,8 @@ public:
         outStreams = 0;
         mmRegistered = false;
         if (rc_allMem == diskMemMix)
-            spillPriority = UINT_MAX; // all mem, implies no spilling
-        else if (UINT_MAX != spillPriority)
+            spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
+        else if (SPILL_PRIORITY_DISABLE != spillPriority)
         {
             activity.queryJob().queryRowManager()->addRowBuffer(this);
             mmRegistered = true;
@@ -1303,8 +1303,8 @@ public:
         diskMemMix = _diskMemMix;
         spillPriority = _spillPriority;
         if (rc_allMem == diskMemMix)
-            spillPriority = UINT_MAX; // all mem, implies no spilling
-        if (mmRegistered && (UINT_MAX == spillPriority))
+            spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
+        if (mmRegistered && (SPILL_PRIORITY_DISABLE == spillPriority))
         {
             mmRegistered = false;
             activity.queryJob().queryRowManager()->removeRowBuffer(this);
@@ -1318,7 +1318,7 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
-        if (UINT_MAX == spillPriority)
+        if (SPILL_PRIORITY_DISABLE == spillPriority)
             return false;
         CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
         return spillRows();
