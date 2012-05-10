@@ -34,6 +34,8 @@ for p in $*;
    fi
 done;
 
+#the log variable is read from the HPCC Platform config
+LOGS_LOCATION=$log
 HDFSCONNLOGLOC=$LOGS_LOCATION/mydataconnectors
 LOG=$HDFSCONNLOGLOC/HDFSCONNECTOR.$nodeid.$PID.log
 
