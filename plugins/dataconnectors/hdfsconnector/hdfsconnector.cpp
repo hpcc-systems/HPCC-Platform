@@ -411,7 +411,7 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 
 int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 		unsigned long readlen, const char * eolseq, unsigned long bufferSize, bool outputTerminator,
-		unsigned long recLen, unsigned long maxlen, const char * quote)
+		unsigned long recLen, unsigned long maxLen, const char * quote)
 {
 	fprintf(stderr, "CSV terminator: \'%s\' and quote: \'%c\'\n", eolseq, quote[0]);
 	unsigned long recsFound = 0;
@@ -564,7 +564,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 			{
 				fprintf(stderr, "%c", currChar);
 				bytesLeft--;
-				if(recLen > 0 && currentPos-seekPos > recLen * 100)
+				if(maxLen > 0 && currentPos-seekPos > maxLen * 10)
 				{
 					fprintf(stderr, "\nFirst EOL was not found within the first %lu bytes", currentPos-seekPos);
 					exit(-1);
