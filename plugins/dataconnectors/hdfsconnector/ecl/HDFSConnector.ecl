@@ -1,4 +1,4 @@
-/* HDFSPipe
+/* HDFSConnector
 Pipe data to and from Hadoop
 
 It is necessary to add this option to your workunit:
@@ -19,10 +19,10 @@ enable it add this to hdfs-site.xml:
 
 import std;
 
-EXPORT HDFSPipe := MODULE
+EXPORT HDFSConnector := MODULE
 
     /*
-   * HDFSPipe.PipeIn - this macro to be called by the user to pipe in data from the Hadoop file system (HDFS).
+   * HDFSConnector.PipeIn - this macro to be called by the user to pipe in data from the Hadoop file system (HDFS).
      *
      * @param ECL_RS            The ECL recordset to pipe into.
      * @param HadoopFileName    The fully qualified target HDFS file name.
@@ -84,7 +84,7 @@ EXPORT HDFSPipe := MODULE
 				ECL_RS:= PIPE('hdfspipe -si '
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
-				+ ' -reclen ' + sizeof(Layout)
+				+ ' -maxlen ' + sizeof(Layout, MAX)
 				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%[1..3]
 				+ ' -terminator ' + %termcont2%
@@ -95,7 +95,7 @@ EXPORT HDFSPipe := MODULE
 				ECL_RS:= PIPE('hdfspipe -si '
 				+ ' -nodeid ' + STD.system.Thorlib.node()
 				+ ' -clustercount ' + STD.system.Thorlib.nodes()
-				+ ' -reclen ' + sizeof(Layout)
+				+ ' -maxlen ' + sizeof(Layout, MAX)
 				+ ' -filename ' + HadoopFileName
 				+ ' -format '	+  %formatstr%[1..3]
 				+ ' -host ' + HDFSHost	+ ' -port ' + HDSFPort,
@@ -114,7 +114,7 @@ EXPORT HDFSPipe := MODULE
 	ENDMACRO;
 
     /*
-    HadoopPipe.PipeOut - writes the given recordset 'ECL_RS' to the target HDFS system in
+    HDFSConnector.PipeOut - writes the given recordset 'ECL_RS' to the target HDFS system in
                                                 file parts. One file part for each HPCC node.
 
     ECL_RS              - The ECL recordset to pipe out.
@@ -128,8 +128,8 @@ EXPORT HDFSPipe := MODULE
 
     Example:
 
-    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
-    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
+    HDFSConnector.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
+    HDFSConnector.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
     */
 
 	export PipeOut(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort, HDFSUser) := MACRO
@@ -159,7 +159,7 @@ EXPORT HDFSPipe := MODULE
 	ENDMACRO;
 
     /*
-    HadoopPipe.PipeOutAndMerge - writes the given recordset 'ECL_RS' to the target HDFS system
+    HDFSConnector.PipeOutAndMerge - writes the given recordset 'ECL_RS' to the target HDFS system
                                                              in file parts and merges them together to form a single target file
                                                              on the HDFS system.
 
@@ -174,8 +174,8 @@ EXPORT HDFSPipe := MODULE
 
     Example:
 
-    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
-    HadoopPipe.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
+    HDFSConnector.PipeOut(sue, '/user/hadoop/HDFSAccounts', Layout_CSV_Accounts, CSV, '192.168.56.102', '54310', 'hadoop');
+    HDFSConnector.PipeOut(sue, '/user/hadoop/HDFSPersons', Layout_Flat_Persons, FLAT, '192.168.56.102', '54310', 'hadoop');
     */
 
 	export PipeOutAndMerge(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort, HDFSUser) := MACRO

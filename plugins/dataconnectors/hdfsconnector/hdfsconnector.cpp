@@ -10,7 +10,6 @@ using namespace std;
 using std::string;
 using std::vector;
 
-//#define EOL "\n\r"
 #define EOL "\n"
 
 tOffset getBlockSize(hdfsFS * filefs, const char * filename)
@@ -412,7 +411,7 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 
 int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 		unsigned long readlen, const char * eolseq, unsigned long bufferSize, bool outputTerminator,
-		unsigned long recLen, unsigned long maxlen, const char * quote)
+		unsigned long recLen, unsigned long maxLen, const char * quote)
 {
 	fprintf(stderr, "CSV terminator: \'%s\' and quote: \'%c\'\n", eolseq, quote[0]);
 	unsigned long recsFound = 0;
@@ -565,7 +564,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 			{
 				fprintf(stderr, "%c", currChar);
 				bytesLeft--;
-				if(recLen > 0 && currentPos-seekPos > recLen * 100)
+				if(maxLen > 0 && currentPos-seekPos > maxLen * 10)
 				{
 					fprintf(stderr, "\nFirst EOL was not found within the first %lu bytes", currentPos-seekPos);
 					exit(-1);
@@ -821,7 +820,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
 	size_t totalbytesread = 0;
 	size_t totalbyteswritten = 0;
 
-	fprintf(stderr, "Writing %s to HDFS [.", filepartname);
+	fprintf(stderr, "Writing %s to HDFS.", filepartname);
  	while(!in.eof())
  	{
  		memset(&char_ptr[0], 0, sizeof(char_ptr));
@@ -831,7 +830,6 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
  		tSize num_written_bytes = hdfsWrite(*fs, writeFile, (void*)char_ptr, bytesread);
  		totalbyteswritten += num_written_bytes;
 
- 		fprintf(stderr, ".");
  		//Need to figure out how often this should be done
  		//if(totalbyteswritten % )
 
@@ -850,7 +848,6 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
  		fprintf(stderr, "Failed to 'flush' %s\n", filepartname);
 		exit(-1);
 	}
- 	fprintf(stderr, "]");
 
 	fprintf(stderr,"\n total read: %lu, total written: %lu\n", totalbytesread, totalbyteswritten);
 
