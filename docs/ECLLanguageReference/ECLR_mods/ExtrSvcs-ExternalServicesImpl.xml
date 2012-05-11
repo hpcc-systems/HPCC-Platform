@@ -4,7 +4,7 @@
 <sect1 id="External_Service_Implementation">
   <title>External Service Implementation</title>
 
-  <para><emphasis>ECL </emphasis>external system services<indexterm>
+  <para>ECL external system services<indexterm>
       <primary>external system services</primary>
     </indexterm><indexterm>
       <primary>External Service</primary>
@@ -22,7 +22,7 @@
   (like that used by C++) is not allowed.</para>
 
   <para>Second, the storage class of __declspec(dllexport) and declaration
-  type _cdecl needs to be declared for Windows/Microsoft C++ applications.
+  type _cdecl need to be declared for Windows/Microsoft C++ applications.
   Typically, SERVICE_CALL is defined as _declspec(dllexport) and SERVICE_API
   is defined as _cdecl for Windows, and left as nulls for Linux. For
   example:</para>
@@ -396,14 +396,12 @@
   <sect2 id="Deployment">
     <title>Deployment</title>
 
-    <para>External .SOs must be deployed to each node of the target
-    environment as well as the ECL Server and ESP server used for the cluster.
-    PlugIns may be deployed via the ConfigEnv command (see Systems Operation
-    manual). If external data files are required, they should be either
-    manually deployed to each node, or referenced from a network node (the
-    latter requires hard-coding the address in the code for the .SO). Note
-    that manually deployed files are not backed up with the standard SDS
-    backup utilities. [I think].</para>
+    <para>External .SOs must be deployed to the /opt/HPCCSystems/plugins
+    directory on each node of the target environment. If external data files
+    are required, they should be either manually deployed to each node, or
+    referenced from a network node (the latter requires hard-coding the
+    address in the code for the .SO). Note that manually deployed files are
+    not backed up with the standard SDS backup utilities.</para>
   </sect2>
 
   <sect2 id="Constraints">
