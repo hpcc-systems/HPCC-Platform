@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-set ( HPCC_ECLJDBC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set ( HPCC_SOURCE_DIR ${HPCC_ECLJDBC_SOURCE_DIR}/../../../../../../../../..)
-include(${HPCC_SOURCE_DIR}/version.cmake)
+#set ( HPCC_ECLJDBC_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+#set ( HPCC_SOURCE_DIR ${HPCC_ECLJDBC_SOURCE_DIR}/../../../../../../../../..)
+#include(${HPCC_SOURCE_DIR}/version.cmake)
 
 configure_file("EclVersionTracker.java.in" "${HPCC_ECLJDBC_SOURCE_DIR}/EclVersionTracker.java")
 
