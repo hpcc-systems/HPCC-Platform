@@ -191,6 +191,11 @@ public:
         CSlaveActivity::processDone(mb);
         ((CSlaveGraph *)queryContainer().queryLoopGraph()->queryGraph())->serializeDone(mb);
     }
+    virtual void serializeStats(MemoryBuffer &mb)
+    {
+        CSlaveActivity::serializeStats(mb);
+        mb.append(loopCounter);
+    }
 };
 
 class CLoopSlaveActivity : public CLoopSlaveActivityBase
@@ -246,6 +251,7 @@ public:
                 activity.doStop();
             }
         };
+        ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart("LOOP", container.queryId());
         nextRowFeeder.setown(new CNextRowFeeder(this, new CWrapper(*this)));
     }
@@ -385,8 +391,9 @@ public:
         executed = false;
         maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
-        loopResults.setown(createThorGraphResults(maxIterations));
+        loopResults.setown(queryGraph().createThorGraphResults(0));
         helper->createParentExtract(extractBuilder);
+        ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart("GRAPHLOOP", container.queryId());
     }
     CATCH_NEXTROW()
@@ -394,7 +401,7 @@ public:
         if (!executed)
         {
             executed = true;
-            IThorResult *result = loopResults->createResult(*this, 0, this, true);
+            IThorResult *result = loopResults->createResult(*this, 0, this, !queryGraph().isLocalChild());
             Owned<IRowWriter> resultWriter = result->getWriter();
             loop
             {
@@ -409,7 +416,6 @@ public:
                 resultWriter->putRow(row.getClear());
             }
 
-            unsigned loopCounter=1;
             for (; loopCounter<=maxIterations; loopCounter++)
             {
                 sendLoopingCount(loopCounter);
@@ -447,6 +453,7 @@ class CLocalResultReadActivity : public CSlaveActivity, public CThorDataLink
     IHThorLocalResultReadArg *helper;
     Owned<IRowStream> resultStream;
     unsigned curRow;
+    mptag_t replyTag;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -456,6 +463,7 @@ public:
         helper = (IHThorLocalResultReadArg *)queryHelper();
         input = NULL;
         curRow = 0;
+        replyTag = createReplyTag();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -471,14 +479,15 @@ public:
         graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
         if (!resultGraphId)
             resultGraphId = container.queryResultsGraph()->queryGraphId();
-        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(resultGraphId);
-        Owned<IThorResult> result = graph->getResult(helper->querySequence());
+        Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
+        Owned<IThorResult> result = graph->getResult(helper->querySequence(), queryGraph().isLocalChild());
         resultStream.setown(result->getRowStream());
         dataLinkStart("LOCALRESULTREAD", container.queryId());
     }
     virtual void stop()
     {
         abortSoon = true;
+        resultStream.clear();
         dataLinkStop();
     }
     virtual void kill()
@@ -513,42 +522,12 @@ activityslaves_decl CActivityBase *createLocalResultReadSlave(CGraphElementBase 
 }
 
 
-void receiveResult(CActivityBase &activity, IRowInterfaces &inputRowIf, IRowWriter &result)
-{
-    const mptag_t &mpTag = activity.queryMpTag();
-    ICommunicator &comm = activity.queryContainer().queryJob().queryJobComm();
-    IOutputRowDeserializer *deserializer = inputRowIf.queryRowDeserializer();
-    IEngineRowAllocator *allocator = inputRowIf.queryRowAllocator();
-    // receive full result back
-    CMessageBuffer msg;
-    MemoryBuffer mb;
-    Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
-    CThorStreamDeserializerSource rowSource(stream);
-    loop
-    {
-        if (activity.queryAbortSoon())
-            return;
-        msg.clear();
-        if (!activity.receiveMsg(msg, 0, mpTag))
-            return;
-        if (0 == msg.length())
-            break;
-        ThorExpand(msg, mb.clear());
-        while (!rowSource.eos()) 
-        {
-            RtlDynamicRowBuilder rowBuilder(allocator);
-            size32_t sz = deserializer->deserialize(rowBuilder, rowSource);
-            result.putRow(rowBuilder.finalizeRowClear(sz));
-        }
-    }
-}
-
 /////////////// local spill write
 
 class CLocalResultSpillActivity : public CSlaveActivity, public CThorDataLink
 {
     IHThorLocalResultSpillArg *helper;
-    bool eoi, lastNull, global;
+    bool eoi, lastNull;
     Owned<IRowWriter> resultWriter;
     MemoryBuffer mb;
 
@@ -578,14 +557,9 @@ public:
         lastNull = eoi = false;
         abortSoon = false;
         assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        bool local = container.queryOwner().isLocalOnly();
-        IThorResult *result = graph->queryResult(helper->querySequence());
-        if (result)
-            local = result->isLocal();
-        result = graph->createResult(*this, helper->querySequence(), this, local);  // NB graph owns result
+        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
         resultWriter.setown(result->getWriter());
-        global = !result->isLocal();
         startInput(inputs.item(0));
         dataLinkStart("LOCALRESULTSPILL", container.queryId());
     }
@@ -603,43 +577,20 @@ public:
                 lastNull = true;
             return NULL;
         }
-        if (lastNull)
+        if (lastNull) // looks like I should only bother with this if grouped
         {
-            if (!global)
-                resultWriter->putRow(NULL);
+            resultWriter->putRow(NULL);
             lastNull = false;
         }
-        if (global)
-        {
-            CMemoryRowSerializer mbs(mb);
-            queryRowSerializer()->serialize(mbs, (const byte *)row.get());
-            if (mb.length() > 0x80000)
-                sendResultSoFar();
-        }
-        else
-            resultWriter->putRow(row.getClear());
+        resultWriter->putRow(row.getClear());
         dataLinkIncrement();
         return row.getClear();
     }
     virtual void stop()
     {
-        if (global)
-        {
-            if (mb.length())
-                sendResultSoFar();
-            CMessageBuffer msg;
-            container.queryJob().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT);
-            receiveResult(*this, *this, *resultWriter);
-        }
         stopInput(inputs.item(0));
         abortSoon = true;
         dataLinkStop();
-    }
-    virtual void abort()
-    {
-        CSlaveActivity::abort();
-        if (global)
-            cancelReceiveMsg(0, mpTag);
     }
     virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -661,11 +612,6 @@ public:
     {
         input = NULL;
     }
-    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
-    {
-        if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().deserializeMPTag(data);
-    }
     virtual IThorResult *createResult() = 0;
     virtual void process()
     {
@@ -676,59 +622,18 @@ public:
         IThorResult *result = createResult();
 
         Owned<IRowWriter> resultWriter = result->getWriter();
-        if (!result->isLocal())
+        loop
         {
-            CMessageBuffer msg;
-            MemoryBuffer mb;
-            CMemoryRowSerializer mbs(mb);
-            IRowInterfaces *inputRowIf = input->queryFromActivity();
-            loop
+            OwnedConstThorRow nextrec = input->nextRow();
+            if (!nextrec)
             {
-                loop
-                {
-                    OwnedConstThorRow row = input->nextRow();
-                    if (!row)
-                    {
-                        row.setown(input->nextRow());
-                        if (!row)
-                            break;
-                    }
-                    inputRowIf->queryRowSerializer()->serialize(mbs, (const byte *)row.get());
-                    if (mb.length() > 0x80000)
-                        break;
-                }
-                msg.clear();
-                if (mb.length())
-                {
-                    ThorCompress(mb.toByteArray(), mb.length(), msg);
-                    mb.clear();
-                }
-                container.queryJob().queryJobComm().send(msg, 0, mpTag, LONGTIMEOUT);
-                if (0 == msg.length())
-                    break;
-            }
-            receiveResult(*this, *inputRowIf, *resultWriter);
-        }
-        else
-        {
-            loop
-            {
-                OwnedConstThorRow nextrec = input->nextRow();
+                nextrec.setown(input->nextRow());
                 if (!nextrec)
-                {
-                    nextrec.setown(input->nextRow());
-                    if (!nextrec)
-                        break;
-                    resultWriter->putRow(NULL);
-                }
-                resultWriter->putRow(nextrec.getClear());
+                    break;
+                resultWriter->putRow(NULL);
             }
+            resultWriter->putRow(nextrec.getClear());
         }
-    }
-    virtual void abort()
-    {
-        ProcessSlaveActivity::abort();
-        cancelReceiveMsg(0, mpTag);
     }
     void endProcess()
     {
@@ -753,12 +658,8 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        bool local = container.queryOwner().isLocalOnly();
-        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        IThorResult *result = graph->queryResult(helper->querySequence());
-        if (result)
-            local = result->isLocal();
-        return graph->createResult(*this, helper->querySequence(), this, local);
+        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        return graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
     }
 };
 
@@ -1145,6 +1046,11 @@ public:
     {
         appendOutputLinked(this);
     }
+    virtual void kill()
+    {
+        CSlaveActivity::kill();
+        resultStream.clear();
+    }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
@@ -1156,8 +1062,8 @@ public:
             graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
             if (!resultGraphId)
                 resultGraphId = container.queryResultsGraph()->queryGraphId();
-            Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(resultGraphId);
-            Owned<IThorResult> result = graph->getGraphLoopResult(sequence);
+            Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
+            Owned<IThorResult> result = graph->getGraphLoopResult(sequence, queryGraph().isLocalChild());
             resultStream.setown(result->getRowStream());
         }
         else
@@ -1182,6 +1088,7 @@ public:
     virtual void stop()
     {
         abortSoon = true;
+        resultStream.clear();
         dataLinkStop();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -1279,8 +1186,8 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = container.queryOwner().queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        return graph->createGraphLoopResult(*this, input->queryFromActivity());
+        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        return graph->createGraphLoopResult(*this, input->queryFromActivity(), !queryGraph().isLocalChild());
     }
 };
 

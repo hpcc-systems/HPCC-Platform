@@ -40,6 +40,7 @@
 #include "thgraph.hpp"
 #include "thbufdef.hpp"
 #include "thmem.hpp"
+#include "thcompressutil.hpp"
 
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
@@ -154,7 +155,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 
 void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != container->queryOwner().queryOwner() && !container->queryOwner().isGlobal()))
+    if ((0 == (flags & thorlog_all)) && !container->doLogging())
         return; // suppress logging child activities unless thorlog_all flag
     StringBuffer res;
     ActPrintLogArgsPrep(res, container, flags, format, args);
@@ -1195,7 +1196,6 @@ public:
                     if (!row)
                         break;
                     activity->queryRowSerializer()->serialize(mbs,(const byte *)row.get());
-
                 } while (mb.length() < fetchBuffSize); // NB: allows at least 1
                 if (!comm.send(mb, sender, mpTag, LONGTIMEOUT))
                     throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJob().queryMyRank());
@@ -1235,4 +1235,38 @@ IRowStream *createUngroupStream(IRowStream *input)
         }
     };
     return new CUngroupStream(input);
+}
+
+void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf)
+{
+    CMessageBuffer msg;
+    MemoryBuffer mb;
+    CMemoryRowSerializer mbs(mb);
+    IOutputRowSerializer *serializer = rowIf->queryRowSerializer();
+    loop
+    {
+        loop
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (!row)
+            {
+                row.setown(input->nextRow());
+                if (!row)
+                    break;
+            }
+            serializer->serialize(mbs, (const byte *)row.get());
+            if (mb.length() > 0x80000)
+                break;
+        }
+        msg.clear();
+        if (mb.length())
+        {
+            msg.append(false); // no error
+            ThorCompress(mb.toByteArray(), mb.length(), msg);
+            mb.clear();
+        }
+        comm.send(msg, dst, mpTag, LONGTIMEOUT);
+        if (0 == msg.length())
+            break;
+    }
 }

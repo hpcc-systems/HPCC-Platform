@@ -44,6 +44,8 @@
 #include "eclhelper.hpp"
 #include "thexception.hpp"
 #include "thactivitymaster.ipp"
+#include "thmem.hpp"
+#include "thcompressutil.hpp"
 
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
@@ -286,7 +288,7 @@ void CSlaveMessageHandler::main()
                 }
                 case smt_actMsg:
                 {
-                    LOG(MCdebugProgress, unknownJob, "smt_podata called from slave %d", sender-1);
+                    LOG(MCdebugProgress, unknownJob, "smt_actMsg called from slave %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
                     activity_id id;
@@ -298,6 +300,21 @@ void CSlaveMessageHandler::main()
                     CMasterActivity *activity = (CMasterActivity *)container->queryActivity();
                     assertex(activity);
                     activity->handleSlaveMessage(msg); // don't block
+                    break;
+                }
+                case smt_getresult:
+                {
+                    LOG(MCdebugProgress, unknownJob, "smt_getresult called from slave %d", sender-1);
+                    graph_id gid;
+                    msg.read(gid);
+                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    unsigned resultId;
+                    msg.read(resultId);
+                    mptag_t replyTag = graph->queryJob().deserializeMPTag(msg);
+                    assertex(graph);
+                    Owned<IThorResult> result = graph->getResult(resultId);
+                    Owned<IRowStream> resultStream = result->getRowStream();
+                    sendInChunks(graph->queryJob().queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
                     break;
                 }
             }
@@ -1734,6 +1751,153 @@ bool CJobMaster::fireException(IException *e)
 
 ///////////////////
 
+class CCollatedResult : public CSimpleInterface, implements IThorResult
+{
+    CMasterGraph &graph;
+    CActivityBase &activity;
+    IRowInterfaces *rowIf;
+    unsigned id;
+    CriticalSection crit;
+    PointerArrayOf<CThorExpandingRowArray> results;
+    Owned<IThorResult> result;
+
+    void ensure()
+    {
+        CriticalBlock b(crit);
+        if (result)
+            return;
+        mptag_t replyTag = createReplyTag();
+        CMessageBuffer msg;
+        msg.append(GraphGetResult);
+        msg.append(activity.queryJob().queryKey());
+        msg.append(graph.queryGraphId());
+        msg.append(id);
+        msg.append(replyTag);
+        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, NULL, NULL, true);
+
+        unsigned numSlaves = graph.queryJob().querySlaves();
+        for (unsigned n=0; n<numSlaves; n++)
+            results.item(n)->kill();
+        rank_t sender;
+        MemoryBuffer mb;
+        Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+        CThorStreamDeserializerSource rowSource(stream);
+        unsigned todo = numSlaves;
+
+        loop
+        {
+            loop
+            {
+                if (activity.queryAbortSoon())
+                    return;
+                msg.clear();
+                if (activity.receiveMsg(msg, RANK_ALL, replyTag, &sender, 60*1000))
+                    break;
+                ActPrintLog(&activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+            }
+            sender = sender - 1; // 0 = master
+            if (!msg.length())
+            {
+                --todo;
+                if (0 == todo)
+                    break; // done
+            }
+            else
+            {
+                bool error;
+                msg.read(error);
+                if (error)
+                {
+                    Owned<IThorException> e = deserializeThorException(msg);
+                    e->setSlave(sender);
+                    throw e.getClear();
+                }
+                ThorExpand(msg, mb.clear());
+
+                CThorExpandingRowArray *slaveResults = results.item(sender);
+                while (!rowSource.eos())
+                {
+                    RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
+                    size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                    slaveResults->append(rowBuilder.finalizeRowClear(sz));
+                }
+            }
+        }
+        Owned<IThorResult> _result = ::createResult(activity, rowIf, false);
+        Owned<IRowWriter> resultWriter = _result->getWriter();
+        for (unsigned s=0; s<numSlaves; s++)
+        {
+            CThorExpandingRowArray *slaveResult = results.item(s);
+            ForEachItemIn(r, *slaveResult)
+            {
+                const void *row = slaveResult->query(r);
+                LinkThorRow(row);
+                resultWriter->putRow(row);
+            }
+        }
+        result.setown(_result.getClear());
+    }
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id) : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id)
+    {
+        for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
+            results.append(new CThorExpandingRowArray(activity));
+    }
+    ~CCollatedResult()
+    {
+        ForEachItemIn(l, results)
+        {
+            CThorExpandingRowArray *result = results.item(l);
+            delete result;
+        }
+    }
+    void setId(unsigned _id)
+    {
+        id = _id;
+    }
+
+// IThorResult
+    virtual IRowWriter *getWriter() { throwUnexpected(); }
+    virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count)
+    {
+        throwUnexpected();
+    }
+    virtual IRowStream *getRowStream()
+    {
+        ensure();
+        return result->getRowStream();
+    }
+    virtual IRowInterfaces *queryRowInterfaces()
+    {
+        return rowIf;
+    }
+    virtual CActivityBase *queryActivity()
+    {
+        return &activity;
+    }
+    virtual bool isDistributed() const { return false; }
+    virtual void serialize(MemoryBuffer &mb)
+    {
+        ensure();
+        result->serialize(mb);
+    }
+    virtual void getResult(size32_t & retSize, void * & ret)
+    {
+        ensure();
+        return result->getResult(retSize, ret);
+    }
+    virtual void getLinkedResult(unsigned & count, byte * * & ret)
+    {
+        ensure();
+        return result->getLinkedResult(count, ret);
+    }
+};
+
+///////////////////
+
 //
 // CMasterGraph impl.
 //
@@ -2411,12 +2575,48 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed)
+{
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id);
+    localResults->setResult(id, result);
+    return result;
+}
+
+IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+{
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0);
+    unsigned id = graphLoopResults->addResult(result);
+    result->setId(id);
+    return result;
+}
+
+
 ///////////////////////////////////////////////////
 
-CThorStats::CThorStats()
+CThorStats::CThorStats(const char *_prefix)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
+    if (_prefix)
+    {
+        prefix.set(_prefix);
+        StringBuffer tmp;
+        labelMin.set(tmp.append(_prefix).append("Min"));
+        labelMax.set(tmp.clear().append(_prefix).append("Max"));
+        labelMinSkew.set(tmp.clear().append(_prefix).append("MinSkew"));
+        labelMaxSkew.set(tmp.clear().append(_prefix).append("MaxSkew"));
+        labelMinEndpoint.set(tmp.clear().append(_prefix).append("MinEndpoint"));
+        labelMaxEndpoint.set(tmp.clear().append(_prefix).append("MaxEndpoint"));
+    }
+    else
+    {
+        labelMin.set("min");
+        labelMax.set("max");
+        labelMinSkew.set("minSkew");
+        labelMaxSkew.set("maxSkew");
+        labelMinEndpoint.set("minEndpoint");
+        labelMaxEndpoint.set("maxEndpoint");
+    }
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2479,28 +2679,43 @@ void CThorStats::processInfo()
     }
 }
 
-///////////////////////////////////////////////////
-
-void CTimingInfo::getXGMML(IPropertyTree *node)
+void CThorStats::getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual)
 {
     processInfo();
-    addAttribute(node, "timeMaxMs", max);
-    addAttribute(node, "timeMinMs", min);
-    if (hi == lo)
+    if (suppressMinMaxWhenEqual && (hi == lo))
     {
-        removeAttribute(node, "timeMaxEndpoint");
-        removeAttribute(node, "timeMinEndpoint");
-        removeAttribute(node, "timeMaxSkew");
-        removeAttribute(node, "timeMinSkew");
+        removeAttribute(node, labelMin);
+        removeAttribute(node, labelMax);
     }
     else
     {
-        StringBuffer epStr;
-        addAttribute(node, "timeMaxEndpoint", querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr).str());
-        addAttribute(node, "timeMinEndpoint", querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr.clear()).str());
-        addAttribute(node, "timeMaxSkew", hi);
-        addAttribute(node, "timeMinSkew", lo);
+        addAttribute(node, labelMin, min);
+        addAttribute(node, labelMax, max);
     }
+    if (hi == lo)
+    {
+        removeAttribute(node, labelMinEndpoint);
+        removeAttribute(node, labelMaxEndpoint);
+        removeAttribute(node, labelMinSkew);
+        removeAttribute(node, labelMaxSkew);
+    }
+    else
+    {
+        addAttribute(node, labelMinSkew, lo);
+        addAttribute(node, labelMaxSkew, hi);
+        StringBuffer epStr;
+        addAttribute(node, labelMinEndpoint, querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr).str());
+        addAttribute(node, labelMaxEndpoint, querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr.clear()).str());
+    }
+}
+
+///////////////////////////////////////////////////
+
+CTimingInfo::CTimingInfo() : CThorStats("time")
+{
+    StringBuffer tmp;
+    labelMin.set(tmp.append(labelMin).append("Ms"));
+    labelMax.set(tmp.clear().append(labelMax).append("Ms"));
 }
 
 ///////////////////////////////////////////////////
@@ -2543,30 +2758,11 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
 
 void ProgressInfo::getXGMML(IPropertyTree *node)
 {
-    processInfo();
+    CThorStats::getXGMML(node, true);
     addAttribute(node, "slaves", counts.ordinality());
     addAttribute(node, "count", tot);
     addAttribute(node, "started", startcount);
     addAttribute(node, "stopped", stopcount);
-    if (hi == lo)
-    {
-        removeAttribute(node, "max");
-        removeAttribute(node, "min");
-        removeAttribute(node, "maxskew");
-        removeAttribute(node, "minskew");
-        removeAttribute(node, "maxEndpoint");
-        removeAttribute(node, "minEndpoint");
-    }
-    else
-    {
-        StringBuffer epStr;
-        addAttribute(node, "max", max);
-        addAttribute(node, "min", min);
-        addAttribute(node, "maxskew", hi);
-        addAttribute(node, "minskew", lo);
-        addAttribute(node, "maxEndpoint", querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr).str());
-        addAttribute(node, "minEndpoint", querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr.clear()).str());
-    }
 }
 
 
