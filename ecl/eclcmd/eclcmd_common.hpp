@@ -52,6 +52,11 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PASSWORD_INI "eclPassword"
 #define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
 
+#define ECLOPT_OVERWRITE "--overwrite"
+#define ECLOPT_OVERWRITE_S "-O"
+#define ECLOPT_OVERWRITE_INI "overwriteDefault"
+#define ECLOPT_OVERWRITE_ENV NULL
+
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
@@ -73,6 +78,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_INPUT_S "-in"
 
 #define ECLOPT_NOROOT "--noroot"
+
+#define ECLOPT_DALIIP "--daliip"
+#define ECLOPT_PROCESS "--process"
 
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"

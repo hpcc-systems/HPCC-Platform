@@ -103,6 +103,7 @@ public:
 private:
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
+    StringAttr daliServers;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
     WUSchedule m_sched;

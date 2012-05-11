@@ -533,6 +533,8 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
+    daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));
+
     wuActionTable.setValue("delete", ActionDelete);
     wuActionTable.setValue("abort", ActionAbort);
     wuActionTable.setValue("pausenow", ActionPauseNow);
@@ -2374,6 +2376,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 StringBuffer name;
                 winfo.getWorkunitDll(name, mb);
                 resp.setFileName(name.str());
+                resp.setDaliServer(daliServers.get());
                 openSaveFile(context, opt, req.getName(), HTTP_TYPE_OCTET_STREAM, mb, resp);
             }
             else if (strieq(File_Res,req.getType()))

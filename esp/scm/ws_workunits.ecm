@@ -614,6 +614,7 @@ ESPresponse [exceptions_inline] WULogFileResponse
     [min_ver("1.36")] string QueryName;
     [min_ver("1.36")] string QueryId;
     [min_ver("1.36")] string FileName;
+    [min_ver("1.38")] string DaliServer;
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -1043,8 +1044,6 @@ ESPrequest WUPublishWorkunitRequest
     string JobName;
     int Activate;
     bool NotifyCluster(false);
-    bool showFiles(0);
-    bool CopyLocal(0);
     int Wait(10000);
 };
 
@@ -1229,7 +1228,9 @@ ESPrequest WUQuerySetCopyQueryRequest
     string Source;
     string Target;
     string Cluster;
+    string DaliServer;
     int Activate;
+    bool Overwrite(false);
     int Wait(10000);
 };
 
@@ -1239,7 +1240,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.37"), default_client_version("1.37"),
+    version("1.38"), default_client_version("1.38"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
