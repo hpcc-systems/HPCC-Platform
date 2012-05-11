@@ -2,10 +2,10 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PIPEIN" role="nobrk">
-  <title>HDFSPipe.PipeIn</title>
+  <title>HDFSConnector.PipeIn</title>
 
-  <para><emphasis role="bold">HDFSPipe.PipeIn </emphasis><emphasis>( ECL_RS,
-  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
+  <para><emphasis role="bold">HDFSConnector.PipeIn </emphasis><emphasis>(
+  ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort
   )</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
@@ -49,20 +49,21 @@
           <row>
             <entry><emphasis>HDFSPort</emphasis></entry>
 
-            <entry>The Hadoop DFS port number.</entry>
+            <entry>The Hadoop NameNode port number.</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">HDFSPipe.PipeIn </emphasis>macro is called
-  to pipe in data from the Hadoop file system (HDFS) to a Thor Cluster.</para>
+  <para>The <emphasis role="bold">HDFSConnector.PipeIn </emphasis>macro is
+  called to pipe in data from the Hadoop file system (HDFS) to a Thor
+  Cluster.</para>
 
   <para>Example:</para>
 
   <programlisting>#OPTION('pickBestEngine', 0);
 IMPORT std;
-IMPORT DataStream;
+IMPORT DataConnectors;
 Layout_Flat := RECORD
   STRING10  fname;
   STRING10  lname;
@@ -75,19 +76,19 @@ Layout_Flat := RECORD
   UNSIGNED1 one;
   UNSIGNED8 id;
 END;
-DataStream.HDFSPipe.PipeIn(certrecords, 
-                           '/user/hadoop/test/cert1', 
-                           Layout_Flat, 
-                           FLAT, 
+DataConnectors.HDFSConnector.PipeIn(MyDataFile, 
+                           '/user/hadoop/test/MyData1', 
+                           Layout_Flat, FLAT, 
                            '192.168.56.120', 
-                           54310)
+                           54310);
+OUTPUT(MyDataFile);
 </programlisting>
 
   <?hard-pagebreak ?>
 
   <programlisting>#OPTION('pickBestEngine', 0);
 IMPORT std;
-IMPORT DataStream;
+IMPORT DataConnectors;
 Layout_CSV := RECORD
   STRING10 fname;
   STRING10 lname;
@@ -100,12 +101,12 @@ Layout_CSV := RECORD
   STRING3  one;
   STRING20 id;
 END;
-DataStream.HDFSPipe.PipeIn(certrecords, 
-                           '/user/Administrator/test/cert1', 
-                           Layout_CSV, 
-                           CSV(SEPARATOR('|')), 
+DataConnectors.HDFSConnector.PipeIn(MyDataFile, 
+                           '/user/Administrator/test/MyData1', 
+                           Layout_CSV, CSV(SEPARATOR('|')), 
                            '192.168.56.120', 
-                           54310)
+                           54310);
+OUTPUT(MyDataFile);
 </programlisting>
 
   <para></para>
