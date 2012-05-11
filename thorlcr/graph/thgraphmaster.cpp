@@ -2593,10 +2593,30 @@ IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowIn
 
 ///////////////////////////////////////////////////
 
-CThorStats::CThorStats()
+CThorStats::CThorStats(const char *_prefix)
 {
     unsigned c = queryClusterWidth();
     while (c--) counts.append(0);
+    if (_prefix)
+    {
+        prefix.set(_prefix);
+        StringBuffer tmp;
+        labelMin.set(tmp.append(_prefix).append("Min"));
+        labelMax.set(tmp.clear().append(_prefix).append("Max"));
+        labelMinSkew.set(tmp.clear().append(_prefix).append("MinSkew"));
+        labelMaxSkew.set(tmp.clear().append(_prefix).append("MaxSkew"));
+        labelMinEndpoint.set(tmp.clear().append(_prefix).append("MinEndpoint"));
+        labelMaxEndpoint.set(tmp.clear().append(_prefix).append("MaxEndpoint"));
+    }
+    else
+    {
+        labelMin.set("min");
+        labelMax.set("max");
+        labelMinSkew.set("minSkew");
+        labelMaxSkew.set("maxSkew");
+        labelMinEndpoint.set("minEndpoint");
+        labelMaxEndpoint.set("maxEndpoint");
+    }
 }
 
 void CThorStats::set(unsigned node, unsigned __int64 count)
@@ -2659,28 +2679,43 @@ void CThorStats::processInfo()
     }
 }
 
-///////////////////////////////////////////////////
-
-void CTimingInfo::getXGMML(IPropertyTree *node)
+void CThorStats::getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual)
 {
     processInfo();
-    addAttribute(node, "timeMaxMs", max);
-    addAttribute(node, "timeMinMs", min);
-    if (hi == lo)
+    if (suppressMinMaxWhenEqual && (hi == lo))
     {
-        removeAttribute(node, "timeMaxEndpoint");
-        removeAttribute(node, "timeMinEndpoint");
-        removeAttribute(node, "timeMaxSkew");
-        removeAttribute(node, "timeMinSkew");
+        removeAttribute(node, labelMin);
+        removeAttribute(node, labelMax);
     }
     else
     {
-        StringBuffer epStr;
-        addAttribute(node, "timeMaxEndpoint", querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr).str());
-        addAttribute(node, "timeMinEndpoint", querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr.clear()).str());
-        addAttribute(node, "timeMaxSkew", hi);
-        addAttribute(node, "timeMinSkew", lo);
+        addAttribute(node, labelMin, min);
+        addAttribute(node, labelMax, max);
     }
+    if (hi == lo)
+    {
+        removeAttribute(node, labelMinEndpoint);
+        removeAttribute(node, labelMaxEndpoint);
+        removeAttribute(node, labelMinSkew);
+        removeAttribute(node, labelMaxSkew);
+    }
+    else
+    {
+        addAttribute(node, labelMinSkew, lo);
+        addAttribute(node, labelMaxSkew, hi);
+        StringBuffer epStr;
+        addAttribute(node, labelMinEndpoint, querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr).str());
+        addAttribute(node, labelMaxEndpoint, querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr.clear()).str());
+    }
+}
+
+///////////////////////////////////////////////////
+
+CTimingInfo::CTimingInfo() : CThorStats("time")
+{
+    StringBuffer tmp;
+    labelMin.set(tmp.append(labelMin).append("Ms"));
+    labelMax.set(tmp.clear().append(labelMax).append("Ms"));
 }
 
 ///////////////////////////////////////////////////
@@ -2723,30 +2758,11 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
 
 void ProgressInfo::getXGMML(IPropertyTree *node)
 {
-    processInfo();
+    CThorStats::getXGMML(node, true);
     addAttribute(node, "slaves", counts.ordinality());
     addAttribute(node, "count", tot);
     addAttribute(node, "started", startcount);
     addAttribute(node, "stopped", stopcount);
-    if (hi == lo)
-    {
-        removeAttribute(node, "max");
-        removeAttribute(node, "min");
-        removeAttribute(node, "maxskew");
-        removeAttribute(node, "minskew");
-        removeAttribute(node, "maxEndpoint");
-        removeAttribute(node, "minEndpoint");
-    }
-    else
-    {
-        StringBuffer epStr;
-        addAttribute(node, "max", max);
-        addAttribute(node, "min", min);
-        addAttribute(node, "maxskew", hi);
-        addAttribute(node, "minskew", lo);
-        addAttribute(node, "maxEndpoint", querySlaveGroup().queryNode(maxNode).endpoint().getUrlStr(epStr).str());
-        addAttribute(node, "minEndpoint", querySlaveGroup().queryNode(minNode).endpoint().getUrlStr(epStr.clear()).str());
-    }
 }
 
 

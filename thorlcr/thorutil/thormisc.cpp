@@ -155,7 +155,7 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
 
 void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != container->queryOwner().queryOwner() && !container->queryOwner().isGlobal()))
+    if ((0 == (flags & thorlog_all)) && !container->doLogging())
         return; // suppress logging child activities unless thorlog_all flag
     StringBuffer res;
     ActPrintLogArgsPrep(res, container, flags, format, args);
