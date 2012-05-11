@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IntroHDFS" role="nobrk">
+  <title>Introduction</title>
+
+  <para>The HDFS to HPCC Connector provides a means to import data from
+  Hadoop's HDFS into an HPCC Systems Thor platform. It also supports exporting
+  the data back to HDFS or exporting and merging it. This allows you to use an
+  HPCC cluster in conjunction with your Hadoop-based cluster.</para>
+
+  <para>The H2H Connector is an add-on to an HPCC Cluster and consists of
+  server-side components and ECL Macros that invoke them.</para>
+
+  <para><itemizedlist>
+      <listitem>
+        <para><emphasis role="bold">Server-side
+        components:</emphasis><itemizedlist>
+            <listitem>
+              <para>The executable ( /opt/HPCCSystems/bin/hdfsconnector
+              )</para>
+            </listitem>
+
+            <listitem>
+              <para>The shell script (/opt/HPCCSystems/bin/hdfspipe)</para>
+            </listitem>
+
+            <listitem>
+              <para>The configuration file
+              (/opt/HPCCSystems/etc/HPCCSystems/hdfsconnector.conf)</para>
+
+              <para>The configuration file contains the location where Hadoop
+              is installed, as shown in the example below: </para>
+
+              <programlisting>HADOOP_LOCATION=/usr/local/hadoop</programlisting>
+
+              <para>This allows access to the libhdfs (API) library.</para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>The HDFS Connector writes log files to a folder
+                    named <emphasis
+                    role="bluebold">mydataconnectors</emphasis> in the the
+                    HPCC log directory (the HPCC log location can be set using
+                    Configuration Manager). </para>
+
+                    <para>The default location is:<programlisting>/var/log/HPCCSystems/mydataconnectors/</programlisting></para>
+
+                    <para>The log files are written following the following
+                    pattern:<programlisting>HDFSCONNECTOR.&lt;nodeid&gt;.&lt;PID&gt;.log</programlisting></para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </listitem>
+          </itemizedlist></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">ECL Macros
+        (HDFSConnector.ecl)</emphasis></para>
+
+        <itemizedlist>
+          <listitem>
+            <para>HDFSConnector.PipeIn</para>
+
+            <para>Imports data from Hadoop's file system (HDFS) to a Thor
+            Cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>HDFSConnector.PipeOut</para>
+
+            <para>Exports data from a Thor Cluster to Hadoop's file system
+            (HDFS).</para>
+          </listitem>
+
+          <listitem>
+            <para>HDFSConnector.PipeOutAndMerge</para>
+
+            <para>Exports data from a Thor Cluster to Hadoop's file system
+            (HDFS) and merges the data.</para>
+          </listitem>
+        </itemizedlist>
+      </listitem>
+
+      <listitem>
+        <para>The HDFS to HPCC Connector User's Guide</para>
+      </listitem>
+    </itemizedlist></para>
+</sect1>

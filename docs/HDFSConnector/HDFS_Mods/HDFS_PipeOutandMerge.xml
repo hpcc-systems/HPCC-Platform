@@ -2,11 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="PIPEOUTANDMERGE">
-  <title>HDFSPipe.PipeOutAndMerge</title>
+  <title>HDFSConnector.PipeOutAndMerge</title>
 
-  <para><emphasis role="bold">HDFSPipe.PipeOutAndMerge</emphasis><emphasis>
-  (ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort,
-  HDFSUser )</emphasis></para>
+  <para><emphasis
+  role="bold">HDFSConnector.PipeOutAndMerge</emphasis><emphasis> (ECL_RS,
+  HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDFSPort, HDFSUser
+  )</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
@@ -18,7 +19,7 @@
           <row>
             <entry><emphasis>ECL_RS</emphasis></entry>
 
-            <entry>The ECL recordset to stream out.</entry>
+            <entry>The ECL recordset to export.</entry>
           </row>
 
           <row>
@@ -48,7 +49,7 @@
           <row>
             <entry><emphasis>HDFSPort</emphasis></entry>
 
-            <entry>The Hadoop DFS port number.</entry>
+            <entry>The Hadoop NameNode port number.</entry>
           </row>
 
           <row>
@@ -62,16 +63,16 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">HDFSPipe.PipeOutAndMerge </emphasis>macro
-  writes the given <emphasis>ECL_RS</emphasis> recordset to the target HDFS
-  system in file parts and merges them together to form a single target file
-  on the HDFS system.</para>
+  <para>The <emphasis role="bold">HDFSConnector.PipeOutAndMerge
+  </emphasis>macro writes the given <emphasis>ECL_RS</emphasis> recordset to
+  the target HDFS system in file parts and merges them together to form a
+  single target file on the HDFS system.</para>
 
   <para>Example:</para>
 
   <programlisting>#OPTION('pickBestEngine', 0);  
 IMPORT std;
-IMPORT DataStream;
+IMPORT DataConnectors;
 Layout_Flat :=RECORD
   STRING10  fname;
   STRING10  lname;
@@ -84,21 +85,20 @@ Layout_Flat :=RECORD
   UNSIGNED1 one;
   UNSIGNED8 id;
 END;
-hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_Flat, FLAT);
-DataStream.HDFSPipe.PipeOutAndMerge(hpcccertrecords, 
-                                    '/user/hadoop/test/cert1', 
-                                    Layout_Flat, 
-                                    FLAT, 
+MyDataFile := DATASET('~certification::full_test_distributed',Layout_Flat, FLAT);
+DataConnectors.HDFSConnector.PipeOutAndMerge(MyDataFile, 
+                                    '/user/hadoop/test/MyData1', 
+                                    Layout_Flat, FLAT, 
                                     '192.168.56.120', 
                                     54310, 
-                                    'hadoop' )
+                                    'hadoopusername' );
 </programlisting>
 
   <?hard-pagebreak ?>
 
   <programlisting>#OPTION('pickBestEngine', 0);  
 IMPORT std;
-IMPORT DataStream;
+IMPORT DataConnectors;
 Layout_CSV := RECORD
   STRING10 fname;
   STRING10 lname;
@@ -111,14 +111,13 @@ Layout_CSV := RECORD
   STRING3  one;
   STRING20 id;
 END;
-hpcccertrecords := DATASET('~certification::full_test_distributed',Layout_CSV, CSV);
-DataStream.HDFSPipe.PipeOutAndMerge(hpcccertrecords, 
-                                    '/user/hadoop/test/cert1', 
-                                    Layout_CSV, 
-                                    CSV, 
+MyDataFile := DATASET('~certification::full_test_distributed',Layout_CSV, CSV);
+DataConnectors.HDFSConnector.PipeOutAndMerge(MyDataFile, 
+                                    '/user/hadoop/test/MyData1', 
+                                    Layout_CSV, CSV, 
                                     '192.168.56.120', 
                                     54310, 
-                                    'hadoop' )
+                                    'hadoopusername' );
 </programlisting>
 
   <para></para>
