@@ -589,6 +589,8 @@ public:
         request->setProcess(optProcess);
         request->setPackageName(optFileName);
         request->setOverWrite(optOverWrite);
+        if (!optDaliIp.isEmpty())
+            request->setDaliIp(optDaliIp.get());
 
         Owned<IClientCopyFilesResponse> resp = packageProcessClient->CopyFiles(request);
         return 0;

@@ -241,7 +241,7 @@ protected:
 #if ARCHIVE_VERSION_NUMBER < 3000000
     off_t curPos;
 #else
-    unsigned __int64 curPos;
+    int64_t curPos;
 #endif
     offset_t lastPos;
     size_t curBuffSize;
