@@ -93,11 +93,32 @@ protected:
     unsigned flags;
 #ifdef __linux__
 private:
-
-    int useINotify(int inotify_queue, unsigned timeout, IDirectoryIterator* dirIter);
+    int useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeout, Semaphore *abortsem, IDirectoryIterator* dirIter);
     unsigned int getINotifyQueueLength(int inotify_queue) const;
     unsigned int getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const;
     int flushINotifyQueue(int inotify_queue);
+
+    class CAbortMonitorThread : public CInterface, implements IThreaded
+    {
+    public:
+      CAbortMonitorThread(int &inotify_queue, unsigned int check_interval, Semaphore *sem, bool &quit_thread);
+      virtual ~CAbortMonitorThread();
+      void init();
+
+      IMPLEMENT_IINTERFACE;
+
+    private:
+      CAbortMonitorThread();
+      CAbortMonitorThread(const CAbortMonitorThread &abort_thread) : m_inotify_queue(abort_thread.m_inotify_queue), m_quitThread(abort_thread.m_quitThread){};
+      CAbortMonitorThread& operator=(CAbortMonitorThread const&){};
+      virtual void main();
+
+      bool &m_quitThread;
+      int &m_inotify_queue;
+      unsigned int m_checkInterval;
+      Semaphore *m_abortSem;
+      CThreaded* m_pWorkerThread;
+    };
 #endif //__linux__
 };
 

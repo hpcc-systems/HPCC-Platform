@@ -3740,13 +3740,56 @@ public:
 
 #ifdef __linux__
 
-int CFile::useINotify(int inotify_queue, unsigned timeout, IDirectoryIterator *dirIter)
+CFile::CAbortMonitorThread::CAbortMonitorThread(int &inotify_queue, unsigned int check_interval, Semaphore *sem, bool &quit_thread)
+    : m_quitThread(quit_thread), m_pWorkerThread(NULL), m_inotify_queue(inotify_queue), m_checkInterval(check_interval), m_abortSem(sem)
+{
+};
+
+CFile::CAbortMonitorThread::~CAbortMonitorThread()
+{
+  m_quitThread = true;
+  m_pWorkerThread->join();
+  delete m_pWorkerThread;
+};
+
+void CFile::CAbortMonitorThread::main()
+{
+  if (m_abortSem == NULL)
+  {
+    return;
+  }
+
+  loop
+  {
+    if (m_quitThread == true)
+    {
+      break;
+    }
+
+    if (m_abortSem->wait(m_checkInterval) == true)
+    {
+      m_quitThread = true;
+      CLOSE_INOTIFY_QUEUE(m_inotify_queue) // will unblock select on abort
+    }
+  }
+}
+
+void CFile::CAbortMonitorThread::init()
+{
+  m_pWorkerThread = new CThreaded("CAbortMonitorThread");
+  IThreaded* pIThreaded = this;
+  m_pWorkerThread->init(pIThreaded);
+}
+
+int CFile::useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeout, Semaphore *abortsem, IDirectoryIterator *dirIter)
 {
   StringBuffer strfile;
   struct timeval tvTimeout;
   int retVal = 0;
   T_FD_SET rfds;
   bool b = false;
+  Owned<CFile::CAbortMonitorThread> thread;
+  bool bAborted = false;
 
   if (inotify_queue <= 0) // check for error
   {
@@ -3782,10 +3825,25 @@ int CFile::useINotify(int inotify_queue, unsigned timeout, IDirectoryIterator *d
     tvTimeout.tv_sec = timeout/1000;
   }
 
+  if (abortsem != NULL)
+  {
+    thread.setown(new CAbortMonitorThread(inotify_queue, checkinterval, abortsem, bAborted));
+    thread->init();
+  }
+
   retVal = select(inotify_queue+1, (fd_set *)&rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
+
+  if (thread.get() != NULL)
+  {
+    thread.clear();
+  }
 
   if (retVal < 0) // error
   {
+    if (bAborted == true)
+    {
+      return 0;
+    }
     throw MakeErrnoException(errno, "select() returned error for inotify file decriptor %d",inotify_queue+1);
   }
   else if (retVal == 0)
@@ -3807,7 +3865,11 @@ int CFile::useINotify(int inotify_queue, unsigned timeout, IDirectoryIterator *d
   }
   else
   {
-    throw MakeStringException(-1,"findfds() returned false for inotify");
+    if (bAborted == true)
+    {
+      return 0;
+    }
+    throw MakeStringException(-1,"select() returned but inotify file descriptor not ready to be read");
   }
 }
 
@@ -3815,6 +3877,12 @@ int CFile::flushINotifyQueue(int inotify_queue)
 {
   const int max_attempts = 5;
   int attempts = 0;
+
+
+  if(inotify_queue <= 0)
+  {
+    throw MakeStringException(-1,"Invalid inotify file descriptor is not valid %d",inotify_queue);
+  }
 
   loop
   {
@@ -3854,7 +3922,7 @@ unsigned int CFile::getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int 
 {
   unsigned int num_events = 0;
 
-  if (buffer_length > 0 && buffer && *buffer)
+  if (buffer_length > 0 && buffer)
   {
       unsigned int offset =  EVENT_SIZE + ((struct inotify_event*)(buffer))->len;
       num_events = getNumberOfINotifyEventsInBuffer(buffer + offset, buffer_length-offset) + 1;
@@ -3905,37 +3973,53 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
 #ifdef __linux__
     int inotify_queue = inotify_init();
-#else
-    prev.clear();
+
+    if (inotify_queue >= 0)
+    {
+      try
+      {
+        if (!useINotify(inotify_queue, checkinterval, timeout, abortsem, prev))
+        {
+          CLOSE_INOTIFY_QUEUE(inotify_queue);
+          return NULL; // timed out or aborted
+        }
+        CLOSE_INOTIFY_QUEUE(inotify_queue);
+      }
+      catch (IException *e)
+      {
+        CLOSE_INOTIFY_QUEUE(inotify_queue);
+        throw e;
+      }
+      Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
+
+      if (!current)
+      {
+        return NULL;
+      }
+
+      Owned<CDirectoryDifferenceIterator> cmp = new CDirectoryDifferenceIterator(current,base);
+      current.clear();
+
+      if (cmp->numChanges())
+      {
+        return cmp.getClear();
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    else // inotify_init() failed to iniatlize so use fallback method
 #endif
+    prev.clear(); // not needed now
     unsigned start=msTick();
     loop {
         if (abortsem) {
             if (abortsem->wait(checkinterval))
                 break;
         }
-#ifdef __linux__
-        else if (inotify_queue >= 0)
-        {
-          try
-          {
-            if (!useINotify(inotify_queue, timeout, prev))
-            {
-              return NULL; // timed out
-            }
-
-            CLOSE_INOTIFY_QUEUE(inotify_queue);
-          }
-          catch (IException *e)
-          {
-            CLOSE_INOTIFY_QUEUE(inotify_queue);
-            e->Release();
-          }
-        }
-#endif //__linux__
         else
             Sleep(checkinterval);
-
         Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
         if (!current)
             break;
