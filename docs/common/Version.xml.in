@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <chapter>
   <chapterinfo>
-    <date id="DateVer">February 2012 Version ${DOC_VERSION}</date>
+    <date id="DateVer">2012 Version ${DOC_VERSION}</date>
 
     <releaseinfo id="FooterInfo">© 2012 HPCC Systems. All rights
     reserved</releaseinfo>
@@ -18,10 +18,12 @@
   <section>
     <title>Version Section</title>
 
-    <para id="bpara">This document contains absolutely no actual content,
-    information, or other interesting material. In fact it is only here to
-    serve one purpose and that is to store the chapterinfo in the blue box
-    above that is being used by several other documents.</para>
+    <para id="bpara">This document contains no actual content, information, 
+    or other interesting material. In fact it is only here to
+    serve one purpose and that is to store the chapterinfo the above sections
+    that are being used by several other documents.</para>
+
+    <para id="CHMVer">2012 Version ${DOC_VERSION}</para>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>
@@ -33,12 +35,8 @@
     <para>DateVer is the <emphasis role="bold">id</emphasis> we provided to be
     able to reference it.</para>
 
-    <para>All content herein is but a placeholder to maintain a valid document
-    that we can use it's bookinfo/date element for our other purposes.</para>
-
-    <para>Think of this document like a government bureaucracy, a whole lot of
-    overhead to do essentially nothing!</para>
-
-    <para>☺</para>
+    <para>All content herein is but a placeholder to maintain a valid document structure
+    that we can use bookinfo/date and other elements for other purposes.</para>
+    
   </section>
 </chapter>
