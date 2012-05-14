@@ -1174,7 +1174,7 @@ void ComplexImplicitProjectInfo::notifyRequiredFields(ComplexImplicitProjectInfo
     {
         whichInput->inheritRequiredFields(outputFields);
     }
-    else if (activityKind() == RollupTransformActivity)
+    else if ((activityKind() == RollupTransformActivity) || (activityKind() == IterateTransformActivity))
     {
         whichInput->inheritRequiredFields(leftFieldsRequired);
         whichInput->inheritRequiredFields(rightFieldsRequired);
@@ -1582,6 +1582,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case CreateRecordActivity:
         case CreateRecordLRActivity:
         case RollupTransformActivity:
+        case IterateTransformActivity:
         case DenormalizeActivity:
         case CreateRecordSourceActivity:
             if (hasUnknownTransform(expr))
@@ -1607,6 +1608,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case AnyTypeActivity:
             break;
         case RollupTransformActivity:
+        case IterateTransformActivity:
             setOriginal(complexExtra->leftFieldsRequired, child);
             setOriginal(complexExtra->rightFieldsRequired, child);
             break;
@@ -2000,6 +2002,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_process:            // optimization currently disabled...
         return PassThroughActivity;
     case no_iterate:
+        return IterateTransformActivity;
     case no_rollup:
         return RollupTransformActivity;
     case no_denormalize:
@@ -2198,6 +2201,7 @@ void ImplicitProjectTransformer::processSelect(ComplexImplicitProjectInfo * extr
         processMatchingSelector(extra->outputFields, curSelect, leftSelect);
         break;
     case RollupTransformActivity:
+    case IterateTransformActivity:
         //For ROLLUP/ITERATE the transform may or may not be called.  Therefore
         //if a field is used from the output it is used from the input [ handled in the main processing loop]
         //if a field is used from LEFT then it must be in the input and the output
@@ -2434,6 +2438,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             break;
         }
     case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //currently rollup and iterate
             //output record is fixed by input, and never gets changed.
@@ -2714,6 +2719,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     {
     case DenormalizeActivity:
     case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //Always reduce things that create a new record so they only project the fields they need to
             if (complexExtra->outputChanged() || !complexExtra->fieldsToBlank.isEmpty())
@@ -2972,6 +2978,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
         break;
     case DenormalizeActivity:
     case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //output must always match the input..., but any fields that are in the input, but not needed in the output we'll add as exceptions
             //and assign default values to them, otherwise it can cause other fields to be required in the input + causes chaos
