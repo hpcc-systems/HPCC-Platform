@@ -537,6 +537,12 @@ int CLibXslTransform::transform(xmlChar **xmlbuff, int &len)
         mp.append(sizeof(const char *) * params.length(), params.getArray()).append((unsigned __int64)0);
 
     xmlDocPtr res = xsltApplyStylesheetUser(xsldoc, xmldoc, (mp.length()) ? (const char**)mp.toByteArray() : NULL, NULL, NULL, ctxt);
+    if (!res)
+    {
+        if (exceptions && exceptions->ordinality())
+            throw exceptions.getClear();
+        throw MakeStringException(XSLERR_TransformFailed, "Failed running xlst using libxslt.");
+    }
 
     try
     {

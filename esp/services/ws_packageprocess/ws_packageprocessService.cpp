@@ -103,10 +103,13 @@ bool addFileInfoToDali(const char *logicalname, const char *lookupDaliIp, const 
         }
 
         StringBuffer user;
-        userdesc->getUserName(user);
-
         StringBuffer password;
-        userdesc->getPassword(password);
+
+        if (userdesc)
+        {
+            userdesc->getUserName(user);
+            userdesc->getPassword(password);
+        }
 
         Owned<IClientFileSpray> fs;
         fs.setown(createFileSprayClient());

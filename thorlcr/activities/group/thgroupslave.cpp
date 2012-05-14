@@ -27,7 +27,7 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
     bool eogNext, prevEog, eof;
     bool rolloverEnabled, useRollover;
     IThorDataLink *input;
-    Owned<IRowStream> stream;
+    Owned<IRowStream> stream, nextNodeStream;
     OwnedConstThorRow next;
     Owned<IRowServer> rowServer;
 
@@ -41,7 +41,8 @@ class GroupSlaveActivity : public CSlaveActivity, public CThorDataLink
             useRollover = false;
             // JCSMORE will generate time out log messages, while waiting for next nodes group
             rank_t myNode = container.queryJob().queryMyRank();
-            stream.setown(createRowStreamFromNode(*this, myNode+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
+            nextNodeStream.setown(createRowStreamFromNode(*this, myNode+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
+            stream.set(nextNodeStream);
             return stream->nextRow();
         }
         else
@@ -84,11 +85,10 @@ public:
         startInput(input);
         dataLinkStart("GROUP", container.queryId());        
 
-        next.setown(stream->ungroupedNextRow());
+        next.setown(getNext());
 
         if (rolloverEnabled && !firstNode())  // 1st node can have nothing to send
         {
-            rowcount_t sentRecs = 0;
             Owned<IThorRowCollector> collector = createThorRowCollector(*this, NULL, false, rc_mixed, SPILL_PRIORITY_SPILLABLE_STREAM);
             Owned<IRowWriter> writer = collector->getWriter();
             if (next)
@@ -99,7 +99,6 @@ public:
                     writer->putRow(next.getLink());
                     if (abortSoon)
                         break; //always send group even when aborting
-                    sentRecs++;
                     OwnedConstThorRow next2 = getNext();
                     if (!next2)
                     {
@@ -122,8 +121,15 @@ public:
     }
     virtual void stop()
     {
+        if (nextNodeStream)
+            nextNodeStream->stop();
         stopInput(input);
         dataLinkStop();
+    }
+    virtual void kill()
+    {
+        CSlaveActivity::kill();
+        rowServer.clear();
     }
     CATCH_NEXTROW()
     {

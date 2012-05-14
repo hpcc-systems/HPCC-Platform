@@ -173,7 +173,7 @@ void DumpWorkunitTimings(IPropertyTree *wu)
                         unsigned day;
                         dt.getDate(year,month,day);
                         StringBuffer logname(basename);
-                        logname.appendf("%02d_%02d_%02d.log",month,day,year%100);
+                        logname.appendf("%04d_%02d_%02d.log",year,month,day);
 //                      printf("**%s\n",logname.str());
                         if (strcmp(logname.str(),curfilename.str())!=0) {
                             fileio.clear();
