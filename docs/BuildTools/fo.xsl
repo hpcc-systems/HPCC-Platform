@@ -336,6 +336,25 @@
        </fo:inline>
 </xsl:template>
 
+<!--Special-TABLE-Striping-TEMPLATE-->
+<xsl:template name="table.row.properties">
+  <xsl:variable name="tabstyle">
+    <xsl:call-template name="tabstyle"/>
+  </xsl:variable>
+    <xsl:variable name="rownum">
+    <xsl:number from="tgroup" count="row"/>
+  </xsl:variable>
+  <xsl:choose>
+    <xsl:when test="$tabstyle = 'striped'">
+      <xsl:if test="$rownum mod 2 = 0">
+        <xsl:attribute name="background-color">#939598</xsl:attribute>
+      </xsl:if>
+    <xsl:if test="$rownum mod 2 != 0">
+      <xsl:attribute name="background-color">#bcbec0</xsl:attribute>
+    </xsl:if>
+   </xsl:when>
+ </xsl:choose>
+</xsl:template>
 
 </xsl:stylesheet>
 
