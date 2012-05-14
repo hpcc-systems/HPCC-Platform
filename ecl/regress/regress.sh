@@ -27,7 +27,7 @@
 # in your build directory. (option: -e $BUILDDIR/Debug/bin/eclcc)
 ##############################################################################
 
-syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-i include_dir] [-e eclcc binary] -n [parallel processes] [-r (no run, just compare)]"
+syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-i include_dir] [-e eclcc] [-d diff_program]"
 
 ## Create Makefile (git doesn't like tabs)
 echo "FILES=\$(shell echo *.ecl*)" > Makefile
@@ -47,12 +47,24 @@ target_dir=run_$$
 compare_dir=
 include_dir=
 compare_only=0
-eclcc=`which eclcc`
+eclcc=
+diff=
 np=`grep -c processor /proc/cpuinfo`
 
 ## Get cmd line options (overrite default args)
+if [[ $1 = '' ]]; then
+    echo
+    echo $syntax
+    echo " * target_dir automatically created with run_pid"
+    echo " * compare_dir necessary for comparisons"
+    echo " * include dir for special ECL headers"
+    echo " * eclcc necessary for compilation, otherwise, only comparison will be made"
+    echo " * diff_program must be able to handle directories"
+    echo
+    exit -1
+fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:i:e:n:r" opt; do
+    while getopts "t:c:i:e:d:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -66,20 +78,18 @@ if [[ $* != '' ]]; then
             e)
                 eclcc=$OPTARG
                 ;;
-            n)
-                np=$OPTARG
-                ;;
-            r)
-                compare_only=1
+            d)
+                diff=$OPTARG
                 ;;
             :)
-                die $syntax
+                echo $syntax
+                exit -1
                 ;;
         esac
     done
 fi
 
-if [[ $compare_only = 0 ]]; then
+if [[ $eclcc != '' ]]; then
     ## Set flags
     default_flags="-P$target_dir -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph"
     flags="$default_flags $include_dir -fshowMetaInGraph"
@@ -103,16 +113,16 @@ if [[ $compare_dir ]]; then
     fi
     echo "* Comparing to $compare_dir"
     echo
-    if [[ $compare_only = 0 ]]; then
-        quick=-q
+    if [[ $diff != '' ]]; then
+        $diff $compare_dir $target_dir 2> /dev/null
+    else
+        diff -I $compare_dir -I $target_dir \
+             -I '\d* ms' \
+             -I 'at \/.*\(\d*\)$' \
+             -I '\d*s total time' \
+             -I 'hash=\"[0-9a-f]*' \
+             -q $compare_dir $target_dir
     fi
-    diff -I $compare_dir \
-         -I $target_dir \
-         -I '\d* ms' \
-         -I 'at \/.*\(\d*\)$' \
-         -I '\d*s total time' \
-         -I 'hash=\"[0-9a-f]*"' \
-         $quick $compare_dir $target_dir
 fi
 
 # Confirmation
