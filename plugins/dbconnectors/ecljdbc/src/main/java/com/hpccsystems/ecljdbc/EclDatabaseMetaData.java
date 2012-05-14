@@ -1001,20 +1001,19 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	@Override
 	public String getDriverVersion() throws SQLException
 	{
-		return EclDriver.ECLJDBCMajorVersion + "." + EclDriver.ECLJDBCMinorVersion + "." + EclDriver.ECLJDBCPatchVersion ;
-
+		return EclVersionTracker.HPCCMajor + "." + EclVersionTracker.HPCCMinor + "." + EclVersionTracker.HPCCPoint;
 	}
 
 	@Override
 	public int getDriverMajorVersion()
 	{
-		return EclDriver.ECLJDBCMajorVersion;
+		return EclVersionTracker.HPCCMajor;
 	}
 
 	@Override
 	public int getDriverMinorVersion()
 	{
-		return EclDriver.ECLJDBCMinorVersion;
+		return EclVersionTracker.HPCCMinor;
 	}
 
 	@Override
