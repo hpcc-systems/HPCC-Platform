@@ -376,27 +376,45 @@ void getPkgInfo(const char *cluster, const char *package, StringBuffer &info)
 
 bool deletePkgInfo(const char *packageSetName, const char *queryset)
 {
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(queryset, false);
-    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    Owned<IRemoteConnection> pkgSet = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!pkgSet)
+    {
+        DBGLOG("No package sets defined");
+        return false;
+    }
+
+    IPropertyTree* packageSets = pkgSet->queryRoot();
+
+    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", queryset);
+    IPropertyTree *pkgSetRegistry = packageSets->queryPropTree(pkgSet_xpath.str());
+    if (!pkgSetRegistry)
+    {
+        DBGLOG("No package sets defined for = %s", queryset);
+        return false;
+    }
 
     StringBuffer lcName(packageSetName);
     lcName.toLowerCase();
-    StringBuffer xpath;
-    xpath.append("PackageMap[@id='").append(lcName).append("']");
+    VStringBuffer xpath("PackageMap[@id='%s'][@querySet='%s']", lcName.str(), queryset);
+    IPropertyTree *pm = pkgSetRegistry->getPropTree(xpath.str());
+    if (pm)
+        pkgSetRegistry->removeTree(pm);
 
-    bool ret = true;
-    IPropertyTree *root = globalLock->queryRoot();
-    IPropertyTree *mapTree = root->queryPropTree(xpath);
-    if (mapTree)
-        ret = root->removeTree(mapTree);
+    VStringBuffer ps_xpath("PackageSet/PackageMap[@id='%s']", lcName.str());
 
-    if (ret)
+    if (!packageSets->hasProp(ps_xpath))
     {
-        IPropertyTree *pkgTree = pkgSetRegistry->queryPropTree(xpath.str());
-        if (pkgTree)
-            ret = pkgSetRegistry->removeTree(pkgTree);
+        Owned<IRemoteConnection> pkgMap = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        if (pkgMap)
+        {
+            VStringBuffer map_xpath("PackageMap[@id='%s']", lcName.str());
+            IPropertyTree *pkgMaproot = pkgMap->queryRoot();
+            IPropertyTree *pm = pkgMaproot->getPropTree(map_xpath.str());
+            if (pm)
+                pkgMaproot->removeTree(pm);
+        }
     }
-    return ret;
+    return true;
 }
 
 void activatePackageMapInfo(const char *packageSetName, const char *packageMap, bool activate)
