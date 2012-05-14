@@ -69,13 +69,13 @@ define([
 		query: function (query, options) {
 			var deferredResults = new Deferred();
 
-			var context = this;
 			this.queryWhenComplete(query, options, deferredResults);
 
-			var retVal = lang.delegate(deferredResults);
-			retVal.total = Deferred.when(deferredResults, function (rows) {
-				return rows.total;
-			});
+			var retVal = lang.mixin({
+				total: Deferred.when(deferredResults, function (rows) {
+					return rows.total;
+				})
+			}, deferredResults);
 
 			return QueryResults(retVal);
 		}
