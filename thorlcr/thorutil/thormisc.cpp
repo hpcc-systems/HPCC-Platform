@@ -40,6 +40,7 @@
 #include "thgraph.hpp"
 #include "thbufdef.hpp"
 #include "thmem.hpp"
+#include "thcompressutil.hpp"
 
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
@@ -1195,7 +1196,6 @@ public:
                     if (!row)
                         break;
                     activity->queryRowSerializer()->serialize(mbs,(const byte *)row.get());
-
                 } while (mb.length() < fetchBuffSize); // NB: allows at least 1
                 if (!comm.send(mb, sender, mpTag, LONGTIMEOUT))
                     throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJob().queryMyRank());
@@ -1235,4 +1235,38 @@ IRowStream *createUngroupStream(IRowStream *input)
         }
     };
     return new CUngroupStream(input);
+}
+
+void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf)
+{
+    CMessageBuffer msg;
+    MemoryBuffer mb;
+    CMemoryRowSerializer mbs(mb);
+    IOutputRowSerializer *serializer = rowIf->queryRowSerializer();
+    loop
+    {
+        loop
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (!row)
+            {
+                row.setown(input->nextRow());
+                if (!row)
+                    break;
+            }
+            serializer->serialize(mbs, (const byte *)row.get());
+            if (mb.length() > 0x80000)
+                break;
+        }
+        msg.clear();
+        if (mb.length())
+        {
+            msg.append(false); // no error
+            ThorCompress(mb.toByteArray(), mb.length(), msg);
+            mb.clear();
+        }
+        comm.send(msg, dst, mpTag, LONGTIMEOUT);
+        if (0 == msg.length())
+            break;
+    }
 }
