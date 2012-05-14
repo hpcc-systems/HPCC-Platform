@@ -113,8 +113,6 @@ public:
     }
 };
 
-#define EMPTY_LOOP_LIMIT 1000
-
 class CLoopSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
 protected:
@@ -124,34 +122,51 @@ protected:
     unsigned maxIterations;
     unsigned loopCounter;
     rtlRowBuilder extractBuilder;
+    bool lastMaxEmpty;
+    unsigned maxEmptyLoopIterations;
 
-    void sendLoopingCount(unsigned n)
+    bool sendLoopingCount(unsigned n, unsigned emptyIterations)
     {
-        if (!global || container.queryLocalOrGrouped())
-            return;
-        CMessageBuffer msg; // inform master starting
-        msg.append(n);
-        container.queryJob().queryJobComm().send(msg, 0, mpTag);
-        receiveMsg(msg, 0, mpTag);
+        if (!container.queryLocalOrGrouped())
+        {
+            if (global || (lastMaxEmpty && (0 == emptyIterations)) || (!lastMaxEmpty && (emptyIterations>maxEmptyLoopIterations)) || ((0 == n) && (0 == emptyIterations)))
+            {
+                CMessageBuffer msg; // inform master starting
+                msg.append(n);
+                msg.append(emptyIterations);
+                container.queryJob().queryJobComm().send(msg, 0, mpTag);
+                if (!global)
+                {
+                    lastMaxEmpty = emptyIterations>maxEmptyLoopIterations;
+                    return true;
+                }
+                receiveMsg(msg, 0, mpTag);
+                bool ok;
+                msg.read(ok);
+                return ok;
+            }
+        }
+        return true;
     }
     void sendStartLooping()
     {
-        sendLoopingCount(0);
+        sendLoopingCount(0, 0);
     }
     void sendEndLooping()
     {
         if (sentEndLooping)
             return;
         sentEndLooping = true;
-        sendLoopingCount(0);
+        sendLoopingCount(0, 0);
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CLoopSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CLoopSlaveActivityBase(CGraphElementBase *container) : CSlaveActivity(container), CThorDataLink(this)
     {
         input = NULL;
         mpTag = TAG_NULL;
+        maxEmptyLoopIterations = (unsigned)container->queryJob().getWorkUnitValueInt("@maxEmptyLoopIterations", 1000);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -170,6 +185,7 @@ public:
     {
         extractBuilder.clear();
         sentEndLooping = false;
+        lastMaxEmpty = false;
         loopCounter = 1;
         input = inputs.item(0);
         startInput(input);
@@ -199,7 +215,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
     Owned<CNextRowFeeder> nextRowFeeder;
     Owned<IRowWriterMultiReader> loopPending;
     unsigned loopPendingCount;
-    unsigned flags;
+    unsigned flags, lastMs;
     IHThorLoopArg *helper;
     bool eof, finishedLooping;
 
@@ -230,6 +246,7 @@ public:
         loopPendingCount = 0;
         finishedLooping = ((container.getKind() == TAKloopcount) && (maxIterations == 0));
         curInput.set(input);
+        lastMs = msTick();
 
         class CWrapper : public CSimpleInterface, implements IRowStream
         {
@@ -260,9 +277,9 @@ public:
         if (!abortSoon && !eof)
         {
             unsigned emptyIterations = 0;
-            loop
+            while (!abortSoon)
             {
-                loop
+                while (!abortSoon)
                 {
                     OwnedConstThorRow ret = (void *)curInput->nextRow();
                     if (!ret)
@@ -288,6 +305,8 @@ public:
                     ++loopPendingCount;
                     loopPending->putRow(ret.getClear());
                 }
+                if (abortSoon)
+                    break;
 
                 switch (container.getKind())
                 {
@@ -326,13 +345,19 @@ public:
                 {
                     //note: any outputs which didn't go around the loop again, would return the record, reinitializing emptyIterations
                     emptyIterations++;
-                    if (emptyIterations > EMPTY_LOOP_LIMIT)
+                    // only fire error here, if local
+                    if (container.queryLocalOrGrouped() && emptyIterations > maxEmptyLoopIterations)
                         throw MakeActivityException(this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
-                    if (emptyIterations % 32 == 0)
+                    unsigned now = msTick();
+                    if (now-lastMs > 60000)
+                    {
                         ActPrintLog("Executing LOOP with empty input and output %u times", emptyIterations);
+                        lastMs = now;
+                    }
                 }
 
-                sendLoopingCount(loopCounter);
+                if (!sendLoopingCount(loopCounter, emptyIterations)) // only if global
+                    return NULL;
                 loopPending->flush();
                 curInput.setown(queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes()));
                 loopPending.setown(createOverflowableBuffer(*this, this, false, true));
@@ -412,7 +437,7 @@ public:
             unsigned loopCounter=1;
             for (; loopCounter<=maxIterations; loopCounter++)
             {
-                sendLoopingCount(loopCounter);
+                sendLoopingCount(loopCounter, 0);
                 queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorGraphLoopArg::GLFcounter)?loopCounter:0, loopResults, extractBuilder.size(), extractBuilder.getbytes());
             }
             int iNumResults = loopResults->count();
