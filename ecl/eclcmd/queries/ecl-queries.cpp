@@ -281,7 +281,11 @@ public:
                 }
                 continue;
             }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
@@ -321,7 +325,9 @@ public:
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetQuerySet.get());
         req->setCluster(optCluster.get());
+        req->setDaliServer(optDaliIP.get());
         req->setActivate(optActivate);
+        req->setOverwrite(optOverwrite);
         req->setWait(optMsToWait);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
@@ -351,8 +357,10 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target_queryset>      name of queryset to copy the query into\n"
+            "   --daliip=<ip>          For file copying if remote version < 3.8\n"
             "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
+            "   -O, --overwrite        Overwrite existing files\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
@@ -362,8 +370,10 @@ private:
     StringAttr optSourceQueryPath;
     StringAttr optTargetQuerySet;
     StringAttr optCluster;
+    StringAttr optDaliIP;
     unsigned optMsToWait;
     bool optActivate;
+    bool optOverwrite;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)

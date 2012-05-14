@@ -36,6 +36,7 @@ set (    SRCS
 
 include_directories ( 
          ./../../common/workunit
+         ./../../common/remote
          ./../../system/mp 
          ./../../dali/ft 
          ./../../common/deftype 
