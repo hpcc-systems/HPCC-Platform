@@ -1111,7 +1111,7 @@ public:
         // I think this dependant on row being same format as meta
 
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, rowif, true);
+        CThorExpandingRowArray splits(*activity, auxrowif, true);
         char *s=cosortfilenames;
         unsigned i;
         for(i=0;i<numnodes;i++) {
@@ -1143,7 +1143,7 @@ public:
     {
         ActPrintLog(activity, "Previous partition");
         unsigned numsplits=numnodes-1;
-        CThorExpandingRowArray splits(*activity, rowif, true);
+        CThorExpandingRowArray splits(*activity, auxrowif, true);
         unsigned i;
         for(i=1;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
