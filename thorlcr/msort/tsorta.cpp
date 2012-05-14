@@ -71,6 +71,8 @@ CThorKeyArray::CThorKeyArray(
 void CThorKeyArray::clear()
 {
     keys.kill();
+    sizes.clear();
+    filepos.clear();
     totalserialsize = 0;
     serialrowsize = 0;
     totalfilesize = 0;
