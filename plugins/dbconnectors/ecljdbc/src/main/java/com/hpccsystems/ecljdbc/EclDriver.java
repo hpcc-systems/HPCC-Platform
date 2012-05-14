@@ -26,10 +26,6 @@ public class EclDriver implements Driver
 		}
 	}
 
-	static final int ECLJDBCMajorVersion = 0;
-	static final int ECLJDBCMinorVersion = 1;
-	static final int ECLJDBCPatchVersion = 0;
-
 	public EclDriver()
 	{
 	}
@@ -85,14 +81,12 @@ public class EclDriver implements Driver
 
 	public int getMajorVersion()
 	{
-		System.out.println("ECLDRIVER GETMAJORVERSION");
-		return ECLJDBCMajorVersion;
+		return EclVersionTracker.HPCCMajor;
 	}
 
 
 	public int getMinorVersion() {
-		System.out.println("ECLDRIVER GETMINORVERSION");
-		return ECLJDBCMinorVersion;
+		return EclVersionTracker.HPCCMinor;
 	}
 
 
