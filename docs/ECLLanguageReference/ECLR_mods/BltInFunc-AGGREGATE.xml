@@ -114,7 +114,7 @@
   <para>The operation is implicitly local, in that the
   <emphasis>maintransform</emphasis> is called to process records locally on
   each node, and the result records on each node are then merged to produce
-  the global result. The </para>
+  the global result. </para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Aggregate">
     <title>TRANSFORM Function Requirements - AGGREGATE</title>
@@ -175,7 +175,8 @@
   UNSIGNED box; 
   STRING text{MAXLENGTH(10)}; 
 END; 
-inTable := DATASET('in', inRecord, THOR);
+inTable := DATASET([{1,'Fred'},{1,'Freddy'},
+                    {2,'Freddi'},{3,'Fredrik'},{1,'FredJon'}], inRecord);
       
 //Example 1: Produce a list of box contents by concatenating a string:
       
@@ -206,11 +207,11 @@ outRecord2 := RECORD
   UNSIGNED box; 
   DATASET(inRecord) items; 
 END; 
-outRecord2 t3(inRecord l, outRecord1 r) := TRANSFORM 
+outRecord2 t3(inRecord l, outRecord2 r) := TRANSFORM 
   SELF.box := l.box; 
   SELF.items:= r.items + l; 
 END; 
-OUTPUT(AGGREGATE(inTable, outRecord1, t3(LEFT, RIGHT), LEFT.box));</programlisting>
+OUTPUT(AGGREGATE(inTable, outRecord2, t3(LEFT, RIGHT), LEFT.box));</programlisting>
 
     <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
     Structure</link>, <link linkend="RECORD_Structure">RECORD

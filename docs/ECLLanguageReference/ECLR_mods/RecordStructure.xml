@@ -408,7 +408,7 @@ END;</programlisting>
   <sect2 id="Field_Modifiers">
     <title>Field Modifiers</title>
 
-    <para>The following list of options are available for use on field
+    <para>The following list of field modifiers are available for use on field
     definitions:</para>
 
     <para><emphasis role="bold"> { MAXLENGTH<indexterm>
@@ -425,6 +425,12 @@ END;</programlisting>
         <primary>XPATH</primary>
       </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
     role="bold">'</emphasis><emphasis>tag</emphasis><emphasis role="bold">' )
+    }</emphasis><emphasis role="bold"> </emphasis></para>
+
+    <para><emphasis role="bold"> { XMLDEFAULT<indexterm>
+        <primary>XMLDEFAULT</primary>
+      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
+    role="bold">'</emphasis><emphasis>value</emphasis><emphasis role="bold">' )
     }</emphasis><emphasis role="bold"> </emphasis></para>
 
     <para><emphasis role="bold"> { VIRTUAL<indexterm>
@@ -476,6 +482,15 @@ END;</programlisting>
             field <emphasis>identifier</emphasis>). See the <emphasis
             role="bold">XPATH Support</emphasis> section below for
             details.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{
+            XMLDEFAULT(</emphasis>'<emphasis>value</emphasis>'<emphasis role="bold">)
+            }</emphasis></entry>
+
+            <entry>Specifies a default XML <emphasis>value</emphasis> for the field. 
+            The <emphasis>value</emphasis> must be constant. </entry>
           </row>
 
           <row>
