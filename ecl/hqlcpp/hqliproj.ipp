@@ -34,14 +34,17 @@ enum ProjectExprKind
     CreateRecordLRActivity,             // creates a record, can remove fields from output at will, has left and right input
     CompoundActivity,                   // a compound source, so inserting a project before it is assumed to have no cost
     CompoundableActivity,               // a source that could become a compound activity, so worth adding projects after
-    RollupTransformActivity,            // contains a transform, but input must match output
     FixedInputActivity,                 // can't change input to this activity.  E.g., pipe, output
                                         // or input/output record contains ifblocks.
     SourceActivity,                     // No inputs, so no need to do any calculations.
     SimpleActivity,                     // Filter etc - may be worth inserting a project before it.
     PassThroughActivity,                // input always equals output.
     ScalarSelectActivity,               // <someDataset>[n].field
-    DenormalizeActivity,                // contains a transform, but left must match output
+    DenormalizeActivity,                // contains a transform, but left must match output, fields in LEFT must be in output
+    RollupTransformActivity,            // contains a transform, input must match output, fields in LEFT must have
+                                        // values in input and output
+    IterateTransformActivity,           // contains a transform, input must match output, fields in LEFT must have values
+                                        //in output (not nesc evaluated in the input)
     SinkActivity,                       // a sink, but that doesn't necessarily use all input fields.
     CreateRecordSourceActivity,         // a source activity containing a transform i.e., inline table
     ComplexNonActivity,                 
