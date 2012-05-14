@@ -44,45 +44,6 @@
 
 #define RECORD_BUFFER_SIZE  64 * 1024       // 64k
 
-class CDiskReadSlaveActivityRecord;
-class CDiskRecordPartHandler : public CDiskPartHandlerBase
-{
-    Owned<IExtRowStream> in;
-protected:
-    offset_t localRowOffset;
-    CDiskReadSlaveActivityRecord &activity;
-public:
-    CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &activity);
-    ~CDiskRecordPartHandler();
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc);
-    virtual void open();
-    virtual void close(CRC32 &fileCRC);
-    offset_t getLocalOffset()
-    {
-        return localRowOffset;
-    }
-    inline const void *nextRow()
-    {
-        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
-        const void *ret = in->nextRow();
-        if (ret)
-            ++progress;
-        return ret;
-    }
-    inline const void *prefetchRow()
-    {
-        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
-        const void *ret = in->prefetchRow();
-        if (ret)
-            ++progress;
-        return ret;
-    }
-    inline void prefetchDone()
-    {
-        in->prefetchDone();
-    }
-};
-
 //////////////////////////////////////////////
 
 class CDiskReadSlaveActivityRecord : public CDiskReadSlaveActivityBase, implements IIndexReadContext
@@ -145,6 +106,46 @@ public:
     }
 
 friend class CDiskRecordPartHandler;
+};
+
+/////////////////////////////////////////////////
+
+class CDiskRecordPartHandler : public CDiskPartHandlerBase
+{
+    Owned<IExtRowStream> in;
+protected:
+    offset_t localRowOffset;
+    CDiskReadSlaveActivityRecord &activity;
+public:
+    CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &activity);
+    ~CDiskRecordPartHandler();
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc);
+    virtual void open();
+    virtual void close(CRC32 &fileCRC);
+    offset_t getLocalOffset()
+    {
+        return localRowOffset;
+    }
+    inline const void *nextRow()
+    {
+        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
+        const void *ret = in->nextRow();
+        if (ret)
+            ++activity.diskProgress;
+        return ret;
+    }
+    inline const void *prefetchRow()
+    {
+        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
+        const void *ret = in->prefetchRow();
+        if (ret)
+            ++activity.diskProgress;
+        return ret;
+    }
+    inline void prefetchDone()
+    {
+        in->prefetchDone();
+    }
 };
 
 /////////////////////////////////////////////////

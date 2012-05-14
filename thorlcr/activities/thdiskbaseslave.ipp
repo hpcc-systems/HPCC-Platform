@@ -40,7 +40,6 @@ protected:
     StringAttr filename, logicalFilename;
     unsigned __int64 fileBaseOffset;
     const char *kindStr;
-    rowcount_t progress;
 
     CDiskReadSlaveActivityBase &activity;
 
@@ -49,7 +48,6 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CDiskPartHandlerBase(CDiskReadSlaveActivityBase &activity);
-    rowcount_t getProgress() { return progress; }
     virtual void close(CRC32 &fileCRC) = 0;
     virtual void open();
 
@@ -85,11 +83,11 @@ protected:
     ThorDataLinkMetaInfo cachedMetaInfo;
     Owned<CDiskPartHandlerBase> partHandler;
     Owned<IExpander> eexp;
+    rowcount_t diskProgress;
 
 public:
     CDiskReadSlaveActivityBase(CGraphElementBase *_container);
     const char *queryLogicalFilename(unsigned index);
-    rowcount_t getHandlerProgress() { return partHandler.get()?partHandler->getProgress():0; }
     IRowInterfaces * queryDiskRowInterfaces();
     void start();
 
