@@ -38,8 +38,12 @@
           <row>
             <entry><emphasis>command</emphasis></entry>
 
-            <entry>The name of a program to execute. This must have already
-            been deployed on the HPCC cluster.</entry>
+            <entry>The name of a program to execute, which must take any input
+            data through stdin and produce its output through stdout. This
+            program must have already been deployed on the HPCC cluster in the
+            Thor instance directory (such as: /var/lib/HPCCSystems/mythor/) but that can be
+            overridden by the externalProgDir environment setting for the Thor
+            cluster). </entry>
           </row>
 
           <row>
@@ -102,8 +106,10 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">PIPE </emphasis>function has two forms.
-  </para>
+  <para>The <emphasis role="bold">PIPE </emphasis>function allows ECL code to
+  launch an external <emphasis>command</emphasis> program on each node,
+  effectively parallelizing a non-parallel processing program. PIPE has two
+  forms:</para>
 
   <para>Form 1 takes no input, executes the <emphasis>command</emphasis>, and
   produces its output in the <emphasis>recorddef </emphasis>format. This is an
@@ -137,5 +143,6 @@ p := PIPE('echo &lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson
 OUTPUT(p);
 </programlisting>
 
-  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="DATASET">DATASET</link></para>
+  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="DATASET">DATASET</link></para>
 </sect1>

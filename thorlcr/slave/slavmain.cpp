@@ -44,6 +44,7 @@
 #include "thorport.hpp"
 #include "thgraphslave.hpp"
 #include "slave.ipp"
+#include "thcompressutil.hpp"
 
 //---------------------------------------------------------------------------
 
@@ -342,6 +343,38 @@ public:
                     {
                         doReply = false;
                         stopped = true;
+                        break;
+                    }
+                    case GraphGetResult:
+                    {
+                        StringAttr jobKey;
+                        msg.read(jobKey);
+                        PROGLOG("GraphGetResult: %s", jobKey.get());
+                        CJobSlave *job = jobs.find(jobKey.get());
+                        if (job)
+                        {
+                            graph_id gid;
+                            msg.read(gid);
+                            Owned<CGraphBase> graph = job->getGraph(gid);
+                            if (!graph)
+                            {
+                                Owned<IThorException> e = MakeThorException(0, "GraphGetResult: graph not found");
+                                e->setGraphId(gid);
+                                throw e.getClear();
+                            }
+                            unsigned resultId;
+                            msg.read(resultId);
+                            mptag_t replyTag = job->deserializeMPTag(msg);
+                            msg.setReplyTag(replyTag);
+                            Owned<IThorResult> result = graph->getResult(resultId);
+                            if (!result)
+                                throw MakeGraphException(graph, 0, "GraphGetResult: result not found: %d", resultId);
+                            msg.clear();
+
+                            Owned<IRowStream> resultStream = result->getRowStream();
+                            sendInChunks(job->queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
+                            doReply = false;
+                        }
                         break;
                     }
                     default:

@@ -1,7 +1,9 @@
 #!/bin/bash
 
+source @HPCC_ETC_DIR@/init.d/hpcc_common
+set_environmentvars
 
-source @HDFSCONFIG@/hdfsstream.conf 
+source @HPCC_CONF_DIR@/@HDFSCONN_CONF_FILE@ 
 
 CLASSPATH=$CLASSPATH:$HADOOP_LOCATION/conf
 
@@ -22,7 +24,6 @@ nodeid=0;
 
 for p in $*;
  do
-#   echo "[$p]" >> $LOG;
    if [ "$idfound" = "1" ];
    then
         nodeid=$p;
@@ -33,7 +34,17 @@ for p in $*;
    fi
 done;
 
-LOG=/tmp/HPCC-HadoopStream.log.$nodeid.$PID
+#the log variable is read from the HPCC Platform config
+LOGS_LOCATION=$log
+HDFSCONNLOGLOC=$LOGS_LOCATION/mydataconnectors
+LOG=$HDFSCONNLOGLOC/HDFSCONNECTOR.$nodeid.$PID.log
+
+if [ -e $HDFSCONNLOGLOC ]
+  then
+    echo "log file found"	>> $LOG
+  else
+    mkdir $HDFSCONNLOGLOC
+fi
 
 echo "Script starting"		>> $LOG
 echo "Running as user: $USER"   >> $LOG
@@ -47,10 +58,10 @@ then
 	exit 1;
 elif [ $1 = "-mf" ];
 then
-	/opt/HPCCSystems/bin/hdfsstream "${@}" 2>> $LOG;
+	/opt/HPCCSystems/bin/hdfsconnector "${@}" 2>> $LOG;
 elif [ $1 = "-si" ];
 then
-	/opt/HPCCSystems/bin/hdfsstream  "${@}" 2>> $LOG;
+	/opt/HPCCSystems/bin/hdfsconnector  "${@}" 2>> $LOG;
 elif [ $1 = "-so" ];
 then
 
@@ -68,9 +79,9 @@ then
 
 	ls -l "$HPCCTMPFILE" 				>> $LOG
 
-	echo "calling hdfsstream..." 		>> $LOG
+	echo "calling hdfsconnector..." 		>> $LOG
 
-	/opt/HPCCSystems/bin/hdfsstream "${@}" -pipepath $HPCCTMPFILE  	2>> $LOG
+	/opt/HPCCSystems/bin/hdfsconnector "${@}" -pipepath $HPCCTMPFILE  	2>> $LOG
 
 	echo "write exited with: $?" 			>> $LOG
 elif [ $1 = "-sop" ];
@@ -85,9 +96,9 @@ then
 	then
 		rm -f /tmp/HPCC-FIFO.err.$PID 2> /dev/null
 	else
-		echo "  WARNING (hdfsstream mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
+		echo "  WARNING (hdfsconnector mkfifo) error registered in file: /tmp/HPCC-FIFO.err.$PID " >> $LOG
 	fi
-	/opt/HPCCSystems/bin/hdfsstream  "${@}" -pipepath $pipepath	2>> $LOG &
+	/opt/HPCCSystems/bin/hdfsconnector  "${@}" -pipepath $pipepath	2>> $LOG &
 	echo "redirecting stdin to named pipe ... " 	>> $LOG
 	cat < /dev/stdin > "$pipepath"			2>> $LOG
 

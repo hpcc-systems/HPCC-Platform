@@ -31,14 +31,21 @@
 
         <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
-        <blockquote>
-          <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
-          SuSe you must set a password for the hpcc user on all nodes. One way
-          to do do this is to issue the following command:</para>
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
 
-          <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
-          set the password on ALL nodes.</para>
-        </blockquote>
+            <listitem>
+              <para>For ANY version of SuSe you must set a password for the
+              <emphasis role="bluebold">hpcc</emphasis> user on all nodes. One
+              way to do do this is to issue the following command:</para>
+
+              <programlisting>sudo passwd hpcc</programlisting>
+
+              <para>Be sure to set the password on ALL nodes</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
 
         <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
@@ -54,7 +61,7 @@
     <title>Editing and distributing the Configuration file</title>
 
     <para>After you install the HDFS to HPCC Connector package, you must edit
-    the configuration file and push it out to all nodes. </para>
+    the configuration file and push it out to all nodes.</para>
 
     <orderedlist>
       <listitem>
@@ -63,7 +70,7 @@
 
       <listitem>
         <para>Edit the configuration file <emphasis
-        role="bluebold">/opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</emphasis>.</para>
+        role="bluebold">/opt/HPCCSystems/etc/HPCCSystems/hdfsconnector.conf</emphasis>.</para>
 
         <para>The configuration file contains one line:</para>
 
@@ -78,18 +85,18 @@
         push.sh script:</para>
 
         <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh /
-             /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf /
-             /opt/HPCCSystems/etc/HPCCSystems/hdfsstream.conf</programlisting></para>
+             /opt/HPCCSystems/etc/HPCCSystems/hdfsconnector.conf /
+             /opt/HPCCSystems/etc/HPCCSystems/hdfsconnector.conf</programlisting></para>
       </listitem>
     </orderedlist>
 
     <para></para>
   </sect2>
 
-  <sect2>
+  <sect2 role="brk">
     <title>Installing the ECL library to your ECL IDE source folder</title>
 
-    <para>The HDSF-to-HPCC Connector library is a single ECL file containing
+    <para>The HDSF to HPCC Connector library is a single ECL file containing
     three MACROs. These steps explain how to install to your ECL source
     repository.</para>
 
@@ -100,8 +107,8 @@
 
         <listitem>
           <para>Extract the contents of the zip file to the ECL IDE source
-          folder. Make sure to enable the option to keep the folder structure
-          within Zip file.</para>
+          folder. Make sure to select the option to use the folder names from
+          the Zip file.</para>
 
           <para>The ECL Source folder is typically located at <emphasis
           role="bluebold">C:\Users\Public\Documents\HPCC Systems\ECL\My
@@ -112,7 +119,9 @@
           Compiler &gt;&gt; ECL Folders</emphasis>.</para>
 
           <para>When you are finished, the library will be in a repository
-          folder named <emphasis role="bluebold">DataStream</emphasis>.</para>
+          folder named <emphasis role="bluebold">DataConnectors</emphasis>. It
+          will contain one file named
+          <emphasis>HDFSConnector.ecl</emphasis>.</para>
         </listitem>
       </orderedlist></para>
   </sect2>
