@@ -30,7 +30,7 @@
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
 
-static const char* FEATURE_URL = "SmcAccess";
+static const char* FEATURE_URL = "SMCAccess";
 const char* THORQUEUE_FEATURE = "ThorQueueAccess";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
