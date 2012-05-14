@@ -49,6 +49,7 @@ private:
     Owned<IJoinHelper> joinhelper;
     CriticalSection joinHelperCrit;
     Owned<IBarrier> barrier;
+    SocketEndpoint server;
 
     bool isUnstable()
     {
@@ -111,6 +112,7 @@ public:
         compare = NULL;
         keyserializer = NULL;
         inputStopped = false;
+        mpTagRPC = TAG_NULL;
     }
 
     ~SelfJoinSlaveActivity()
@@ -123,12 +125,12 @@ public:
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {       
         appendOutputLinked(this);
-        if(!isLocal) {
+        if(!isLocal)
+        {
             mpTagRPC = container.queryJob().deserializeMPTag(data);
             mptag_t barrierTag = container.queryJob().deserializeMPTag(data);
             barrier.setown(container.queryJob().createBarrier(barrierTag));
             portbase = allocPort(NUMSLAVEPORTS);
-            SocketEndpoint server;
             server.setLocalHost(portbase);
             sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
             server.serialize(slaveData);
@@ -143,7 +145,18 @@ public:
         else
             ActPrintLog("SELFJOIN: GLOBAL");
     }
-
+    virtual void reset()
+    {
+        CSlaveActivity::reset();
+        if (sorter) return; // JCSMORE loop - shouldn't have to recreate sorter between loop iterations
+        if (!isLocal && TAG_NULL != mpTagRPC)
+            sorter.setown(CreateThorSorter(this, server,&container.queryJob().queryIDiskUsage(),&container.queryJob().queryJobComm(),mpTagRPC));
+    }
+    virtual void kill()
+    {
+        sorter.clear();
+        CSlaveActivity::kill();
+    }
 
 // IThorDataLink
     virtual void start()
