@@ -12,8 +12,9 @@
   role="bold">)</emphasis><emphasis role="bold"></emphasis></para>
 
   <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
-  expression </emphasis><emphasis role="bold">)</emphasis><emphasis
-  role="bold"></emphasis></para>
+  expression </emphasis><emphasis role="bold"> [<emphasis>,</emphasis>
+  MERGE(</emphasis><emphasis> sorts </emphasis><emphasis role="bold">) ]
+  )</emphasis></para>
 
   <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset, index
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, joincondition
@@ -23,9 +24,9 @@
   <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
   </emphasis><emphasis role="bold"> SKEW<indexterm>
       <primary>SKEW</primary>
-    </indexterm>(</emphasis><emphasis> minskew </emphasis><emphasis
-  role="bold">[</emphasis><emphasis>, maxskew</emphasis><emphasis role="bold">
-  ] ) )</emphasis></para>
+    </indexterm>(</emphasis><emphasis> maxskew </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, skewlimit</emphasis><emphasis
+  role="bold"> ] ) )</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
@@ -46,6 +47,20 @@
             <entry>An integer expression that specifies how to distribute the
             recordset, usually using one the HASH functions for
             efficiency.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MERGE</emphasis></entry>
+
+            <entry>Specifies the data is redistributed maintaining the local
+            sort order on each node.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>sorts</emphasis></entry>
+
+            <entry>The sort expressions by which the data has been locally
+            sorted.</entry>
           </row>
 
           <row>
@@ -71,14 +86,14 @@
           </row>
 
           <row>
-            <entry><emphasis>minskew</emphasis></entry>
+            <entry><emphasis>maxskew</emphasis></entry>
 
             <entry>A floating point number in the range of zero (0.0) to one
             (1.0) specifying the minimum skew to allow (0.1=10%).</entry>
           </row>
 
           <row>
-            <entry><emphasis>maxskew</emphasis></entry>
+            <entry><emphasis>skewlimit</emphasis></entry>
 
             <entry>Optional. A floating point number in the range of zero
             (0.0) to one (1.0) specifying the maximum skew to allow
@@ -124,6 +139,10 @@
     up on the same node. DISTRIBUTE implicitly performs a modulus operation if
     an <emphasis>expression</emphasis> value is not in the range of the number
     of nodes available.</para>
+
+    <para>If the MERGE option is specified, the <emphasis>recordset</emphasis>
+    must have been locally sorted by the <emphasis>sorts</emphasis>
+    expressions. This avoids resorting.</para>
   </sect2>
 
   <sect2 id="Index-based_DISTRIBUTE">
@@ -145,9 +164,9 @@
     <title>Skew-based DISTRIBUTE</title>
 
     <para><emphasis role="bold">DISTRIBUTE(</emphasis><emphasis>recordset,
-    </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> minskew
+    </emphasis><emphasis role="bold">SKEW(</emphasis><emphasis> maxskew
     </emphasis><emphasis role="bold">[</emphasis><emphasis>,
-    maxskew</emphasis><emphasis role="bold"> ] ) )</emphasis></para>
+    skewlimit</emphasis><emphasis role="bold"> ] ) )</emphasis></para>
 
     <para>This form redistributes the <emphasis>recordset,</emphasis> but only
     if necessary. The purpose of this form is to replace the use of
@@ -161,12 +180,12 @@
     <para>MAX(ABS(AvgPartSize-PartSize[node])/AvgPartSize)</para>
 
     <para>If the <emphasis>recordset</emphasis> is skewed less than
-    <emphasis>minskew </emphasis>then the DISTRIBUTE is a no-op. If
-    <emphasis>maxskew</emphasis> is specified and the skew on any node exceeds
-    this, the job fails with an error message (specifying the first node
-    number exceeding skew), otherwise the data is redistributed to ensure that
-    the data is distributed with less skew than
-    <emphasis>minskew</emphasis>.</para>
+    <emphasis>maxskew </emphasis>then the DISTRIBUTE is a no-op. If
+    <emphasis>skewlimit</emphasis> is specified and the skew on any node
+    exceeds this, the job fails with an error message (specifying the first
+    node number exceeding the limit), otherwise the data is redistributed to
+    ensure that the data is distributed with less skew than
+    <emphasis>maxskew</emphasis>.</para>
 
     <para>Example:</para>
 
