@@ -1,7 +1,7 @@
-project(hdfsstream)
+project(hdfsconnector)
 
-option(USE_HDFSSTREAM "Configure use of hdstream plugin" OFF)
-if ( USE_HDFSSTREAM )
+option(USE_HDFSCONNECTOR "Configure use of hdfs data connector" OFF)
+if ( USE_HDFSCONNECTOR )
 add_subdirectory (ecl)
 	option(HADOOP_PATH "Set the Hadoop path.")
 	if( NOT HADOOP_PATH )
@@ -12,15 +12,17 @@ add_subdirectory (ecl)
 	#generate config for script.
 	#add script processor for vars.
 
-	configure_file("hdfsstream.conf.in" "hdfsstream.conf")
+	set(HPCC_ETC_DIR "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/etc")
+	set(HPCC_CONF_DIR "${CMAKE_INSTALL_PREFIX}/${OSSDIR}${CONFIG_DIR}")
+	set(HDFSCONN_CONF_FILE "hdfsconnector.conf")
 
-	set(HDFSCONFIG "${CMAKE_INSTALL_PREFIX}/${OSSDIR}${CONFIG_DIR}")
+	configure_file("hdfsconnector.conf.in" "hdfsconnector.conf")
 	configure_file("hdfspipe.in" "hdfspipe" @ONLY )
 
 	find_package(JNI REQUIRED)
 	find_package(LIBHDFS REQUIRED)
 
-	set( SRC hdfsstream.cpp )
+	set( SRC hdfsconnector.cpp )
 
 	include_directories (
 					${CMAKE_BINARY_DIR}
@@ -30,13 +32,13 @@ add_subdirectory (ecl)
 					${JAVA_INCLUDE_PATH2}
 					${LIBHDFS_INCLUDE_DIR}	)
 
-	add_executable( hdfsstream ${SRC} )
+	add_executable( hdfsconnector ${SRC} )
 
 	set ( INSTALLDIR "${OSSDIR}/bin")
-	Install ( TARGETS hdfsstream DESTINATION ${INSTALLDIR} COMPONENT Runtime)
+	Install ( TARGETS hdfsconnector DESTINATION ${INSTALLDIR} COMPONENT Runtime)
 	Install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hdfspipe DESTINATION ${INSTALLDIR} COMPONENT Runtime )
-	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsstream.conf DESTINATION ${HDFSCONFIG} COMPONENT Runtime )
-	target_link_libraries ( hdfsstream
+	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsconnector.conf DESTINATION ${HPCC_CONF_DIR} COMPONENT Runtime )
+	target_link_libraries ( hdfsconnector
 					${JAVA_JVM_LIBRARY}
 					${LIBHDFS_LIBRARIES})
 endif()
