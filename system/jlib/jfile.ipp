@@ -109,11 +109,12 @@ private:
 
     private:
       CAbortMonitorThread();
-      CAbortMonitorThread(const CAbortMonitorThread &abort_thread) : m_inotify_queue(abort_thread.m_inotify_queue), m_quitThread(abort_thread.m_quitThread){};
+      CAbortMonitorThread(const CAbortMonitorThread &abort_thread) : m_quitThread(abort_thread.m_quitThread), m_abortThread(abort_thread.m_abortThread), m_inotify_queue(abort_thread.m_inotify_queue), m_checkInterval(abort_thread.m_checkInterval), m_abortSem(abort_thread.m_abortSem), m_pWorkerThread(abort_thread.m_pWorkerThread) {};
       CAbortMonitorThread& operator=(CAbortMonitorThread const&){};
       virtual void main();
 
-      bool &m_quitThread;
+      bool m_quitThread;
+      bool &m_abortThread;
       int &m_inotify_queue;
       unsigned int m_checkInterval;
       Semaphore *m_abortSem;
