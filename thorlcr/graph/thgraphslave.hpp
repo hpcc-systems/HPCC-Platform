@@ -59,7 +59,6 @@ public:
     virtual void init(MemoryBuffer &in, MemoryBuffer &out) { }
     virtual void processDone(MemoryBuffer &mb) { };
     virtual void abort();
-    virtual void kill() { CActivityBase::kill(); }
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const;
     virtual MemoryBuffer &getInitializationData(unsigned slave, MemoryBuffer &mb) const;
 

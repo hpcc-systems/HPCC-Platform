@@ -2354,7 +2354,10 @@ public:
         rhsProgressCount = joinhelper->getRhsProgress();
         strmL.clear();
         strmR.clear();
-        joinhelper.clear();
+        {
+            CriticalBlock b(joinHelperCrit);
+            joinhelper.clear();
+        }
         dataLinkStop();
     }
     void kill()
