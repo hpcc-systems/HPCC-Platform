@@ -529,12 +529,6 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
         throw exception.getClear();
 }
 
-bool CSlaveGraph::prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async)
-{
-    CriticalBlock b(progressCrit);
-    return CGraphBase::prepare(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async);
-}
-
 void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
 {
     CriticalBlock b(progressCrit);
