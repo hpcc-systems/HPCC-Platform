@@ -133,6 +133,7 @@ extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createTransformFromRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createNullTransform(IHqlExpression * record);
+extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector);
 
 extern HQL_API IHqlExpression * getFailCode(IHqlExpression * failExpr);
 extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted);

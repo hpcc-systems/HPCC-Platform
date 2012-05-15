@@ -37,6 +37,15 @@
 
 //#define PRESERVE_TRANSFORM_ANNOTATION     // improves the text in the graph, occasionally prevents optimizations.  Maybe add on a debug flag.
 //#define POST_COMMON_ANNOTATION            // would be better if this just commoned up transforms...
+//#define PARANOID_CHECKING
+
+//MORE: Extend UsedFieldSet/NestedField so that once all is set it is never modified and then allow a LINK from
+//a nestedfield to clone.
+//Problems:
+//  combine the two classes for simplicity
+//  save links in the complexextra rather than objects.
+//  Ensure all functions that modify now return objects + clone if modifying and was all.
+//  Need to implement gathered-enough in a different way so it isn't shared.
 
 enum
 {
@@ -47,45 +56,154 @@ enum
     CostNetworkCopy         = 10,
 };
 
+//-------------------------------------------------------------------------------------------------
+
+IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
+{
+    ForEachChild(i, transform)
+    {
+        IHqlExpression * cur = transform->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            {
+                IHqlExpression * ret = queryTransformAssign(cur, searchField);
+                if (ret)
+                    return ret;
+                break;
+            }
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
+                if (lhs == searchField)
+                    return cur->queryChild(1);
+                break;
+            }
+        }
+    }
+    return NULL;
+}
+
+//-------------------------------------------------------------------------------------------------
 
 void UsedFieldSet::addUnique(IHqlExpression * field)
 {
+    //MORE: Add if (!all test to short-circuit contains)
     if (!contains(*field))
-        append(*LINK(field));
+        appendField(*LINK(field));
 }
 
-void UsedFieldSet::append(IHqlExpression & field)
+NestedField * UsedFieldSet::addNested(IHqlExpression * field)
 {
+    NestedField * match = findNested(field);
+    if (!match)
+    {
+        assertex(originalFields);
+#ifdef PARANOID_CHECKING
+        assertex(!contains(*field));
+        assertex(originalFields->contains(*field));
+#endif
+        NestedField * original = originalFields->findNested(field);
+        assertex(original);
+        match = new NestedField(field, &original->used);
+        appendNested(*LINK(field), match);
+    }
+    else
+    {
+        assertex(contains(*field));
+    }
+
+    return match;
+}
+
+void UsedFieldSet::appendNested(IHqlExpression & ownedField, NestedField * ownedNested)
+{
+    appendField(ownedField);
+    nested.append(*ownedNested);
+}
+
+bool UsedFieldSet::checkAllFieldsUsed()
+{
+    if (all)
+        return true;
+    assertex(originalFields);
+    if (fields.ordinality() != originalFields->fields.ordinality())
+        return false;
+    ForEachItemIn(i, nested)
+    {
+        NestedField & cur = nested.item(i);
+        if (!cur.used.checkAllFieldsUsed())
+            return false;
+    }
+    all = true;
+    return true;
+}
+
+bool UsedFieldSet::allGathered() const
+{
+    if (maxGathered == (unsigned)-1)
+        return true;
+    if (maxGathered < fields.ordinality())
+        return false;
+    ForEachItemIn(i, nested)
+    {
+        if (!nested.item(i).used.allGathered())
+            return false;
+    }
+    return true;
+}
+
+void UsedFieldSet::appendField(IHqlExpression & ownedField)
+{
+#ifdef PARANOID_CHECKING
+    assertex(!contains(ownedField));
+#endif
 #ifdef USE_IPROJECT_HASH
     if (!all)
-        hash.add(&field);
+        hash.add(&ownedField);
 #endif
-    fields.append(field);
-}
-
-void UsedFieldSet::cloneFields(const UsedFieldSet & source)
-{
-#ifdef USE_IPROJECT_HASH
-    ForEachItemIn(i, source.fields)
-        append(OLINK(source.fields.item(i)));
-#else
-    appendArray(fields, source.fields);
+    fields.append(ownedField);
+#ifdef PARANOID_CHECKING
+    if (originalFields)
+        assertex(originalFields->contains(ownedField));
 #endif
 }
-
 
 void UsedFieldSet::clone(const UsedFieldSet & source)
 {
+    assertex(originalFields == source.originalFields);
+    ForEachItemIn(i, source.fields)
+        appendField(OLINK(source.fields.item(i)));
+
+    ForEachItemIn(i1, source.nested)
+        nested.append(*source.nested.item(i1).clone());
+
     if (source.all)
         all = true;
 
-    cloneFields(source);
+    finalRecord.set(source.finalRecord);
+}
+
+
+unsigned UsedFieldSet::getOriginalPosition(IHqlExpression * field) const
+{
+    assertex(originalFields == this);
+    unsigned match = fields.find(*field);
+    if (match != NotFound)
+        return match;
+    assertex(field->isDatarow());
+    assertex(finalRecord);
+    OwnedHqlExpr originalField = finalRecord->querySimpleScope()->lookupSymbol(field->queryName());
+    assertex(originalField && originalField != field);
+    unsigned matchOriginal = fields.find(*originalField);
+    assertex(matchOriginal != NotFound);
+    return matchOriginal;
 }
 
 
 int UsedFieldSet::compareOrder(IHqlExpression * left, IHqlExpression * right) const
 {
-    return fields.find(*left) - fields.find(*right);
+    return (int)(getOriginalPosition(left) - getOriginalPosition(right));
 }
 
 
@@ -100,9 +218,389 @@ bool UsedFieldSet::contains(IHqlExpression & field) const
 #endif
 }
 
-void UsedFieldSet::getFields(HqlExprArray & target) const
+bool UsedFieldSet::contains(_ATOM name) const
 {
-    appendArray(target, fields);
+    if (all)
+        return true;
+    ForEachItemIn(i, fields)
+    {
+        if (fields.item(i).queryName() == name)
+            return true;
+    }
+    return false;
+}
+
+//Calculate left - right
+void UsedFieldSet::createDifference(const UsedFieldSet & left, const UsedFieldSet & right)
+{
+    if (right.includeAll())
+        return;
+
+    //if all are used and non modifyable this code will need changing.
+    ForEachItemIn(i, left.fields)
+    {
+        IHqlExpression & cur = left.fields.item(i);
+        if (cur.isDatarow())
+        {
+            NestedField * leftNested = left.findNested(&cur);
+            NestedField * rightNested = right.findNested(&cur);
+            assertex(leftNested);
+            if (rightNested)
+            {
+                Owned<NestedField> diffNested = new NestedField(&cur, leftNested->used.queryOriginal());
+                diffNested->used.createDifference(leftNested->used, rightNested->used);
+                if (!diffNested->isEmpty())
+                    appendNested(OLINK(cur), diffNested.getClear());
+            }
+            else if (!leftNested->isEmpty())
+            {
+                appendNested(OLINK(cur), leftNested->clone());
+            }
+        }
+        else
+        {
+            if (!right.contains(cur))
+                appendField(OLINK(cur));
+        }
+    }
+}
+
+
+NestedField * UsedFieldSet::findNested(IHqlExpression * field) const
+{
+    ForEachItemIn(i, nested)
+    {
+        NestedField & cur = nested.item(i);
+        if (cur.field == field)
+            return &cur;
+    }
+    return NULL;
+}
+
+IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHqlExpression * value, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const
+{
+    if (!contains(*field))
+        return NULL;
+
+    OwnedHqlExpr newValue = LINK(value);
+    OwnedHqlExpr newField;
+    if (field->isDatarow())
+    {
+        NestedField * match = findNested(field);
+        assertex(match);
+        NestedField * exception = exceptions ? exceptions->findNested(field) : NULL;
+        if (!match->isEmpty())
+        {
+            bool createSubset = true;
+            if (match->used.checkAllFieldsUsed())
+            {
+                if (!exception || exception->isEmpty())
+                {
+                    createSubset = false;
+                }
+                else if (exception && exception->used.checkAllFieldsUsed())
+                {
+                    newValue.setown(createNullExpr(field));
+                    createSubset = false;
+                }
+            }
+
+            if (createSubset)
+            {
+                newField.setown(finalRecord->querySimpleScope()->lookupSymbol(field->queryName()));
+                assertex(newField);
+                assertex(exception || newField != field);
+
+                //Two options - this is either a no_createrow, and we extract the assignments from the transform
+                //or we create a no_createrow to extract the values from the other record
+                OwnedHqlExpr newTransform;
+                UsedFieldSet * exceptionFields = exception ? &exception->used : NULL;
+                if (value->getOperator() == no_createrow)
+                {
+                    newTransform.setown(match->used.createFilteredTransform(value->queryChild(0), exceptionFields));
+                }
+                else
+                {
+                    newTransform.setown(match->used.createRowTransform(value, exceptionFields));
+                }
+
+                newValue.setown(createRow(no_createrow, newTransform.getClear()));
+#if defined(PRESERVE_TRANSFORM_ANNOTATION)
+                newValue.setown(value->cloneAllAnnotations(newValue));
+#endif
+            }
+        }
+        else
+            newValue.clear();
+    }
+    else
+    {
+        if (exceptions && exceptions->contains(*field))
+        {
+            newValue.setown(createNullExpr(field));
+        }
+    }
+
+    if (newValue)
+    {
+        IHqlExpression * rhs = newField ? newField.get() : field;
+        OwnedHqlExpr newLhs = createSelectExpr(LINK(newSelf), LINK(rhs));
+        return createAssign(newLhs.getClear(), newValue.getClear());
+    }
+    return NULL;
+}
+
+void UsedFieldSet::createFilteredAssigns(HqlExprArray & assigns, IHqlExpression * transform, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const
+{
+    ForEachChild(i, transform)
+    {
+        IHqlExpression * cur = transform->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                IHqlExpression * field = lhs->queryChild(1);
+                IHqlExpression * value = cur->queryChild(1);
+                IHqlExpression * assign = createFilteredAssign(field, value, newSelf, exceptions);
+                if (assign)
+                    assigns.append(*assign);
+                break;
+            }
+        case no_assignall:
+            createFilteredAssigns(assigns, cur, newSelf, exceptions);
+            break;
+        default:
+            assigns.append(*LINK(cur));
+            break;
+        }
+    }
+}
+
+
+IHqlExpression * UsedFieldSet::createFilteredTransform(IHqlExpression * transform, const UsedFieldSet * exceptions) const
+{
+    OwnedHqlExpr self = getSelf(finalRecord);
+    HqlExprArray assigns;
+    createFilteredAssigns(assigns, transform, self, exceptions);
+    OwnedHqlExpr ret = createValue(transform->getOperator(), makeTransformType(finalRecord->getType()), assigns);
+#if defined(PRESERVE_TRANSFORM_ANNOTATION)
+    return transform->cloneAllAnnotations(ret);
+#else
+    return ret.getClear();
+#endif
+}
+
+IHqlExpression * UsedFieldSet::createRowTransform(IHqlExpression * row, const UsedFieldSet * exceptions) const
+{
+    OwnedHqlExpr self = getSelf(finalRecord);
+    HqlExprArray assigns;
+    ForEachItemIn(i, fields)
+    {
+        IHqlExpression & field = fields.item(i);
+        OwnedHqlExpr value = createNewSelectExpr(LINK(row), LINK(&field));
+        OwnedHqlExpr assign = createFilteredAssign(&field, value, self, exceptions);
+        if (assign)
+            assigns.append(*assign.getClear());
+    }
+
+    return createValue(no_transform, makeTransformType(finalRecord->getType()), assigns);
+}
+
+
+void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
+{
+    assertex(originalFields);
+    if (finalRecord)
+        return;
+
+    ForEachItemIn(i1, nested)
+        nested.item(i1).used.calcFinalRecord(canPack, true);
+
+    IHqlExpression * originalRecord = queryOriginalRecord();
+    if (checkAllFieldsUsed())
+    {
+        if (canPack)
+            finalRecord.setown(getPackedRecord(originalRecord));
+        else
+            finalRecord.set(originalRecord);
+        return;
+    }
+
+    HqlExprArray recordFields;
+    ForEachItemIn(i, fields)
+    {
+        IHqlExpression & cur = fields.item(i);
+        if (cur.isDatarow())
+        {
+            NestedField * match = findNested(&cur);
+            assertex(match);
+            IHqlExpression * record = cur.queryRecord();
+            IHqlExpression * newRecord = match->used.queryFinalRecord();
+            if (record == newRecord)
+            {
+                recordFields.append(OLINK(cur));
+            }
+            else if (newRecord)
+            {
+                HqlExprArray args;
+                unwindChildren(args, &cur);
+                OwnedHqlExpr newField = createField(cur.queryName(), makeRowType(newRecord->getType()), args);
+                recordFields.append(*newField.getClear());
+            }
+        }
+        else
+            recordFields.append(OLINK(cur));
+    }
+
+    if (originalFields)
+    {
+        //Reorder the record to match the original fields
+        RecordOrderComparer compare(*originalFields);
+        qsortvec((void * *)recordFields.getArray(), recordFields.ordinality(), compare);
+    }
+
+    if (recordFields.ordinality() == 0)
+    {
+        if (ignoreIfEmpty)
+            return;
+        recordFields.append(*createAttribute(_nonEmpty_Atom));
+    }
+
+    finalRecord.setown(createRecord(recordFields));
+    if (canPack)
+        finalRecord.setown(getPackedRecord(finalRecord));
+
+    OwnedHqlExpr serializedRecord = getSerializedForm(finalRecord);
+    if (maxRecordSizeUsesDefault(serializedRecord))
+    {
+        HqlExprArray recordFields;
+        unwindChildren(recordFields, finalRecord);
+        //Lost some indication of the record size->add an attribute
+        IHqlExpression * max = originalRecord->queryProperty(maxLengthAtom);
+        if (max)
+            recordFields.append(*LINK(max));
+        else
+        {
+            bool isKnownSize, useDefaultRecordSize;
+            OwnedHqlExpr oldSerializedRecord = getSerializedForm(originalRecord);
+            unsigned oldRecordSize = getMaxRecordSize(oldSerializedRecord, 0, isKnownSize, useDefaultRecordSize);
+            if (!useDefaultRecordSize)
+                recordFields.append(*createAttribute(maxLengthAtom, getSizetConstant(oldRecordSize)));
+        }
+        finalRecord.setown(createRecord(recordFields));
+    }
+}
+
+void UsedFieldSet::gatherExpandSelectsUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, IHqlExpression * selector, IHqlExpression * source)
+{
+    assertex(selfSelects ? selector != NULL : true);
+    for (unsigned i1 = maxGathered; i1 < fields.ordinality(); i1++)
+    {
+        IHqlExpression & cur = fields.item(i1);
+        if (!cur.isDatarow())
+        {
+            if (selfSelects)
+            {
+                OwnedHqlExpr selected = createSelectExpr(LINK(selector), LINK(&cur));
+                selfSelects->append(*selected.getClear());
+            }
+            if (parentSelects)
+            {
+                OwnedHqlExpr sourceSelected = createSelectExpr(LINK(source), LINK(&cur));
+                parentSelects->append(*sourceSelected.getClear());
+            }
+        }
+    }
+    maxGathered = fields.ordinality();
+
+    ForEachItemIn(i2, nested)
+    {
+        NestedField & curNested = nested.item(i2);
+        IHqlExpression * field = curNested.field;
+        OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(field)) : NULL;
+        OwnedHqlExpr sourceSelected = createSelectExpr(LINK(source), LINK(field));
+
+        if (!curNested.includeAll())
+        {
+            curNested.used.gatherExpandSelectsUsed(selfSelects, parentSelects, selected, sourceSelected);
+            sourceSelected.clear();
+        }
+        else
+        {
+            curNested.used.noteGatheredAll();
+            if (selfSelects)
+                selfSelects->append(*selected.getClear());
+            if (parentSelects)
+                parentSelects->append(*sourceSelected.getClear());
+        }
+    }
+}
+
+inline bool isSelector(IHqlExpression * expr)
+{
+    return (expr->getOperator() == no_select) && !isNewSelector(expr);
+}
+
+void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform)
+{
+    for (unsigned i = maxGathered; i < fields.ordinality(); i++)
+    {
+        IHqlExpression & cur = fields.item(i);
+        if (!cur.isDatarow())
+        {
+            if (selfSelects)
+            {
+                OwnedHqlExpr selected = createSelectExpr(LINK(selector), LINK(&cur));
+                selfSelects->append(*selected.getClear());
+            }
+            if (values)
+            {
+                IHqlExpression * transformValue = queryTransformAssign(transform, &cur);
+                //If no transform value is found then we almost certainly have an invalid query (e.g, LEFT inside a
+                //global).  Don't add the value - you'll definitely get a later follow on error
+                assertex(transformValue);
+                values->append(*LINK(transformValue));
+            }
+        }
+    }
+    maxGathered = fields.ordinality();
+
+    ForEachItemIn(i2, nested)
+    {
+        NestedField & curNested = nested.item(i2);
+        if (!curNested.isEmpty() && !curNested.used.allGathered())
+        {
+            IHqlExpression * field = curNested.field;
+            OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(field)) : NULL;
+            IHqlExpression * transformValue = queryTransformAssign(transform, field);
+            assertex(transformValue);
+            bool includeThis = true;
+            if (!curNested.includeAll() && transformValue->isPure())
+            {
+                if (transformValue->getOperator() == no_createrow)
+                {
+                    curNested.used.gatherTransformValuesUsed(selfSelects, parentSelects, values, selected, transformValue->queryChild(0));
+                    includeThis = false;
+                }
+                else if (isAlwaysActiveRow(transformValue) || isSelector(transformValue))
+                {
+                    curNested.used.gatherExpandSelectsUsed(selfSelects, parentSelects, selected, transformValue);
+                    includeThis = false;
+                }
+                //otherwise use the whole value.
+            }
+
+            if (includeThis)
+            {
+                curNested.used.noteGatheredAll();
+                if (selfSelects)
+                    selfSelects->append(*selected.getClear());
+                if (values)
+                    values->append(*LINK(transformValue));
+            }
+        }
+    }
 }
 
 void UsedFieldSet::getText(StringBuffer & s) const
@@ -113,8 +611,15 @@ void UsedFieldSet::getText(StringBuffer & s) const
     s.append("[");
     ForEachItemIn(i, fields)
     {
+        IHqlExpression & cur = fields.item(i);
         if (i) s.append(",");
-        s.append(fields.item(i).queryName());
+        s.append(cur.queryName());
+        if (cur.isDatarow())
+        {
+            NestedField * match = findNested(&cur);
+            if (!match->used.checkAllFieldsUsed())
+                match->used.getText(s);
+        }
     }
     s.append("]");
 }
@@ -129,20 +634,97 @@ void UsedFieldSet::intersectFields(const UsedFieldSet & source)
         set(source);
     else
     {
-        ForEachItemInRev(i, fields)
+        finalRecord.clear();
+        ForEachItemInRev(i1, fields)
         {
-            IHqlExpression & field = fields.item(i);
-            if (!source.contains(field))
+            IHqlExpression & field = fields.item(i1);
+            if (!field.isDatarow() && !source.contains(field))
             {
-                fields.remove(i);
+                fields.remove(i1);
 #ifdef USE_IPROJECT_HASH
                 hash.remove(&field);
 #endif
             }
         }
+        ForEachItemInRev(i2, nested)
+        {
+            NestedField & cur = nested.item(i2);
+            NestedField * match = source.findNested(cur.field);
+            //MORE: If we never modify items that have been all set then the following will need changing:
+            if (match)
+            {
+                cur.used.intersectFields(match->used);
+            }
+            else
+            {
+                cur.clear();
+            }
+        }
     }
 }
 
+
+void UsedFieldSet::optimizeFieldsToBlank(const UsedFieldSet & allAssigned, IHqlExpression * transform)
+{
+    //MORE:
+    //this contains a list of fields that can be blanked instead of assigning.
+    //If there is a sequence of assignments SELF.x := LEFT.x then
+    //a) the the field will already be in the input and output records (since it is a rollup/iterate)
+    //b) if the previous field is assigned, then it may generate more efficient code to also assign this
+    //   field rather than blanking it.
+    //Therefore we should walk the transform, and if a field is an exception and previous field is used
+    //and possibly the exception is fixed length, then remove it from the exceptions.
+}
+
+bool UsedFieldSet::requiresFewerFields(const UsedFieldSet & other) const
+{
+    if (includeAll())
+        return false;
+    return (fields.ordinality() < other.fields.ordinality());
+}
+
+void UsedFieldSet::unionFields(const UsedFieldSet & source)
+{
+    if (includeAll())
+        return;
+
+    if (source.includeAll())
+        set(source);
+    else
+    {
+        ForEachItemIn(i, source.fields)
+        {
+            IHqlExpression & field = source.fields.item(i);
+            if (!contains(field))
+                appendField(OLINK(field));
+        }
+        ForEachItemIn(i1, source.nested)
+        {
+            NestedField & cur = source.nested.item(i1);
+            NestedField * match = findNested(cur.field);
+            if (match)
+                match->used.unionFields(cur.used);
+            else
+                nested.append(*cur.clone());
+        }
+    }
+}
+
+bool UsedFieldSet::isEmpty() const
+{
+    ForEachItemIn(i1, fields)
+    {
+        IHqlExpression & cur = fields.item(i1);
+        if (!cur.isDatarow())
+            return false;
+    }
+    ForEachItemIn(i2, nested)
+    {
+        if (!nested.item(i2).isEmpty())
+            return false;
+    }
+    return true;
+}
 
 void UsedFieldSet::kill()
 {
@@ -150,32 +732,107 @@ void UsedFieldSet::kill()
     hash.kill();
 #endif
     fields.kill();
+    nested.kill();
+    all = false;
+    maxGathered = 0;
+    finalRecord.clear();
 }
 
 void UsedFieldSet::set(const UsedFieldSet & source)
 {
-    all = source.all;
     kill();
-    cloneFields(source);
+    clone(source);
 }
 
-void UsedFieldSet::setAll(IHqlExpression * record)
+void UsedFieldSet::setAll()
 {
     if (all)
         return;
-
-    all = true;
+    assertex(originalFields);
     kill();
-    unwindFields(fields, record);
+    clone(*originalFields);
 }
 
-
-void UsedFieldSet::sort(ICompare & compare)
+void UsedFieldSet::setRecord(IHqlExpression * record)
 {
-    qsortvec((void * *)fields.getArray(), fields.ordinality(), compare);
+    assertex(fields.ordinality() == 0);
+    all = true;
+    unwindFields(fields, record);
+    ForEachItemIn(i, fields)
+    {
+        IHqlExpression & cur = fields.item(i);
+        if (cur.isDatarow())
+        {
+            NestedField * child = new NestedField(&cur, NULL);
+            child->used.setRecord(cur.queryRecord());
+            nested.append(*child);
+        }
+    }
+    finalRecord.set(record->queryBody());
+    originalFields = this;
 }
 
-//---------------------------------------------------------
+
+static UsedFieldSet * addNestedField(UsedFieldSet & fields, IHqlExpression * expr, IHqlExpression * selector)
+{
+    if (expr == selector)
+        return &fields;
+    IHqlExpression * ds = expr->queryChild(0);
+    UsedFieldSet * parent = addNestedField(fields, ds, selector);
+    if (parent)
+    {
+        NestedField * nested = parent->addNested(expr->queryChild(1));
+        if (!nested || nested->includeAll())
+            return NULL;
+        return &nested->used;
+    }
+    return NULL;
+}
+
+bool processMatchingSelector(UsedFieldSet & fields, IHqlExpression * select, IHqlExpression * selector)
+{
+    if (select == selector)
+    {
+        fields.setAll();
+        return true;
+    }
+
+    if (select->getOperator() != no_select)
+        return false;
+
+    //Could be <root>.blah.ds - queryDatasetSelector needs to be applied to the lhs.
+    IHqlExpression * root = queryDatasetCursor(select->queryChild(0));
+    if (root == selector)
+    {
+        if (select->isDatarow())
+        {
+            UsedFieldSet * nested = addNestedField(fields, select, selector);
+            if (nested)
+                nested->setAll();
+        }
+        else
+        {
+            IHqlExpression * ds = select->queryChild(0);
+            IHqlExpression * field = select->queryChild(1);
+            UsedFieldSet * nested = addNestedField(fields, ds, selector);
+            if (nested)
+                nested->addUnique(field);
+        }
+    }
+    return false;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+int RecordOrderComparer::docompare(const void * l,const void * r) const
+{
+    IHqlExpression * lExpr = (IHqlExpression *)l;
+    IHqlExpression * rExpr = (IHqlExpression *)r;
+    return fields.compareOrder(lExpr, rExpr);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 
 
 static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetClusterType)
@@ -271,19 +928,6 @@ bool isSensibleRecord(IHqlExpression * record)
     return true;
 }
 
-inline bool processMatchingSelector(UsedFieldSet & fields, IHqlExpression * select, IHqlExpression * ds)
-{
-    if (select == ds)
-    {
-        fields.setAll();
-        return true;
-    }
-    IHqlExpression * curDs = select->queryChild(0);
-    if (curDs == ds)
-        fields.addUnique(select->queryChild(1));
-    return false;
-}
-
 IHqlExpression * queryRootSelector(IHqlExpression * select)
 {
     loop
@@ -295,32 +939,6 @@ IHqlExpression * queryRootSelector(IHqlExpression * select)
             return select;
         select = ds;
     }
-}
-
-IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
-{
-    ForEachChild(i, transform)
-    {
-        IHqlExpression * cur = transform->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_assignall:
-            {
-                IHqlExpression * ret = queryTransformAssign(cur, searchField);
-                if (ret)
-                    return ret;
-                break;
-            }
-        case no_assign:
-            {
-                IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
-                if (lhs == searchField)
-                    return cur->queryChild(1);
-                break;
-            }
-        }
-    }
-    return NULL;
 }
 
 static node_operator queryCompoundOp(IHqlExpression * expr)
@@ -351,7 +969,6 @@ ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExpr
     gatheredSelectsUsed = false;
 
 //The following logically belong to the complexProjectInfo, see note in header
-    childDatasetType = getChildDatasetType(original);
     canOptimize = true;
     insertProject = false;
     alreadyInScope = false;
@@ -381,6 +998,7 @@ void ImplicitProjectInfo::addActiveSelects(const SelectUsedArray & src)
     }
     else
     {
+        //MORE: Should only check if exists in pre-existing selects otherwise O(N^2) in items added
         for (unsigned i=0; i < numSrc; i++)
             addActiveSelect(&src.item(i));
     }
@@ -403,7 +1021,8 @@ void ImplicitProjectInfo::removeScopedFields(IHqlExpression * selector)
     ForEachItemInRev(i, selectsUsed)
     {
         IHqlExpression & cur = selectsUsed.item(i);
-        if ((&cur == selector) || (cur.queryChild(0) == selector))
+        if ((&cur == selector) ||
+            ((cur.getOperator() == no_select) && (queryDatasetCursor(cur.queryChild(0)) == selector)))
             selectsUsed.remove(i);
     }
 }
@@ -440,118 +1059,36 @@ void ImplicitProjectInfo::removeRowsFields(IHqlExpression * expr, IHqlExpression
 
 ComplexImplicitProjectInfo::ComplexImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : ImplicitProjectInfo(_original, _kind) 
 {
-    outputInfo = NULL;
 }
 
-
-bool ComplexImplicitProjectInfo::addOutputField(IHqlExpression * field)
-{
-    if (!outputFields.contains(*field))
-    {
-        if (outputFields.ordinality() + 1 == outputInfo->outputFields.ordinality())
-            addAllOutputs();
-        else
-            outputFields.append(*LINK(field));
-        return true;
-    }
-    return false;
-}
 
 void ComplexImplicitProjectInfo::addAllOutputs()
 {
-    if (!outputFields.includeAll())
-    {
-        IHqlExpression * record = original->queryRecord();
-        if (record)
-        {
-            outputFields.setAll(record);
-            if (safeToReorderOutput() && okToOptimize())
-                newOutputRecord.setown(getPackedRecord(record));
-            else
-                newOutputRecord.set(record);
-        }
-    }
+    outputFields.setAll();
 }
 
 
 IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression * ds)
 {
+    if (ds->getOperator() == no_null)
+        return createDataset(no_null, LINK(queryOutputRecord()));
     OwnedHqlExpr seq = createSelectorSequence();
     OwnedHqlExpr left = createSelector(no_left, ds, seq);
-    OwnedHqlExpr self = getSelf(newOutputRecord);
-    HqlExprArray assigns;
-    ForEachItemIn(i, outputFields)
-    {
-        IHqlExpression * cur = &outputFields.item(i);
-        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(cur)), createSelectExpr(LINK(left), LINK(cur))));
-    }
-    IHqlExpression * transform = createValue(no_transform, makeTransformType(newOutputRecord->getType()), assigns);
+    OwnedHqlExpr self = getSelf(queryOutputRecord());
+    IHqlExpression * transform = createMappingTransform(self, left);
     if (ds->isDataset())
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
     return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
 }
 
 
-int ComplexImplicitProjectInfo::docompare(const void * l,const void * r) const
-{
-    IHqlExpression * lExpr = (IHqlExpression *)l;
-    IHqlExpression * rExpr = (IHqlExpression *)r;
-    return outputFields.compareOrder(lExpr, rExpr);
-}
-
-
 void ComplexImplicitProjectInfo::finalizeOutputRecord()
 {
     //MORE: Create them in the same order as the original record + don't change if numOutputFields = numOriginalOutputFields
-    if (!newOutputRecord)
+    if (!queryOutputRecord())
     {
-        HqlExprArray recordFields;
-        IHqlExpression * oldRecord = original->queryRecord();
-        if (outputInfo)
-        {
-            if (outputFields.ordinality() == outputInfo->outputFields.ordinality())
-            {
-                addAllOutputs();
-                return;
-            }
-
-            outputFields.sort(*outputInfo);
-            outputFields.getFields(recordFields);
-
-            if (recordFields.ordinality() == 0)
-                recordFields.append(*createAttribute(_nonEmpty_Atom));
-
-            //Ensure that maxSize is set on the new record - if necessary
-            OwnedHqlExpr newRecord = createRecord(recordFields);
-            //optionally? pack the record so that it is in the optimal alignment order
-            //assertex(safeToReorderOutput());
-            if (safeToReorderOutput() && okToOptimize())
-                newRecord.setown(getPackedRecord(newRecord));
-
-            OwnedHqlExpr serializedRecord = getSerializedForm(newRecord);
-            if (maxRecordSizeUsesDefault(serializedRecord))
-            {
-                //Lost some indication of the record size->add an attribute
-                IHqlExpression * max = oldRecord->queryProperty(maxLengthAtom);
-                if (max)
-                    recordFields.append(*LINK(max));
-                else
-                {
-                    bool isKnownSize, useDefaultRecordSize;
-                    OwnedHqlExpr oldSerializedRecord = getSerializedForm(oldRecord);
-                    unsigned oldRecordSize = getMaxRecordSize(oldSerializedRecord, 0, isKnownSize, useDefaultRecordSize);
-                    if (!useDefaultRecordSize)
-                        recordFields.append(*createAttribute(maxLengthAtom, getSizetConstant(oldRecordSize)));
-                }
-            }
-            else
-                newOutputRecord.set(newRecord);
-        }
-        else
-            outputFields.getFields(recordFields);
-
-        if (!newOutputRecord)
-            newOutputRecord.setown(createRecord(recordFields));
+        bool canPack = (safeToReorderOutput() && okToOptimize());
+        outputFields.calcFinalRecord(canPack, false);
     }
 }
 
@@ -582,7 +1119,7 @@ void ComplexImplicitProjectInfo::trace()
     s.append(getOpString(original->getOperator()));
     DBGLOG("%s", s.str());
 
-    switch (childDatasetType)
+    switch (getChildDatasetType(original))
     {
     case childdataset_none: 
     case childdataset_many_noscope:
@@ -621,38 +1158,40 @@ void ComplexImplicitProjectInfo::trace(const char * label, const UsedFieldSet & 
 }
 
 
-void ComplexImplicitProjectInfo::inheritRequiredFields(UsedFieldSet * requiredList)
+void ComplexImplicitProjectInfo::inheritRequiredFields(const UsedFieldSet & requiredList)
 {
-    if (!requiredList || requiredList->includeAll())
-        addAllOutputs();
-    else if (!outputFields.includeAll())
-    {
-        ForEachItemIn(i, *requiredList)
-            addOutputField(&requiredList->item(i));
-    }
+    //Temporary code to avoid a check.  It is permissible for the fields of an AnyTypeActivity to not match
+    if ((activityKind() == AnyTypeActivity) && !outputFields.includeAll() && requiredList.includeAll())
+        outputFields.setOriginal(requiredList.queryOriginal());
+    outputFields.unionFields(requiredList);
 }
 
 void ComplexImplicitProjectInfo::notifyRequiredFields(ComplexImplicitProjectInfo * whichInput)
 {
     if (activityKind() == PassThroughActivity)
     {
-        whichInput->inheritRequiredFields(&outputFields);
+        whichInput->inheritRequiredFields(outputFields);
+    }
+    else if ((activityKind() == RollupTransformActivity) || (activityKind() == IterateTransformActivity))
+    {
+        whichInput->inheritRequiredFields(leftFieldsRequired);
+        whichInput->inheritRequiredFields(rightFieldsRequired);
     }
     else if (original->getOperator() == no_fetch)
     {
         assertex(whichInput == &inputs.item(0));
-        whichInput->inheritRequiredFields(&rightFieldsRequired);
+        whichInput->inheritRequiredFields(rightFieldsRequired);
     }
     else if (whichInput == &inputs.item(0))
     {
-        whichInput->inheritRequiredFields(&leftFieldsRequired);
+        whichInput->inheritRequiredFields(leftFieldsRequired);
         //can occur if same dataset is used for left and right - e.g., non-symmetric self join
         if ((inputs.ordinality() > 1) && (whichInput == &inputs.item(1)))
-            whichInput->inheritRequiredFields(&rightFieldsRequired);
+            whichInput->inheritRequiredFields(rightFieldsRequired);
     }
     else if (whichInput == &inputs.item(1))
     {
-        whichInput->inheritRequiredFields(&rightFieldsRequired);
+        whichInput->inheritRequiredFields(rightFieldsRequired);
     }
     else if (inputs.contains(*whichInput))
         whichInput->addAllOutputs();
@@ -708,9 +1247,8 @@ bool ComplexImplicitProjectInfo::safeToReorderInput()
 
 void ComplexImplicitProjectInfo::setMatchingOutput(ComplexImplicitProjectInfo * other)
 {
-    assertex(other->newOutputRecord != NULL);
+    assertex(other->queryOutputRecord());
     outputFields.set(other->outputFields);
-    newOutputRecord.set(other->newOutputRecord);
 }
 
 
@@ -728,6 +1266,7 @@ ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _trans
     options.notifyOptimizedProjects = translator.notifyOptimizedProjectsLevel();
     options.optimizeSpills = _optimizeSpills;
     options.enableCompoundCsvRead = translator.queryOptions().enableCompoundCsvRead;
+    options.projectNestedTables = translator.queryOptions().projectNestedTables;
     allowActivity = true;
     options.insertProjectCostLevel = 0;
     if (transOptions.reduceNetworkTraffic)
@@ -751,7 +1290,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             //Don't allow modification if referenced from activity and non-activity context
             if (allowActivity)
             {
-                if (extra->activityKind() != NonActivity)
+                if ((extra->activityKind() != NonActivity) || (expr->getOperator() == no_record))
                     return;
                 //either allowed before, but tagged as a non
                 //If previously this was called in an allowactivity context it must have been explicitly disabled, so no point recursing.
@@ -781,7 +1320,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
     {
     case no_record:
         {
-            complexExtra->outputFields.setAll(expr);
+            complexExtra->outputFields.setRecord(expr);
             return;
         }
     case no_constant:
@@ -814,7 +1353,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                 assertex(extra->activityKind() == SourceActivity);
                 activities.append(*LINK(expr));
                 IHqlExpression * record = expr->queryRecord();
-                complexExtra->outputInfo = queryBodyComplexExtra(record);
+                complexExtra->setOriginalRecord(queryBodyComplexExtra(record));
                 analyseExpr(record);
             }
             else if (isNewSelector(expr))
@@ -825,6 +1364,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                     connect(expr->queryChild(0), expr);
                 activities.append(*LINK(expr));
             }
+            gatherFieldsUsed(expr, extra);
             return;
         case no_activerow:
             assertex(extra->activityKind() == SimpleActivity);
@@ -832,6 +1372,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             Parent::analyseExpr(expr);
             allowActivity = true;
             activities.append(*LINK(expr));
+            gatherFieldsUsed(expr, extra);
             return;
         case no_attr:
         case no_attr_expr:
@@ -953,6 +1494,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                     default:
                         extra->kind = NonActivity;
                         Parent::analyseExpr(expr);
+                        gatherFieldsUsed(expr, extra);
                         return;
                     }
                 }
@@ -1025,6 +1567,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             break;
         default:
             Parent::analyseExpr(expr);
+            break;
         }
     }
 
@@ -1036,7 +1579,8 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         {
         case CreateRecordActivity:
         case CreateRecordLRActivity:
-        case TransformRecordActivity:
+        case RollupTransformActivity:
+        case IterateTransformActivity:
         case DenormalizeActivity:
         case CreateRecordSourceActivity:
             if (hasUnknownTransform(expr))
@@ -1045,13 +1589,60 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         }
 
         activities.append(*LINK(expr));
+
+        IHqlExpression * child = expr->queryChild(0);
+        switch (extra->activityKind())
+        {
+        case CreateRecordActivity:
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            break;
+        case CreateRecordLRActivity:
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
+            break;
+        case CompoundActivity:
+        case CompoundableActivity:
+        case CreateRecordSourceActivity:
+        case AnyTypeActivity:
+            break;
+        case RollupTransformActivity:
+        case IterateTransformActivity:
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            setOriginal(complexExtra->rightFieldsRequired, child);
+            break;
+        case DenormalizeActivity:
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
+            break;
+        case FixedInputActivity:
+            assertex(child && (child->isDataset() || child->isDatarow()));
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            if (getNumChildTables(expr) >= 2)
+                setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
+            break;
+        case SourceActivity:
+        case PassThroughActivity:
+        case ScalarSelectActivity:
+            break;
+        case SinkActivity:
+            setOriginal(complexExtra->leftFieldsRequired, child);
+            break;
+        case SimpleActivity:
+            if (expr->getOperator() == no_compound)
+                setOriginal(complexExtra->leftFieldsRequired, expr->queryChild(1));
+            else
+                setOriginal(complexExtra->leftFieldsRequired, child);
+            break;
+        default:
+            throwUnexpected();
+        }
     }
 
     IHqlExpression * record = expr->queryRecord();
-    if (record && !isPatternType(type))
+    if (record && !isPatternType(type) && !expr->isTransform())
     {
         assertex(complexExtra);
-        complexExtra->outputInfo = queryBodyComplexExtra(record);
+        complexExtra->setOriginalRecord(queryBodyComplexExtra(record));
         analyseExpr(record);
     }
 
@@ -1078,24 +1669,36 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
     {
     case no_select:
         {
-            //Either inherit from the dataset if new, or add the root field (x.a.b only adds x.a)
-            IHqlExpression * cur = expr;
-            loop
+            if (options.projectNestedTables)
             {
-                IHqlExpression * ds = cur->queryChild(0);
-                if (cur->hasProperty(newAtom))
-                {
+                bool isNew;
+                IHqlExpression * ds = querySelectorDataset(expr, isNew);
+                if (isNew)
                     inheritActiveFields(extra, ds);
-                    break;
-                }
-                node_operator dsOp = ds->getOperator();
-                if (dsOp != no_select || ds->isDataset())
+                else
+                    extra->addActiveSelect(expr);
+            }
+            else
+            {
+                //Either inherit from the dataset if new, or add the root field (x.a.b only adds x.a)
+                IHqlExpression * cur = expr;
+                loop
                 {
-                    if ((dsOp != no_self) && (dsOp != no_selfref))
-                        extra->addActiveSelect(cur);
-                    break;
+                    IHqlExpression * ds = cur->queryChild(0);
+                    if (cur->hasProperty(newAtom))
+                    {
+                        inheritActiveFields(extra, ds);
+                        break;
+                    }
+                    node_operator dsOp = ds->getOperator();
+                    if (dsOp != no_select || ds->isDataset())
+                    {
+                        if ((dsOp != no_self) && (dsOp != no_selfref))
+                            extra->addActiveSelect(cur);
+                        break;
+                    }
+                    cur = ds;
                 }
-                cur = ds;
             }
             break;
         }
@@ -1383,11 +1986,13 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_newxmlparse:
     case no_createrow:
     case no_rollupgroup:
+    case no_projectrow:
         return CreateRecordActivity;
     case no_inlinetable:
         return CreateRecordSourceActivity;
     case no_extractresult:
-        return ActionSinkActivity;
+    case no_apply:
+        return SinkActivity;
     case no_denormalizegroup:
     case no_join:
     case no_fetch:
@@ -1395,8 +2000,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_process:            // optimization currently disabled...
         return PassThroughActivity;
     case no_iterate:
+        return IterateTransformActivity;
     case no_rollup:
-        return TransformRecordActivity;
+        return RollupTransformActivity;
     case no_denormalize:
         return DenormalizeActivity;
     case no_null:
@@ -1460,24 +2066,27 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_getgraphresult:
     case no_getgraphloopresult:
     case no_rows:
-    case no_libraryinput:
-    case no_allnodes:
         return SourceActivity;
+    case no_allnodes:
+    case no_httpcall:
+    case no_soapcall:
+    case no_newsoapcall:
+    case no_libraryinput:
     case no_thisnode:
         if (expr->isDataset() || expr->isDatarow())
             return SourceActivity;
         return NonActivity;
     case no_pipe:
-    case no_httpcall:
-    case no_soapcall:
+    case no_nofold:
+    case no_nohoist:
+        if (expr->isDataset() || expr->isDatarow())
+            return FixedInputActivity;
+        return NonActivity;
     case no_soapcall_ds:
-    case no_newsoapcall:
     case no_newsoapcall_ds:
     case no_output:
     case no_distribution:
     case no_buildindex:
-    case no_nofold:
-    case no_nohoist:
     case no_spill:
     case no_setgraphresult:
     case no_setgraphloopresult:
@@ -1494,9 +2103,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_aggregate:
         if (expr->hasProperty(mergeTransformAtom))
             return FixedInputActivity;
-        return FixedInputActivity;  //MORE:TransformRecordActivity
+        return FixedInputActivity;  //MORE:???? Should be able to optimize this
     case no_fromxml:                // A bit bit like a source activity, no transform..., but has an input
-        return FixedInputActivity;
+        return SourceActivity;
     case no_selfjoin:
         return CreateRecordActivity;
     case no_if:
@@ -1511,6 +2120,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_cogroup:
         return PassThroughActivity;
     case no_keydiff:
+    case no_keypatch:
         return NonActivity;
     case no_datasetfromrow:
         if (getNumActivityArguments(expr) == 0)
@@ -1518,6 +2128,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return SimpleActivity;
     case no_newtransform:
     case no_transform:
+        return NonActivity;
         return ComplexNonActivity;
     case no_record:
     case no_assign:
@@ -1525,15 +2136,18 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return NonActivity;
     case NO_AGGREGATE:
     case no_createset:
-        return SimpleActivity;
+        return SinkActivity;
     case no_call:
     case no_externalcall:
-        return SourceActivity;
+        if (expr->isDataset() || expr->isDatarow())
+            return SourceActivity;
+        //MORE: What about parameters??
+        return NonActivity;
     case no_commonspill:
     case no_readspill:
         return SimpleActivity;
     case no_writespill:
-        return ActionSinkActivity;
+        return SinkActivity;
     case no_preservemeta:
     case no_dataset_alias:
         if (getProjectExprKind(expr->queryChild(0)) == CompoundableActivity)
@@ -1549,69 +2163,93 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     switch (tc)
     {
     case type_void:
+        if (getNumChildTables(expr) > 0)
+            return SinkActivity;
+        return NonActivity;
     case type_row:
     case type_table:
     case type_groupedtable:
-    case type_transform:
         break;
+    case type_transform:
+        return NonActivity;
     default:
         return NonActivity;
     }
 
-    if (getChildDatasetType(expr) == childdataset_none)
-        return FixedInputActivity;
     if (getNumActivityArguments(expr) == 0)
         return SourceActivity;
     return SimpleActivity;
 }
 
-void ImplicitProjectTransformer::processSelectsUsedForCreateRecord(ComplexImplicitProjectInfo * extra, SelectUsedArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
+void ImplicitProjectTransformer::processSelect(ComplexImplicitProjectInfo * extra, IHqlExpression * curSelect, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
 {
-    ForEachItemIn(i2, selectsUsed)
-    {
-        IHqlExpression * curSelect = &selectsUsed.item(i2);
-        if (leftSelect)
-            processMatchingSelector(extra->leftFieldsRequired, curSelect, leftSelect);
-        if (ds)
-            processMatchingSelector(extra->leftFieldsRequired, curSelect, ds);
-        if (rightSelect)
-            processMatchingSelector(extra->rightFieldsRequired, curSelect, rightSelect);
-    }
-}
-
-
-void ImplicitProjectTransformer::processSelectsUsedForDenormalize(ComplexImplicitProjectInfo * extra, SelectUsedArray const & selectsUsed, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
-{
-    ForEachItemIn(i, selectsUsed)
-    {
-        IHqlExpression * curSelect = &selectsUsed.item(i);
-        if (curSelect->queryChild(0) == leftSelect)
-            extra->addOutputField(curSelect->queryChild(1));
-
+    if (leftSelect)
         processMatchingSelector(extra->leftFieldsRequired, curSelect, leftSelect);
+    if (ds)
+        processMatchingSelector(extra->leftFieldsRequired, curSelect, ds);
+    if (rightSelect)
         processMatchingSelector(extra->rightFieldsRequired, curSelect, rightSelect);
+
+    switch (extra->activityKind())
+    {
+    case DenormalizeActivity:
+        //For DENORMALIZE the transform is always called, possibly multiple times.  Therefore
+        //if a field is used from the output it must be included in the input (but could be blanked)
+        //if a field is used from LEFT then it must be in the input and the output
+        processMatchingSelector(extra->outputFields, curSelect, leftSelect);
+        break;
+    case RollupTransformActivity:
+    case IterateTransformActivity:
+        //For ROLLUP/ITERATE the transform may or may not be called.  Therefore
+        //if a field is used from the output it is used from the input [ handled in the main processing loop]
+        //if a field is used from LEFT then it must be in the input and the output
+        //Anything used from the input must be in the output (but could be blanked) - handled elsewhere
+        processMatchingSelector(extra->outputFields, curSelect, leftSelect);
+        if (ds)
+            processMatchingSelector(extra->outputFields, curSelect, ds);
+        break;
     }
 }
 
-void ImplicitProjectTransformer::processSelectsUsedForTransformRecord(ComplexImplicitProjectInfo * extra, SelectUsedArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
+
+
+void ImplicitProjectTransformer::processSelects(ComplexImplicitProjectInfo * extra, SelectUsedArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
 {
     ForEachItemIn(i2, selectsUsed)
     {
         IHqlExpression * curSelect = &selectsUsed.item(i2);
-        if (curSelect == leftSelect || curSelect == rightSelect || curSelect == ds)
+        processSelect(extra, curSelect, ds, leftSelect, rightSelect);
+    }
+}
+
+
+void ImplicitProjectTransformer::processTransform(ComplexImplicitProjectInfo * extra, IHqlExpression * transform, IHqlExpression * dsSelect, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
+{
+    HqlExprCopyArray assigns;
+    unwindTransform(assigns, transform);
+    ForEachItemIn(itr, assigns)
+    {
+        IHqlExpression * cur = &assigns.item(itr);
+        //Need to handle skip attributes...
+        if (cur->getOperator() == no_skip)
         {
-            extra->leftFieldsRequired.setAll();
-            break;
+            const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
+            processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
         }
-        IHqlExpression * curDs = curSelect->queryChild(0);
-        if ((curDs == leftSelect) || (curDs == rightSelect) || (curDs == ds))
+        else if (cur->getOperator() == no_assign)
         {
-            IHqlExpression * field = curSelect->queryChild(1);
-            extra->leftFieldsRequired.addUnique(field);
-            extra->addOutputField(field);
+            IHqlExpression * value = cur->queryChild(1);
+            if (!value->isPure())
+            {
+                IHqlExpression * lhs = cur->queryChild(0);
+                processMatchingSelector(extra->outputFields, lhs, lhs->queryChild(0));
+                const SelectUsedArray & selectsUsed = querySelectsUsed(value);
+                processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
+            }
         }
     }
 }
+
 
 void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 {
@@ -1619,7 +2257,8 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
     if (!extra->okToOptimize())
     {
-        extra->addAllOutputs();
+        if (expr->queryRecord())
+            extra->addAllOutputs();
     }
     else
     {
@@ -1627,7 +2266,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             extra->outputs.item(i1).notifyRequiredFields(extra);
 
         if (extra->outputFields.includeAll())
-            assertex(extra->newOutputRecord != NULL);       //extra->newOutputRecord.set(expr->queryRecord());
+            assertex(extra->queryOutputRecord() != NULL);
     }
 
     switch (extra->activityKind())
@@ -1641,7 +2280,8 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             if (!isKnownTransform(transform))
             {
                 extra->leftFieldsRequired.setAll();
-                extra->rightFieldsRequired.setAll();
+                if (extra->activityKind() == CreateRecordLRActivity)
+                    extra->rightFieldsRequired.setAll();
                 break;
             }
 
@@ -1662,34 +2302,16 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 extra->addAllOutputs();
 
             //MORE: querySelectsUsedForField() could be optimized by creating a map first, but it is only ~1% of time, so not really worth it.
-            ForEachItemIn(i, extra->outputFields)
-            {
-                IHqlExpression & cur = extra->outputFields.item(i);
-                processSelectsUsedForCreateRecord(extra, querySelectsUsedForField(transform, &cur), dsSelect, leftSelect, rightSelect);
-            }
+            SelectUsedArray parentSelects;
+            HqlExprArray values;
+            extra->outputFields.gatherTransformValuesUsed(NULL, &parentSelects, &values, NULL, transform);
+            processSelects(extra, parentSelects, dsSelect, leftSelect, rightSelect);
+            ForEachItemIn(i, values)
+                processSelects(extra, querySelectsUsed(&values.item(i)), dsSelect, leftSelect, rightSelect);
+            if (!extra->outputFields.allGathered())
+                assertex(extra->outputFields.allGathered());
 
-            HqlExprCopyArray assigns;
-            unwindTransform(assigns, transform);
-            ForEachItemIn(itr, assigns)
-            {
-                IHqlExpression * cur = &assigns.item(itr);
-                //Need to handle skip attributes...
-                if (cur->getOperator() == no_skip)
-                {
-                    const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                    processSelectsUsedForCreateRecord(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
-                }
-                else if (cur->getOperator() == no_assign)
-                {
-                    IHqlExpression * value = cur->queryChild(1);
-                    if (!value->isPure())
-                    {
-                        extra->addOutputField(cur->queryChild(0)->queryChild(1));
-                        const SelectUsedArray & selectsUsed = querySelectsUsed(value);
-                        processSelectsUsedForCreateRecord(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
-                    }
-                }
-            }
+            processTransform(extra, transform, dsSelect, leftSelect, rightSelect);
 
             unsigned max = expr->numChildren();
             unsigned first = extra->inputs.ordinality();
@@ -1702,7 +2324,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     continue;
 
                 const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                processSelectsUsedForCreateRecord(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
+                processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
             }
 
             switch (expr->getOperator())
@@ -1722,6 +2344,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                         {
                             IHqlExpression * curGrouping = grouping->queryChild(i);
                             IHqlExpression * match = NULL;
+                            //All groupings have entries in the transform - find the corresponding field.
                             ForEachChild(j, transform)
                             {
                                 IHqlExpression * cur = transform->queryChild(j);
@@ -1735,7 +2358,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                                 }
                             }
                             assertex(match);
-                            extra->addOutputField(match->queryChild(1));
+                            processMatchingSelector(extra->outputFields, match, match->queryChild(0));
                         }
                     }
                     break;
@@ -1748,7 +2371,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             //output will now be whatever fields are required by the output fields.
             //input will be the same as the output fields, since it is just a wrapper node.
             extra->finalizeOutputRecord();
-            extra->leftFieldsRequired.clone(extra->outputFields);
+            //MORE: Not sure this is neededextra->leftFieldsRequired.clone(extra->outputFields);
             extra->insertProject = true;
             assertex(extra->inputs.ordinality() == 0);
             //extra->inputs.item(0).stopOptimizeCompound(true);
@@ -1790,12 +2413,12 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     IHqlExpression * cur = order->queryChild(i);
                     if (!cur->isAttribute() && !cur->isConstant())          // shouldn't really happen..
                     {
-                        if (cur->getOperator() == no_select)
+                        if ((cur->getOperator() == no_select) && !isNewSelector(cur))
                         {
-                            IHqlExpression * ds = cur->queryChild(0);
+                            IHqlExpression * ds = queryDatasetCursor(cur);
                             IHqlExpression * field = cur->queryChild(1);
-                            if ((ds == queryActiveTableSelector()) && extra->outputInfo->outputFields.contains(*field))
-                                extra->addOutputField(field);
+                            if (ds == queryActiveTableSelector())
+                                processMatchingSelector(extra->outputFields, cur, queryActiveTableSelector());
                             else
                                 extra->addAllOutputs();
                         }
@@ -1811,10 +2434,11 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
     case ScalarSelectActivity:
         {
             IHqlExpression * root = queryRootSelector(expr);
-            extra->leftFieldsRequired.append(*LINK(root->queryChild(1)));
+            extra->leftFieldsRequired.appendField(*LINK(root->queryChild(1)));
             break;
         }
-    case TransformRecordActivity:
+    case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //currently rollup and iterate
             //output record is fixed by input, and never gets changed.
@@ -1827,33 +2451,13 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 extra->leftFieldsRequired.setAll();
             else
             {
-                IHqlExpression * ds = expr->queryChild(0)->queryNormalizedSelector();
+                IHqlExpression * dsSelect = expr->queryChild(0)->queryNormalizedSelector();
                 IHqlExpression * selSeq = querySelSeq(expr);
-                OwnedHqlExpr leftSelect = createSelector(no_left, ds, selSeq);
-                OwnedHqlExpr rightSelect = createSelector(no_right, ds, selSeq);
+                OwnedHqlExpr leftSelect = createSelector(no_left, dsSelect, selSeq);
+                OwnedHqlExpr rightSelect = createSelector(no_right, dsSelect, selSeq);
 
                 //Need to handle skip attributes...
-                HqlExprCopyArray assigns;
-                unwindTransform(assigns, transform);
-                ForEachItemIn(itr, assigns)
-                {
-                    IHqlExpression * cur = &assigns.item(itr);
-                    if (cur->getOperator() == no_skip)
-                    {
-                        const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                        processSelectsUsedForTransformRecord(extra, selectsUsed, ds, leftSelect, rightSelect);
-                    }
-                    else if (cur->getOperator() == no_assign)
-                    {
-                        IHqlExpression * value = cur->queryChild(1);
-                        if (!value->isPure())
-                        {
-                            extra->addOutputField(cur->queryChild(0)->queryChild(1));
-                            const SelectUsedArray & selectsUsed = querySelectsUsed(value);
-                            processSelectsUsedForTransformRecord(extra, selectsUsed, ds, leftSelect, rightSelect);
-                        }
-                    }
-                }
+                processTransform(extra, transform, dsSelect, leftSelect, rightSelect);
 
                 //Rollup criteria need to be included in the fields used!
                 unsigned max = expr->numChildren();
@@ -1866,22 +2470,41 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     if (cur != transform)
                     {
                         const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                        processSelectsUsedForTransformRecord(extra, selectsUsed, ds, leftSelect, rightSelect);
+                        processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
                     }
                 }
 
                 //NB: outputfields can extend...
-                for (unsigned i=0; i < extra->outputFields.ordinality(); i++)
+                while (!extra->outputFields.allGathered())
                 {
-                    IHqlExpression & cur = extra->outputFields.item(i);
-                    extra->leftFieldsRequired.addUnique(&cur);
-                    const SelectUsedArray & selectsUsed = querySelectsUsedForField(transform, &cur);
-                    processSelectsUsedForTransformRecord(extra, selectsUsed, ds, leftSelect, rightSelect);
+                    SelectUsedArray parentSelects;
+                    HqlExprArray values;
+                    HqlExprArray selfSelects;
+                    extra->outputFields.gatherTransformValuesUsed(&selfSelects, &parentSelects, &values, dsSelect, transform);
+\
+                    //For ROLLUP/ITERATE the transform may or may not be called.  Therefore
+                    //if a field is used from the output it is used from the input
+                    //if a field is used from LEFT then it must be in the input and the output
+                    //if a field is used from RIGHT it muse be in the output (but could be blanked) - handled elsewhere
 
-                    if (extra->outputFields.includeAll() || extra->leftFieldsRequired.ordinality() == extra->outputInfo->outputFields.ordinality())
+                    //Ensure all output rows are also included in the input dataset
+                    ForEachItemIn(i1, selfSelects)
+                        processMatchingSelector(extra->leftFieldsRequired, &selfSelects.item(i1), dsSelect);
+
+                    processSelects(extra, parentSelects, NULL, leftSelect, rightSelect);
+                    ForEachItemIn(i2, values)
+                        processSelects(extra, querySelectsUsed(&values.item(i2)), NULL, leftSelect, rightSelect);
+
+                    //If all fields selected from the output then select all fields from the input
+                    if (extra->outputFields.checkAllFieldsUsed())
                         extra->leftFieldsRequired.setAll();
+
+                    //if selected all fields from the input then already done.
                     if (extra->leftFieldsRequired.includeAll())
+                    {
+                        extra->outputFields.setAll();
                         break;
+                    }
                 }
 
                 if (extra->leftFieldsRequired.includeAll())
@@ -1906,27 +2529,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             OwnedHqlExpr leftSelect = createSelector(no_left, left, selSeq);
             OwnedHqlExpr rightSelect = createSelector(no_right, right, selSeq);
 
-            HqlExprCopyArray assigns;
-            unwindTransform(assigns, transform);
-            ForEachItemIn(itr, assigns)
-            {
-                IHqlExpression * cur = &assigns.item(itr);
-                if (cur->getOperator() == no_skip)
-                {
-                    const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                    processSelectsUsedForDenormalize(extra, selectsUsed, leftSelect, rightSelect);
-                }
-                else if (cur->getOperator() == no_assign)
-                {
-                    IHqlExpression * value = cur->queryChild(1);
-                    if (!value->isPure())
-                    {
-                        extra->addOutputField(cur->queryChild(0)->queryChild(1));
-                        const SelectUsedArray & selectsUsed = querySelectsUsed(value);
-                        processSelectsUsedForDenormalize(extra, selectsUsed, leftSelect, rightSelect);
-                    }
-                }
-            }
+            processTransform(extra, transform, NULL, leftSelect, rightSelect);
 
             //include all other attributes except for the transform
             unsigned max = expr->numChildren();
@@ -1936,41 +2539,37 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 if (cur != transform)
                 {
                     const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-                    processSelectsUsedForDenormalize(extra, selectsUsed, leftSelect, rightSelect);
+                    processSelects(extra, selectsUsed, NULL, leftSelect, rightSelect);
                 }
             }
 
-            //NB: May need to loop twice - if all outputs are added then the order of output fields will change, so need to process list again
-            //use a list to ensure that we don't do too much processing.
-            HqlExprCopyArray processed;
-            loop
+            while (!extra->outputFields.allGathered())
             {
-                bool allOutputsUsed = extra->outputFields.includeAll();
-                //NB: outputfields can extend... can also get completely reordered is includeAll() is set.
-                for (unsigned i=0; i < extra->outputFields.ordinality(); i++)
-                {
-                    IHqlExpression & cur = extra->outputFields.item(i);
-                    if (!processed.contains(cur))
-                    {
-                        processed.append(cur);
-                        extra->leftFieldsRequired.addUnique(&cur);
-                        const SelectUsedArray & selectsUsed = querySelectsUsedForField(transform, &cur);
-                        processSelectsUsedForDenormalize(extra, selectsUsed, leftSelect, rightSelect);
-                    }
-                }
+                SelectUsedArray parentSelects;
+                HqlExprArray values;
+                HqlExprArray selfSelects;
+                extra->outputFields.gatherTransformValuesUsed(&selfSelects, &parentSelects, &values, left, transform);
 
-                //All outputs didn't change, so processed whole list correctly
-                if (allOutputsUsed == extra->outputFields.includeAll())
-                    break;
+                //For DENORMALIZE the transform is always called, possibly multiple times.  Therefore
+                //if a field is used from the output it must be included in the input (but could be blanked)
+                //if a field is used from LEFT then it must be in the input and the output
+
+                //Ensure all output rows are also included in the input dataset
+                ForEachItemIn(i1, selfSelects)
+                    processMatchingSelector(extra->leftFieldsRequired, &selfSelects.item(i1), left);  // more: Could blank
+
+                processSelects(extra, parentSelects, NULL, leftSelect, rightSelect);
+                ForEachItemIn(i2, values)
+                    processSelects(extra, querySelectsUsed(&values.item(i2)), NULL, leftSelect, rightSelect);
             }
             break;
         }
     case FixedInputActivity:
         {
             extra->leftFieldsRequired.setAll();
-            if (getNumChildTables(expr) >= 2)
-                extra->rightFieldsRequired.setAll();
-            extra->addAllOutputs();
+            extra->rightFieldsRequired.setAllIfAny();
+            if (expr->queryRecord())
+                extra->addAllOutputs();
             break;
         }
     case SourceActivity:
@@ -1979,7 +2578,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             extra->addAllOutputs();
             break;
         }
-    case ActionSinkActivity:
+    case SinkActivity:
     case SimpleActivity:
         {
             //inputs will be outputs required plus any fields used within the function
@@ -1988,7 +2587,8 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 extra->leftFieldsRequired.setAll();
             else
             {
-                extra->leftFieldsRequired.cloneFields(extra->outputFields);
+                if (extra->activityKind() != SinkActivity)
+                    extra->leftFieldsRequired.clone(extra->outputFields);
 
                 IHqlExpression * ds = expr->queryChild(0)->queryNormalizedSelector();
                 IHqlExpression * selSeq = querySelSeq(expr);
@@ -2003,71 +2603,27 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     ForEachItemIn(i3, selectsUsed)
                     {
                         IHqlExpression * curSelect = &selectsUsed.item(i3);
-                        if (curSelect == leftSelect || curSelect == rightSelect || curSelect == ds)
-                        {
-                            extra->leftFieldsRequired.setAll();
+                        processMatchingSelector(extra->leftFieldsRequired, curSelect, leftSelect);
+                        processMatchingSelector(extra->leftFieldsRequired, curSelect, rightSelect);
+                        processMatchingSelector(extra->leftFieldsRequired, curSelect, ds);
+                        if (extra->leftFieldsRequired.includeAll())
                             break;
-                        }
-                        IHqlExpression * curDs = curSelect->queryChild(0);
-                        if ((curDs == leftSelect) || (curDs == rightSelect) || (curDs == ds))
-                            extra->leftFieldsRequired.addUnique(curSelect->queryChild(1));
                     }
                     if (extra->leftFieldsRequired.includeAll())
                         break;
                 }
 
-                if (extra->leftFieldsRequired.includeAll())
-                    extra->addAllOutputs();
+                if (extra->activityKind() != SinkActivity)
+                {
+                    if (extra->leftFieldsRequired.includeAll())
+                        extra->addAllOutputs();
+                }
             }
             break;
         }
     default:
         throwUnexpected();
     }
-}
-
-
-void ImplicitProjectTransformer::createFilteredAssigns(HqlExprArray & assigns, IHqlExpression * transform, const UsedFieldSet & fields, IHqlExpression * newSelf, const UsedFieldSet * exceptions)
-{
-    ForEachChild(i, transform)
-    {
-        IHqlExpression * cur = transform->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_assign:
-            {
-                IHqlExpression * lhs = cur->queryChild(0);
-                IHqlExpression * field = lhs->queryChild(1);
-                if (fields.contains(*field))
-                {
-                    IHqlExpression * newLhs = createSelectExpr(LINK(newSelf), LINK(field));
-                    if (exceptions && exceptions->contains(*field))
-                        assigns.append(*createAssign(newLhs, createNullExpr(newLhs)));
-                    else
-                        assigns.append(*createAssign(newLhs, LINK(cur->queryChild(1))));
-                }
-                break;
-            }
-        case no_assignall:
-            createFilteredAssigns(assigns, cur, fields, newSelf, exceptions);
-            break;
-        default:
-            assigns.append(*LINK(cur));
-        }
-    }
-}
-
-IHqlExpression * ImplicitProjectTransformer::createFilteredTransform(IHqlExpression * transform, const UsedFieldSet & fields, IHqlExpression * record, const UsedFieldSet * exceptions)
-{
-    OwnedHqlExpr self = getSelf(record);
-    HqlExprArray assigns;
-    createFilteredAssigns(assigns, transform, fields, self, exceptions);
-    OwnedHqlExpr ret = createValue(transform->getOperator(), makeTransformType(record->getType()), assigns);
-#if defined(PRESERVE_TRANSFORM_ANNOTATION)
-    return transform->cloneAllAnnotations(ret);
-#else
-    return ret.getClear();
-#endif
 }
 
 
@@ -2082,12 +2638,23 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
         name.append(exprName).append(" ");
     name.append(getOpString(expr->getOperator()));
 
-    fieldText.append("(").append(fields.ordinality());
-    if (expr->queryRecord())
-        fieldText.append("/").append(queryBodyComplexExtra(expr->queryRecord())->outputFields.ordinality());
+    const UsedFieldSet * original = fields.queryOriginal();
+    assertex(original);
+    fieldText.append("(").append(fields.numFields());
+    fieldText.append("/").append(original->numFields());
     fieldText.append(")");
-    //MORE: If number removed << number remaining just display fields removed.
-    fields.getText(fieldText);
+
+    //If number removed < number remaining just log the fields removed.
+    if (fields.numFields() * 2 > original->numFields())
+    {
+        UsedFieldSet removed;
+        removed.createDifference(*original, fields);
+        fieldText.append(" removed ");
+        removed.getText(fieldText);
+    }
+    else
+        fields.getText(fieldText);
+
 
     const char * const format = "ImplicitProject: %s %s now %s";
     DBGLOG(format, message, name.str(), fieldText.str());
@@ -2151,10 +2718,11 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     switch (extra->activityKind())
     {
     case DenormalizeActivity:
-    case TransformRecordActivity:
+    case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //Always reduce things that create a new record so they only project the fields they need to
-            if (complexExtra->outputChanged() || complexExtra->fieldsToBlank.ordinality())
+            if (complexExtra->outputChanged() || !complexExtra->fieldsToBlank.isEmpty())
             {
                 unsigned transformPos = queryTransformIndex(expr);
 
@@ -2165,7 +2733,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 //MORE: If the input's output contains fields that are not required in this transforms output then
                 //include them, but assign them default values to stop them pulling in other variables.
                 IHqlExpression * transform = &args.item(transformPos);
-                IHqlExpression * newTransform = createFilteredTransform(transform, complexExtra->outputFields, complexExtra->newOutputRecord, &complexExtra->fieldsToBlank);
+                IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(transform, &complexExtra->fieldsToBlank);
                 args.replace(*newTransform, transformPos);
                 transformed.setown(expr->clone(args));
                 transformed.setown(updateSelectors(transformed, expr));
@@ -2197,14 +2765,14 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 getTransformedChildren(expr, args);
 
                 IHqlExpression * transform = &args.item(transformPos);
-                IHqlExpression * newTransform = createFilteredTransform(transform, complexExtra->outputFields, complexExtra->newOutputRecord);
+                IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(transform, NULL);
                 args.replace(*newTransform, transformPos);
                 if (transform->getOperator() == no_newtransform)
-                    args.replace(*LINK(complexExtra->newOutputRecord), transformPos-1);
+                    args.replace(*LINK(complexExtra->queryOutputRecord()), transformPos-1);
                 IHqlExpression * onFail = queryProperty(onFailAtom, args);
                 if (onFail)
                 {
-                    IHqlExpression * newTransform = createFilteredTransform(onFail->queryChild(0), complexExtra->outputFields, complexExtra->newOutputRecord);
+                    IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(onFail->queryChild(0), NULL);
                     IHqlExpression * newOnFail = createExprAttribute(onFailAtom, newTransform);
                     args.replace(*newOnFail, args.find(*onFail));
                 }
@@ -2240,12 +2808,12 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 ForEachChild(i, transforms)
                 {
                     IHqlExpression * transform = transforms->queryChild(i);
-                    newTransforms.append(*createFilteredTransform(transform, complexExtra->outputFields, complexExtra->newOutputRecord));
+                    newTransforms.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
                 }
 
                 HqlExprArray args;
                 args.append(*transforms->clone(newTransforms));
-                args.append(*LINK(complexExtra->newOutputRecord));
+                args.append(*LINK(complexExtra->queryOutputRecord()));
                 unwindChildren(args, expr, 2);
                 transformed.setown(expr->clone(args));
                 logChange("Minimize", expr, complexExtra->outputFields);
@@ -2290,7 +2858,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             {
                 logChange("Change format of dataset", expr, complexExtra->outputFields);
                 HqlExprArray args;
-                args.append(*LINK(complexExtra->newOutputRecord));
+                args.append(*LINK(complexExtra->queryOutputRecord()));
                 unwindChildren(args, transformed, 1);
                 transformed.setown(transformed->clone(args));
             }
@@ -2300,7 +2868,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     case SourceActivity:
     case NonActivity:
     case ScalarSelectActivity:
-    case ActionSinkActivity:
+    case SinkActivity:
         transformed.setown(Parent::createTransformed(expr));
         //can't change...
         break;
@@ -2315,7 +2883,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 if (cur->isDataset() || cur->isDatarow())
                 {
                     //Ensure all inputs have same format..
-                    if (cur->queryRecord() != complexExtra->newOutputRecord)
+                    if (cur->queryRecord() != complexExtra->queryOutputRecord())
                         next.setown(complexExtra->createOutputProject(next));
                 }
                 args.append(*next.getClear());
@@ -2332,7 +2900,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             IHqlExpression * onFail = transformed->queryProperty(onFailAtom);
             if (onFail)
             {
-                IHqlExpression * newTransform = createFilteredTransform(onFail->queryChild(0), complexExtra->outputFields, complexExtra->newOutputRecord);
+                IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(onFail->queryChild(0), NULL);
                 IHqlExpression * newOnFail = createExprAttribute(onFailAtom, newTransform);
                 transformed.setown(replaceOwnedProperty(transformed, newOnFail));
             }
@@ -2389,11 +2957,8 @@ void ImplicitProjectTransformer::finalizeFields()
 
 static bool requiresFewerFields(const UsedFieldSet & fields, ComplexImplicitProjectInfo & input)
 {
-    if (fields.includeAll())
-        return false;
-    return (fields.ordinality() < input.outputFields.ordinality());
+    return fields.requiresFewerFields(input.outputFields);
 }
-
 
 void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
 {
@@ -2412,22 +2977,20 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
         extra->finalizeOutputRecord();
         break;
     case DenormalizeActivity:
-    case TransformRecordActivity:
+    case RollupTransformActivity:
+    case IterateTransformActivity:
         {
             //output must always match the input..., but any fields that are in the input, but not needed in the output we'll add as exceptions
             //and assign default values to them, otherwise it can cause other fields to be required in the input + causes chaos
-            if (!extra->outputFields.includeAll())
+            extra->fieldsToBlank.createDifference(extra->inputs.item(0).outputFields, extra->outputFields);
+            extra->outputFields.unionFields(extra->fieldsToBlank);
+            extra->fieldsToBlank.optimizeFieldsToBlank(extra->outputFields, queryNewColumnProvider(expr));
+            if (!extra->fieldsToBlank.isEmpty())
             {
-                UsedFieldSet & inFields = extra->inputs.item(0).outputFields;
-                ForEachItemIn(i, inFields)
-                {
-                    IHqlExpression & cur = inFields.item(i);
-                    if (extra->addOutputField(&cur))
-                    {
-                        DBGLOG("ImplicitProject: Field %s for %s not required by outputs - so blank in transform", cur.queryName()->str(), getOpString(expr->getOperator()));
-                        extra->fieldsToBlank.append(OLINK(cur));
-                    }
-                }
+                const char * opString = getOpString(expr->getOperator());
+                StringBuffer fieldText;
+                extra->fieldsToBlank.getText(fieldText);
+                DBGLOG("ImplicitProject: Fields %s for %s not required by outputs - so blank in transform", fieldText.str(), opString);
             }
             extra->finalizeOutputRecord();
             break;
@@ -2438,6 +3001,10 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
         break;
     case PassThroughActivity:
         {
+            //Banches coming into this IF/MERGE etc. may have different fields (e.g., because of ITERATEs), and
+            //the output fields may be smaller (e.g., no merge sort conditions, no fields used and inputs filter)
+            //So use the intersection of the inputfields as the output record.  90% of the time they will be
+            //the same so no projects will be introduced.
             bool anyProjected = false;
             unsigned numInputs = extra->inputs.ordinality();
             for (unsigned i=0; i != numInputs; i++)
@@ -2462,7 +3029,8 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
                 extra->setMatchingOutput(&extra->inputs.item(0));
             break;
         }
-    case ActionSinkActivity:
+    case SinkActivity:
+        break;
     case SimpleActivity:
         if (extra->insertProject && requiresFewerFields(extra->leftFieldsRequired, extra->inputs.item(0)))
         {
@@ -2586,6 +3154,9 @@ void ImplicitProjectTransformer::traceActivities()
 
 IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * newExpr, IHqlExpression * oldExpr)
 {
+    //MORE: Clean me up using new flags when they are merged
+    IHqlExpression * newDs = newExpr->queryChild(0);
+    IHqlExpression * oldDs = oldExpr->queryChild(0);
     switch (getChildDatasetType(newExpr))
     {
     case childdataset_none: 
@@ -2599,25 +3170,38 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
         //None of these have any scoped arguments, so no need to remove them
         break;
     case childdataset_dataset:
-        return LINK(newExpr);
+        {
+            return updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+        }
     case childdataset_datasetleft:
+        {
+            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+            IHqlExpression * selSeq = querySelSeq(newExpr);
+            assertex(selSeq == querySelSeq(oldExpr));
+            OwnedHqlExpr newLeft = createSelector(no_left, newDs, selSeq);
+            OwnedHqlExpr oldLeft = createSelector(no_left, oldDs, selSeq);
+            return updateChildSelectors(mapped, oldLeft, newLeft, 1);
+        }
+
     case childdataset_left:
         {
             IHqlExpression * selSeq = querySelSeq(newExpr);
             assertex(selSeq == querySelSeq(oldExpr));
-            OwnedHqlExpr newLeft = createSelector(no_left, newExpr->queryChild(0), selSeq);
-            OwnedHqlExpr oldLeft = createSelector(no_left, oldExpr->queryChild(0), selSeq);
+            OwnedHqlExpr newLeft = createSelector(no_left, newDs, selSeq);
+            OwnedHqlExpr oldLeft = createSelector(no_left, oldDs, selSeq);
             return updateChildSelectors(newExpr, oldLeft, newLeft, 1);
         }
     case childdataset_same_left_right:
     case childdataset_top_left_right:
     case childdataset_nway_left_right:
         {
+            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+
             IHqlExpression * selSeq = querySelSeq(newExpr);
             assertex(selSeq == querySelSeq(oldExpr));
             OwnedHqlExpr newLeft = createSelector(no_left, newExpr->queryChild(0), selSeq);
             OwnedHqlExpr oldLeft = createSelector(no_left, oldExpr->queryChild(0), selSeq);
-            OwnedHqlExpr ds1 = updateChildSelectors(newExpr, oldLeft, newLeft, 1);
+            OwnedHqlExpr ds1 = updateChildSelectors(mapped, oldLeft, newLeft, 1);
 
             OwnedHqlExpr newRight = createSelector(no_right, newExpr->queryChild(0), selSeq);
             OwnedHqlExpr oldRight = createSelector(no_right, oldExpr->queryChild(0), selSeq);
@@ -2640,27 +3224,6 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
     default:
         throwUnexpected();
     }
-}
-
-IHqlExpression * ImplicitProjectTransformer::updateChildSelectors(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector, unsigned firstChild)
-{
-    if (oldSelector == newSelector)
-        return LINK(expr);
-    unsigned max = expr->numChildren();
-    unsigned i;
-    HqlExprArray args;
-    for (i = 0; i < firstChild; i++)
-        args.append(*LINK(expr->queryChild(i)));
-#if 0
-    //Possibly more efficient
-    HqlExprArray argsToUpdate;
-    unwindChildren(argsToUpdate, expr, firstChild);
-    newReplaceSelector(args, argsToUpdate, oldSelector, newSelector);
-#else
-    for (; i < max; i++)
-        args.append(*replaceSelector(expr->queryChild(i), oldSelector, newSelector));
-#endif
-    return expr->clone(args);
 }
 
 const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsedForField(IHqlExpression * transform, IHqlExpression * field)
