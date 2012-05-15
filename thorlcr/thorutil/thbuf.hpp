@@ -26,6 +26,7 @@
 #include "jbuff.hpp"
 #include "jcrc.hpp"
 #include "thorcommon.hpp"
+#include "thmem.hpp"
 
 
 #ifdef _WIN32
@@ -87,7 +88,7 @@ interface IRowWriterMultiReader : extends IRowWriter
     virtual IRowStream *getReader() = 0;
 };
 
-extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowif, bool grouped, bool shared=false);
+extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowif, bool grouped, bool shared=false, unsigned spillPriority=SPILL_PRIORITY_OVERFLOWABLE_BUFFER);
 // NB first write all then read (not interleaved!)
 
 #endif

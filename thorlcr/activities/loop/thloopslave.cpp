@@ -207,6 +207,11 @@ public:
         CSlaveActivity::processDone(mb);
         ((CSlaveGraph *)queryContainer().queryLoopGraph()->queryGraph())->serializeDone(mb);
     }
+    virtual void serializeStats(MemoryBuffer &mb)
+    {
+        CSlaveActivity::serializeStats(mb);
+        mb.append(loopCounter);
+    }
 };
 
 class CLoopSlaveActivity : public CLoopSlaveActivityBase
@@ -263,6 +268,7 @@ public:
                 activity.doStop();
             }
         };
+        ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart("LOOP", container.queryId());
         nextRowFeeder.setown(new CNextRowFeeder(this, new CWrapper(*this)));
     }
@@ -412,6 +418,7 @@ public:
         if ((int)maxIterations < 0) maxIterations = 0;
         loopResults.setown(queryGraph().createThorGraphResults(0));
         helper->createParentExtract(extractBuilder);
+        ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart("GRAPHLOOP", container.queryId());
     }
     CATCH_NEXTROW()
@@ -434,7 +441,6 @@ public:
                 resultWriter->putRow(row.getClear());
             }
 
-            unsigned loopCounter=1;
             for (; loopCounter<=maxIterations; loopCounter++)
             {
                 sendLoopingCount(loopCounter, 0);

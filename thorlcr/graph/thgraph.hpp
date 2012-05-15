@@ -49,6 +49,7 @@
 #include "thormisc.hpp"
 #include "workunit.hpp"
 #include "thorcommon.hpp"
+#include "thmem.hpp"
 
 #include "thor.hpp"
 #include "eclhelper.hpp"
@@ -129,8 +130,8 @@ interface IThorGraphResults : extends IEclGraphResults
 {
     virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
     virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
@@ -249,7 +250,7 @@ protected:
     activity_id id, ownerId;
     StringAttr eclText;
     Owned<IPropertyTree> xgmml;
-    bool isLocal, isGrouped, sink, prepared, onCreateCalled, onStartCalled, onlyUpdateIfChanged, nullAct;
+    bool isLocal, isGrouped, sink, prepared, onCreateCalled, onStartCalled, onlyUpdateIfChanged, nullAct, log;
     Owned<CActivityBase> activity;
     CGraphBase *resultsGraph, *owner;
     CGraphDependencyArray dependsOn;
@@ -311,6 +312,8 @@ public:
     unsigned getOutputs() const { return outputs.ordinality(); }
     bool isSource() const { return isActivitySource(kind); }
     bool isSink() const { return sink; }
+    inline bool doLogging() const { return log; }
+    inline void setLogging(bool _log) { log = _log; }
     bool queryLocal() const { return isLocal; }
     bool queryGrouped() const { return isGrouped; }
     bool queryLocalOrGrouped() { return isLocal || isGrouped; }
@@ -625,6 +628,7 @@ public:
     bool isLocalChild() const { return localChild; }
     void setCompleteEx(bool tf=true) { complete = tf; }
     void setGlobal(bool tf) { global = tf; }
+    void setLogging(bool tf);
     const byte *setParentCtx(size32_t _parentExtractSz, const byte *parentExtract)
     {
         parentExtractSz = _parentExtractSz;
@@ -741,8 +745,8 @@ public:
 
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // ILocalGraph
     virtual void getResult(size32_t & len, void * & data, unsigned id);
@@ -806,6 +810,7 @@ protected:
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
     unsigned maxActivityCores;
+    unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     class CThorPluginCtx : public SimplePluginCtx
     {
     public:
@@ -842,6 +847,7 @@ public:
     const bool &queryAborted() const { return aborted; }
     const char *queryKey() const { return key; }
     const char *queryGraphName() const { return graphName; }
+    bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
     virtual IGraphTempHandler *createTempHandler() = 0;
     virtual CGraphBase *createGraph() = 0;
@@ -1086,10 +1092,10 @@ public:
         // NB: stream static after this, i.e. nothing can be added to this result
         return LINK(&results.item(id));
     }
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
     {
-        return createResult(activity, results.ordinality(), rowIf, distributed);
+        return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
     }
     virtual unsigned addResult(IThorResult *result)
     {
@@ -1120,7 +1126,7 @@ public:
     }
 };
 
-extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
+extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 
 class CGraphElementBase;

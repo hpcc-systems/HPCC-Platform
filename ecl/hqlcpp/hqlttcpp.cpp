@@ -945,6 +945,11 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         switch (type->getTypeCode())
         {
         case type_row:
+            switch (op)
+            {
+            case no_fromxml:
+                return option;
+            }
             return OptionYes;
         case type_groupedtable:
         case type_table:

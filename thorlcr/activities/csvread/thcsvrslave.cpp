@@ -158,7 +158,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 if (res != 0)
                 {
                     localOffset += lineLength;
-                    ++progress;
+                    ++activity.diskProgress;
                     return row.finalizeRowClear(res);
                 }
             }

@@ -58,13 +58,38 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
         meta = allocator->queryOutputMeta();
         rowStreamCount = 0;
     }
+    class CStreamWriter : public CSimpleInterface, implements IRowWriterMultiReader
+    {
+        CThorGraphResult &owner;
+        CThorExpandingRowArray rows;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CStreamWriter(CThorGraphResult &_owner) : owner(_owner), rows(owner.activity, owner.rowIf, true)
+        {
+        }
+
+    //IRowWriterMultiReader
+        virtual void putRow(const void *row)
+        {
+            rows.append(row);
+        }
+        virtual void flush() { }
+        virtual IRowStream *getReader()
+        {
+            return rows.createRowStream(0, (rowcount_t)-1, false);
+        }
+    };
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _distributed) : activity(_activity), rowIf(_rowIf), distributed(_distributed)
+    CThorGraphResult(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _distributed, unsigned spillPriority) : activity(_activity), rowIf(_rowIf), distributed(_distributed)
     {
         init();
-        rowBuffer.setown(createOverflowableBuffer(activity, rowIf, true, true));
+        if (SPILL_PRIORITY_DISABLE == spillPriority)
+            rowBuffer.setown(new CStreamWriter(*this));
+        else
+            rowBuffer.setown(createOverflowableBuffer(activity, rowIf, true, true));
     }
 
 // IRowWriter
@@ -169,18 +194,18 @@ public:
 
 /////
 
-IThorResult *CThorGraphResults::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed)
+IThorResult *CThorGraphResults::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<IThorResult> result = ::createResult(activity, rowIf, distributed);
+    Owned<IThorResult> result = ::createResult(activity, rowIf, distributed, spillPriority);
     setResult(id, result);
     return result;
 }
 
 /////
 
-IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    return new CThorGraphResult(activity, rowIf, distributed);
+    return new CThorGraphResult(activity, rowIf, distributed, spillPriority);
 }
 
 /////
@@ -207,7 +232,7 @@ public:
         thor_loop_counter_t * res = (thor_loop_counter_t *)counterRow.ensureCapacity(sizeof(thor_loop_counter_t),NULL);
         *res = loopCounter;
         OwnedConstThorRow counterRowFinal = counterRow.finalizeRowClear(sizeof(thor_loop_counter_t));
-        IThorResult *counterResult = results->createResult(activity, pos, countRowIf, false);
+        IThorResult *counterResult = results->createResult(activity, pos, countRowIf, false, SPILL_PRIORITY_DISABLE);
         Owned<IRowWriter> counterResultWriter = counterResult->getWriter();
         counterResultWriter->putRow(counterRowFinal.getClear());
     }
@@ -352,6 +377,7 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     whichBranchBitSet.setown(createBitSet());
     newWhichBranch = false;
     isEof = false;
+    log = true;
     sentActInitData.setown(createBitSet());
 }
 
@@ -1603,6 +1629,13 @@ void CGraphBase::GraphPrintLog(IException *e, const char *format, ...)
     va_end(args);
 }
 
+void CGraphBase::setLogging(bool tf)
+{
+    CGraphElementIterator iterC(containers);
+    ForEach(iterC)
+        iterC.query().setLogging(tf);
+}
+
 void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGraphBase *_parent, CGraphBase *resultsGraph)
 {
     owner = _owner;
@@ -1804,14 +1837,14 @@ IThorResult *CGraphBase::getGraphLoopResult(unsigned id, bool distributed)
     return graphLoopResults->getResult(id, distributed);
 }
 
-IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed)
+IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    return localResults->createResult(activity, id, rowIf, distributed);
+    return localResults->createResult(activity, id, rowIf, distributed, spillPriority);
 }
 
-IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    return graphLoopResults->createResult(activity, rowIf, distributed);
+    return graphLoopResults->createResult(activity, rowIf, distributed, spillPriority);
 }
 
 // ILocalGraph
@@ -2296,6 +2329,9 @@ void CJobBase::init()
     userDesc = createUserDescriptor();
     userDesc->set(user.str(), password.str());
 
+    forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
+    forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
+
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
     maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", globals->getPropInt("@maxActivityCores", 0)); // NB: 0 means system decides
@@ -2333,6 +2369,14 @@ CJobBase::~CJobBase()
     ::Release(userDesc);
     timeReporter->Release();
     delete pluginMap;
+}
+
+bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
+{
+    // JCSMORE, could add comma separated range, e.g. 1-5,10-12
+    if ((graphId >= forceLogGraphIdMin) && (graphId <= forceLogGraphIdMax))
+        return true;
+    return def;
 }
 
 void CJobBase::clean()
@@ -2461,6 +2505,8 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
                 }
             }
         }
+        bool log = queryForceLogging(subGraph.queryGraphId(), subGraph.isGlobal());
+        subGraph.setLogging(log);
     }
 }
 

@@ -107,7 +107,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                         lastMatch.clear();
                         if (sz) {
                             localOffset = 0;
-                            ++progress;
+                            ++activity.diskProgress;
                             return row.finalizeRowClear(sz);
                         }
                     }

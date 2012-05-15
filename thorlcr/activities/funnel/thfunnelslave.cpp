@@ -535,7 +535,7 @@ public:
 
 
     CombineSlaveActivity(CGraphElementBase *_container) 
-        : CSlaveActivity(_container), CThorDataLink(this), rows(*this)
+        : CSlaveActivity(_container), CThorDataLink(this), rows(*this, this)
     {
         grouped = container.queryGrouped();
     }

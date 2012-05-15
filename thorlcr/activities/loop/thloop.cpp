@@ -33,6 +33,7 @@ protected:
     CGraphBase *loopGraph;
     unsigned emptyIterations;
     unsigned maxEmptyLoopIterations;
+    Owned<CThorStats> loopCounterProgress;
 
     bool sync(unsigned loopCounter)
     {
@@ -81,6 +82,7 @@ protected:
 public:
     CLoopActivityMasterBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
+        loopCounterProgress.setown(new CThorStats("loopCounter-"));
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;
@@ -127,6 +129,18 @@ public:
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
+    }
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
+    {
+        CMasterActivity::deserializeStats(node, mb);
+        unsigned loopCounter;
+        mb.read(loopCounter);
+        loopCounterProgress->set(node, loopCounter);
+    }
+    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    {
+        CMasterActivity::getXGMML(progress, node);
+        loopCounterProgress->getXGMML(node, false);
     }
 };
 

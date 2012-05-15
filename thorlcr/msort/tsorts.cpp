@@ -166,7 +166,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CWriteIntercept(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _interval)
-        : activity(_activity), rowIf(_rowIf), interval(_interval), sampleRows(activity, true)
+        : activity(_activity), rowIf(_rowIf), interval(_interval), sampleRows(activity, rowIf, true)
     {
         interval = _interval;
         idx = 0;
@@ -429,7 +429,7 @@ public:
     CMiniSort(CActivityBase &_activity, IRowInterfaces &_rowIf, ICommunicator &_clusterComm, unsigned _partNo, unsigned _numNodes, mptag_t _mpTag)
         : activity(_activity), rowIf(_rowIf), clusterComm(_clusterComm), partNo(_partNo), numNodes(_numNodes), mpTag(_mpTag)
     {
-        collector.setown(createThorRowCollector(activity));
+        collector.setown(createThorRowCollector(activity, &rowIf));
         serializer = rowIf.queryRowSerializer();
         deserializer = rowIf.queryRowDeserializer();
         allocator = rowIf.queryRowAllocator();
@@ -466,7 +466,6 @@ public:
                     break;
                 idx += done;
             }
-            collector->setup(&rowIf);
             Owned<IRowWriter> writer = collector->getWriter();
             appendFromPrimaryNode(*writer); // will be sorted, may spill
             writer.clear();
@@ -475,7 +474,7 @@ public:
         }
         else
         {
-            collector->setup(&rowIf, &iCompare, isStable, rc_mixed, UINT_MAX); // must not spill
+            collector->setup(&iCompare, isStable, rc_mixed, SPILL_PRIORITY_DISABLE); // must not spill
             collector->transferRowsIn(localRows);
 
             // JCSMORE - very odd, threaded, but semaphores ensuring sequential writes, why?
@@ -729,7 +728,7 @@ public:
 
     CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
         : activity(_activity), myendpoint(ep), iDiskUsage(_iDiskUsage), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
-          rowArray(*_activity), threaded("CThorSorter", this)
+          rowArray(*_activity, _activity), threaded("CThorSorter", this)
     {
         numnodes = 0;
         partno = 0;

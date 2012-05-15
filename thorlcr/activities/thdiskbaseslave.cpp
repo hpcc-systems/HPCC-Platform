@@ -72,7 +72,6 @@ CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity
     which = 0;
     eoi = false;
     kindStr = activityKindStr(activity.queryContainer().getKind());
-    progress = 0;
 }
 
 void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized)
@@ -247,6 +246,7 @@ const char *CDiskReadSlaveActivityBase::queryLogicalFilename(unsigned index)
 void CDiskReadSlaveActivityBase::start()
 {
     markStart = true;
+    diskProgress = 0;
 }
 
 void CDiskReadSlaveActivityBase::kill()
@@ -277,7 +277,7 @@ IRowInterfaces * CDiskReadSlaveActivityBase::queryDiskRowInterfaces()
 void CDiskReadSlaveActivityBase::serializeStats(MemoryBuffer &mb)
 {
     CSlaveActivity::serializeStats(mb);
-    mb.append(getHandlerProgress());
+    mb.append(diskProgress);
 }
 
 

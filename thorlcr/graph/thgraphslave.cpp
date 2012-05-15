@@ -240,15 +240,13 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     if (1 == inputs.ordinality())
     {
         IThorDataLink *input = inputs.item(0);
-        CSlaveActivity &inputAct = * (CSlaveActivity *)input->queryFromActivity();
-        inputCycles += inputAct.queryTotalCycles();
+        inputCycles += input->queryTotalCycles();
     }
     else
     {
-        if (((unsigned)-1) != container.whichBranch && inputs.isItem(container.whichBranch))
+        if (TAKchildif == container.getKind())
         {
-            IThorDataLink *input = inputs.item(container.whichBranch);
-            if (input != NULL)
+            if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
                 inputCycles += inputs.item(container.whichBranch)->queryTotalCycles();
         }
         else
@@ -527,12 +525,6 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
     }
     else if (exception)
         throw exception.getClear();
-}
-
-bool CSlaveGraph::prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async)
-{
-    CriticalBlock b(progressCrit);
-    return CGraphBase::prepare(parentExtractSz, parentExtract, checkDependencies, shortCircuit, async);
 }
 
 void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
