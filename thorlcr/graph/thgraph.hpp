@@ -49,6 +49,7 @@
 #include "thormisc.hpp"
 #include "workunit.hpp"
 #include "thorcommon.hpp"
+#include "thmem.hpp"
 
 #include "thor.hpp"
 #include "eclhelper.hpp"
@@ -129,8 +130,8 @@ interface IThorGraphResults : extends IEclGraphResults
 {
     virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed) = 0;
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
     virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
@@ -744,8 +745,8 @@ public:
 
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
-    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 // ILocalGraph
     virtual void getResult(size32_t & len, void * & data, unsigned id);
@@ -1091,10 +1092,10 @@ public:
         // NB: stream static after this, i.e. nothing can be added to this result
         return LINK(&results.item(id));
     }
-    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed);
-    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
     {
-        return createResult(activity, results.ordinality(), rowIf, distributed);
+        return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
     }
     virtual unsigned addResult(IThorResult *result)
     {
@@ -1125,7 +1126,7 @@ public:
     }
 };
 
-extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed);
+extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
 
 class CGraphElementBase;

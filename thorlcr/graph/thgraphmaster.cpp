@@ -1760,6 +1760,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
     CriticalSection crit;
     PointerArrayOf<CThorExpandingRowArray> results;
     Owned<IThorResult> result;
+    unsigned spillPriority;
 
     void ensure()
     {
@@ -1823,7 +1824,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
                 }
             }
         }
-        Owned<IThorResult> _result = ::createResult(activity, rowIf, false);
+        Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
         Owned<IRowWriter> resultWriter = _result->getWriter();
         for (unsigned s=0; s<numSlaves; s++)
         {
@@ -1841,10 +1842,10 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id) : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id)
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, unsigned _spillPriority) : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), spillPriority(_spillPriority)
     {
         for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
-            results.append(new CThorExpandingRowArray(activity));
+            results.append(new CThorExpandingRowArray(activity, rowIf));
     }
     ~CCollatedResult()
     {
@@ -2575,16 +2576,16 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed)
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id);
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, spillPriority);
     localResults->setResult(id, result);
     return result;
 }
 
-IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed)
+IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0);
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, spillPriority);
     unsigned id = graphLoopResults->addResult(result);
     result->setId(id);
     return result;

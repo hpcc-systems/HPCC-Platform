@@ -278,14 +278,14 @@ public:
                 groupStream.clear();
                 return NULL;
             }
-            CThorExpandingRowArray rows(*this);
+            CThorExpandingRowArray rows(*this, this);
             groupLoader->loadGroup(input, abortSoon, &rows);
             if (rows.ordinality())
             {
                 // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.
                 if (helper->isValid(rows.ordinality(), rows.getRowArray()))
                 {
-                    CThorSpillableRowArray spillableRows(*this);
+                    CThorSpillableRowArray spillableRows(*this, this);
                     spillableRows.transferFrom(rows);
                     groupStream.setown(spillableRows.createRowStream());
                 }
@@ -345,7 +345,7 @@ public:
                 ret.setown(input->nextRowGE(seek, numFields, wasCompleteMatch, stepExtra));
 #endif
 
-        CThorExpandingRowArray rows(*this);
+        CThorExpandingRowArray rows(*this, this);
         groupStream.setown(groupLoader->loadGroup(input, abortSoon, &rows));
         if (rows.ordinality())
         {

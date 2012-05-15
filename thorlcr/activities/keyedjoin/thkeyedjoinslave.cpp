@@ -114,7 +114,7 @@ public:
     CJoinGroup *prev;  // Doubly-linked list to allow us to keep track of ones that are still in use
     CJoinGroup *next;
 
-    CJoinGroup(CActivityBase &_activity) : activity(_activity), rows(_activity)
+    CJoinGroup(CActivityBase &_activity) : activity(_activity), rows(_activity, NULL)
     {
         // Used for head object only
         prev = NULL;
@@ -161,7 +161,7 @@ public:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJoinGroup(CActivityBase &_activity, const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : activity(_activity), join(_join), rows(_activity)
+    CJoinGroup(CActivityBase &_activity, const void *_left, IJoinProcessor *_join, CJoinGroup *_groupStart) : activity(_activity), join(_join), rows(_activity, NULL)
     {
 #ifdef TRACE_USAGE
         atomic_inc(&join->getdebug(0));
@@ -889,7 +889,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             stopped = aborted = writeWaiting = replyWaiting = false;
             pendingSends = pendingReplies = 0;
             for (unsigned n=0; n<nodes; n++)
-                dstLists.append(new CThorExpandingRowArray(owner));
+                dstLists.append(new CThorExpandingRowArray(owner, owner.fetchInputMetaRowIf));
             fetchMin = owner.helper->queryJoinFieldsRecordSize()->getMinRecordSize();
             perRowMin = NEWFETCHSENDHEADERSZ+fetchMin;
             maxRequests = NEWFETCHPRMEMLIMIT<perRowMin ? 1 : (NEWFETCHPRMEMLIMIT / perRowMin);
@@ -1041,7 +1041,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                     if (total)
                     {
                         assertex(!replyWaiting);
-                        CThorExpandingRowArray dstList(owner);
+                        CThorExpandingRowArray dstList(owner, owner.fetchInputMetaRowIf);
                         unsigned dstP=0;
                         loop
                         {
