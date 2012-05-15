@@ -187,13 +187,15 @@ protected:
     unsigned __int64 max, min, tot, avg;
     unsigned hi, lo, minNode, maxNode;
     UInt64Array counts;
+    StringAttr prefix;
+    StringAttr labelMin, labelMax, labelMinSkew, labelMaxSkew, labelMinEndpoint, labelMaxEndpoint;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorStats();
+    CThorStats(const char *prefix=NULL);
     void reset();
-    void processInfo();
+    virtual void processInfo();
     static void removeAttribute(IPropertyTree *node, const char *name);
     static void addAttribute(IPropertyTree *node, const char *name, unsigned __int64 val);
     static void addAttribute(IPropertyTree *node, const char *name, const char *val);
@@ -208,18 +210,21 @@ public:
     unsigned queryMinNode() { return minNode; }
 
     void set(unsigned node, unsigned __int64 count);
+    void getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual);
 };
 
 class graphmaster_decl CTimingInfo : public CThorStats
 {
 public:
-    void getXGMML(IPropertyTree *node);
+    CTimingInfo();
+    void getXGMML(IPropertyTree *node) { CThorStats::getXGMML(node, false); }
 };
+
 class graphmaster_decl ProgressInfo : public CThorStats
 {
     unsigned startcount, stopcount;
 public:
-    void processInfo();
+    virtual void processInfo();
     void getXGMML(IPropertyTree *node);
 };
 typedef IArrayOf<ProgressInfo> ProgressInfoArray;
