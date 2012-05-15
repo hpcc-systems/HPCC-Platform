@@ -325,6 +325,9 @@ IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHql
                 }
 
                 newValue.setown(createRow(no_createrow, newTransform.getClear()));
+#if defined(PRESERVE_TRANSFORM_ANNOTATION)
+                newValue.setown(value->cloneAllAnnotations(newValue));
+#endif
             }
         }
         else
@@ -401,12 +404,7 @@ IHqlExpression * UsedFieldSet::createRowTransform(IHqlExpression * row, const Us
             assigns.append(*assign.getClear());
     }
 
-    OwnedHqlExpr ret = createValue(no_transform, makeTransformType(finalRecord->getType()), assigns);
-#if defined(PRESERVE_TRANSFORM_ANNOTATION)
-    return transform->cloneAllAnnotations(ret);
-#else
-    return ret.getClear();
-#endif
+    return createValue(no_transform, makeTransformType(finalRecord->getType()), assigns);
 }
 
 
@@ -2207,6 +2205,8 @@ void ImplicitProjectTransformer::processSelect(ComplexImplicitProjectInfo * extr
         //if a field is used from LEFT then it must be in the input and the output
         //Anything used from the input must be in the output (but could be blanked) - handled elsewhere
         processMatchingSelector(extra->outputFields, curSelect, leftSelect);
+        if (ds)
+            processMatchingSelector(extra->outputFields, curSelect, ds);
         break;
     }
 }
@@ -2481,7 +2481,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     HqlExprArray values;
                     HqlExprArray selfSelects;
                     extra->outputFields.gatherTransformValuesUsed(&selfSelects, &parentSelects, &values, dsSelect, transform);
-
+\
                     //For ROLLUP/ITERATE the transform may or may not be called.  Therefore
                     //if a field is used from the output it is used from the input
                     //if a field is used from LEFT then it must be in the input and the output
@@ -2491,9 +2491,9 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                     ForEachItemIn(i1, selfSelects)
                         processMatchingSelector(extra->leftFieldsRequired, &selfSelects.item(i1), dsSelect);
 
-                    processSelects(extra, parentSelects, dsSelect, leftSelect, rightSelect);
+                    processSelects(extra, parentSelects, NULL, leftSelect, rightSelect);
                     ForEachItemIn(i2, values)
-                        processSelects(extra, querySelectsUsed(&values.item(i2)), dsSelect, leftSelect, rightSelect);
+                        processSelects(extra, querySelectsUsed(&values.item(i2)), NULL, leftSelect, rightSelect);
 
                     //If all fields selected from the output then select all fields from the input
                     if (extra->outputFields.checkAllFieldsUsed())
