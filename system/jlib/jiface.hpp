@@ -54,6 +54,13 @@ void jlib_decl RaiseAssertCore(const char *assertion, const char *file, unsigned
 #define verify(p) ((void) (p))
 #endif
 
+//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
+#ifdef _DEBUG
+#define dbgassertex(x) assertex(x)
+#else
+#define dbgassertex(x)
+#endif
+
 #define DEAD_PSEUDO_COUNT               0x3fffffff
 
 //The simplest implementation of IInterface.  Can be used in situations where speed is critical, and
