@@ -326,7 +326,19 @@ public:
     {
         assertex(isConnected);
         Owned<IWorkUnitFactory> wuFactory = getWorkUnitFactory();
-        Owned<IWorkUnit> w = wuFactory->updateWorkUnit(wuid);
+        Owned<IWorkUnit> w;
+        StringAttr newWuid;
+        if (wuid && *wuid)
+        {
+            w.setown(wuFactory->updateWorkUnit(wuid));
+            newWuid.set(wuid);
+        }
+        else
+        {
+            w.setown(wuFactory->createWorkUnit(NULL, NULL, NULL));
+            w->getWuid(StringAttrAdaptor(newWuid));
+        }
+
         if (!w)
             return NULL;
         w->setAgentSession(myProcessSession());
@@ -344,7 +356,7 @@ public:
         }
         w->commit();
         w.clear();
-        return wuFactory->openWorkUnit(wuid, false);
+        return wuFactory->openWorkUnit(newWuid.get(), false);
     }
 
     static IRoxieDaliHelper *connectToDali()
