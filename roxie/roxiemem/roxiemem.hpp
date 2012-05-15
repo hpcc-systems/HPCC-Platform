@@ -40,13 +40,6 @@
 #define ROXIEMM_LARGE_MEMORY_EXHAUSTED    ROXIEMM_ERROR_START+4
 
 
-//Use for asserts that are highly unlikely to occur, and would likely to be reproduced in debug mode.
-#ifdef _DEBUG
-#define dbgassertex(x) assertex(x)
-#else
-#define dbgassertex(x)
-#endif
-
 #ifdef __64BIT__
 #define HEAP_ALIGNMENT_SIZE I64C(0x100000u)                     // 1 mb heaplets - may be too big?
 #else
