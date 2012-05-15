@@ -990,6 +990,12 @@ public:
 
     inline bool foundAmbiguity() const { return introducesAmbiguity; }
 
+    void setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlExpression * record);
+
+protected:
+    void setNestedMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlSimpleScope * oldScope, IHqlExpression * newRecord);
+    void setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel);
+
 protected:
     OwnedHqlExpr oldSelector;
     bool introducesAmbiguity;

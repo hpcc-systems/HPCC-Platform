@@ -993,11 +993,8 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
             //A bit of a hack - Richard can't cope with zero length values being returned, so allocate
             //a single byte to keep him happy.
-            OwnedHqlExpr dummyField = createField(unnamedAtom, makeIntType(1, false), NULL, NULL);
-            extractJoinFieldsRecord.setown(createRecord(dummyField));
-            OwnedHqlExpr self = getSelf(extractJoinFieldsRecord);
-
-            assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(dummyField)), getZero()));
+            OwnedHqlExpr nonEmptyAttr = createAttribute(_nonEmpty_Atom);
+            extractJoinFieldsRecord.setown(createRecord(nonEmptyAttr));
         }
 
         extractJoinFieldsTransform.setown(createValue(no_transform, makeTransformType(extractJoinFieldsRecord->getType()), assigns));

@@ -170,6 +170,8 @@ extern HQL_API TableProjectMapper * createProjectMapper(IHqlExpression * mapping
 //The tree must be scope tagged before it works correctly though...
 extern HQL_API IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset);
 extern HQL_API void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first, IHqlExpression * oldDataset, IHqlExpression * newDataset);
+extern HQL_API IHqlExpression * updateChildSelectors(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector, unsigned firstChild);
+extern HQL_API IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newSelector, unsigned firstChild);
 extern HQL_API IHqlExpression * scopedReplaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * replaceSelfRefSelector(IHqlExpression * expr, IHqlExpression * newDataset);
 
