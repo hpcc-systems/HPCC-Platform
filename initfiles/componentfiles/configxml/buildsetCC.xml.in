@@ -360,8 +360,10 @@
              schema="esp_service_ecldirect.xsd">
     <Properties bindingType="EclDirectSoapBinding"
                 defaultPort="8008"
+                defaultWizardPort="8010"
                 defaultResourcesBasedn="ou=EclDirectAccess,ou=EspServices,ou=ecl"
                 defaultSecurePort="18008"
+                defaultWizardSecurePort="18010"
                 plugin="ecldirect"
                 type="ecldirect">
      <Authenticate access="Read"
