@@ -29,6 +29,7 @@
 #include "XMLTags.h"
 #include "httpclient.hpp"
 #include "jqueue.tpp"
+#include "build-config.h"
 
 typedef enum EnvAction_
 {
@@ -44,7 +45,6 @@ typedef enum EnvAction_
 #define CLOUD_SOAPCALL_TIMEOUT 10000
 #define CONFIG_MONITOR_CHECK_INTERVAL  1000
 #define CONFIG_MONITOR_TIMEOUT_PERIOD  6000
-#define ENVIRONMENT_SOURCE_DIR "/etc/HPCCSystems/source/"
 
 class CCloudTask;
 class CCloudActionHandler;
@@ -196,11 +196,11 @@ private:
         }
         else
         {
-          m_mutexObserverQueue.lock();
+          CriticalBlock block(m_critsecObserverQueue);
 
           for (unsigned int idxObservers = 0; idxObservers < m_qObservers.ordinality(); idxObservers++)
           {
-            IConfigFileObserver *pConfigFileObserver = dynamic_cast<IConfigFileObserver*>(m_qObservers.query(idxObservers));
+            IConfigFileObserver *pConfigFileObserver = m_qObservers.query(idxObservers);
 
             for (diffIter->first(); diffIter->isValid() == true; diffIter->next())
             {
@@ -217,38 +217,30 @@ private:
               }
             }
           }
-
-          m_mutexObserverQueue.unlock();
         }
       }
 
-      virtual void addObserver( IObserver &observer )
+      virtual void addObserver( IConfigFileObserver &observer )
       {
-         m_mutexObserverQueue.lock();
+         CriticalBlock block(m_critsecObserverQueue);
 
         //allow observers to register only once
         if (m_qObservers.find(&observer) == (unsigned)-1)
         {
           m_qObservers.enqueue(&observer);
         }
-
-        m_mutexObserverQueue.unlock();
       }
 
-      virtual void removeObserver( IObserver &observer )
+      virtual void removeObserver( IConfigFileObserver &observer )
       {
-        m_mutexObserverQueue.lock();
+        CriticalBlock block(m_critsecObserverQueue);
 
         m_qObservers.dequeue(&observer);
-
-        m_mutexObserverQueue.unlock();
       }
 
       virtual void main()
       {
-        StringBuffer strDrive, strPath, strTail, strExt, strDirName;
-
-        Owned<IFile> configFiles = createIFile(ENVIRONMENT_SOURCE_DIR);
+        Owned<IFile> configFiles = createIFile(CONFIG_SOURCE_DIR);
 
         while ( m_quitThread == false )
         {
@@ -259,7 +251,7 @@ private:
             notify(diffIter);
           }
         }
-       };
+      };
 
       void init()
       {
@@ -273,15 +265,19 @@ private:
 
       static CConfigFileMonitorThread* getInstance()
       {
-        static CConfigFileMonitorThread* s_pConfigFileMonitorSingleton = NULL;
+        static Owned<CConfigFileMonitorThread> s_configFileMonitorSingleton;
+        static CSingletonLock slock;
 
-        if ( s_pConfigFileMonitorSingleton == NULL )
+        if (slock.lock() == true)
         {
-          s_pConfigFileMonitorSingleton = new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD);
-          s_pConfigFileMonitorSingleton->init();
+          if (s_configFileMonitorSingleton.get() == NULL)
+          {
+            s_configFileMonitorSingleton.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
+            s_configFileMonitorSingleton->init();
+          }
         }
 
-        return s_pConfigFileMonitorSingleton;
+        return s_configFileMonitorSingleton.get();
       };
 
     protected:
@@ -290,8 +286,8 @@ private:
       bool m_quitThread;
       unsigned int m_uTimeout;
       unsigned int m_uCheckInterval;
-      QueueOf<IObserver,false> m_qObservers;
-      Mutex m_mutexObserverQueue;
+      QueueOf<IConfigFileObserver,false> m_qObservers;
+      CriticalSection m_critsecObserverQueue;
       CConfigChangeNotification m_configChangeNotification;
 
     private:
@@ -545,8 +541,6 @@ private:
     StringBuffer              m_cloudEnvId;
     short                     m_daliServerPort;
     Owned<CGenerateJSFactoryThread> m_pGenJSFactoryThread;
-public:
-    Owned<CConfigFileMonitorThread> m_configFileMonitorThread;
 private:
     bool                      m_skipEnvUpdateFromNotification;
     bool                      m_activeUserNotResp;

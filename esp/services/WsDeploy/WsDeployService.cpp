@@ -24,7 +24,6 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "jencrypt.hpp"
-#include "build-config.h"
 
 #ifdef _WINDOWS
 #include <winsock2.h>
@@ -5253,6 +5252,8 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
 void CWsDeployFileInfo::updateConfigFromFile()
 {
   StringBuffer sbxml;
+
+  synchronized block(m_mutex);
 
   if (m_pFileIO.get() != NULL)
   {
