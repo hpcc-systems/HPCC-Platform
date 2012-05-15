@@ -59,7 +59,7 @@ protected:
         if (1 == numPartialResults)
             return firstRow;
 
-        CThorExpandingRowArray partialResults(*this, true, false, true, numPartialResults);
+        CThorExpandingRowArray partialResults(*this, this, true, false, true, numPartialResults);
         partialResults.setRow(0, firstRow);
         --numPartialResults;
 
