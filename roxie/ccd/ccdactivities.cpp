@@ -2342,6 +2342,16 @@ public:
         finalRow.clear();
     }
 
+    virtual const char *queryDynamicFileName() const
+    {
+        return helper->getFileName();
+    }
+
+    virtual void setVariableFileInfo()
+    {
+        // noop (but not unexpected)
+    }
+
     virtual bool needsRowAllocator()
     {
         return true;
@@ -2736,6 +2746,16 @@ public:
     virtual bool needsRowAllocator()
     {
         return true;
+    }
+
+    virtual const char *queryDynamicFileName() const
+    {
+        return helper->getFileName();
+    }
+
+    virtual void setVariableFileInfo()
+    {
+        // noop (but not unexpected)
     }
 
     virtual void doProcess(IMessagePacker *output)
