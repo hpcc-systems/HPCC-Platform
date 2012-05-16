@@ -72,7 +72,7 @@
 //#define PARANOID
 //#define SEARCH_NAME1   "vL6R"
 //#define SEARCH_NAME2   "v19"
-//#define SEARCH_IEXPR 0x03289048
+//#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
 #define VERIFY_EXPR_INTEGRITY
@@ -1004,6 +1004,7 @@ const char *getOpString(node_operator op)
     case no_mergedscope: return "<scope>";
     case no_privatescope: return "<private_scope>";
     case no_list: return "<list>";
+    case no_selectmap: return "SELECT_MAP";
     case no_selectnth: return "SELECT_NTH";
     case no_filter: return "FILTER";
     case no_param: return "<parameter>";
@@ -1445,9 +1446,9 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
     case no_childquery: return "no_childquery";
+    case no_inlinedictionary: return "DICTIONARY";
 
-
-    case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
@@ -1455,7 +1456,6 @@ const char *getOpString(node_operator op)
     case no_unused50: case no_unused52:
     case no_unused80:
     case no_unused81:
-    case no_unused82:
     case no_unused83:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -2517,7 +2517,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_field:
         {
             type_t tc = dataset->queryType()->getTypeCode();
-            assertex(tc == type_table || tc == type_groupedtable);
+            assertex(tc == type_table || tc == type_groupedtable || tc == type_dictionary);
             return true;
         }
     case no_comma:
@@ -2883,6 +2883,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
                 break;
             }
         }
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         if (recordTypesMatch(type, exprType))
@@ -3067,8 +3068,8 @@ void CHqlExpression::initFlagsBeforeOperands()
 {
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("initFlags");
 #endif
 #endif
 
@@ -3266,6 +3267,7 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_assert_ds:
         switch (queryType()->getTypeCode())
         {
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             infoFlags |= HEFthrowds;
@@ -3626,6 +3628,7 @@ switch (op)
                 }
                 break;
             }
+        case type_dictionary:
         case type_groupedtable:
         case type_table:
             {
@@ -4116,6 +4119,27 @@ bool CHqlExpression::isDataset()
     }
 }
 
+bool CHqlExpression::isDictionary()
+{
+    ITypeInfo * cur = queryType();
+    loop
+    {
+        if (!cur)
+            return false;
+
+        switch(cur->getTypeCode())
+        {
+        case type_dictionary:
+            return true;
+        case type_function:
+            cur = cur->queryChildType();
+            break;
+        default:
+            return false;
+        }
+    }
+}
+
 bool CHqlExpression::isDatarow() 
 {
     return matchesTypeCode(queryType(), type_row);
@@ -4249,8 +4273,8 @@ void CHqlExpression::Link(void) const
 #endif
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("Link");
 #endif
 #endif
     Parent::Link();
@@ -4265,8 +4289,8 @@ bool CHqlExpression::Release(void) const
 #endif
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("Release");
 #endif
 #endif
     return Parent::Release();
@@ -5089,6 +5113,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
                             switch (thisType->getTypeCode())
                             {
                             case type_void:
+                            case type_dictionary:
                             case type_table:
                             case type_groupedtable:
                             case type_row:
@@ -5428,6 +5453,7 @@ void CHqlField::onCreateField()
         break;
     case type_row:
         break;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         typeExpr = queryRecord();
@@ -5641,6 +5667,29 @@ bool isInImplictScope(IHqlExpression * scope, IHqlExpression * dataset)
     return false;
 }
 
+//===========================================================================
+
+CHqlDictionary *CHqlDictionary::makeDictionary(node_operator _op, ITypeInfo *type, HqlExprArray &_ownedOperands)
+{
+    CHqlDictionary *e = new CHqlDictionary(_op, type, _ownedOperands);
+    return (CHqlDictionary *) e->closeExpr();
+}
+
+CHqlDictionary::CHqlDictionary(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands)
+: CHqlExpressionWithType(_op, _type, _ownedOperands)
+{
+}
+
+CHqlDictionary::~CHqlDictionary()
+{
+}
+
+IHqlExpression *CHqlDictionary::clone(HqlExprArray &newkids)
+{
+    return createDictionary(op, newkids);
+}
+
+//===========================================================================
 
 CHqlDataset *CHqlDataset::makeDataset(node_operator _op, ITypeInfo *type, HqlExprArray &_ownedOperands)
 {
@@ -6082,6 +6131,7 @@ bool CHqlRecord::assignableFrom(ITypeInfo * source)
     switch(source->getTypeCode())
     {
     case type_groupedtable:
+    case type_dictionary:
     case type_table:
     case type_row:
     case type_transform:
@@ -6897,6 +6947,7 @@ extern HQL_API bool okToAddLocation(IHqlExpression * expr)
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_void:
@@ -8754,6 +8805,9 @@ IHqlExpression * CHqlParameter::makeParameter(_ATOM _name, unsigned _idx, ITypeI
     type_t tc = _type->getTypeCode();
     switch (tc)
     {
+    case type_dictionary:
+        UNIMPLEMENTED;
+        break;
     case type_table:
     case type_groupedtable:
         e = new CHqlDatasetParameter(_name, _idx, _type);
@@ -9819,6 +9873,88 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
     return createDataset(op, children);
 }
 
+IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
+{
+#ifdef GATHER_LINK_STATS
+    insideCreate++;
+#endif
+    Owned<ITypeInfo> type = NULL;
+
+    switch (op)
+    {
+    case no_null:
+        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(0)))));
+        break;
+    case no_inlinedictionary:
+        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(1)))));
+        break;
+    case no_select:
+        type.set(parms.item(1).queryType());
+        break;
+    case no_addfiles:
+        type.set(parms.item(0).queryType());  // It's an error if they don't all match, caught elsewhere (?)
+        break;
+    case no_if:
+        {
+            IHqlExpression & left = parms.item(1);
+            IHqlExpression & right = parms.item(2);
+            ITypeInfo * leftType = left.queryType();
+            ITypeInfo * rightType = right.queryType();
+            if (left.getOperator() == no_null)
+                type.set(rightType);
+            else if (right.getOperator() == no_null)
+                type.set(leftType);
+            else
+                type.setown(getTypeIntersection(leftType, rightType));
+            break;
+        }
+    case no_case:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(1).queryType());
+        break;
+    case no_map:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(0).queryType());
+        break;
+    case no_nofold:
+    case no_nohoist:
+    case no_thor:
+    case no_nothor:
+    case no_alias:
+    case no_translated:
+    case no_catch:
+        type.set(parms.item(0).queryType());
+        break;
+    default:
+        UNIMPLEMENTED_XY("Type calculation for dictionary operator", getOpString(op));
+        break;
+    }
+
+    IHqlExpression * ret = CHqlDictionary::makeDictionary(op, type.getClear(), parms);
+#ifdef GATHER_LINK_STATS
+    insideCreate--;
+#endif
+    return ret;
+}
+
+IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary, IHqlExpression *list)
+{
+    HqlExprArray parms;
+    parms.append(*dictionary);
+    if (list)
+    {
+        list->unwindList(parms, no_comma);
+        list->Release();
+    }
+    return createDictionary(op, parms);
+}
+
+IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary)
+{
+    HqlExprArray parms;
+    parms.append(*dictionary);
+    return createDictionary(op, parms);
+}
 
 IHqlExpression * createAliasOwn(IHqlExpression * expr, IHqlExpression * attr)
 {
@@ -9839,6 +9975,8 @@ IHqlExpression * createTypedValue(node_operator op, ITypeInfo * type, HqlExprArr
     case type_groupedtable:
     case type_table:
         return createDataset(op, args);
+    case type_dictionary:
+        return createDictionary(op, args);
     case type_row:
         return createRow(op, args);
     default:
@@ -11917,6 +12055,8 @@ extern IHqlExpression *createWrapper(node_operator op, IHqlExpression * e)
         case type_table:
         case type_groupedtable:
             return createDataset(op, e, NULL);
+        case type_dictionary:
+            return createDictionary(op, e, NULL);
         }
     }
     return createValue(op, LINK(type), e);
@@ -11931,6 +12071,8 @@ IHqlExpression *createWrapper(node_operator op, ITypeInfo * type, HqlExprArray &
         {
         case type_row:
             return createRow(op, args);
+        case type_dictionary:
+            return createDictionary(op, args);
         case type_table:
         case type_groupedtable:
             return createDataset(op, args);
@@ -12044,6 +12186,8 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
         return createDataset(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
+    if (t == type_dictionary)
+        return createDictionary(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
     if (t == type_row)
         return createRow(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
 
@@ -12058,6 +12202,8 @@ static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
         return createDataset(no_select, args);
+    if (t == type_dictionary)
+        return createDictionary(no_select, args);
     if (t == type_row)
         return createRow(no_select, args);
 
@@ -12548,6 +12694,13 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
             IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
             return createDataset(no_null, LINK(record), LINK(attr));
         }
+    case type_dictionary:
+        {
+            ITypeInfo * recordType = queryRecordType(type);
+            IHqlExpression * record = queryExpression(recordType);
+            IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
+            return createDictionary(no_null, LINK(record), LINK(attr));
+        }
     case type_row:
 #if 0
         {
@@ -12600,6 +12753,8 @@ extern HQL_API IHqlExpression * createPureVirtual(ITypeInfo * type)
             return createDataset(no_purevirtual, LINK(queryOriginalRecord(type)));
         case type_groupedtable:
             return createDataset(no_purevirtual, LINK(queryOriginalRecord(type)), createAttribute(groupedAtom));
+        case type_dictionary:
+            return createDictionary(no_purevirtual, LINK(queryOriginalRecord(type)), createAttribute(groupedAtom));
         case type_row:
         case type_record:
             return createRow(no_purevirtual, LINK(queryOriginalRecord(type)));
@@ -13733,7 +13888,7 @@ IHqlExpression * extractChildren(IHqlExpression * value)
 
 IHqlExpression * queryDatasetCursor(IHqlExpression * ds)
 {
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
         ds = ds->queryChild(0);
     return ds;
 }
@@ -13743,7 +13898,7 @@ IHqlExpression * querySelectorDataset(IHqlExpression * expr, bool & isNew)
     assertex(expr->getOperator() == no_select);
     isNew = expr->hasProperty(newAtom);
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         if (ds->hasProperty(newAtom))
             isNew = true;
@@ -13759,7 +13914,7 @@ bool isNewSelector(IHqlExpression * expr)
     if (expr->hasProperty(newAtom))
         return true;
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         if (ds->hasProperty(newAtom))
             return true;
@@ -13781,7 +13936,7 @@ IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * 
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
-    if ((ds->getOperator() == no_select) && !ds->isDataset())
+    if ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         OwnedHqlExpr newSelector = replaceSelectorDataset(ds, newDataset);
         return replaceChild(expr, 0, newSelector);
@@ -13841,6 +13996,7 @@ static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, boo
     case type_alien:
         return getSimplifiedType(promoted, isConditional, isSerialized);
     case type_row:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_transform:
@@ -14629,6 +14785,7 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
         if (expr->hasProperty(mergeTransformAtom))
             return true;
         break;
+    case no_inlinedictionary:
     case no_inlinetable:
         {
             IHqlExpression * transforms = expr->queryChild(0);
@@ -14738,6 +14895,11 @@ IHqlExpression * queryNullRowRecord()
 IHqlExpression * createNullDataset()
 {
     return createDataset(no_null, LINK(queryNullRecord()));
+}
+
+IHqlExpression * createNullDictionary()
+{
+    return createDictionary(no_null, LINK(queryNullRecord()));
 }
 
 bool removeProperty(HqlExprArray & args, _ATOM name)
@@ -15616,6 +15778,9 @@ IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
     case type_table:
     case type_groupedtable:
         return createDataset(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
+        break;
+    case type_dictionary:
+        return createDictionary(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
         break;
     default:
         return createValue(no_typetransfer, newType.getClear(), expr);

@@ -691,6 +691,33 @@ BoundRow * InlineLinkedDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression
 }
 
 //---------------------------------------------------------------------------
+
+InlineLinkedDictionaryCursor::InlineLinkedDictionaryCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs)
+  : InlineLinkedDatasetCursor(_translator, _ds, _boundDs)
+{
+}
+
+BoundRow * InlineLinkedDictionaryCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+{
+    OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
+
+    StringBuffer s, rowName;
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, false); // MORE - what should this be?
+
+    CHqlBoundExpr boundIndex;
+    BuildCtx subctx(ctx);
+    translator.buildExpr(ctx, index, boundIndex);
+
+    OwnedHqlExpr address = getPointer(boundDs.expr);
+    OwnedHqlExpr indexedValue = createValue(no_selectmap, row->getType(), LINK(address), LINK(boundIndex.expr));
+    subctx.addAssign(row, indexedValue);
+
+    //MORE: Should mark as linked if it is.
+    BoundRow * cursor = translator.bindRow(ctx, indexExpr, row);
+    return cursor;
+}
+
+//---------------------------------------------------------------------------
 MultiLevelDatasetCursor::MultiLevelDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds)
 : BaseDatasetCursor(_translator, _ds, NULL)
 {
@@ -1299,7 +1326,10 @@ IHqlCppDatasetCursor * HqlCppTranslator::createDatasetSelector(BuildCtx & ctx, I
     buildDataset(ctx, expr, bound, FormatNatural);
     if (bound.expr->isDatarow() || !isArrayRowset(bound.expr->queryType()))
         return new InlineBlockDatasetCursor(*this, expr, bound);
-    return new InlineLinkedDatasetCursor(*this, expr, bound);
+    else if (bound.expr->isDictionary())
+        return new InlineLinkedDictionaryCursor(*this, expr, bound);
+    else
+        return new InlineLinkedDatasetCursor(*this, expr, bound);
 }
 
 
@@ -1709,6 +1739,162 @@ bool LinkedDatasetBuilder::buildAppendRows(BuildCtx & ctx, IHqlExpression * expr
 
 //---------------------------------------------------------------------------
 
+
+LinkedDictionaryBuilder::LinkedDictionaryBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : DatasetBuilderBase(_translator, _record, true)
+{
+}
+
+void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
+{
+    StringBuffer decl, allocatorName;
+
+    OwnedHqlExpr curActivityId = translator.getCurrentActivityId(ctx);
+    translator.ensureRowAllocator(allocatorName, ctx, record, curActivityId);
+
+    StringBuffer lookupHelperName;
+    OwnedHqlExpr dict = createDictionary(no_null, record.getLink()); // MORE - is the actual dict not available?
+    translator.buildDictionaryHashClass(ctx, record, dict, lookupHelperName);
+
+    decl.append("RtlLinkedDictionaryBuilder ").append(instanceName).append("(");
+    decl.append(allocatorName).append(", &").append(lookupHelperName);
+    decl.append(");");
+
+    ctx.addQuoted(decl);
+}
+
+void LinkedDictionaryBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
+{
+    OwnedHqlExpr size = translator.getRecordSize(selfCursor->querySelector());
+    CHqlBoundExpr boundSize;
+    translator.buildExpr(ctx, size, boundSize);
+
+    StringBuffer s;
+    s.append(instanceName).append(".finalizeRow(");
+    translator.generateExprCpp(s, boundSize.expr).append(");");
+    ctx.addQuoted(s);
+}
+
+void LinkedDictionaryBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
+{
+    //more: should I do this by really calling a function?
+    StringBuffer s;
+
+    s.append(instanceName).append(".getcount()");
+
+    if (hasWrapperModifier(target.queryType()))
+    {
+        translator.generateExprCpp(s.clear(), target.expr);
+        s.append(".setown(").append(instanceName).append(".getcount()");
+        s.append(",").append(instanceName).append(".linkrows());");
+        ctx.addQuoted(s);
+    }
+    else
+    {
+        OwnedHqlExpr countExpr = createQuoted(s.str(), LINK(unsignedType));
+        ctx.addAssign(target.count, countExpr);
+        s.clear().append(instanceName).append(".linkrows()");
+        OwnedHqlExpr rowsExpr = createQuoted(s.str(), dataset->getType());
+        ctx.addAssign(target.expr, rowsExpr);
+    }
+}
+
+
+void LinkedDictionaryBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
+{
+    StringBuffer s;
+    s.clear().append(instanceName).append(".getcount()");
+    bound.count.setown(createQuoted(s.str(), LINK(unsignedType)));
+    s.clear().append(instanceName).append(".queryrows()");
+    bound.expr.setown(createQuoted(s.str(), makeReferenceModifier(dataset->getType())));
+}
+
+bool LinkedDictionaryBuilder::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
+{
+    IHqlExpression * sourceRecord = sourceRow->queryRecord();
+    if (recordTypesMatch(sourceRecord, record) && sourceRow->isBinary())
+    {
+        OwnedHqlExpr source = getPointer(sourceRow->queryBound());
+        BuildCtx subctx(ctx);
+        if (sourceRow->isConditional())
+            subctx.addFilter(source);
+
+        if (sourceRow->isLinkCounted())
+        {
+            StringBuffer s;
+            s.append(instanceName).append(".append(");
+            translator.generateExprCpp(s, source);
+            s.append(");");
+            subctx.addQuoted(s);
+            return true;
+        }
+
+        IHqlExpression * sourceExpr = sourceRow->querySelector();
+        OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
+        OwnedHqlExpr size = createSizeof(rowExpr);
+        CHqlBoundExpr boundSize;
+        translator.buildExpr(ctx, size, boundSize);
+
+        StringBuffer s;
+        s.append(instanceName).append(".cloneRow(");
+        translator.generateExprCpp(s, boundSize.expr).append(",");
+        translator.generateExprCpp(s, source);
+        s.append(");");
+        subctx.addQuoted(s);
+        return true;
+    }
+    return false;
+}
+
+bool LinkedDictionaryBuilder::buildAppendRows(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * sourceRecord = expr->queryRecord();
+    if (recordTypesMatch(sourceRecord, record))
+    {
+        CHqlBoundExpr bound;
+        if (!ctx.getMatchExpr(expr, bound))
+        {
+            bool tryToOptimize = false;
+            switch (expr->getOperator())
+            {
+            case no_select:
+                if (isMultiLevelDatasetSelector(expr, false))
+                    break;
+                if (!hasLinkedRow(expr->queryType()))
+                    break;
+                tryToOptimize = true;
+                break;
+            default:
+                //Don't speculatively evaluate if the expression isn't pure
+                tryToOptimize = alwaysEvaluatesToBound(expr) && expr->isPure();
+                break;
+            }
+
+            if (tryToOptimize)
+                translator.buildDataset(ctx, expr, bound, FormatNatural);
+        }
+
+        if (bound.expr)
+        {
+            if (hasLinkedRow(bound.queryType()))
+            {
+                OwnedHqlExpr source = getPointer(bound.expr);
+                StringBuffer s;
+                s.append(instanceName).append(".appendRows(");
+                translator.generateExprCpp(s, bound.count);
+                s.append(",");
+                translator.generateExprCpp(s, source);
+                s.append(");");
+                ctx.addQuoted(s);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+//---------------------------------------------------------------------------
+
 SetBuilder::SetBuilder(HqlCppTranslator & _translator, ITypeInfo * fieldType, IHqlExpression * _allVar) : translator(_translator)
 {
     HqlExprArray fields;
@@ -1793,6 +1979,11 @@ IHqlCppDatasetBuilder * HqlCppTranslator::createBlockedDatasetBuilder(IHqlExpres
 IHqlCppDatasetBuilder * HqlCppTranslator::createLinkedDatasetBuilder(IHqlExpression * record, IHqlExpression * choosenLimit)
 {
     return new LinkedDatasetBuilder(*this, record, choosenLimit);
+}
+
+IHqlCppDatasetBuilder * HqlCppTranslator::createLinkedDictionaryBuilder(IHqlExpression * record)
+{
+    return new LinkedDictionaryBuilder(*this, record);
 }
 
 IHqlCppDatasetBuilder * HqlCppTranslator::createSingleRowTempDatasetBuilder(IHqlExpression * record, BoundRow * row)

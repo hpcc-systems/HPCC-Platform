@@ -8486,6 +8486,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             ITypeInfo * type = expr->queryType();
             switch (type->getTypeCode())
             {
+            case type_dictionary:
             case type_table:
             case type_groupedtable:
                 if (expr->hasProperty(embeddedAtom))

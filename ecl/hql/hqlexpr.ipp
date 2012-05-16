@@ -200,6 +200,7 @@ public:
     virtual bool isBoolean();
     virtual bool isConstant();
     virtual bool isDataset();
+    virtual bool isDictionary();
     virtual bool isDatarow();
     virtual bool isScope();
     virtual bool isMacro();
@@ -1528,6 +1529,18 @@ public:
     void insertSymbols(IHqlExpression * expr);
 };
 
+class CHqlDictionary : public CHqlExpressionWithType // , implements IHqlDictionary
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CHqlExpression)
+    static CHqlDictionary *makeDictionary(node_operator op, ITypeInfo *type, HqlExprArray &operands);
+
+public:
+    CHqlDictionary(node_operator op, ITypeInfo *_type, HqlExprArray &_ownedOperands);
+    ~CHqlDictionary();
+
+    virtual IHqlExpression *clone(HqlExprArray &newkids);
+};
 
 
 class CHqlDataset : public CHqlExpressionWithType, implements IHqlDataset

@@ -1177,6 +1177,9 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
     if (left->isDatarow() || right->isDatarow())
         return createRow(no_if, cond, createComma(left, right));
 
+    if (left->isDictionary() || right->isDictionary())
+        return createDictionary(no_if, cond, createComma(left, right));
+
     ITypeInfo * type = ::getPromotedECLType(left->queryType(), right->queryType());
     return createValue(no_if, type, cond, left, right);
 }
@@ -1879,9 +1882,12 @@ unsigned isEmptyRecord(IHqlExpression * record)
 
 bool isTrivialSelectN(IHqlExpression * expr)
 {
-    IHqlExpression * index = expr->queryChild(1);
-    if (index->queryValue() && (index->queryValue()->getIntValue() == 1))
-        return hasSingleRow(expr->queryChild(0));
+    if (expr->getOperator() == no_index || expr->getOperator() == no_index)
+    {
+        IHqlExpression * index = expr->queryChild(1);
+        if (index->queryValue() && (index->queryValue()->getIntValue() == 1))
+            return hasSingleRow(expr->queryChild(0));
+    }
     return false;
 }
 
@@ -3239,6 +3245,8 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
         return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
     case type_groupedtable:
         return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
+    case type_dictionary:
+        return createDictionary(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
     case type_row:
     case type_record:
          return createRow(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
@@ -5307,7 +5315,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr, bool isDictionary)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5344,10 +5352,19 @@ IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocat
     HqlExprArray children;
     children.append(*createValue(no_transformlist, makeNullType(), transforms));
     children.append(*LINK(record));
-    OwnedHqlExpr ret = createDataset(no_inlinetable, children);
+    OwnedHqlExpr ret = isDictionary ? createDictionary(no_inlinedictionary, children) : createDataset(no_inlinetable, children);
     return expr->cloneAllAnnotations(ret);
 }
 
+IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+{
+    return convertTempTableToInline(errors, location, expr, false);
+}
+
+IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+{
+    return convertTempTableToInline(errors, location, expr, true);
+}
 
 bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)
 {
@@ -5377,6 +5394,7 @@ bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)
     case type_array:
         return areTypesComparable(leftType->queryChildType(), rightType->queryChildType());
     case type_row:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         return recordTypesMatch(leftType, rightType);
@@ -6964,6 +6982,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record) const
                         builder.addSetField(name, childName, *type);
                         break;
                     }
+                case type_dictionary:
                 case type_table:
                 case type_groupedtable:
                     {
@@ -7300,6 +7319,7 @@ bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * 
                 if (rhsOp == no_createrow)
                     return createConstantRow(out, rhs->queryChild(0));
                 return false;
+            case type_dictionary:
             case type_table:
             case type_groupedtable:
                 if (!expr->hasProperty(countAtom) && !expr->hasProperty(sizeofAtom))

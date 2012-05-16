@@ -355,6 +355,10 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
                 gatherChildFields(expr->queryRecord(), isConditional);
                 fields.append(*new DataSourceMetaItem(FVFFendrecord, outname, xpath, voidType));
             }
+            else if ((tc == type_dictionary))
+            {
+                UNIMPLEMENTED;
+            }
             else if ((tc == type_table) || (tc == type_groupedtable))
             {
                 isStoredFixedWidth = false;
