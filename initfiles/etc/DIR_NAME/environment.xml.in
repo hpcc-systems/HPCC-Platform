@@ -86,7 +86,7 @@
              schema="esp.xsd"/>
    <BuildSet deployable="no"
              installSet="deploy_map.xml"
-             name="eclwatch"
+             name="espsmc"
              path="componentfiles/espsmc"
              processName="EspService"
              schema="espsmcservice.xsd">
@@ -95,13 +95,13 @@
                 defaultSecurePort="18010"
                 type="WsSMC">
      <Authenticate access="Read"
-                   description="Base access to ESP services"
+                   description="Root access to SMC service"
                    path="/"
                    required="Read"
-                   resource="SMCAccess"/>
-     <AuthenticateFeature description="Base access to ESP services"
-                          path="SMCAccess"
-                          resource="SMCAccess"
+                   resource="SmcAccess"/>
+     <AuthenticateFeature description="Access to SMC service"
+                          path="SmcAccess"
+                          resource="SmcAccess"
                           service="ws_smc"/>
      <AuthenticateFeature description="Access to thor queues"
                           path="ThorQueueAccess"
@@ -491,7 +491,7 @@
                    method="none"/>
    <EspBinding defaultForPort="true"
                defaultServiceVersion=""
-               name="eclwatch"
+               name="smc"
                port="8010"
                protocol="http"
                resourcesBasedn="ou=SMC,ou=EspServices,ou=ecl"
@@ -499,14 +499,14 @@
                workunitsBasedn="ou=workunits,ou=ecl"
                wsdlServiceAddress="">
     <Authenticate access="Read"
-                  description="Base access to ESP services"
+                  description="Root access to SMC service"
                   path="/"
                   required="Read"
-                  resource="SMCAccess"/>
+                  resource="SmcAccess"/>
     <AuthenticateFeature authenticate="Yes"
-                         description="Base access to ESP services"
-                         path="SMCAccess"
-                         resource="SMCAccess"
+                         description="Access to SMC service"
+                         path="SmcAccess"
+                         resource="SmcAccess"
                          service="ws_smc"/>
     <AuthenticateFeature authenticate="Yes"
                          description="Access to thor queues"
@@ -668,8 +668,8 @@
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
               build="${projname}_${version}-${stagever}"
-              buildSet="eclwatch"
-              description="ESP services for Management Console"
+              buildSet="espsmc"
+              description="ESP services for SMC"
               disableUppercaseTranslation="false"
               enableSystemUseRewrite="false"
               excludePartitions="/,/dev*,/sys,/usr,/proc/*"
@@ -687,13 +687,13 @@
                defaultSecurePort="18010"
                type="WsSMC">
     <Authenticate access="Read"
-                  description="Base access to ESP services"
+                  description="Root access to SMC service"
                   path="/"
                   required="Read"
-                  resource="SMCAccess"/>
-    <AuthenticateFeature description="Base access to ESP services"
-                         path="SMCAccess"
-                         resource="SMCAccess"
+                  resource="SmcAccess"/>
+    <AuthenticateFeature description="Access to SMC service"
+                         path="SmcAccess"
+                         resource="SmcAccess"
                          service="ws_smc"/>
     <AuthenticateFeature description="Access to thor queues"
                          path="ThorQueueAccess"

@@ -93,7 +93,7 @@
              schema="esp.xsd"/>
    <BuildSet deployable="no"
              installSet="deploy_map.xml"
-             name="eclwatch"
+             name="espsmc"
              path="componentfiles/espsmc"
              processName="EspService"
              schema="espsmcservice.xsd">
@@ -102,13 +102,13 @@
                 defaultSecurePort="18010"
                 type="WsSMC">
      <Authenticate access="Read"
-                   description="Base access to ESP services"
+                   description="Root access to SMC service"
                    path="/"
                    required="Read"
-                   resource="SMCAccess"/>
-     <AuthenticateFeature description="Base access to ESP services"
-                          path="SMCAccess"
-                          resource="SMCAccess"
+                   resource="SmcAccess"/>
+     <AuthenticateFeature description="Access to SMC service"
+                          path="SmcAccess"
+                          resource="SmcAccess"
                           service="ws_smc"/>
      <AuthenticateFeature description="Access to thor queues"
                           path="ThorQueueAccess"
