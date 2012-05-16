@@ -1082,9 +1082,10 @@ class CRowStreamFromNode : public CSimpleInterface, implements IRowStream
     MemoryBuffer mb;
     bool eos;
     const bool &abortSoon;
-    mptag_t mpTag;
+    mptag_t mpTag, replyTag;
     Owned<ISerialStream> bufferStream;
     CThorStreamDeserializerSource memDeserializer;
+    CMessageBuffer msg;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1094,6 +1095,8 @@ public:
         bufferStream.setown(createMemoryBufferSerialStream(mb));
         memDeserializer.setStream(bufferStream);
         myNode = comm.queryGroup().rank(queryMyNode());
+        replyTag = createReplyTag();
+        msg.setReplyTag(replyTag);
         eos = false;
     }
 // IRowStream
@@ -1109,14 +1112,14 @@ public:
                 size32_t sz = activity.queryRowDeserializer()->deserialize(rowBuilder, memDeserializer);
                 return rowBuilder.finalizeRowClear(sz);
             }
-            CMessageBuffer msg; // no msg just give me data
+            // no msg just give me data
             if (!comm.send(msg, node, mpTag, LONGTIMEOUT)) // should never timeout, unless other end down
                 throw MakeStringException(0, "CRowStreamFromNode: Failed to send data request from node %d, to node %d", myNode, node);
             loop
             {
                 if (abortSoon)
                     break;
-                if (comm.recv(msg, node, mpTag, NULL, 60000))
+                if (comm.recv(msg, node, replyTag, NULL, 60000))
                     break;
                 ActPrintLog(&activity, "CRowStreamFromNode, request more from node %d, tag %d timedout, retrying", node, mpTag);
             }
@@ -1197,7 +1200,7 @@ public:
                         break;
                     activity->queryRowSerializer()->serialize(mbs,(const byte *)row.get());
                 } while (mb.length() < fetchBuffSize); // NB: allows at least 1
-                if (!comm.send(mb, sender, mpTag, LONGTIMEOUT))
+                if (!comm.reply(mb, LONGTIMEOUT))
                     throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJob().queryMyRank());
                 mb.clear();
             }
