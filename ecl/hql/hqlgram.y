@@ -166,6 +166,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   DENORMALIZE
   DEPRECATED
   DESC
+  DICTIONARY
   DISTRIBUTE
   DISTRIBUTED
   DISTRIBUTION
@@ -332,7 +333,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PARTITION
   PARTITION_ATTR
   TOK_PATTERN
-  PAYLOAD
   PENALTY
   PERSIST
   PHYSICALFILENAME
@@ -479,6 +479,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 
   DATAROW_ID
   DATASET_ID
+  DICTIONARY_ID
   SCOPE_ID
   VALUE_ID
   VALUE_ID_REF
@@ -499,6 +500,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 
   DATAROW_FUNCTION
   DATASET_FUNCTION
+  DICTIONARY_FUNCTION
   VALUE_FUNCTION
   ACTION_FUNCTION
   PATTERN_FUNCTION
@@ -703,6 +705,7 @@ defineType
     : typeDef
     | setType
     | explicitDatasetType
+    | explicitDictionaryType
     | ROW               {
                             IHqlExpression* record = queryNullRecord();
                             $$.setType(makeRowType(record->getType()));
@@ -758,6 +761,22 @@ explicitDatasetType1
                             $$.setPosition($1);
                         }
     ;
+
+explicitDictionaryType
+    : DICTIONARY
+                        {
+                            $$.setType(makeDictionaryType(makeRowType(queryNullRecord()->getType())));
+                            $$.setPosition($1);
+                        }
+    | DICTIONARY '(' recordDef ')'
+                        {
+                            OwnedHqlExpr record = $3.getExpr();
+                            ITypeInfo * recordType = createRecordType(record);
+                            $$.setType(makeDictionaryType(makeRowType(recordType)));
+                            $$.setPosition($1);
+                        }
+    ;
+
 
 transformType
     : TRANSFORM '(' recordDef ')'
@@ -862,6 +881,7 @@ object
 
 goodObject
     : dataSet
+    | dictionary
     | expression
                         {
                             //Remove later to allow sortlist attributes
@@ -1172,6 +1192,7 @@ knownOrUnknownId
 knownId
     : DATAROW_ID
     | DATASET_ID
+    | DICTIONARY_ID
     | VALUE_ID
     | ACTION_ID
     | RECORD_ID
@@ -1890,6 +1911,11 @@ transformation1
                             parser->addAssignment($1, $3);
                             $$.clear($1);
                         }
+    | transformDst ASSIGN dictionary
+                        {
+                            parser->addAssignment($1, $3);
+                            $$.clear($1);
+                        }
     | transformDst ASSIGN error ';'
                         {
                             $1.release();
@@ -1961,6 +1987,12 @@ transformDstSelect
                             $$.setExpr(scope.getClear(), $1);
                         }
     | DATASET_ID
+                        {
+                            OwnedHqlExpr scope = $1.getExpr();
+                            parser->setDotScope(scope);
+                            $$.setExpr(scope.getClear(), $1);
+                        }
+    | DICTIONARY_ID
                         {
                             OwnedHqlExpr scope = $1.getExpr();
                             parser->setDotScope(scope);
@@ -2925,12 +2957,6 @@ indexFlag
                             $$.setExpr(createAttribute(fixedAtom));
                             $$.setPosition($1);
                         }
-    | PAYLOAD '(' expression ')'
-                        {
-                            parser->normalizeExpression($3);        //$3 indicates the first payload field
-                            $$.setExpr(createExprAttribute(payloadAtom, $3.getExpr()));
-                            $$.setPosition($1);
-                        }
     | COMPRESSED '(' compressMode ')'
                         {
                             $$.setExpr(createExprAttribute(compressedAtom, $3.getExpr()));
@@ -3721,6 +3747,15 @@ funcRetType
                         }
     ;
 
+payloadPart
+    :  		            {
+                            // NOTE - this reduction happens as soon as the GOESTO is seen,
+                            // so it ensures that the following fields go into the payload record def
+                            $$.setExpr(parser->endRecordDef());
+                            parser->beginRecord();
+                        }
+      GOESTO fieldDefs optSemiComma
+    ;
 
 recordDef
     : startrecord fieldDefs optSemiComma endrecord
@@ -3730,6 +3765,16 @@ recordDef
                             $$.setExpr(record.getClear());
                             $$.setPosition($1);
                         }
+
+    | startrecord fieldDefs payloadPart endrecord
+                        {
+                            OwnedHqlExpr record = $3.getExpr();
+                            OwnedHqlExpr payload = $4.getExpr();
+                            parser->mergeDictionaryPayload(record, payload, $1);
+                            $$.setExpr(record.getClear());
+                            $$.setPosition($1);
+                        }
+
     | startrecord recordOptions fieldDefs optSemiComma endrecord
                         {
                             OwnedHqlExpr record = $5.getExpr();
@@ -3737,6 +3782,16 @@ recordDef
                             $$.setExpr(record.getClear());
                             $$.setPosition($1);
                         }
+
+    | startrecord recordOptions fieldDefs payloadPart endrecord
+                        {
+                            OwnedHqlExpr record = $4.getExpr();
+                            OwnedHqlExpr payload = $5.getExpr();
+                            parser->mergeDictionaryPayload(record, payload, $1);
+                            $$.setExpr(record.getClear());
+                            $$.setPosition($1);
+                        }
+
     | startrecord recordBase optFieldDefs endrecord
                         {
                             OwnedHqlExpr record = $4.getExpr();
@@ -3744,10 +3799,29 @@ recordDef
                             $$.setExpr(record.getClear());
                             $$.setPosition($1);
                         }
+
+    | startrecord recordBase optFieldDefs payloadPart endrecord
+                        {
+                            OwnedHqlExpr record = $4.getExpr();
+                            OwnedHqlExpr payload = $5.getExpr();
+                            parser->mergeDictionaryPayload(record, payload, $1);
+                            $$.setExpr(record.getClear());
+                            $$.setPosition($1);
+                        }
+
     | startrecord recordBase recordOptions optFieldDefs endrecord
                         {
                             OwnedHqlExpr record = $5.getExpr();
                             parser->checkRecordIsValid($1, record);
+                            $$.setExpr(record.getClear());
+                            $$.setPosition($1);
+                        }
+
+    | startrecord recordBase recordOptions optFieldDefs payloadPart endrecord
+                        {
+                            OwnedHqlExpr record = $5.getExpr();
+                            OwnedHqlExpr payload = $6.getExpr();
+                            parser->mergeDictionaryPayload(record, payload, $1);
                             $$.setExpr(record.getClear());
                             $$.setPosition($1);
                         }
@@ -3972,11 +4046,7 @@ recordOption
 endrecord
     : endOfRecordMarker
                         {
-                            IHqlExpression * record = parser->popRecord();
-                            record->Link();     // link should be in startrecord, but can only link after closeExpr()
-                            parser->popSelfScope();
-                            OwnedHqlExpr newRecord = record->closeExpr();
-                            $$.setExpr(newRecord.getClear());
+                            $$.setExpr(parser->endRecordDef());
                             parser->popLocale();
                             $$.setPosition($1);
                         }
@@ -4168,6 +4238,32 @@ fieldDef
                             parser->addDatasetField($1, $1.getName(), LINK(value->queryRecord()), value, $2.getExpr());
                             $$.clear();
                         }
+
+
+    | DICTIONARY '(' recordDef childDictionaryOptions ')' knownOrUnknownId optFieldAttrs
+                        {
+                            $$.clear($1);
+                            parser->addDictionaryField($6, $6.getName(), $3.getExpr(), NULL, createComma($4.getExpr(), $7.getExpr()));
+                        }
+    | DICTIONARY '(' recordDef childDictionaryOptions ')' knownOrUnknownId optFieldAttrs ASSIGN dictionary
+                        {
+                            $$.clear($1);
+                            parser->addDictionaryField($6, $6.getName(), $3.getExpr(), $9.getExpr(), createComma($4.getExpr(), $7.getExpr()));
+                        }
+    | DICTIONARY knownOrUnknownId optFieldAttrs ASSIGN dictionary
+                        {
+                            $$.clear($1);
+                            IHqlExpression * value = $5.getExpr();
+                            parser->addDictionaryField($2, $2.getName(), LINK(value->queryRecord()), value, $3.getExpr());
+                        }
+    | UNKNOWN_ID optFieldAttrs ASSIGN dictionary
+                        {
+                            IHqlExpression * value = $4.getExpr();
+                            parser->addDictionaryField($1, $1.getName(), LINK(value->queryRecord()), value, $2.getExpr());
+                            $$.clear();
+                        }
+
+
     | alienTypeInstance knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
@@ -4593,6 +4689,24 @@ userTypedefPattern
     ;
 
 
+childDictionaryOptions
+    :
+                        { $$.setNullExpr(); }
+    | childDictionaryOptions ',' childDictionaryOption
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                        }
+    ;
+
+childDictionaryOption
+    : COUNT '(' expression ')'
+                        {
+                            parser->normalizeExpression($3);
+                            $$.setExpr(createLinkAttribute(countAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 childDatasetOptions
     :
                         { $$.setNullExpr(); }
@@ -4936,6 +5050,46 @@ compareExpr
                             IHqlExpression *set = $3.getExpr();
                             IHqlExpression *expr = $1.getExpr();
                             $$.setExpr(parser->createINExpression(no_in, expr, set, $3));
+                            $$.setPosition($2);
+                        }
+    | expr NOT TOK_IN dictionary
+                        {
+                            parser->normalizeExpression($1);
+                            parser->normalizeExpression($4);
+                            parser->normalizeExpression($4, type_dictionary, false);
+                            IHqlExpression *dict = $4.getExpr();
+                            IHqlExpression *expr = $1.getExpr();
+                            $$.setExpr(parser->createINDict(no_notin, expr, dict, $4));
+                            $$.setPosition($3);
+                        }
+    | dataRow NOT TOK_IN dictionary
+                        {
+                            parser->normalizeExpression($1);
+                            parser->normalizeExpression($4);
+                            parser->normalizeExpression($4, type_dictionary, false);
+                            IHqlExpression *dict = $4.getExpr();
+                            IHqlExpression *expr = $1.getExpr();
+                            $$.setExpr(parser->createINDict(no_notin, expr, dict, $4));
+                            $$.setPosition($3);
+                        }
+    | expr TOK_IN dictionary
+                        {
+                            parser->normalizeExpression($1);
+                            parser->normalizeExpression($3);
+                            parser->normalizeExpression($3, type_dictionary, false);
+                            IHqlExpression *dict = $3.getExpr();
+                            IHqlExpression *expr = $1.getExpr();
+                            $$.setExpr(parser->createINDict(no_in, expr, dict, $3));
+                            $$.setPosition($2);
+                        }
+    | dataRow TOK_IN dictionary
+                        {
+                            parser->normalizeExpression($1);
+                            parser->normalizeExpression($3);
+                            parser->normalizeExpression($3, type_dictionary, false);
+                            IHqlExpression *dict = $3.getExpr();
+                            IHqlExpression *expr = $1.getExpr();
+                            $$.setExpr(parser->createINDict(no_in, expr, dict, $3));
                             $$.setPosition($2);
                         }
     | dataSet EQ dataSet    
@@ -6637,6 +6791,10 @@ dataRow
                             parser->normalizeExpression($3, type_int, false);
                             $$.setExpr(createRow(no_selectnth, $1.getExpr(), $3.getExpr()));    
                         }
+    | dictionary '[' expressionList ']'
+                        {
+                            $$.setExpr(createRow(no_selectmap, $1.getExpr(), $3.getExpr()));
+                        }
     | dataSet '[' NOBOUNDCHECK expression ']'
                         {   
                             parser->normalizeExpression($4, type_int, false);
@@ -6927,6 +7085,101 @@ simpleDataRow
     | WHEN '(' dataRow ',' action ')'
                         {
                             $$.setExpr(createCompound($5.getExpr(), $3.getExpr()), $1);
+                        }
+    ;
+
+dictionary
+    : simpleDictionary
+    | dictionary '+' dictionary
+                        {   parser->createAppendDictionaries($$, $1, $3, NULL);    }
+    ;
+
+simpleDictionary
+    : scopedDictionaryId
+    | NOFOLD '(' dictionary ')'
+                        {
+                            $$.setExpr(createDictionary(no_nofold, $3.getExpr(), NULL));
+                            $$.setPosition($1);
+                        }
+    | NOHOIST '(' dictionary ')'
+                        {
+                            $$.setExpr(createDictionary(no_nohoist, $3.getExpr(), NULL));
+                            $$.setPosition($1);
+                        }
+/*
+    | DICTIONARY '(' dataSet ',' recordDef ')'
+                        {
+                            $$.setExpr($3.getExpr()); // MORE!
+                            $$.setPosition($1);
+                        }
+*/
+    | DICTIONARY '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
+                        {
+                            HqlExprArray values;
+                            parser->endList(values);
+                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
+                            $$.setExpr(convertTempTableToInlineDictionary(parser->errorHandler, $5.pos, table));
+                            $$.setPosition($1);
+                        }
+    | '(' dictionary  ')'  {
+                            $$.setExpr($2.getExpr());
+                            $$.setPosition($1);
+                        }
+    | IF '(' booleanExpr ',' dictionary ',' dictionary ')'
+                        {
+                            OwnedHqlExpr ds = parser->processIfProduction($3, $5, &$7);
+                            $$.setExpr(ds.getClear(), $1);
+                        }
+    | IF '(' booleanExpr ',' dictionary ')'
+                        {
+                            OwnedHqlExpr ds = parser->processIfProduction($3, $5, NULL);
+                            $$.setExpr(ds.getClear(), $1);
+                        }
+    | IFF '(' booleanExpr ',' dictionary ',' dictionary ')'
+                        {
+                            OwnedHqlExpr ds = parser->processIfProduction($3, $5, &$7);
+                            $$.setExpr(ds.getClear(), $1);
+                        }
+    | IFF '(' booleanExpr ',' dictionary ')'
+                        {
+                            OwnedHqlExpr ds = parser->processIfProduction($3, $5, NULL);
+                            $$.setExpr(ds.getClear(), $1);
+                        }
+// MORE - should do CASE and MAP
+    ;
+
+scopedDictionaryId
+    : globalScopedDictionaryId
+    | dotScope DICTIONARY_ID leaveScope
+                        {
+                            IHqlExpression *e1 = $1.getExpr();
+                            IHqlExpression *e2 = $2.getExpr();
+                            if (e1 && (e1->getOperator() != no_record) && (e2->getOperator() == no_field))
+                                $$.setExpr(parser->createSelect(e1, e2, $2));
+                            else
+                            {
+                                ::Release(e1);
+                                $$.setExpr(e2);
+                            }
+                        }
+/*
+    | dictionaryFunction '('
+                        {
+                            parser->beginFunctionCall($1);
+                        }
+    actualParameters ')'
+                        {
+                            $$.setExpr(parser->bindParameters($1, $4.getExpr()));
+                        }
+*/
+    ;
+
+globalScopedDictionaryId
+    : DICTIONARY_ID
+    | moduleScopeDot DICTIONARY_ID leaveScope
+                        {
+                            OwnedHqlExpr scope = $1.getExpr();
+                            $$.setExpr($2.getExpr());
                         }
     ;
 
@@ -7877,7 +8130,6 @@ simpleDataSet
                             parser->extractRecordFromExtra(record, extra);
                             OwnedHqlExpr transform = parser->extractTransformFromExtra(extra);
 
-                            parser->applyPayloadAttribute($6, record, extra);
                             parser->inheritRecordMaxLength(dataset, record);
 
                             record.setown(parser->checkIndexRecord(record, $5));
@@ -7904,8 +8156,6 @@ simpleDataSet
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr extra = $4.getExpr();
                             parser->extractRecordFromExtra(record, extra);
-                            parser->applyPayloadAttribute($6, record, extra);
-
                             $$.setExpr(parser->createIndexFromRecord(record, extra, $3));
                             parser->checkIndexRecordTypes($$.queryExpr(), $1);
                             $$.setPosition($1);
@@ -9461,8 +9711,13 @@ inlineFieldValues
     | inlineFieldValues ',' inlineFieldValue
     ;
 
+inlineFieldValuesWithGoesto
+    : inlineFieldValues optSemiComma
+    | inlineFieldValues GOESTO inlineFieldValues optSemiComma
+    ;
+
 inlineDatasetValue
-    : '{' beginList inlineFieldValues optSemiComma '}'
+    : '{' beginList inlineFieldValuesWithGoesto  '}'
                         {
                             HqlExprArray args;
                             parser->endList(args);

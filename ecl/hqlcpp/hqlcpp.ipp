@@ -836,6 +836,8 @@ public:
     IHqlExpression * ensureIteratedRowIsLive(BuildCtx & initctx, BuildCtx & searchctx, BuildCtx & iterctx, BoundRow * row, IHqlExpression * dataset, IHqlExpression * rowExpr);
     BoundRow * buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExpression * expr);
 
+    IReferenceSelector * buildDatasetSelectMap(BuildCtx & ctx, IHqlExpression * expr);
+
 // Helper functions
 
     void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4)));            // override the global function to try and add more context information
@@ -1087,6 +1089,7 @@ public:
     IHqlCppDatasetBuilder * createChoosenDatasetBuilder(IHqlExpression * record, IHqlExpression * maxCount);
     IHqlCppDatasetBuilder * createLimitedDatasetBuilder(IHqlExpression * record, IHqlExpression * maxCount);
     IHqlCppDatasetBuilder * createLinkedDatasetBuilder(IHqlExpression * record, IHqlExpression * choosenLimit = NULL);
+    IHqlCppDatasetBuilder * createLinkedDictionaryBuilder(IHqlExpression * record);
     IReferenceSelector * createSelfSelect(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr, IHqlExpression * rootSelector);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor, IHqlExpression * path);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor);
@@ -1559,6 +1562,7 @@ public:
     void buildConnectOrders(BuildCtx & ctx, ABoundActivity * slaveActivity, ABoundActivity * masterActivity);
     void buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & equalities, HqlExprArray & conds, IHqlExpression * dataset, IHqlExpression * selSeq);
     void buildDedupSerializeFunction(BuildCtx & ctx, const char * funcName, IHqlExpression * srcDataset, IHqlExpression * tgtDataset, HqlExprArray & srcValues, HqlExprArray & tgtValues, IHqlExpression * selSeq);
+    void buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName);
     void buildHashClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, const DatasetReference & dataset);
     void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf);
     void buildInstancePrefix(ActivityInstance * instance);

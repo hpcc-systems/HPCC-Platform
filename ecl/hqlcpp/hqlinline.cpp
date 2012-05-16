@@ -151,6 +151,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETiterate;
             return RETiterate|HEFspillinline;
         }
+    case no_selectmap:
     case no_selectnth:
         {
             IHqlExpression * ds = expr->queryChild(0);

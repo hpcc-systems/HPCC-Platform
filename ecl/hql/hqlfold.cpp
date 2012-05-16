@@ -5570,6 +5570,10 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         //all bets are off.
         break;
 
+    case no_selectmap:
+        // MORE - maybe should be something here?
+        break;
+
     case no_selectnth:
         {
             //Careful - this can create a null row if it is out of range.

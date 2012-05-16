@@ -166,6 +166,10 @@ public:
     {
         return queryExpr()->isDatarow();
     }
+    inline bool isDictionary() const
+    {
+        return queryExpr()->isDictionary();
+    }
 
     /* setters */
     inline void inherit(attribute & other)
@@ -406,6 +410,7 @@ public:
     void checkBooleanOrNumeric(attribute &atr);
     void checkDatarow(attribute &atr);
     void checkDataset(attribute &atr);
+    void checkDictionary(attribute &atr);
     void checkFieldnameValid(const attribute &errpos, _ATOM name);
     void checkList(attribute &atr);
     void checkScalar(attribute &atr);
@@ -498,6 +503,7 @@ public:
     ITypeInfo *promoteMapToSameType(HqlExprArray & exprs, attribute &eElse);
     ITypeInfo *promoteSetToSameType(HqlExprArray & exprs, attribute &errpos);
     ITypeInfo * queryElementType(const attribute & errpos, IHqlExpression * list);
+    IHqlExpression *createINDict(node_operator op, IHqlExpression *expr, IHqlExpression *dict, attribute &errpos);
     IHqlExpression *createINExpression(node_operator op, IHqlExpression *expr, IHqlExpression *set, attribute &errpos);
     IHqlExpression * createLoopCondition(IHqlExpression * left, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq, IHqlExpression * rowsid);
     void setTemplateAttribute();
@@ -618,12 +624,15 @@ public:
     IHqlExpression * attachMetaAttributes(IHqlExpression * ownedExpr, HqlExprArray & meta);
 
     void addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
+    void addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
     void addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
     void addFields(const attribute &errpos, IHqlExpression *record, IHqlExpression * dataset, bool clone);
     void addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock);
     void addToActiveRecord(IHqlExpression * newField);
     void beginIfBlock();
     IHqlExpression * endIfBlock();
+    void beginPayload();
+    IHqlExpression * endPayload();
 
     IHqlExpression * expandedSortListByReference(attribute * module, attribute & list);
     IHqlExpression *bindParameters(const attribute & errpos, IHqlExpression * function, HqlExprArray & ownedActuals);
@@ -640,11 +649,12 @@ public:
     int checkRecordTypes(IHqlExpression *left, IHqlExpression *right, attribute &atr, unsigned maxFields = (unsigned)-1);
     bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, attribute &atr);
     IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, attribute & errpos, bool rightIsRow);
-    void checkRecordIsValid(attribute &atr, IHqlExpression *record);
+    void checkRecordIsValid(const attribute &atr, IHqlExpression *record);
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
     void checkValidCsvRecord(const attribute & errpos, IHqlExpression * record);
     void checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr);
 
+    void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
@@ -914,6 +924,7 @@ protected:
 
     IHqlExpression * getActiveCounter(attribute & errpos);
     void pushRecord(IHqlExpression *);
+    IHqlExpression *endRecordDef();
     IHqlExpression *popRecord();
     IHqlExpression *queryTopScope();
     ITypeInfo * getPromotedECLType(HqlExprArray & args, ITypeInfo * otherType, bool allowVariableLength);
@@ -947,11 +958,11 @@ protected:
     IHqlExpression *queryCurrentTransformRecord();
     IHqlExpression* queryFieldMap(IHqlExpression* expr);
     IHqlExpression* bindFieldMap(IHqlExpression*, IHqlExpression*);
-    void applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, SharedHqlExpr & extra);
     void extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra);
     void transferOptions(attribute & filenameAttr, attribute & optionsAttr);
     IHqlExpression * extractTransformFromExtra(SharedHqlExpr & extra);
     void expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos);
+    void mergeDictionaryPayload(SharedHqlExpr & record, SharedHqlExpr & payload, const attribute & errpos);
     void modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos);
 
     bool haveAssignedToChildren(IHqlExpression * select);

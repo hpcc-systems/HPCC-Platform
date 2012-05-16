@@ -264,6 +264,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_newtransform:
 
 //Rows
+    case no_selectmap:
     case no_selectnth:
     case no_matchrow:
     case no_matchattr:      // and scalar
@@ -271,6 +272,9 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_createrow:
     case no_newrow:
     case no_temprow:
+
+//Dictionaries
+    case no_inlinedictionary:
 
 //Datasets [see also selection operators]
     case no_rollup:
@@ -607,13 +611,13 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_persist_check:
     case no_dataset_from_transform:
 
-    case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
-    case no_unused80: case no_unused82: case no_unused83:
+    case no_unused80: case no_unused83:
     case no_is_null:
     case no_position:
     case no_current_time:
@@ -868,6 +872,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
                 }
                 break;
             }
+        case type_dictionary:
         case type_groupedtable:
         case type_table:
             {
@@ -3429,6 +3434,7 @@ bool isLinkedRowset(ITypeInfo * t)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         return hasLinkCountedModifier(t);
     }
     return false;
@@ -3441,6 +3447,7 @@ bool isArrayRowset(ITypeInfo * t)
     case type_table:
     case type_groupedtable:
     case type_array:
+    case type_dictionary:
         {
             if (hasLinkCountedModifier(t))
                 assertex(hasLinkCountedModifier(t->queryChildType()));
@@ -3463,6 +3470,7 @@ bool hasLinkedRow(ITypeInfo * t)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         return hasLinkedRow(t->queryChildType());
     case type_row:
         return hasLinkCountedModifier(t);
@@ -3479,6 +3487,7 @@ ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         {
             ITypeInfo * rowType = type->queryChildType();
             Owned<ITypeInfo> newRowType = setLinkCountedAttr(rowType, setValue);

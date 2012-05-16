@@ -332,7 +332,6 @@ RtlLinkedDatasetBuilder::~RtlLinkedDatasetBuilder()
 
 void RtlLinkedDatasetBuilder::append(const void * source)
 {
-    flush();
     if (count < choosenLimit)
     {
         ensure(count+1);
@@ -343,7 +342,6 @@ void RtlLinkedDatasetBuilder::append(const void * source)
 
 void RtlLinkedDatasetBuilder::appendRows(size32_t num, byte * * rows)
 {
-    flush();
     if (num && (count < choosenLimit))
     {
         unsigned numToAdd = (count + num < choosenLimit) ? num : choosenLimit - count;
@@ -356,7 +354,6 @@ void RtlLinkedDatasetBuilder::appendRows(size32_t num, byte * * rows)
 
 void RtlLinkedDatasetBuilder::appendOwn(const void * row)
 {
-    //flush() must have been called before this... otherwise the order will be messed up
     assertex(!builder.exists());
     if (count < choosenLimit)
     {
@@ -371,7 +368,6 @@ void RtlLinkedDatasetBuilder::appendOwn(const void * row)
 
 byte * RtlLinkedDatasetBuilder::createRow()
 {
-    flush();
     if (count >= choosenLimit)
         return NULL;
     return builder.getSelf();
@@ -395,7 +391,6 @@ public:
 
 void RtlLinkedDatasetBuilder::cloneRow(size32_t len, const void * row)
 {
-    flush();
     if (count >= choosenLimit)
         return;
 
@@ -415,7 +410,6 @@ void RtlLinkedDatasetBuilder::cloneRow(size32_t len, const void * row)
 
 void RtlLinkedDatasetBuilder::deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in)
 {
-    flush();
     builder.ensureRow();
     size32_t rowSize = deserializer.deserialize(builder, in);
     finalizeRow(rowSize);
@@ -439,11 +433,15 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
 {
     for (unsigned i=0; i < count; i++)
     {
-        serializer->serialize(out, rows[i]);
-        if (isGrouped)
+        byte *row = rows[i];
+        if (row)   // When serializing a dictionary, there may be nulls in the rowset. These can be skipped (we rehash on deserialize)
         {
-            byte eogPending = (i+1 < count) && (rows[i+1] == NULL);
-            out.put(1, &eogPending);
+            serializer->serialize(out, rows[i]);
+            if (isGrouped)
+            {
+                byte eogPending = (i+1 < count) && (rows[i+1] == NULL);
+                out.put(1, &eogPending);
+            }
         }
     }
 }
@@ -451,8 +449,6 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
 
 void RtlLinkedDatasetBuilder::deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped)
 {
-    flush();
-
     offset_t marker = in.beginNested();
     doDeserializeRowset(*this, deserializer, in, marker, isGrouped);
 }
@@ -460,16 +456,10 @@ void RtlLinkedDatasetBuilder::deserialize(IOutputRowDeserializer & deserializer,
 
 void RtlLinkedDatasetBuilder::finalizeRows()
 {
-    flush();
     if (count != max)
         resize(count);
 }
 
-
-void RtlLinkedDatasetBuilder::flush()
-{
-//  builder.clear();
-}
 
 void RtlLinkedDatasetBuilder::finalizeRow(size32_t rowSize)
 {
@@ -554,6 +544,119 @@ void rtlSerializeGroupedRowset(IRowSerializerTarget & out, IOutputRowSerializer 
     size32_t marker = out.beginNested();
     doSerializeRowset(out, serializer, count, rows, true);
     out.endNested(marker);
+}
+
+//---------------------------------------------------------------------------
+
+RtlLinkedDictionaryBuilder::RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialSize)
+  : builder(_rowAllocator, false)
+{
+    init(_rowAllocator, _hashInfo, _initialSize);
+}
+
+RtlLinkedDictionaryBuilder::RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo)
+  : builder(_rowAllocator, false)
+{
+    init(_rowAllocator, _hashInfo, 8);
+}
+
+void RtlLinkedDictionaryBuilder::init(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialSize)
+{
+    hash  = _hashInfo->queryHash();
+    compare  = _hashInfo->queryCompare();
+    initialSize = _initialSize;
+    rowAllocator = LINK(_rowAllocator);
+    table = NULL;
+    usedCount = 0;
+    usedLimit = 0;
+    tableSize = 0;
+}
+
+RtlLinkedDictionaryBuilder::~RtlLinkedDictionaryBuilder()
+{
+//    builder.clear();
+    if (table)
+        rowAllocator->releaseRowset(tableSize, table);
+    ::Release(rowAllocator);
+}
+
+void RtlLinkedDictionaryBuilder::append(const void * source)
+{
+    if (source)
+    {
+        appendOwn(rowAllocator->linkRow(source));
+    }
+}
+
+void RtlLinkedDictionaryBuilder::appendOwn(const void * source)
+{
+    if (source)
+    {
+        checkSpace();
+        unsigned rowidx = hash->hash(source) % tableSize;
+        loop
+        {
+            const void *entry = table[rowidx];
+            if (entry && compare->docompare(source, entry)==0)
+            {
+                rowAllocator->releaseRow(entry);
+                usedCount--;
+                entry = NULL;
+            }
+            if (!entry)
+            {
+                table[rowidx] = (byte *) source;
+                usedCount++;
+                break;
+            }
+            rowidx++;
+            if (rowidx==tableSize)
+                rowidx = 0;
+        }
+    }
+}
+
+void RtlLinkedDictionaryBuilder::checkSpace()
+{
+    if (!table)
+    {
+        table = rowAllocator->createRowset(initialSize);
+        tableSize = initialSize;
+        memset(table, 0, tableSize*sizeof(byte *));
+        usedLimit = (tableSize * 3) / 4;
+        usedCount = 0;
+    }
+    else if (usedCount > usedLimit)
+    {
+        // Rehash
+        byte * * oldTable = table;
+        unsigned oldSize = tableSize;
+        tableSize = tableSize*2;
+        table = rowAllocator->createRowset(tableSize);
+        memset(table, 0, tableSize * sizeof(byte *));
+        usedLimit = (tableSize * 3) / 4;
+        usedCount = 0;
+        unsigned i;
+        for (i = 0; i < oldSize; i++)
+        {
+            append(oldTable[i]);  // we link the rows here...
+        }
+        rowAllocator->releaseRowset(oldSize, oldTable);   // ... because this will release them
+    }
+}
+
+void RtlLinkedDictionaryBuilder::appendRows(size32_t num, byte * * rows)
+{
+    // MORE - if we know that the source is already a hashtable, we can optimize the add to an empty table...
+    for (unsigned i=0; i < num; i++)
+        append(rows[i]);
+}
+
+void RtlLinkedDictionaryBuilder::finalizeRow(size32_t rowSize)
+{
+    assertex(builder.exists());
+    const void * next = builder.finalizeRowClear(rowSize);
+    appendOwn(next);
 }
 
 //---------------------------------------------------------------------------

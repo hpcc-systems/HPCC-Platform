@@ -631,6 +631,21 @@ public:
     virtual bool assignableFrom(ITypeInfo *t2);
 };
 
+class CDictionaryTypeInfo : public CBasedTypeInfo
+{
+public:
+    CDictionaryTypeInfo(ITypeInfo * _basetype)
+        : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH)
+    {}
+
+    virtual type_t getTypeCode() const                      { return type_dictionary; }
+    virtual bool isScalar()                                 { return false; }
+    virtual const char *queryTypeName()                     { return "dictionary"; }
+    virtual StringBuffer &getECLType(StringBuffer & out);
+
+    virtual void serialize(MemoryBuffer &tgt);
+};
+
 class CTableTypeInfo : public CBasedTypeInfo
 {
 private:

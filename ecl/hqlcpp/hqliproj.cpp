@@ -1048,7 +1048,7 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
     OwnedHqlExpr left = createSelector(no_left, ds, seq);
     OwnedHqlExpr self = getSelf(queryOutputRecord());
     IHqlExpression * transform = createMappingTransform(self, left);
-    if (ds->isDataset())
+    if (ds->isDataset() || ds->isDictionary())
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
     return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
 }
@@ -1315,7 +1315,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case no_evaluate:
             throwUnexpected();
         case no_select:
-            if (expr->isDataset() || expr->isDatarow())
+            if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             {
                 //MORE: These means that selects from a parent dataset don't project down the parent dataset.
                 //I'm not sure how big an issue that would be.
@@ -1354,7 +1354,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             allowActivity = true;
             return;
         case no_thor:
-            if (expr->isDataset() || expr->isDatarow())
+            if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             {
                 assertex(extra->activityKind() == SimpleActivity);
                 Parent::analyseExpr(expr);
@@ -1367,7 +1367,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             }
             break;
         case no_compound:
-            if (expr->isDataset())
+            if (expr->isDataset() || expr->isDictionary())
             {
                 assertex(extra->activityKind() == SimpleActivity);
                 Parent::analyseExpr(expr);
@@ -1378,7 +1378,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             Parent::analyseExpr(expr);
             break;
         case no_executewhen:
-            if (expr->isDataset())
+            if (expr->isDataset() || expr->isDictionary())
             {
                 assertex(extra->activityKind() == SimpleActivity);
                 Parent::analyseExpr(expr);
@@ -1402,7 +1402,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                 ForEachChild(i, expr)
                 {
                     IHqlExpression * cur = expr->queryChild(i);
-                    if (cur->isDataset())
+                    if (cur->isDataset() || expr->isDictionary())
                     {
                         analyseExpr(cur);
                         queryBodyExtra(cur)->preventOptimization();
@@ -1425,7 +1425,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case no_ensureresult:
             {
                 IHqlExpression * value = expr->queryChild(0);
-                if (value->isDataset() || value->isDatarow())// || value->isList())
+                if (value->isDataset() || value->isDatarow() || expr->isDictionary())// || value->isList())
                 {
                     assertex(extra->activityKind() == FixedInputActivity);
                     analyseExpr(value);
@@ -1452,7 +1452,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                 unsigned first = 0;
                 unsigned last = numArgs;
                 unsigned start = 0;
-                if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow())
+                if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow() && !expr->isDictionary())
                 {
                     switch (op)
                     {
@@ -1596,7 +1596,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
             break;
         case FixedInputActivity:
-            assertex(child && (child->isDataset() || child->isDatarow()));
+            assertex(child && (child->isDataset() || child->isDatarow() || child->isDictionary()));
             setOriginal(complexExtra->leftFieldsRequired, child);
             if (getNumChildTables(expr) >= 2)
                 setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
@@ -1672,7 +1672,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                         break;
                     }
                     node_operator dsOp = ds->getOperator();
-                    if (dsOp != no_select || ds->isDataset())
+                    if (dsOp != no_select || ds->isDataset() || expr->isDictionary())
                     {
                         if ((dsOp != no_self) && (dsOp != no_selfref))
                             extra->addActiveSelect(cur);
@@ -1913,7 +1913,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_evaluate:
         throwUnexpected();
     case no_select:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SourceActivity;
         if (isNewSelector(expr))
             return ScalarSelectActivity;
@@ -1925,21 +1925,21 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_attr_link:
         return NonActivity;
     case no_typetransfer:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SourceActivity;
         return NonActivity;
     case no_thor:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SimpleActivity;
         return NonActivity;
     case no_compound:
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
             return SimpleActivity;
         if (expr->isDatarow())
             return ComplexNonActivity;
         return NonActivity;
     case no_executewhen:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SimpleActivity;
         return NonActivity;
     case no_subgraph:
@@ -1954,7 +1954,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_ensureresult:
         {
             IHqlExpression * value = expr->queryChild(0);
-            if (value->isDataset() || value->isDatarow())
+            if (value->isDataset() || value->isDatarow() || expr->isDictionary())
                 return FixedInputActivity;
             return NonActivity;
         }
@@ -1971,6 +1971,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return CreateRecordActivity;
     case no_inlinetable:
     case no_dataset_from_transform:
+    case no_inlinedictionary:
         return CreateRecordSourceActivity;
     case no_extractresult:
     case no_apply:
@@ -1993,7 +1994,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return AnyTypeActivity;
     case no_skip:
     case no_fail:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return AnyTypeActivity;
         return NonActivity;
     case no_table:
@@ -2055,13 +2056,13 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_newsoapcall:
     case no_libraryinput:
     case no_thisnode:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SourceActivity;
         return NonActivity;
     case no_pipe:
     case no_nofold:
     case no_nohoist:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return FixedInputActivity;
         return NonActivity;
     case no_soapcall_ds:
@@ -2121,7 +2122,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return SinkActivity;
     case no_call:
     case no_externalcall:
-        if (expr->isDataset() || expr->isDatarow())
+        if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
             return SourceActivity;
         //MORE: What about parameters??
         return NonActivity;
@@ -2149,6 +2150,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             return SinkActivity;
         return NonActivity;
     case type_row:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         break;
@@ -2781,7 +2783,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CreateRecordSourceActivity:
         {
-            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform);
+            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform || expr->getOperator() == no_inlinedictionary);
             //Always reduce things that create a new record so they only project the fields they need to
             if (complexExtra->outputChanged())
             {
@@ -2876,7 +2878,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             {
                 IHqlExpression * cur = expr->queryChild(i);
                 OwnedHqlExpr next = transform(cur);
-                if (cur->isDataset() || cur->isDatarow())
+                if (cur->isDataset() || cur->isDatarow() || expr->isDictionary())
                 {
                     //Ensure all inputs have same format..
                     if (cur->queryRecord() != complexExtra->queryOutputRecord())

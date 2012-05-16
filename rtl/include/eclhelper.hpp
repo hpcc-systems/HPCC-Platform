@@ -2683,6 +2683,14 @@ struct IHThorExternalArg : public IHThorArg
     virtual IThorExternalRowProcessor * createProcessor() = 0;
 };
 
+//------------------------- Dictionary stuff -------------------------
+
+interface IHThorHashLookupInfo
+{
+    virtual IHash * queryHash() = 0;
+    virtual ICompare * queryCompare() = 0;
+};
+
 
 //------------------------- Other stuff -------------------------
 
