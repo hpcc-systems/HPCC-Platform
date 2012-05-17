@@ -3589,7 +3589,8 @@ switch (op)
 
     if (type)
     {
-        switch (type->getTypeCode())
+        type_t tc = type->getTypeCode();
+        switch (tc)
         {
         case type_alien:
         case type_scope:
@@ -3630,10 +3631,16 @@ switch (op)
                 default:
                     infoFlags &= ~HEFthrowscalar;
                     infoFlags &= ~HEFoldthrows;
+                    if (tc == type_row)
+                        infoFlags &= ~HEFthrowds;
                     break;
                 }
-
+                break;
             }
+        case type_void:
+            if (op != no_assign)
+                infoFlags &= ~HEFthrowds;
+            break;
         }
     }
 
@@ -3700,6 +3707,11 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     case no_nameof:
         updateFlags = false;
         break;
+    case no_limit:
+    case no_keyedlimit:
+        if (whichOperand > 1)
+            childFlags &= ~(HEFthrowscalar|HEFthrowds);
+        break;
 #ifdef _DEBUG
     case no_transform:
         {
@@ -3742,7 +3754,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     {
     case no_transform:
     case no_newtransform:
-        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip);
+        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
         break;
     }
 
