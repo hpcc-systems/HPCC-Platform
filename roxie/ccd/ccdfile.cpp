@@ -2784,6 +2784,7 @@ class LazyIOTest: public CppUnit::TestFixture
         DBGLOG("Testing localPresent=%d localCorrect=%d", localPresent, localCorrect);
         remove("cppfile_localfile1");
         FILE *x = fopen("cppfile_localfile2", "wb");
+        assertex(x);
         fputs("Test", x);
         fclose(x);
         if (localPresent)
@@ -2793,6 +2794,7 @@ class LazyIOTest: public CppUnit::TestFixture
             else
             {
                 FILE *x = fopen("cppfile_localfile1", "wb");
+                assertex(x);
                 fputs("Pink1", x);
                 fclose(x);
             }
