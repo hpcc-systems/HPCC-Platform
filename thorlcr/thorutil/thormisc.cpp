@@ -1128,6 +1128,7 @@ public:
             if (abortSoon)
                 break;
             msg.swapWith(mb);
+            msg.clear();
         }
         eos = true;
         return NULL;
