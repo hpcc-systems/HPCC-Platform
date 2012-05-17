@@ -3707,7 +3707,8 @@ protected:
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
         CountingRowAllocatorCache rowCache;
-        FixedSizeHeaplet * heaplet = new FixedSizeHeaplet(&rowCache, 32);
+        void * memory = suballoc_aligned(1, true);
+        FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(&rowCache, 32);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
