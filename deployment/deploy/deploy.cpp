@@ -933,7 +933,7 @@ public:
     //---------------------------------------------------------------------------
   CConfigGenMgr(IConstEnvironment& environment, IDeploymentCallback& callback, 
     IPropertyTree* pSelectedComponents, const char* inputDir, const char* outputDir, const char* compName, const char* compType, const char* ipAddr)
-    : CEnvironmentDeploymentEngine(environment, callback, pSelectedComponents),
+    : CEnvironmentDeploymentEngine(environment, callback, NULL),
     m_inDir(inputDir), 
     m_outDir(outputDir),
     m_compName(compName),
