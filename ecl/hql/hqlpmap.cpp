@@ -980,7 +980,7 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
 
 IHqlExpression * getExtractSelect(IHqlExpression * expr, IHqlExpression * field)
 {
-    if (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips))
+    if (expr->getInfoFlags() & (HEFcontainsSkip))
         return NULL;
 
     ForEachChild(i, expr)

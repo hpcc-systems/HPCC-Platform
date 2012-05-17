@@ -3230,7 +3230,7 @@ void CHqlExpression::updateFlagsAfterOperands()
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip|HEFtransformSkips);
+        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -3333,9 +3333,6 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_transform:
     case no_newtransform:
         {
-            if (infoFlags & HEFcontainsSkip)
-                infoFlags |= HEFtransformSkips;
-            infoFlags &= ~(HEFcontainsSkip|HEFtransformDependent);          // don't leak information outside the transform..
             IHqlExpression * record = queryRecord();
             if (record)
             {
@@ -3685,6 +3682,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     bool updateFlags = true;
     unsigned childFlags = child.getInfoFlags();
     unsigned childFlags2 = child.getInfoFlags2();
+    node_operator childOp = child.getOperator();
     switch (op)
     {
     case no_keyindex:
@@ -3705,7 +3703,6 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 #ifdef _DEBUG
     case no_transform:
         {
-            node_operator childOp = child.getOperator();
             switch (childOp)
             {
             case no_assign:
@@ -3724,7 +3721,6 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
         }
     case no_record:
         {
-            node_operator childOp = child.getOperator();
             switch (childOp)
             {
             case no_field: 
@@ -3740,6 +3736,14 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
             break;
         }
 #endif
+    }
+
+    switch (childOp)
+    {
+    case no_transform:
+    case no_newtransform:
+        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip);
+        break;
     }
 
     if (updateFlags)
@@ -3761,7 +3765,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     }
 #ifdef _DEBUG
     //This should never occur on legal code, but can occur on illegal, so only check in debug mode.
-    if (child.getOperator() == no_field)
+    if (childOp == no_field)
         assertex(op == no_record || op == no_select || op == no_comma || op == no_attr || op == no_attr_expr || op == no_indirect);
 #endif
 }
@@ -14221,9 +14225,10 @@ bool isPureActivity(IHqlExpression * expr)
 bool isPureActivityIgnoringSkip(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
+    const unsigned mask = HEFimpure & ~(HEFcontainsSkip);
     for (unsigned i = getNumChildTables(expr); i < max; i++)
     {
-        if (expr->queryChild(i)->getInfoFlags() & (HEFimpure &~HEFtransformSkips))
+        if (expr->queryChild(i)->getInfoFlags() & mask)
             return false;
     }
     return true;
