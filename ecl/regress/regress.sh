@@ -50,6 +50,7 @@ compare_only=0
 eclcc=
 diff=
 np=`grep -c processor /proc/cpuinfo`
+export ECLCC_ECLINCLUDE_PATH=
 
 ## Get cmd line options (overrite default args)
 if [[ $1 = '' ]]; then
