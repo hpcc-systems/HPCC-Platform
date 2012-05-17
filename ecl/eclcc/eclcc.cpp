@@ -167,9 +167,11 @@ public:
 class EclCC
 {
 public:
-    EclCC(const char * _programName)
-        : programName(_programName)
+    EclCC(int _argc, const char **_argv)
+        : programName(argv[0])
     {
+        argc = _argc;
+        argv = _argv;
         logVerbose = false;
         optArchive = false;
         optGenerateMeta = false;
@@ -269,6 +271,8 @@ protected:
     bool optOnlyCompile;
     bool optSaveQueryText;
     bool optLegacy;
+    int argc;
+    const char **argv;
 };
 
 
@@ -276,7 +280,7 @@ protected:
 
 static int doMain(int argc, const char *argv[])
 {
-    EclCC processor(argv[0]);
+    EclCC processor(argc, argv);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
 
@@ -1597,6 +1601,10 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
     Owned<ILogMsgHandler> handler;
     try
     {
+        // Print compiler and arguments to help reproduce problems
+        for (int i=0; i<argc; i++)
+            fprintf(logFile, "%s ", argv[i]);
+        fprintf(logFile, "\n");
         fprintf(logFile, "--- %s --- \n", basename.str());
         {
             if (!multiThreaded)
