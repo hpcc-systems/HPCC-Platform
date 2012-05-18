@@ -19,6 +19,7 @@
 #define __HQLUTIL_HPP_
 
 #include "hqlexpr.hpp"
+#include "hqlir.hpp"
 
 extern HQL_API bool containsAggregate(IHqlExpression * expr);
 extern HQL_API bool containsComplexAggregate(IHqlExpression * expr);
