@@ -1814,4 +1814,9 @@ extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
 
+// Expression dump related functions
+extern HQL_API void dump_expression(IHqlExpression * expr, int depth);
+extern HQL_API const char* dumpOperator(node_operator op);
+extern HQL_API const char* dumpExpressionType(type_t type);
+
 #endif
