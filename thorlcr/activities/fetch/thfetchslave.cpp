@@ -291,6 +291,9 @@ public:
         fetchStream = NULL;
         keyIn = NULL;
         fetchStreamOut = NULL;
+        fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
+        fetchContext = static_cast<IHThorFetchContext *>(fetchBaseHelper->selectInterface(TAIfetchcontext_1));
+        reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
     }
     ~CFetchSlaveBase()
     {
@@ -300,8 +303,6 @@ public:
 
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        fetchBaseHelper = (IHThorFetchBaseArg *)queryHelper();
-        fetchContext = static_cast<IHThorFetchContext *>(queryHelper()->selectInterface(TAIfetchcontext_1));
         unsigned numParts;
         data.read(numParts);
         offsetCount = 0;

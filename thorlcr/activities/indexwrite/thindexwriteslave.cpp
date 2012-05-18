@@ -102,7 +102,7 @@ public:
 
     IndexWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
-        helper = NULL;
+        helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
         sizeSignalled = false;
         initTotalCount = totalCount = 0;
         maxDiskRecordSize = lastRowSize = firstRowSize = 0;
@@ -117,12 +117,11 @@ public:
         needFirstRow = true;
         receivingTag2 = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
+        reInit = (0 != (TIWvarfilename & helper->getFlags()));
     }
 
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
-
         isLocal = 0 != (TIWlocal & helper->getFlags());
 
         mpTag = container.queryJob().deserializeMPTag(data);
