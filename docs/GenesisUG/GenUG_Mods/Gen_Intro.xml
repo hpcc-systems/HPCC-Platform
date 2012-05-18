@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Genesis Introduction</title>
+
+  <sect1 id="IntroGen" role="brk">
+    <title>Genesis Introduction</title>
+
+    <para>Genesis is a collection of technologies that is treated as a network
+    appliance. Genesis is used to configure and manage network (PXE) booted
+    server farms.</para>
+  </sect1>
+
+  <sect1 id="Nodes-Hardware">
+    <title>Hardware requirements</title>
+
+    <para>Genesis can on any x86 architecture Linux platform.*** not
+    exclusive</para>
+
+    <sect2 id="Node-Mandatory-requirements">
+      <title>Minimum Requirements</title>
+
+      <itemizedlist mark="square" spacing="compact">
+        <listitem>
+          <para>Pentium 4 or newer CPU</para>
+        </listitem>
+
+        <listitem>
+          <para>64-bit </para>
+        </listitem>
+
+        <listitem>
+          <para>4GB RAM</para>
+        </listitem>
+
+        <listitem>
+          <para>Hard Drive with *** free space</para>
+        </listitem>
+
+        <listitem>
+          <para>network interface</para>
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Nodes-Software">
+    <title>Software</title>
+
+    <para>Genesis is designed to run on Linux operating systems. It is
+    currently runs on Ubuntu 12.04 (but it is possible that it will work on
+    other operating systems as well.)</para>
+
+    <sect2 id="Operating-System-Requirements">
+      <title>Genesis Operating System Requirements</title>
+
+      <para>You will need one of the following:</para>
+
+      <para><itemizedlist mark="square" spacing="compact">
+          <listitem>
+            <para>64-bit Ubuntu 12.04 LTS (11.04, or 11.10)</para>
+          </listitem>
+
+          <listitem>
+            <para></para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux /
+            Scientificrisk/pan***</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit OpenSuSe 11.3 or 11.4***</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit Debian 6.x***</para>
+          </listitem>
+        </itemizedlist></para>
+    </sect2>
+
+    <sect2 id="Operating-System-Requirements">
+      <title>Genesis Client Operating System Requirements</title>
+
+      <para>You will need one of the following:</para>
+
+      <para><itemizedlist mark="square" spacing="compact">
+          <listitem>
+            <para>64-bit Ubuntu 12.04 LTS (11.04, or 11.10)</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux***</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit OpenSuSe 11.3 or 11.4***</para>
+          </listitem>
+
+          <listitem>
+            <para>64-bit Debian 6.x***</para>
+          </listitem>
+        </itemizedlist></para>
+    </sect2>
+
+    <sect2 id="configuration-manager">
+      <title>Dependencies***</title>
+
+      <para>Installing HPCC on your system depends on having required
+      component packages installed on the system. The required dependencies
+      can vary depending on your platform. In some cases the dependencies are
+      included in the installation packages. In other instances the
+      installation may fail, and the package management utility will prompt
+      you for the required packages. Installation of these packages can vary
+      depending on your platform. For details of the specific installation
+      commands for obtaining and installing these packages, see the commands
+      specific to your Operating System.</para>
+    </sect2>
+  </sect1>
+</chapter>

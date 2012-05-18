@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Genesis Installation</title>
+
+  <sect1 id="InstallGen" role="brk">
+    <title>Genesis Installation </title>
+
+    <para>Installing Genesis as a stand alone Network Appliance type
+    installation.</para>
+
+    <para>Once the Genesis device is identified, install Genesis.</para>
+
+    <para>Follow these steps to install Genesis. Once it is successfully
+    installed, you can use it to manage the other servers in your
+    cluster.</para>
+
+    <para></para>
+  </sect1>
+
+  <sect1 id="initial-set-up-single-node">
+    <title>Initial Setup</title>
+
+    <para>This section covers installing Genesis.</para>
+
+    <sect2 id="installing-the-Package">
+      <title>Installing the Package</title>
+
+      <para>Genesis is delivered as a package that you install onto the
+      operating system you plan to use.</para>
+
+      <para>The Genesis installation is available from the HPCC Systems
+      website: <ulink
+      url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>
+      ***</para>
+
+      <para>To install the package, follow the appropriate installation
+      instructions:</para>
+
+      <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+      <para>For Ubuntu installations a Debian package is provided. To install
+      the package, use:</para>
+
+      <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+
+      <para>any dependencies (apt-get)***</para>
+
+      <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+      <para>Install RPM with the -Uvh switch.</para>
+
+      <para>This is the upgrade command and will perform an automatic upgrade
+      if a previous version is installed or it will just install fresh if no
+      other version has been installed.</para>
+
+      <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+
+      <blockquote>
+        <para><emphasis role="bold">/* NOTE :</emphasis> For ANY version of
+        SuSe you must set a password for the hpcc user on all nodes. One way
+        to do do this is to issue the following command:</para>
+
+        <para><programlisting>sudo passwd hpcc</programlisting>Be sure to set
+        the password on ALL nodes. */</para>
+      </blockquote>
+    </sect2>
+
+    <sect2 id="initial-startup">
+      <title><emphasis>Initial Startup</emphasis></title>
+
+      <orderedlist>
+        <listitem>
+          <para>Start the Genesis system.</para>
+
+          <para><emphasis role="bold">Centos/Red
+          Hat/SuSe</emphasis><programlisting>sudo /sbin/service genstart***</programlisting></para>
+
+          <para><emphasis role="bold">Ubuntu</emphasis></para>
+
+          <programlisting>sudo service genstart***</programlisting>
+
+          <para><emphasis role="bold">Debian 6 (Squeeze)</emphasis></para>
+
+          <para><programlisting>sudo /etc/init.d/genesis start***</programlisting><graphic
+          fileref="images/GS-InitStart.jpg" /><informaltable colsep="1"
+              frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry>There are log files for each component in
+                    directories below <emphasis
+                    role="bold">/var/log/HPCCSystems</emphasis> (default
+                    location). If any component fails to start, these logs can
+                    help in troubleshooting.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+</chapter>
