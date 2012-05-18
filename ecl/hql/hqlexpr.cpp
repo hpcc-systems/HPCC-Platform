@@ -14229,8 +14229,11 @@ bool isPureActivity(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
     for (unsigned i = getNumChildTables(expr); i < max; i++)
-        if (!expr->queryChild(i)->isPure())
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (!cur->isPure() || containsSkip(cur))
             return false;
+    }
     return true;
 }
 
@@ -14335,8 +14338,11 @@ bool isPureInlineDataset(IHqlExpression * expr)
     assertex(expr->getOperator() == no_inlinetable);
     IHqlExpression * values = expr->queryChild(0);
     ForEachChild(i, values)
-        if (!values->queryChild(i)->isPure())
+    {
+        IHqlExpression * transform = values->queryChild(i);
+        if (!transform->isPure() || containsSkip(transform))
             return false;
+    }
     return true;
 }
 

@@ -10479,8 +10479,9 @@ IHqlExpression * HqlTreeNormalizer::transformTable(IHqlExpression * untransforme
 
 IHqlExpression * HqlTreeNormalizer::optimizeAssignSkip(HqlExprArray & children, IHqlExpression * expr, IHqlExpression * cond, unsigned depth)
 {
-    if (!(expr->getInfoFlags() & HEFcontainsSkip))
+    if (!containsSkip(expr))
         return LINK(expr);
+
     switch (expr->getOperator())
     {
     case no_skip:

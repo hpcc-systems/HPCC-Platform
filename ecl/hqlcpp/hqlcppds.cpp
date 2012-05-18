@@ -4043,7 +4043,8 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndexViaIterator(BuildCtx & c
     {
     case no_hqlproject:
         //optimize selectnth(project(rows, t), n) to projectrow(selectnth(rows, n), t)
-        if (dataset->queryChild(1)->isPure() && !expr->hasProperty(_countProject_Atom))
+        IHqlExpression * transform = dataset->queryChild(1);
+        if (!containsSkip(transform) && !expr->hasProperty(_countProject_Atom))
             childDataset = dataset->queryChild(0);
         break;
     }

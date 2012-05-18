@@ -1043,7 +1043,7 @@ IHqlExpression * transformTrivialSelectProject(IHqlExpression * select)
 
     IHqlExpression * expr = row->queryChild(0);
     IHqlExpression * transform = queryNewColumnProvider(expr);
-    if (!transform) // || !transform->isPure())
+    if (!transform)
         return NULL;
     if (!transform->isPure() && transformHasSkipAttr(transform))
         return NULL;
