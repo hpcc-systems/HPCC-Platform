@@ -85,7 +85,7 @@ public:
     unsigned short  mpport;
     mptag_t         mpTagRPC;
     unsigned        beat;
-    rowmap_t        numrecs;
+    rowcount_t      numrecs;
     offset_t        slavesize;
     bool            overflow;
     unsigned        scale;     // num times overflowed
@@ -157,8 +157,7 @@ public:
         scale = 1;
     }
 
-    void AdjustNumRecs(rowmap_t n);
-
+    void AdjustNumRecs(rowcount_t n);
 };
 
 class CTimer
@@ -414,7 +413,7 @@ public:
         total = 0;
         stotal = 0;
         totalmem = 0;
-        minrecsonnode = UINT_MAX;
+        minrecsonnode = RCMAX;
         maxrecsonnode = 0;
         numnodes = slaves.ordinality();
         estrecsize = 100;
@@ -534,11 +533,12 @@ public:
     unsigned __int64 CalcMinMax(OwnedConstThorRow &min, OwnedConstThorRow &max)
     {
         // initialize min/max keys
-        unsigned __int64 tot=0;
+        rowcount_t tot=0;
         unsigned i;
         size32_t ers = 0;
         unsigned ersn=0;
-        for (i=0;i<numnodes;i++) {
+        for (i=0;i<numnodes;i++)
+        {
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs==0)
                 continue;
@@ -546,13 +546,14 @@ public:
             void *p = NULL;
             size32_t retlen = 0;
             size32_t avrecsize=0;
-            rowmap_t num=slave.GetMinMax(retlen,p,avrecsize);
+            rowcount_t num=slave.GetMinMax(retlen,p,avrecsize);
             if (avrecsize) {
                 ers += avrecsize;       // should probably do mode but this is OK
                 ersn++;
             }
             tot += num;
-            if (num>0) {
+            if (num>0)
+            {
                 minmax.deserialize(retlen, p);
                 free(p);
                 const void *p = minmax.query(0);
@@ -595,12 +596,10 @@ public:
     }
 
 
-    rowmap_t *CalcPartitionUsingSampling()
+    rowcount_t *CalcPartitionUsingSampling()
     {   // doesn't support between
 #define OVERSAMPLE 16
-        OwnedMalloc<rowmap_t> splitMap(numnodes*numnodes, true);
-        if (sizeof(rowmap_t)<=4) 
-            assertex(total/numnodes<INT_MAX); // keep record numbers on individual nodes in 31 bits
+        OwnedMalloc<rowcount_t> splitMap(numnodes*numnodes, true);
         unsigned numsplits=numnodes-1;
         if (total==0) {
             // no partition info!
@@ -608,7 +607,7 @@ public:
             return splitMap.getClear();
         }
         unsigned averagesamples = OVERSAMPLE*numnodes;  
-        rowmap_t averagerecspernode = (rowmap_t)(total/numnodes);
+        rowcount_t averagerecspernode = (rowcount_t)(total/numnodes);
         CriticalSection asect;
         CThorExpandingRowArray sample(*activity, rowif, true);
 #ifdef ASYNC_PARTIONING
@@ -618,9 +617,9 @@ public:
             CThorExpandingRowArray &sample;
             CriticalSection &asect;
             unsigned averagesamples;
-            rowmap_t averagerecspernode;
+            rowcount_t averagerecspernode;
         public:
-            casyncfor1(NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowmap_t _averagerecspernode, CriticalSection &_asect)
+            casyncfor1(NodeArray &_slaves, CThorExpandingRowArray &_sample, unsigned _averagesamples, rowcount_t _averagerecspernode, CriticalSection &_asect)
                 : slaves(_slaves), sample(_sample), asect(_asect)
             { 
                 averagesamples = _averagesamples;
@@ -629,7 +628,7 @@ public:
             void Do(unsigned i)
             {
                 CSortNode &slave = slaves.item(i);
-                unsigned slavesamples = averagerecspernode?((unsigned)((averagerecspernode/2+averagesamples*(count_t)slave.numrecs)/averagerecspernode)):1;  
+                unsigned slavesamples = averagerecspernode?((unsigned)((averagerecspernode/2+averagesamples*slave.numrecs)/averagerecspernode)):1;
                 //PrintLog("%d samples for %d",slavesamples,i);
                 if (slavesamples) {
                     size32_t samplebufsize;
@@ -646,7 +645,7 @@ public:
         unsigned i;
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
-            unsigned slavesamples = (unsigned)((count_t)averagesamples*(count_t)slave.numrecs/(count_t)averagerecspernode);
+            unsigned slavesamples = (unsigned)((count_t)averagesamples*slave.numrecs/(count_t)averagerecspernode);
             PrintLog("%d samples for %d",slavesamples,i);
             if (!slavesamples)
                 continue;
@@ -731,11 +730,11 @@ public:
         class casyncfor3: public CAsyncFor
         {
             NodeArray &slaves;
-            rowmap_t *splitmap;
+            rowcount_t *splitmap;
             unsigned numnodes;
             unsigned numsplits;
         public:
-            casyncfor3(NodeArray &_slaves,rowmap_t *_splitmap,unsigned _numnodes,unsigned _numsplits)
+            casyncfor3(NodeArray &_slaves,rowcount_t *_splitmap,unsigned _numnodes,unsigned _numsplits)
                 : slaves(_slaves)
             { 
                 splitmap = _splitmap;
@@ -746,7 +745,7 @@ public:
             {
                 CSortNode &slave = slaves.item(i);
                 if (slave.numrecs!=0) {
-                    rowmap_t *res=splitmap+(i*numnodes);
+                    rowcount_t *res=splitmap+(i*numnodes);
                     slave.MultiBinChopStop(numsplits,res);
                     res[numnodes-1] = slave.numrecs;
                 }
@@ -757,7 +756,7 @@ public:
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
             if (slave.numrecs!=0) {
-                rowmap_t *res=splitMap+(i*numnodes);
+                rowcount_t *res=splitMap+(i*numnodes);
                 slave.MultiBinChopStop(numsplits,res);
                 res[numnodes-1] = slave.numrecs;
             }
@@ -779,17 +778,15 @@ public:
     }
 
 
-    rowmap_t *CalcPartition(bool logging)
+    rowcount_t *CalcPartition(bool logging)
     {
         CriticalBlock block(ECFcrit);       
         // this is a bit long winded
-        if (sizeof(rowmap_t)<=4) 
-            assertex(stotal/numnodes<INT_MAX); // keep record numbers on individual nodes in 31 bits
 
         OwnedConstThorRow mink;
         OwnedConstThorRow maxk;
         // so as won't overflow
-        OwnedMalloc<rowmap_t> splitmap(numnodes*numnodes, true);
+        OwnedMalloc<rowcount_t> splitmap(numnodes*numnodes, true);
         if (CalcMinMax(mink,maxk)==0) {
             // no partition info!
             partitioninfo->kill();
@@ -956,7 +953,7 @@ public:
                 for (i=0;i<numnodes;i++) {
                     CSortNode &slave = slaves.item(i);
                     if (slave.numrecs!=0) {
-                        rowmap_t *res=splitmap+(i*numnodes);
+                        rowcount_t *res=splitmap+(i*numnodes);
                         slave.MultiBinChopStop(numsplits,res);
                         res[numnodes-1] = slave.numrecs;
                     }
@@ -1041,7 +1038,7 @@ public:
     }
 
 
-    rowmap_t *UsePartitionInfo(PartitionInfo &pi, bool uppercmp)
+    rowcount_t *UsePartitionInfo(PartitionInfo &pi, bool uppercmp)
     {
         unsigned i;
 #ifdef _TRACE
@@ -1057,10 +1054,10 @@ public:
         // first find split points
         unsigned numnodes = pi.numnodes;
         unsigned numsplits = numnodes-1;
-        OwnedMalloc<rowmap_t> splitMap(numnodes*numnodes, true);
-        OwnedMalloc<rowmap_t> res(numsplits);
+        OwnedMalloc<rowcount_t> splitMap(numnodes*numnodes, true);
+        OwnedMalloc<rowcount_t> res(numsplits);
         unsigned j;
-        rowmap_t *mapp=splitMap;
+        rowcount_t *mapp=splitMap;
         for (i=0;i<numnodes;i++) {
             CSortNode &slave = slaves.item(i);
             if (numsplits>0) {
@@ -1068,13 +1065,13 @@ public:
                 pi.splitkeys.serialize(mb);
                 assertex(pi.splitkeys.ordinality()==numsplits);
                 slave.MultiBinChop(mb.length(),(const byte *)mb.bufferBase(),numsplits,res,uppercmp?CMPFN_UPPER:CMPFN_COLLATE,true);
-                rowmap_t *resp = res;
-                rowmap_t p=*resp;
+                rowcount_t *resp = res;
+                rowcount_t p=*resp;
                 *mapp = p;
                 resp++;
                 mapp++;
                 for (j=1;j<numsplits;j++) {
-                    rowmap_t n = *resp;
+                    rowcount_t n = *resp;
                     *mapp = n;
                     if (p>n) {
                         ActPrintLog(activity, "ERROR: Split positions out of order!");
@@ -1091,7 +1088,7 @@ public:
 #ifdef _TRACE
 #ifdef TRACE_PARTITION
         ActPrintLog(activity, "UsePartitionInfo result");
-        rowmap_t *p = splitMap;
+        rowcount_t *p = splitMap;
         for (i=0;i<numnodes;i++) {
             StringBuffer s;
             s.appendf("%d: ",i);
@@ -1165,7 +1162,7 @@ public:
         partitioninfo->numnodes = numnodes;
     }
 
-    IThorException *CheckSkewed(unsigned __int64 threshold, double skewWarning, double skewError, rowmap_t n, unsigned __int64 total, rowcount_t max)
+    IThorException *CheckSkewed(unsigned __int64 threshold, double skewWarning, double skewError, unsigned n, rowcount_t total, rowcount_t max)
     {
         if (n<=0)
             return NULL;
@@ -1238,7 +1235,7 @@ public:
 #endif
         bool useAux = false; // JCSMORE using existing partioning and auxillary rowIf (only used if overflow)
         loop {
-            OwnedMalloc<rowmap_t> splitMap, splitMapUpper;
+            OwnedMalloc<rowcount_t> splitMap, splitMapUpper;
             CTimer timer;
             if (numnodes>1) {
                 timer.start();
@@ -1356,7 +1353,7 @@ public:
                     }
                 }
 
-                OwnedMalloc<rowmap_t> tot(numnodes, true);
+                OwnedMalloc<rowcount_t> tot(numnodes, true);
                 rowcount_t max=0;
                 unsigned imax=numnodes;
                 for (i=0;i<imax;i++) {
@@ -1461,9 +1458,9 @@ IThorSorterMaster *CreateThorSorterMaster(CActivityBase *activity)
 
 
 
-void CSortNode::AdjustNumRecs(rowmap_t num)
+void CSortNode::AdjustNumRecs(rowcount_t num)
 {
-    rowmap_t old = numrecs;
+    rowcount_t old = numrecs;
     numrecs = num;
     sorter.total += num-old;
     if (num>sorter.maxrecsonnode)

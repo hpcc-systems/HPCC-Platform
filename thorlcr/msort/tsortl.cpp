@@ -63,11 +63,11 @@ public:
 
 struct TransferStreamHeader
 {
-    rowmap_t numrecs;
+    rowcount_t numrecs;
     rowcount_t pos;
-    size32_t   recsize;
+    size32_t recsize;
     unsigned id;
-    TransferStreamHeader(rowcount_t _pos, rowmap_t _numrecs, unsigned _recsize, unsigned _id) 
+    TransferStreamHeader(rowcount_t _pos, rowcount_t _numrecs, unsigned _recsize, unsigned _id)
         : pos(_pos), numrecs(_numrecs), recsize(_recsize), id(_id)
     {
     }
@@ -281,22 +281,22 @@ public:
 };
 
 
-IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowmap_t numrecs)
+IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs)
 {
     Owned<ISocket> socket = DoConnect(nodeaddr);
     TransferStreamHeader hdr(startrec,numrecs,0,id);
 #ifdef _FULL_TRACE
     StringBuffer s;
     nodeaddr.getUrlStr(s);
-    PROGLOG("ConnectMergeRead(%d,%s,%x,%"RCPF"d,%"RMF"u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
+    PROGLOG("ConnectMergeRead(%d,%s,%x,%"RCPF"d,%"RCPF"u)",id,s.str(),(unsigned)(memsize_t)socket.get(),startrec,numrecs);
 #endif
     hdr.winrev();
     socket->write(&hdr,sizeof(hdr));
-    return  new CSocketRowStream(id,rowif->queryRowAllocator(),rowif->queryRowDeserializer(),socket);
+    return new CSocketRowStream(id,rowif->queryRowAllocator(),rowif->queryRowDeserializer(),socket);
 }
 
 
-ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowmap_t &numrecs)
+ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs)
 {
     TransferStreamHeader hdr;
     socket->read(&hdr,sizeof(hdr));
@@ -306,7 +306,7 @@ ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32
 #ifdef _FULL_TRACE
     char name[100];
     int port = socket->peer_name(name,sizeof(name));
-    PROGLOG("ConnectMergeWrite(%d,%s:%d,%x,%"RCPF"d,%"RMF"u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
+    PROGLOG("ConnectMergeWrite(%d,%s:%d,%x,%"RCPF"d,%"RCPF"u)",hdr.id,name,port,(unsigned)(memsize_t)socket,startrec,numrecs);
 #endif
     return new CSocketRowWriter(hdr.id,rowif,socket,bufsize);
 }

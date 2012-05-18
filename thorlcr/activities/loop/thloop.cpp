@@ -175,7 +175,7 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
             bool overLimit = slaveEmptyIterations > maxEmptyLoopIterations;
             emptyIterations->set(sender-1, overLimit);
             if (emptyIterations->scan(0, 0) >= nodes) // all empty
-                throw MakeActivityException(this, 0, "Executed LOOP with empty input and output > %maxEmptyLoopIterations times on all nodes", maxEmptyLoopIterations);
+                throw MakeActivityException(this, 0, "Executed LOOP with empty input and output > %d maxEmptyLoopIterations times on all nodes", maxEmptyLoopIterations);
         }
     }
 public:

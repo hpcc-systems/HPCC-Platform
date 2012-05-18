@@ -124,7 +124,7 @@ class CWriteIntercept : public CSimpleInterface
             fixedsize = (size32_t)(o-lastofs);
         lastofs = o;
     }
-    size32_t _readOverflowPos(rowmap_t pos, unsigned n, offset_t *ofs, bool closeIO)
+    size32_t _readOverflowPos(rowcount_t pos, unsigned n, offset_t *ofs, bool closeIO)
     {
         if (fixedsize)
         {
@@ -247,12 +247,12 @@ public:
         dataFileDeserializerSource.setStream(NULL);
         idxFileIO.clear();
     }
-    size32_t readOverflowPos(rowmap_t pos, unsigned n, offset_t *ofs, bool closeIO)
+    size32_t readOverflowPos(rowcount_t pos, unsigned n, offset_t *ofs, bool closeIO)
     {
         CriticalBlock block(crit);
         return _readOverflowPos(pos, n, ofs, closeIO);
     }
-    const void *getRow(rowmap_t pos)
+    const void *getRow(rowcount_t pos)
     {
         CriticalBlock block(crit);
         offset_t ofs[2]; // JCSMORE doesn't really need 2, only to verify read right amount below
@@ -574,7 +574,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     unsigned partno, numnodes; // JCSMORE - shouldn't be necessary
     rowcount_t totalrows, grandtotal;
     offset_t grandtotalsize;
-    rowmap_t *overflowmap, *multibinchoppos;
+    rowcount_t *overflowmap, *multibinchoppos;
     bool stopping, gatherdone, nosort, isstable;
     ICompare *icompare;
     ICompare *icollate; // used for co-sort
@@ -643,14 +643,14 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         }
         return NULL;
     }
-    unsigned BinChop(const void *row, bool lesseq, bool firstdup, byte cmpfn)
+    rowidx_t BinChop(const void *row, bool lesseq, bool firstdup, byte cmpfn)
     {
-        unsigned n = rowArray.ordinality();
-        unsigned l=0;
-        unsigned r=n;
+        rowidx_t n = rowArray.ordinality();
+        rowidx_t l=0;
+        rowidx_t r=n;
         ICompare* icmp=queryCmpFn(cmpfn);
         while (l<r) {
-            unsigned m = (l+r)/2;
+            rowidx_t m = (l+r)/2;
             const void *p = rowArray.query(m);
             int cmp = icmp->docompare(row, p);
             if (cmp < 0)
@@ -673,7 +673,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
             return l-1;
         return l;
     }
-    void doBinChop(CThorExpandingRowArray &keys, rowmap_t * pos, unsigned num, byte cmpfn)
+    void doBinChop(CThorExpandingRowArray &keys, rowcount_t * pos, unsigned num, byte cmpfn)
     {
         MemoryBuffer tmp;
         for (unsigned n=0;n<num;n++)
@@ -695,15 +695,15 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
             }
         }
     }
-    void AdjustOverflow(rowmap_t &apos, const void *key, byte cmpfn)
+    void AdjustOverflow(rowcount_t &apos, const void *key, byte cmpfn)
     {
 #ifdef TRACE_PARTITION_OVERFLOW
         ActPrintLog(activity, "AdjustOverflow: in (%"RCPF"d)",apos);
         TraceKey(" ",(byte *)key);
 #endif
-        rowmap_t pos = (rowmap_t)(apos+1)*(rowmap_t)overflowinterval;
+        rowcount_t pos = (apos+1)*(rowcount_t)overflowinterval;
         if (pos>grandtotal)
-            pos = (rowmap_t)grandtotal;
+            pos = grandtotal;
         assertex(intercept);
         MemoryBuffer bufma;
         while (pos>0)
@@ -769,7 +769,7 @@ public:
         gatherdone = false;
         startgathersem.signal();
     }
-    virtual void GetGatherInfo(rowmap_t &numlocal, offset_t &totalsize, unsigned &_overflowscale, bool haskeyserializer)
+    virtual void GetGatherInfo(rowcount_t &numlocal, offset_t &totalsize, unsigned &_overflowscale, bool haskeyserializer)
     {
         if (!gatherdone)
             ERRLOG("GetGatherInfo:***Error called before gather complete");
@@ -784,7 +784,7 @@ public:
         _overflowscale = overflowinterval;
         totalsize = grandtotalsize; // used by master, if nothing overflowed to see if can MiniSort
     }
-    virtual rowmap_t GetMinMax(size32_t &keybufsize,void *&keybuf,size32_t &avrecsize)
+    virtual rowcount_t GetMinMax(size32_t &keybufsize,void *&keybuf,size32_t &avrecsize)
     {
         CThorExpandingRowArray ret(*activity, rowif, true);
         avrecsize = 0;
@@ -902,13 +902,7 @@ public:
         mbufsize = midkeybufsize;
         midkeybuf = NULL;
     }
-    virtual rowmap_t SingleBinChop(size32_t keysize, const byte * key,byte cmpfn)
-    {
-        OwnedConstThorRow row;
-        row.deserialize(rowif,keysize,key);
-        return BinChop(row.get(),false,true,cmpfn);
-    }
-    virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowmap_t * pos, byte cmpfn, bool useaux)
+    virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowcount_t * pos, byte cmpfn, bool useaux)
     {
         CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
         keys.deserialize(keybufsize, keybuf);
@@ -920,23 +914,23 @@ public:
         keys.deserializeExpand(keybufsize, keybuf);
         assertex(multibinchoppos==NULL); // check for reentrancy
         multibinchopnum = keys.ordinality();
-        multibinchoppos = (rowmap_t *)malloc(sizeof(rowmap_t)*multibinchopnum);
+        multibinchoppos = (rowcount_t *)malloc(sizeof(rowcount_t)*multibinchopnum);
         doBinChop(keys, multibinchoppos, multibinchopnum, cmpfn);
     }
-    virtual void MultiBinChopStop(unsigned num, rowmap_t * pos)
+    virtual void MultiBinChopStop(unsigned num, rowcount_t * pos)
     {
         assertex(multibinchoppos);
         assertex(multibinchopnum==num);
-        memcpy(pos,multibinchoppos,num*sizeof(rowmap_t));
+        memcpy(pos,multibinchoppos,num*sizeof(rowcount_t));
         free(multibinchoppos);
         multibinchoppos = NULL;
     }
-    virtual void OverflowAdjustMapStart(unsigned mapsize, rowmap_t * map,
+    virtual void OverflowAdjustMapStart(unsigned mapsize, rowcount_t * map,
                                size32_t keybufsize, const byte * keybuf, byte cmpfn, bool useaux)
     {
         assertex(intercept);
-        overflowmap = (rowmap_t *)malloc(mapsize*sizeof(rowmap_t));
-        memcpy(overflowmap,map,mapsize*sizeof(rowmap_t));
+        overflowmap = (rowcount_t *)malloc(mapsize*sizeof(rowcount_t));
+        memcpy(overflowmap,map,mapsize*sizeof(rowcount_t));
         unsigned i;
 #ifdef TRACE_PARTITION_OVERFLOW
 
@@ -949,27 +943,25 @@ public:
         keys.deserialize(keybufsize, keybuf);
         for (i=0;i<mapsize-1;i++)
             AdjustOverflow(overflowmap[i], keys.query(i), cmpfn);
-        assertex(grandtotal==(unsigned)grandtotal);
-        overflowmap[mapsize-1] = (unsigned)grandtotal;
+        overflowmap[mapsize-1] = grandtotal;
 #ifdef TRACE_PARTITION_OVERFLOW
         ActPrintLog(activity, "Out: ");
         for (i=0;i<mapsize;i++)
             ActPrintLog(activity, "%"RCPF"u ",overflowmap[i]);
 #endif
     }
-    virtual rowmap_t OverflowAdjustMapStop(unsigned mapsize, rowmap_t * map)
+    virtual rowcount_t OverflowAdjustMapStop(unsigned mapsize, rowcount_t * map)
     {
-        memcpy(map,overflowmap,mapsize*sizeof(rowmap_t));
+        memcpy(map,overflowmap,mapsize*sizeof(rowcount_t));
         free(overflowmap);
-        assertex(grandtotal==(rowmap_t)grandtotal);
-        return (rowmap_t)grandtotal;
+        return grandtotal;
     }
-    virtual void MultiMerge(unsigned mapsize,rowmap_t *map,
+    virtual void MultiMerge(unsigned mapsize,rowcount_t *map,
                     unsigned num,SocketEndpoint* endpoints)
     {
         MultiMergeBetween(mapsize,map,NULL,num,endpoints);
     }
-    virtual void MultiMergeBetween(unsigned mapsize, rowmap_t * map, rowmap_t * mapupper, unsigned num, SocketEndpoint * endpoints)
+    virtual void MultiMergeBetween(unsigned mapsize, rowcount_t * map, rowcount_t * mapupper, unsigned num, SocketEndpoint * endpoints)
     {
         assertex(transferserver.get()!=NULL);
         if (intercept)
@@ -1090,10 +1082,8 @@ public:
     }
 
 // ISortSlaveBase
-    virtual IRowStream *createMergeInputStream(rowmap_t sstart, rowcount_t snum)
+    virtual IRowStream *createMergeInputStream(rowcount_t sstart, rowcount_t snum)
     {
-        unsigned _snum = (unsigned)snum;    // only support 2^32 rows locally
-        assertex(snum==_snum);
         if (intercept)
         {
             offset_t startofs;  
@@ -1102,7 +1092,11 @@ public:
             return intercept->getStream(startofs, snum);
         }
         else
-            return rowArray.createRowStream((unsigned)sstart, _snum, false); // must be false as rows may overlap (between join)
+        {
+            unsigned _snum = (rowidx_t)snum; // only support 2^32 rows in memory
+            assertex(snum==_snum);
+            return rowArray.createRowStream((rowidx_t)sstart, _snum, false); // must be false as rows may overlap (between join)
+        }
     }
     virtual size32_t getTransferBlockSize()
     {
