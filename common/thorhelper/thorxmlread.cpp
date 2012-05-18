@@ -1619,6 +1619,7 @@ class CXMLParse : public CInterface, implements IXMLParse
         CopyCIArrayOf<CParseStackInfo> stack, freeParseInfo;
         IPTreeMaker *maker;
         Linked<CMarkReadBase> marking;
+        Owned<COffsetNodeCreator> nodeCreator;
         void *utf8Translator;
         unsigned level;
         bool contentRequired;
@@ -1647,24 +1648,12 @@ class CXMLParse : public CInterface, implements IXMLParse
         void init()
         {
             level = 0;
-            Owned<COffsetNodeCreator> nodeCreator = new COffsetNodeCreator();
+            nodeCreator.setown(new COffsetNodeCreator());
             maker = createRootLessPTreeMaker(ipt_none, NULL, nodeCreator);
             bool f;
             utf8Translator = rtlOpenCodepageConverter("utf-8", "latin1", f);
             if (f)
                 throw MakeStringException(0, "Failed to initialize unicode utf-8 translator");
-        }
-        void reset()
-        {
-            level = 0;
-            ForEachItemIn(i, stack)
-                delete &stack.item(i);
-            ForEachItemIn(i2, freeParseInfo)
-                delete &freeParseInfo.item(i2);
-            stack.kill();
-            freeParseInfo.kill();
-            if (marking)
-                marking->reset();
         }
         void setMarkingStream(CMarkReadBase &_marking) { marking.set(&_marking); }
         CXPath &queryXPath() { return xpath; }
@@ -1896,6 +1885,22 @@ class CXMLParse : public CInterface, implements IXMLParse
         }
         virtual IPropertyTree *queryRoot() { return maker->queryRoot(); }
         virtual IPropertyTree *queryCurrentNode() { return maker->queryCurrentNode(); }
+        virtual void reset()
+        {
+            level = 0;
+            ForEachItemIn(i, stack)
+                delete &stack.item(i);
+            ForEachItemIn(i2, freeParseInfo)
+                delete &freeParseInfo.item(i2);
+            stack.kill();
+            freeParseInfo.kill();
+            if (marking)
+                marking->reset();
+        }
+        virtual IPropertyTree *create(const char *tag)
+        {
+            return nodeCreator->create(tag);
+        }
     } *iXMLMaker;
 
 public:

@@ -630,6 +630,10 @@ public:
         }
         currentNode = NULL;
     }
+    virtual IPropertyTree *create(const char *tag)
+    {
+        return nodeCreator->create(tag);
+    }
 };
 
 #ifdef __64BIT__

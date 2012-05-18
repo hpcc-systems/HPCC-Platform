@@ -5104,7 +5104,7 @@ IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, XmlReaderOptio
     if (iMaker->queryRoot())
         return LINK(iMaker->queryRoot());
     else
-        return createPTree(flags);
+        return iMaker->create(NULL);
 }
 
 IPropertyTree *createPTree(IFileIO &ifileio, byte flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
