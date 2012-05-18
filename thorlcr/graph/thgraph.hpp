@@ -1135,6 +1135,7 @@ extern graph_decl void registerCreateFunc(CreateFunc func);
 extern graph_decl CGraphElementBase *createGraphElement(IPropertyTree &node, CGraphBase &owner, CGraphBase *resultsGraph);
 extern graph_decl IThorBoundLoopGraph *createBoundLoopGraph(CGraphBase *graph, IOutputMetaData *resultMeta, unsigned activityId);
 extern graph_decl bool isDiskInput(ThorActivityKind kind);
+extern graph_decl bool isLoopActivity(CGraphElementBase &container);
 
 
 #endif

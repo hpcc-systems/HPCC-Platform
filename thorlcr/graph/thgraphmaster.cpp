@@ -2333,7 +2333,14 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
             throw;
         }
     }
-    if (!queryOwner() || isGlobal())
+    CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : NULL;
+    bool request;
+    if (parentElement && isLoopActivity(*parentElement))
+        request = parentElement->queryLoopGraph()->queryGraph()->isGlobal();
+    else
+        request = !isLocalChild();
+
+    if (request)
         sendActivityInitData(); // has to be done at least once
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())

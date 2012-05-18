@@ -715,20 +715,12 @@ void CGraphElementBase::initActivity()
     if (activity)
         return;
     activity.setown(factory());
-    switch (getKind())
+    if (isLoopActivity(*this))
     {
-        case TAKlooprow:
-        case TAKloopcount:
-        case TAKloopdataset:
-        case TAKgraphloop:
-        case TAKparallelgraphloop:
-        {
-            unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
-            Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
-            Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
-            setBoundGraph(boundLoopGraph);
-            break;
-        }
+        unsigned loopId = queryXGMML().getPropInt("att[@name=\"_loopid\"]/@value");
+        Owned<CGraphBase> childGraph = owner->getChildGraph(loopId);
+        Owned<IThorBoundLoopGraph> boundLoopGraph = createBoundLoopGraph(childGraph, baseHelper->queryOutputMeta(), queryId());
+        setBoundGraph(boundLoopGraph);
     }
 }
 
@@ -1004,6 +996,19 @@ bool isGlobalActivity(CGraphElementBase &container)
     return false;
 }
 
+bool isLoopActivity(CGraphElementBase &container)
+{
+    switch (container.getKind())
+    {
+        case TAKlooprow:
+        case TAKloopcount:
+        case TAKloopdataset:
+        case TAKgraphloop:
+        case TAKparallelgraphloop:
+            return true;
+    }
+    return false;
+}
 /////
 
 CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
@@ -1667,22 +1672,14 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     {
         CGraphElementBase *parentElement = owner->queryElement(parentActivityId);
         parentElement->addAssociatedChildGraph(this);
-        switch (parentElement->getKind())
+        localChild = false;
+        if (isLoopActivity(*parentElement))
         {
-            case TAKlooprow:
-            case TAKloopcount:
-            case TAKloopdataset:
-            case TAKgraphloop:
-            case TAKparallelgraphloop:
-            {
-                if (parentElement->queryOwner().isLocalChild())
-                    localChild = true;
-                break;
-            }
-            default:
+            if (parentElement->queryOwner().isLocalChild())
                 localChild = true;
-                break;
         }
+        else
+            localChild = true;
     }
 
     Owned<IPropertyTreeIterator> nodes = xgmml->getElements("node");
@@ -2491,18 +2488,10 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
         if (subGraph.queryOwner() && subGraph.queryParentActivityId())
         {
             CGraphElementBase *parentElement = subGraph.queryOwner()->queryElement(subGraph.queryParentActivityId());
-            switch (parentElement->getKind())
+            if (isLoopActivity(*parentElement))
             {
-                case TAKlooprow:
-                case TAKloopcount:
-                case TAKloopdataset:
-                case TAKgraphloop:
-                case TAKparallelgraphloop:
-                {
-                    if (!parentElement->queryOwner().isLocalChild() && !subGraph.isLocalOnly())
-                        subGraph.setGlobal(true);
-                    break;
-                }
+                if (!parentElement->queryOwner().isLocalChild() && !subGraph.isLocalOnly())
+                    subGraph.setGlobal(true);
             }
         }
         bool log = queryForceLogging(subGraph.queryGraphId(), subGraph.isGlobal());
