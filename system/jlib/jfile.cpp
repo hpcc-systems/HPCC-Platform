@@ -3866,7 +3866,7 @@ int CFile::useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeo
   }
 }
 
-int CFile::flushINotifyQueue(int inotify_queue)
+void CFile::flushINotifyQueue(int inotify_queue)
 {
   const int max_attempts = 5;
   int attempts = 0;
@@ -3874,7 +3874,7 @@ int CFile::flushINotifyQueue(int inotify_queue)
 
   if(inotify_queue <= 0)
   {
-    throw MakeStringException(-1,"Invalid inotify file descriptor is not valid %d",inotify_queue);
+    return;
   }
 
   loop
@@ -3884,7 +3884,7 @@ int CFile::flushINotifyQueue(int inotify_queue)
 
     if (queue_length == 0)
     {
-      return 1;
+      return;  // nothing to flush
     }
     else if (queue_length > 0)
     {
@@ -3899,7 +3899,7 @@ int CFile::flushINotifyQueue(int inotify_queue)
 
     if (bytes_read_successfully == queue_length)
     {
-      return 1; // queue flushed
+      return; // queue flushed
     }
     else if (attempts >= max_attempts)
     {
@@ -3907,8 +3907,6 @@ int CFile::flushINotifyQueue(int inotify_queue)
     }
     Sleep(0);
   };
-
-  return 1;
 }
 
 unsigned int CFile::getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const

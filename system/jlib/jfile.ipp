@@ -96,7 +96,7 @@ private:
     int useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeout, Semaphore *abortsem, IDirectoryIterator* dirIter);
     unsigned int getINotifyQueueLength(int inotify_queue) const;
     unsigned int getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const;
-    int flushINotifyQueue(int inotify_queue);
+    void flushINotifyQueue(int inotify_queue);
 
     class CAbortMonitorThread : public CInterface, implements IThreaded
     {
