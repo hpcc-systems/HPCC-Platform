@@ -247,7 +247,11 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
         if (TAKchildif == container.getKind())
         {
             if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
-                inputCycles += inputs.item(container.whichBranch)->queryTotalCycles();
+            {
+                IThorDataLink *input = inputs.item(container.whichBranch);
+                if (input)
+                    inputCycles += input->queryTotalCycles();
+            }
         }
         else
         {
@@ -295,6 +299,7 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     waitBarrier = job.createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = job.createBarrier(doneBarrierTag);
+    initialized = false;
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)
@@ -308,6 +313,8 @@ void CSlaveGraph::init(MemoryBuffer &mb)
 
 void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 {
+    CriticalBlock b(progressCrit);
+    initialized = true;
     activity_id id;
     loop
     {
@@ -652,7 +659,8 @@ void CSlaveGraph::serializeStats(MemoryBuffer &mb)
     unsigned count = 0;
     mb.append(count);
     CriticalBlock b(progressCrit);
-    if (started || 0 == activityCount())
+    // until started and activities initialized, activities are not ready to serliaze stats.
+    if ((started&&initialized) || 0 == activityCount())
     {
         unsigned sPos = mb.length();
         Owned<IThorActivityIterator> iter = getTraverseIterator();

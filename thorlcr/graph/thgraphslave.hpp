@@ -90,7 +90,7 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     CJobSlave &jobS;
     Owned<IInterface> progressHandler;
     Semaphore getDoneSem;
-    bool needsFinalInfo;
+    bool initialized;
     CriticalSection progressCrit;
 
 public:
