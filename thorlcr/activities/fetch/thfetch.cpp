@@ -33,6 +33,8 @@ class CFetchActivityMaster : public CMasterActivity
     SocketEndpoint *endpoints;
 
 protected:
+    IHThorFetchArg *helper;
+    IHThorFetchContext *fetchContext;
     Owned<IDistributedFile> fetchFile;
 public:
     CFetchActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -40,6 +42,9 @@ public:
         endpoints = NULL;
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
+        helper = (IHThorFetchArg *)queryHelper();
+        fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
+        reInit = 0 != (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
     }
     ~CFetchActivityMaster()
     {
@@ -47,7 +52,6 @@ public:
     }
     virtual void init()
     {
-        IHThorFetchArg *helper = (IHThorFetchArg *)queryHelper();
         fetchFile.setown(queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true));
         if (fetchFile)
         {

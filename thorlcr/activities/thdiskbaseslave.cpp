@@ -201,6 +201,7 @@ const char * CDiskPartHandlerBase::queryLogicalFilename(const void * row)
 CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container)
 {
     helper = (IHThorDiskReadBaseArg *)queryHelper();
+    reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
     crcCheckCompressed = 0 != container.queryJob().getWorkUnitValueInt("crcCheckCompressed", 0);
     markStart = gotMeta = false;
     checkFileCrc = !globals->getPropBool("Debug/@fileCrcDisabled");
@@ -209,6 +210,8 @@ CDiskReadSlaveActivityBase::CDiskReadSlaveActivityBase(CGraphElementBase *_conta
 // IThorSlaveActivity
 void CDiskReadSlaveActivityBase::init(MemoryBuffer &data, MemoryBuffer &slaveData)
 {
+    subfileLogicalFilenames.kill();
+    partDescs.kill();
     data.read(logicalFilename);
     unsigned subfiles;
     data.read(subfiles);

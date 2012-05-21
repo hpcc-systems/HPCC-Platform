@@ -170,6 +170,7 @@ public:
         localKey = false;
         fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedMeta()->getFixedSize(); // 0 if variable and unused
         progress = 0;
+        reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     rowcount_t sendGetCount(rowcount_t count)
     {

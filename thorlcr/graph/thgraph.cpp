@@ -522,8 +522,7 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
 
 void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
 {
-    if (!onStartCalled) return;
-    mb.append(queryId());
+    assertex(onStartCalled);
     unsigned pos = mb.length();
     mb.append((size32_t)0);
     queryHelper()->serializeStartContext(mb);
@@ -545,6 +544,7 @@ void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
     mb.read(startCtxLen);
     startCtxMb.append(startCtxLen, mb.readDirect(startCtxLen));
     haveStartCtx = true;
+    onStartCalled = false; // allow to be called again
 }
 
 void CGraphElementBase::onCreate()
@@ -1068,6 +1068,7 @@ void CGraphBase::serializeStartContexts(MemoryBuffer &mb)
     ForEach (*iter)
     {
         CGraphElementBase &element = iter->query();
+        mb.append(element.queryId());
         element.serializeStartContext(mb);
     }
     mb.append((activity_id)0);
@@ -2631,7 +2632,7 @@ IThorResource &queryThor()
 CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_container), timeActivities(_container->queryJob().queryTimeActivities())
 {
     mpTag = TAG_NULL;
-    abortSoon = cancelledReceive = false;
+    abortSoon = cancelledReceive = reInit = false;
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;

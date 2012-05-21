@@ -353,26 +353,21 @@ void CSlaveGraph::recvStartCtx()
         CMessageBuffer msg;
         if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
             throw MakeStringException(0, "Error receiving startCtx data for graph: %"GIDPF"d", graphId);
-        activity_id id;
-        loop
-        {
-            msg.read(id);
-            if (0 == id) break;
-            CSlaveGraphElement *element = (CSlaveGraphElement *)queryElement(id);
-            assertex(element);
-            element->deserializeStartContext(msg);
-        }
+        deserializeStartContexts(msg);
     }
 }
 
-bool CSlaveGraph::recvActivityInitData()
+bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract)
 {
     bool ret = true;
     unsigned needActInit = 0;
     Owned<IThorActivityIterator> iter = getTraverseIterator();
     ForEach(*iter)
     {
-        CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
+        CGraphElementBase &element = (CGraphElementBase &)iter->query();
+        CActivityBase *activity = element.queryActivity();
+        if (activity && activity->needReInit())
+            element.sentActInitData->set(0, false); // force act init to be resent
         if (!element.sentActInitData->test(0))
             ++needActInit;
     }
@@ -395,12 +390,18 @@ bool CSlaveGraph::recvActivityInitData()
             // initialize any for which no data was sent
             msg.append(smt_initActDataReq); // may cause graph to be created at master
             msg.append(queryGraphId());
+            assertex(!parentExtractSz || NULL!=parentExtract);
+            msg.append(parentExtractSz);
+            msg.append(parentExtractSz, parentExtract);
             Owned<IThorActivityIterator> iter = getTraverseIterator();
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
                 if (!element.sentActInitData->test(0))
+                {
                     msg.append(element.queryId());
+                    element.serializeStartContext(msg);
+                }
             }
             msg.append((activity_id)0);
             if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
@@ -457,7 +458,7 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
     recvStartCtx();
     CGraphBase::preStart(parentExtractSz, parentExtract);
 
-    if (!recvActivityInitData())
+    if (!recvActivityInitData(parentExtractSz, parentExtract))
         return false;
     connect(); // only now do slave acts. have all their outputs prepared.
     if (isGlobal())
@@ -578,9 +579,6 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 CMessageBuffer msg;
                 msg.append(smt_initGraphReq);
                 msg.append(graphId);
-                assertex(!parentExtractSz || NULL!=parentExtract);
-                msg.append(parentExtractSz);
-                msg.append(parentExtractSz, parentExtract);
                 if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                     throwUnexpected();
                 unsigned len;
