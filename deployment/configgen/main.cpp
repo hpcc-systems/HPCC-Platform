@@ -51,6 +51,13 @@ void usage()
   puts("          If not specified, the following defaults are used. ");
   puts("          For win32, '.'");
   puts("          For Linux, '"CONFIG_DIR"'");
+  puts("   -ldapconfig : Generates a .ldaprc file and puts it in the specified");
+  puts("          output directory. If output directory is not specified,");
+  puts("          default output directory is used as mentioned in -od option");
+  puts("          if a LDAPServer is not defined in the environment, the .ldaprc ");
+  puts("          file is not generated. If an -ip is not provided, the first");
+  puts("          instance of the first LDAPserver is used to generate the ");
+  puts("          .ldaprc file");
   puts("   -list: Lists out the components for a specific ip in the format");
   puts("          componentType=componentName;config file directory. Does not ");
   puts("          generate any output files. If masters and slaves exist for ");
@@ -60,7 +67,7 @@ void usage()
   puts("          that have an instance defined. Does not require an ip. Does ");
   puts("          not generate any output files. Output is written to stdout ");
   puts("          in the csv format as follows");
-  puts("          ProcessType,componentNameinstanceip,instanceport,runtimedir,logdir");
+  puts("          ProcessType,componentName,instanceip,instanceport,runtimedir,logdir");
   puts("          Missing fields will be empty.");
   puts("   -listdirs: Lists out any directories that need to be created during ");
   puts("          init time. Currently, directories for any drop zones ");
@@ -75,6 +82,11 @@ void usage()
   puts("          Software/Directories section in the following format. ");
   puts("          <CategoryName>=<DirectoryValue>");
   puts("          Each directory will be listed on a new line.");
+  puts("   -listldaps: Lists out all LDAPServer instances defined in the ");
+  puts("          environment in the following format. If the same component");
+  puts("          has more than one instance, it will be listed as two separate.");
+  puts("          entries in the output");
+  puts("          componentName,instanceip");
   puts("   -machines: Lists out all names or ips of machines specified in the environment");
   puts("          Output is written to stdout, one machine per line.");
   puts("   -validateonly: Validates the environment, without generating permanent ");
@@ -107,6 +119,45 @@ void deleteRecursive(const char* path)
         }
         pDir->remove();
     }
+}
+
+void copyDirectoryRecursive(const char *source, const char *target)
+{
+  bool first = true;
+  Owned<IDirectoryIterator> dir = createDirectoryIterator(source, "*");
+
+  ForEach (*dir)
+  {
+    IFile &sourceFile = dir->query();
+
+    if (sourceFile.isFile())
+    {
+      StringBuffer targetname(target);
+      targetname.append(PATHSEPCHAR);
+      dir->getName(targetname);
+      OwnedIFile destFile = createIFile(targetname.str());
+
+      if (first)
+      {
+        if (!recursiveCreateDirectory(target))
+          throw MakeStringException(-1,"Cannot create directory %s",target);
+
+        first = false;
+      }
+
+      copyFile(destFile, &sourceFile);
+    }
+    else if (sourceFile.isDirectory())
+    {
+      StringBuffer newSource(source);
+      StringBuffer newTarget(target);
+      newSource.append(PATHSEPCHAR);
+      newTarget.append(PATHSEPCHAR);
+      dir->getName(newSource);
+      dir->getName(newTarget);
+      copyDirectoryRecursive(newSource.str(), newTarget.str());
+    }
+  }
 }
 
 //returns temp path that ends with path sep
@@ -194,7 +245,8 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
                    const char* compName, const char* compType, const char* in_filename, 
                    const char* out_filename, bool generateOutput, const char* ipAddr, 
                    bool listComps, bool verbose, bool listallComps, bool listdirs, 
-                   bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly)
+                   bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly,
+                   bool listldaps, bool ldapconfig)
 {
   Owned<IPropertyTree> pEnv = createPTreeFromXMLFile(in_cfgname);
   short nodeIndex = 1;
@@ -247,11 +299,118 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       throw e;
     }
   }
-  else if (!listComps && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines)
+  else if (ldapconfig)
+  {
+    char tempdir[_MAX_PATH];
+    StringBuffer sb;
+
+    while(true)
+    {
+      sb.clear().appendf("%d", msTick());
+      getTempPath(tempdir, sizeof(tempdir), sb.str());
+
+      if (!checkDirExists(tempdir))
+      {
+        if (recursiveCreateDirectory(tempdir))
+          break;
+      }
+    }
+
+    StringBuffer out;
+    xPath.clear().append(XML_TAG_SOFTWARE"/"XML_TAG_LDAPSERVERPROCESS);
+    Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
+    Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
+    bool flag = false;
+
+    ForEach(*ldaps)
+    {
+      IPropertyTree* ldap = &ldaps->query();
+      IPropertyTree* inst;
+      int count = 1;
+      xPath.clear().appendf(XML_TAG_INSTANCE"[%d]", count);
+
+      while ((inst = ldap->queryPropTree(xPath.str())) != NULL)
+      {
+        if (ipAddr && *ipAddr && strcmp(ipAddr, inst->queryProp(XML_ATTR_NETADDRESS)))
+        {
+          ldap->removeTree(inst);
+          continue;
+        }
+
+        if (!flag)
+        {
+          inst->addProp(XML_ATTR_DIRECTORY, ".");
+          sb.clear().append(tempdir).append(PATHSEPCHAR).append(ldap->queryProp(XML_ATTR_NAME));
+          xPath.clear().appendf(XML_TAG_INSTANCE"[%d]", ++count);
+          flag = true;
+        }
+        else
+        {
+          ldap->removeTree(inst);
+        }
+      }
+
+      if (flag)
+      {
+        pSelComps->addPropTree(XML_TAG_LDAPSERVERPROCESS, createPTreeFromIPT(ldap));
+        break;
+      }
+    }
+
+    if (flag)
+    {
+      try
+      {
+        toXML(pEnv, envXML.clear());
+        m_pEnvironment.setown(factory->loadLocalEnvironment(envXML));
+        m_pConstEnvironment.set(m_pEnvironment);
+        Owned<IEnvDeploymentEngine> m_configGenMgr;
+        m_configGenMgr.setown(createConfigGenMgr(*m_pConstEnvironment, callback, pSelComps, in_dirname?in_dirname:"", tempdir, compName, compType, ipAddr));
+        m_configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
+        copyDirectoryRecursive(sb.str(), out_dirname);
+        deleteRecursive(tempdir);
+      }
+      catch (IException* e)
+      {
+        deleteRecursive(tempdir);
+        throw e;
+      }
+    }
+  }
+  else if (!listComps && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines
+           && !listldaps)
   {
     Owned<IEnvDeploymentEngine> m_configGenMgr;
     m_configGenMgr.setown(createConfigGenMgr(*m_pConstEnvironment, callback, NULL, in_dirname?in_dirname:"", out_dirname?out_dirname:"", compName, compType, ipAddr));
     m_configGenMgr->deploy(DEFLAGS_CONFIGFILES, DEBACKUP_NONE, false, false);
+  }
+  else if (listldaps)
+  {
+    StringBuffer out;
+    xPath.appendf("Software/%s/", XML_TAG_LDAPSERVERPROCESS);
+    Owned<IPropertyTreeIterator> ldaps = pEnv->getElements(xPath.str());
+
+    ForEach(*ldaps)
+    {
+      IPropertyTree* ldap = &ldaps->query();
+      Owned<IPropertyTreeIterator> insts = ldap->getElements(XML_TAG_INSTANCE);
+
+      ForEach(*insts)
+      {
+        IPropertyTree* inst = &insts->query();
+        StringBuffer computerName(inst->queryProp(XML_ATTR_COMPUTER));
+        xPath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computerName.str());
+        IPropertyTree* pComputer = pEnv->queryPropTree(xPath.str());
+
+        if (pComputer)
+        {
+          const char* netAddr = pComputer->queryProp("@netAddress");
+          out.appendf("%s,%s\n", ldap->queryProp(XML_ATTR_NAME), netAddr);
+        }
+      }
+    }
+
+    fprintf(stdout, "%s", out.str());
   }
   else if (listdirs || listdropzones)
   {
@@ -458,6 +617,8 @@ int main(int argc, char** argv)
   bool listcommondirs = false;
   bool listMachines = false;
   bool validateOnly = false;
+  bool ldapconfig = false;
+  bool listldaps = false;
 
   int i = 1;
   bool writeToFiles = false;
@@ -510,6 +671,11 @@ int main(int argc, char** argv)
       i++;
       in_dirname = argv[i++];
     }
+    else if (stricmp(argv[i], "-ldapconfig") == 0)
+    {
+      i++;
+      ldapconfig = true;
+    }
     else if (stricmp(argv[i], "-list") == 0)
     {
       i++;
@@ -534,6 +700,11 @@ int main(int argc, char** argv)
     {
       i++;
       listcommondirs = true;
+    }
+    else if (stricmp(argv[i], "-listldaps") == 0)
+    {
+      i++;
+      listldaps = true;
     }
     else if (stricmp(argv[i], "-machines") == 0)
     {
@@ -567,14 +738,15 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  if (ipAddr.length() == 0  && !listallComps && !validateOnly && !listcommondirs && !listMachines)
+  if (ipAddr.length() == 0  && !listallComps && !validateOnly && !listcommondirs && !listMachines && !listldaps && !ldapconfig)
     ipAddr.clear().append("."); // Meaning match any local address
 
   try
   {
     processRequest(in_cfgname, out_dirname, in_dirname, compName, 
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
-      listComps, verbose, listallComps, listdirs, listdropzones, listcommondirs, listMachines, validateOnly);
+      listComps, verbose, listallComps, listdirs, listdropzones, listcommondirs, listMachines,
+      validateOnly, listldaps, ldapconfig);
   }
   catch(IException *excpt)
   {
