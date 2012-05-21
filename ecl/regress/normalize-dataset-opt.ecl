@@ -102,3 +102,4 @@ output(dsRN);
 output('LEFT referenced children');
 dsL := dataset(ROW({10,'foo'},myRec));
 dsLN := normalize(dsL, LEFT.id, myTransf(COUNTER));
+output(dsLN);

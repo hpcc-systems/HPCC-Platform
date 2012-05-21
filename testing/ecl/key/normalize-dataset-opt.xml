@@ -299,3 +299,15 @@
 <Dataset name='Result 24'>
  <Row><Result_24>LEFT referenced children</Result_24></Row>
 </Dataset>
+<Dataset name='Result 25'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+</Dataset>
