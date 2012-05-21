@@ -52,6 +52,9 @@
   <Component name="GAB_Configuration">
     <File name="GABConfig.xsl" method="xslt" destName="@name+.cfg"/>
   </Component>
+  <Component name="ldapServer" processName="LDAPServerProcess">
+    <File name="ldapserver.xsl" method="xslt" destName=".ldaprc"/>
+  </Component>
   <Component name="regressionSuite" processName='RegressionSuite' schema='regress.xsd'>
     <File name="regressionSuite.xsl" method="xslt" destName="test_suites.bat"/>
     <File name="runregress.xsl" method="xslt" destName="regress.ini"/>
