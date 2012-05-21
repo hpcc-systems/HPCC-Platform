@@ -3465,6 +3465,19 @@ protected:
 };
 
 
+class CLibraryGraphLoopResultWriteArg : public CThorGraphLoopResultWriteArg
+{
+public:
+    inline CLibraryGraphLoopResultWriteArg(IOutputMetaData * _meta)
+        : meta(_meta) {}
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+
+protected:
+    IOutputMetaData * meta;
+};
+
+
 class EclProcess : public RtlCInterface, implements IEclProcess
 {
 public:
