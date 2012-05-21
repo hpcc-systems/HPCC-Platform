@@ -249,6 +249,8 @@ private:
           if (diffIter != NULL)
           {
             notify(diffIter);
+
+            delete diffIter;
           }
         }
       };
