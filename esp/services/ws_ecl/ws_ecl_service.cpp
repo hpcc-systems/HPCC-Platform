@@ -2394,7 +2394,7 @@ int CWsEclBinding::onRelogin(IEspContext &context, CHttpRequest* request, CHttpR
             "<head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title>Advanced feature in Enterprise Edition</title></head>"
             "<body>"
               "<h3 style=\"text-align:centre;\">Advanced feature in the Enterprise Edition</h4>"
-              "<p style=\"text-align:centre;\">This feature is only available with the Enterprise Edition. Further information can be found at ");
+              "<p style=\"text-align:centre;\">Support for this feature is coming soon. Further information can be found at ");
         html.appendf("<a href=\"%s\" target=\"_blank\">%s</a>.", wsecl->portal_URL.sget(), wsecl->portal_URL.sget());
         html.append(
               "</p>"
