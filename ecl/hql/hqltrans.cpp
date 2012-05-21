@@ -1042,6 +1042,127 @@ void DebugDifferenceAnalyser::doAnalyse(IHqlExpression * expr)
 
 //-------------------------------------------------------------------------------------------------
 
+static HqlTransformerInfo expressionDumper("ExpressionDumper");
+ExpressionDumper::ExpressionDumper(int _maxDepth)
+    : QuickHqlTransformer(expressionDumper, NULL), depth(0), maxDepth(_maxDepth)
+{
+}
+
+void ExpressionDumper::analyse(IHqlExpression * expr)
+{
+    bool recurse = true;
+    IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
+    if (match)
+        recurse = false;
+
+    doAnalyseBody(expr, recurse);
+    expr->setTransformExtraUnlinked(alreadyVisitedMarker);
+}
+
+void ExpressionDumper::appendMinimalInfo(IHqlExpression *expr)
+{
+    node_operator op = expr->getOperator();
+    string.appendN(depth, ' ');
+    string.append("op:").append(getOpString(op));
+}
+
+void ExpressionDumper::doAnalyseBody(IHqlExpression * expr, bool recurse)
+{
+    depth++;
+
+    node_operator op = expr->getOperator();
+    switch(op)
+    {
+    case no_getresult:
+    case no_newtransform:
+    case no_transform:
+        {
+            appendMinimalInfo(expr);
+            IHqlExpression * oldRecord = queryOriginalRecord(expr);
+            if (oldRecord)
+            {
+                string.newline();
+                analyse(oldRecord);
+            }
+            else
+            {
+                string.newline();
+            }
+            break;
+        }
+    case no_scope:
+    case no_virtualscope:
+    case no_concretescope:
+    case no_libraryscope:
+    case no_forwardscope:
+        {
+            appendMinimalInfo(expr);
+            string.append(" {").newline();
+            IHqlScope * scope = expr->queryScope();
+            HqlExprArray oldsyms;
+            scope->getSymbols(oldsyms);
+            oldsyms.sort(compareSymbolsByName);
+            for (unsigned idx = 0; idx < oldsyms.length(); idx++)
+            {
+                IHqlExpression *oldkid = &oldsyms.item(idx);
+                analyse(oldkid);
+            }
+            string.append("}").newline();
+            break;
+        }
+    case no_constant:
+        {
+            appendMinimalInfo(expr);
+            string.append(", ");
+            expr->queryValue()->getStringValue(string);
+            string.append(" (");
+            expr->getType()->getECLType(string);
+            string.append(")");
+            string.newline();
+            break;
+        }
+    case no_field:
+    case no_attr:
+    case no_attr_expr:
+        {
+            appendMinimalInfo(expr);
+            _ATOM name = expr->queryName();
+            string.appendf(", %s", name->getAtomNamePtr());
+            string.newline();
+            break;
+        }
+    default:
+        {
+            appendMinimalInfo(expr);
+            string.newline();
+            break;
+        }
+    }
+
+    if (recurse && depth <= maxDepth)
+    {
+        unsigned max = expr->numChildren();
+        for (unsigned i=0; i < max; i++)
+            analyse(expr->queryChild(i));
+    }
+
+    depth--;
+}
+
+StringBuffer& ExpressionDumper::getString()
+{
+    return string;
+}
+
+HQL_API void dump_expression(IHqlExpression * expr, int depth)
+{
+    ExpressionDumper dump(depth);
+    dump.analyse(expr);
+    printf("%s", dump.getString().str());
+}
+
+//-------------------------------------------------------------------------------------------------
+
 //NB: Derived from QuickHqlTransformer since it is called before the tree is normalised
 static HqlTransformerInfo hqlSectionAnnotatorInfo("HqlSectionAnnotator");
 HqlSectionAnnotator::HqlSectionAnnotator(IHqlExpression * sectionWorkflow) 

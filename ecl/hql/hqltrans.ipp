@@ -271,6 +271,33 @@ protected:
     _ATOM search;
 };
 
+/**
+ * The aim of this class is to provide a complete and accurate view
+ * of the expression node for debug purposes. This includes printing
+ * information about the structure (which node contains which other
+ * nodes), and the information on each node (values, attributes, etc).
+ *
+ * For now, a simple depth-limited redundant checking tree dumper is
+ * implemented, but the final goal is to produce a meaningful dump of
+ * all expressions involved in creating the node in question. In that
+ * case, a tree might not be the best representation.
+ */
+class HQL_API ExpressionDumper : protected QuickHqlTransformer
+{
+public:
+    ExpressionDumper(int _depth);
+
+    virtual void analyse(IHqlExpression * expr);
+    StringBuffer& getString();
+
+protected:
+    void doAnalyseBody(IHqlExpression * expr, bool recurse);
+    void appendMinimalInfo(IHqlExpression *expr);
+    StringBuffer string;
+    int depth;
+    int maxDepth;
+};
+
 //---------------------------------------------------------------------------
 
 class HQL_API HqlSectionAnnotator : public QuickHqlTransformer

@@ -1813,5 +1813,6 @@ extern HQL_API bool getBoolProperty(IHqlExpression * expr, _ATOM name, bool dft=
 extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
+extern HQL_API void dump_expression(IHqlExpression * expr, int depth);
 
 #endif
