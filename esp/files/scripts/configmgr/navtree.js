@@ -4814,7 +4814,7 @@ function showTooltipForButtons(event) {
       top.document.EEOnlyTooltip = new YAHOO.widget.Tooltip("EEOnlyTooltip", {
         width: "300px",
         showDelay: 25,
-        text: "This operation is only supported in Enterprise Editions (or higher )."
+        text: "Support for this operation is coming soon."
       });
     }
 
