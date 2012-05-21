@@ -544,17 +544,6 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
 
 //---------------------------------------------------------------------------
 
-static bool isIndex(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_keyindex:
-    case no_newkeyindex:
-        return true;
-    }
-    return false;
-}
-
 IHqlExpression * appendUniqueAttr(IHqlExpression * expr)
 {
     return replaceOwnedProperty(expr, createUniqueId());

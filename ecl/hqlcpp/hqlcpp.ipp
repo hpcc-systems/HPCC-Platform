@@ -28,6 +28,7 @@
 #include "hqlutil.hpp"
 #include "hqlwcpp.hpp"
 #include "hqltrans.ipp"
+#include "hqlusage.hpp"
 
 #define DEBUG_TIMER(name, time)                     if (options.addTimingToWorkunit) { timeReporter->addTiming(name, time); }
 #define DEBUG_TIMERX(timeReporter, name, time)      if (timeReporter) { timeReporter->addTiming(name, time); }
@@ -708,6 +709,7 @@ struct HqlCppOptions
     bool                implicitGroupShuffle;  // use shuffle if some sort conditions match when grouping
     bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
+    bool                reportFieldUsage;
     bool                shuffleLocalJoinConditions;
     bool                projectNestedTables;
 };
@@ -893,6 +895,7 @@ public:
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();
+    void generateStatistics(const char * targetDir);
 
             unsigned getHints()                             { return hints; }
     inline  bool checkForRowOverflow() const                { return options.checkRowOverflow; }
@@ -1799,6 +1802,9 @@ protected:
     bool getDebugFlag(const char * name, bool defValue);
     void initOptions();
     void postProcessOptions();
+    SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
+    void reportFieldUsage(const char * filename);
+    void noteAllFieldsUsed(IHqlExpression * expr);
 
 public:
     IHqlExpression * convertToPhysicalIndex(IHqlExpression * tableExpr);
@@ -1882,6 +1888,7 @@ protected:
     PointerArray recordIndexCache;
     Owned<ITimeReporter> timeReporter;
     WarningProcessor warningProcessor;
+    CIArrayOf<SourceFieldUsage> trackedSources;
 };
 
 

@@ -331,7 +331,8 @@ enum WUFileType
     FileTypeDll = 1,
     FileTypeResText = 2,
     FileTypeHintXml = 3,
-    FileTypeSize = 4
+    FileTypeXml = 4,
+    FileTypeSize = 5
 };
 
 

@@ -53,6 +53,7 @@
 #include "hqlcse.ipp"
 #include "thorplugin.hpp"
 #include "hqlinline.hpp"
+#include "hqlusage.hpp"
 
 #ifdef _DEBUG
 //#define ADD_ASSIGNMENT_COMMENTS
@@ -1679,6 +1680,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupShuffle,"implicitGroupShuffle",false),
         DebugOption(options.implicitGroupHashAggregate,"implicitGroupHashAggregate",false),
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
+        DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
     };
