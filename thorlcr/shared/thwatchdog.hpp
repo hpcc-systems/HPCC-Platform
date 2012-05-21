@@ -23,22 +23,17 @@
 #include "thor.hpp"
 
 #define HEARTBEAT_INTERVAL      15          // seconds
-#define DATA_MAX            1024 * 8    // 8k
+#define UDP_DATA_MAX            1024 * 8    // 8k
 #define THORBEAT_INTERVAL       10*1000     // 10 sec!
 #define THORBEAT_RETRY_INTERVAL 4*60*1000   // 4 minutes
 
-struct HeartBeatPacket
+
+struct HeartBeatPacketHeader
 {
-    unsigned short  packetsize;                 // used as validity check must be first
-    SocketEndpoint  sender;
-    unsigned        tick;                       // sequence check
-    unsigned short  progressSize;               // size of progress data (following performamce data)
-
-    byte            perfdata[DATA_MAX]; // performance/progress data from here on
-
-    inline size32_t packetSize() { return progressSize + (sizeof(HeartBeatPacket) - sizeof(perfdata)); }
-    inline size32_t minPacketSize() { return sizeof(progressSize) + sizeof(tick) + sizeof(sender) + sizeof(packetsize); }
-    inline size32_t maxPacketSize() { return DATA_MAX + minPacketSize(); }
+    size32_t packetSize;   // used as validity check must be first
+    SocketEndpoint sender;
+    unsigned tick;         // sequence check
+    size32_t progressSize; // size of progress data (following performamce data)
 };
 
 #endif

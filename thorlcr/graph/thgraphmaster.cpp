@@ -2413,23 +2413,19 @@ void CMasterGraph::getFinalProgress()
         {
             if (globals->getPropBool("@watchdogProgressEnabled"))
             {
-                HeartBeatPacket &hb = *(HeartBeatPacket *) msg.readDirect(sizeof(hb.packetsize));
-                if (hb.packetsize)
+                try
                 {
-                    size32_t sz = hb.packetsize-sizeof(hb.packetsize);
-                    if (sz)
-                    {
-                        msg.readDirect(sz);
-                        try
-                        {
-                            queryJobManager().queryDeMonServer()->takeHeartBeat(hb);
-                        }
-                        catch (IException *e)
-                        {
-                            GraphPrintLog(e, "Failure whilst deserializing stats/progress");
-                            e->Release();
-                        }
-                    }
+                    size32_t progressLen;
+                    msg.read(progressLen);
+                    MemoryBuffer progressData;
+                    progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
+                    const SocketEndpoint &ep = queryClusterGroup().queryNode(sender).endpoint();
+                    queryJobManager().queryDeMonServer()->takeHeartBeat(ep, progressData);
+                }
+                catch (IException *e)
+                {
+                    GraphPrintLog(e, "Failure whilst deserializing stats/progress");
+                    e->Release();
                 }
             }
         }

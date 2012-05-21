@@ -666,12 +666,6 @@ void CSlaveGraph::serializeStats(MemoryBuffer &mb)
         Owned<IThorActivityIterator> iter = getTraverseIterator();
         ForEach (*iter)
         {
-            if (mb.length() > (DATA_MAX-30))
-            {
-                WARNLOG("Act: Progress packet too big!");
-                break;
-            }
-            
             CGraphElementBase &element = iter->query();
             CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
             unsigned pos = mb.length();
@@ -739,11 +733,7 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
             if (!queryOwner())
             {
                 if (globals->getPropBool("@watchdogProgressEnabled"))
-                {
-                    HeartBeatPacket hb;
-                    jobS.queryProgressHandler()->stopGraph(*this, &hb);
-                    doneInfoMb.append(hb.packetsize, &hb);
-                }
+                    jobS.queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
             doneInfoMb.append(job.queryMaxDiskUsage());
             queryJob().queryTimeReporter().serialize(doneInfoMb);
