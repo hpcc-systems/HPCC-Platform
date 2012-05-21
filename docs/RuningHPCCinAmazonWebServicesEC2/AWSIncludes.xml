@@ -41,7 +41,7 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/AWS_Accesskey.jpg" />
+                    <imagedata fileref="../images/AWS_Accesskey.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
