@@ -156,6 +156,7 @@ interface IPTreeMaker : extends IPTreeNotifyEvent
     virtual IPropertyTree *queryRoot() = 0;
     virtual IPropertyTree *queryCurrentNode() = 0;
     virtual void reset() = 0;
+    virtual IPropertyTree *create(const char *tag) = 0;
 };
 
 interface IPTreeNodeCreator : extends IInterface

@@ -21,6 +21,7 @@ set (    SRCS
          ws_packageprocessPlugin.cpp
          ws_packageprocessService.cpp
          ws_packageprocessService.hpp
+         packageprocess_errors.h
     )
 
 include_directories (

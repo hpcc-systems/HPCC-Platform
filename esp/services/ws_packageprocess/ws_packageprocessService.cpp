@@ -1,5 +1,19 @@
 /*##############################################################################
-Copyright (C) 2011 HPCC Systems.
+
+    Copyright (C) 2011 HPCC Systems.
+
+    All rights reserved. This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
 #pragma warning (disable : 4786)
@@ -11,6 +25,7 @@ Copyright (C) 2011 HPCC Systems.
 #include "dfuutil.hpp"
 #include "ws_fs.hpp"
 #include "ws_workunits.hpp"
+#include "packageprocess_errors.h"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -58,7 +73,7 @@ IPropertyTree *getPkgSetRegistry(const char *setName, bool readonly)
 
         conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
         if (!conn)
-            throwUnexpected();
+            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali %s", xpath.str());
     }
 
     return conn->getRoot();
@@ -167,9 +182,7 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *setName, const
     IPropertyTree *mapTree = root->queryPropTree(xpath);
 
     if (!overWrite && (pkgRegTree || mapTree))
-    {
-        throw MakeStringException(0, "Package name %s already exists, either delete it or specify overwrite", lcName.str());
-    }
+        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", lcName.str());
 
     if (mapTree)
         root->removeTree(mapTree);
@@ -238,8 +251,7 @@ void copyPackageSubFiles(IPropertyTree *packageInfo, const char *process, const 
         if (lookupDaliIp.length() == 0)
         {
             StringAttr superfile(item.queryProp("@id"));
-            DBGLOG("Could not lookup SubFiles in package %s because no remote dali ip was specified", superfile.get());
-            return;
+            throw MakeStringException(PKG_MISSING_DALI_LOOKUP_IP, "Could not lookup SubFiles in package %s because no remote dali ip was specified", superfile.get());
         }
         Owned<IPropertyTreeIterator> super_iter = item.getElements("SuperFile");
         ForEach(*super_iter)
@@ -298,7 +310,7 @@ void listPkgInfo(const char *cluster, IArrayOf<IConstPackageListMapData>* result
     StringBuffer info;
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
-        return;
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
     if (!cluster || !*cluster)
     {
@@ -316,6 +328,9 @@ void listPkgInfo(const char *cluster, IArrayOf<IConstPackageListMapData>* result
     else
     {
         Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(cluster, true);
+        if (!pkgSetRegistry)
+            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for cluster %s", cluster);
+
         Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements("PackageMap");
         info.append("<PackageMaps>");
         ForEach(*iter)
@@ -339,7 +354,7 @@ void getPkgInfo(const char *cluster, const char *package, StringBuffer &info)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
-        return;
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
     if (cluster)
@@ -378,20 +393,14 @@ bool deletePkgInfo(const char *packageSetName, const char *queryset)
 {
     Owned<IRemoteConnection> pkgSet = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!pkgSet)
-    {
-        DBGLOG("No package sets defined");
-        return false;
-    }
+        throw MakeStringException(PKG_SET_NOT_DEFINED, "No package sets defined");
 
     IPropertyTree* packageSets = pkgSet->queryRoot();
 
     VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", queryset);
     IPropertyTree *pkgSetRegistry = packageSets->queryPropTree(pkgSet_xpath.str());
     if (!pkgSetRegistry)
-    {
-        DBGLOG("No package sets defined for = %s", queryset);
-        return false;
-    }
+        throw MakeStringException(PKG_SET_NOT_DEFINED, "No package sets defined for %s", queryset);
 
     StringBuffer lcName(packageSetName);
     lcName.toLowerCase();
@@ -399,6 +408,8 @@ bool deletePkgInfo(const char *packageSetName, const char *queryset)
     IPropertyTree *pm = pkgSetRegistry->getPropTree(xpath.str());
     if (pm)
         pkgSetRegistry->removeTree(pm);
+    else
+        throw MakeStringException(PKG_DELETE_NOT_FOUND, "Unable to delete %s - information not found", lcName.str());
 
     VStringBuffer ps_xpath("PackageSet/PackageMap[@id='%s']", lcName.str());
 
@@ -420,11 +431,11 @@ bool deletePkgInfo(const char *packageSetName, const char *queryset)
 void activatePackageMapInfo(const char *packageSetName, const char *packageMap, bool activate)
 {
     if (!packageSetName || !*packageSetName)
-        return;
+        throw MakeStringException(PKG_SET_NOT_DEFINED, "No package sets defined");
 
     Owned<IRemoteConnection> globalLock = querySDS().connect("PackageSets", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
-        return;
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve PackageSets information from dali /PackageSets");
 
     StringBuffer lcName(packageSetName);
     lcName.toLowerCase();
@@ -432,7 +443,7 @@ void activatePackageMapInfo(const char *packageSetName, const char *packageMap, 
 
     IPropertyTree *root = globalLock->queryRoot();
     if (!root)
-        return;
+        throw MakeStringException(PKG_ACTIVATE_NOT_FOUND, "Unable to retrieve PackageSet information for %s", lcName.str());
 
     IPropertyTree *pkgSetTree = root->queryPropTree(xpath);
     if (pkgSetTree)
@@ -538,7 +549,7 @@ bool CWsPackageProcessEx::onCopyFiles(IEspContext &context, IEspCopyFilesRequest
     StringAttr lookupDaliIp(req.getDaliIp());
 
     if (process.length() == 0)
-        throw MakeStringException(0, "CWsPackageProcessEx::onCopyFiles process parameter not set.");
+        throw MakeStringException(PKG_MISSING_PARAM, "CWsPackageProcessEx::onCopyFiles process parameter not set.");
 
     Owned<IUserDescriptor> userdesc;
     const char *user = context.queryUserId();

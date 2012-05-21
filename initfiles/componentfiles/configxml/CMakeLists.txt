@@ -61,6 +61,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/generic.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/installset.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/ldapserver.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/ldapserver.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/mysqlserver.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/plugin.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/regress.xsd
