@@ -37,7 +37,7 @@ static void breakOnMatchField()
 class ExpressionStatsInfo
 {
 public:
-    enum { MaxOperands = 17 };
+    enum { MaxOperands = 17 };  //An arbitrary upper limit to the distinct number of operands being counted
 public:
     ExpressionStatsInfo() { count = 0; _clear(numOperands); countMax = 0; sumMax = 0; }
 
@@ -46,7 +46,7 @@ public:
         DBGLOG("numUnique %u", count);
         for (unsigned i=0; i < MaxOperands; i++)
             DBGLOG("  %u operands: %u", i, numOperands[i]);
-        DBGLOG("  %u experessions total %u operands", countMax, sumMax);
+        DBGLOG("  %u expressions total %u operands", countMax, sumMax);
     }
 
     unsigned count;
@@ -382,7 +382,7 @@ IHqlExpression * SourceFieldUsage::queryFilename() const
     case no_table:
         return source->queryChild(0);
     }
-    UNIMPLEMENTED;
+    throwUnexpected();
     return NULL;
 }
 
