@@ -53,6 +53,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/useradd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/groupadd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlayground.htm
+    ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlaygroundResults.htm
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlayground.css
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlayground.js
 )

@@ -14,51 +14,51 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-define([    
+define([
 	"dojo/_base/declare",
 	"dojo/_base/sniff",
 	"dojo/dom"
-], function(declare, has, dom) {
+], function (declare, sniff, dom) {
 	return declare(null, {
 		id: "gvc",
 		width: "",
 		height: "",
-		installed:  false,
+		installed: false,
 		markup: "",
 		obj: {},
 		eventsRegistered: false,
 
-		onInitialize: function(){
-			//  Creater can override.
-		},
-		
-		onLayoutFinished: function() {
+		onInitialize: function () {
 			//  Creater can override.
 		},
 
-		onMouseDoubleClick: function(item) {
+		onLayoutFinished: function () {
 			//  Creater can override.
 		},
 
-		onSelectionChanged: function(items) {
+		onMouseDoubleClick: function (item) {
 			//  Creater can override.
 		},
-	
+
+		onSelectionChanged: function (items) {
+			//  Creater can override.
+		},
+
 		// The constructor    
-		constructor: function(args, parentNode){
+		constructor: function (args, parentNode) {
 			declare.safeMixin(this, args);
-			
-			if(has("ie")){
-				this.installed = (function(){
-					try{
+
+			if (sniff("ie")) {
+				this.installed = (function () {
+					try {
 						var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
 						return true;
-					} catch(e){ }
+					} catch (e) { }
 					return false;
 				})();
-		
-				if(!this.installed){ 
-					this.markup = this.getInstallMarkup(); 
+
+				if (!this.installed) {
+					this.markup = this.getInstallMarkup();
 				} else {
 					this.markup = '<object type="application/x-hpccsystemsgraphviewcontrol" '
 						+ 'id="' + this.id + '" '
@@ -66,17 +66,17 @@ define([
 						+ 'height="' + this.height + '"></object>';
 				}
 			} else {
-				this.installed = (function(){
-					for(var i=0, p=navigator.plugins, l=p.length; i<l; i++){
-						if(p[i].name.indexOf("HPCCSystemsGraphViewControl")>-1){
+				this.installed = (function () {
+					for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
+						if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
 							return true;
 						}
 					}
 					return false;
 				})();
-			
-				if(!this.installed){ 
-					this.markup = this.getInstallMarkup(); 
+
+				if (!this.installed) {
+					this.markup = this.getInstallMarkup();
 				} else {
 					this.markup = '<embed type="application/x-hpccsystemsgraphviewcontrol" '
 						+ 'id="' + this.id + '" '
@@ -88,26 +88,26 @@ define([
 			parentNode.innerHTML = this.markup;
 			this.obj = dom.byId(this.id);
 			var context = this;
-			setTimeout(function(){
+			setTimeout(function () {
 				context.onInitialize();
 			}, 20);
 		},
-		
-		getInstallMarkup: function() {
+
+		getInstallMarkup: function () {
 			return "<h4>Graph View</h4>" +
-			"<p>To enable graph views, please install the Graph View Control plugin:</p>" + 
-			"<a href=\"http://graphcontrol.hpccsystems.com/stable/SetupGraphControl.msi\">Internet Explorer + Firefox (32bit)</a><br>" + 
-			"<a href=\"http://graphcontrol.hpccsystems.com/stable/SetupGraphControl64.msi\">Internet Explorer + Firefox (64bit)</a><br>" + 
+			"<p>To enable graph views, please install the Graph View Control plugin:</p>" +
+			"<a href=\"http://graphcontrol.hpccsystems.com/stable/SetupGraphControl.msi\">Internet Explorer + Firefox (32bit)</a><br>" +
+			"<a href=\"http://graphcontrol.hpccsystems.com/stable/SetupGraphControl64.msi\">Internet Explorer + Firefox (64bit)</a><br>" +
 			"<a href=\"https://github.com/hpcc-systems/GraphControl\">Linux/Other (sources)</a>";
 		},
 
-		clear: function() {
+		clear: function () {
 			if (this.obj) {
 				this.obj.clear();
 			}
 		},
-		
-		loadXGMML: function(xgmml, merge) {
+
+		loadXGMML: function (xgmml, merge) {
 			if (this.obj) {
 				this.registerEvents();
 				this.obj.setMessage("Loading Data...");
@@ -119,12 +119,12 @@ define([
 				this.obj.startLayout("dot");
 			}
 		},
-		
-		loadDOT: function(dot) {
+
+		loadDOT: function (dot) {
 			this.load(dot, "dot");
 		},
-		
-		load: function(dot, layout) {
+
+		load: function (dot, layout) {
 			if (this.obj) {
 				this.registerEvents();
 				this.obj.setMessage("Loading Data...");
@@ -133,34 +133,34 @@ define([
 				this.obj.startLayout(layout);
 			}
 		},
-		
-		setLayout: function(layout) {
+
+		setLayout: function (layout) {
 			if (this.obj) {
 				this.registerEvents();
 				this.obj.setMessage("Performing Layout...");
 				this.obj.startLayout(layout);
 			}
 		},
-		
-		centerOn : function(globalID) {
+
+		centerOn: function (globalID) {
 			var item = this.obj.getItem(globalID);
 			this.obj.centerOnItem(item, true);
 			var items = [item];
 			this.obj.setSelected(items, true);
 		},
-		
-		registerEvents: function() {
+
+		registerEvents: function () {
 			if (!this.eventsRegistered) {
 				this.eventsRegistered = true;
 				this.registerEvent("LayoutFinished", this.onLayoutFinished);
 				this.registerEvent("MouseDoubleClick", this.onMouseDoubleClick);
 				this.registerEvent("SelectionChanged", this.onSelectionChanged);
 			}
-		},		
-		
-		registerEvent: function(evt, func) {
+		},
+
+		registerEvent: function (evt, func) {
 			if (this.obj) {
-				if(has("ie")){
+				if (sniff("ie")) {
 					this.obj.attachEvent("on" + evt, func);
 				} else {
 					this.obj.addEventListener(evt, func, false);

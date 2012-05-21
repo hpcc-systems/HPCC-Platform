@@ -14,75 +14,110 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-define([ 
-	"dojo/_base/config", 
-	"dojo/_base/fx", 
-	"dojo/_base/window", 
-	"dojo/dom", 
+define([
+	"dojo/_base/fx",
+	"dojo/_base/window",
+	"dojo/dom",
 	"dojo/dom-style",
-	"dojo/dom-geometry", 
+	"dojo/dom-geometry",
 	"dojo/on",
-	"hpcc/EclEditorControl", 
-	"hpcc/GraphControl", 
+	"dojo/ready",
+	"dijit/registry",
+	"hpcc/EclEditorControl",
+	"hpcc/GraphControl",
 	"hpcc/ResultsControl",
-	"hpcc/SampleSelectControl", 
+	"hpcc/SampleSelectControl",
 	"hpcc/ESPWorkunit"
-], function(baseConfig, baseFx, baseWindow, dom, domStyle, domGeometry, on, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
-			var editorControl = null, 
-			graphControl = null, 
-			resultsControl = null, 
-			sampleSelectControl = null, 
+], function (fx, baseWindow, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
+	var		wu = null,
+			editorControl = null,
+			graphControl = null,
+			resultsControl = null,
+			sampleSelectControl = null,
 
-			initUi = function() {
+			initUi = function () {
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
 				on(dom.byId("submitBtn"), "click", doSubmit);
-				initSamples();
+
+				if (wuid) {
+					dojo.destroy("topPane");
+					registry.byId("appLayout").resize();
+				} else {
+					initSamples();
+				}
 				initEditor();
 				initResultsControl();
+
 				//  ActiveX will flicker if created before initial layout
-				setTimeout(function(){
+				setTimeout(function () {
 					initGraph();
-					var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["wuid"];
 					if (wuid) {
-						doLoad(wuid);
+						wu = new Workunit({
+							wuid: wuid
+						});
+						wu.fetchText(function (text) {
+							editorControl.setText(text);
+						});
+						wu.monitor(monitorEclPlayground);
 					}
 				}, 1);
 			},
 
-			initSamples = function() {
+			initUiResults = function () {
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
+				var sequence = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Sequence"];
+				initResultsControl(sequence);
+				if (wuid) {
+					wu = new Workunit({
+						wuid: wuid
+					});
+					var monitorCount = 4;
+					wu.monitor(function () {
+						dom.byId("loadingMessage").innerHTML = wu.state;
+						if (wu.isComplete() || ++monitorCount % 5 == 0) {
+							wu.getInfo({
+								onGetResults: displayResults
+							});
+						}
+					});
+				}
+			},
+
+			initSamples = function () {
 				sampleSelectControl = new Select({
-					id : "sampleSelect",
-					samplesURL : "ecl/ECLPlaygroundSamples.json",
-					onNewSelection : function(eclText) {
+					id: "sampleSelect",
+					samplesURL: "ecl/ECLPlaygroundSamples.json",
+					onNewSelection: function (eclText) {
 						resetPage();
 						editorControl.setText(eclText);
 					}
 				});
 			},
 
-			initEditor = function() {
+			initEditor = function () {
 				editorControl = new EclEditor({
-					domId : "eclCode"
+					domId: "eclCode"
 				});
 			},
 
-			initGraph = function() {
+			initGraph = function () {
 				graphControl = new GraphControl({
-					id : "gvc",
-					width : "100%",
-					height : "100%",
-					onInitialize : function() {
+					id: "gvc",
+					width: "100%",
+					height: "100%",
+					onInitialize: function () {
 					},
 
-					onLayoutFinished : function() {
+					onLayoutFinished: function () {
 						graphControl.obj.setMessage('');
 						graphControl.obj.centerOnItem(0, true);
 					},
 
-					onMouseDoubleClick : function(item) {
+					onMouseDoubleClick: function (item) {
 						graphControl.obj.centerOnItem(item, true);
 					},
-					
-					onSelectionChanged: function(items) {
+
+					onSelectionChanged: function (items) {
 						editorControl.clearHighlightLines();
 						for (var i = 0; i < items.length; ++i) {
 							var props = graphControl.obj.getProperties(items[i]);
@@ -90,121 +125,114 @@ define([
 								var startPos = props.definition.indexOf("(");
 								var endPos = props.definition.lastIndexOf(")");
 								var pos = props.definition.slice(startPos + 1, endPos).split(",");
-								editorControl.highlightLine(parseInt(pos[0], 10));
+								var lineNo = parseInt(pos[0], 10);
+								editorControl.highlightLine(lineNo);
+								editorControl.setCursor(lineNo, 0);
 							}
 						}
+
 					}
 				}, dom.byId("graphs"));
 			},
 
-			initResultsControl = function() {
-				var _resultsControl = resultsControl = new ResultsControl({
-					resultsSheetID : "bottomPane",
-					onErrorClick : function(line, col) {
+			initResultsControl = function (sequence) {
+				resultsControl = new ResultsControl({
+					resultsSheetID: "resultsPane",
+					sequence: sequence,
+					onErrorClick: function (line, col) {
 						editorControl.setCursor(line, col);
 					}
 				});
 			},
 
-			resetPage = function() {
+			resetPage = function () {
 				editorControl.clearErrors();
 				editorControl.clearHighlightLines();
 				graphControl.clear();
 				resultsControl.clear();
 			},
 
-			doLoad = function (wuid) {
-				wu = new Workunit({
-					wuid: wuid,
-
-					onMonitor: function () {
-						dom.byId("status").innerHTML = wu.state;
-						if (wu.isComplete())
-							wu.getInfo();
-					},
-					onGetText: function () {
-						editorControl.setText(wu.getText());
-					},
-					onGetInfo: function () {
-						if (wu.errors.length) {
-							editorControl.setErrors(wu.errors);
-							resultsControl.addExceptionTab(wu.errors);
-						}
-						wu.getResults();
-						wu.getGraphs();
-					},
-					onGetGraph: function (idx) {
-						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
-					},
-					onGetResult: function (idx) {
-						resultsControl.addDatasetTab(wu.results[idx].dataset);
-					}
-				});
-				wu.getText();
-				wu.monitor();
+			monitorEclPlayground = function () {
+				dom.byId("status").innerHTML = wu.state;
+				if (wu.isComplete()) {
+					wu.getInfo({
+						onGetExceptions: displayExceptions,
+						onGetResults: displayResults,
+						onGetGraphs: displayGraphs
+					});
+				}
 			},
 
-			doSubmit = function(evt) {
+			displayExceptions = function (exceptions) {
+				if (exceptions.length) {
+					editorControl.setErrors(wu.exceptions);
+					resultsControl.addExceptionTab(wu.exceptions);
+				}
+			},
+
+			displayResults = function (results) {
+				resultsControl.refreshResults(wu);
+			},
+
+			displayGraphs = function (graphs) {
+				for (var i = 0; i < graphs.length; ++i) {
+					wu.fetchGraphXgmml(i, function (xgmml) {
+						graphControl.loadXGMML(xgmml, true);
+					});
+				}
+			},
+
+			doSubmit = function (evt) {
 				resetPage();
 				wu = new Workunit({
-					wuid : "",
-					
-					onCreate : function() {
+					onCreate: function () {
 						wu.update(editorControl.getText());
 					},
-					onUpdate : function() {
+					onUpdate: function () {
 						wu.submit("hthor");
 					},
-					onSubmit : function() {
-					},
-					onMonitor : function() {
-						dom.byId("status").innerHTML = wu.state;						
-						if (wu.isComplete())
-							wu.getInfo();
-					},
-					onGetInfo : function() {
-						if (wu.errors.length) {
-							editorControl.setErrors(wu.errors);
-							resultsControl.addExceptionTab(wu.errors);
-						}
-						wu.getResults();
-						wu.getGraphs();
-					},
-					onGetGraph : function(idx) {
-						graphControl.loadXGMML(wu.graphs[idx].xgmml, true);
-					},
-					onGetResult : function(idx) {
-						resultsControl.addDatasetTab(wu.results[idx].dataset);
+					onSubmit: function () {
+						wu.monitor(monitorEclPlayground);
 					}
 				});
 			},
 
-			startLoading = function(targetNode) {
+			startLoading = function (targetNode) {
 				var overlayNode = dom.byId("loadingOverlay");
 				if ("none" == domStyle.get(overlayNode, "display")) {
 					var coords = domGeometry.getMarginBox(targetNode || baseWindow.body());
 					domGeometry.setMarginBox(overlayNode, coords);
 					domStyle.set(dom.byId("loadingOverlay"), {
-						display : "block",
-						opacity : 1
+						display: "block",
+						opacity: 1
 					});
 				}
 			},
 
-			endLoading = function() {
-				baseFx.fadeOut({
-					node : dom.byId("loadingOverlay"),
-					onEnd : function(node) {
+			endLoading = function () {
+				fx.fadeOut({
+					node: dom.byId("loadingOverlay"),
+					duration: 175,
+					onEnd: function (node) {
 						domStyle.set(node, "display", "none");
 					}
 				}).play();
 			}
 
-			return {
-				init : function() {
-					startLoading();
-					initUi();
-					endLoading();
-				}
-			};
-		});
+	return {
+		init: function () {
+			startLoading();
+			ready(function () {
+				initUi();
+				endLoading();
+			});
+		},
+		initResults: function () {
+			startLoading();
+			ready(function () {
+				initUiResults();
+				endLoading();
+			});
+		}
+	};
+});

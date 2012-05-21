@@ -43,9 +43,11 @@
                   <xsl:value-of select="$wuid"/>
                 </xsl:when>
                 <xsl:otherwise>
-                  <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >
-                    <xsl:value-of select="$wuid"/>
-                  </a>
+                  <xsl:value-of select="$wuid"/>
+                  &nbsp;
+                  <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
+                  &nbsp;
+                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/ECLPlayground.htm%3fWuid%3d{$wuid}" >ECL Playground</a>
                 </xsl:otherwise>
               </xsl:choose>
             </td>
@@ -397,6 +399,8 @@
                 <A href="javascript:void(0)" onclick="toggleElement('Results');" id="explinkresults" class="wusectionexpand">
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
+                &nbsp;-&nbsp;
+                <a href="/esp/iframe?esp_iframe_title=ECL Playground (Results) - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">
@@ -1042,6 +1046,8 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="number(IsSupplied)"> supplied</xsl:if>
+        &nbsp;-&nbsp;
+        <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/esp/files/ECLPlaygroundResults.htm?Wuid={$wuid}&amp;Sequence={Link}');return false;">Show</a>
       </td>
      <xsl:choose>
        <xsl:when test="number(ShowFileContent) and string-length(Link)">
