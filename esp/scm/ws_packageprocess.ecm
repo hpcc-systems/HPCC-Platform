@@ -29,7 +29,7 @@ ESPrequest AddPackageRequest
 };
 
 
-ESPresponse AddPackageResponse
+ESPresponse [exceptions_inline] AddPackageResponse
 {
     ESPstruct BasePackageStatus status;
 };
@@ -40,7 +40,7 @@ ESPrequest DeletePackageRequest
     string PackageName;
 };
 
-ESPresponse DeletePackageResponse
+ESPresponse [exceptions_inline] DeletePackageResponse
 {
     ESPstruct BasePackageStatus status;
 };
@@ -51,7 +51,7 @@ ESPrequest ActivatePackageRequest
     string PackageMapName;
 };
 
-ESPresponse ActivatePackageResponse
+ESPresponse [exceptions_inline] ActivatePackageResponse
 {
     ESPstruct BasePackageStatus status;
 };
@@ -62,7 +62,7 @@ ESPrequest DeActivatePackageRequest
     string PackageMapName;
 };
 
-ESPresponse DeActivatePackageResponse
+ESPresponse [exceptions_inline] DeActivatePackageResponse
 {
     ESPstruct BasePackageStatus status;
 };
@@ -73,7 +73,7 @@ ESPrequest GetPackageRequest
     string PackageName;
 };
 
-ESPresponse GetPackageResponse
+ESPresponse [exceptions_inline] GetPackageResponse
 {
     ESPstruct BasePackageStatus status;
     string Info;
@@ -96,7 +96,7 @@ ESPstruct PackageListMapData
     ESParray<ESPstruct PackageListData> PkgListData;
 };
 
-ESPresponse ListPackageResponse
+ESPresponse [exceptions_inline] ListPackageResponse
 {
     ESPstruct BasePackageStatus status;
     ESParray<ESPstruct PackageListMapData> PkgListMapData;
@@ -112,7 +112,7 @@ ESPrequest CopyFilesRequest
 };
 
 
-ESPresponse CopyFilesResponse
+ESPresponse [exceptions_inline] CopyFilesResponse
 {
     ESPstruct BasePackageStatus status;
 };

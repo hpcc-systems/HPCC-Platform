@@ -55,6 +55,7 @@
 #define XML_TAG_INSTALLSET             "InstallSet"
 #define XML_TAG_INSTANCE               "Instance"
 #define XML_TAG_INSTANCES              "Instances"
+#define XML_TAG_LDAPSERVERPROCESS      "LDAPServerProcess"
 #define XML_TAG_LOCATION               "Location"
 #define XML_TAG_MAP                    "Map"
 #define XML_TAG_MAPTABLES              "MapTables"

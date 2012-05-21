@@ -15,102 +15,82 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 define([
-	"dojo/_base/config", 
-	"dojo/_base/declare"
-], function(baseConfig, declare) {
+	"dojo/_base/declare",
+	"dojo/_base/config"
+], function (declare, config) {
 	return declare(null, {
 
-		constructor : function(args) {
+		constructor: function (args) {
 			declare.safeMixin(this, args);
 		},
-		
-		getParam : function(key) {
+
+		getParam: function (key) {
 			var value = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))[key];
-			if(value)
+			if (value)
 				return value;
-			return baseConfig[key];
+			return config[key];
 		},
-		
-		getBaseURL : function() {
+
+		getBaseURL: function () {
 			var serverIP = this.getParam("serverIP");
-			if(serverIP)
+			if (serverIP)
 				return "http://" + serverIP + ":8010/WsWorkunits";
 			return "/WsWorkunits";
 		},
 
-		parseKeyValue : function(xmlDom, nodeLabel) {
-			var items = xmlDom.getElementsByTagName(nodeLabel);
-			if(items.length && items[0].childNodes.length) {
-				return items[0].childNodes[0].nodeValue;
+		getValue: function (domXml, tagName, knownObjectArrays) {
+			var retVal = this.getValues(domXml, tagName, knownObjectArrays);
+			if (retVal.length == 0) {
+				return null;
+			} else if (retVal.length != 1) {
+				alert("Invalid length:  " + retVal.length);
 			}
-			return "";
+			return retVal[0];
 		},
-		
-		parseKeyChildren : function(xmlDom, nodeLabel) {
-			var items = xmlDom.getElementsByTagName(nodeLabel);
-			if(items.length && items[0].childNodes.length) {
-				return items[0].childNodes;
-			}
-			return null;
-		},
-		
-		parseRows : function(xmlDom, nodeLabel) {
-			var rows = [];
-			var items = xmlDom.getElementsByTagName(nodeLabel);
-			for(var i = 0; i < items.length; ++i) {
-				var item = items[i];
-				var cols = {};
-				for(var c = 0; c < item.childNodes.length; ++c) {
-					colNode = item.childNodes[c];
-					if(colNode.childNodes.length && colNode.childNodes[0].nodeValue) {
-						cols[colNode.nodeName] = colNode.childNodes[0].nodeValue;
-					} else {
-						cols[colNode.nodeName] = "";
-					}
-				}
-				rows.push(cols);
-			}
-			return rows;
-		},
-		
-		//  <XXX><YYY/><YYY/><YYY/><YYY/></XXX>
-		parseDataset : function(xmlDom, _name, nodeLabel) {
-			var retVal = {};
-			var retValRows = this.parseRows(xmlDom, nodeLabel);
-			var retValHeader = [];
-			if(retValRows.length) {
-				for(var key in retValRows[0]) {
-					retValHeader.push(key)
-				}
-			}
-			retVal = {
-				name : _name,
-				header : retValHeader,
-				rows : retValRows
-			};
-			return retVal;
 
-		},
-		
-		parseDatasets : function(xmlDom, nodeLabel, innerNodeLabel) {
+		getValues: function (domXml, tagName, knownObjectArrays) {
 			var retVal = [];
-			var datasets = xmlDom.getElementsByTagName(nodeLabel);
-			for(var d = 0; d < datasets.length; ++d) {
-				var dataset = datasets[d];
-				var retValRows = this.parseRows(dataset, innerNodeLabel);
-				var retValHeader = [];
-				if(retValRows.length) {
-					for(var key in retValRows[0]) {
-						retValHeader.push(key)
+			var items = domXml.getElementsByTagName(tagName);
+			var parentNode = items.length ? items[0].parentNode : null; //  Prevent <Dataset><row><field><row> scenario
+			for (var i = 0; i < items.length; ++i) {
+				if (items[i].parentNode == parentNode)
+					retVal.push(this.flattenXml(items[i], knownObjectArrays));
+			}
+			return retVal;
+		},
+
+		flattenXml: function (domXml, knownObjectArrays) {
+			var retValArr = [];
+			var retValStr = "";
+			var retVal = {};
+			for (var i = 0; i < domXml.childNodes.length; ++i) {
+				var childNode = domXml.childNodes[i];
+				if (childNode.childNodes) {
+					if (childNode.nodeName && knownObjectArrays != null && dojo.indexOf(knownObjectArrays, childNode.nodeName) >= 0) {
+						retValArr.push(this.flattenXml(childNode, knownObjectArrays));
+					} else if (childNode.nodeName == "#text") {
+						retValStr += childNode.nodeValue;
+					} else if (childNode.childNodes.length == 0) {
+						retVal[childNode.nodeName] = null;
+					} else {
+						var value = this.flattenXml(childNode, knownObjectArrays);
+						if (retVal[childNode.nodeName] == null) {
+							retVal[childNode.nodeName] = value;
+						} else if (dojo.isArray(retVal[childNode.nodeName])) {
+							retVal[childNode.nodeName].push(value);
+						} else if (dojo.isObject(retVal[childNode.nodeName])) {
+							var tmp = retVal[childNode.nodeName];
+							retVal[childNode.nodeName] = [];
+							retVal[childNode.nodeName].push(tmp);
+							retVal[childNode.nodeName].push(value);
+						}
 					}
 				}
-
-				retVal.push({
-					name : dataset.getAttribute("name"),
-					header : retValHeader,
-					rows : retValRows
-				});
 			}
+			if (retValArr.length)
+				return retValArr;
+			else if (retValStr.length)
+				return retValStr;
 			return retVal;
 		}
 	});
