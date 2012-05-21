@@ -89,6 +89,9 @@ public:
         request->setPackageMapName(optPackageMap);
 
         Owned<IClientActivatePackageResponse> resp = packageProcessClient->ActivatePackage(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
         return 0;
     }
     virtual void usage()
@@ -164,6 +167,9 @@ public:
         request->setPackageMapName(optPackageMap);
 
         Owned<IClientDeActivatePackageResponse> resp = packageProcessClient->DeActivatePackage(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
         return 0;
     }
     virtual void usage()
@@ -230,30 +236,33 @@ public:
         request->setCluster(optCluster);
 
         Owned<IClientListPackageResponse> resp = packageProcessClient->ListPackage(request);
-
-        IArrayOf<IConstPackageListMapData> &pkgMapInfo = resp->getPkgListMapData();
-        unsigned int num = pkgMapInfo.ordinality();
-
-        for (unsigned i=0; i<num; i++)
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
         {
-            IConstPackageListMapData& req = pkgMapInfo.item(i);
-            const char *id = req.getId();
-            printf("\nPackage Name = %s\n", id);
-            IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
+            IArrayOf<IConstPackageListMapData> &pkgMapInfo = resp->getPkgListMapData();
+            unsigned int num = pkgMapInfo.ordinality();
 
-            unsigned int numPkgs = pkgInfo.ordinality();
-            for (unsigned int j = 0; j <numPkgs; j++)
+            for (unsigned i=0; i<num; i++)
             {
-                IConstPackageListData& req = pkgInfo.item(j);
+                IConstPackageListMapData& req = pkgMapInfo.item(i);
                 const char *id = req.getId();
-                const char *queries = req.getQueries();
-                if (queries && *queries)
-                    printf("\t\tid = %s  queries = %s\n", id, queries);
-                else
-                    printf("\t\tid = %s\n", id);
+                printf("\nPackage Name = %s\n", id);
+                IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
+
+                unsigned int numPkgs = pkgInfo.ordinality();
+                for (unsigned int j = 0; j <numPkgs; j++)
+                {
+                    IConstPackageListData& req = pkgInfo.item(j);
+                    const char *id = req.getId();
+                    const char *queries = req.getQueries();
+                    if (queries && *queries)
+                        printf("\t\tid = %s  queries = %s\n", id, queries);
+                    else
+                        printf("\t\tid = %s\n", id);
+                }
             }
         }
-
         return 0;
     }
     virtual void usage()
@@ -331,7 +340,10 @@ public:
         request->setCluster(optCluster);
 
         Owned<IClientGetPackageResponse> resp = packageProcessClient->GetPackage(request);
-        printf("%s", resp->getInfo());
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
+            printf("%s", resp->getInfo());
         return 0;
     }
     virtual void usage()
@@ -410,6 +422,9 @@ public:
         request->setPackageName(optFileName);
 
         Owned<IClientDeletePackageResponse> resp = packageProcessClient->DeletePackage(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
         return 0;
     }
 
@@ -497,6 +512,9 @@ public:
         request->setOverWrite(optOverWrite);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
         return 0;
     }
 
@@ -593,6 +611,9 @@ public:
             request->setDaliIp(optDaliIp.get());
 
         Owned<IClientCopyFilesResponse> resp = packageProcessClient->CopyFiles(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
         return 0;
     }
 
