@@ -558,7 +558,7 @@ sub _get_configuration_info($$$$)
         next if($cfgname eq '*');
         my $cfg = $cfgreader->get_block($cfgname);
         push(@{$self->{configinfo}->{$cfgname}->{configfiles}}, $filename);
-        foreach my $key qw(type cluster roxieserver setup_generate)
+        foreach my $key ('type', 'cluster', 'roxieserver', 'setup_generate')
         {
             next if(defined($self->{configinfo}->{$cfgname}->{$key}));
             $self->{configinfo}->{$cfgname}->{$key} = $cfg->{$key} if($cfg->{$key});
@@ -625,9 +625,9 @@ sub _set_defaults($)
 sub _regularize_values($)
 {
     my ($self) = @_;
-    $self->{type} = lc($self->{type});
-    $self->{os} = lc($self->{os});
-    $self->{class} = lc($self->{class});
+    $self->{type} = (defined $self->{type}) ? lc($self->{type}) : "";
+    $self->{os} = (defined $self->{os}) ? lc($self->{os}) : "";
+    $self->{class} = (defined $self->{class}) ? lc($self->{class}) : "";
     $self->{setup_generate} = 'on' if($self->{setup_generate});
     $self->{norun} = 'on' if($self->{norun});
     $self->{deploy_roxie_queries} = 'no' unless(($self->{deploy_roxie_queries} eq 'yes') || ($self->{deploy_roxie_queries} eq 'run'));
