@@ -4220,11 +4220,11 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             IHqlExpression * ds = expr->queryChild(0);
             IHqlExpression * count = expr->queryChild(1);
             IHqlExpression * transform = expr->queryChild(2);
-            if (!hasSingleRow(ds) || !count->isConstant()) // Complicate things more
+            OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
+            if (!hasSingleRow(ds) || exprReferencesDataset(count, left)) // Complicate things more
                 break;
 
             // Replace LEFT from normalize transform (if used) by ROW's contents
-            OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
             OwnedHqlExpr newTransform;
             if (exprReferencesDataset(transform, left)) {
                 OwnedHqlExpr newRow;
