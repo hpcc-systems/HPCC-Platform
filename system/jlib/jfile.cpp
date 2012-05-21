@@ -37,7 +37,13 @@
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
-#endif
+#include <sys/inotify.h>
+
+#define EVENT_SIZE (sizeof (struct inotify_event))
+#define INOTIFY_CHANGE_EVENT_ONE_SHOT (IN_MODIFY | IN_MOVE | IN_DELETE | IN_ATTRIB | IN_ONESHOT)
+#define CLOSE_INOTIFY_QUEUE(q) if (q > 0); ::close(q); q=-1;
+
+#endif  // (__linux__)
 
 #include "time.h"
 
@@ -3732,7 +3738,213 @@ public:
     }
 };
 
+#ifdef __linux__
 
+CFile::CAbortMonitorThread::CAbortMonitorThread(int &inotify_queue, unsigned int check_interval, Semaphore *sem, bool &abort_thread)
+    : m_quitThread(false), m_abortThread(abort_thread), m_inotify_queue(inotify_queue), m_checkInterval(check_interval), m_abortSem(sem), m_pWorkerThread(NULL)
+{
+};
+
+CFile::CAbortMonitorThread::~CAbortMonitorThread()
+{
+  m_quitThread = true;
+  m_pWorkerThread->join();
+  delete m_pWorkerThread;
+};
+
+void CFile::CAbortMonitorThread::main()
+{
+  if (m_abortSem == NULL)
+  {
+    return;
+  }
+
+  loop
+  {
+    if (m_quitThread == true || m_abortThread == true)
+    {
+      break;
+    }
+
+    if (m_abortSem->wait(m_checkInterval) == true)
+    {
+      m_abortThread = true;
+      CLOSE_INOTIFY_QUEUE(m_inotify_queue) // will unblock select on abort
+    }
+  }
+}
+
+void CFile::CAbortMonitorThread::init()
+{
+  m_pWorkerThread = new CThreaded("CAbortMonitorThread");
+  IThreaded* pIThreaded = this;
+  m_pWorkerThread->init(pIThreaded);
+}
+
+int CFile::useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeout, Semaphore *abortsem, IDirectoryIterator *dirIter)
+{
+  StringBuffer strfile;
+  struct timeval tvTimeout;
+  int retVal = 0;
+  T_FD_SET rfds;
+  bool b = false;
+  Owned<CFile::CAbortMonitorThread> thread;
+  bool bAborted = false;
+
+  if (inotify_queue <= 0) // check for error
+  {
+    throw MakeStringException(-1,"Invalid file descriptor for inotify instance");
+  }
+
+  memset(&tvTimeout,0,sizeof(tvTimeout));
+  strfile.clear();
+
+  if (dirIter != NULL)
+  {
+    StringBuffer temp;
+
+    ForEach(*dirIter)
+    {
+      temp.clear();
+      strfile.clear();
+
+      strfile.appendf("%s/%s",this->queryFilename(),dirIter->getName(temp).toCharArray());
+
+      if (inotify_add_watch(inotify_queue,strfile.toCharArray(), INOTIFY_CHANGE_EVENT_ONE_SHOT) == -1)
+      {
+        throw MakeErrnoException(errno, "inotify_add_watch() failed when adding watch for %s", strfile.toCharArray());
+      }
+    }
+  }
+
+  XFD_ZERO(&rfds);
+  FD_SET(inotify_queue,&rfds);
+
+  if (timeout != (unsigned)-1)
+  {
+    tvTimeout.tv_sec = timeout/1000;
+  }
+
+  // If we get an abortsem, we have to create a new thread so that when abortsem is signaled we can close the the inotify_queue to unblock the select.
+  if (abortsem != NULL)
+  {
+    thread.setown(new CAbortMonitorThread(inotify_queue, checkinterval, abortsem, bAborted));
+    thread->init();
+  }
+
+  retVal = select(inotify_queue+1, (fd_set *)&rfds, NULL, NULL, timeout == (unsigned)-1 ? NULL : &tvTimeout);
+
+  if (thread.get() != NULL)
+  {
+    thread.clear();
+  }
+
+  if (bAborted == true || retVal == 0) // if aborted or timedout
+  {
+    return 0;
+  }
+  else if (retVal < 0)
+  {
+    throw MakeErrnoException(errno, "select() returned error for inotify file decriptor %d",inotify_queue+1);
+  }
+  else if (findfds(rfds, inotify_queue, b) == true)
+  {
+    try
+    {
+      flushINotifyQueue(inotify_queue);
+    }
+    catch (IException *e)
+    {
+      e->Release();
+    }
+
+    return 1; // change detected
+  }
+  else
+  {
+    throw MakeStringException(-1,"select() returned but inotify file descriptor not ready to be read");
+  }
+}
+
+void CFile::flushINotifyQueue(int inotify_queue)
+{
+  const int max_attempts = 5;
+  int attempts = 0;
+
+
+  if(inotify_queue <= 0)
+  {
+    return;
+  }
+
+  loop
+  {
+    unsigned int queue_length = getINotifyQueueLength(inotify_queue);
+    int bytes_read_successfully = 0;
+
+    if (queue_length == 0)
+    {
+      return;  // nothing to flush
+    }
+    else if (queue_length > 0)
+    {
+      char *buf = new char[queue_length];
+
+      //flush the queue
+      bytes_read_successfully = ::read(inotify_queue, buf, queue_length);
+      delete[] buf;
+
+      attempts++;
+    }
+
+    if (bytes_read_successfully == queue_length)
+    {
+      return; // queue flushed
+    }
+    else if (attempts >= max_attempts)
+    {
+      throw MakeStringException(-1,"Failed to flush the inotify queue after %d attempts",attempts);
+    }
+    Sleep(0);
+  };
+}
+
+unsigned int CFile::getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const
+{
+  unsigned int num_events = 0;
+
+  if (buffer_length > 0 && buffer)
+  {
+      unsigned int offset =  EVENT_SIZE + ((struct inotify_event*)(buffer))->len;
+      num_events = getNumberOfINotifyEventsInBuffer(buffer + offset, buffer_length-offset) + 1;
+  }
+
+  return num_events;
+}
+
+unsigned int CFile::getINotifyQueueLength(int inotify_queue) const
+{
+  unsigned int queue_length = 0;
+  int ret_val = -1;
+
+  if (inotify_queue <= 0)
+  {
+    return 0;
+  }
+
+  ret_val = ioctl(inotify_queue, FIONREAD, &queue_length);
+
+  if (ret_val < 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return queue_length;
+  }
+}
+
+#endif //__linux__
 
 IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,            // in
                              const char *mask,
@@ -3750,6 +3962,44 @@ IDirectoryDifferenceIterator *CFile::monitorDirectory(IDirectoryIterator *_prev,
     if (!prev)
         return NULL;
     Owned<CDirectoryDifferenceIterator> base = new CDirectoryDifferenceIterator(prev,NULL);
+#ifdef __linux__
+    int inotify_queue = inotify_init();
+
+    assertex(inotify_queue > 0);
+
+    try
+    {
+      if (!useINotify(inotify_queue, checkinterval, timeout, abortsem, prev))
+      {
+        CLOSE_INOTIFY_QUEUE(inotify_queue);
+        return NULL; // timed out or aborted
+      }
+      CLOSE_INOTIFY_QUEUE(inotify_queue);
+    }
+    catch (IException *e)
+    {
+      CLOSE_INOTIFY_QUEUE(inotify_queue);
+      throw e;
+    }
+    Owned<IDirectoryIterator> current = directoryFiles(mask,sub,includedirs);
+
+    if (!current)
+    {
+      return NULL;
+    }
+
+    Owned<CDirectoryDifferenceIterator> cmp = new CDirectoryDifferenceIterator(current,base);
+    current.clear();
+
+    if (cmp->numChanges())
+    {
+      return cmp.getClear();
+    }
+    else
+    {
+      return NULL;
+    }
+#endif
     prev.clear(); // not needed now
     unsigned start=msTick();
     loop {

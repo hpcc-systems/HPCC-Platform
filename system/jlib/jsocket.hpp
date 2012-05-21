@@ -31,13 +31,122 @@
 #include "jexcept.hpp"
 #include "jthread.hpp"
 
+#ifdef __APPLE__
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0x4000
+#endif
+#endif
 
+#if defined( _WIN32)
+#define T_SOCKET SOCKET
+#define T_FD_SET fd_set
+#define XFD_SETSIZE FD_SETSIZE
+#define ETIMEDOUT WSAETIMEDOUT
+#define ECONNREFUSED WSAECONNREFUSED
+#define XFD_ZERO(s) FD_ZERO(s)
+#define SEND_FLAGS 0
+#define BADSOCKERR(err) ((err==WSAEBADF)||(err==WSAENOTSOCK))
+#define CHECKSOCKRANGE(s)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
+#define XFD_SETSIZE FD_SETSIZE
+#define T_FD_SET fd_set
+#define XFD_ZERO(s) FD_ZERO(s)
+#define T_SOCKET int
+#define SEND_FLAGS (MSG_NOSIGNAL)
+#define BADSOCKERR(err) ((err==EBADF)||(err==ENOTSOCK))
+#define CHECKSOCKRANGE(s)
+#else
+#define XFD_SETSIZE 8192
+struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our own
+// linux 64 bit
+#ifdef __linux__
+#ifdef __x86_64__
+#undef __FDMASK
+#define __FDMASK(d)     (1UL << ((d) % __NFDBITS))
+#undef __FDELT
+#define __FDELT(d)      ((d) / __NFDBITS)
+#undef __FD_SET
+#define __FD_SET(d, s)     (__FDS_BITS (s)[__FDELT(d)] |= __FDMASK(d))
+#undef __FD_ISSET
+#define __FD_ISSET(d, s)   ((__FDS_BITS (s)[__FDELT(d)] & __FDMASK(d)) != 0)
+#endif
+#define CHECKSOCKRANGE(s) { if (s>=XFD_SETSIZE) THROWJSOCKEXCEPTION2(JSOCKERR_handle_too_large); }
+#endif
+// end 64 bit
+#define T_FD_SET xfd_set
+#define XFD_ZERO(s) memset(s,0,sizeof(xfd_set))
+#define T_SOCKET int
+#define SEND_FLAGS (MSG_NOSIGNAL)
+#define BADSOCKERR(err) ((err==EBADF)||(err==ENOTSOCK))
+#endif
 
 #define DEFAULT_LISTEN_QUEUE_SIZE    200            // maximum for windows 2000 server
 #define DEFAULT_LINGER_TIME          1000 // seconds
 #ifndef WAIT_FOREVER
 #define WAIT_FOREVER                 ((unsigned)-1)
 #endif
+
+#ifdef _WIN32
+
+// fd_set utility functions
+inline T_FD_SET *cpyfds(T_FD_SET &dst,const T_FD_SET &src)
+{
+    unsigned i = src.fd_count;
+    dst.fd_count = i;
+    while (i--)
+        dst.fd_array[i] = src.fd_array[i]; // possibly better as memcpy
+    return &dst;
+}
+
+inline bool findfds(T_FD_SET &s,T_SOCKET h,bool &c)
+{
+    unsigned n = s.fd_count;
+    unsigned i;
+    for(i=0;i<n;i++) {
+        if (s.fd_array[i] == h) {
+            if (--n)
+                s.fd_array[i] = s.fd_array[n]; // remove item
+            else
+                c = false;
+            s.fd_count = n;
+            return true;
+        }
+    }
+    return false;
+}
+
+inline T_SOCKET popfds(T_FD_SET &s)
+{
+    unsigned n = s.fd_count;
+    T_SOCKET ret;
+    if (n) {
+        ret = s.fd_array[--n];
+        s.fd_count = n;
+    }
+    else
+        ret = NULL;
+    return ret;
+}
+
+#else
+#define _USE_PIPE_FOR_SELECT_TRIGGER
+
+// not as optimized as windows but I am expecting to convert to using poll anyway
+inline T_FD_SET *cpyfds(T_FD_SET &dst,const T_FD_SET &src)
+{
+    memcpy(&dst,&src,sizeof(T_FD_SET));
+    return &dst;
+}
+
+inline bool findfds(T_FD_SET &s,T_SOCKET h,bool &c)
+{
+    if ((unsigned)h>=XFD_SETSIZE)
+        return false;
+    return FD_ISSET(h,&s); // does not remove entry or set termination flag when done
+}
+
+#endif
+
 
 enum JSOCKET_ERROR_CODES {
         JSOCKERR_ok                    = 0, 

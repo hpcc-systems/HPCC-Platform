@@ -91,6 +91,36 @@ public:
 protected:
     StringAttr filename;
     unsigned flags;
+#ifdef __linux__
+private:
+    int useINotify(int &inotify_queue, unsigned checkinterval, unsigned timeout, Semaphore *abortsem, IDirectoryIterator* dirIter);
+    unsigned int getINotifyQueueLength(int inotify_queue) const;
+    unsigned int getNumberOfINotifyEventsInBuffer(char *buffer, unsigned int buffer_length) const;
+    void flushINotifyQueue(int inotify_queue);
+
+    class CAbortMonitorThread : public CInterface, implements IThreaded
+    {
+    public:
+      CAbortMonitorThread(int &inotify_queue, unsigned int check_interval, Semaphore *sem, bool &quit_thread);
+      virtual ~CAbortMonitorThread();
+      void init();
+
+      IMPLEMENT_IINTERFACE;
+
+    private:
+      CAbortMonitorThread();
+      CAbortMonitorThread(const CAbortMonitorThread &abort_thread) : m_quitThread(abort_thread.m_quitThread), m_abortThread(abort_thread.m_abortThread), m_inotify_queue(abort_thread.m_inotify_queue), m_checkInterval(abort_thread.m_checkInterval), m_abortSem(abort_thread.m_abortSem), m_pWorkerThread(abort_thread.m_pWorkerThread) {};
+      CAbortMonitorThread& operator=(CAbortMonitorThread const&){};
+      virtual void main();
+
+      bool m_quitThread;
+      bool &m_abortThread;
+      int &m_inotify_queue;
+      unsigned int m_checkInterval;
+      Semaphore *m_abortSem;
+      CThreaded* m_pWorkerThread;
+    };
+#endif //__linux__
 };
 
 
