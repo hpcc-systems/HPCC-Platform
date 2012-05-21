@@ -266,6 +266,7 @@ bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
                 wu->setState(WUStateCompleted);
                 return true;
             }
+            translator.generateStatistics(targetDir);
             translator.finalizeResources();
             translator.expandFunctions(true);
         }

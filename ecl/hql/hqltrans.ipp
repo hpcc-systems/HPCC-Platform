@@ -1164,22 +1164,6 @@ inline bool activityHidesSelector(IHqlExpression * expr, IHqlExpression * select
     return activityHidesSelectorGetNumNonHidden(expr, selector) != 0;
 }
 
-
-class HQL_API HqlSelectorAnywhereLocator : public NewHqlTransformer
-{
-public:
-    HqlSelectorAnywhereLocator(IHqlExpression * _selector);
-
-    virtual void analyseExpr(IHqlExpression * expr);
-    virtual void analyseSelector(IHqlExpression * expr);
-
-    bool containsSelector(IHqlExpression * expr);
-
-protected:
-    bool foundSelector;
-    OwnedHqlExpr selector;
-};
-
 class SplitterVerifierInfo : public NewTransformInfo
 {
 public:
@@ -1200,29 +1184,6 @@ protected:
     inline SplitterVerifierInfo * queryExtra(IHqlExpression * expr)     { return static_cast<SplitterVerifierInfo *>(queryTransformExtra(expr)); }
 };
 
-extern HQL_API bool containsSelector(IHqlExpression * expr, IHqlExpression * selector);
-extern HQL_API bool containsSelectorAnywhere(IHqlExpression * expr, IHqlExpression * selector);         // searches through nested "hidden" definitions
-
-class HQL_API FieldAccessAnalyser : public NewHqlTransformer
-{
-public:
-    FieldAccessAnalyser(IHqlExpression * selector);
-
-    inline bool accessedAll() const { return numAccessed == fields.ordinality(); }
-    IHqlExpression * queryLastFieldAccessed() const;
-
-protected:
-    virtual void analyseExpr(IHqlExpression * expr);
-    virtual void analyseSelector(IHqlExpression * expr);
-
-    inline void setAccessedAll() { numAccessed = fields.ordinality(); }
-
-protected:
-    LinkedHqlExpr selector;
-    HqlExprCopyArray fields;
-    Owned<IBitSet> accessed;
-    unsigned numAccessed;
-};
 /*
 
 If something can be transformed more than one way depending on the context then must either
@@ -1242,14 +1203,8 @@ extern HQL_API IHqlExpression * queryNewReplaceSelector(IHqlExpression * expr, I
 extern HQL_API IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr);
 extern HQL_API void verifySplitConsistency(IHqlExpression * expr);
 extern HQL_API IHqlExpression * convertWorkflowToImplicitParmeters(HqlExprArray & parameters, HqlExprArray & defaults, IHqlExpression * expr);
-extern HQL_API unsigned getNumUniqueExpressions(IHqlExpression * expr);
-extern HQL_API unsigned getNumUniqueExpressions(const HqlExprArray & exprs);
-extern HQL_API unsigned getNumOccurences(HqlExprArray & exprs, IHqlExpression * search, unsigned limit);
-extern HQL_API void logTreeStats(IHqlExpression * expr);
-extern HQL_API void logTreeStats(const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * quickFullReplaceExpression(IHqlExpression * expr, IHqlExpression * oldValue, IHqlExpression * newValue);
 extern HQL_API IHqlExpression * quickFullReplaceExpressions(IHqlExpression * expr, const HqlExprArray & oldValues, const HqlExprArray & newValues);
-extern HQL_API void gatherSelectExprs(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API void dbglogTransformStats(bool reset);
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR

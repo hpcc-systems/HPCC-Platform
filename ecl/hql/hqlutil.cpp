@@ -30,6 +30,7 @@
 #include "hqlfold.hpp"
 #include "hqlerrors.hpp"
 #include "hqltrans.ipp"
+#include "hqlusage.hpp"
 #include "hqlthql.hpp"
 #include "deffield.hpp"
 #include "workunit.hpp"
