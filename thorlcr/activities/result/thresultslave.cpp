@@ -39,7 +39,6 @@ public:
     }
     void process()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
         processed = 0;
 
         input = inputs.item(0);
