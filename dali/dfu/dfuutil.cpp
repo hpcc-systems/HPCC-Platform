@@ -709,7 +709,6 @@ public:
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
-        transaction->start();
         Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction);
         bool newfile = false;
         if (!superfile) {
@@ -717,6 +716,7 @@ public:
             newfile = true;
         }
         if (numtoadd) {
+            transaction->start();
             unsigned i;
             for (i=0;i<numtoadd;i++)
                 if (superfile->querySubFileNamed(subfiles[i]))
