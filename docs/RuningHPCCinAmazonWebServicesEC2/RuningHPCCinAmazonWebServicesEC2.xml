@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book lang="en_US">
+<book lang="en_US" xml:base="../">
   <title>Running the HPCC Systems Thor Platform within Amazon Web
   Services</title>
 
@@ -48,15 +48,15 @@
       <para><emphasis role="redbold">BETA 2</emphasis></para>
     </legalnotice>
 
-        <xi:include href="Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-    <xi:include href="Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -365,7 +365,7 @@
                     <para>You can use EBS storage, but expect poorer
                     performance as EBS is not tuned for sequential access. See
                     <link linkend="ebs_answer">the FAQ section</link> for more
-                    details. </para>
+                    details.</para>
 
                     <para>Because of limitations for very large files in
                     certain fuse drivers, we do not recommend fuse drivers at
@@ -453,8 +453,8 @@
                   <listitem>
                     <para>Windows</para>
 
-                    <para>Use PuTTY, Pageant, and PuttyGen to SSH to the node.
-                    </para>
+                    <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
+                    node.</para>
 
                     <para>See <ulink
                     url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
@@ -571,23 +571,23 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
                         <tgroup cols="1">
                           <tbody>
                             <row>
-                              <entry>temp </entry>
+                              <entry>temp</entry>
                             </row>
 
                             <row>
-                              <entry>data </entry>
+                              <entry>data</entry>
                             </row>
 
                             <row>
-                              <entry>data2 </entry>
+                              <entry>data2</entry>
                             </row>
 
                             <row>
-                              <entry>data3 </entry>
+                              <entry>data3</entry>
                             </row>
 
                             <row>
-                              <entry>mirror </entry>
+                              <entry>mirror</entry>
                             </row>
 
                             <row>
@@ -1019,13 +1019,13 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
                 </row>
 
                 <row>
-                  <entry>WsAtrtributes (Enterprise Edition)</entry>
+                  <entry>WsAtrtributes </entry>
 
                   <entry>8145</entry>
                 </row>
 
                 <row>
-                  <entry>Roxie Config (Enterprise Edition)</entry>
+                  <entry>Roxie Config </entry>
 
                   <entry>8050</entry>
                 </row>
@@ -1706,8 +1706,8 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
               <listitem>
                 <para>Windows</para>
 
-                <para>Use PuTTY, Pageant, and PuttyGen to SSH to the node.
-                </para>
+                <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
+                node.</para>
 
                 <para>See <ulink
                 url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
@@ -1768,8 +1768,8 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
                 <listitem>
                   <para>Windows</para>
 
-                  <para>Use PuTTY, Pageant, and PuttyGen to SSH to the node.
-                  </para>
+                  <para>Use PuTTY, Pageant, and PuttyGen to SSH to the
+                  node.</para>
 
                   <para>See <ulink
                   url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink>
@@ -2151,8 +2151,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para
               <?dbfo keep-together="always"?>
 
               <para>From ECL Watch page, click on the <emphasis
-              role="bold">Browse </emphasis>link under <emphasis
-              role="bold">Resources</emphasis> in the menu on the left
+              role="bold">Resources </emphasis> link in the menu on the left
               side.</para>
 
               <para><figure>
@@ -2160,31 +2159,28 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/vmimg07aa3.JPG" />
+                      <imagedata fileref="images/GS_1311.JPG" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
 
-              <para><emphasis role="bold">Note: The order of items on the page
-              may vary depending on the order in which optional packages are
-              installed.</emphasis></para>
+              <para>Follow the link to the HPCC System's portal.</para>
             </listitem>
 
             <listitem>
-              <para>Click on the <emphasis role="bold">ECL IDE
-              Installer</emphasis> link. When prompted, save this file to your
-              PC and then run it—do not run directly from your browser. This
-              is a Windows installer for a Windows application.</para>
+              <para>Click on the <emphasis role="bold">ECL IDE and Client
+              Tools </emphasis>link.</para>
             </listitem>
 
             <listitem>
-              <para>You can close your browser, if desired.</para>
+              <para>Follow the instructions on the web page to install the ECL
+              IDE.</para>
             </listitem>
 
             <listitem>
               <para>Install the ECL IDE, following the prompts in the
-              installer. Once the ECL IDE is installed successfully, you can
-              proceed.</para>
+              installation program. Once the ECL IDE is installed
+              successfully, you can proceed.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
@@ -3250,9 +3246,8 @@ s3cmd --configure
           </question>
 
           <answer>
-            <para>The Community Edition offers peer support in the Forums on
-            the HPCC Systems Portal. Enterprise Edition Packages include
-            expert support.</para>
+            <para>Peer support is available in the Forums on the HPCC Systems
+            Portal. </para>
           </answer>
         </qandaentry>
 

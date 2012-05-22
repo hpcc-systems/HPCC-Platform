@@ -2,7 +2,7 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1>
-  <title><emphasis role="bold">User Security Maintenance</emphasis></title>
+  <title>User Security Maintenance</title>
 
   <para>Configuring an HPCC System to use LDAP security will give you greater
   control over users and the security of your HPCC system.</para>
@@ -28,7 +28,8 @@
     feature. Permissions are separated into the following
     categories:<informaltable frame="all">
         <tgroup cols="2" colsep="1">
-           
+          <colspec colwidth="185pt" />
+
           <tbody>
             <row>
               <entry><emphasis role="bold">Esp Features for
@@ -297,7 +298,7 @@
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm.</para>
+              <para>Click OK to confirm. </para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -326,7 +327,7 @@
             </listitem>
 
             <listitem>
-              <para>Click <emphasis role="bold">Submit</emphasis>.</para>
+              <para>Click <emphasis role="bold">Submit</emphasis>. </para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -346,7 +347,7 @@
             </listitem>
 
             <listitem>
-              <para>Click <emphasis role="bold">Delete</emphasis>.</para>
+              <para>Click <emphasis role="bold">Delete</emphasis>. </para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -929,10 +930,8 @@
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm.</para>
-
-              <para>Confirmation of your request is shown.<emphasis
-              role="bold"></emphasis></para>
+              <para>Click OK to confirm. Confirmation of your request is
+              shown.<emphasis role="bold"></emphasis></para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -956,7 +955,12 @@
       <para>SMCAccess is required by all users to be able to successfully
       login to ECL Watch. <informaltable>
           <tgroup cols="3">
- 
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -994,7 +998,12 @@
 
       <para><informaltable>
           <tgroup cols="3">
-  
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1073,6 +1082,11 @@
       contents of the workunits list reflects whether a user has the
       permission to view their own and others workunits.<informaltable>
           <tgroup cols="3">
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
 
             <thead>
               <row>
@@ -1145,7 +1159,12 @@
       disc space, CPU usage and access to logs as well as the ability to swap
       faulty nodes out of the cluster. <informaltable>
           <tgroup cols="3">
-   
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1216,7 +1235,12 @@
       <para>A user must have permission to view DFU Workunits and requires
       other permissions to be able to manipulate them.<informaltable>
           <tgroup cols="3">
-       
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
             <thead>
               <row>
                 <entry>LDAP Path</entry>
@@ -1261,8 +1285,13 @@
       generated show where housekeeping is required on the cluster(s) and
       users require additional permission to use this feature. <informaltable>
           <tgroup cols="3">
-        
-             <thead>
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
+            <thead>
               <row>
                 <entry>LDAP Path</entry>
 
@@ -1396,8 +1425,12 @@
       <para>Additional permission is required to view roxie queries in ECL
       Watch.<informaltable>
           <tgroup cols="3">
-      
-          
+            <colspec colwidth="155pt" />
+
+            <colspec />
+
+            <colspec colwidth="85pt" />
+
             <thead>
               <row>
                 <entry>LDAP Path</entry>
