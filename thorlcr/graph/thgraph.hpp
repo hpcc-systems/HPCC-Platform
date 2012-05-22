@@ -287,7 +287,6 @@ public:
     IThorGraphDependencyIterator *getDependsIterator() const;
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
-
     void setBoundGraph(IThorBoundLoopGraph *graph) { loopGraph.set(graph); }
     IThorBoundLoopGraph *queryLoopGraph() { return loopGraph; }
     bool executeDependencies(size32_t parentExtractSz, const byte *parentExtract, int controlId, bool async);
@@ -619,6 +618,7 @@ public:
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
     CGraphBase *queryParent() { return parent?parent:this; }
+    bool syncInitData();
     bool isComplete() const { return complete; }
     bool isPrepared() const { return prepared; }
     bool isGlobal() const { return global; }

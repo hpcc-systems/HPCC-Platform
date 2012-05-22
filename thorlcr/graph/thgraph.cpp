@@ -1349,6 +1349,15 @@ void CGraphBase::done()
     }
 }
 
+bool CGraphBase::syncInitData()
+{
+    CGraphElementBase *parentElement = queryOwner() ? queryOwner()->queryElement(queryParentActivityId()) : NULL;
+    if (parentElement && isLoopActivity(*parentElement))
+        return parentElement->queryLoopGraph()->queryGraph()->isGlobal();
+    else
+        return !isLocalChild();
+}
+
 void CGraphBase::end()
 {
 // always called, any final action clear up
@@ -1672,12 +1681,8 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     {
         CGraphElementBase *parentElement = owner->queryElement(parentActivityId);
         parentElement->addAssociatedChildGraph(this);
-        localChild = false;
         if (isLoopActivity(*parentElement))
-        {
-            if (parentElement->queryOwner().isLocalChild())
-                localChild = true;
-        }
+            localChild = parentElement->queryOwner().isLocalChild();
         else
             localChild = true;
     }
