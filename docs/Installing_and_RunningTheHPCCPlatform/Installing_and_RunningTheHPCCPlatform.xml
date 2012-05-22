@@ -669,54 +669,6 @@
         <para></para>
       </sect2>
 
-      <sect2 id="installing-the-Optional-Package">
-        <title>Installing the Optional Packages</title>
-
-        <para>There are three optional packages you can install which will
-        enable resources to be available from your ESP server's ECL Watch
-        page. These resources include:</para>
-
-        <para><itemizedlist spacing="compact">
-            <listitem>
-              <para>Documentation</para>
-            </listitem>
-
-            <listitem>
-              <para>ECL IDE</para>
-            </listitem>
-
-            <listitem>
-              <para>Graph Control</para>
-            </listitem>
-          </itemizedlist></para>
-
-        <para>We recommend installing these packages on your ESP Server
-        node.</para>
-
-        <para>You can find these packages at <ulink
-        url="http://hpccsystems.lexisnexis.com/download/free-community-edition">http://hpccsystems.lexisnexis.com/download/free-community-edition</ulink></para>
-
-        <para><?hard-pagebreak ?>To install the package, follow the
-        appropriate installation instructions:</para>
-
-        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
-
-        <para>Install RPM with the -Uvh switch.</para>
-
-        <para>This is the upgrade command and will perform an automatic
-        upgrade if a previous version is installed or it will just install
-        fresh if no other version has been installed.</para>
-
-        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
-
-        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
-
-        <para>For Ubuntu installations a Debian package is provided. To
-        install the package, use:</para>
-
-        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
-      </sect2>
-
       <sect2 id="initial-startup">
         <title><emphasis>Initial Startup</emphasis></title>
 
@@ -812,6 +764,8 @@
               </listitem>
 
               <listitem>
+                <?dbfo keep-together="always"?>
+
                 <para>From ECL Watch page, click on the <emphasis
                 role="bold">Resources </emphasis> link in the menu on the left
                 side.</para>
@@ -821,35 +775,28 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/vmimg07aa3.JPG" />
+                        <imagedata fileref="images/GS_1311.JPG" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
 
-                <para><emphasis role="bold">Note: The order of items on the
-                page may vary depending on the order in which optional
-                packages are installed.</emphasis></para>
-
-                <para>If this page is not visible, either follow the link to
-                the HPCC System's portal or install the Optional
-                Packages,</para>
+                <para>Follow the link to the HPCC System's portal.</para>
               </listitem>
 
               <listitem>
-                <para>Click on the ECL IDE Installer link. When prompted save
-                this file to your PC and then run it—do not run directly from
-                your browser. This is a Windows installer for a Windows
-                application.</para>
+                <para>Click on the <emphasis role="bold">ECL IDE and Client
+                Tools </emphasis>link. </para>
               </listitem>
 
               <listitem>
-                <para>You can close your browser, if desired.</para>
+                <para>Follow the instructions on the web page to install the
+                ECL IDE. </para>
               </listitem>
 
               <listitem>
                 <para>Install the ECL IDE, following the prompts in the
-                installer. Once the ECL IDE is installed successfully, you can
-                proceed.</para>
+                installation program. Once the ECL IDE is installed
+                successfully, you can proceed.</para>
               </listitem>
             </orderedlist></para>
 
@@ -1038,7 +985,6 @@
                   </mediaobject>
                 </figure>
               </listitem>
-
 
               <listitem>
                 <para>Open a new <emphasis role="bold">Builder
@@ -1262,8 +1208,7 @@
             button.</para>
 
             <para>Alternatively, you could find the IP addresses using Auto
-            Discovery by selecting the Auto Discovery button. (only avallable
-            in Enterprise Edition)</para>
+            Discovery by selecting the Auto Discovery button. </para>
 
             <para>Now you will define how many nodes to use for the Roxie and
             Thor clusters.</para>

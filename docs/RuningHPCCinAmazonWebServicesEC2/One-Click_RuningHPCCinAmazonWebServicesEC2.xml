@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book lang="en_US">
+<book lang="en_US" xml:base="../">
   <title>One-Click<trademark> Thor </trademark> within Amazon Web
   Services</title>
 
@@ -40,20 +40,22 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para></para>
+      <para />
 
-      <para><emphasis role="redbold"></emphasis></para>
+      <para>
+        <emphasis role="redbold" />
+      </para>
     </legalnotice>
 
-    <xi:include href="Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <corpname>HPCC Systems </corpname>
+    <corpname>HPCC Systems</corpname>
 
-    <xi:include href="Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -214,7 +216,8 @@
 
             <tbody>
               <row>
-                <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+                <entry><inlinegraphic
+                fileref="images/OSSgr3.png" /></entry>
 
                 <entry>For detailed PuTTY/pcsp/PUTTYGen directions from
                 Amazon, see: <para><ulink
@@ -247,7 +250,7 @@
 
       <!--Include follows-->
 
-      <xi:include href="AWSIncludes.xml" xpointer="Find_AWS_Keys"
+      <xi:include href="RuningHPCCinAmazonWebServicesEC2/AWSIncludes.xml" xpointer="Find_AWS_Keys"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -347,8 +350,7 @@
         </listitem>
 
         <listitem>
-          <para>Installs HPCC Systems platform packages (required and optional
-          packages and their dependencies).</para>
+          <para>Installs HPCC Systems platform packages.</para>
         </listitem>
 
         <listitem>
@@ -427,8 +429,7 @@
             the SSH Key.</para>
 
             <para>It also has a link that allows you to <emphasis
-            role="bold">Terminate</emphasis> the cluster instantiation.
-            </para>
+            role="bold">Terminate</emphasis> the cluster instantiation.</para>
 
             <para><figure>
                 <title>View Clusters</title>
@@ -670,8 +671,8 @@
                         fileref="images/caution.png" /></entry>
 
                         <entry>Your IP address could be different from the
-                        ones provided in the example images. Please use the IP
-                        address of <emphasis role="bold">your</emphasis>
+                        ones provided in the example images. Please use the
+                        IP address of <emphasis role="bold">your</emphasis>
                         node.</entry>
                       </row>
                     </tbody>
@@ -683,8 +684,7 @@
               <?dbfo keep-together="always"?>
 
               <para>From ECL Watch page, click on the <emphasis
-              role="bold">Browse </emphasis>link under <emphasis
-              role="bold">Resources</emphasis> in the menu on the left
+              role="bold">Resources </emphasis> link in the menu on the left
               side.</para>
 
               <para><figure>
@@ -692,31 +692,28 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/vmimg07aa3.JPG" />
+                      <imagedata fileref="images/GS_1311.JPG" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
 
-              <para><emphasis role="bold">Note: The order of items on the page
-              may vary depending on the order in which optional packages are
-              installed.</emphasis></para>
+              <para>Follow the link to the HPCC System's portal.</para>
             </listitem>
 
             <listitem>
-              <para>Click on the <emphasis role="bold">ECL IDE
-              Installer</emphasis> link. When prompted, save this file to your
-              PC and then run it—do not run directly from your browser. This
-              is a Windows installer for a Windows application.</para>
+              <para>Click on the <emphasis role="bold">ECL IDE and Client
+              Tools </emphasis>link.</para>
             </listitem>
 
             <listitem>
-              <para>You can close your browser, if desired.</para>
+              <para>Follow the instructions on the web page to install the ECL
+              IDE.</para>
             </listitem>
 
             <listitem>
               <para>Install the ECL IDE, following the prompts in the
-              installer. Once the ECL IDE is installed successfully, you can
-              proceed.</para>
+              installation program. Once the ECL IDE is installed
+              successfully, you can proceed.</para>
             </listitem>
           </orderedlist></para>
       </sect2>
@@ -1383,7 +1380,7 @@ OUTPUT(ValidWords)
 
       <!--*** include follows-->
 
-      <xi:include href="AWSIncludes.xml" xpointer="Find_AWS_Keys"
+      <xi:include href="RuningHPCCinAmazonWebServicesEC2/AWSIncludes.xml" xpointer="Find_AWS_Keys"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <sect2>
@@ -1393,7 +1390,8 @@ OUTPUT(ValidWords)
         <para>To move files to or from S3 storage, the S3 packages must be
         installed and configured on your Landing Zone node.</para>
 
-        <para><orderedlist>
+        <para>
+          <orderedlist>
             <listitem>
               <para>Open a console window and connect to the Landing Zone (LZ)
               node</para>
@@ -1402,9 +1400,11 @@ OUTPUT(ValidWords)
             <listitem>
               <para>Run these commands:</para>
 
-              <para><programlisting>sudo apt-get install s3cmd
+              <para>
+                <programlisting>sudo apt-get install s3cmd
 s3cmd --configure
-</programlisting></para>
+</programlisting>
+              </para>
             </listitem>
 
             <listitem>
@@ -1453,7 +1453,8 @@ s3cmd --configure
               <para>Enter <emphasis role="bold">Yes</emphasis> to Save
               Settings</para>
             </listitem>
-          </orderedlist></para>
+          </orderedlist>
+        </para>
       </sect2>
 
       <sect2>
@@ -1473,20 +1474,26 @@ s3cmd --configure
         <sect3>
           <title>Create a bucket</title>
 
-          <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
+          <para>
+            <programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting>
+          </para>
         </sect3>
 
         <sect3>
           <title>List Buckets</title>
 
-          <para><programlisting>s3cmd ls</programlisting></para>
+          <para>
+            <programlisting>s3cmd ls</programlisting>
+          </para>
         </sect3>
 
         <sect3>
           <title>Upload a file to a bucket</title>
 
-          <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
-</programlisting></para>
+          <para>
+            <programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
+</programlisting>
+          </para>
         </sect3>
 
         <sect3>
