@@ -41,13 +41,12 @@ import org.xml.sax.SAXException;
 
 public class EclDatabaseMetaData implements DatabaseMetaData {
 
-	//private Properties eclQueryAliases;
 	private EclQueries eclqueries;
 	private Properties dfufiles;
 	private static Map<Integer, String> SQLFieldMapping;
 
-	public static final short JDBCVerMajor = 0;
-	public static final short JDBCVerMinor = 1;
+	public static final short JDBCVerMajor = 3;
+	public static final short JDBCVerMinor = 0;
 
 	private static String HPCCBuildVersionFull = "";
 	@SuppressWarnings("unused")
@@ -58,8 +57,10 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	private boolean isMetaDataCached;
 	private String serverAddress;
 	private String cluster;
+	private String wseclwatchaddress;
+	private String wsecladdress;
 	private String wseclwatchport;
-	private String wseclport;
+	//private String wseclport;
 	private String basicAuth;
 	private String UserName;
 
@@ -68,16 +69,14 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		super();
 		this.serverAddress = props.getProperty("ServerAddress","localhost");
 		this.cluster = props.getProperty("Cluster","myroxie");
-		this.wseclwatchport  = props.getProperty("WsECLWatchPort"); ;
-		this.wseclport = props.getProperty("WsECLPort");
+		this.wseclwatchport  = props.getProperty("WsECLWatchPort");
+		this.wseclwatchaddress  = props.getProperty("WsECLWatchAddress");
 		this.UserName = props.getProperty("username");
-		//this.defaultDB =  props.getProperty("DefaultDB");
 		this.basicAuth = props.getProperty("BasicAuth");
 
-		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + cluster + " eclwatch: " + wseclwatchport + " ecl: " + wseclport);
+		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + cluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
 		dfufiles = new Properties();
-		//eclQueryAliases = new Properties();
 		eclqueries = new EclQueries(this.cluster);
 		SQLFieldMapping = new HashMap<Integer, String>();
 
@@ -164,7 +163,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			String urlString = "http://" + serverAddress + ":" + wseclwatchport + "/WsDfu/DFUQuery?rawxml_";
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsDfu/DFUQuery?rawxml_";
 
 			URL dfuLogicalFilesURL;
 			dfuLogicalFilesURL = new URL(urlString);
@@ -295,7 +294,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 						if (file.getFullyQualifiedName().length() > 0 && file.getClusterName()!=null)
 						{
-							String filedetailUrl = "http://" + serverAddress + ":" + wseclwatchport +
+							String filedetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
 									"/WsDfu/DFUInfo?Name=" +
 									URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
 									"&Cluster=" +
@@ -319,11 +318,10 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 							// Get all pertinent detail info regarding this file (files are being treated as DB tables)
 							registerFileDetails(docElement, file);
 
-
 							//we might need more info if this file is actually an index:
 							if(file.isKeyFile())
 							{
-								String openfiledetailUrl = "http://" + serverAddress + ":" + wseclwatchport +
+								String openfiledetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
 										"/WsDfu/DFUSearchData?OpenLogicalName=" +
 										URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
 										"&Cluster=" +
@@ -345,11 +343,9 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 								Element docElement2 = dom3.getDocumentElement();
 
-								//NodeList keyfiledetail = docElement2.getElementsByTagName("DFUSearchDataResponse");
 								NodeList keyfiledetail = docElement2.getChildNodes();
 								if (keyfiledetail.getLength()>0)
 								{
-									//NodeList resultslist = keyfiledetail.item(0).getChildNodes(); //ECLResult nodes
 									for (int k = 0; k< keyfiledetail.getLength(); k++)
 									{
 										Node currentnode = keyfiledetail.item(k);
@@ -365,7 +361,6 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 													Node keyedcolumnfield = KeyedColumnFields.item(q);
 													if (keyedcolumnfield.getNodeName().equals("ColumnLabel"))
 													{
-														//file.addKeyedColumn(fieldindex+1,keyedcolumnfield.getTextContent());
 														file.addKeyedColumnInOrder(keyedcolumnfield.getTextContent());
 														break;
 													}
@@ -380,7 +375,6 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 										{
 											NodeList nonKeyedColumns = currentnode.getChildNodes();
 
-											//Properties nonkeyedcolumns = new Properties();
 											for (int fieldindex = 0 ; fieldindex < nonKeyedColumns.getLength(); fieldindex++)
 											{
 												Node nonKeyedColumn = nonKeyedColumns.item(fieldindex);
@@ -390,7 +384,6 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 													Node nonkeyedcolumnfield = nonKeyedColumnFields.item(q);
 													if (nonkeyedcolumnfield.getNodeName().equals("ColumnLabel"))
 													{
-														//file.addNonKeyedColumn(fieldindex+1, nonkeyedcolumnfield.getTextContent());
 														file.addNonKeyedColumnInOrder(nonkeyedcolumnfield.getTextContent());
 														break;
 													}
@@ -442,7 +435,8 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			String urlString = "http://" + serverAddress + ":" + wseclwatchport + "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + cluster + "&rawxml_";
+
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + cluster + "&rawxml_";
 
 			URL querysetURL;
 			querysetURL = new URL(urlString);
@@ -501,7 +495,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 						}
 						//for each QuerySetQuery found above, get all schema related info:
-						String queryinfourl = "http://" + serverAddress + ":" + wseclwatchport +
+						String queryinfourl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
 								"/WsWorkunits/WUInfo/WUInfoRequest?Wuid=" +
 								query.getWUID() +
 								"&IncludeExceptions=0" +
@@ -2224,7 +2218,8 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		if (serverAddress == null || cluster == null)
 			return false;
 
-		String urlString = "http://" + serverAddress + ":"+wseclwatchport+"/WsSMC/Activity?rawxml_";
+		//String urlString = "http://" + serverAddress + ":"+wseclwatchport+"/WsSMC/Activity?rawxml_";
+		String urlString = "http://" + wseclwatchaddress + ":"+wseclwatchport+"/WsSMC/Activity?rawxml_";
 
 		URL querysetURL;
 

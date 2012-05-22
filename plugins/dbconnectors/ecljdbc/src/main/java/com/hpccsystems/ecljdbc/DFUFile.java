@@ -386,7 +386,6 @@ public class DFUFile
 
 	public void setFileFields(String eclString)
 	{
-		//Ecl = "filerecstruct := RECORD ";
 		Ecl = "";
 		if (eclString != null && eclString.length()>0)
 		{
@@ -424,7 +423,6 @@ public class DFUFile
 							columnmeta.setTableName(this.FullyQualifiedName);
 
 							Ecl += type + " " + name + "; ";
-							//Fields.add(columnmeta);
 							Fields.put(name.toUpperCase(), columnmeta);
 						}
 						index++;
