@@ -300,6 +300,7 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = job.createBarrier(doneBarrierTag);
     initialized = false;
+    progressActive = progressToCollect = false;
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)
@@ -477,6 +478,11 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 
 void CSlaveGraph::start()
 {
+    {
+        SpinBlock b(progressActiveLock);
+        progressActive = true;
+        progressToCollect = true;
+    }
     bool forceAsync = !queryOwner() || isGlobal();
     Owned<IThorActivityIterator> iter = getSinkIterator();
     unsigned sinks = 0;
@@ -614,6 +620,11 @@ void CSlaveGraph::abort(IException *e)
 void CSlaveGraph::done()
 {
     GraphPrintLog("End of sub-graph");
+    {
+        SpinBlock b(progressActiveLock);
+        progressActive = false;
+        progressToCollect = true; // NB: ensure collected after end of graph
+    }
     if (!aborted && (!queryOwner() || isGlobal()))
         getDoneSem.wait(); // must wait on master
     if (!queryOwner())
@@ -652,41 +663,62 @@ void CSlaveGraph::end()
     }
 }
 
-void CSlaveGraph::serializeStats(MemoryBuffer &mb)
+bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
+    unsigned beginPos = mb.length();
     mb.append(queryGraphId());
     unsigned cPos = mb.length();
     unsigned count = 0;
     mb.append(count);
     CriticalBlock b(progressCrit);
-    // until started and activities initialized, activities are not ready to serliaze stats.
+    // until started and activities initialized, activities are not ready to serlialize stats.
     if ((started&&initialized) || 0 == activityCount())
     {
-        unsigned sPos = mb.length();
-        Owned<IThorActivityIterator> iter = getTraverseIterator();
-        ForEach (*iter)
+        bool collect=false;
         {
-            CGraphElementBase &element = iter->query();
-            CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
-            unsigned pos = mb.length();
-            mb.append(activity.queryContainer().queryId());
-            activity.serializeStats(mb);
-            if (pos == mb.length()-sizeof(activity_id))
-                mb.rewrite(pos);
-            else
-                ++count;
+            SpinBlock b(progressActiveLock);
+            if (progressActive || progressToCollect)
+            {
+                progressToCollect = false;
+                collect = true;
+            }
         }
-        mb.writeDirect(cPos, sizeof(count), &count);
-        mb.append(queryChildGraphCount());
+        if (collect)
+        {
+            unsigned sPos = mb.length();
+            Owned<IThorActivityIterator> iter = getTraverseIterator();
+            ForEach (*iter)
+            {
+                CGraphElementBase &element = iter->query();
+                CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
+                unsigned pos = mb.length();
+                mb.append(activity.queryContainer().queryId());
+                activity.serializeStats(mb);
+                if (pos == mb.length()-sizeof(activity_id))
+                    mb.rewrite(pos);
+                else
+                    ++count;
+            }
+            mb.writeDirect(cPos, sizeof(count), &count);
+        }
+        unsigned cqCountPos = mb.length();
+        unsigned cq=0;
+        mb.append(cq);
         Owned<IThorGraphIterator> childIter = getChildGraphs();
         ForEach(*childIter)
         {
             CSlaveGraph &graph = (CSlaveGraph &)childIter->query();
-            graph.serializeStats(mb);
+            if (graph.serializeStats(mb))
+                ++cq;
+        }
+        if (count || cq)
+        {
+            mb.writeDirect(cqCountPos, sizeof(cq), &cq);
+            return true;
         }
     }
-    else
-        mb.append((unsigned)0); // sub graph count
+    mb.rewrite(beginPos);
+    return false;
 }
 
 void CSlaveGraph::serializeDone(MemoryBuffer &mb)
