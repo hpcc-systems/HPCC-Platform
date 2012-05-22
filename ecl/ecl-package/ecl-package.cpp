@@ -546,7 +546,7 @@ public:
             }
             if (iter.matchOption(optProcess, ECLOPT_PROCESS))
                 continue;
-            if (iter.matchFlag(optDaliIp, ECLOPT_DALIIP))
+            if (iter.matchOption(optDaliIp, ECLOPT_DALIIP))
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE))
                 continue;
