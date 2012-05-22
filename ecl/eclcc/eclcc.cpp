@@ -168,7 +168,7 @@ class EclCC
 {
 public:
     EclCC(int _argc, const char **_argv)
-        : programName(argv[0])
+        : programName(_argv[0])
     {
         argc = _argc;
         argv = _argv;
