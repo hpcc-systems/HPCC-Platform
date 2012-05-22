@@ -383,7 +383,8 @@ bool CSlaveGraph::recvActivityInitData()
         CMessageBuffer actInitRtnData;
         actInitRtnData.append(false);
         CMessageBuffer msg;
-        if (!queryOwner() || isGlobal())
+
+        if (syncInitData())
         {
             if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving actinit data for graph: %"GIDPF"d", graphId);

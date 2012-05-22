@@ -2333,7 +2333,8 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
             throw;
         }
     }
-    if (!queryOwner() || isGlobal())
+
+    if (syncInitData())
         sendActivityInitData(); // has to be done at least once
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
