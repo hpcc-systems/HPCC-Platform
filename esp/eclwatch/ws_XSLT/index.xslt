@@ -892,7 +892,13 @@
                     <xsl:otherwise>/FileSpray/GetDFUWorkunit</xsl:otherwise>
                 </xsl:choose>
             </xsl:variable>
-            <a href="javascript:go('{$href-method}?Wuid={Wuid}')">
+            <xsl:variable name="href-wuidparam">
+                <xsl:choose>
+                    <xsl:when test="substring(Wuid,1,1) != 'D'">Wuid</xsl:when>
+                    <xsl:otherwise>wuid</xsl:otherwise>
+                </xsl:choose>
+            </xsl:variable>
+            <a href="javascript:go('{$href-method}?{$href-wuidparam}={Wuid}')">
                 <xsl:choose>
                     <xsl:when test="State='running'">
                         <b>
