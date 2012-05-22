@@ -33,7 +33,6 @@ public:
     }
     virtual void process()
     {
-        ActivityTimer t(totalCycles, timeActivities, NULL);
         startInput(inputs.item(0));
         stopInput(inputs.item(0));
     }

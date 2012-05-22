@@ -77,11 +77,28 @@ void ProcessSlaveActivity::startProcess(bool async)
 
 void ProcessSlaveActivity::main() 
 { 
+    try
+    {
 #ifdef TIME_ACTIVITIES
-    if (timeActivities)
-        lastCycles = get_cycles_now();
+        if (timeActivities)
+        {
+            {
+                SpinBlock b(cycleLock);
+                lastCycles = get_cycles_now(); // serializeStats will reset
+            }
+            process();
+            {
+                SpinBlock b(cycleLock);
+                totalCycles += get_cycles_now()-lastCycles;
+                lastCycles = 0; // signal not processing
+            }
+        }
+        else
+            process();
+#else
+        process();
 #endif
-    try { process(); }
+    }
     catch (IException *_e)
     {
         IThorException *e = QUERYINTERFACE(_e, IThorException);
@@ -145,16 +162,20 @@ bool ProcessSlaveActivity::wait(unsigned timeout)
 
 void ProcessSlaveActivity::serializeStats(MemoryBuffer &mb)
 {
-    CSlaveActivity::serializeStats(mb);
-    mb.append(processed);
 #ifdef TIME_ACTIVITIES
     if (timeActivities)
     {
-        unsigned __int64 nowCycles = get_cycles_now();
-        totalCycles += nowCycles-lastCycles;
-        lastCycles = nowCycles;
+        SpinBlock b(cycleLock);
+        if (lastCycles)
+        {
+            unsigned __int64 nowCycles = get_cycles_now();
+            totalCycles += nowCycles-lastCycles;
+            lastCycles = nowCycles; // time accounted for
+        }
     }
 #endif
+    CSlaveActivity::serializeStats(mb);
+    mb.append(processed);
 }
 
 void ProcessSlaveActivity::done()
