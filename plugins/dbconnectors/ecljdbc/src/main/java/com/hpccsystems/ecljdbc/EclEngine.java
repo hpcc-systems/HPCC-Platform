@@ -70,7 +70,17 @@ public class EclEngine
 	{
 		try
 		{
-			urlString = "http://" + props.getProperty("ServerAddress") + ":" + props.getProperty("WsECLDirectPort") + "/EclDirect/RunEcl?Submit&eclText=";
+			urlString = "http://" + props.getProperty("WsECLDirectAddress") + ":" + props.getProperty("WsECLDirectPort") + "/EclDirect/RunEcl?Submit";
+
+			if (props.containsKey("Cluster"))
+			{
+				urlString += "&cluster=";
+				urlString += props.getProperty("Cluster");
+			}
+			else
+				System.out.println("No cluster property found, executing query on EclDirect default cluster");
+
+			urlString += "&eclText=";
 			urlString +=  URLEncoder.encode(eclstring, "UTF-8");
 
 			System.out.println("WSECL:executeSelect: " + urlString);
@@ -122,19 +132,29 @@ public class EclEngine
 				parser.verifySelectColumns(dfufile);
 
 				expectedretcolumns = parser.getSelectColumns();
+
 				totalparamcount = parser.getWhereClauseExpressionsCount();
 
 				if (indexToUseName != null)
 				{
+					System.out.print("USING INDEX FILE: " + indexToUseName);
+
 					indexfiletouse = dbMetadata.getDFUFile(indexToUseName);
 					indexposfield = indexfiletouse.getIdxFilePosField();
 
 					isPayloadIndex = processIndex(indexfiletouse, keyedandwild);
 
+					if (isPayloadIndex)
+						System.out.println(" as PAYLOAD");
+					else
+						System.out.println(" NOT as PAYLOAD");
+
 					eclEnteties.put("KEYEDWILD", keyedandwild.toString());
 					if (isPayloadIndex)
 						eclEnteties.put("PAYLOADINDEX", "true");
 				}
+				else
+					System.out.println("NOT USING INDEX!");
 
 				eclEnteties.put("PARAMCOUNT", Integer.toString(totalparamcount));
 
@@ -144,6 +164,7 @@ public class EclEngine
 						eclcode.append(dfufile.getFileRecDefwithIndexpos(indexfiletouse.getFieldMetaData(indexposfield), "filerecstruct"));
 					else
 						eclcode.append(dfufile.getFileRecDef("filerecstruct"));
+					eclcode.append("\n");
 				}
 				else
 					throw new Exception("Target HPCC file ("+hpccfilename+") does not contain ECL record definition");
@@ -162,9 +183,8 @@ public class EclEngine
 				}
 
 				StringBuilder selectstruct = new StringBuilder(" selectstruct:=RECORD ");
-				String datasource = indexToUseName == null || isPayloadIndex ? "fileds" : "fetchedds";
+				String datasource = indexToUseName == null ? "fileds" : "idxds";
 
-				//boolean usescalar = expectedretcolumns.size() == 1;
 				for (int i = 0; i < expectedretcolumns.size(); i++)
 				{
 					EclColumnMetaData col = expectedretcolumns.get(i);
@@ -241,47 +261,28 @@ public class EclEngine
 								}
 							}
 							selectstruct.append(" );");
+						}
+						else if (col.getColumnName().equalsIgnoreCase("MIN"))
+						{
+							eclEnteties.put("MINFN", "TRUE");
+							selectstruct.append("minout :=  ");
 
-							/*
 							if (parser.hasGroupByColumns())
 							{
-								selectstruct.append(col.getColumnName().toUpperCase()).append("( GROUP");
-								List<EclColumnMetaData> funccols = col.getFunccols();
-
-								if (funccols.size() > 0)
-								{
-									String paramname = funccols.get(0).getColumnName();
-									eclEnteties.put("FNCOLS", paramname);
-									if (!paramname.equals("*") && funccols.get(0).getColumnType() != EclColumnMetaData.COLUMN_TYPE_CONSTANT)
-									{
-										selectstruct.append(", ");
-										selectstruct.append(datasource);
-										selectstruct.append(".");
-										selectstruct.append(paramname);
-									}
-								}
-								selectstruct.append(" );");
+								selectstruct.append("MIN( GROUP ");
 							}
 							else
 							{
-								selectstruct.append(" totalmax;");
-								//if (expectedretcolumns.size() == 1)
-								//	eclEnteties.put("SCALAROUTNAME", col.getColumnName());
+								selectstruct.append("MIN( ").append(datasource);
+								if (eclEnteties.size() > 0)
+									addFilterClause(selectstruct, eclEnteties);
 							}
-							*/
-							/*
-
-							selectstruct.append(col.getColumnName().toUpperCase()).append(" ( ");
-							if (parser.hasGroupByColumns())
-								selectstruct.append("GROUP");
-							else
-								selectstruct.append(datasource);
 
 							List<EclColumnMetaData> funccols = col.getFunccols();
-
 							if (funccols.size() > 0)
 							{
 								String paramname = funccols.get(0).getColumnName();
+								eclEnteties.put("FNCOLS", paramname);
 								if (!paramname.equals("*") && funccols.get(0).getColumnType() != EclColumnMetaData.COLUMN_TYPE_CONSTANT)
 								{
 									selectstruct.append(", ");
@@ -290,8 +291,9 @@ public class EclEngine
 									selectstruct.append(paramname);
 								}
 							}
-							selectstruct.append(" );");*/
+							selectstruct.append(" );");
 						}
+
 					}
 					else
 						selectstruct.append(col.getEclType()).append(" ").append(col.getColumnName()).append(" := ").append(datasource).append(".").append(col.getColumnName()).append("; ");
@@ -315,10 +317,8 @@ public class EclEngine
 			case SqlParser.SQL_TYPE_SELECTCONST:
 			{
 				System.out.println("Processing test_query...");
-				//ArrayList<EclColumnMetaData> columns = new ArrayList();
 				eclcode.append("selectstruct:=RECORD ");
 				expectedretcolumns = parser.getSelectColumns();
-				//defaultEclQueryReturnDatasetName = "ConstECLQueryResult";
 				StringBuilder ecloutput = new StringBuilder(" OUTPUT(DATASET([{ ");
 				for (int i = 1;  i <= expectedretcolumns.size(); i++)
 				{
@@ -329,7 +329,6 @@ public class EclEngine
 						ecloutput.append(", ");
 				}
 				ecloutput.append("}],selectstruct), NAMED(\'");
-				//ecloutput.append(defaultEclQueryReturnDatasetName);
 				ecloutput.append("ConstECLQueryResult");
 				ecloutput.append("\'));");
 
@@ -428,10 +427,18 @@ public class EclEngine
 		int responseCode = -1;
 		try
 		{
-			urlString = "http://" + props.getProperty("ServerAddress") + ":" + props.getProperty("WsECLDirectPort") + "/EclDirect/RunEcl?Submit"; 			//&eclText=
+			urlString = "http://" + props.getProperty("WsECLDirectAddress") + ":" + props.getProperty("WsECLDirectPort") + "/EclDirect/RunEcl?Submit";
 
-			StringBuilder sb = new StringBuilder("&eclText=");
+			StringBuilder sb = new StringBuilder();
+
+			if (props.containsKey("Cluster"))
+				sb.append("&cluster=").append(props.getProperty("Cluster"));
+			else
+				System.out.println("No cluster property found, executing query on EclDirect default cluster");
+
+			sb.append("&eclText=");
 			sb.append(eclcode);
+			sb.append("\n");
 
 			if (indexfile == null) //no indexfile read...
 			{
@@ -448,6 +455,16 @@ public class EclEngine
 					if (parameters.containsKey("MAXFN"))
 					{
 						sb.append("scalarout := MAX(fileds");
+						if (parameters.size() > 0)
+							addFilterClause(sb, parameters);
+
+						sb.append(" , fileds.");
+						sb.append(parameters.get("FNCOLS"));
+						sb.append(");");
+					}
+					else if (parameters.containsKey("MINFN"))
+					{
+						sb.append("scalarout := MIN(fileds");
 						if (parameters.size() > 0)
 							addFilterClause(sb, parameters);
 
@@ -495,46 +512,36 @@ public class EclEngine
 			}
 			else // use index
 			{
-				sb.append("IDX := INDEX(fileds, {")
+				sb.append("idx := INDEX(fileds, {")
 				.append(indexfile.getKeyedFieldsAsDelmitedString(',', null))
 				.append("}");
 
 				if(indexfile.getNonKeyedColumnsCount()>0)
 					sb.append(",{ ").append(indexfile.getNonKeyedFieldsAsDelmitedString(',', null)).append(" }");
 
-				sb.append(",\'~").append(indexfile.getFullyQualifiedName()).append("\');");
+				sb.append(",\'~").append(indexfile.getFullyQualifiedName()).append("\');\n");
 
 				if( parameters.containsKey("PAYLOADINDEX"))
 				{
-					sb.append(" OUTPUT(CHOOSEN(");
-					if (parameters.containsKey("ORDERBY"))
-						sb.append("SORT( ");
-
-					sb.append("IDX(")
+					sb.append("idxds := idx(")
 					.append(parameters.get("KEYEDWILD"))
-					.append(")");
-					if (parameters.containsKey("ORDERBY"))
-					{
-						sb.append(",");
-						sb.append(parameters.get("ORDERBY"));
-						sb.append(")");
-					}
-				}
-				else
-				{
-					sb.append("fetchedds := FETCH(fileds, IDX( ");
-
-					sb.append(parameters.get("KEYEDWILD"));
-					sb.append("), RIGHT.");
-					sb.append(indexfile.getIdxFilePosField()).append(");");
-
+					.append(");\n");
 
 					if (!parameters.containsKey("GROUPBY"))
 					{
 						if (parameters.containsKey("COUNTFN"))
-							sb.append("scalarout := COUNT(fetchedds);");
+							sb.append("scalarout := COUNT(idxds");
 						if (parameters.containsKey("MAXFN"))
-							sb.append("scalarout := MAX(fetchedds, fileds.zip);");
+						{
+							sb.append("scalarout := MAX(idxds, fileds.");
+							sb.append(parameters.get("FNCOLS"));
+						}
+						if (parameters.containsKey("MINFN"))
+						{
+							sb.append("scalarout := MIN(idxds, fileds.");
+							sb.append(parameters.get("FNCOLS"));
+						}
+						sb.append(", KEYED);\n");
 					}
 
 					if (parameters.containsKey("SCALAROUTNAME"))
@@ -545,39 +552,94 @@ public class EclEngine
 					}
 					else
 					{
+						sb.append(parameters.get("SELECTSTRUCT"));
 
-					sb.append(parameters.get("SELECTSTRUCT"));
+						sb.append(" idxdstable := TABLE(idxds, selectstruct ");
 
-					sb.append(" IDXTABLE := TABLE(fetchedds , selectstruct ");
+						if (parameters.containsKey("GROUPBY"))
+						{
+							sb.append(", ");
+							sb.append(parameters.get("GROUPBY"));
+						}
+						sb.append(");\n");
 
-					if (parameters.containsKey("GROUPBY"))
-					{
-						sb.append(", ");
-						sb.append(parameters.get("GROUPBY"));
-					}
-
-					sb.append("); ");
-
-					sb.append(" OUTPUT(CHOOSEN(");
-					sb.append(" IDXTABLE ");
-					}
-
-					/*{
-						sb.append(" OUTPUT(CHOOSEN(");
-						if (parameters.containsKey("ORDERBY"))
-							sb.append("SORT( ");
-
-						sb.append("fetchedds");
-						if (parameters.size() > 0)
-							addFilterClause(sb, parameters);
 
 						if (parameters.containsKey("ORDERBY"))
 						{
-							sb.append(",");
+							sb.append("sortedidxtable := SORT( idxdstable, ");
 							sb.append(parameters.get("ORDERBY"));
-							sb.append(")");
+							sb.append(");\n");
+							sb.append("resultset := sortedidxtable;\n");
 						}
-					}*/
+						else
+							sb.append("resultset := idxdstable;\n");
+
+
+						sb.append(" OUTPUT(CHOOSEN(");
+						sb.append(" resultset ");
+					}
+				}
+				else
+				{
+					sb.append("idxds := FETCH(fileds, idx( ");
+
+					sb.append(parameters.get("KEYEDWILD"));
+					sb.append("), RIGHT.");
+					sb.append(indexfile.getIdxFilePosField()).append(");\n");
+
+					if (!parameters.containsKey("GROUPBY"))
+					{
+						if (parameters.containsKey("COUNTFN"))
+							sb.append("scalarout := COUNT(idxds);");
+						if (parameters.containsKey("MAXFN"))
+						{
+							sb.append("scalarout := MAX(idxds, fileds.");
+							sb.append(parameters.get("FNCOLS"));
+							sb.append(");");
+						}
+						if (parameters.containsKey("MINFN"))
+						{
+							sb.append("scalarout := MIN(idxds, fileds.");
+							sb.append(parameters.get("FNCOLS"));
+							sb.append(");");
+						}
+						sb.append("\n");
+					}
+
+					if (parameters.containsKey("SCALAROUTNAME"))
+					{
+						sb.append("OUTPUT(scalarout ,NAMED(\'");
+						sb.append(parameters.get("SCALAROUTNAME"));
+						sb.append("\'));");
+					}
+					else
+					{
+						sb.append(parameters.get("SELECTSTRUCT"));
+
+						sb.append(" idxtable := TABLE(idxds , selectstruct ");
+
+						if (parameters.containsKey("GROUPBY"))
+						{
+							sb.append(", ");
+							sb.append(parameters.get("GROUPBY"));
+						}
+
+						sb.append(");\n ");
+
+						if (parameters.containsKey("ORDERBY"))
+						{
+							sb.append("sortedidxtable := SORT( idxtable, ");
+							sb.append(parameters.get("ORDERBY"));
+							sb.append(");\n");
+
+							sb.append("resultset := sortedidxtable;\n");
+						}
+						else
+							sb.append("resultset := idxtable;");
+
+						sb.append(" OUTPUT(CHOOSEN(");
+						sb.append(" resultset ");
+					}
 				}
 			}
 
@@ -638,7 +700,7 @@ public class EclEngine
 	{
 		try
 		{
-			urlString = "http://" + props.getProperty("ServerAddress") + ":" + props.getProperty("WsECLPort") + "/WsEcl/submit/query/" + props.getProperty("Cluster") + "/" + eclqueryname + "/expanded";
+			urlString = "http://" + props.getProperty("WsECLAddress") + ":" + props.getProperty("WsECLPort") + "/WsEcl/submit/query/" + props.getProperty("Cluster") + "/" + eclqueryname + "/expanded";
 			System.out.println("WSECL:executeCall: " + urlString);
 
 			// Construct data
@@ -903,7 +965,8 @@ public class EclEngine
 		info.put("WsECLWatchPort", "8010");
 		info.put("WsECLPort", "8002");
 		info.put("username", "_rpastrana");
-		info.put("password", "ch@ng3m3");
+		info.put("password", "a");
+
 
 		EclEngine wsEcl = new EclEngine("fetchpeoplebyzipservice.2","" ,info);
 		// http://192.168.56.102:8002/

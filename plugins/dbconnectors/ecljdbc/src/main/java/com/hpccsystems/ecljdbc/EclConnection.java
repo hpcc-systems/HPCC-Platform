@@ -28,53 +28,65 @@ public class EclConnection implements Connection {
     private EclDatabaseMetaData metadata;
     private Properties props;
     private String serverAddress;
-    private String cluster;
+    //private String cluster;
     private Properties clientInfo;
 
     public EclConnection(Properties props)
     {
-       closed = false;
+		closed = false;
 
-       this.serverAddress = props.getProperty("ServerAddress","localhost");
-       this.cluster = props.getProperty("Cluster","myroxie");
-       this.props = props;
+		this.serverAddress = "localhost";
 
-       if (!this.props.containsKey("WsECLWatchPort"))
-    	   this.props.setProperty("WsECLWatchPort", "8010");
+		if (props.containsKey("ServerAddress"))
+			this.serverAddress = props.getProperty("ServerAddress");
+		else
+			props.setProperty("ServerAddress", this.serverAddress);
 
-       if (!this.props.containsKey("WsECLPort"))
-    	   this.props.setProperty("WsECLPort", "8002");
+		this.props = props;
 
-       //TODO soon wsecldirect will be part of wseclwatch
-       //I will continue to support this property but, by
-       //default we should use the wseclwatch port
-       if (!this.props.containsKey("WsECLDirectPort"))
-    	   this.props.setProperty("WsECLDirectPort", "8008");
+		if (!this.props.containsKey("Cluster"))
+			this.props.setProperty("Cluster", "hthor");
 
-       if (!this.props.containsKey("username"))
-    	   this.props.setProperty("username", "");
+		if (!this.props.containsKey("WsECLWatchAddress"))
+			this.props.setProperty("WsECLWatchAddress", serverAddress);
 
-       if (!this.props.containsKey("password"))
-    	   this.props.setProperty("password", "");
+		if (!this.props.containsKey("WsECLWatchPort"))
+			this.props.setProperty("WsECLWatchPort", "8010");
 
-       if (!this.props.containsKey("EclLimit"))
-    	   this.props.setProperty("EclLimit", "100");
+		if (!this.props.containsKey("WsECLAddress"))
+			this.props.setProperty("WsECLAddress", serverAddress);
 
-       //basicAuth
-       String userPassword = this.props.getProperty("username") + ":" + props.getProperty("password");
-       //String basicAuth = "Basic " + new String(new Base64().encode(userPassword.getBytes()));
+		if (!this.props.containsKey("WsECLPort"))
+			this.props.setProperty("WsECLPort", "8002");
+
+		if (!this.props.containsKey("WsECLDirectAddress"))
+			this.props.setProperty("WsECLDirectAddress", serverAddress);
+
+		if (!this.props.containsKey("WsECLDirectPort"))
+			this.props.setProperty("WsECLDirectPort", "8008");
+
+		if (!this.props.containsKey("username"))
+			this.props.setProperty("username", "");
+
+		if (!this.props.containsKey("password"))
+			this.props.setProperty("password", "");
+
+		if (!this.props.containsKey("EclLimit"))
+			this.props.setProperty("EclLimit", "100");
+
+		// basicAuth
+		String userPassword = this.props.getProperty("username") + ":"
+				+ props.getProperty("password");
 
        String basicAuth = "Basic " + Utils.Base64Encode(userPassword.getBytes(), false);
 
-       //System.out.println(Utils.Base64Decode(Utils.Base64Encode(userPassword.getBytes(), false).getBytes()));
        this.props.put("BasicAuth", basicAuth);
        metadata = new EclDatabaseMetaData(props);
 
        //TODO not doing anything w/ this yet, just exposing it to comply w/ API definition...
        clientInfo = new Properties();
 
-       System.out.println("EclConnection initialized - server: " + this.serverAddress + " cluster: " + this.cluster);
-
+       System.out.println("EclConnection initialized - server: " + this.serverAddress);
     }
 
     public Properties getProperties()
@@ -85,13 +97,6 @@ public class EclConnection implements Connection {
     public String getProperty(String propname)
     {
     	return props.getProperty(propname, "");
-    }
-    public String getCluster() {
-        return cluster;
-    }
-
-    public void setCluster(String cluster) {
-        this.cluster = cluster;
     }
 
     public String getServerAddress() {
@@ -112,13 +117,11 @@ public class EclConnection implements Connection {
 
 
     public Statement createStatement() throws SQLException {
-    	System.out.println("##Statement EclConnection::createStatement()##");
         return new EclPreparedStatement(this, null);
     }
 
 
     public PreparedStatement prepareStatement(String query) throws SQLException {
-    	System.out.println("##PreparedStatement EclConnection::createStatement("+ query +")##");
         return new EclPreparedStatement(this, query);
     }
 

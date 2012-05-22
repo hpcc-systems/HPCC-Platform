@@ -26,13 +26,9 @@ public class SqlParser {
 
 	private String tableName;
 	private String tableAlias;
-	//private String whereStatement;
 	private int sqlType;
-	//private String[] selectColumns;
 	private List<EclColumnMetaData> selectColumns;
 	private String[] columnValues;
-	//private String[] columnWhereNames;
-	//private String[] columnWhereValues;
 	private SqlWhereClause whereclause;
 	private String[] columnGroupByNames;
 	private String[] columnOrderByNames;
@@ -58,14 +54,10 @@ public class SqlParser {
 		limit = -1;
 		tableName = null;
 		tableAlias = null;
-		//selectColumns = new String[0];
 		selectColumns = new ArrayList<EclColumnMetaData>();
 		columnValues = new String[0];
-		//columnWhereNames = new String[0];
-		//columnWhereValues = new String[0];
 		whereclause = new SqlWhereClause();
 		procInParamValues = new String[0];
-		//whereStatement = null;
 		storedProcName = null;
 		sqlType = SQL_TYPE_UNKNOWN;
 		sql = sql.trim();
@@ -218,21 +210,6 @@ public class SqlParser {
 				{
 					groupByToken = upperSql.substring(groupPos + 10, orderPos);
 					orderByToken = upperSql.substring(orderPos + 10);
-
-					/*int dirPos = orderByColumn.lastIndexOf("ASC");
-					if (dirPos == -1)
-						dirPos = orderByColumn.lastIndexOf("DESC");
-
-					//not else if from above if!!
-					if (dirPos != -1)
-					{
-						orderByAscending = Boolean.toString(orderByColumn.contains("ASC"));
-						orderByColumn = orderByColumn.substring(0,dirPos).trim();
-					}
-					else
-						orderByAscending = "true";
-						*/
-
 				}
 
 				upperSql = upperSql.substring(0, groupPos);
@@ -250,20 +227,6 @@ public class SqlParser {
 					groupByToken = upperSql.substring(groupPos + 10);
 
 				}
-
-				/*int dirPos = orderByColumn.lastIndexOf("ASC");
-				if (dirPos == -1)
-					dirPos = orderByColumn.lastIndexOf("DESC");
-
-				//not else if from above if!!
-				if (dirPos != -1)
-				{
-					orderByAscending = Boolean.toString(orderByColumn.contains("ASC"));
-					orderByColumn = orderByColumn.substring(0, dirPos).trim();
-				}
-				else
-					orderByAscending = "true";
-				*/
 				upperSql = upperSql.substring(0, orderPos);
 			}
 
@@ -338,8 +301,12 @@ public class SqlParser {
 					List<EclColumnMetaData> funccols = new ArrayList<EclColumnMetaData>();
 
 					String funcname = col.substring(0,col.indexOf('('));
-					//if (funcname.equalsIgnoreCase("count"))
-					//	hasCount = true;
+					EclFunction func= EclFunctions.getEclFunction(funcname.toUpperCase());
+
+					if (func == null)
+						throw new Exception("ECL Function " + funcname + "is not currently supported");
+
+					boolean a = func.acceptsWilCard();
 
 					col = col.substring(col.indexOf('(')+1).trim();
 
@@ -347,7 +314,9 @@ public class SqlParser {
 					{
 						col = col.substring(0, col.indexOf(")")).trim();
 						if (col.length()>0)
+						{
 							funccols.add(new EclColumnMetaData(col,funcparampos++,java.sql.Types.OTHER));
+						}
 					}
 					else
 					{
@@ -364,8 +333,11 @@ public class SqlParser {
 							funccols.add(new EclColumnMetaData(col,funcparampos++,java.sql.Types.OTHER));
 						}
 					}
-					colmetadata = new EclColumnMetaData(funcname, sqlcolpos++, funccols);
 
+					if (EclFunctions.verifyEclFunction(funcname, funccols))
+						colmetadata = new EclColumnMetaData(funcname, sqlcolpos++, funccols);
+					else
+						throw new Exception("Funtion " + funcname + " does not map to ECL as written");
 				}
 
 				if(col.contains("."))
@@ -453,271 +425,8 @@ public class SqlParser {
 				}
 
 				System.out.println(whereclause);
-
-//				while (tokenizerWhere.hasMoreTokens())
-//				{
-//					String strToken = tokenizerWhere.nextToken();
-//					if (strToken.toLowerCase().indexOf(" and ") != -1) {
-//						String temp = strToken;
-//						int andPos = 0;
-//						out: do {
-//							andPos = temp.toLowerCase().indexOf(" and ");
-//							String strTokenAdd;
-//							if (andPos != -1) {
-//								strTokenAdd = temp.substring(0, andPos).trim();
-//							} else {
-//								strTokenAdd = temp.trim();
-//							}
-//							int delimiter2 = strTokenAdd.indexOf("=");
-//							if (delimiter2 != -1) {
-//								String valueAdd = strTokenAdd.substring(
-//										delimiter2 + 1).trim();
-//								valueAdd = Utils.handleQuotedString(valueAdd);
-//								whereCols.add(strTokenAdd.substring(0,
-//										delimiter2).trim());
-//								valueAdd = Utils.replaceAll(valueAdd,
-//										COMMA_ESCAPE, ",");
-//								valueAdd = Utils.replaceAll(valueAdd,
-//										QUOTE_ESCAPE, "'");
-//								whereValues.add(valueAdd);
-//							} else {
-//								int delimiter3 = strTokenAdd.toLowerCase()
-//										.indexOf(" is ");
-//								whereCols.add(strTokenAdd.substring(0,
-//										delimiter3).trim());
-//								whereValues.add(null);
-//							}
-//							temp = temp.substring(andPos + 5);
-//							if (temp.toLowerCase().indexOf(" and ") == -1) {
-//								strTokenAdd = temp.trim();
-//								int delimiter4 = strTokenAdd.indexOf("=");
-//								if (delimiter4 != -1) {
-//									String valueAdd = strTokenAdd.substring(
-//											delimiter4 + 1).trim();
-//									valueAdd = Utils
-//											.handleQuotedString(valueAdd);
-//									whereCols.add(strTokenAdd.substring(0,
-//											delimiter4).trim());
-//									valueAdd = Utils.replaceAll(valueAdd,
-//											COMMA_ESCAPE, ",");
-//									valueAdd = Utils.replaceAll(valueAdd,
-//											QUOTE_ESCAPE, "'");
-//									whereValues.add(valueAdd);
-//								} else {
-//									int delimiter3 = strTokenAdd.toLowerCase()
-//											.indexOf(" is ");
-//									whereCols.add(strTokenAdd.substring(0,
-//											delimiter3).trim());
-//									whereValues.add(null);
-//								}
-//								break out;
-//							}
-//
-//						} while (true);
-//
-//					}
-//					else
-//					{
-//						int delimiter = strToken.indexOf("=");
-//						if (delimiter != -1) {
-//							String value = strToken.substring(delimiter + 1)
-//									.trim();
-//							value = Utils.handleQuotedString(value);
-//							whereCols.add(strToken.substring(0, delimiter)
-//									.trim());
-//							value = Utils.replaceAll(value, COMMA_ESCAPE, ",");
-//							value = Utils.replaceAll(value, QUOTE_ESCAPE, "'");
-//							whereValues.add(value);
-//						} else {
-//							int delimiter1 = strToken.toLowerCase().indexOf(
-//									" is ");
-//							whereCols.add(strToken.substring(0, delimiter1)
-//									.trim());
-//							whereValues.add(null);
-//						}
-//					}
-//				}
-//
-//				columnWhereNames = new String[whereCols.size()];
-//				columnWhereValues = new String[whereValues.size()];
-//				whereCols.copyInto(columnWhereNames);
-//				whereValues.copyInto(columnWhereValues);
-//
 			}
 		}
-		// INSERT
-		/*if (upperSql.startsWith("INSERT ")) {
-			if (upperSql.lastIndexOf(" VALUES") == -1) {
-				throw new Exception("Malformed SQL. Missing VALUES statement.");
-			}
-			sqlType = INSERT;
-			int intoPos = 0;
-			if (upperSql.indexOf(" INTO ") != -1) {
-				intoPos = upperSql.indexOf(" INTO ") + 6;
-			} else {
-				intoPos = upperSql.indexOf("INSERT ") + 7;
-			}
-			int bracketPos = upperSql.indexOf("(");
-			int lastBracketPos = upperSql.indexOf(")");
-			tableName = sql.substring(intoPos, bracketPos).trim();
-
-			Vector<String> cols = new Vector<String>();
-			StringTokenizer tokenizer = new StringTokenizer(upperSql.substring(
-					bracketPos + 1, lastBracketPos), ",");
-			while (tokenizer.hasMoreTokens()) {
-				cols.add(tokenizer.nextToken().trim());
-			}
-			selectColumns = new String[cols.size()];
-			cols.copyInto(selectColumns);
-
-			int valuesPos = upperSql.indexOf("VALUES");
-			String endStatement = sql.substring(valuesPos + 6).trim();
-			bracketPos = endStatement.indexOf("(");
-			lastBracketPos = endStatement.lastIndexOf(")");
-			Vector<String> values = new Vector<String>();
-			StringTokenizer tokenizer2 = new StringTokenizer(
-					endStatement.substring(bracketPos + 1, lastBracketPos), ",");
-			while (tokenizer2.hasMoreTokens()) {
-				String value = tokenizer2.nextToken().trim();
-				value = Utils.handleQuotedString(value);
-				value = Utils.replaceAll(value, COMMA_ESCAPE, ",");
-				value = Utils.replaceAll(value, QUOTE_ESCAPE, "'");
-				values.add(value);
-			}
-			columnValues = new String[values.size()];
-			values.copyInto(columnValues);
-		}
-
-		// UPDATE
-		if (upperSql.startsWith("UPDATE ")) {
-			if (upperSql.lastIndexOf(" SET ") == -1) {
-				throw new Exception("Malformed SQL. Missing SET statement.");
-			}
-			sqlType = UPDATE;
-			int updatePos = upperSql.indexOf("UPDATE");
-			int setPos = upperSql.indexOf(" SET ");
-			//int equalPos = upperSql.indexOf("=");
-			int wherePos = upperSql.indexOf(" WHERE ");
-			tableName = sql.substring(updatePos + 6, setPos).trim();
-
-			String setString = "";
-			if (wherePos != -1) {
-				setString = sql.substring(setPos + 5, wherePos);
-			} else {
-				setString = sql.substring(setPos + 5, sql.length());
-			}
-			StringTokenizer tokenizerSet = new StringTokenizer(setString, ",");
-			Vector<String> setNames = new Vector<String>();
-			Vector<String> setValues = new Vector<String>();
-
-			while (tokenizerSet.hasMoreTokens()) {
-				String strToken = tokenizerSet.nextToken();
-				int delimiter = strToken.indexOf("=");
-				setNames.add(strToken.substring(0, delimiter).trim());
-				String value = strToken.substring(delimiter + 1).trim();
-				value = Utils.handleQuotedString(value);
-				value = Utils.replaceAll(value, COMMA_ESCAPE, ",");
-				value = Utils.replaceAll(value, QUOTE_ESCAPE, "'");
-				setValues.add(value);
-			}
-
-			selectColumns = new String[setNames.size()];
-			columnValues = new String[setValues.size()];
-			setNames.copyInto(selectColumns);
-			setValues.copyInto(columnValues);
-			if (wherePos != -1) {
-				String strWhere = sql.substring(wherePos + 6).trim();
-				Vector<String> whereCols = new Vector<String>();
-				Vector<String> whereValues = new Vector<String>();
-				StringTokenizer tokenizerWhere = new StringTokenizer(strWhere,
-						",");
-
-				while (tokenizerWhere.hasMoreTokens()) {
-					String strToken = tokenizerWhere.nextToken();
-					if (strToken.toLowerCase().indexOf(" and ") != -1) {
-						String temp = strToken;
-						int andPos = 0;
-						out: do {
-							andPos = temp.toLowerCase().indexOf(" and ");
-							String strTokenAdd;
-							if (andPos != -1) {
-								strTokenAdd = temp.substring(0, andPos).trim();
-							} else {
-								strTokenAdd = temp.trim();
-							}
-							int delimiter2 = strTokenAdd.indexOf("=");
-							if (delimiter2 != -1) {
-								String valueAdd = strTokenAdd.substring(
-										delimiter2 + 1).trim();
-								valueAdd = Utils.handleQuotedString(valueAdd);
-								whereCols.add(strTokenAdd.substring(0,
-										delimiter2).trim());
-								valueAdd = Utils.replaceAll(valueAdd,
-										COMMA_ESCAPE, ",");
-								valueAdd = Utils.replaceAll(valueAdd,
-										QUOTE_ESCAPE, "'");
-								whereValues.add(valueAdd);
-							} else {
-								int delimiter3 = strTokenAdd.toLowerCase()
-										.indexOf(" is ");
-								whereCols.add(strTokenAdd.substring(0,
-										delimiter3).trim());
-								whereValues.add(null);
-							}
-							temp = temp.substring(andPos + 5);
-							if (temp.toLowerCase().indexOf(" and ") == -1) {
-								strTokenAdd = temp.trim();
-								int delimiter4 = strTokenAdd.indexOf("=");
-								if (delimiter4 != -1) {
-									String valueAdd = strTokenAdd.substring(
-											delimiter4 + 1).trim();
-									valueAdd = Utils
-											.handleQuotedString(valueAdd);
-									whereCols.add(strTokenAdd.substring(0,
-											delimiter4).trim());
-									valueAdd = Utils.replaceAll(valueAdd,
-											COMMA_ESCAPE, ",");
-									valueAdd = Utils.replaceAll(valueAdd,
-											QUOTE_ESCAPE, "'");
-									whereValues.add(valueAdd);
-								} else {
-									int delimiter3 = strTokenAdd.toLowerCase()
-											.indexOf(" is ");
-									whereCols.add(strTokenAdd.substring(0,
-											delimiter3).trim());
-									whereValues.add(null);
-								}
-								break out;
-							}
-
-						} while (true);
-
-					} else {
-						int delimiter = strToken.indexOf("=");
-						if (delimiter != -1) {
-							String value = strToken.substring(delimiter + 1)
-									.trim();
-							value = Utils.handleQuotedString(value);
-							whereCols.add(strToken.substring(0, delimiter)
-									.trim());
-							value = Utils.replaceAll(value, COMMA_ESCAPE, ",");
-							value = Utils.replaceAll(value, QUOTE_ESCAPE, "'");
-							whereValues.add(value);
-						} else {
-							int delimiter1 = strToken.toLowerCase().indexOf(
-									" is ");
-							whereCols.add(strToken.substring(0, delimiter1)
-									.trim());
-							whereValues.add(null);
-						}
-					}
-				}
-				columnWhereNames = new String[whereCols.size()];
-				columnWhereValues = new String[whereValues.size()];
-				whereCols.copyInto(columnWhereNames);
-				whereValues.copyInto(columnWhereValues);
-			}
-		}*/
 	}
 
 	private boolean parseConstantSelect(String sql) throws Exception
