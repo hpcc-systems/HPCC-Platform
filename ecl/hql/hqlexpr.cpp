@@ -1899,6 +1899,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         if (expr->isDataset())
             return childdataset_dataset_noscope;
         return childdataset_none;
+    case no_ensureresult:
+        return childdataset_dataset_noscope;
     case no_preservemeta:
         //Only has a single dataset - but fields are referenced via active selector, so use the many option
         return childdataset_many;
@@ -2131,6 +2133,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_normalizegroup:
     case no_owned_ds:
     case no_dataset_alias:
+    case no_ensureresult:
         return 1;
     case no_childdataset:
     case no_left:
