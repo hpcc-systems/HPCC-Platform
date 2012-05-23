@@ -1428,7 +1428,7 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
                     "</head>"
                     "<body>"
                         "<h3 style=\"text-align:centre;\">Advanced feature in the Enterprise Edition</h4>"
-                        "<p style=\"text-align:centre;\">This feature is only available with the Enterprise Edition. ");
+                        "<p style=\"text-align:centre;\">Support for this feature is coming soon. ");
             if (link.length() > 0)
                 page.append(link.str());
             page.append("</p></body>"

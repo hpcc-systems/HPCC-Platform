@@ -565,7 +565,7 @@ bool CWsPackageProcessEx::onCopyFiles(IEspContext &context, IEspCopyFilesRequest
     context.getServAddress(host, port);
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
-    copyPackageSubFiles(LINK(packageTree), process, lookupDaliIp, req.getOverWrite(), userdesc, host, port);
+    copyPackageSubFiles(LINK(packageTree), process, lookupDaliIp.get(), req.getOverWrite(), userdesc, host, port);
 
     StringBuffer msg;
     msg.append("Successfully loaded ").append(pkgName.get());

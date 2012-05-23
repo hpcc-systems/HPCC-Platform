@@ -37,6 +37,7 @@ protected:
     CThreadedPersistent threaded;
     rowcount_t processed;
     unsigned __int64 lastCycles;
+    SpinLock cycleLock;
 
     virtual void endProcess() = 0;
     virtual void process() { }
