@@ -391,10 +391,12 @@ protected:
     CFileUsageTable tmpFiles;
     CJobBase &job;
     mutable CriticalSection crit;
+    bool errorOnMissing;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CGraphTempHandler(CJobBase &_job) : job(_job) { }
+    CGraphTempHandler(CJobBase &_job, bool _errorOnMissing) : job(_job), errorOnMissing(_errorOnMissing) { }
     ~CGraphTempHandler()
     {
     }
@@ -849,7 +851,7 @@ public:
     const char *queryGraphName() const { return graphName; }
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
-    virtual IGraphTempHandler *createTempHandler() = 0;
+    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
     void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);

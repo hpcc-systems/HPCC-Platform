@@ -655,7 +655,7 @@ public:
 class CMasterGraphTempHandler : public CGraphTempHandler
 {
 public:
-    CMasterGraphTempHandler(CJobBase &job) : CGraphTempHandler(job) { }
+    CMasterGraphTempHandler(CJobBase &job, bool errorOnMissing) : CGraphTempHandler(job, errorOnMissing) { }
 
     virtual bool removeTemp(const char *name)
     {
@@ -1242,7 +1242,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
-    tmpHandler.setown(new CMasterGraphTempHandler(*this));
+    tmpHandler.setown(createTempHandler(true));
 }
 
 CJobMaster::~CJobMaster()
@@ -1710,9 +1710,9 @@ IBarrier *CJobMaster::createBarrier(mptag_t tag)
     return new CBarrierMaster(*jobComm, tag);
 }
 
-IGraphTempHandler *CJobMaster::createTempHandler()
+IGraphTempHandler *CJobMaster::createTempHandler(bool errorOnMissing)
 {
-    return new CMasterGraphTempHandler(*this);
+    return new CMasterGraphTempHandler(*this, errorOnMissing);
 }
 
 bool CJobMaster::fireException(IException *e)
@@ -2281,7 +2281,7 @@ void CMasterGraph::sendGraph()
     CMessageBuffer msg;
     msg.append(GraphInit);
     msg.append(job.queryKey());
-    node->serialize(msg); // everthing
+    node->serialize(msg); // everything
     if (TAG_NULL == executeReplyTag)
         executeReplyTag = queryJob().allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
