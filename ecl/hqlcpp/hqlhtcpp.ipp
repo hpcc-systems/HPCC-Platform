@@ -30,8 +30,8 @@
 class HQLCPP_API ThorBoundActivity : public ABoundActivity
 {
 public:
-    ThorBoundActivity(IHqlExpression * _dataset, IHqlExpression * _bound, unsigned _activityid, unsigned _graphId, ThorActivityKind _kind) 
-    : ABoundActivity(_dataset->queryBody(), _bound, _activityid, _graphId, _kind) {}
+    ThorBoundActivity(IHqlExpression * _dataset, IHqlExpression * _bound, unsigned _activityid, unsigned _containerid, unsigned _graphId, ThorActivityKind _kind)
+    : ABoundActivity(_dataset->queryBody(), _bound, _activityid, _containerid, _graphId, _kind) {}
 };
 
 //===========================================================================

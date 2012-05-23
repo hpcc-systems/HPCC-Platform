@@ -1831,7 +1831,6 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     argsName.set(s.clear().append("oAc").append(activityId).str());
 
     OwnedHqlExpr boundName = createVariable(instanceName, dataset->getType());
-    table = new ThorBoundActivity(dataset, boundName, activityId, translator.curSubGraphId(ctx), kind);
     isMember = false;
     instanceIsLocal = false;
     classStmt = NULL;
@@ -1891,8 +1890,15 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
         executedRemotely = isNonLocal(dataset);
 
+
+    unsigned containerId = 0;
     if (containerActivity)
+    {
         containerActivity->hasChildActivity = true;
+        containerId = containerActivity->activityId;
+    }
+
+    table = new ThorBoundActivity(dataset, boundName, activityId, containerId, translator.curSubGraphId(ctx), kind);
 }
 
 ActivityInstance::~ActivityInstance()
@@ -6735,10 +6741,19 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
             addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
     }
 
-    if (kind == dependencyAtom)
-        addGraphAttributeBool(edge, "_dependsOn", true);
-    else if (kind == childAtom)
+    if (kind == childAtom)
+    {
         addGraphAttributeBool(edge, "_childGraph", true);
+    }
+    else if (kind == dependencyAtom)
+    {
+        addGraphAttributeBool(edge, "_dependsOn", true);
+    }
+    else if (sourceActivity->queryContainerId() != sinkActivity->queryContainerId())
+    {
+        //mark as a dependendency if the source and target aren't at the same depth
+        addGraphAttributeBool(edge, "_dependsOn", true);
+    }
 
     if (whenId)
         addGraphAttributeInt(edge, "_when", whenId);
