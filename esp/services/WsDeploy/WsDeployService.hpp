@@ -28,6 +28,8 @@
 #include "jsocket.hpp"
 #include "XMLTags.h"
 #include "httpclient.hpp"
+#include "jqueue.tpp"
+#include "build-config.h"
 
 typedef enum EnvAction_
 {
@@ -41,13 +43,21 @@ typedef enum EnvAction_
 } EnvAction;
 
 #define CLOUD_SOAPCALL_TIMEOUT 10000
+#define CONFIG_MONITOR_CHECK_INTERVAL  1000
+#define CONFIG_MONITOR_TIMEOUT_PERIOD  6000
 
 class CCloudTask;
 class CCloudActionHandler;
 class CWsDeployEx;
 class CWsDeployExCE;
 
-class CWsDeployFileInfo : public CInterface, implements IInterface
+interface IConfigFileObserver : extends IObserver
+{
+public:
+  virtual const char* getConfigFilePath() = 0;
+};
+
+class CWsDeployFileInfo : public CInterface, implements IConfigFileObserver
 {
 private:
     //==========================================================================================
@@ -125,10 +135,165 @@ private:
         {
             m_constEnv.set(pConstEnv);
         }
+
     private:
         CThreaded* m_pWorkerThread;
         Linked<CWsDeployExCE> m_pService;
         Linked<IConstEnvironment> m_constEnv;
+    };
+  public:
+
+    class CConfigChangeNotification : implements INotification
+    {
+    public:
+
+      CConfigChangeNotification(IObservable *pSource) : m_pSource(pSource)
+      {
+      };
+
+      virtual ~CConfigChangeNotification()
+      {
+      };
+
+      virtual NotifyAction getAction(void)
+      {
+        return NotifyNone;
+      }
+
+      virtual IObservable* querySource(void)
+      {
+        return m_pSource;
+      }
+
+    private:
+      IObservable* m_pSource;
+      CConfigChangeNotification() {};
+    };
+
+    class CConfigFileMonitorThread
+      : public CInterface, implements IThreaded, implements IObservable
+    {
+    public:
+      CConfigFileMonitorThread(unsigned int uCheckInterval, unsigned int uTimeout)
+        : m_pWorkerThread(NULL), m_quitThread(false), m_uCheckInterval(uCheckInterval), m_uTimeout(uTimeout), m_configChangeNotification(this)
+      {
+      };
+
+      virtual ~CConfigFileMonitorThread()
+      {
+        m_quitThread = true;
+        m_pWorkerThread->join();
+        delete m_pWorkerThread;
+      };
+
+      IMPLEMENT_IINTERFACE;
+
+      virtual void notify(IDirectoryDifferenceIterator *diffIter)
+      {
+        if ( diffIter == NULL )
+        {
+          return;
+        }
+        else
+        {
+          CriticalBlock block(m_critsecObserverQueue);
+
+          for (unsigned int idxObservers = 0; idxObservers < m_qObservers.ordinality(); idxObservers++)
+          {
+            IConfigFileObserver *pConfigFileObserver = m_qObservers.query(idxObservers);
+
+            for (diffIter->first(); diffIter->isValid() == true; diffIter->next())
+            {
+              bool bDoNotify = true;
+
+              if ( (diffIter->getFlags() == IDDIunchanged) || (pConfigFileObserver != NULL && (strcmp( pConfigFileObserver->getConfigFilePath(), diffIter->query().queryFilename() ) != 0)) )
+              {
+                bDoNotify = false;
+              }
+
+              if (bDoNotify == true)
+              {
+                 m_qObservers.query(idxObservers)->onNotify(m_configChangeNotification);
+              }
+            }
+          }
+        }
+      }
+
+      virtual void addObserver( IConfigFileObserver &observer )
+      {
+         CriticalBlock block(m_critsecObserverQueue);
+
+        //allow observers to register only once
+        if (m_qObservers.find(&observer) == (unsigned)-1)
+        {
+          m_qObservers.enqueue(&observer);
+        }
+      }
+
+      virtual void removeObserver( IConfigFileObserver &observer )
+      {
+        CriticalBlock block(m_critsecObserverQueue);
+
+        m_qObservers.dequeue(&observer);
+      }
+
+      virtual void main()
+      {
+        Owned<IFile> configFiles = createIFile(CONFIG_SOURCE_DIR);
+
+        while ( m_quitThread == false )
+        {
+          Owned<IDirectoryDifferenceIterator> diffIter = configFiles->monitorDirectory(NULL, NULL, false, false, m_uCheckInterval, m_uTimeout);
+
+          if (diffIter.get() != NULL)
+          {
+            notify(diffIter.get());
+          }
+        }
+      };
+
+      void init()
+      {
+        if ( m_pWorkerThread == NULL)
+        {
+          m_pWorkerThread = new CThreaded("CConfigFileMonitorThread");
+          IThreaded* pIThreaded = this;
+          m_pWorkerThread->init(pIThreaded);
+        }
+      };
+
+      static CConfigFileMonitorThread* getInstance()
+      {
+        static Owned<CConfigFileMonitorThread> s_configFileMonitorSingleton;
+        static CSingletonLock slock;
+
+        if (slock.lock() == true)
+        {
+          if (s_configFileMonitorSingleton.get() == NULL)
+          {
+            s_configFileMonitorSingleton.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
+            s_configFileMonitorSingleton->init();
+          }
+        }
+
+        return s_configFileMonitorSingleton.get();
+      };
+
+    protected:
+      CThreaded* m_pWorkerThread;
+
+      bool m_quitThread;
+      unsigned int m_uTimeout;
+      unsigned int m_uCheckInterval;
+      QueueOf<IConfigFileObserver,false> m_qObservers;
+      CriticalSection m_critsecObserverQueue;
+      CConfigChangeNotification m_configChangeNotification;
+
+    private:
+      CConfigFileMonitorThread() : m_configChangeNotification(NULL) {};
+      CConfigFileMonitorThread(const CConfigFileMonitorThread& configFileThread) : m_configChangeNotification(NULL) {};
+      CConfigFileMonitorThread& operator=(CConfigFileMonitorThread const&) {};
     };
 
     class CClientAliveThread : public CInterface, implements IThreaded, implements IInterface
@@ -248,12 +413,41 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CWsDeployFileInfo(CWsDeployExCE* pService, const char* pEnvFile, bool bCloud):m_pService(pService),m_bCloud(bCloud)
+    CWsDeployFileInfo(CWsDeployExCE* pService, const char* pEnvFile, bool bCloud) : m_configChanged(false), m_pService(pService),m_bCloud(bCloud)
     {
         m_envFile.clear().append(pEnvFile);
     }
     ~CWsDeployFileInfo();
-     void initFileInfo(bool createFile);
+    void initFileInfo(bool createFile);
+    void setConfigChanged(bool b)
+    {
+      m_configChanged = b;
+    };
+    bool getConfigChanged() const
+    {
+      return m_configChanged;
+    };
+    bool getSkipNotification() const
+    {
+      return m_bSkipNotification;
+    }
+    void setSkipNotification(bool b)
+    {
+      m_bSkipNotification = b;
+    }
+    virtual bool onNotify(INotification &notify)
+    {
+      if (notify.getAction() == NotifyNone && getSkipNotification() == false)
+      {
+        setConfigChanged(true);
+      }
+      setSkipNotification(false);
+    };
+    virtual const char* getConfigFilePath()
+    {
+       return m_pFile->queryFilename();
+    };
+    virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool graph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
@@ -347,8 +541,11 @@ private:
     StringBuffer              m_cloudEnvId;
     short                     m_daliServerPort;
     Owned<CGenerateJSFactoryThread> m_pGenJSFactoryThread;
+private:
     bool                      m_skipEnvUpdateFromNotification;
     bool                      m_activeUserNotResp;
+    bool                      m_configChanged;
+    bool                      m_bSkipNotification;
     bool                      m_bCloud;
     Owned<IFile>              m_pFile;
     Owned<IFileIO>            m_pFileIO;
