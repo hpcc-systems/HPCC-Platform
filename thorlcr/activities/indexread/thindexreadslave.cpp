@@ -26,7 +26,6 @@
 
 #include "thorstep.ipp"
 
-#include "thcrc.hpp"
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
 #include "thactivityutil.ipp"

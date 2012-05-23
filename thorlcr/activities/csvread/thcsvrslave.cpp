@@ -27,7 +27,6 @@
 #include "thormisc.hpp"
 #include "thmfilemanager.hpp"
 #include "thorport.hpp"
-#include "thcrc.hpp"
 #include "thexception.hpp"
 #include "thsortu.hpp"
 #include "thbufdef.hpp"

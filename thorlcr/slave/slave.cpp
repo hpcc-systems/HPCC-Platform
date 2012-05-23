@@ -25,7 +25,6 @@
 #include "thorport.hpp"
 #include "thormisc.hpp"
 #include "thactivityutil.ipp"
-#include "thcrc.hpp"
 #include "thexception.hpp"
 #ifndef _WIN32
 #include <stdexcept>

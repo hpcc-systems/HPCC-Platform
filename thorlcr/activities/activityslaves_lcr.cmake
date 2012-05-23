@@ -91,7 +91,6 @@ include_directories (
          ./../thorutil 
          ./../../system/jhtree 
          ./../../system/mp 
-         ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
          ./../graph 

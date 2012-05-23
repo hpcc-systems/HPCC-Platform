@@ -34,7 +34,6 @@ include_directories (
          ./../../common/remote 
          ./../../system/mp 
          ./../master 
-         ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
          ./../graph 

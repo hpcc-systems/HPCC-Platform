@@ -50,7 +50,6 @@ include_directories (
          ./../../common/commonext 
          ./../thorutil 
          ./../../common/thorhelper 
-         ./../thorcrc 
          ./../../common/dllserver 
          ./../../roxie/roxiemem
          ${CMAKE_CURRENT_BINARY_DIR}
