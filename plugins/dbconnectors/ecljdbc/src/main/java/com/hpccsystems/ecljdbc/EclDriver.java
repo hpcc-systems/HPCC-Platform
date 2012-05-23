@@ -33,9 +33,6 @@ public class EclDriver implements Driver
 
 	public Connection connect(String url, Properties info) throws SQLException
 	{
-		String serverAddress = info.getProperty("ServerAddress");
-		String cluster = info.getProperty("Cluster");
-
 		try
 		{
 			StringTokenizer urltokens = new StringTokenizer(url,";");
@@ -51,6 +48,8 @@ public class EclDriver implements Driver
 						String value = keyvalues.nextToken();
 						if (!info.containsKey(key))
 							info.put(key, value);
+						else
+							System.out.println("Connection property: " + key + " found in info properties and URL, ignoring URL value");
 					}
 				}
 			}
@@ -60,8 +59,9 @@ public class EclDriver implements Driver
 			System.out.println("Issue parsing URL! \"" + url +"\"" );
 		}
 
-
-		System.out.println("EclDriver::connect" + serverAddress + ":" + cluster);
+		String serverAddress = info.getProperty("ServerAddress");
+		System.out.println("EclDriver::connect" + serverAddress);
+		
 		return new EclConnection(info);
 	}
 
@@ -105,65 +105,63 @@ public class EclDriver implements Driver
 			//info.put("ServerAddress", "10.239.219.10"); //fishbeck
 			//info.put("ServerAddress", "172.25.237.145"); //arjuna
 
-			info.put("Cluster", "thor"); //analagous to DB server instance
-			info.put("DefaultQuery", "fetchpeoplebyzipservice"); //analagous to default DB name
+			info.put("Cluster", "thor");
 			info.put("WsECLWatchPort", "8010");
-			//info.put("EclLimit", "100");
+			info.put("EclLimit", "10");
 			info.put("WsECLPort", "8002");
 			info.put("WsECLDirectPort", "8008");
 			info.put("username", "_rpastrana");
-			info.put("password", "ch@ng3m3");
+			info.put("password", "a");
 
 			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=192.168.124.128;Cluster=myroxie",info);
 			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.20.80;Cluster=thor;EclLimit=8",info);
-			conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.219.10;Cluster=thor;EclLimit=8",info);
+			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.219.10;Cluster=thor;EclLimit=8",info);
+			conn = (EclConnection) d.connect("url:jdbc:ecl;",info);
 
+			PreparedStatement p = conn.prepareStatement(
+			//"select  * from thor::full_test_distributed_index where lname = BRYANT , fname = whoknows group by zips order by birth_month DESC"
+			//"select  * from thor::full_test_distributed_index where lname = BRYANT AND fname = SILVA "
 
-			//PreparedStatement p = conn.prepareStatement("SELECT 2");
-			//PreparedStatement p = conn.prepareStatement("select  * from thor::full_test_distributed_index where lname = BRYANT , fname = whoknows group by zips order by birth_month DESC");
-			//PreparedStatement p = conn.prepareStatement("select  * from thor::full_test_distributed_index where lname = BRYANT AND fname = SILVA ");
+			//"select  x, 'firstname', 1  from tutorial::rp::tutorialperson where  firstname >= ? and firstname >= ? limit 1000"
+			//"select  count(*) from tutorial::rp::tutorialperson where  firstname = 'A' or firstname = 'Z' limit 1000"
+			//"select  firstname from tutorial::rp::tutorialperson where  middlename =' ' "
+			//"select  * from tutorial::rp::tutorialperson where zip = ? and  middlename>='W'    city='DELRAY BEACH' limit 1000" );
+			//"select * from tutorial::rp::tutorialperson where firstname = 'MARICHELLE'  order by lastname ASC, firstname DESC limit 1000"
+			//"select count(*) from tutorial::rp::tutorialperson"
+			//"select tutorial::rp::peoplebyzipindex.zip from \n tutorial::rp::peoplebyzipindex order by zip"
+			//"select zip, count( * ) from tutorial::rp::tutorialperson  group by zip"
+			//"select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000"
+			//"select city from tutorial::rp::tutorialperson USE INDEX(tutorial::rp::peoplebyzipindex2) where zip = ? "
+			//"select count(*) from tutorial::rp::tutorialperson USE INDEX(0) where zip > ?"
+			//"select count(city)  from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
+			//"select * from enron::final where tos = 'randy.young@enron.com' limit 1000"
+			//"select count(*), zip from tutorial::rp::tutorialperson where zip = '33445' "
+			"select * from tutorial::rp::tutorialperson where zip > '32605'"
+			//"select MAX(firstname), lastname from tutorial::rp::tutorialperson  limit 1000"
+			//"select 1"
+			//"select zip, city from tutorial::rp::tutorialperson where city = 'ABBEVILLE' "
+			//"select 1 "
 
-			//PreparedStatement p = conn.prepareStatement("select  x, 'firstname', 1  from tutorial::rp::tutorialperson where  firstname >= ? and firstname >= ? limit 1000");
-			//PreparedStatement p = conn.prepareStatement("select  count(*) from tutorial::rp::tutorialperson where  firstname = 'A' or firstname = 'Z' limit 1000");
-			//PreparedStatement p = conn.prepareStatement("select  firstname from tutorial::rp::tutorialperson where  middlename =' ' ");
-			//PreparedStatement p = conn.prepareStatement("select  * from tutorial::rp::tutorialperson where zip = ? and  middlename>='W'    city='DELRAY BEACH' limit 1000" );
-			//PreparedStatement p = conn.prepareStatement("select * from tutorial::rp::tutorialperson where firstname = 'MARICHELLE'  order by lastname ASC, firstname DESC limit 1000");
-			//PreparedStatement p = conn.prepareStatement("select count(*) from tutorial::rp::tutorialperson");
-			//PreparedStatement p = conn.prepareStatement("select tutorial::rp::peoplebyzipindex.zip from \n tutorial::rp::peoplebyzipindex order by zip");
-			//PreparedStatement p = conn.prepareStatement("select zip, count( * ) from tutorial::rp::tutorialperson  group by zip");
-			//PreparedStatement p = conn.prepareStatement("select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000");
-			//PreparedStatement p = conn.prepareStatement("select city from tutorial::rp::tutorialperson USE INDEX(tutorial::rp::peoplebyzipindex2) where zip = ? ");
-			//PreparedStatement p = conn.prepareStatement("select count(*) from tutorial::rp::tutorialperson USE INDEX(0) where zip > ?");
-			//PreparedStatement p = conn.prepareStatement("select count(city)  from tutorial::rp::tutorialperson where zip = '33445'");//where zip = '33445'");
-			//PreparedStatement p = conn.prepareStatement("select * from enron::final where tos = 'randy.young@enron.com' limit 1000");
-			PreparedStatement p = conn.prepareStatement("select count(*), zip from tutorial::rp::tutorialperson ");
+			//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
+			//"select tbl.* from progguide::exampledata::peopleaccts tbl"
+			//"select firstname, lastname, middlename, city, street, state, zip from tutorial::rp::tutorialperson where firstname = VIMA LIMIT 1000"
+			//"select tbl.* from progguide::exampledata::people tbl"
 
+			//"select * from certification::full_test_distributed limit 100"
+			//"select * from certification::full_test_distributed where birth_state = FL LIMIT 1000"
+			//"select * from customer::customer"
+			//"select count(*) from tutorial::rp::tutorialperson"
+			//"select * from tutorial::rp::tutorialperson"
 
-			//PreparedStatement p = conn.prepareStatement("select tbl.* from progguide::exampledata::peopleaccts tbl");
-			//PreparedStatement p = conn.prepareStatement("select firstname, lastname, middlename, city, street, state, zip from tutorial::rp::tutorialperson where firstname = VIMA LIMIT 1000");
-		//PreparedStatement p = conn.prepareStatement("select tbl.* from progguide::exampledata::people tbl");
+			//"select tbl.* from .::xdbcsample tbl"
+			//"select tbl.* from fetchpeoplebyzipservice tbl where zipvalue=33445  order by fname DESC group by zip limit 10"
+			//"select tbl.* from fetchpeoplebyzipservice tbl where zipvalue=33445 group by zip, fname order by fname DESC, lname, zip ASC limit 10"
+			//"call fetchpeoplebyzipservice(?)"
+			//"select tbl.* from bestdemo tbl "
+			//"select * fname from fetchpeoplebyzipservice"
 
-			//PreparedStatement p = conn.prepareStatement("select * from certification::full_test_distributed limit 100");
-			//PreparedStatement p = conn.prepareStatement("select * from certification::full_test_distributed where birth_state = FL LIMIT 1000");
-			//PreparedStatement p = conn.prepareStatement("select * from customer::customer");
-			//PreparedStatement p = conn.prepareStatement("select count(*) from tutorial::rp::tutorialperson");
-			//PreparedStatement p = conn.prepareStatement("select * from tutorial::rp::tutorialperson");
-
-
-			//PreparedStatement p = conn.prepareStatement("select tbl.* from .::xdbcsample tbl");
-
-			//PreparedStatement p = conn.prepareStatement("select tbl.* from fetchpeoplebyzipservice tbl where zipvalue=33445  order by fname DESC group by zip limit 10");
-			//PreparedStatement p = conn.prepareStatement("select tbl.* from fetchpeoplebyzipservice tbl where zipvalue=33445 group by zip, fname order by fname DESC, lname, zip ASC limit 10");
-			//PreparedStatement p = conn.prepareStatement("call fetchpeoplebyzipservice(?)");
-			//PreparedStatement p = conn.prepareStatement("select tbl.* from bestdemo tbl ");
-			//PreparedStatement p = conn.prepareStatement("select * fname from fetchpeoplebyzipservice");
-
-
-			//PreparedStatement p = conn.prepareStatement("select * from 'Result 1' where zipvalue=33445");
-
-			//PreparedStatement p = conn.prepareStatement("select * from Timeline_Total_Property_Sales");
-			//PreparedStatement p = conn.prepareStatement("select * from motiondemo");
+			);
 
 			p.clearParameters();
 			p.setObject(1, "'33445'");

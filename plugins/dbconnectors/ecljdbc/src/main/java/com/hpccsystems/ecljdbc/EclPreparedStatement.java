@@ -41,7 +41,7 @@ public class EclPreparedStatement implements PreparedStatement {
 
     public EclPreparedStatement(Connection connection, String query)
     {
-    	System.out.println("#####ECLPreparedStatement::ECLPreparedStatement: " + query + "###");
+    	System.out.println("ECLPreparedStatement::ECLPreparedStatement: " + query);
         this.query = query;
         this.connection = connection;
         warnings = new ArrayList<SQLWarning>();
@@ -66,7 +66,6 @@ public class EclPreparedStatement implements PreparedStatement {
 
     public ResultSet executeQuery() throws SQLException
     {
-    	System.out.println("#####ECLPreparedStatement::executeQuery: " + query + "###");
     	return new EclResultSet(this, query, parameters);
     }
 
