@@ -66,7 +66,6 @@ public:
     CriticalSection &queryCreateLock() { return createdCrit; }
     void handleSlaveDone(unsigned node, MemoryBuffer &mb);
     void serializeCreateContexts(MemoryBuffer &mb);
-    void serializeStartCtxs(MemoryBuffer &mb);
     bool serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter);
     void readActivityInitData(MemoryBuffer &mb, unsigned slave);
     bool deserializeStats(unsigned node, MemoryBuffer &mb);
@@ -277,7 +276,7 @@ public:
     bool sentCreateCtx;
 
     CMasterGraphElement(CGraphBase &owner, IPropertyTree &xgmml);
-    void doCreateActivity();
+    void doCreateActivity(size32_t parentExtractSz=0, const byte *parentExtract=NULL);
     virtual bool checkUpdate();
 
     virtual void initActivity();

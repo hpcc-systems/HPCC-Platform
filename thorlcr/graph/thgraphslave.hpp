@@ -101,7 +101,7 @@ public:
     void connect();
     void init(MemoryBuffer &mb);
     void recvStartCtx();
-    bool recvActivityInitData();
+    bool recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract);
     void setExecuteReplyTag(mptag_t _executeReplyTag) { executeReplyTag = _executeReplyTag; }
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);

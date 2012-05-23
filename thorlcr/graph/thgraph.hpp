@@ -950,7 +950,7 @@ protected:
     const bool &timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
-    bool receiving, cancelledReceive;
+    bool receiving, cancelledReceive, reInit;
     unsigned maxCores; // NB: only used by acts that sort at the moment
 
 public:
@@ -963,6 +963,7 @@ public:
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline const bool &queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
+    inline bool needReInit() const { return reInit; }
     inline const bool &queryTimeActivities() const { return timeActivities; } 
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

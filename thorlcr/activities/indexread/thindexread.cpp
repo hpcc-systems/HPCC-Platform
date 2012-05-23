@@ -32,7 +32,7 @@ protected:
     Linked<IDistributedFile> index;
     Owned<IFileDescriptor> fileDesc;
     rowcount_t limit;
-    IHThorIndexReadBaseArg *helper;
+    IHThorIndexReadBaseArg *indexBaseHelper;
     Owned<CSlavePartMapping> mapping;
     bool nofilter;
     ProgressInfoArray progressInfoArr;
@@ -69,7 +69,7 @@ protected:
         unsigned nparts = f->numParts(); // includes tlks if any, but unused in array
         performPartLookup.ensure(nparts);
 
-        bool checkTLKConsistency = NULL != super && 0 != (TIRsorted & helper->getFlags());
+        bool checkTLKConsistency = NULL != super && 0 != (TIRsorted & indexBaseHelper->getFlags());
         if (nofilter)
         {
             while (nparts--) performPartLookup.append(true);
@@ -154,11 +154,11 @@ protected:
                     }
                 }
                 if (!keyIndex)
-                    throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", helper->getFileName());
+                    throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", indexBaseHelper->getFileName());
             
-                unsigned maxSize = helper->queryDiskRecordSize()->querySerializedMeta()->getRecordSize(NULL); // used only if fixed
+                unsigned maxSize = indexBaseHelper->queryDiskRecordSize()->querySerializedMeta()->getRecordSize(NULL); // used only if fixed
                 Owned <IKeyManager> tlk = createKeyManager(keyIndex, maxSize, NULL);
-                helper->createSegmentMonitors(tlk);
+                indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();
                 while (tlk->lookup(false))
@@ -179,6 +179,7 @@ protected:
 public:
     CIndexReadBase(CMasterGraphElement *info) : CMasterActivity(info)
     {
+        indexBaseHelper = (IHThorIndexReadBaseArg *)queryHelper();
         limit = RCMAX;
         if (!container.queryLocalOrGrouped())
             mpTag = container.queryJob().allocateMPTag();
@@ -187,16 +188,16 @@ public:
         ForEachItemIn(l, progressLabels)
             progressInfoArr.append(*new ProgressInfo);
         inputProgress.setown(new ProgressInfo);
+        reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
     void init()
     {
-        helper = (IHThorIndexReadArg *)queryHelper();
         nofilter = false;
 
-        index.setown(queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), false, 0 != (TIRoptional & helper->getFlags()), true));
+        index.setown(queryThorFileManager().lookup(container.queryJob(), indexBaseHelper->getFileName(), false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true));
         if (index)
         {
-            nofilter = 0 != (TIRnofilter & helper->getFlags());
+            nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
             if (index->queryAttributes().getPropBool("@local"))
                 nofilter = true;
             else
@@ -206,8 +207,8 @@ public:
                 if (sub && 1 == sub->numParts())
                     nofilter = true;
             }   
-            checkFormatCrc(this, index, helper->getFormatCrc(), true);
-            if ((container.queryLocalOrGrouped() || helper->canMatchAny()) && index->numParts())
+            checkFormatCrc(this, index, indexBaseHelper->getFormatCrc(), true);
+            if ((container.queryLocalOrGrouped() || indexBaseHelper->canMatchAny()) && index->numParts())
             {
                 fileDesc.setown(getConfiguredFileDescriptor(*index));
                 if (container.queryLocalOrGrouped())
@@ -220,7 +221,7 @@ public:
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        dst.append(helper->getFileName());
+        dst.append(indexBaseHelper->getFileName());
         if (!container.queryLocalOrGrouped())
             dst.append(mpTag);
         IArrayOf<IPartDescriptor> parts;
