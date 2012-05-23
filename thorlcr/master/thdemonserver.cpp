@@ -25,6 +25,7 @@
 
 #include "thormisc.hpp"
 #include "thorport.hpp"
+#include "thcompressutil.hpp"
 #include "thgraphmaster.ipp"
 #include "thgraphmanager.hpp"
 #include "thwatchdog.hpp"
@@ -159,28 +160,27 @@ public:
         reportRate = globals->getPropInt("@watchdogProgressInterval", 30);
     }
 
-    virtual void takeHeartBeat(HeartBeatPacket & hbpacket)
+    virtual void takeHeartBeat(const SocketEndpoint &sender, MemoryBuffer &progressMb)
     {
         synchronized block(mutex);
-        
-        if((hbpacket.packetsize>sizeof(hbpacket.packetsize))&&(hbpacket.progressSize > 0))
+        if (0 == activeGraphs.ordinality())
         {
-            if (0 == activeGraphs.ordinality())
-            {
-                StringBuffer urlStr;
-                LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs, from=%s", hbpacket.sender.getUrlStr(urlStr).str());
-                return;
-            }
-            rank_t node = querySlaveGroup().rank(hbpacket.sender);
-            assertex(node != RANK_NULL);
+            StringBuffer urlStr;
+            LOG(MCdebugProgress, unknownJob, "heartbeat packet received with no active graphs, from=%s", sender.getUrlStr(urlStr).str());
+            return;
+        }
+        rank_t node = querySlaveGroup().rank(sender);
+        assertex(node != RANK_NULL);
 
-            MemoryBuffer statsMb;
-            statsMb.setBuffer(hbpacket.progressSize, hbpacket.perfdata);
-
-            while (statsMb.remaining())
+        size32_t compressedProgressSz = progressMb.remaining();
+        if (compressedProgressSz)
+        {
+            MemoryBuffer uncompressedMb;
+            ThorExpand(progressMb.readDirect(compressedProgressSz), compressedProgressSz, uncompressedMb);
+            do
             {
                 graph_id graphId;
-                statsMb.read(graphId);
+                uncompressedMb.read(graphId);
                 CMasterGraph *graph = NULL;
                 ForEachItemIn(g, activeGraphs) if (activeGraphs.item(g).queryGraphId() == graphId) graph = (CMasterGraph *)&activeGraphs.item(g);
                 if (!graph)
@@ -188,18 +188,19 @@ public:
                     LOG(MCdebugProgress, unknownJob, "heartbeat received from unknown graph %"GIDPF"d", graphId);
                     break;
                 }
-                if (!graph->deserializeStats(node, statsMb))
+                if (!graph->deserializeStats(node, uncompressedMb))
                 {
                     LOG(MCdebugProgress, unknownJob, "heartbeat error in graph %"GIDPF"d", graphId);
                     break;
                 }
             }
-            unsigned now=msTick();
-            if (now-lastReport > 1000*reportRate) 
-            {
-                reportGraph(false);
-                lastReport = msTick();
-            }
+            while (uncompressedMb.remaining());
+        }
+        unsigned now=msTick();
+        if (now-lastReport > 1000*reportRate)
+        {
+            reportGraph(false);
+            lastReport = msTick();
         }
     }
     void startGraph(CGraphBase *graph)

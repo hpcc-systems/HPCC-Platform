@@ -29,46 +29,47 @@
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
 
-class CGraphProgressHandler : public CSimpleInterface, implements ISlaveWatchdog, implements IThreaded
+class CGraphProgressHandlerBase : public CSimpleInterface, implements ISlaveWatchdog, implements IThreaded
 {
     CriticalSection crit;
     CGraphArray activeGraphs;
     bool stopped, progressEnabled;
-    Owned<ISocket> sock;
     CThreaded threaded;
     SocketEndpoint self;
 
-    void sendData()
+    void gatherAndSend()
     {
-        HeartBeatPacket hbpacket;
-        gatherData(hbpacket);
-        if(hbpacket.packetsize > 0)
-        {
-            MemoryBuffer mb;
-            size32_t sz = ThorCompress(&hbpacket,hbpacket.packetsize, mb, 0x200);
-            sock->write(mb.toByteArray(), sz);
-        }
+        MemoryBuffer sendMb, progressMb;
+        HeartBeatPacketHeader hb;
+        hb.sender = self;
+        hb.tick++;
+        size32_t progressSizePos = (byte *)&hb.progressSize - (byte *)&hb;
+        sendMb.append(sizeof(HeartBeatPacketHeader), &hb);
+
+        hb.progressSize = gatherData(progressMb);
+        sendMb.writeDirect(progressSizePos, sizeof(hb.progressSize), &hb.progressSize);
+        sendMb.append(progressMb);
+        size32_t packetSize = sendMb.length();
+        sendMb.writeDirect(0, sizeof(hb.packetSize), &packetSize);
+        sendData(sendMb);
     }
+    virtual void sendData(MemoryBuffer &mb) = 0;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CGraphProgressHandler() : threaded("CGraphProgressHandler")
+    CGraphProgressHandlerBase() : threaded("CGraphProgressHandler")
     {
         self = queryMyNode()->endpoint();
         stopped = true;
 
-        StringBuffer ipStr;
-        queryClusterGroup().queryNode(0).endpoint().getIpText(ipStr);
-        sock.setown(ISocket::udp_connect(getFixedPort(getMasterPortBase(), TPORT_watchdog),ipStr.str()));
         progressEnabled = globals->getPropBool("@watchdogProgressEnabled");
-        sendData();                         // send initial data
         stopped = false;
 #ifdef _WIN32
         threaded.adjustPriority(+1); // it is critical that watchdog packets get through.
 #endif
         threaded.init(this);
     }
-    ~CGraphProgressHandler()
+    ~CGraphProgressHandlerBase()
     {
         stop();
     }
@@ -82,31 +83,27 @@ public:
         LOG(MCdebugProgress, thorJob, "Stopped watchdog");
     }
 
-    void gatherData(HeartBeatPacket &hb)
+    size32_t gatherData(MemoryBuffer &mb)
     {
         CriticalBlock b(crit);
-        hb.sender = self;
-        hb.progressSize = 0;
         if (progressEnabled)
         {
-            CriticalBlock b(crit);
-            MemoryBuffer mb;
-            mb.setBuffer(DATA_MAX, hb.perfdata);
-            mb.rewrite();
-            ForEachItemIn(g, activeGraphs)
-            {
-                CGraphBase &graph = activeGraphs.item(g);
-                graph.serializeStats(mb);
-                if (mb.length() > (DATA_MAX-30))
+            MemoryBuffer progressData;
+            { CriticalBlock b(crit);
+                ForEachItemIn(g, activeGraphs)
                 {
-                    WARNLOG("Progress packet too big!");
-                    break;
+                    CGraphBase &graph = activeGraphs.item(g);
+                    graph.serializeStats(progressData);
                 }
             }
-            hb.progressSize = mb.length();
+            size32_t sz = progressData.length();
+            if (sz)
+            {
+                ThorCompress(progressData, mb, 0x200);
+                return sz;
+            }
         }
-        hb.tick++;
-        hb.packetsize = hb.packetSize();
+        return 0;
     }
 
 // ISlaveWatchdog impl.
@@ -117,15 +114,21 @@ public:
         StringBuffer str("Watchdog: Start Job ");
         LOG(MCdebugProgress, thorJob, "%s", str.append(graph.queryGraphId()).str());
     }
-    void stopGraph(CGraphBase &graph, HeartBeatPacket *hb)
+    void stopGraph(CGraphBase &graph, MemoryBuffer *mb)
     {
         CriticalBlock b(crit);
         if (NotFound != activeGraphs.find(graph))
         {
             StringBuffer str("Watchdog: Stop Job ");
             LOG(MCdebugProgress, thorJob, "%s", str.append(graph.queryGraphId()).str());
-            if (hb)
-                gatherData(*hb);
+            if (mb)
+            {
+                unsigned pos=mb->length();
+                mb->append((size32_t)0); // placeholder
+                gatherData(*mb);
+                size32_t len=(mb->length()-pos)-sizeof(size32_t);
+                mb->writeDirect(pos, sizeof(len), &len);
+            }
             activeGraphs.zap(graph);
         }
     }
@@ -134,6 +137,7 @@ public:
     void main()
     {
         LOG(MCdebugProgress, thorJob, "Watchdog: thread running");
+        gatherAndSend(); // send initial data
         assertex(HEARTBEAT_INTERVAL>=8);
         unsigned count = HEARTBEAT_INTERVAL+getRandom()%8-4;
         while (!stopped)
@@ -141,15 +145,57 @@ public:
             Sleep(1000);
             if (count--==0)
             {
-                sendData();
+                gatherAndSend();
                 count = HEARTBEAT_INTERVAL+getRandom()%8-4;         
             }
         }
     }
 };
 
-ISlaveWatchdog *createProgressHandler()
-{
-    return new CGraphProgressHandler();
-}
 
+class CGraphProgressUDPHandler : public CGraphProgressHandlerBase
+{
+    Owned<ISocket> sock;
+public:
+    CGraphProgressUDPHandler()
+    {
+        StringBuffer ipStr;
+        queryClusterGroup().queryNode(0).endpoint().getIpText(ipStr);
+        sock.setown(ISocket::udp_connect(getFixedPort(getMasterPortBase(), TPORT_watchdog),ipStr.str()));
+    }
+    virtual void sendData(MemoryBuffer &mb)
+    {
+        HeartBeatPacketHeader hb;
+        memcpy(&hb, mb.toByteArray(), sizeof(HeartBeatPacketHeader));
+        if (hb.packetSize > UDP_DATA_MAX)
+        {
+            WARNLOG("Progress packet too big! progress lost");
+            hb.progressSize = 0;
+            hb.packetSize = sizeof(HeartBeatPacketHeader);
+        }
+        sock->write(mb.toByteArray(), mb.length());
+    }
+};
+
+
+class CGraphProgressMPHandler : public CGraphProgressHandlerBase
+{
+public:
+    CGraphProgressMPHandler()
+    {
+    }
+    virtual void sendData(MemoryBuffer &mb)
+    {
+        CMessageBuffer msg;
+        msg.swapWith(mb);
+        queryClusterComm().send(msg, 0, MPTAG_THORWATCHDOG);
+    }
+};
+
+ISlaveWatchdog *createProgressHandler(bool udp)
+{
+    if (udp)
+        return new CGraphProgressUDPHandler();
+    else
+        return new CGraphProgressMPHandler();
+}

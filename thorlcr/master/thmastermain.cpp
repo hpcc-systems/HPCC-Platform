@@ -133,7 +133,7 @@ class CRegistryServer : public CSimpleInterface
         }
     } deregistrationWatch;
 public:
-    Linked<CMasterWatchdog> watchdog;
+    Linked<CMasterWatchdogBase> watchdog;
     IBitSet *status;
 
     CRegistryServer()  : deregistrationWatch(*this), stopped(false)
@@ -142,7 +142,7 @@ public:
         msgDelay = SLAVEREG_VERIFY_DELAY;
         slavesRegistered = 0;
         if (globals->getPropBool("@watchdogEnabled"))
-            watchdog.setown(new CMasterWatchdog);
+            watchdog.setown(createMasterWatchdog(globals->getPropBool("@useUDPWatchdog")));
         else
             globals->setPropBool("@watchdogProgressEnabled", false);
         CriticalBlock b(regCrit);

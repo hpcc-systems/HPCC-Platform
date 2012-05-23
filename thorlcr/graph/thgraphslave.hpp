@@ -90,8 +90,9 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     CJobSlave &jobS;
     Owned<IInterface> progressHandler;
     Semaphore getDoneSem;
-    bool needsFinalInfo;
+    bool initialized, progressActive, progressToCollect;
     CriticalSection progressCrit;
+    SpinLock progressActiveLock;
 
 public:
 
@@ -109,7 +110,7 @@ public:
     IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void serializeStats(MemoryBuffer &mb);
+    virtual bool serializeStats(MemoryBuffer &mb);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void start();
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
