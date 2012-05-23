@@ -86,7 +86,7 @@ class ThorBoundLibraryActivity : public ThorBoundActivity
 {
 public:
     ThorBoundLibraryActivity(ABoundActivity * activity, IPropertyTree * _graphNode, HqlCppLibraryInstance * _libraryInstance)
-    : ThorBoundActivity(activity->queryDataset(), activity->queryBound(), activity->queryActivityId(), activity->queryGraphId(), activity->queryActivityKind()) 
+    : ThorBoundActivity(activity->queryDataset(), activity->queryBound(), activity->queryActivityId(), activity->queryContainerId(), activity->queryGraphId(), activity->queryActivityKind())
     {
         graphNode.set(_graphNode);
         libraryInstance.set(_libraryInstance);
