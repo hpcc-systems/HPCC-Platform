@@ -61,13 +61,19 @@ public:
 class HQLCPP_API ABoundActivity : public CInterface, public IInterface
 {
 public:
-    ABoundActivity(IHqlExpression * _dataset, IHqlExpression * _bound, unsigned _activityid, unsigned _graphId, ThorActivityKind _kind) : represents(_dataset), bound(_bound) { activityId = _activityid; graphId = _graphId; outputCount = 0; kind = _kind; }
+    ABoundActivity(IHqlExpression * _dataset, IHqlExpression * _bound, unsigned _activityid, unsigned _containerid, unsigned _graphId, ThorActivityKind _kind)
+        : represents(_dataset), bound(_bound), activityId(_activityid), containerId(_containerid), graphId(_graphId)
+    {
+        outputCount = 0;
+        kind = _kind;
+    }
     IMPLEMENT_IINTERFACE
 
     inline  IHqlExpression * queryBound() const { return bound; }
     inline  IHqlExpression * queryDataset() const { return represents; }
     inline unsigned queryActivityId() const { return activityId; }
     inline ThorActivityKind queryActivityKind() const { return kind; }
+    inline unsigned queryContainerId() const { return containerId; }
     inline unsigned queryGraphId() const { return graphId; }
     inline unsigned nextOutputCount() { return outputCount++; }
     IHqlDelayedCodeGenerator * createOutputCountCallback();
@@ -78,6 +84,7 @@ private:
     HqlExprAttr             represents;
     HqlExprAttr             bound;
     unsigned                activityId;
+    unsigned                containerId;
     unsigned                graphId;
     unsigned                outputCount;
     ThorActivityKind        kind;

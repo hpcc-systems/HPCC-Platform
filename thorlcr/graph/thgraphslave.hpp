@@ -90,8 +90,9 @@ class graphslave_decl CSlaveGraph : public CGraphBase
     CJobSlave &jobS;
     Owned<IInterface> progressHandler;
     Semaphore getDoneSem;
-    bool needsFinalInfo;
+    bool initialized, progressActive, progressToCollect;
     CriticalSection progressCrit;
+    SpinLock progressActiveLock;
 
 public:
 
@@ -101,7 +102,7 @@ public:
     void connect();
     void init(MemoryBuffer &mb);
     void recvStartCtx();
-    bool recvActivityInitData();
+    bool recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract);
     void setExecuteReplyTag(mptag_t _executeReplyTag) { executeReplyTag = _executeReplyTag; }
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);
@@ -109,7 +110,7 @@ public:
     IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void serializeStats(MemoryBuffer &mb);
+    virtual bool serializeStats(MemoryBuffer &mb);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void start();
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
@@ -158,7 +159,7 @@ public:
 
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
-    virtual IGraphTempHandler *createTempHandler();
+    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     virtual CGraphBase *createGraph()
     {
         return new CSlaveGraph(*this);

@@ -142,7 +142,7 @@ interface IThorBoundLoopGraph : extends IInterface
 {
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results) = 0;
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos) = 0;
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *rowStream, unsigned rowStreamCount, size32_t parentExtractSz, const byte * parentExtract) = 0;
+    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *rowStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte * parentExtract) = 0;
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults * graphLoopResults, size32_t parentExtractSz, const byte * parentExtract) = 0;
     virtual CGraphBase *queryGraph() = 0;
 };
@@ -391,10 +391,12 @@ protected:
     CFileUsageTable tmpFiles;
     CJobBase &job;
     mutable CriticalSection crit;
+    bool errorOnMissing;
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CGraphTempHandler(CJobBase &_job) : job(_job) { }
+    CGraphTempHandler(CJobBase &_job, bool _errorOnMissing) : job(_job), errorOnMissing(_errorOnMissing) { }
     ~CGraphTempHandler()
     {
     }
@@ -729,7 +731,7 @@ public:
     void setResults(IThorGraphResults *results);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract, IThorGraphResults *results, IThorGraphResults *graphLoopResults);
     virtual void executeChild(size32_t parentExtractSz, const byte *parentExtract);
-    virtual void serializeStats(MemoryBuffer &mb) { }
+    virtual bool serializeStats(MemoryBuffer &mb) { return false; }
     virtual bool prepare(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool shortCircuit, bool async);
     virtual void create(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
@@ -849,7 +851,7 @@ public:
     const char *queryGraphName() const { return graphName; }
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
-    virtual IGraphTempHandler *createTempHandler() = 0;
+    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
     void startGraph(CGraphBase &graph, IGraphCallback &callback, bool checkDependencies, size32_t parentExtractSize, const byte *parentExtract);
@@ -950,7 +952,7 @@ protected:
     const bool &timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
-    bool receiving, cancelledReceive;
+    bool receiving, cancelledReceive, reInit;
     unsigned maxCores; // NB: only used by acts that sort at the moment
 
 public:
@@ -963,6 +965,7 @@ public:
     inline const mptag_t queryMpTag() const { return mpTag; }
     inline const bool &queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
+    inline bool needReInit() const { return reInit; }
     inline const bool &queryTimeActivities() const { return timeActivities; } 
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);

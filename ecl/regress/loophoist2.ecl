@@ -16,25 +16,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#ifndef THWATCHDOG_HPP
-#define THWATCHDOG_HPP
 
-#include "jsocket.hpp"
-#include "thor.hpp"
+namesRecord :=
+            RECORD
+string20        surname;
+string10        forename;
+integer2        age := 25;
+            END;
 
-#define HEARTBEAT_INTERVAL      15          // seconds
-#define UDP_DATA_MAX            1024 * 8    // 8k
-#define THORBEAT_INTERVAL       10*1000     // 10 sec!
-#define THORBEAT_RETRY_INTERVAL 4*60*1000   // 4 minutes
+namesTable := dataset('x',namesRecord,FLAT);
+
+otherTable := dataset('other',namesRecord,FLAT);
 
 
-struct HeartBeatPacketHeader
-{
-    size32_t packetSize;   // used as validity check must be first
-    SocketEndpoint sender;
-    unsigned tick;         // sequence check
-    size32_t progressSize; // size of progress data (following performamce data)
-};
+processLoop(dataset(namesRecord) in, unsigned c) := FUNCTION
 
-#endif
+    x := otherTable(LENGTH(TRIM(surname)) > 1);
+    x2 := dedup(x, surname, all);
 
+    //Use x2 from a child query - so it IS force to a single node
+    y := JOIN(in, x2, LEFT.surname = RIGHT.surname and LEFT.surname != x2[c].surname);
+
+    RETURN y;
+END;
+
+
+ds1 := LOOP(namesTable, 100, processLoop(ROWS(LEFT), COUNTER));
+output(ds1);

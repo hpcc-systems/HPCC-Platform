@@ -277,6 +277,7 @@ public:
     HqlExprArray conditions;
     HqlExprArray childDependents;
     HqlExprCopyArray originalChildDependents;
+    BoolArray childSingleNode;
     HqlExprAttr spilledDataset;
     HqlExprAttr splitterOutput;
 

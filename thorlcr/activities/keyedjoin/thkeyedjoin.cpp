@@ -26,6 +26,7 @@
 
 class CKeyedJoinMaster : public CMasterActivity
 {
+    IHThorKeyedJoinArg *helper;
     Owned<CSlavePartMapping> dataFileMapping;
     Owned<IDistributedFile> indexFile, dataFile;
     MemoryBuffer offsetMapMb, initMb;
@@ -39,13 +40,13 @@ class CKeyedJoinMaster : public CMasterActivity
 public:
     CKeyedJoinMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
+        helper = (IHThorKeyedJoinArg *) queryHelper();
         progressLabels.append("seeks");
         progressLabels.append("scans");
         progressLabels.append("accepted");
         progressLabels.append("postfiltered");
         progressLabels.append("prefiltered");
 
-        IHThorKeyedJoinArg *helper = (IHThorKeyedJoinArg *) queryHelper();
         if (helper->diskAccessRequired())
         {
             progressLabels.append("diskSeeks");
@@ -57,6 +58,7 @@ public:
         localKey = false;
         numTags = 0;
         tags[0] = tags[1] = tags[2] = tags[3] = TAG_NULL;
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
     }
     ~CKeyedJoinMaster()
     {
@@ -67,14 +69,14 @@ public:
     }
     void init()
     {
-        IHThorKeyedJoinArg *helper = (IHThorKeyedJoinArg *)queryHelper();
-        
         indexFile.setown(queryThorFileManager().lookup(container.queryJob(), helper->getIndexFileName(), false, 0 != (helper->getJoinFlags() & JFindexoptional), true));
 
         unsigned keyReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJKRR", 0);
         if (!keyReadWidth || keyReadWidth>container.queryJob().querySlaves())
             keyReadWidth = container.queryJob().querySlaves();
         
+
+        initMb.clear();
         initMb.append(helper->getIndexFileName());
         if (helper->diskAccessRequired())
             numTags += 2;
@@ -222,7 +224,7 @@ public:
                                 dataReadWidth = container.queryJob().querySlaves();
                             Owned<IGroup> grp = container.queryJob().querySlaveGroup().subset((unsigned)0, dataReadWidth);
                             dataFileMapping.setown(getFileSlaveMaps(dataFile->queryLogicalName(), *dataFileDesc, container.queryJob().queryUserDescriptor(), *grp, false, false, NULL));
-                            dataFileMapping->serializeFileOffsetMap(offsetMapMb);
+                            dataFileMapping->serializeFileOffsetMap(offsetMapMb.clear());
                             queryThorFileManager().noteFileRead(container.queryJob(), dataFile);
                         }
                         else
@@ -240,7 +242,6 @@ public:
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        IHThorKeyedJoinArg *helper = (IHThorKeyedJoinArg *)queryHelper();
         dst.append(initMb);
         if (indexFile && helper->diskAccessRequired())
         {

@@ -77,7 +77,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
         virtual void flush() { }
         virtual IRowStream *getReader()
         {
-            return rows.createRowStream(0, (rowcount_t)-1, false);
+            return rows.createRowStream(0, (rowidx_t)-1, false);
         }
     };
 public:
@@ -171,9 +171,10 @@ public:
     }
     virtual void getLinkedResult(unsigned &countResult, byte * * & result)
     {
+        assertex(rowStreamCount==((unsigned)rowStreamCount)); // catch, just in case
         Owned<IRowStream> stream = getRowStream();
         countResult = 0;
-        OwnedConstThorRow _rowset = allocator->createRowset(rowStreamCount);
+        OwnedConstThorRow _rowset = allocator->createRowset((unsigned)rowStreamCount);
         const void **rowset = (const void **)_rowset.get();
         loop
         {
@@ -243,7 +244,7 @@ public:
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild());
     }
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, unsigned rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
+    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
         Owned<IThorGraphResults> results = graph->createThorGraphResults(3);
         prepareLoopResults(activity, results);
@@ -522,8 +523,7 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
 
 void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
 {
-    if (!onStartCalled) return;
-    mb.append(queryId());
+    assertex(onStartCalled);
     unsigned pos = mb.length();
     mb.append((size32_t)0);
     queryHelper()->serializeStartContext(mb);
@@ -545,6 +545,7 @@ void CGraphElementBase::deserializeStartContext(MemoryBuffer &mb)
     mb.read(startCtxLen);
     startCtxMb.append(startCtxLen, mb.readDirect(startCtxLen));
     haveStartCtx = true;
+    onStartCalled = false; // allow to be called again
 }
 
 void CGraphElementBase::onCreate()
@@ -1073,6 +1074,7 @@ void CGraphBase::serializeStartContexts(MemoryBuffer &mb)
     ForEach (*iter)
     {
         CGraphElementBase &element = iter->query();
+        mb.append(element.queryId());
         element.serializeStartContext(mb);
     }
     mb.append((activity_id)0);
@@ -1673,7 +1675,8 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     {
         localResults.setown(createThorGraphResults(numResults));
         resultsGraph = this;
-        tmpHandler.setown(queryJob().createTempHandler());
+        // JCSMORE - it might more sense if this temp handler was owned by parent act., which may finish(get stopped) earlier than the owning graph
+        tmpHandler.setown(queryJob().createTempHandler(false));
     }
 
     localChild = false;
@@ -1955,7 +1958,11 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
     CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
-        throw MakeThorException(TE_FileNotFound, "File not found (%s) deregistering tmp file", name);
+    {
+        if (errorOnMissing)
+            throw MakeThorException(TE_FileNotFound, "File not found (%s) deregistering tmp file", name);
+        return;
+    }
     if (0 == fileUsage->queryUsage()) // marked 'not to be deleted' until workunit complete.
         return;
     else if (1 == fileUsage->queryUsage())
@@ -2625,7 +2632,7 @@ IThorResource &queryThor()
 CActivityBase::CActivityBase(CGraphElementBase *_container) : container(*_container), timeActivities(_container->queryJob().queryTimeActivities())
 {
     mpTag = TAG_NULL;
-    abortSoon = cancelledReceive = false;
+    abortSoon = cancelledReceive = reInit = false;
     baseHelper.set(container.queryHelper());
     parentExtractSz = 0;
     parentExtract = NULL;

@@ -47,6 +47,7 @@ void CDiskReadMasterBase::init()
             fileDesc.setown(getConfiguredFileDescriptor(*file));
         else
             fileDesc.setown(file->getFileDescriptor());
+        reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
         if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
         {
             bool local;

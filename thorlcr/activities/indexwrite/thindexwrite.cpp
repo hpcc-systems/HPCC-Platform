@@ -38,24 +38,26 @@ class IndexWriteActivityMaster : public CMasterActivity
     Owned<ProgressInfo> replicateProgress;
     bool publishReplicatedDone;
     CDfsLogicalFileName dlfn;
+    IHThorIndexWriteArg *helper;
 
 public:
     IndexWriteActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
+        helper = (IHThorIndexWriteArg *)queryHelper();
         replicateProgress.setown(new ProgressInfo);
         publishReplicatedDone = !globals->getPropBool("@replicateAsync", true);
         recordsProcessed = 0;
         refactor = singlePartKey = isLocal = false;
         mpTag2 = TAG_NULL;
+        reInit = (0 != (TIWvarfilename & helper->getFlags()));
     }
     ~IndexWriteActivityMaster()
     {
         if (TAG_NULL != mpTag2)
             container.queryJob().freeMPTag(mpTag2);
     }
-    void init()
+    virtual void init()
     {
-        IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         dlfn.set(helper->getFileName());
         isLocal = 0 != (TIWlocal & helper->getFlags());
         unsigned maxSize = helper->queryDiskRecordSize()->getMinRecordSize();
@@ -63,6 +65,7 @@ public:
             throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds 32767 internal limit", maxSize);
 
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
+        clusters.kill();
         unsigned idx=0;
         while (helper->queryCluster(idx))
             clusters.append(helper->queryCluster(idx++));
@@ -170,7 +173,7 @@ public:
         mpTag = container.queryJob().allocateMPTag();
         mpTag2 = container.queryJob().allocateMPTag();
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper(); 
         dst.append(mpTag);  // used to build TLK on node1
@@ -220,7 +223,7 @@ public:
             }
         }
     }
-    void done()
+    virtual void done()
     {
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         StringBuffer scopedName;
@@ -287,16 +290,12 @@ public:
             }
         }
     }
-    void process()
-    {
-        CMasterActivity::process();
-    }
-    void abort()
+    virtual void abort()
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag2);
     }
-    void preStart(size32_t parentExtractSz, const byte *parentExtract)
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         CMasterActivity::preStart(parentExtractSz, parentExtract);
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *) queryHelper();
@@ -311,14 +310,14 @@ public:
             }
         }
     }
-    void deserializeStats(unsigned node, MemoryBuffer &mb)
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         CMasterActivity::deserializeStats(node, mb);
         unsigned repPerc;
         mb.read(repPerc);
         replicateProgress->set(node, repPerc);
     }
-    void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
+    virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node)
     {
         CMasterActivity::getXGMML(progress, node);
         if (publishReplicatedDone)

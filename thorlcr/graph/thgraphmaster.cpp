@@ -183,17 +183,6 @@ void CSlaveMessageHandler::main()
                     msg.read(gid);
                     Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
                     assertex(graph);
-                    size32_t parentExtractSz;
-                    msg.read(parentExtractSz);
-                    const byte *parentExtract = NULL;
-                    if (parentExtractSz)
-                    {
-                        parentExtract = msg.readDirect(parentExtractSz);
-                        StringBuffer msg("Graph(");
-                        msg.append(graph->queryGraphId()).append(") - initializing master graph with parentExtract ").append(parentExtractSz).append(" bytes");
-                        DBGLOG("%s", msg.str());
-                        parentExtract = graph->setParentCtx(parentExtractSz, parentExtract);
-                    }
                     {
                         CriticalBlock b(graph->queryCreateLock());
                         Owned<IThorActivityIterator> iter = graph->getIterator();
@@ -202,8 +191,6 @@ void CSlaveMessageHandler::main()
                         {
                             CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
                             element.onCreate();
-                            if (isDiskInput(element.getKind()))
-                                element.onStart(parentExtractSz, parentExtract);
                         }
                     }
                     msg.clear();
@@ -218,19 +205,32 @@ void CSlaveMessageHandler::main()
                     Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
                     assertex(graph);
                     CGraphElementArray toSerialize;
+                    CriticalBlock b(graph->queryCreateLock());
+                    size32_t parentExtractSz;
+                    msg.read(parentExtractSz);
+                    const byte *parentExtract = NULL;
+                    if (parentExtractSz)
                     {
-                        CriticalBlock b(graph->queryCreateLock());
-                        loop
-                        {
-                            activity_id id;
-                            msg.read(id);
-                            if (!id)
-                                break;
-                            CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
-                            assertex(element);
-                            element->doCreateActivity();
-                            toSerialize.append(*LINK(element));
-                        }
+                        parentExtract = msg.readDirect(parentExtractSz);
+                        StringBuffer msg("Graph(");
+                        msg.append(graph->queryGraphId()).append(") - initializing master graph with parentExtract ").append(parentExtractSz).append(" bytes");
+                        DBGLOG("%s", msg.str());
+                        parentExtract = graph->setParentCtx(parentExtractSz, parentExtract);
+                    }
+                    loop
+                    {
+                        activity_id id;
+                        msg.read(id);
+                        if (!id)
+                            break;
+                        CMasterGraphElement *element = (CMasterGraphElement *)graph->queryElement(id);
+                        assertex(element);
+                        element->deserializeStartContext(msg);
+                        element->doCreateActivity(parentExtractSz, parentExtract);
+                        CActivityBase *activity = element->queryActivity();
+                        if (activity && activity->needReInit())
+                            element->sentActInitData->set(slave, 0); // clear to permit serializeActivityInitData to resend
+                        toSerialize.append(*LINK(element));
                     }
                     msg.clear();
                     CMessageBuffer replyMsg;
@@ -529,13 +529,14 @@ bool CMasterGraphElement::checkUpdate()
 
 void CMasterGraphElement::initActivity()
 {
-    if (activity)
-        return;
+    CriticalBlock b(crit);
+    bool first = (NULL == activity);
     CGraphElementBase::initActivity();
-    ((CMasterActivity *)activity.get())->init();
+    if (first || activity->needReInit())
+        ((CMasterActivity *)activity.get())->init();
 }
 
-void CMasterGraphElement::doCreateActivity()
+void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte *parentExtract)
 {
     bool ok=false;
     switch (getKind())
@@ -560,6 +561,8 @@ void CMasterGraphElement::doCreateActivity()
     if (!ok)
         return;
     onCreate();
+    if (isDiskInput(getKind()))
+       onStart(parentExtractSz, parentExtract);
     initActivity();
 }
 
@@ -652,7 +655,7 @@ public:
 class CMasterGraphTempHandler : public CGraphTempHandler
 {
 public:
-    CMasterGraphTempHandler(CJobBase &job) : CGraphTempHandler(job) { }
+    CMasterGraphTempHandler(CJobBase &job, bool errorOnMissing) : CGraphTempHandler(job, errorOnMissing) { }
 
     virtual bool removeTemp(const char *name)
     {
@@ -1239,7 +1242,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     mpJobTag = allocateMPTag();
     slavemptag = allocateMPTag();
     slaveMsgHandler = new CSlaveMessageHandler(*this, slavemptag);
-    tmpHandler.setown(new CMasterGraphTempHandler(*this));
+    tmpHandler.setown(createTempHandler(true));
 }
 
 CJobMaster::~CJobMaster()
@@ -1707,9 +1710,9 @@ IBarrier *CJobMaster::createBarrier(mptag_t tag)
     return new CBarrierMaster(*jobComm, tag);
 }
 
-IGraphTempHandler *CJobMaster::createTempHandler()
+IGraphTempHandler *CJobMaster::createTempHandler(bool errorOnMissing)
 {
-    return new CMasterGraphTempHandler(*this);
+    return new CMasterGraphTempHandler(*this, errorOnMissing);
 }
 
 bool CJobMaster::fireException(IException *e)
@@ -2017,22 +2020,6 @@ void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
     }
 }
 
-void CMasterGraph::serializeStartCtxs(MemoryBuffer &mb)
-{
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
-    ForEach (*iter)
-    {
-        CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
-        mb.append(element.queryId());
-        unsigned pos = mb.length();
-        mb.append((size32_t)0);
-        element.queryHelper()->serializeStartContext(mb);
-        size32_t sz = (mb.length()-pos)-sizeof(size32_t);
-        mb.writeDirect(pos, sizeof(sz), &sz);
-    }
-    mb.append((activity_id)0);
-}
-
 bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter)
 {
     CriticalBlock b(createdCrit);
@@ -2162,6 +2149,9 @@ void CMasterGraph::sendActivityInitData()
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
+            CActivityBase *activity = element.queryActivity();
+            if (activity && activity->needReInit())
+                element.sentActInitData->set(w, false); // force act init to be resent
             if (!element.sentActInitData->test(w)) // has it been sent
                 ++needActInit;
         }
@@ -2291,7 +2281,7 @@ void CMasterGraph::sendGraph()
     CMessageBuffer msg;
     msg.append(GraphInit);
     msg.append(job.queryKey());
-    node->serialize(msg); // everthing
+    node->serialize(msg); // everything
     if (TAG_NULL == executeReplyTag)
         executeReplyTag = queryJob().allocateMPTag();
     serializeMPtag(msg, executeReplyTag);
@@ -2320,7 +2310,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         sentStartCtx = true;
         CMessageBuffer msg;
-        serializeStartCtxs(msg);
+        serializeStartContexts(msg);
         try
         {
             jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "startCtx", &bcastTag, true);
@@ -2414,23 +2404,19 @@ void CMasterGraph::getFinalProgress()
         {
             if (globals->getPropBool("@watchdogProgressEnabled"))
             {
-                HeartBeatPacket &hb = *(HeartBeatPacket *) msg.readDirect(sizeof(hb.packetsize));
-                if (hb.packetsize)
+                try
                 {
-                    size32_t sz = hb.packetsize-sizeof(hb.packetsize);
-                    if (sz)
-                    {
-                        msg.readDirect(sz);
-                        try
-                        {
-                            queryJobManager().queryDeMonServer()->takeHeartBeat(hb);
-                        }
-                        catch (IException *e)
-                        {
-                            GraphPrintLog(e, "Failure whilst deserializing stats/progress");
-                            e->Release();
-                        }
-                    }
+                    size32_t progressLen;
+                    msg.read(progressLen);
+                    MemoryBuffer progressData;
+                    progressData.setBuffer(progressLen, (void *)msg.readDirect(progressLen));
+                    const SocketEndpoint &ep = queryClusterGroup().queryNode(sender).endpoint();
+                    queryJobManager().queryDeMonServer()->takeHeartBeat(ep, progressData);
+                }
+                catch (IException *e)
+                {
+                    GraphPrintLog(e, "Failure whilst deserializing stats/progress");
+                    e->Release();
                 }
             }
         }

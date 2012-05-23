@@ -247,7 +247,11 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
         if (TAKchildif == container.getKind())
         {
             if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
-                inputCycles += inputs.item(container.whichBranch)->queryTotalCycles();
+            {
+                IThorDataLink *input = inputs.item(container.whichBranch);
+                if (input)
+                    inputCycles += input->queryTotalCycles();
+            }
         }
         else
         {
@@ -295,6 +299,8 @@ void CSlaveGraph::init(MemoryBuffer &mb)
     waitBarrier = job.createBarrier(waitBarrierTag);
     if (doneBarrierTag != TAG_NULL)
         doneBarrier = job.createBarrier(doneBarrierTag);
+    initialized = false;
+    progressActive = progressToCollect = false;
     unsigned subCount;
     mb.read(subCount);
     while (subCount--)
@@ -308,6 +314,8 @@ void CSlaveGraph::init(MemoryBuffer &mb)
 
 void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 {
+    CriticalBlock b(progressCrit);
+    initialized = true;
     activity_id id;
     loop
     {
@@ -353,26 +361,21 @@ void CSlaveGraph::recvStartCtx()
         CMessageBuffer msg;
         if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
             throw MakeStringException(0, "Error receiving startCtx data for graph: %"GIDPF"d", graphId);
-        activity_id id;
-        loop
-        {
-            msg.read(id);
-            if (0 == id) break;
-            CSlaveGraphElement *element = (CSlaveGraphElement *)queryElement(id);
-            assertex(element);
-            element->deserializeStartContext(msg);
-        }
+        deserializeStartContexts(msg);
     }
 }
 
-bool CSlaveGraph::recvActivityInitData()
+bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *parentExtract)
 {
     bool ret = true;
     unsigned needActInit = 0;
     Owned<IThorActivityIterator> iter = getTraverseIterator();
     ForEach(*iter)
     {
-        CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
+        CGraphElementBase &element = (CGraphElementBase &)iter->query();
+        CActivityBase *activity = element.queryActivity();
+        if (activity && activity->needReInit())
+            element.sentActInitData->set(0, false); // force act init to be resent
         if (!element.sentActInitData->test(0))
             ++needActInit;
     }
@@ -396,12 +399,18 @@ bool CSlaveGraph::recvActivityInitData()
             // initialize any for which no data was sent
             msg.append(smt_initActDataReq); // may cause graph to be created at master
             msg.append(queryGraphId());
+            assertex(!parentExtractSz || NULL!=parentExtract);
+            msg.append(parentExtractSz);
+            msg.append(parentExtractSz, parentExtract);
             Owned<IThorActivityIterator> iter = getTraverseIterator();
             ForEach(*iter)
             {
                 CSlaveGraphElement &element = (CSlaveGraphElement &)iter->query();
                 if (!element.sentActInitData->test(0))
+                {
                     msg.append(element.queryId());
+                    element.serializeStartContext(msg);
+                }
             }
             msg.append((activity_id)0);
             if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
@@ -458,7 +467,7 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
     recvStartCtx();
     CGraphBase::preStart(parentExtractSz, parentExtract);
 
-    if (!recvActivityInitData())
+    if (!recvActivityInitData(parentExtractSz, parentExtract))
         return false;
     connect(); // only now do slave acts. have all their outputs prepared.
     if (isGlobal())
@@ -471,6 +480,11 @@ bool CSlaveGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
 
 void CSlaveGraph::start()
 {
+    {
+        SpinBlock b(progressActiveLock);
+        progressActive = true;
+        progressToCollect = true;
+    }
     bool forceAsync = !queryOwner() || isGlobal();
     Owned<IThorActivityIterator> iter = getSinkIterator();
     unsigned sinks = 0;
@@ -579,9 +593,6 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 CMessageBuffer msg;
                 msg.append(smt_initGraphReq);
                 msg.append(graphId);
-                assertex(!parentExtractSz || NULL!=parentExtract);
-                msg.append(parentExtractSz);
-                msg.append(parentExtractSz, parentExtract);
                 if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                     throwUnexpected();
                 unsigned len;
@@ -608,6 +619,11 @@ void CSlaveGraph::abort(IException *e)
 void CSlaveGraph::done()
 {
     GraphPrintLog("End of sub-graph");
+    {
+        SpinBlock b(progressActiveLock);
+        progressActive = false;
+        progressToCollect = true; // NB: ensure collected after end of graph
+    }
     if (!aborted && (!queryOwner() || isGlobal()))
         getDoneSem.wait(); // must wait on master
     if (!queryOwner())
@@ -646,46 +662,62 @@ void CSlaveGraph::end()
     }
 }
 
-void CSlaveGraph::serializeStats(MemoryBuffer &mb)
+bool CSlaveGraph::serializeStats(MemoryBuffer &mb)
 {
+    unsigned beginPos = mb.length();
     mb.append(queryGraphId());
     unsigned cPos = mb.length();
     unsigned count = 0;
     mb.append(count);
     CriticalBlock b(progressCrit);
-    if (started || 0 == activityCount())
+    // until started and activities initialized, activities are not ready to serlialize stats.
+    if ((started&&initialized) || 0 == activityCount())
     {
-        unsigned sPos = mb.length();
-        Owned<IThorActivityIterator> iter = getTraverseIterator();
-        ForEach (*iter)
+        bool collect=false;
         {
-            if (mb.length() > (DATA_MAX-30))
+            SpinBlock b(progressActiveLock);
+            if (progressActive || progressToCollect)
             {
-                WARNLOG("Act: Progress packet too big!");
-                break;
+                progressToCollect = false;
+                collect = true;
             }
-            
-            CGraphElementBase &element = iter->query();
-            CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
-            unsigned pos = mb.length();
-            mb.append(activity.queryContainer().queryId());
-            activity.serializeStats(mb);
-            if (pos == mb.length()-sizeof(activity_id))
-                mb.rewrite(pos);
-            else
-                ++count;
         }
-        mb.writeDirect(cPos, sizeof(count), &count);
-        mb.append(queryChildGraphCount());
+        if (collect)
+        {
+            unsigned sPos = mb.length();
+            Owned<IThorActivityIterator> iter = getTraverseIterator();
+            ForEach (*iter)
+            {
+                CGraphElementBase &element = iter->query();
+                CSlaveActivity &activity = (CSlaveActivity &)*element.queryActivity();
+                unsigned pos = mb.length();
+                mb.append(activity.queryContainer().queryId());
+                activity.serializeStats(mb);
+                if (pos == mb.length()-sizeof(activity_id))
+                    mb.rewrite(pos);
+                else
+                    ++count;
+            }
+            mb.writeDirect(cPos, sizeof(count), &count);
+        }
+        unsigned cqCountPos = mb.length();
+        unsigned cq=0;
+        mb.append(cq);
         Owned<IThorGraphIterator> childIter = getChildGraphs();
         ForEach(*childIter)
         {
             CSlaveGraph &graph = (CSlaveGraph &)childIter->query();
-            graph.serializeStats(mb);
+            if (graph.serializeStats(mb))
+                ++cq;
+        }
+        if (count || cq)
+        {
+            mb.writeDirect(cqCountPos, sizeof(cq), &cq);
+            return true;
         }
     }
-    else
-        mb.append((unsigned)0); // sub graph count
+    mb.rewrite(beginPos);
+    return false;
 }
 
 void CSlaveGraph::serializeDone(MemoryBuffer &mb)
@@ -732,11 +764,7 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
             if (!queryOwner())
             {
                 if (globals->getPropBool("@watchdogProgressEnabled"))
-                {
-                    HeartBeatPacket hb;
-                    jobS.queryProgressHandler()->stopGraph(*this, &hb);
-                    doneInfoMb.append(hb.packetsize, &hb);
-                }
+                    jobS.queryProgressHandler()->stopGraph(*this, &doneInfoMb);
             }
             doneInfoMb.append(job.queryMaxDiskUsage());
             queryJob().queryTimeReporter().serialize(doneInfoMb);
@@ -959,7 +987,7 @@ public:
 class CSlaveGraphTempHandler : public CGraphTempHandler
 {
 public:
-    CSlaveGraphTempHandler(CJobBase &job) : CGraphTempHandler(job)
+    CSlaveGraphTempHandler(CJobBase &job, bool errorOnMissing) : CGraphTempHandler(job, errorOnMissing)
     {
     }
     virtual bool removeTemp(const char *name)
@@ -1027,7 +1055,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 #endif
     querySo.setown(createDllEntry(_querySo, false, NULL));
     codeCtx = new CThorCodeContextSlave(*this, *querySo, *userDesc, slavemptag);
-    tmpHandler.setown(new CSlaveGraphTempHandler(*this));
+    tmpHandler.setown(createTempHandler(true));
     startJob();
 }
 
@@ -1053,7 +1081,7 @@ void CJobSlave::startJob()
     unsigned __int64 freeSpaceRep = getFreeSpace(queryBaseDirectory(true));
     PROGLOG("Disk space: %s = %"I64F"d, %s = %"I64F"d", queryBaseDirectory(), freeSpace/0x100000, queryBaseDirectory(true), freeSpaceRep/0x100000);
 
-    unsigned minFreeSpace = getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
+    unsigned minFreeSpace = (unsigned)getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
         if (freeSpace < ((unsigned __int64)minFreeSpace)*0x100000)
@@ -1102,9 +1130,9 @@ IBarrier *CJobSlave::createBarrier(mptag_t tag)
     return new CBarrierSlave(*jobComm, tag);
 }
 
-IGraphTempHandler *CJobSlave::createTempHandler()
+IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
 {
-    return new CSlaveGraphTempHandler(*this);
+    return new CSlaveGraphTempHandler(*this, errorOnMissing);
 }
 
 // IGraphCallback

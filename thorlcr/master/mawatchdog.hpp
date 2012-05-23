@@ -25,28 +25,35 @@
 #include "jmutex.hpp"
 
 class CMachineStatus;
-struct HeartBeatPacket;
+struct HeartBeatPacketHeader;
 
-class CMasterWatchdog : public CSimpleInterface, implements IThreaded
+class CMasterWatchdogBase : public CSimpleInterface, implements IThreaded
 {
+    PointerArray state;
+    SocketEndpoint master;
+    Mutex mutex;
+    int retrycount;
     CThreaded threaded;
+protected:
+    bool stopped;
+    unsigned watchdogMachineTimeout;
 public:
-    CMasterWatchdog();
-    ~CMasterWatchdog();
+    CMasterWatchdogBase();
+    ~CMasterWatchdogBase();
     void addSlave(const SocketEndpoint &slave);
     void removeSlave(const SocketEndpoint &slave);
     CMachineStatus *findSlave(const SocketEndpoint &ep);
     void checkMachineStatus();
+    unsigned readPacket(HeartBeatPacketHeader &hb, MemoryBuffer &mb);
+    void start();
     void stop();
     void main();
-private:
-    PointerArray state;
-    SocketEndpoint master;
-    ISocket *sock;
-    Mutex mutex;
-    bool stopped;
-    int retrycount;
+
+    virtual unsigned readData(MemoryBuffer &mb) = 0;
+    virtual void stopReading() = 0;
 };
+
+CMasterWatchdogBase *createMasterWatchdog(bool udp=false);
 
 #endif
 

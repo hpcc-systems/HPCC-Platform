@@ -1082,7 +1082,7 @@ public:
         if (exception.get())
         {
             StringBuffer errStr(joinStr);
-            errStr.append("(").append(container.queryId()).appendf(") right-hand side is too large (%"I64F"u bytes in %"RCPF"d rows) for %s : (",(unsigned __int64) rhs.serializedSize(),rhs.ordinality(),joinStr.get());
+            errStr.append("(").append(container.queryId()).appendf(") right-hand side is too large (%"I64F"u bytes in %"RIPF"d rows) for %s : (",(unsigned __int64) rhs.serializedSize(),rhs.ordinality(),joinStr.get());
             errStr.append(exception->errorCode()).append(", ");
             exception->errorMessage(errStr);
             errStr.append(")");

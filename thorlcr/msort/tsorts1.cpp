@@ -58,7 +58,7 @@ protected:
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CMergeReadStream(IRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowmap_t numrecs)
+    CMergeReadStream(IRowInterfaces *rowif, unsigned streamno,SocketEndpoint &targetep, rowcount_t startrec, rowcount_t numrecs)
     {
         endpoint = targetep;
 #ifdef _TRACE
@@ -127,7 +127,7 @@ class CSortMerge: public CSimpleInterface, implements ISocketSelectNotify
     ISortSlaveBase &src;
     Owned<ISocketRowWriter> out;
     rowcount_t poscount;
-    rowmap_t numrecs;
+    rowcount_t numrecs;
 //  unsigned pos;
 //  unsigned endpos;
     unsigned ndone;
@@ -144,7 +144,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowmap_t _numrecs,ISocketSelectHandler *_selecthandler);
+    CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler);
     ~CSortMerge()
     {
 #ifdef _FULL_TRACE
@@ -166,12 +166,13 @@ public:
         url.append(name).append(':').append(port);
         PrintLog("SORT Merge WRITE: start %s, pos=%"RCPF"d, len=%"RCPF"d",url.str(),poscount,numrecs);
 #endif
-        rowmap_t pos=(rowmap_t)poscount;
-        assertex(pos==poscount);
-        try {
+        rowcount_t pos=poscount;
+        try
+        {
             iseq.setown(src.createMergeInputStream(pos,numrecs));
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             PrintExceptionLog(e,"**Exception(4a)");
             throw;
         }
@@ -343,11 +344,11 @@ public:
                 }
 
                 rowcount_t poscount=0;
-                rowmap_t numrecs=0;
+                rowcount_t numrecs=0;
                 ISocketRowWriter *strm=NULL;
                 try {
                     waitRowIF();
-                    strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs);   
+                    strm = ConnectMergeWrite(rowif,socket,0x100000,poscount,numrecs);
                 }
                 catch (IJSOCK_Exception *e) { // retry if failed
                     PrintExceptionLog(e,"WARNING: Exception(ConnectMergeWrite)");
@@ -407,7 +408,7 @@ public:
 
     }
 
-    void add(ISocketRowWriter *strm,ISocket *socket,rowcount_t poscount,rowmap_t numrecs) // takes ownership of sock
+    void add(ISocketRowWriter *strm,ISocket *socket,rowcount_t poscount,rowcount_t numrecs) // takes ownership of sock
     {
         CriticalBlock proc(childsect);
         if (!selecthandler) {
@@ -429,7 +430,7 @@ public:
 
 
 
-    rowmap_t merge(unsigned mapsize,rowmap_t *map,rowmap_t *mapupper,
+    rowcount_t merge(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,
                    unsigned numnodes,SocketEndpoint* endpoints,
                    unsigned partno)
     {
@@ -458,7 +459,7 @@ public:
             }
         }
 #endif  
-        rowmap_t resnum=0;
+        rowcount_t resnum=0;
         for (i=0;i<numnodes;i++) 
             resnum += vMAPU(i,partno)-vMAPL(i,partno-1);
         // calculate start position
@@ -467,18 +468,22 @@ public:
             for (j=0;j<numnodes;j++) 
                 respos += vMAPL(j,i)-vMAPL(j,i-1);      // note we are adding up all of the lower as we want start
 
-        rowmap_t totalrows = resnum;
+        rowcount_t totalrows = resnum;
         PrintLog("Output start = %"RCPF"d, num = %"RCPF"u",respos,resnum);
 
         IArrayOf<IRowStream> readers;
         IException *exc = NULL;
-        try {
-            for (j=0;j<numnodes;j++) {
+        try
+        {
+            for (j=0;j<numnodes;j++)
+            {
                 unsigned i=j;
-                rowmap_t sstart=vMAPL(i,partno-1);
-                rowmap_t snum=vMAPU(i,partno)-sstart; 
-                if (snum>0) {
-                    if (i==partno) {
+                rowcount_t sstart=vMAPL(i,partno-1);
+                rowcount_t snum=vMAPU(i,partno)-sstart;
+                if (snum>0)
+                {
+                    if (i==partno)
+                    {
                         PrintLog("SORT Merge READ: Stream(%u) local, pos=%"RCPF"u len=%"RCPF"u",i,sstart,snum);
                         readers.append(*slave.createMergeInputStream(sstart,snum));
                     }
@@ -508,7 +513,7 @@ public:
     }
 };
 
-CSortMerge::CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowmap_t _numrecs,ISocketSelectHandler *_selecthandler)
+CSortMerge::CSortMerge(CSortTransferServerThread *_parent,ISocket* _socket,ISocketRowWriter *_out,rowcount_t _poscount,rowcount_t _numrecs,ISocketSelectHandler *_selecthandler)
     : src(_parent->slave),socket(_socket),out(_out)
 {
     parent = _parent;

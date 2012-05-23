@@ -1953,9 +1953,16 @@ static HqlTransformerInfo eclHoistLocatorInfo("EclHoistLocator");
 class EclHoistLocator : public NewHqlTransformer
 {
 public:
-    EclHoistLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _alwaysHoistMatches) 
-        : NewHqlTransformer(eclHoistLocatorInfo), originalMatched(_originalMatches), matched(_matches), alwaysHoistMatches(_alwaysHoistMatches)
-    { 
+    EclHoistLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches)
+        : NewHqlTransformer(eclHoistLocatorInfo), originalMatched(_originalMatches), matched(_matches), singleNode(_singleNode), alwaysHoistMatches(_alwaysHoistMatches)
+    {
+        alwaysSingle = true;
+    }
+
+    void analyseChild(IHqlExpression * expr, bool _alwaysSingle)
+    {
+        alwaysSingle = _alwaysSingle;
+        analyse(expr, 0);
     }
 
     void noteDataset(IHqlExpression * expr, IHqlExpression * hoisted, bool alwaysHoist)
@@ -1969,9 +1976,15 @@ public:
             originalMatched.append(*expr);
             matched.append(*LINK(hoisted));
             alwaysHoistMatches.append(alwaysHoist);
+            singleNode.append(alwaysSingle);
         }
-        else if (alwaysHoist && !alwaysHoistMatches.item(match))
-            alwaysHoistMatches.replace(true, match);
+        else
+        {
+            if (alwaysHoist && !alwaysHoistMatches.item(match))
+                alwaysHoistMatches.replace(true, match);
+            if (alwaysSingle && !singleNode.item(match))
+                singleNode.replace(true, match);
+        }
     }
 
     void noteScalar(IHqlExpression * expr, IHqlExpression * value)
@@ -2036,13 +2049,16 @@ public:
             originalMatched.append(*expr);
             matched.append(*hoisted.getClear());
             alwaysHoistMatches.append(true);
+            singleNode.append(true);
         }
     }
 
 protected:
     HqlExprCopyArray & originalMatched;
     HqlExprArray & matched;
+    BoolArray & singleNode;
     BoolArray & alwaysHoistMatches;
+    bool alwaysSingle;
 };
 
 
@@ -2050,8 +2066,8 @@ protected:
 class EclChildSplitPointLocator : public EclHoistLocator
 {
 public:
-    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators, bool _supportsChildQueries) 
-    : EclHoistLocator(_originalMatches, _matches, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators), supportsChildQueries(_supportsChildQueries)
+    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators, bool _supportsChildQueries)
+    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators), supportsChildQueries(_supportsChildQueries)
     { 
         original = _original;
         okToSelect = false; 
@@ -2068,14 +2084,16 @@ public:
         }
     }
 
-    void findSplitPoints(IHqlExpression * expr, unsigned from, unsigned to, bool _executedOnce)
+    void findSplitPoints(IHqlExpression * expr, unsigned from, unsigned to, bool _alwaysSingle, bool _executedOnce)
     {
+        alwaysSingle = _alwaysSingle;
         for (unsigned i=from; i < to; i++)
         {
             IHqlExpression * cur = expr->queryChild(i);
             executedOnce = _executedOnce || cur->isAttribute();     // assume attributes are only executed once.
             findSplitPoints(cur);
         }
+        alwaysSingle = false;
     }
 
 protected:
@@ -2434,7 +2452,7 @@ protected:
 void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last)
 {
     //NB: Don't call member functions to ensure correct nesting of transform mutexes.
-    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, alwaysHoistChild, options.groupedChildIterators, options.supportsChildQueries);
+    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators, options.supportsChildQueries);
     unsigned max = expr->numChildren();
 
     //If child queries are supported then don't hoist the expressions if they might only be evaluated once
@@ -2444,18 +2462,32 @@ void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alw
     case no_setresult:
     case no_selectnth:
         //set results, only done once=>don't hoist conditionals
-        locator.findSplitPoints(expr, last, max, true);
+        locator.findSplitPoints(expr, last, max, true, true);
         return;
+    case no_loop:
+        if ((options.targetClusterType == ThorLCRCluster) && !options.isChildQuery)
+        {
+            //This is ugly!  The body is executed in parallel, so don't force that as a work unit result
+            //It means some child query expressions within loops don't get forced into work unit writes
+            //but that just means that the generated code will be not as good as it could be.
+            const unsigned bodyArg = 4;
+            locator.findSplitPoints(expr, 1, bodyArg, true, false);
+            locator.findSplitPoints(expr, bodyArg, bodyArg+1, false, false);
+            locator.findSplitPoints(expr, bodyArg+1, max, true, false);
+            return;
+        }
+        break;
     }
-    locator.findSplitPoints(expr, 0, first, true);          // IF() conditions only evaluated once... => don't force
-    locator.findSplitPoints(expr, last, max, false);
+    locator.findSplitPoints(expr, 0, first, true, true);          // IF() conditions only evaluated once... => don't force
+    locator.findSplitPoints(expr, last, max, true, false);
 }
 
 
 class EclThisNodeLocator : public EclHoistLocator
 {
 public:
-    EclThisNodeLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _alwaysHoistMatches) : EclHoistLocator(_originalMatches, _matches, _alwaysHoistMatches)
+    EclThisNodeLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches)
+        : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches)
     { 
         allNodesDepth = 0;
     }
@@ -2646,8 +2678,8 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         case no_allnodes:
             {
                 //MORE: This needs to recursively walk and lift any contained no_selfnode, but don't go past another nested no_allnodes;
-                EclThisNodeLocator locator(info->originalChildDependents, info->childDependents, alwaysHoistChild);
-                locator.analyse(expr->queryChild(0), 0);
+                EclThisNodeLocator locator(info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild);
+                locator.analyseChild(expr->queryChild(0), true);
                 break;
             }
         default:
@@ -3472,7 +3504,8 @@ void EclResourcer::addDependencies(IHqlExpression * expr, ResourceGraphInfo * gr
         {
             addDependencies(&cur, NULL, NULL);
             ResourcerInfo * sourceInfo = queryResourceInfo(&cur);
-            sourceInfo->noteUsedFromChild();
+            if (info->childSingleNode.item(i))
+                sourceInfo->noteUsedFromChild();
             ResourceGraphLink * link = new ResourceGraphDependencyLink(sourceInfo->graph, &cur, graph, expr);
             graph->dependsOn.append(*link);
             links.append(*link);
