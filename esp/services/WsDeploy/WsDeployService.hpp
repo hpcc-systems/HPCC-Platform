@@ -244,13 +244,11 @@ private:
 
         while ( m_quitThread == false )
         {
-          IDirectoryDifferenceIterator* diffIter = configFiles->monitorDirectory(NULL, NULL, false, false, m_uCheckInterval, m_uTimeout);
+          Owned<IDirectoryDifferenceIterator> diffIter = configFiles->monitorDirectory(NULL, NULL, false, false, m_uCheckInterval, m_uTimeout);
 
-          if (diffIter != NULL)
+          if (diffIter.get() != NULL)
           {
-            notify(diffIter);
-
-            delete diffIter;
+            notify(diffIter.get());
           }
         }
       };
