@@ -709,6 +709,7 @@ struct HqlCppOptions
     bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
     bool                shuffleLocalJoinConditions;
+    bool                projectNestedTables;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

@@ -1504,6 +1504,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_allnodes:
     case no_thisnode:
     case no_keydiff:
+    case no_keypatch:
         return 0;
     case no_setresult:
         if (expr->queryChild(0)->isAction())
@@ -7415,6 +7416,54 @@ StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const
     }
     return s;
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSelector, IHqlExpression * oldSelector, IHqlSimpleScope * oldScope, IHqlExpression * newRecord)
+{
+    ForEachChild(i, newRecord)
+    {
+        IHqlExpression * cur = newRecord->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur);
+            break;
+        case no_ifblock:
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur->queryChild(1));
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryName());
+                assertex(oldField);
+                OwnedHqlExpr selfSelected = createSelectExpr(LINK(selfSelector), LINK(cur));
+                OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSelector), LINK(oldField));
+
+                if (selfSelected->queryRecord() != oldSelected->queryRecord())
+                {
+                    assertex(oldSelected->isDatarow());
+                    OwnedHqlExpr childSelf = getSelf(cur);
+                    OwnedHqlExpr childTransform = createMappingTransform(childSelf, oldSelected);
+                    OwnedHqlExpr createRowExpr = createRow(no_createrow, childTransform.getClear());
+                    assigns.append(*createAssign(selfSelected.getClear(), createRowExpr.getClear()));
+                }
+                else
+                    assigns.append(*createAssign(selfSelected.getClear(), oldSelected.getClear()));
+            }
+        }
+    }
+}
+
+IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector)
+{
+    HqlExprArray assigns;
+    IHqlExpression * selfRecord = selfSelector->queryRecord();
+    IHqlExpression * inRecord = inSelector->queryRecord();
+    createMappingAssigns(assigns, selfSelector, inSelector, inRecord->querySimpleScope(), selfRecord);
+    return createValue(no_transform, makeTransformType(selfRecord->getType()), assigns);
+
+}
+
 
 //---------------------------------------------------------------------------------------------------------------------
 
