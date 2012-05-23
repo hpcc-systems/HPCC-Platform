@@ -1487,6 +1487,7 @@ public:
     void addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, _ATOM kind, const char * label=NULL, int controlId = 0);
     void addFileDependency(IHqlExpression * name, ABoundActivity * whoAmI);
 
+    void doBuildClearAggregateRecord(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * self, IHqlExpression * transform);
     void doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateFirstFunc(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildAggregateNextFunc(BuildCtx & ctx, IHqlExpression * expr);

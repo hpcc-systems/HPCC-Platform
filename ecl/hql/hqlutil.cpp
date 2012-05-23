@@ -7751,3 +7751,39 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
         return name == rightAtom;
     throwUnexpected();
 }
+
+//-------------------------------------------------------------------------------------------------
+
+IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
+{
+    ForEachChild(i, transform)
+    {
+        IHqlExpression * cur = transform->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            {
+                IHqlExpression * ret = queryTransformAssign(cur, searchField);
+                if (ret)
+                    return ret;
+                break;
+            }
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
+                if (lhs == searchField)
+                    return cur;
+                break;
+            }
+        }
+    }
+    return NULL;
+}
+
+IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField)
+{
+    IHqlExpression * value = queryTransformAssign(transform, searchField);
+    if (value)
+        return value->queryChild(1);
+    return NULL;
+}
