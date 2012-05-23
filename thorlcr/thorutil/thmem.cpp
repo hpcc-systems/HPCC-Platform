@@ -1612,6 +1612,7 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
 
 class CThorAllocator : public CSimpleInterface, implements roxiemem::IRowAllocatorCache, implements IRtlRowCallback, implements IThorAllocator
 {
+protected:
     mutable IArrayOf<IEngineRowAllocator> allAllocators;
     mutable SpinLock allAllocatorsLock;
     Owned<roxiemem::IRowManager> rowManager;
@@ -1729,9 +1730,33 @@ public:
     }
 };
 
-IThorAllocator *createThorAllocator(memsize_t memSize)
+// derived to avoid a 'crcChecking' check per getRowAllocator only
+class CThorCrcCheckingAllocator : public CThorAllocator
 {
-    return new CThorAllocator(memSize);
+public:
+    CThorCrcCheckingAllocator(memsize_t memSize) : CThorAllocator(memSize)
+    {
+    }
+// IThorAllocator
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    {
+        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
+        SpinBlock b(allAllocatorsLock);
+        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        LINK(ret);
+        allAllocators.append(*ret);
+        return ret;
+    }
+};
+
+
+IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking)
+{
+    PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
+    if (crcChecking)
+        return new CThorCrcCheckingAllocator(memSize);
+    else
+        return new CThorAllocator(memSize);
 }
 
 
@@ -2014,9 +2039,4 @@ IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t s
 IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
 {
     return LINK(chain);
-}
-
-void setLCRrowCRCchecking(bool on)
-{
-    // JCSMORE!
 }
