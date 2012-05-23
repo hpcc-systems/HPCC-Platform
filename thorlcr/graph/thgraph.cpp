@@ -1659,7 +1659,8 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     {
         localResults.setown(createThorGraphResults(numResults));
         resultsGraph = this;
-        tmpHandler.setown(queryJob().createTempHandler());
+        // JCSMORE - it might more sense if this temp handler was owned by parent act., which may finish(get stopped) earlier than the owning graph
+        tmpHandler.setown(queryJob().createTempHandler(false));
     }
 
     localChild = false;
@@ -1953,7 +1954,11 @@ void CGraphTempHandler::deregisterFile(const char *name, bool kept)
     CriticalBlock b(crit);
     CFileUsageEntry *fileUsage = tmpFiles.find(name);
     if (!fileUsage)
-        throw MakeThorException(TE_FileNotFound, "File not found (%s) deregistering tmp file", name);
+    {
+        if (errorOnMissing)
+            throw MakeThorException(TE_FileNotFound, "File not found (%s) deregistering tmp file", name);
+        return;
+    }
     if (0 == fileUsage->queryUsage()) // marked 'not to be deleted' until workunit complete.
         return;
     else if (1 == fileUsage->queryUsage())
