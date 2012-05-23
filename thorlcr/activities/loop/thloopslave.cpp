@@ -219,7 +219,7 @@ class CLoopSlaveActivity : public CLoopSlaveActivityBase
     Owned<IRowStream> curInput;
     Owned<CNextRowFeeder> nextRowFeeder;
     Owned<IRowWriterMultiReader> loopPending;
-    unsigned loopPendingCount;
+    rowcount_t loopPendingCount;
     unsigned flags, lastMs;
     IHThorLoopArg *helper;
     bool eof, finishedLooping;

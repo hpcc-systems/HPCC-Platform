@@ -1051,7 +1051,7 @@ void CJobSlave::startJob()
     unsigned __int64 freeSpaceRep = getFreeSpace(queryBaseDirectory(true));
     PROGLOG("Disk space: %s = %"I64F"d, %s = %"I64F"d", queryBaseDirectory(), freeSpace/0x100000, queryBaseDirectory(true), freeSpaceRep/0x100000);
 
-    unsigned minFreeSpace = getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
+    unsigned minFreeSpace = (unsigned)getWorkUnitValueInt("MINIMUM_DISK_SPACE", 0);
     if (minFreeSpace)
     {
         if (freeSpace < ((unsigned __int64)minFreeSpace)*0x100000)

@@ -77,7 +77,7 @@ class CThorGraphResult : public CInterface, implements IThorResult, implements I
         virtual void flush() { }
         virtual IRowStream *getReader()
         {
-            return rows.createRowStream(0, (rowcount_t)-1, false);
+            return rows.createRowStream(0, (rowidx_t)-1, false);
         }
     };
 public:
@@ -171,9 +171,10 @@ public:
     }
     virtual void getLinkedResult(unsigned &countResult, byte * * & result)
     {
+        assertex(rowStreamCount==((unsigned)rowStreamCount)); // catch, just in case
         Owned<IRowStream> stream = getRowStream();
         countResult = 0;
-        OwnedConstThorRow _rowset = allocator->createRowset(rowStreamCount);
+        OwnedConstThorRow _rowset = allocator->createRowset((unsigned)rowStreamCount);
         const void **rowset = (const void **)_rowset.get();
         loop
         {
@@ -243,7 +244,7 @@ public:
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild());
     }
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, unsigned rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
+    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
         Owned<IThorGraphResults> results = graph->createThorGraphResults(3);
         prepareLoopResults(activity, results);

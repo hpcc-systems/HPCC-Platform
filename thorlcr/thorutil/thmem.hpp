@@ -241,16 +241,16 @@ protected:
     const void **rows;
     void **stableSortTmp;
     bool stableSort, throwOnOom, allowNulls;
-    rowcount_t maxRows;  // Number of rows that can fit in the allocated memory.
-    rowcount_t numRows;  // rows that have been added can only be updated by writing thread.
+    rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
+    rowidx_t numRows;  // rows that have been added can only be updated by writing thread.
 
-    void init(rowcount_t initialSize, bool stable);
-    const void *allocateNewRows(rowcount_t requiredRows, OwnedConstThorRow &newStableSortTmp);
+    void init(rowidx_t initialSize, bool stable);
+    const void *allocateNewRows(rowidx_t requiredRows, OwnedConstThorRow &newStableSortTmp);
     void serialize(IRowSerializerTarget &out);
     void doSort(unsigned n, void **const rows, ICompare &compare, unsigned maxCores);
 
 public:
-    CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true, rowcount_t initialSize=InitialSortElements);
+    CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
     CActivityBase &queryActivity() { return activity; }
     // NB: throws error on OOM by default
@@ -260,7 +260,7 @@ public:
     void clearRows();
     void kill();
 
-    void setRow(rowcount_t idx, const void *row) // NB: takes ownership
+    void setRow(rowidx_t idx, const void *row) // NB: takes ownership
     {
         OwnedConstThorRow _row = row;
         assertex(idx < maxRows);
@@ -282,13 +282,13 @@ public:
         rows[numRows++] = row;
         return true;
     }
-    inline const void *query(rowcount_t i) const
+    inline const void *query(rowidx_t i) const
     {
         if (i>=numRows)
             return NULL;
         return rows[i];
     }
-    inline const void *get(rowcount_t i) const
+    inline const void *get(rowidx_t i) const
     {
         if (i>=numRows)
             return NULL;
@@ -297,7 +297,7 @@ public:
             LinkThorRow(row);
         return row;
     }
-    inline const void *getClear(rowcount_t i)
+    inline const void *getClear(rowidx_t i)
     {
         if (i>=numRows)
             return NULL;
@@ -305,7 +305,7 @@ public:
         rows[i] = NULL;
         return row;
     }
-    inline rowcount_t ordinality() const { return numRows; }
+    inline rowidx_t ordinality() const { return numRows; }
 
     inline const void **getRowArray() { return rows; }
     void swap(CThorExpandingRowArray &src);
@@ -314,18 +314,18 @@ public:
         kill();
         swap(from);
     }
-    void transferRows(rowcount_t & outNumRows, const void * * & outRows);
+    void transferRows(rowidx_t & outNumRows, const void * * & outRows);
     void transferFrom(CThorExpandingRowArray &src); 
     void transferFrom(CThorSpillableRowArray &src);
-    void removeRows(rowcount_t start, rowcount_t n);
+    void removeRows(rowidx_t start, rowidx_t n);
     void clearUnused();
     void sort(ICompare &compare, unsigned maxCores);
-    void reorder(rowcount_t start, rowcount_t num, unsigned *neworder);
+    void reorder(rowidx_t start, rowidx_t num, unsigned *neworder);
 
     bool equal(ICompare *icmp, CThorExpandingRowArray &other);
     bool checkSorted(ICompare *icmp);
 
-    IRowStream *createRowStream(rowcount_t start=0, rowcount_t num=(rowcount_t)-1, bool streamOwns=true);
+    IRowStream *createRowStream(rowidx_t start=0, rowidx_t num=(rowidx_t)-1, bool streamOwns=true);
 
     void partition(ICompare &compare, unsigned num, UnsignedArray &out); // returns num+1 points
 
@@ -337,25 +337,25 @@ public:
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
 
-    virtual bool ensure(rowcount_t requiredRows);
+    virtual bool ensure(rowidx_t requiredRows);
 };
 
 interface IWritePosCallback : extends IInterface
 {
-    virtual rowcount_t queryRecordNumber() = 0;
+    virtual rowidx_t queryRecordNumber() = 0;
     virtual void filePosition(offset_t pos) = 0;
 };
 
 class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray
 {
     const size32_t commitDelta;  // How many rows need to be written before they are added to the committed region?
-    rowcount_t firstRow; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
-    rowcount_t commitRows;  // can only be updated by writing thread within a critical section
+    rowidx_t firstRow; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
+    rowidx_t commitRows;  // can only be updated by writing thread within a critical section
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
 
 protected:
-    virtual bool ensure(rowcount_t requiredRows);
+    virtual bool ensure(rowidx_t requiredRows);
 
 public:
 
@@ -368,7 +368,7 @@ public:
         inline ~CThorSpillableRowArrayLock() { rows.unlock(); }
     };
 
-    CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, rowcount_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
+    CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
     // NB: throwOnOom false
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=false)
@@ -400,17 +400,17 @@ public:
     }
 
     //The following can be accessed from the reader without any need to lock
-    inline const void *query(rowcount_t i) const
+    inline const void *query(rowidx_t i) const
     {
         CThorSpillableRowArrayLock block(*this);
         return CThorExpandingRowArray::query(i);
     }
-    inline const void *get(rowcount_t i) const
+    inline const void *get(rowidx_t i) const
     {
         CThorSpillableRowArrayLock block(*this);
         return CThorExpandingRowArray::get(i);
     }
-    inline const void *getClear(rowcount_t i)
+    inline const void *getClear(rowidx_t i)
     {
         CThorSpillableRowArrayLock block(*this);
         return CThorExpandingRowArray::getClear(i);
@@ -418,17 +418,17 @@ public:
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
-    unsigned save(IFile &file, rowcount_t watchRecNum=(rowcount_t)-1, offset_t *watchFilePosResult=NULL);
-    const void **getBlock(rowcount_t readRows);
-    inline void noteSpilled(rowcount_t spilledRows)
+    unsigned save(IFile &file, rowidx_t watchRecNum=(rowidx_t)-1, offset_t *watchFilePosResult=NULL);
+    const void **getBlock(rowidx_t readRows);
+    inline void noteSpilled(rowidx_t spilledRows)
     {
         firstRow += spilledRows;
     }
 
     //The block returned is only valid until the critical section is released
 
-    inline rowcount_t firstCommitted() const { return firstRow; }
-    inline rowcount_t numCommitted() const { return commitRows - firstRow; }
+    inline rowidx_t firstCommitted() const { return firstRow; }
+    inline rowidx_t numCommitted() const { return commitRows - firstRow; }
 
     //Locking functions - use CThorSpillableRowArrayLock above
     inline void lock() const { cs.enter(); }
