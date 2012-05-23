@@ -146,7 +146,7 @@ public:
     }
     
 // CJobBase impls.
-    virtual IGraphTempHandler *createTempHandler();
+    virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     virtual CGraphBase *createGraph();
 
     CMasterGraphElement *locateActivity(activity_id id)

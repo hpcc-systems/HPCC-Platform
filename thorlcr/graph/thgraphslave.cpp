@@ -987,7 +987,7 @@ public:
 class CSlaveGraphTempHandler : public CGraphTempHandler
 {
 public:
-    CSlaveGraphTempHandler(CJobBase &job) : CGraphTempHandler(job)
+    CSlaveGraphTempHandler(CJobBase &job, bool errorOnMissing) : CGraphTempHandler(job, errorOnMissing)
     {
     }
     virtual bool removeTemp(const char *name)
@@ -1055,7 +1055,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 #endif
     querySo.setown(createDllEntry(_querySo, false, NULL));
     codeCtx = new CThorCodeContextSlave(*this, *querySo, *userDesc, slavemptag);
-    tmpHandler.setown(new CSlaveGraphTempHandler(*this));
+    tmpHandler.setown(createTempHandler(true));
     startJob();
 }
 
@@ -1130,9 +1130,9 @@ IBarrier *CJobSlave::createBarrier(mptag_t tag)
     return new CBarrierSlave(*jobComm, tag);
 }
 
-IGraphTempHandler *CJobSlave::createTempHandler()
+IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
 {
-    return new CSlaveGraphTempHandler(*this);
+    return new CSlaveGraphTempHandler(*this, errorOnMissing);
 }
 
 // IGraphCallback
