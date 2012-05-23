@@ -27,17 +27,13 @@ typedef unsigned graph_id;
 #define ACTPF
 #define GIDPF
 
-#ifdef __64BIT__
 typedef unsigned __int64 rowcount_t;
 #define RCPF I64F
 #define RCMAX ((rowcount_t)(__int64)-1)
-#else
-typedef unsigned rowcount_t;
-#define RCPF ""
-#define RCMAX UINT_MAX
-#endif
 #define RCUNBOUND RCMAX
 #define RCUNSET RCMAX
+typedef size32_t rowidx_t;
+#define RIPF ""
 
 template <class T>
 inline rowcount_t validRC(T X)

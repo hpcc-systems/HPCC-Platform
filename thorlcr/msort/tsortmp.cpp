@@ -19,7 +19,6 @@ enum MPSlaveFunctions
     FN_GetMultiMidPoint,
     FN_GetMultiMidPointStart,
     FN_GetMultiMidPointStop,
-    FN_SingleBinChop,
     FN_MultiBinChop,
     FN_MultiBinChopStart,
     FN_MultiBinChopStop,
@@ -106,7 +105,7 @@ void SortSlaveMP::StartGather()
     sendRecv(mb);
 }
 
-void SortSlaveMP::GetGatherInfo(rowmap_t &numlocal, offset_t &totalsize, unsigned &overflowscale, bool hasserializer)
+void SortSlaveMP::GetGatherInfo(rowcount_t &numlocal, offset_t &totalsize, unsigned &overflowscale, bool hasserializer)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_GetGatherInfo);
@@ -115,14 +114,14 @@ void SortSlaveMP::GetGatherInfo(rowmap_t &numlocal, offset_t &totalsize, unsigne
     mb.read(numlocal).read(totalsize).read(overflowscale);
 }
 
-rowmap_t SortSlaveMP::GetMinMax(size32_t &keybuffsize,void *&keybuff, size32_t &avrecsizesize)
+rowcount_t SortSlaveMP::GetMinMax(size32_t &keybuffsize,void *&keybuff, size32_t &avrecsizesize)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_GetMinMax);
     sendRecv(mb);
     deserializeblk(mb,keybuffsize,keybuff);
     mb.read(avrecsizesize);
-    rowmap_t ret;
+    rowcount_t ret;
     mb.read(ret);
     return ret;
 }
@@ -167,27 +166,14 @@ void SortSlaveMP::GetMultiMidPointStop(size32_t &mkeybuffsize, void * &mkeybuf)
     deserializeblk(mb,mkeybuffsize,mkeybuf);
 }
 
-rowmap_t SortSlaveMP::SingleBinChop(size32_t keysize,const byte *key,byte cmpfn)
-{
-    CMessageBuffer mb;
-    mb.append((byte)FN_SingleBinChop);
-    serializeblk(mb,keysize,key).append(cmpfn);
-    sendRecv(mb);
-    rowmap_t ret;
-    mb.read(ret);
-    return ret;
-}
-
-void SortSlaveMP::MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowmap_t *pos,byte cmpfn,bool useaux)
+void SortSlaveMP::MultiBinChop(size32_t keybuffsize,const byte *keybuff, unsigned num,rowcount_t *pos,byte cmpfn,bool useaux)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiBinChop);
     serializeblk(mb,keybuffsize,keybuff).append(num).append(cmpfn).append(useaux);
     sendRecv(mb);
-    mb.read(num*sizeof(rowmap_t),pos);
+    mb.read(num*sizeof(rowcount_t),pos);
 }
-
-
 
 void SortSlaveMP::MultiBinChopStart(size32_t keybuffsize,const byte *keybuff, byte cmpfn) /* async */
 {
@@ -197,41 +183,41 @@ void SortSlaveMP::MultiBinChopStart(size32_t keybuffsize,const byte *keybuff, by
     sendRecv(mb);
 }
 
-void SortSlaveMP::MultiBinChopStop(unsigned num,rowmap_t *pos)
+void SortSlaveMP::MultiBinChopStop(unsigned num,rowcount_t *pos)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiBinChopStop);
     mb.append(num);
     sendRecv(mb);
-    mb.read(num*sizeof(rowmap_t),pos);
+    mb.read(num*sizeof(rowcount_t),pos);
 }
 
-void SortSlaveMP::OverflowAdjustMapStart( unsigned mapsize,rowmap_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn,bool useaux) /* async */
+void SortSlaveMP::OverflowAdjustMapStart(unsigned mapsize,rowcount_t *map,size32_t keybuffsize,const byte *keybuff, byte cmpfn,bool useaux) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_OverflowAdjustMapStart);
-    mb.append(mapsize).append(mapsize*sizeof(rowmap_t),map);
+    mb.append(mapsize).append(mapsize*sizeof(rowcount_t),map);
     serializeblk(mb,keybuffsize,keybuff).append(cmpfn).append(useaux);
     sendRecv(mb);
 
 }
 
-rowmap_t SortSlaveMP::OverflowAdjustMapStop( unsigned mapsize, rowmap_t *map)
+rowcount_t SortSlaveMP::OverflowAdjustMapStop( unsigned mapsize, rowcount_t *map)
 {
     CMessageBuffer mb;
     mb.append((byte)FN_OverflowAdjustMapStop);
     mb.append(mapsize);
     sendRecv(mb);
-    rowmap_t ret;
-    mb.read(ret).read(mapsize*sizeof(rowmap_t),map);
+    rowcount_t ret;
+    mb.read(ret).read(mapsize*sizeof(rowcount_t),map);
     return ret;
 }
 
-void SortSlaveMP::MultiMerge(unsigned mapsize,rowmap_t *map,unsigned num,SocketEndpoint* endpoints) /* async */
+void SortSlaveMP::MultiMerge(unsigned mapsize,rowcount_t *map,unsigned num,SocketEndpoint* endpoints) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiMerge);
-    mb.append(mapsize).append(mapsize*sizeof(rowmap_t),map);
+    mb.append(mapsize).append(mapsize*sizeof(rowcount_t),map);
     mb.append(num);
     while (num--) {
         endpoints->serialize(mb);
@@ -241,12 +227,12 @@ void SortSlaveMP::MultiMerge(unsigned mapsize,rowmap_t *map,unsigned num,SocketE
 }
 
 
-void SortSlaveMP::MultiMergeBetween(unsigned mapsize,rowmap_t *map,rowmap_t *mapupper,unsigned num,SocketEndpoint* endpoints) /* async */
+void SortSlaveMP::MultiMergeBetween(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,unsigned num,SocketEndpoint* endpoints) /* async */
 {
     CMessageBuffer mb;
     mb.append((byte)FN_MultiMergeBetween);
-    mb.append(mapsize).append(mapsize*sizeof(rowmap_t),map);
-    mb.append(mapsize*sizeof(rowmap_t),mapupper);
+    mb.append(mapsize).append(mapsize*sizeof(rowcount_t),map);
+    mb.append(mapsize*sizeof(rowcount_t),mapupper);
     mb.append(num);
     while (num--) {
         endpoints->serialize(mb);
@@ -352,7 +338,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             case FN_GetGatherInfo: {
                 bool hasserializer;
                 mb.read(hasserializer);
-                rowmap_t numlocal;
+                rowcount_t numlocal;
                 unsigned overflowscale;
                 offset_t totalsize;
                 slave.GetGatherInfo(numlocal,totalsize,overflowscale,hasserializer);
@@ -363,7 +349,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 size32_t keybuffsize;
                 void *keybuff;
                 size32_t avrecsize;
-                rowmap_t ret = slave.GetMinMax(keybuffsize,keybuff,avrecsize);
+                rowcount_t ret = slave.GetMinMax(keybuffsize,keybuff,avrecsize);
                 serializeblk(mbout,keybuffsize,keybuff).append(avrecsize).append(ret);
                 free(keybuff);
             }
@@ -417,8 +403,8 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
             case FN_MultiBinChopStop: {
                 unsigned num;
                 mb.read(num);
-                void *out = mbout.reserveTruncate(num*sizeof(rowmap_t));
-                slave.MultiBinChopStop(num,(rowmap_t *)out);
+                void *out = mbout.reserveTruncate(num*sizeof(rowcount_t));
+                slave.MultiBinChopStop(num,(rowcount_t *)out);
             }
             break;
             case FN_GetMultiMidPointStop: {
@@ -427,17 +413,6 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 slave.GetMultiMidPointStop(mkeybuffsize,mkeybuff);
                 serializeblk(mbout,mkeybuffsize,mkeybuff);
                 free(mkeybuff);
-            }
-            break;
-            case FN_SingleBinChop: {
-                size32_t keysize;
-                byte * key;
-                deserializeblk(mb,keysize,key);
-                byte cmpfn;
-                mb.read(cmpfn);
-                rowmap_t ret = slave.SingleBinChop(keysize,key,cmpfn);
-                mbout.append(ret);
-                free(key);
             }
             break;
             case FN_MultiBinChopStart: {
@@ -460,8 +435,8 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 byte cmpfn;
                 bool useaux;
                 mb.read(num).read(cmpfn).read(useaux);
-                void *out = mbout.reserveTruncate(num*sizeof(rowmap_t));
-                slave.MultiBinChop(keybuffsize,(const byte *)keybuff,num,(rowmap_t *)out,cmpfn,useaux);
+                void *out = mbout.reserveTruncate(num*sizeof(rowcount_t));
+                slave.MultiBinChop(keybuffsize,(const byte *)keybuff,num,(rowcount_t *)out,cmpfn,useaux);
                 free(keybuff);
             }
             break;
@@ -470,7 +445,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 comm->reply(mbout);
                 unsigned mapsize;
                 mb.read(mapsize);
-                const void * map = mb.readDirect(mapsize*sizeof(rowmap_t));
+                const void * map = mb.readDirect(mapsize*sizeof(rowcount_t));
                 size32_t keybuffsize;
                 void * keybuff;
                 deserializeblk(mb,keybuffsize,keybuff);
@@ -478,18 +453,18 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 mb.read(cmpfn);
                 bool useaux;
                 mb.read(useaux);
-                slave.OverflowAdjustMapStart(mapsize,(rowmap_t *)map,keybuffsize,(const byte *)keybuff,cmpfn,useaux);
+                slave.OverflowAdjustMapStart(mapsize,(rowcount_t *)map,keybuffsize,(const byte *)keybuff,cmpfn,useaux);
                 free(keybuff);
             }
             break;
             case FN_OverflowAdjustMapStop: {
                 unsigned mapsize;
                 mb.read(mapsize);
-                rowmap_t ret=0;
+                rowcount_t ret=0;
                 size32_t retofs = mbout.length();
                 mbout.append(ret);
-                void *map=mbout.reserveTruncate(mapsize*sizeof(rowmap_t));
-                ret = slave.OverflowAdjustMapStop(mapsize,(rowmap_t *)map);     // could avoid copy here if passed mb
+                void *map=mbout.reserveTruncate(mapsize*sizeof(rowcount_t));
+                ret = slave.OverflowAdjustMapStop(mapsize,(rowcount_t *)map);     // could avoid copy here if passed mb
                 mbout.writeDirect(retofs,sizeof(ret),&ret);
             }
             break;
@@ -498,7 +473,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 comm->reply(mbout);
                 unsigned mapsize;
                 mb.read(mapsize);
-                const void *map = mb.readDirect(mapsize*sizeof(rowmap_t));
+                const void *map = mb.readDirect(mapsize*sizeof(rowcount_t));
                 unsigned num;
                 mb.read(num);
                 SocketEndpointArray epa;
@@ -507,7 +482,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                     ep.deserialize(mb);
                     epa.append(ep);
                 }
-                slave.MultiMerge(mapsize,(rowmap_t *)map,num,epa.getArray());
+                slave.MultiMerge(mapsize,(rowcount_t *)map,num,epa.getArray());
             }
             break;
             case FN_MultiMergeBetween: {
@@ -515,8 +490,8 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                 comm->reply(mbout);
                 unsigned mapsize;
                 mb.read(mapsize);
-                const void *map = mb.readDirect(mapsize*sizeof(rowmap_t));
-                const void *mapupper = mb.readDirect(mapsize*sizeof(rowmap_t));
+                const void *map = mb.readDirect(mapsize*sizeof(rowcount_t));
+                const void *mapupper = mb.readDirect(mapsize*sizeof(rowcount_t));
                 unsigned num;
                 mb.read(num);
                 SocketEndpointArray epa;
@@ -525,7 +500,7 @@ bool SortSlaveMP::marshall(ISortSlaveMP &slave, ICommunicator* comm, mptag_t tag
                     ep.deserialize(mb);
                     epa.append(ep);
                 }
-                slave.MultiMergeBetween(mapsize,(rowmap_t *)map,(rowmap_t *)mapupper,num,epa.getArray());
+                slave.MultiMergeBetween(mapsize,(rowcount_t *)map,(rowcount_t *)mapupper,num,epa.getArray());
             }
             break;
             case FN_SingleMerge: {

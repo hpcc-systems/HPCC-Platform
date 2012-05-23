@@ -28,8 +28,6 @@
 #include "mptag.hpp"
 #include "mpbase.hpp"
 
-typedef rowcount_t rowmap_t;
-
 interface ISortKeySerializer;
 interface IRowInterfaces;
 interface IThorDataLink;
@@ -67,8 +65,8 @@ interface ISocketRowWriter: extends IRowWriter
 
 class CActivityBase;
 IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC);
-IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowmap_t numrecs);
-ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowmap_t &numrecs);
+IRowStream *ConnectMergeRead(unsigned id,IRowInterfaces *rowif,SocketEndpoint &nodeaddr,rowcount_t startrec,rowcount_t numrecs);
+ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32_t bufsize,rowcount_t &startrec,rowcount_t &numrecs);
 #define SOCKETSERVERINC                    1
 #define NUMSLAVESOCKETS                    2
 
@@ -84,7 +82,7 @@ interface ISortedInput: extends IInterface // reads rows from sorted local data 
 
 interface ISortSlaveBase  // for global merging 
 {
-    virtual IRowStream *createMergeInputStream(rowmap_t sstart, rowcount_t _snum) = 0;
+    virtual IRowStream *createMergeInputStream(rowcount_t sstart, rowcount_t _snum) = 0;
     virtual size32_t getTransferBlockSize() = 0;
     virtual unsigned getTransferPort() = 0;
     virtual void startMerging(IArrayOf<IRowStream> &readers, rowcount_t _totalrows) = 0;
@@ -95,7 +93,7 @@ interface ISortSlaveBase  // for global merging
 interface IMergeTransferServer: extends IInterface
 {
     virtual void start() = 0;
-    virtual rowmap_t merge(unsigned mapsize,rowmap_t *map,rowmap_t *mapupper,
+    virtual rowcount_t merge(unsigned mapsize,rowcount_t *map,rowcount_t *mapupper,
                             unsigned num,SocketEndpoint* endpoints,
                             unsigned partno
                            ) = 0;
