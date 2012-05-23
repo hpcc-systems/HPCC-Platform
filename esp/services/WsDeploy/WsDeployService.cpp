@@ -24,7 +24,6 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "jencrypt.hpp"
-#include "build-config.h"
 
 #ifdef _WINDOWS
 #include <winsock2.h>
@@ -274,7 +273,7 @@ IPropertyTree* CWsDeployFileInfo::getEnvTree(IEspContext &context, IConstWsDeplo
   
   context.getPeer(sbUserIp);
 
-  if (m_userWithLock.length() && !strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
+  if (m_userWithLock.length() && !strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()) &&  m_Environment != NULL)
     return &m_Environment->getPTree();
   else
     return &m_constEnvRdOnly->getPTree();
@@ -2824,6 +2823,12 @@ bool CWsDeployFileInfo::clientAlive(IEspContext &context, IEspClientAliveRequest
   StringBuffer sb(sbName);
   sb.append(sbUserIp);
 
+  if (getConfigChanged() == true)
+  {
+    updateConfigFromFile();
+    setConfigChanged(false);
+  }
+
   if (!strcmp(sbName.str(), m_userWithLock.str()) && !strcmp(sbUserIp.str(), m_userIp.str()))
   {
     CClientAliveThread* pClientAliveThread = m_keepAliveHTable.getValue(sb.str());
@@ -5244,6 +5249,33 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
   }
 }
 
+void CWsDeployFileInfo::updateConfigFromFile()
+{
+  StringBuffer sbxml;
+
+  synchronized block(m_mutex);
+
+  if (m_pFileIO.get() != NULL)
+  {
+    m_pFileIO.clear();
+  }
+  if (m_lastSaved.isNull())
+  {
+    m_lastSaved.setNow();
+  }
+
+  m_pFileIO.setown(m_pFile->open(IFOread));
+  Owned <IPropertyTree> pTree = createPTree(*m_pFileIO);
+  toXML(pTree, sbxml.clear());
+
+  Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+
+  m_constEnvRdOnly.clear();
+  m_constEnvRdOnly.setown(factory->loadLocalEnvironment(sbxml.str()));
+  m_lastSaved.clear();
+  m_lastSaved.setNow();
+}
+
 bool CWsDeployFileInfo::deploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
 {
   synchronized block(m_mutex);
@@ -5465,6 +5497,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
           else
           {
             Owned<IFile> pFile(createIFile(sb.str()));
+            setSkipNotification(true);
             copyFile(pFile, m_pFile, 0x100000);
             break;
           }
@@ -5557,6 +5590,8 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
       throw MakeStringException(0, "%s", sMsg.str());
     }
   }
+
+   CConfigFileMonitorThread::getInstance()->addObserver(*this);
 }
 
 void CWsDeployFileInfo::unlockEnvironment(IEspContext* context, IConstWsDeployReqInfo *reqInfo, const char* xmlArg, StringBuffer& sbErrMsg, bool saveEnv)
@@ -6046,9 +6081,9 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
 
   if (!fileExists)
     toXML(pEnvRoot, sbxml.clear());
-  
+
   m_Environment.clear();
-  
+
   if (m_constEnvRdOnly.get() == NULL)
   {
     if (fileExists)
@@ -6084,6 +6119,7 @@ CWsDeployFileInfo::~CWsDeployFileInfo()
     unlockCloud.start(sbMsg);
   }
 
+  CWsDeployFileInfo::CConfigFileMonitorThread::getInstance()->removeObserver(*this);
   m_pNavTree.clear();
   m_pGraphXml.clear();
   m_Environment.clear();
@@ -6547,6 +6583,7 @@ CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNo
       try
       {
         fi->initFileInfo(createFile);
+        CWsDeployFileInfo::CConfigFileMonitorThread::getInstance()->addObserver(*fi);
       }
       catch (IException* e)
       {

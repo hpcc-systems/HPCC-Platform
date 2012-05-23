@@ -317,14 +317,18 @@ function keepAlive() {
         resetHiddenVars();
         document.forms['treeForm'].mode.value = prevmode;
       }
-      else if (form.saveInProgress.value !== "true" && (RefreshClient1[0] === 'true' || (LastSaved1[0].charAt(0) != '<' && form.lastSaved.value.length && (form.lastSaved.value != LastSaved1[0])))) {
+      else if ( document.getElementById('ReadWrite').checked == false &&
+                form.saveInProgress.value !== "true" &&
+                (RefreshClient1[0] === 'true' || (LastSaved1[0].charAt(0) != '<' && form.lastSaved.value.length && (form.lastSaved.value != LastSaved1[0]))))
+      {
         if (document.forms['treeForm'].mode.value === '2')
           msg = "Environment has been updated by another user. Press Ok to reload the Environment.";
         form.lastSaved.value = LastSaved1[0];
       }
-
-      if (msg.length > 0)
+      if (msg.length > 0  && form.isChanged.value === "false")
+      {
         refresh(msg);
+      }
     },
     failure: function(o) {
     },
@@ -1597,9 +1601,13 @@ function unlockEnvironment(navtable, saveEnv) {
             var form = document.forms['treeForm'];
             var LastSaved = o.responseText.split(/<LastSaved>/g);
             var LastSaved1 = LastSaved[1].split(/<\/LastSaved>/g);
+            var Refresh = "false";
 
             if (LastSaved1[0].charAt(0) != '<' && form.lastSaved.value !== LastSaved1[0])
+            {
+              Refresh = "true";
               form.lastSaved.value = LastSaved1[0];
+            }
 
             Dom.removeClass(navtable.getTrEl(0), 'envlocked');
             form.isLocked.value = "false";
@@ -1607,8 +1615,10 @@ function unlockEnvironment(navtable, saveEnv) {
             form.isChanged.value = "false";
             updateEnvCtrls(false);
 
-            if (saveEnv || changed === "true")
+            if (saveEnv || changed === "true" || Refresh === "true")
+            {
               refresh();
+            }
           }
         }
         else if (o.responseText.indexOf("<html") === 0) {
