@@ -1587,6 +1587,7 @@ public:
         lastTick = 0;
 #endif
         helper = (IHThorKeyedJoinArg *)queryHelper();
+        reInit = 0 != (helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename));
     }
     ~CKeyedJoinSlave()
     {
@@ -1832,6 +1833,10 @@ public:
             tags.append(tag);
             container.queryJob().queryJobComm().flush(tag);
         }
+        indexParts.kill();
+        dataParts.kill();
+        tlkKeySet.setown(createKeyIndexSet());
+        partKeySet.setown(createKeyIndexSet());
         unsigned numIndexParts;
         data.read(numIndexParts);
         if (numIndexParts)
