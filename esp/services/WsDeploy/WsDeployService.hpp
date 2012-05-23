@@ -442,6 +442,7 @@ public:
         setConfigChanged(true);
       }
       setSkipNotification(false);
+      return true;
     };
     virtual const char* getConfigFilePath()
     {
