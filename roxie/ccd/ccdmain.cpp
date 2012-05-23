@@ -950,9 +950,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (runOnce)
         {
             Owned <IRoxieListener> roxieServer;
-            if (standAloneDll) // Local
+            if (standAloneDll)
                 roxieServer.setown(createRoxieWorkUnitListener(1, false, standAloneDll.getClear()->queryDll()));
-            else // Dali
+            else
                 roxieServer.setown(createRoxieSocketListener(0, 1, 0, false));
             try
             {
