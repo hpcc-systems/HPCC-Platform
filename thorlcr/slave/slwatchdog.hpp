@@ -26,11 +26,11 @@ class CGraphBase;
 interface ISlaveWatchdog : extends IInterface
 {
     virtual void startGraph(CGraphBase &graph) = 0;
-    virtual void stopGraph(CGraphBase &graph, HeartBeatPacket *hb=NULL) = 0;
+    virtual void stopGraph(CGraphBase &graph, MemoryBuffer *mb=NULL) = 0;
     virtual void stop() = 0;
 };
-ISlaveWatchdog *createProgressHandler();
 
+ISlaveWatchdog *createProgressHandler(bool udp=false);
 
 #endif
 
