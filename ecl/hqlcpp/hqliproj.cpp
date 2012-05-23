@@ -1971,8 +1971,9 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return CreateRecordActivity;
     case no_inlinetable:
     case no_dataset_from_transform:
-    case no_inlinedictionary:
         return CreateRecordSourceActivity;
+    case no_inlinedictionary:
+        return SourceActivity;
     case no_extractresult:
     case no_apply:
         return SinkActivity;
@@ -2771,7 +2772,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CreateRecordSourceActivity:
         {
-            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform || expr->getOperator() == no_inlinedictionary);
+            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform);
             //Always reduce things that create a new record so they only project the fields they need to
             if (complexExtra->outputChanged())
             {
