@@ -1174,11 +1174,11 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
     if (left->isDataset() || right->isDataset())
         return createDataset(no_if, cond, createComma(left, right));
 
-    if (left->isDatarow() || right->isDatarow())
-        return createRow(no_if, cond, createComma(left, right));
-
     if (left->isDictionary() || right->isDictionary())
         return createDictionary(no_if, cond, createComma(left, right));
+
+    if (left->isDatarow() || right->isDatarow())
+        return createRow(no_if, cond, createComma(left, right));
 
     ITypeInfo * type = ::getPromotedECLType(left->queryType(), right->queryType());
     return createValue(no_if, type, cond, left, right);
@@ -1882,10 +1882,10 @@ unsigned isEmptyRecord(IHqlExpression * record)
 
 bool isTrivialSelectN(IHqlExpression * expr)
 {
-    if (expr->getOperator() == no_index || expr->getOperator() == no_index)
+    if (expr->getOperator() == no_index || expr->getOperator() == no_selectnth)
     {
         IHqlExpression * index = expr->queryChild(1);
-        if (index->queryValue() && (index->queryValue()->getIntValue() == 1))
+        if (matchesConstantValue(index, 1))
             return hasSingleRow(expr->queryChild(0));
     }
     return false;

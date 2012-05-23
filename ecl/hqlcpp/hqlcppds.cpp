@@ -4222,7 +4222,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
     if (!row)
     {
         Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
-        row = cursor->buildSelect(ctx, expr);
+        row = cursor->buildSelectNth(ctx, expr);
 
         if (!row)
         {
@@ -4258,7 +4258,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHq
     if (!row)
     {
         Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
-        row = cursor->buildSelect(ctx, expr);
+        row = cursor->buildSelectMap(ctx, expr);
 
         if (!row)
         {

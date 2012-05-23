@@ -631,8 +631,8 @@ void RtlLinkedDictionaryBuilder::checkSpace()
         // Rehash
         byte * * oldTable = table;
         unsigned oldSize = tableSize;
-        tableSize = tableSize*2;
-        table = rowAllocator->createRowset(tableSize);
+        table = rowAllocator->createRowset(tableSize*2);
+        tableSize = tableSize*2; // Don't update until we have successfully allocated, so that we remain consistent if createRowset throws an exception.
         memset(table, 0, tableSize * sizeof(byte *));
         usedLimit = (tableSize * 3) / 4;
         usedCount = 0;

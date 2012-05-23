@@ -128,7 +128,13 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     translator.bindTableCursor(declarectx, ds, row);
 }
 
-BoundRow * BaseDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+BoundRow * BaseDatasetCursor::buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr)
+{
+    // Should only be seen for dictionaries
+    throwUnexpected();
+}
+
+BoundRow * BaseDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
     //MORE: Check if the cursor already exists....
 
@@ -409,7 +415,7 @@ BoundRow * InlineBlockDatasetCursor::buildSelectFirst(BuildCtx & ctx, IHqlExpres
 }
 
 
-BoundRow * InlineBlockDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+BoundRow * InlineBlockDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
     assertex(!isArrayRowset(boundDs.expr->queryType()));        // I don't think this can ever be called at the moment
 
@@ -418,7 +424,7 @@ BoundRow * InlineBlockDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression 
     {
         if (matchesConstantValue(index, 1))
             return buildSelectFirst(ctx, indexExpr, CREATE_DEAULT_ROW_IF_NULL_VALUE);
-        return BlockDatasetCursor::buildSelect(ctx, indexExpr);
+        return BlockDatasetCursor::buildSelectNth(ctx, indexExpr);
     }
     if (matchesConstantValue(index, 1))
         return buildSelectFirst(ctx, indexExpr, CREATE_DEAULT_ROW_IF_NULL_VALUE);
@@ -607,7 +613,7 @@ BoundRow * InlineLinkedDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool need
     return cursor;
 }
 
-BoundRow * InlineLinkedDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+BoundRow * InlineLinkedDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
     OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
 
@@ -697,7 +703,7 @@ InlineLinkedDictionaryCursor::InlineLinkedDictionaryCursor(HqlCppTranslator & _t
 {
 }
 
-BoundRow * InlineLinkedDictionaryCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
     OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
 
@@ -748,7 +754,7 @@ BoundRow * MultiLevelDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needTo
     return doBuildIterateLoop(ctx, ds, breakVar, true);
 }
 
-BoundRow * MultiLevelDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr)
+BoundRow * MultiLevelDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
     //Declare row for final level, iterate the appropriate number of times, and then assign and break.
     BuildCtx initctx(ctx);
@@ -1118,7 +1124,7 @@ void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExp
             checkNotAll(ctx);
 
         OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
-        BoundRow * cursor = dsCursor->buildSelect(ctx, dsIndexExpr);
+        BoundRow * cursor = dsCursor->buildSelectNth(ctx, dsIndexExpr);
         OwnedHqlExpr select = createSelectExpr(LINK(dsIndexExpr), LINK(element));
         translator.buildExpr(ctx, select, tgt);
     }
@@ -1136,7 +1142,7 @@ void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget &
         checkNotAll(ctx);
 
     OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
-    BoundRow * cursor = dsCursor->buildSelect(ctx, dsIndexExpr);
+    BoundRow * cursor = dsCursor->buildSelectNth(ctx, dsIndexExpr);
 
     if (cursor)
     {
@@ -1389,6 +1395,12 @@ BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpressio
 void DatasetBuilderBase::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
 {
     OwnedHqlExpr size = createSizeof(selfCursor->querySelector());
+    doFinishRow(ctx, selfCursor, size);
+}
+
+
+void DatasetBuilderBase::doFinishRow(BuildCtx & ctx, BoundRow * selfCursor, IHqlExpression *size)
+{
     CHqlBoundExpr boundSize;
     translator.buildExpr(ctx, size, boundSize);
 
@@ -1398,7 +1410,6 @@ void DatasetBuilderBase::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
     ctx.addQuoted(s);
     ctx.removeAssociation(selfCursor);
 }
-
 
 //---------------------------------------------------------------------------
 
@@ -1580,8 +1591,135 @@ void InlineDatasetBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
 
 //---------------------------------------------------------------------------
 
+LinkedDatasetBuilderBase::LinkedDatasetBuilderBase(HqlCppTranslator & _translator, IHqlExpression * _record) : DatasetBuilderBase(_translator, _record, true)
+{
+}
 
-LinkedDatasetBuilder::LinkedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record, IHqlExpression * _choosenLimit) : DatasetBuilderBase(_translator, _record, true)
+void LinkedDatasetBuilderBase::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
+{
+    OwnedHqlExpr size = translator.getRecordSize(selfCursor->querySelector());
+    doFinishRow(ctx, selfCursor, size);
+}
+
+void LinkedDatasetBuilderBase::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
+{
+    //more: should I do this by really calling a function?
+    StringBuffer s;
+
+    s.append(instanceName).append(".getcount()");
+
+    if (hasWrapperModifier(target.queryType()))
+    {
+        translator.generateExprCpp(s.clear(), target.expr);
+        s.append(".setown(").append(instanceName).append(".getcount()");
+        s.append(",").append(instanceName).append(".linkrows());");
+        ctx.addQuoted(s);
+    }
+    else
+    {
+        OwnedHqlExpr countExpr = createQuoted(s.str(), LINK(unsignedType));
+        ctx.addAssign(target.count, countExpr);
+        s.clear().append(instanceName).append(".linkrows()");
+        OwnedHqlExpr rowsExpr = createQuoted(s.str(), dataset->getType());
+        ctx.addAssign(target.expr, rowsExpr);
+    }
+}
+
+
+void LinkedDatasetBuilderBase::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
+{
+    StringBuffer s;
+    s.clear().append(instanceName).append(".getcount()");
+    bound.count.setown(createQuoted(s.str(), LINK(unsignedType)));
+    s.clear().append(instanceName).append(".queryrows()");
+    bound.expr.setown(createQuoted(s.str(), makeReferenceModifier(dataset->getType())));
+}
+
+bool LinkedDatasetBuilderBase::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
+{
+    IHqlExpression * sourceRecord = sourceRow->queryRecord();
+    if (recordTypesMatch(sourceRecord, record) && sourceRow->isBinary())
+    {
+        OwnedHqlExpr source = getPointer(sourceRow->queryBound());
+        BuildCtx subctx(ctx);
+        if (sourceRow->isConditional())
+            subctx.addFilter(source);
+
+        if (sourceRow->isLinkCounted())
+        {
+            StringBuffer s;
+            s.append(instanceName).append(".append(");
+            translator.generateExprCpp(s, source);
+            s.append(");");
+            subctx.addQuoted(s);
+            return true;
+        }
+
+        IHqlExpression * sourceExpr = sourceRow->querySelector();
+        OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
+        OwnedHqlExpr size = createSizeof(rowExpr);
+        CHqlBoundExpr boundSize;
+        translator.buildExpr(ctx, size, boundSize);
+
+        StringBuffer s;
+        s.append(instanceName).append(".cloneRow(");
+        translator.generateExprCpp(s, boundSize.expr).append(",");
+        translator.generateExprCpp(s, source);
+        s.append(");");
+        subctx.addQuoted(s);
+        return true;
+    }
+    return false;
+}
+
+bool LinkedDatasetBuilderBase::buildAppendRows(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * sourceRecord = expr->queryRecord();
+    if (recordTypesMatch(sourceRecord, record))
+    {
+        CHqlBoundExpr bound;
+        if (!ctx.getMatchExpr(expr, bound))
+        {
+            bool tryToOptimize = false;
+            switch (expr->getOperator())
+            {
+            case no_select:
+                if (isMultiLevelDatasetSelector(expr, false))
+                    break;
+                if (!hasLinkedRow(expr->queryType()))
+                    break;
+                tryToOptimize = true;
+                break;
+            default:
+                //Don't speculatively evaluate if the expression isn't pure
+                tryToOptimize = alwaysEvaluatesToBound(expr) && expr->isPure();
+                break;
+            }
+
+            if (tryToOptimize)
+                translator.buildDataset(ctx, expr, bound, FormatNatural);
+        }
+
+        if (bound.expr)
+        {
+            if (hasLinkedRow(bound.queryType()))
+            {
+                OwnedHqlExpr source = getPointer(bound.expr);
+                StringBuffer s;
+                s.append(instanceName).append(".appendRows(");
+                translator.generateExprCpp(s, bound.count);
+                s.append(",");
+                translator.generateExprCpp(s, source);
+                s.append(");");
+                ctx.addQuoted(s);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+LinkedDatasetBuilder::LinkedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record, IHqlExpression * _choosenLimit) : LinkedDatasetBuilderBase(_translator, _record)
 {
     choosenLimit.set(_choosenLimit);
 }
@@ -1606,141 +1744,8 @@ void LinkedDatasetBuilder::buildDeclare(BuildCtx & ctx)
     ctx.addQuoted(decl);
 }
 
-void LinkedDatasetBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
-{
-    OwnedHqlExpr size = translator.getRecordSize(selfCursor->querySelector());
-    CHqlBoundExpr boundSize;
-    translator.buildExpr(ctx, size, boundSize);
 
-    StringBuffer s;
-    s.append(instanceName).append(".finalizeRow(");
-    translator.generateExprCpp(s, boundSize.expr).append(");");
-    ctx.addQuoted(s);
-}
-
-void LinkedDatasetBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
-{
-    //more: should I do this by really calling a function?
-    StringBuffer s;
-
-    s.append(instanceName).append(".getcount()");
-
-    if (hasWrapperModifier(target.queryType()))
-    {
-        translator.generateExprCpp(s.clear(), target.expr);
-        s.append(".setown(").append(instanceName).append(".getcount()");
-        s.append(",").append(instanceName).append(".linkrows());");
-        ctx.addQuoted(s);
-    }
-    else
-    {
-        OwnedHqlExpr countExpr = createQuoted(s.str(), LINK(unsignedType));
-        ctx.addAssign(target.count, countExpr);
-        s.clear().append(instanceName).append(".linkrows()");
-        OwnedHqlExpr rowsExpr = createQuoted(s.str(), dataset->getType());
-        ctx.addAssign(target.expr, rowsExpr);
-    }
-}
-
-
-void LinkedDatasetBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
-{
-    StringBuffer s;
-    s.clear().append(instanceName).append(".getcount()");
-    bound.count.setown(createQuoted(s.str(), LINK(unsignedType)));
-    s.clear().append(instanceName).append(".queryrows()");
-    bound.expr.setown(createQuoted(s.str(), makeReferenceModifier(dataset->getType())));
-}
-
-bool LinkedDatasetBuilder::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
-{
-    IHqlExpression * sourceRecord = sourceRow->queryRecord();
-    if (recordTypesMatch(sourceRecord, record) && sourceRow->isBinary())
-    {
-        OwnedHqlExpr source = getPointer(sourceRow->queryBound());
-        BuildCtx subctx(ctx);
-        if (sourceRow->isConditional())
-            subctx.addFilter(source);
-
-        if (sourceRow->isLinkCounted())
-        {
-            StringBuffer s;
-            s.append(instanceName).append(".append(");
-            translator.generateExprCpp(s, source);
-            s.append(");");
-            subctx.addQuoted(s);
-            return true;
-        }
-
-        IHqlExpression * sourceExpr = sourceRow->querySelector();
-        OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
-        OwnedHqlExpr size = createSizeof(rowExpr);
-        CHqlBoundExpr boundSize;
-        translator.buildExpr(ctx, size, boundSize);
-
-        StringBuffer s;
-        s.append(instanceName).append(".cloneRow(");
-        translator.generateExprCpp(s, boundSize.expr).append(",");
-        translator.generateExprCpp(s, source);
-        s.append(");");
-        subctx.addQuoted(s);
-        return true;
-    }
-    return false;
-}
-
-bool LinkedDatasetBuilder::buildAppendRows(BuildCtx & ctx, IHqlExpression * expr) 
-{
-    IHqlExpression * sourceRecord = expr->queryRecord();
-    if (recordTypesMatch(sourceRecord, record))
-    {
-        CHqlBoundExpr bound;
-        if (!ctx.getMatchExpr(expr, bound))
-        {
-            bool tryToOptimize = false;
-            switch (expr->getOperator())
-            {
-            case no_select:
-                if (isMultiLevelDatasetSelector(expr, false))
-                    break;
-                if (!hasLinkedRow(expr->queryType()))
-                    break;
-                tryToOptimize = true;
-                break;
-            default:
-                //Don't speculatively evaluate if the expression isn't pure
-                tryToOptimize = alwaysEvaluatesToBound(expr) && expr->isPure();
-                break;
-            }
-
-            if (tryToOptimize)
-                translator.buildDataset(ctx, expr, bound, FormatNatural);
-        }
-
-        if (bound.expr)
-        {
-            if (hasLinkedRow(bound.queryType()))
-            {
-                OwnedHqlExpr source = getPointer(bound.expr);
-                StringBuffer s;
-                s.append(instanceName).append(".appendRows(");
-                translator.generateExprCpp(s, bound.count);
-                s.append(",");
-                translator.generateExprCpp(s, source);
-                s.append(");");
-                ctx.addQuoted(s);
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-
-//---------------------------------------------------------------------------
-
-
-LinkedDictionaryBuilder::LinkedDictionaryBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : DatasetBuilderBase(_translator, _record, true)
+LinkedDictionaryBuilder::LinkedDictionaryBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : LinkedDatasetBuilderBase(_translator, _record)
 {
 }
 
@@ -1760,136 +1765,6 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
     decl.append(");");
 
     ctx.addQuoted(decl);
-}
-
-void LinkedDictionaryBuilder::finishRow(BuildCtx & ctx, BoundRow * selfCursor)
-{
-    OwnedHqlExpr size = translator.getRecordSize(selfCursor->querySelector());
-    CHqlBoundExpr boundSize;
-    translator.buildExpr(ctx, size, boundSize);
-
-    StringBuffer s;
-    s.append(instanceName).append(".finalizeRow(");
-    translator.generateExprCpp(s, boundSize.expr).append(");");
-    ctx.addQuoted(s);
-}
-
-void LinkedDictionaryBuilder::buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target)
-{
-    //more: should I do this by really calling a function?
-    StringBuffer s;
-
-    s.append(instanceName).append(".getcount()");
-
-    if (hasWrapperModifier(target.queryType()))
-    {
-        translator.generateExprCpp(s.clear(), target.expr);
-        s.append(".setown(").append(instanceName).append(".getcount()");
-        s.append(",").append(instanceName).append(".linkrows());");
-        ctx.addQuoted(s);
-    }
-    else
-    {
-        OwnedHqlExpr countExpr = createQuoted(s.str(), LINK(unsignedType));
-        ctx.addAssign(target.count, countExpr);
-        s.clear().append(instanceName).append(".linkrows()");
-        OwnedHqlExpr rowsExpr = createQuoted(s.str(), dataset->getType());
-        ctx.addAssign(target.expr, rowsExpr);
-    }
-}
-
-
-void LinkedDictionaryBuilder::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound)
-{
-    StringBuffer s;
-    s.clear().append(instanceName).append(".getcount()");
-    bound.count.setown(createQuoted(s.str(), LINK(unsignedType)));
-    s.clear().append(instanceName).append(".queryrows()");
-    bound.expr.setown(createQuoted(s.str(), makeReferenceModifier(dataset->getType())));
-}
-
-bool LinkedDictionaryBuilder::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
-{
-    IHqlExpression * sourceRecord = sourceRow->queryRecord();
-    if (recordTypesMatch(sourceRecord, record) && sourceRow->isBinary())
-    {
-        OwnedHqlExpr source = getPointer(sourceRow->queryBound());
-        BuildCtx subctx(ctx);
-        if (sourceRow->isConditional())
-            subctx.addFilter(source);
-
-        if (sourceRow->isLinkCounted())
-        {
-            StringBuffer s;
-            s.append(instanceName).append(".append(");
-            translator.generateExprCpp(s, source);
-            s.append(");");
-            subctx.addQuoted(s);
-            return true;
-        }
-
-        IHqlExpression * sourceExpr = sourceRow->querySelector();
-        OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
-        OwnedHqlExpr size = createSizeof(rowExpr);
-        CHqlBoundExpr boundSize;
-        translator.buildExpr(ctx, size, boundSize);
-
-        StringBuffer s;
-        s.append(instanceName).append(".cloneRow(");
-        translator.generateExprCpp(s, boundSize.expr).append(",");
-        translator.generateExprCpp(s, source);
-        s.append(");");
-        subctx.addQuoted(s);
-        return true;
-    }
-    return false;
-}
-
-bool LinkedDictionaryBuilder::buildAppendRows(BuildCtx & ctx, IHqlExpression * expr)
-{
-    IHqlExpression * sourceRecord = expr->queryRecord();
-    if (recordTypesMatch(sourceRecord, record))
-    {
-        CHqlBoundExpr bound;
-        if (!ctx.getMatchExpr(expr, bound))
-        {
-            bool tryToOptimize = false;
-            switch (expr->getOperator())
-            {
-            case no_select:
-                if (isMultiLevelDatasetSelector(expr, false))
-                    break;
-                if (!hasLinkedRow(expr->queryType()))
-                    break;
-                tryToOptimize = true;
-                break;
-            default:
-                //Don't speculatively evaluate if the expression isn't pure
-                tryToOptimize = alwaysEvaluatesToBound(expr) && expr->isPure();
-                break;
-            }
-
-            if (tryToOptimize)
-                translator.buildDataset(ctx, expr, bound, FormatNatural);
-        }
-
-        if (bound.expr)
-        {
-            if (hasLinkedRow(bound.queryType()))
-            {
-                OwnedHqlExpr source = getPointer(bound.expr);
-                StringBuffer s;
-                s.append(instanceName).append(".appendRows(");
-                translator.generateExprCpp(s, bound.count);
-                s.append(",");
-                translator.generateExprCpp(s, source);
-                s.append(");");
-                ctx.addQuoted(s);
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 

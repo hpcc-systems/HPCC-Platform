@@ -173,7 +173,8 @@ interface IHqlCppDatasetCursor : public IInterface
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) = 0;
     virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row) = 0;
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
+    virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx) = 0;
 };
 

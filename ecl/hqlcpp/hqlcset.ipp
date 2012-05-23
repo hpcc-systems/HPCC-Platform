@@ -26,7 +26,8 @@ public:
 
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
     virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row);
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx);
 
 protected:
@@ -58,7 +59,7 @@ public:
     InlineBlockDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
 
 protected:
     BoundRow * buildSelectFirst(BuildCtx & ctx, IHqlExpression * indexExpr, bool createDefaultRowIfNull);
@@ -72,7 +73,7 @@ public:
     virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx);
 };
 
@@ -82,7 +83,7 @@ public:
     InlineLinkedDictionaryCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) { throwUnexpected(); }
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { throwUnexpected(); }
 };
 
@@ -94,7 +95,7 @@ public:
     virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { UNIMPLEMENTED; }
 
 protected:
@@ -226,6 +227,8 @@ public:
     virtual void finishRow(BuildCtx & ctx, BoundRow * selfCursor);
 
 protected:
+    void doFinishRow(BuildCtx & ctx, BoundRow * selfCursor, IHqlExpression *size);
+
     StringBuffer instanceName;
     StringBuffer builderName;
     OwnedHqlExpr dataset;
@@ -268,34 +271,36 @@ protected:
     Owned<BoundRow> cursor;
 };
 
-class LinkedDatasetBuilder : public DatasetBuilderBase
+class LinkedDatasetBuilderBase : public DatasetBuilderBase
+{
+public:
+    LinkedDatasetBuilderBase(HqlCppTranslator & _translator, IHqlExpression * _record);
+
+    virtual void buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target);
+    virtual void buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound);
+    virtual bool buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow);
+    virtual bool buildAppendRows(BuildCtx & ctx, IHqlExpression * expr);
+    virtual void finishRow(BuildCtx & ctx, BoundRow * selfCursor);
+};
+
+class LinkedDatasetBuilder : public LinkedDatasetBuilderBase
 {
 public:
     LinkedDatasetBuilder(HqlCppTranslator & _translator, IHqlExpression * _record, IHqlExpression * _choosenLimit);
 
     virtual void buildDeclare(BuildCtx & ctx);
-    virtual void buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target);
-    virtual void buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound);
-    virtual bool buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow);
-    virtual bool buildAppendRows(BuildCtx & ctx, IHqlExpression * expr);
-    virtual void finishRow(BuildCtx & ctx, BoundRow * selfCursor);
-    virtual bool isRestricted()                             { return choosenLimit != NULL; }
+    virtual bool isRestricted() { return choosenLimit != NULL; }
 
 protected:
     LinkedHqlExpr choosenLimit;
 };
 
-class LinkedDictionaryBuilder : public DatasetBuilderBase
+class LinkedDictionaryBuilder : public LinkedDatasetBuilderBase
 {
 public:
     LinkedDictionaryBuilder(HqlCppTranslator & _translator, IHqlExpression * _record);
 
     virtual void buildDeclare(BuildCtx & ctx);
-    virtual void buildFinish(BuildCtx & ctx, const CHqlBoundTarget & target);
-    virtual void buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound);
-    virtual bool buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow);
-    virtual bool buildAppendRows(BuildCtx & ctx, IHqlExpression * expr);
-    virtual void finishRow(BuildCtx & ctx, BoundRow * selfCursor);
 };
 
 //---------------------------------------------------------------------------
