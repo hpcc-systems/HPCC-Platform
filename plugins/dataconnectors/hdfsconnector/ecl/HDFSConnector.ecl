@@ -36,7 +36,7 @@ EXPORT HDFSConnector := MODULE
 
 	export PipeIn(ECL_RS, HadoopFileName, Layout, HadoopFileFormat, HDFSHost, HDSFPort) := MACRO
 	#uniquename(formatstr)
-		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
+		%formatstr% := STD.Str.FilterOut(#TEXT(HadoopFileFormat), ' \t\n\r');
 		#IF(%formatstr%[1..3] = 'XML')
 			#IF (LENGTH(%formatstr%) > 3)
 				#uniquename(rowtagcont)
@@ -136,7 +136,7 @@ EXPORT HDFSConnector := MODULE
 	#uniquename(formatstr)
 	#uniquename(outpartaction)
 	#uniquename(mergepartsaction)
-		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
+		%formatstr% := STD.Str.FilterOut(#TEXT(HadoopFileFormat), ' \t\n\r');
 		#IF(%formatstr%[1..4] != 'FLAT')
 		OUTPUT(ECL_RS,,
 				PIPE('hdfspipe -sop '
@@ -182,7 +182,7 @@ EXPORT HDFSConnector := MODULE
 	#uniquename(formatstr)
 	#uniquename(outpartaction)
 	#uniquename(mergepartsaction)
-		%formatstr% := STD.Str.CleanSpaces(#TEXT(HadoopFileFormat));
+		%formatstr% := STD.Str.FilterOut(#TEXT(HadoopFileFormat), ' \t\n\r');
 		#IF(%formatstr%[1..4] != 'FLAT')
 		//%mergepartsaction% :=DISTRIBUTE(ECL_RS , 1);
 		%outpartaction%:=OUTPUT(ECL_RS,,
