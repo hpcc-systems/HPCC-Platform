@@ -3827,28 +3827,29 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
     }
 
     IValue * value = expr->queryValue();
+    assertex(value);
     const void * data = value->queryValue();
     unsigned size = type->getSize();
     unsigned stringLen = type->getStringLen();
-    void * lower = malloc(size);
-    memcpy(lower, data, size);
+
+    MemoryAttr lower(size);
+    memcpy(lower.bufferBase(), data, size);
     if (type->getTypeCode() == type_utf8)
-        rtlUtf8ToLower(stringLen, (char *)lower, type->queryLocale()->str());
+        rtlUtf8ToLower(stringLen, (char *)lower.get(), type->queryLocale()->str());
     else if (isUnicodeType(type))
-        rtlUnicodeToLower(stringLen, (UChar *)lower, type->queryLocale()->str());
+        rtlUnicodeToLower(stringLen, (UChar *)lower.get(), type->queryLocale()->str());
     else
     {
-        assert(type->queryCharset()->queryName() != ebcdicAtom);
-        rtlStringToLower(stringLen, (char *)lower);
+        if (type->queryCharset()->queryName() == ebcdicAtom)
+            rtlEStrToStr(stringLen, (char*)lower.get(), stringLen, (char*)lower.get()); // Yes it does work in place.
+        rtlStringToLower(stringLen, (char *)lower.get());
+        if (type->queryCharset()->queryName() == ebcdicAtom)
+            rtlStrToEStr(stringLen, (char*)lower.get(), stringLen, (char*)lower.get()); // Yes it does work in place.
     }
-    if (memcmp(lower, data, size) == 0)
-    {
-        free(lower);
+    if (memcmp(lower.get(), data, size) == 0)
         return LINK(expr);
-    }
-    IHqlExpression * ret = createConstant(createValueFromMem(LINK(type), lower));
-    free(lower);
-    return ret;
+
+    return createConstant(createValueFromMem(LINK(type), lower.get()));
 }
 
 //---------------------------------------------------------------------------
