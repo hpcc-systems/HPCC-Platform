@@ -25,17 +25,21 @@ define([
 		},
 
 		getParam: function (key) {
-			var value = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))[key];
+			var value = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))[key];
+
 			if (value)
 				return value;
 			return config[key];
 		},
 
-		getBaseURL: function () {
+		getBaseURL: function (service) {
+			if (!service) {
+				service = "WsWorkunits";
+			}
 			var serverIP = this.getParam("serverIP");
 			if (serverIP)
-				return "http://" + serverIP + ":8010/WsWorkunits";
-			return "/WsWorkunits";
+				return "http://" + serverIP + ":8010/" + service;
+			return "/" + service;
 		},
 
 		getValue: function (domXml, tagName, knownObjectArrays) {
