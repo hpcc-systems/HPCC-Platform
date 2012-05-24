@@ -369,18 +369,32 @@ static IFile *createIFileInArchive(const char *containedFileName)
     StringBuffer fname(containedFileName);
     assertex(fname.length());
     removeTrailingPathSepChar(fname);
-    StringBuffer dirPath, dirTail;
-    splitFilename(fname.str(), &dirPath, &dirPath, &dirTail, &dirTail);
-
-    Owned<IDirectoryIterator> dir = createArchiveDirectoryIterator(dirPath.str(), dirTail.str(), false, true);
-    if (dir->first())
+    StringAttr container, option, relpath;
+    splitArchivedFileName(fname.str(), container, option, relpath);
+    if (relpath.length())
     {
-        Linked<IFile> file = &dir->query();
-        assertex(!dir->next());
-        return file.getClear();
+        StringBuffer dirPath, dirTail;
+        dirPath.append(container).append(option);
+        splitFilename(relpath, &dirPath, &dirPath, &dirTail, &dirTail);
+        Owned<IDirectoryIterator> dir = createArchiveDirectoryIterator(dirPath.str(), dirTail.str(), false, true);
+        if (dir->first())
+        {
+            Linked<IFile> file = &dir->query();
+            assertex(!dir->next());
+            return file.getClear();
+        }
+        else
+            return new ArchiveFile(containedFileName, NULL);
     }
     else
-        return new ArchiveFile(containedFileName, NULL);
+    {
+        // Create an IFile representing the root of the archive as a directory
+        struct archive_entry *rootEntry = archive_entry_new();
+        archive_entry_set_pathname(rootEntry, ".");
+        archive_entry_set_mode(rootEntry, __S_IFDIR);
+        archive_entry_set_size(rootEntry, 0);
+        return new ArchiveFile(containedFileName, new ArchiveEntry(rootEntry));
+    }
 }
 
 class ArchiveDirectoryIterator : public CInterface, implements IDirectoryIterator
