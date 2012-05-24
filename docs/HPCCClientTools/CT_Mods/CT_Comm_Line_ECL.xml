@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../../">
+<book xml:base="../">
   <bookinfo>
     <title>Client Tools Overview</title>
 
@@ -93,8 +93,7 @@
 
                   <entry>The ECL code to execute. Optionally, this may be
                   replaced by the name of an input file containing the ECL to
-                  execute (in the form: @inputfile), or the name of a stored
-                  ECL file to execute (in the form: $folder.eclfile).</entry>
+                  execute (in the form: @inputfile).</entry>
                 </row>
 
                 <row>
@@ -190,8 +189,8 @@ password=password</programlisting>
 
                 <tbody>
                   <row>
-                    <entry><graphic xml:base="../../" fileref="images/caution.png"
-                    scale="noin" /></entry>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../" /></entry>
 
                     <entry>We do not recommend storing your password in the
                     INI file (which is clear text). The password is included
@@ -253,30 +252,6 @@ output(ds1);</programlisting>
 Yanrui Ma
 Richard Taylor
 Richard Chapman</programlisting>
-        </sect3>
-
-        <sect3>
-          <title>Passing command line values to ECL files</title>
-
-          <para>Using the <emphasis>/variablename= </emphasis>command line
-          capability, you can pass in specific values to ECL files with the
-          STORED Workflow Service. Given this code in the repository attribute
-          MyECLFile.BWR_TestECLPlus: <emphasis role="bold">Not yet
-          implemented.</emphasis></para>
-
-          <programlisting>MyCount := 0 : STORED('Fred');
-        output(MyCount);</programlisting>
-
-          <para></para>
-
-          <para>This ECLPlus command line produces this result:</para>
-
-          <programlisting>C:\eclplus&gt;eclplus $MyModule.BWR_TestECLPlus
-          /Fred=(int)12
-Workunit W20091212-144654-963059896 submitted
-[Result 1]
-Result_1
-12</programlisting>
         </sect3>
 
         <sect3>
