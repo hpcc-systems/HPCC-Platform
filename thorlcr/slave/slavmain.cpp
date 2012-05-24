@@ -34,7 +34,6 @@
 
 #include "slwatchdog.hpp"
 #include "thbuf.hpp"
-#include "thcrc.hpp"
 #include "thmem.hpp"
 #include "thexception.hpp"
 
@@ -452,6 +451,20 @@ class CFileInProgressHandler : public CSimpleInterface, implements IFileInProgre
         }
     }
 
+    void backup(const char *dir, IFile *iFile)
+    {
+        StringBuffer origName(iFile->queryFilename());
+        StringBuffer bakName("fiplist_");
+        CDateTime dt;
+        dt.setNow();
+        bakName.append((unsigned)dt.getSimple()).append("_").append((unsigned)GetCurrentProcessId()).append(".bak");
+        iFileIO.clear(); // close old for rename
+        iFile->rename(bakName.str());
+        WARNLOG("Renamed to %s", bakName.str());
+        OwnedIFile newIFile = createIFile(origName);
+        iFileIO.setown(newIFile->open(IFOreadwrite)); // reopen
+    }
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -476,8 +489,9 @@ public:
     }
     void init()
     {
-        StringBuffer path;
-        globals->getProp("@thorPath", path);
+        StringBuffer dir;
+        globals->getProp("@thorPath", dir);
+        StringBuffer path(dir);
         addPathSepChar(path);
         path.append("fiplist_");
         globals->getProp("@name", path);
@@ -493,20 +507,34 @@ public:
             return;
         }
         MemoryBuffer mb;
-        read(iFileIO, 0, (size32_t)iFileIO->size(), mb);
+        size32_t sz = read(iFileIO, 0, (size32_t)iFileIO->size(), mb);
         const char *mem = mb.toByteArray();
         if (mem)
         {
-            const char *endMem = mem+mb.length();
-            mem += 3; // formatV header
-            do
+            if (sz<=3)
             {
-                const char *eol = strchr(mem, '\n');
-                StringAttr fip(mem, eol-mem);
-                doDelete(fip);
-                mem = eol+1;
+                WARNLOG("Corrupt files-in-progress file detected: %s", path.str());
+                backup(dir, iFile);
             }
-            while (mem != endMem);
+            else
+            {
+                const char *endMem = mem+mb.length();
+                mem += 3; // formatV header
+                do
+                {
+                    const char *eol = strchr(mem, '\n');
+                    if (!eol)
+                    {
+                        WARNLOG("Corrupt files-in-progress file detected: %s", path.str());
+                        backup(dir, iFile);
+                        break;
+                    }
+                    StringAttr fip(mem, eol-mem);
+                    doDelete(fip);
+                    mem = eol+1;
+                }
+                while (mem != endMem);
+            }
         }
         write();
     }

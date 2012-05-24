@@ -23,8 +23,6 @@
 
 #include "jmutex.hpp"
 
-#include "throlling.hpp"
-
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 

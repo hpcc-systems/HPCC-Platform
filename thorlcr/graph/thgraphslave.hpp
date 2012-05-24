@@ -30,7 +30,6 @@
 #endif
 
 #include "platform.h"
-#include "thcrc.hpp"
 #include "slave.hpp"
 #include "thormisc.hpp"
 #include "thgraph.hpp"

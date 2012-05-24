@@ -53,35 +53,10 @@
 enum ThorExceptionAction { tea_null, tea_warning, tea_abort, tea_shutdown };
 
 enum RegistryCode { rc_register, rc_deregister };
-enum RegistryReplyCode { rrc_good, rrc_alreadyRegistered, rrc_unknownSlave };
 
 #define createThorRow(size)         malloc(size)
 #define destroyThorRow(ptr)         free(ptr)
 #define reallocThorRow(ptr, size)   realloc(ptr, size)
-
-graph_decl void destroyThorRowset(PointerArray & ptr);
-graph_decl void *cloneThorRow(size32_t size, const void * ptr);
-
-interface IActionHandler
-{
-    virtual bool action(void *data) = 0;
-};
-
-class ThreadAction : public Thread
-{
-public:
-    ThreadAction(IActionHandler *_tHandler, const char *name, void *_data);
-    ~ThreadAction();
-
-    virtual int run();
-    virtual void stop();
-
-    void *data;
-
-private:
-    IActionHandler *tHandler;
-    bool running;
-};
 
 class BooleanOnOff
 {
@@ -293,7 +268,6 @@ extern graph_decl void ClearDir(const char *dir);
 extern graph_decl void ClearTempDirs();
 extern graph_decl const char *queryTempDir(bool altdisk=false);  
 extern graph_decl void loadCmdProp(IPropertyTree *tree, const char *cmdProp);
-extern graph_decl ThreadAction *createThreadAction(IActionHandler *handler, const char *name, void *data=NULL);
 
 extern graph_decl void ensureDirectoryForFile(const char *fName);
 extern graph_decl void reportExceptionToWorkunit(IConstWorkUnit &workunit,IException *e, WUExceptionSeverity severity=ExceptionSeverityWarning);

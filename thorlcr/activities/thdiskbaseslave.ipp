@@ -24,7 +24,6 @@
 
 #include "dautils.hpp"
 
-#include "thcrc.hpp"
 #define NO_BWD_COMPAT_MAXSIZE
 #include "thorcommon.ipp"
 #include "slave.ipp"

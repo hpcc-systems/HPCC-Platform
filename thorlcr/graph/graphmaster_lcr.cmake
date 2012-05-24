@@ -35,7 +35,6 @@ include_directories (
          ./../../system/jhtree 
          ./../../system/mp 
          ./../master 
-         ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
          ./../graph 

@@ -33,7 +33,6 @@ include_directories (
          ./../../common/remote 
          ./../../system/jhtree 
          ./../../system/mp 
-         ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
          ./../../common/deftype 
