@@ -25,14 +25,12 @@
 project( graph_lcr ) 
 
 set (    SRCS 
-         ../thorcrc/thcrc.cpp 
          ../thorutil/mcorecache.cpp 
          ../thorutil/thbuf.cpp 
          ../thorutil/thcompressutil.cpp 
          ../thorutil/thmem.cpp 
          ../thorutil/thalloc.cpp 
          ../thorutil/thormisc.cpp 
-         ../thorutil/throlling.cpp 
          thgraph.cpp 
     )
 
@@ -41,7 +39,6 @@ include_directories (
          ./../../system/jhtree 
          ./../../system/mp 
          ./../../rtl/include 
-         ./../thorcrc 
          ./../../common/workunit 
          ./../shared 
          ./../../common/deftype 

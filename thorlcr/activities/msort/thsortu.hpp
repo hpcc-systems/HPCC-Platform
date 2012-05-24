@@ -21,7 +21,6 @@
 
 #include "slave.hpp"
 #include "jio.hpp"
-#include "thcrc.hpp"
 
 
 interface IHThorJoinArg;

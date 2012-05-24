@@ -24,7 +24,6 @@
 #include "thmfilemanager.hpp"
 #include "thorport.hpp"
 #include "thprslave.ipp"
-#include "thcrc.hpp"
 #include "thexception.hpp"
 
 /////////////////////////
