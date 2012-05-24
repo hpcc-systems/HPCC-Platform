@@ -23,7 +23,9 @@ import java.util.Properties;
  * @author rpastrana
  */
 
-public class EclConnection implements Connection {
+public class EclConnection implements Connection
+{
+	public static final String ECLRESULTLIMDEFAULT = "100";
     private boolean closed;
     private EclDatabaseMetaData metadata;
     private Properties props;
@@ -71,8 +73,36 @@ public class EclConnection implements Connection {
 		if (!this.props.containsKey("password"))
 			this.props.setProperty("password", "");
 
-		if (!this.props.containsKey("EclLimit"))
-			this.props.setProperty("EclLimit", "100");
+		boolean setdefaultreslim = false;
+		if (this.props.containsKey("EclResultLimit"))
+		{
+			String eclreslim = this.props.getProperty("EclResultLimit").trim();
+			try
+			{
+				if(Utils.isNumeric(eclreslim))
+				{
+					if (Integer.valueOf(eclreslim).intValue() <= 0)
+						setdefaultreslim = true;
+				}
+				else
+				{
+					if(!eclreslim.equalsIgnoreCase("ALL"))
+						setdefaultreslim = true;
+				}
+			}
+			catch (Exception e)
+			{
+				setdefaultreslim = true;
+			}
+		}
+		else
+			setdefaultreslim = true;
+
+		if (setdefaultreslim)
+		{
+			this.props.setProperty("EclResultLimit", ECLRESULTLIMDEFAULT);
+			System.out.println("Invalid Numeric EclResultLimit value detected, using default value: " + ECLRESULTLIMDEFAULT);
+		}
 
 		// basicAuth
 		String userPassword = this.props.getProperty("username") + ":"
