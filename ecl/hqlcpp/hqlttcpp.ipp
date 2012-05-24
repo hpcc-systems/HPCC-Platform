@@ -644,7 +644,6 @@ protected:
     IHqlExpression * hoist(IHqlExpression * expr, IHqlExpression * hoisted);
     IHqlExpression * transformCond(IHqlExpression * expr);
 
-    inline unsigned extraIndex() { return activityDepth != 0 ? 0 : 1; }
     inline ScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
 private:

@@ -7259,10 +7259,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                         if (!isInlineTrivialDataset(row) && !isContextDependent(row) && !transformed->isDataset())
                         {
                             if (isIndependentOfScope(row))
-                            {
-                                OwnedHqlExpr newSelect = createNewSelectExpr(LINK(row), LINK(transformed->queryChild(1)));
-                                return hoist(expr, newSelect);
-                            }
+                                return hoist(expr, transformed);
                         }
                     }
                 }
