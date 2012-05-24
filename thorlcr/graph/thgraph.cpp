@@ -22,7 +22,6 @@
 #include "dasess.hpp"
 #include "jhtree.hpp"
 #include "thcodectx.hpp"
-#include "thcrc.hpp"
 #include "thbuf.hpp"
 #include "thormisc.hpp"
 #include "thbufdef.hpp"

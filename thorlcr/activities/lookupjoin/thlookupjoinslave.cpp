@@ -1078,7 +1078,6 @@ public:
             }
         }
         catch (IOutOfMemException *e) { exception.setown(e); }
-        catch (IThorRowArrayException *e) { exception.setown(e); }
         if (exception.get())
         {
             StringBuffer errStr(joinStr);

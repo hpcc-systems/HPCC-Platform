@@ -39,7 +39,6 @@
 #include "thbufdef.hpp"
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
-#include "thcrc.hpp"
 
 #include "slave.ipp"
 #include "../fetch/thfetchcommon.hpp"

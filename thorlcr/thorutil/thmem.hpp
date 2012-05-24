@@ -181,23 +181,6 @@ public:
 // ---------------------------------------------------------
 
 
-interface CLargeThorLinkedRowArrayOutOfMemException: extends IException
-{
-};
-
-interface IThorRowSequenceCompare: implements ICompare, extends IInterface
-{
-};
-
-#define PERROWOVERHEAD    (sizeof(atomic_t) + sizeof(unsigned) + sizeof(void *))
-                          //    link + activityid + stable sort ptr
-
-interface IThorRowArrayException: extends IException
-{
-};
-
-extern graph_decl IThorRowArrayException *createRowArrayException(size32_t sz);
-
 extern graph_decl void checkMultiThorMemoryThreshold(bool inc);
 extern graph_decl void setMultiThorMemoryNotify(size32_t size,ILargeMemLimitNotify *notify);
 

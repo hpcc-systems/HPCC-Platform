@@ -86,48 +86,6 @@ MODULE_EXIT()
 }
 
 
-ThreadAction::ThreadAction(IActionHandler *_tHandler, const char *name, void *_data) : Thread(name), tHandler(_tHandler), data(_data), running(true)
-{
-}
-
-ThreadAction::~ThreadAction()
-{
-}
-
-int ThreadAction::run()
-{
-    while (running)
-        if (!tHandler->action(data)) break;
-    return 1;
-}
-
-void ThreadAction::stop()
-{
-    running = false;
-    join();
-}
-
-ThreadAction *createThreadAction(IActionHandler *handler, const char *name, void *data)
-{
-    ThreadAction *ta = new ThreadAction(handler, name, data);
-    ta->start();
-    return ta;
-}
-
-void destroyThorRowset(PointerArray & data)
-{
-    ForEachItemIn(idx, data)
-        destroyThorRow(data.item(idx));
-    data.kill();
-}
-
-void * cloneThorRow(size32_t size, const void * ptr)
-{
-    void * mem = createThorRow(size);
-    memcpy(mem, ptr, size);
-    return mem;
-}
-
 #define EXTRAS 1024
 #define NL 3
 StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container, const ActLogEnum flags, const char *format, va_list args)
