@@ -11812,6 +11812,33 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNth(BuildCtx & ctx, IHql
 
 //---------------------------------------------------------------------------
 
+void HqlCppTranslator::doBuildClearAggregateRecord(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * self, IHqlExpression * transform)
+{
+    ForEachChild(i, record)
+    {
+        IHqlExpression * cur = record->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            doBuildClearAggregateRecord(ctx, cur, self, transform);
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
+                IHqlExpression * value = queryTransformAssignValue(transform, cur);
+                assertex(value);
+                if (value->isConstant())
+                    buildAssign(ctx, target, value);
+                else
+                    buildClear(ctx, target);
+                break;
+            }
+        case no_ifblock:
+            throwUnexpected();
+        }
+    }
+}
+
 void HqlCppTranslator::doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * tgtRecord = expr->queryChild(1);
@@ -11832,32 +11859,7 @@ void HqlCppTranslator::doBuildAggregateClearFunc(BuildCtx & ctx, IHqlExpression 
 
     ensureRowAllocated(funcctx, "crSelf");
 
-    unsigned numAggregates = transform->numChildren();
-    unsigned idx;
-    OwnedHqlExpr self = getSelf(tgtRecord);
-    for (idx = 0; idx < numAggregates; idx++)
-    {
-        IHqlExpression * cur = transform->queryChild(idx);
-        OwnedHqlExpr target = selfRow->bindToRow(cur->queryChild(0), self);
-        IHqlExpression * src = cur->queryChild(1);
-
-        switch (src->getOperator())
-        {
-        case no_countgroup:
-        case no_maxgroup:
-        case no_mingroup:
-        case no_sumgroup:
-        case no_existsgroup:
-            buildClear(funcctx, target);
-            break;
-        default:
-            if (src->isConstant())
-                buildAssign(funcctx, target, src);
-            else
-                buildClear(funcctx, target);
-            break;
-        }
-    }
+    doBuildClearAggregateRecord(funcctx, transform->queryRecord(), selfRow->querySelector(), transform);
     buildReturnRecordSize(funcctx, selfRow);
 }
 
