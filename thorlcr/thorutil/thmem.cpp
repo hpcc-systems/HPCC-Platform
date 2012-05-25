@@ -65,31 +65,6 @@ static Owned<ILargeMemLimitNotify> MTthresholdnotify;
 static bool MTlocked = false;
 
 
-class CThorRowArrayException: public CSimpleInterface, public IThorRowArrayException
-{
-    size32_t sz;
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    CThorRowArrayException(size32_t _sz) 
-    {
-//      DebugBreak();
-        sz = _sz;
-    };
-    
-    int             errorCode() const { return 101; }
-    StringBuffer &  errorMessage(StringBuffer &str) const
-    { 
-        return str.append("CThorRowArray: Group too large: ").append(sz).append(" bytes");
-    }
-    MessageAudience errorAudience() const { return MSGAUD_user; }
-};
-
-IThorRowArrayException *createRowArrayException(size32_t sz)
-{
-    return new CThorRowArrayException(sz);
-}
-
-
 void checkMultiThorMemoryThreshold(bool inc)
 {
     if (MTthresholdnotify.get()) {

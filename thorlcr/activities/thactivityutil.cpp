@@ -32,7 +32,6 @@
 #include "slave.ipp"
 #include "thbuf.hpp"
 #include "thbufdef.hpp"
-#include "thcrc.hpp"
 #include "thexception.hpp"
 #include "thmfilemanager.hpp"
 #include "thormisc.hpp"

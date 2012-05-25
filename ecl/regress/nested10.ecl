@@ -16,4 +16,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-** remove **
+level1Rec := RECORD
+    UNSIGNED a;
+    UNSIGNED b;
+    UNSIGNED c;
+END;
+
+level2Rec := RECORD
+    level1Rec a;
+    level1Rec b;
+    level1Rec c;
+END;
+
+level3Rec := RECORD
+    UNSIGNED id;
+    level2Rec a;
+    level2Rec b;
+    level2Rec c;
+END;
+
+ds := DATASET('ds', level3Rec, thor);
+
+f := ds(a.b.c != 10);
+
+//prevent a compound disk operation
+d := dedup(f, c.b.a);
+output(d, { b.a });

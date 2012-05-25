@@ -32,7 +32,6 @@
 #include "thormisc.hpp"
 #include "thmfilemanager.hpp"
 #include "thorport.hpp"
-#include "thcrc.hpp"
 #include "thsortu.hpp"
 #include "thexception.hpp"
 #include "thactivityutil.ipp"

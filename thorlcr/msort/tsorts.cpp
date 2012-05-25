@@ -31,7 +31,6 @@
 #include "tsortm.hpp"
 #include "tsortmp.hpp"
 #include "thbuf.hpp"
-#include "thcrc.hpp"
 #include "thgraph.hpp"
 
 #define _TRACE

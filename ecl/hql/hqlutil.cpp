@@ -1504,6 +1504,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_allnodes:
     case no_thisnode:
     case no_keydiff:
+    case no_keypatch:
         return 0;
     case no_setresult:
         if (expr->queryChild(0)->isAction())
@@ -7418,6 +7419,54 @@ StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const
 
 //---------------------------------------------------------------------------------------------------------------------
 
+static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSelector, IHqlExpression * oldSelector, IHqlSimpleScope * oldScope, IHqlExpression * newRecord)
+{
+    ForEachChild(i, newRecord)
+    {
+        IHqlExpression * cur = newRecord->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_record:
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur);
+            break;
+        case no_ifblock:
+            createMappingAssigns(assigns, selfSelector, oldSelector, oldScope, cur->queryChild(1));
+            break;
+        case no_field:
+            {
+                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryName());
+                assertex(oldField);
+                OwnedHqlExpr selfSelected = createSelectExpr(LINK(selfSelector), LINK(cur));
+                OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSelector), LINK(oldField));
+
+                if (selfSelected->queryRecord() != oldSelected->queryRecord())
+                {
+                    assertex(oldSelected->isDatarow());
+                    OwnedHqlExpr childSelf = getSelf(cur);
+                    OwnedHqlExpr childTransform = createMappingTransform(childSelf, oldSelected);
+                    OwnedHqlExpr createRowExpr = createRow(no_createrow, childTransform.getClear());
+                    assigns.append(*createAssign(selfSelected.getClear(), createRowExpr.getClear()));
+                }
+                else
+                    assigns.append(*createAssign(selfSelected.getClear(), oldSelected.getClear()));
+            }
+        }
+    }
+}
+
+IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector)
+{
+    HqlExprArray assigns;
+    IHqlExpression * selfRecord = selfSelector->queryRecord();
+    IHqlExpression * inRecord = inSelector->queryRecord();
+    createMappingAssigns(assigns, selfSelector, inSelector, inRecord->querySimpleScope(), selfRecord);
+    return createValue(no_transform, makeTransformType(selfRecord->getType()), assigns);
+
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
 {
     if (expr->isMacro())
@@ -7701,4 +7750,40 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
     if (side == no_right)
         return name == rightAtom;
     throwUnexpected();
+}
+
+//-------------------------------------------------------------------------------------------------
+
+IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
+{
+    ForEachChild(i, transform)
+    {
+        IHqlExpression * cur = transform->queryChild(i);
+        switch (cur->getOperator())
+        {
+        case no_assignall:
+            {
+                IHqlExpression * ret = queryTransformAssign(cur, searchField);
+                if (ret)
+                    return ret;
+                break;
+            }
+        case no_assign:
+            {
+                IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
+                if (lhs == searchField)
+                    return cur;
+                break;
+            }
+        }
+    }
+    return NULL;
+}
+
+IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField)
+{
+    IHqlExpression * value = queryTransformAssign(transform, searchField);
+    if (value)
+        return value->queryChild(1);
+    return NULL;
 }

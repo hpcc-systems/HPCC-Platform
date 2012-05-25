@@ -100,22 +100,17 @@ public class EclDriver implements Driver
 		try
 		{
 			Properties info = new Properties();
-			info.put("ServerAddress", "192.168.124.128"); //Mine
-			//info.put("ServerAddress", "10.239.20.80"); //clo
-			//info.put("ServerAddress", "10.239.219.10"); //fishbeck
-			//info.put("ServerAddress", "172.25.237.145"); //arjuna
+			info.put("ServerAddress", "192.168.124.128");
 
 			info.put("Cluster", "thor");
 			info.put("WsECLWatchPort", "8010");
-			info.put("EclLimit", "10");
+			info.put("EclResultLimit", "ALL");
 			info.put("WsECLPort", "8002");
 			info.put("WsECLDirectPort", "8008");
-			info.put("username", "_rpastrana");
-			info.put("password", "a");
+			info.put("username", "myhpccusername");
+			info.put("password", "myhpccpass");
 
-			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=192.168.124.128;Cluster=myroxie",info);
-			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.20.80;Cluster=thor;EclLimit=8",info);
-			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.219.10;Cluster=thor;EclLimit=8",info);
+			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.219.10;Cluster=thor;EclResultLimit=8",info);
 			conn = (EclConnection) d.connect("url:jdbc:ecl;",info);
 
 			PreparedStatement p = conn.prepareStatement(
@@ -136,7 +131,7 @@ public class EclDriver implements Driver
 			//"select count(city)  from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
 			//"select * from enron::final where tos = 'randy.young@enron.com' limit 1000"
 			//"select count(*), zip from tutorial::rp::tutorialperson where zip = '33445' "
-			"select * from tutorial::rp::tutorialperson where zip > '32605'"
+			"select zip from tutorial::rp::tutorialperson where zip < '32605' group by zip"
 			//"select MAX(firstname), lastname from tutorial::rp::tutorialperson  limit 1000"
 			//"select 1"
 			//"select zip, city from tutorial::rp::tutorialperson where city = 'ABBEVILLE' "

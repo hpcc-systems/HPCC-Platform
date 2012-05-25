@@ -157,6 +157,7 @@ void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first,
         out.append(*transformer.transformRoot(expr->queryChild(iChild)));
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 
 //NB: This can not be derived from NewHqlTransformer since it is called before the tree is normalised, and it creates
 //inconsistent expression trees.

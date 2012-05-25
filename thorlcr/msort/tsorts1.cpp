@@ -24,7 +24,6 @@
 #include "thorport.hpp"
 
 #include "tsorts.hpp"
-#include "thcrc.hpp"
 #include "thmem.hpp"
 
 

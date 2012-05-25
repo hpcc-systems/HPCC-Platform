@@ -133,6 +133,7 @@ extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createTransformFromRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createNullTransform(IHqlExpression * record);
+extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpression * inSelector);
 
 extern HQL_API IHqlExpression * getFailCode(IHqlExpression * failExpr);
 extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted);
@@ -643,5 +644,7 @@ extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExp
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
 extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
+extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField);
+extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
 
 #endif

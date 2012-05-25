@@ -16,36 +16,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#ifndef _THROLLING_HPP
-#define _THROLLING_HPP
+strRec := { string value; };
 
-#ifdef _WIN32
-    #ifdef GRAPH_EXPORTS
-        #define graph_decl __declspec(dllexport)
-    #else
-        #define graph_decl __declspec(dllimport)
-    #endif
-#else
-    #define graph_decl
-#endif
+namesRecord :=
+            RECORD
+string20        surname;
+string10        forename;
+dataset(strRec) paths;
+integer2        age := 25;
+            END;
 
-#include "jmutex.hpp"
+namesTable1 := dataset('x1',namesRecord,FLAT);
 
-class graph_decl RollingArray
-{
-public:
-    RollingArray(unsigned _size=0);
-    ~RollingArray();
-    bool add(void *item);
-    bool get(void * &item);
-    unsigned entries();
-public: // data
-    static const unsigned defaultSize;
-private:
-    void **arr;
-    unsigned size, count, nip, nop;
-    CriticalSection crit;
-};
+getUniqueSet(dataset(strRec) values) := FUNCTION
+    unsigned MaxPaths := 100;
+    uniquePaths := DEDUP(values, value, ALL);
+    RETURN IF(COUNT(uniquePaths)<MaxPaths, SET(uniquePaths, value), ['Default']);
+END;
 
-#endif
+getUniqueSet2(dataset(strRec) values) := FUNCTION
+    unsigned MaxPaths := 100;
+    uniquePaths := DEDUP(values, value, ALL);
+    limited := IF(COUNT(uniquePaths)<MaxPaths, uniquePaths, DATASET(['Default'], strRec));
+    RETURN SET(limited, value);
+END;
 
+output(namesTable1(surname not in getUniqueSet(paths)));
