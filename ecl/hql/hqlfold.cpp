@@ -4215,6 +4215,51 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
     case no_and:
         return foldAndExpr(expr, (foldOptions & HFOx_op_not_x) != 0);
     //Operations that involve constant folding on datasets.
+    case no_normalize:
+        {
+            // Identify expressions
+            IHqlExpression * ds = expr->queryChild(0);
+            IHqlExpression * count = expr->queryChild(1);
+            IHqlExpression * transform = expr->queryChild(2);
+            OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
+            if (!hasSingleRow(ds) || exprReferencesDataset(count, left)) // Complicate things more
+                break;
+
+            // Replace LEFT from normalize transform (if used) by ROW's contents
+            OwnedHqlExpr newTransform;
+            if (exprReferencesDataset(transform, left)) {
+                OwnedHqlExpr newRow;
+                // Make sure it's one of the recognised formats
+                switch (ds->getOperator())
+                {
+                case no_datasetfromrow: // DATASET(ROW(transform))
+                    {
+                        IHqlExpression * row = ds->queryChild(0);
+                        if (row->getOperator() == no_createrow)
+                            newRow.set(row);
+                        break;
+                    }
+                case no_inlinetable:    // DATASET([transform()]) or DATASET([value],{ myfield })
+                    {
+                        IHqlExpression * transformList = ds->queryChild(0);
+                        assertex(transformList->getOperator() == no_transformlist);
+                        newRow.setown(createRow(no_createrow, LINK(transformList->queryChild(0))));
+                        break;
+                    }
+                }
+                if (!newRow || !newRow->isPure())
+                    break;
+
+                OwnedHqlExpr replacementRow = createRow(no_newrow, LINK(newRow));
+                newTransform.setown(replaceSelector(transform, left, replacementRow));
+            }
+            HqlExprArray args;
+            unwindChildren(args, expr, 1); // (count, trans)
+            if (newTransform)
+                args.replace(*newTransform.getClear(), 1);
+
+            return createDataset(no_dataset_from_transform, args);
+        }
     case no_filter:
         {
             IHqlExpression * child = expr->queryChild(0);

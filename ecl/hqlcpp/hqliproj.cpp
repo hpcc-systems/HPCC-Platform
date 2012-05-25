@@ -1989,6 +1989,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_projectrow:
         return CreateRecordActivity;
     case no_inlinetable:
+    case no_dataset_from_transform:
         return CreateRecordSourceActivity;
     case no_extractresult:
     case no_apply:
@@ -2799,23 +2800,37 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CreateRecordSourceActivity:
         {
-            assertex(expr->getOperator() == no_inlinetable);
+            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform);
             //Always reduce things that create a new record so they only project the fields they need to
             if (complexExtra->outputChanged())
             {
-                IHqlExpression * transforms = expr->queryChild(0);
-                HqlExprArray newTransforms;
-                ForEachChild(i, transforms)
-                {
-                    IHqlExpression * transform = transforms->queryChild(i);
-                    newTransforms.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
-                }
-
                 HqlExprArray args;
-                args.append(*transforms->clone(newTransforms));
+                switch (expr->getOperator())
+                {
+                case no_inlinetable:
+                    {
+                        IHqlExpression * transforms = expr->queryChild(0);
+                        HqlExprArray newTransforms;
+                        ForEachChild(i, transforms)
+                        {
+                            IHqlExpression * transform = transforms->queryChild(i);
+                            newTransforms.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
+                        }
+                        args.append(*transforms->clone(newTransforms));
+                        break;
+                    }
+                case no_dataset_from_transform:
+                    {
+                        IHqlExpression * transform = expr->queryChild(1);
+                        args.append(*LINK(expr->queryChild(0)));
+                        args.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
+                        break;
+                    }
+                }
                 args.append(*LINK(complexExtra->queryOutputRecord()));
                 unwindChildren(args, expr, 2);
                 transformed.setown(expr->clone(args));
+
                 logChange("Minimize", expr, complexExtra->outputFields);
             }
             else
