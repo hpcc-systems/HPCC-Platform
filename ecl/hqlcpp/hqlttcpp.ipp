@@ -644,7 +644,6 @@ protected:
     IHqlExpression * hoist(IHqlExpression * expr, IHqlExpression * hoisted);
     IHqlExpression * transformCond(IHqlExpression * expr);
 
-    inline unsigned extraIndex() { return activityDepth != 0 ? 0 : 1; }
     inline ScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
 private:
@@ -956,8 +955,6 @@ public:
     void reportWarnings();
 
 protected:
-    void beginTableScope();
-    void endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IHqlExpression * newExpr);
     void checkActiveRow(IHqlExpression * expr);
     IHqlExpression * transformSelect(IHqlExpression * expr);
 

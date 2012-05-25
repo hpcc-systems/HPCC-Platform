@@ -275,7 +275,6 @@ _ATOM recordAtom;
 _ATOM recursiveAtom;
 _ATOM referenceAtom;
 _ATOM refreshAtom;
-_ATOM relatedTableAtom;
 _ATOM _remote_Atom;
 _ATOM renameAtom;
 _ATOM repeatAtom;
@@ -656,7 +655,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(recursive);
     MAKEATOM(reference);
     MAKEATOM(refresh);
-    MAKEATOM(relatedTable);
     MAKESYSATOM(remote);
     MAKEATOM(rename);
     MAKEATOM(repeat);
