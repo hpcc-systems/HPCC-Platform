@@ -279,7 +279,6 @@ extern HQL_API _ATOM recordAtom;
 extern HQL_API _ATOM recursiveAtom;
 extern HQL_API _ATOM referenceAtom;
 extern HQL_API _ATOM refreshAtom;
-extern HQL_API _ATOM relatedTableAtom;
 extern HQL_API _ATOM _remote_Atom;
 extern HQL_API _ATOM renameAtom;
 extern HQL_API _ATOM repeatAtom;

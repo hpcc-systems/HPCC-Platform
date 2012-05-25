@@ -7242,18 +7242,6 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
             IHqlExpression * newAttr = transformed->queryProperty(newAtom);
             if (newAttr)
             {
-                if (newAttr->hasProperty(globalAtom))
-                {
-                    OwnedHqlExpr noGlobalNew = removeProperty(newAttr, globalAtom);
-                    return replaceOwnedProperty(transformed, noGlobalNew.getClear());
-                }
-                if (newAttr->hasProperty(relatedTableAtom))
-                {
-                    //Remove relatedTableAtom, since only used by this transformer, should really be using activityDepth instead
-                    OwnedHqlExpr noRelatedNew = removeProperty(newAttr, relatedTableAtom);
-                    return replaceOwnedProperty(transformed, noRelatedNew.getClear());
-                }
-
                 if (isUsedUnconditionally(expr))
                 {
                     if (extra->maxActivityDepth != 0)
@@ -7271,10 +7259,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                         if (!isInlineTrivialDataset(row) && !isContextDependent(row) && !transformed->isDataset())
                         {
                             if (isIndependentOfScope(row))
-                            {
-                                OwnedHqlExpr newSelect = createNewSelectExpr(LINK(row), LINK(transformed->queryChild(1)));
-                                return hoist(expr, newSelect);
-                            }
+                                return hoist(expr, transformed);
                         }
                     }
                 }
@@ -7283,17 +7268,6 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
         break;
     case NO_AGGREGATE:
         {
-            if (expr->hasProperty(globalAtom))
-            {
-                //Remove globalAtom, since only used by this transformer, should really be using activityDepth instead
-                return removeProperty(transformed, globalAtom);
-            }
-            //ditto, relatedTableAtom only used for this transform
-            if (expr->hasProperty(relatedTableAtom))
-            {
-                return removeProperty(transformed, relatedTableAtom);
-            }
-
             if (isUsedUnconditionally(expr))
             {
                 if (extra->maxActivityDepth != 0)
@@ -8598,42 +8572,6 @@ HqlScopeTagger::HqlScopeTagger(IErrorReceiver * _errors)
 }
 
 
-void HqlScopeTagger::beginTableScope()
-{
-}
-
-void HqlScopeTagger::endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IHqlExpression * newExpr)
-{
-#if 1
-    //A quick test which is often succeeds.
-    if (isDatasetRelatedToScope(ds))
-        attrs.append(*createAttribute(relatedTableAtom));
-    else
-    {
-        //if is actually the base table of the query that would be related, not the
-        IHqlDataset * d = ds->queryDataset();
-        if (d)
-        {
-            d = d->queryRootTable();
-            if (d)
-            {
-                IHqlExpression * root = queryExpression(d);
-                if (isDatasetRelatedToScope(root))
-                    attrs.append(*createAttribute(relatedTableAtom));
-            }
-        }
-    }
-#endif
-
-    //MORE: Remove this asap ...
-    //This is only used by NewScopeMigrateTransformer, and the logic should really be contained within that transformer.
-    //However, initial attempts to remove it (see activityDepth code) caused code generation problems.
-#ifndef REMOVE_GLOBAL_ANNOTATION
-    if (!insideActivity())
-        attrs.append(*createAttribute(globalAtom));
-#endif
-}
-
 bool HqlScopeTagger::isValidNormalizeSelector(IHqlExpression * expr)
 {
     loop
@@ -8766,7 +8704,6 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         }
     }
 
-    beginTableScope();
     pushScope();
     OwnedHqlExpr newDs = transformNewDataset(ds, false);
     popScope();
@@ -9036,17 +8973,6 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         break;
     case no_select:
         return transformSelect(expr);
-    case NO_AGGREGATE:
-    case no_createset:
-        {
-            beginTableScope();
-            OwnedHqlExpr transformed = Parent::createTransformed(expr);
-
-            HqlExprArray args;
-            unwindChildren(args, transformed);
-            endTableScope(args, expr->queryChild(0), transformed);
-            return transformed->clone(args);
-        }
     case no_call:
     case no_externalcall:
     case no_rowvalue:
