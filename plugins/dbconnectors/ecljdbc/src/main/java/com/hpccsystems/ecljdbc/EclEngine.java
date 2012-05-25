@@ -530,18 +530,22 @@ public class EclEngine
 					if (!parameters.containsKey("GROUPBY"))
 					{
 						if (parameters.containsKey("COUNTFN"))
+						{
 							sb.append("scalarout := COUNT(idxds");
+							sb.append(", KEYED);\n");
+						}
 						if (parameters.containsKey("MAXFN"))
 						{
 							sb.append("scalarout := MAX(idxds, fileds.");
 							sb.append(parameters.get("FNCOLS"));
+							sb.append(", KEYED);\n");
 						}
 						if (parameters.containsKey("MINFN"))
 						{
 							sb.append("scalarout := MIN(idxds, fileds.");
 							sb.append(parameters.get("FNCOLS"));
+							sb.append(", KEYED);\n");
 						}
-						sb.append(", KEYED);\n");
 					}
 
 					if (parameters.containsKey("SCALAROUTNAME"))
@@ -648,8 +652,8 @@ public class EclEngine
 				sb.append(",");
 				if (parameters.containsKey("LIMIT"))
 					sb.append(parameters.get("LIMIT"));
-				else
-					sb.append( props.getProperty("EclLimit"));
+				else 
+					sb.append( props.getProperty("EclResultLimit"));;
 				sb.append("),NAMED(\'ECLJDBCSelectOutput\'));");
 			}
 

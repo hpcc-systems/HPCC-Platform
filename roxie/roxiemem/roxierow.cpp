@@ -100,11 +100,11 @@ bool isRowCheckValid(unsigned allocatorId, const void * row)
 {
     switch (allocatorId & ALLOCATORID_CHECK_MASK)
     {
-    case NoCheckingHelper::allocatorCheckFlag:
+    case NoCheckingHelper::allocatorCheckFlag & ALLOCATORID_CHECK_MASK:
         return true;
-    case Crc16CheckingHelper::allocatorCheckFlag:
+    case Crc16CheckingHelper::allocatorCheckFlag & ALLOCATORID_CHECK_MASK:
         return Crc16CheckingHelper::isValid(row);
-    case Sum16CheckingHelper::allocatorCheckFlag:
+    case Sum16CheckingHelper::allocatorCheckFlag & ALLOCATORID_CHECK_MASK:
         return Sum16CheckingHelper::isValid(row);
     default:
         UNIMPLEMENTED;
@@ -222,7 +222,7 @@ public:
         unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
         if (meta.needsDestruct() || CHECKER::allocatorCheckFlag)
             flags |= roxiemem::RHFhasdestructor;
-        heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize(), allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
+        heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize()+CHECKER::extraSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
     }
 
     virtual void * createRow()
@@ -277,12 +277,20 @@ public:
     virtual void * createRow(size32_t & allocatedSize)
     {
         const size32_t allocSize = meta.getInitialSize();
-        return heap->allocate(allocSize+CHECKER::extraSize, allocatedSize);
+        void * row = heap->allocate(allocSize+CHECKER::extraSize, allocatedSize);
+        //This test should get constant folded to avoid the decrement when not checked.
+        if (CHECKER::extraSize)
+            allocatedSize -= CHECKER::extraSize;
+        return row;
     }
 
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
     {
-        return heap->resizeRow(row, size, newSize+CHECKER::extraSize, size);
+        size32_t oldsize = size;  // don't need to include the extra checking bytes
+        void * newrow = heap->resizeRow(row, oldsize, newSize+CHECKER::extraSize, size);
+        if (CHECKER::extraSize)
+            size -= CHECKER::extraSize;
+        return newrow;
     }
 
     virtual void * finalizeRow(size32_t finalSize, void * row, size32_t oldSize)
@@ -314,3 +322,148 @@ IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowMana
     else
         return new RoxieEngineVariableRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
 }
+
+
+#ifdef _USE_CPPUNIT
+#include <cppunit/extensions/HelperMacros.h>
+#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
+
+namespace roxiemem {
+
+class RoxieRowAllocatorTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( RoxieRowAllocatorTests );
+        CPPUNIT_TEST(testChecking);
+    CPPUNIT_TEST_SUITE_END();
+    const IContextLogger &logctx;
+
+public:
+    RoxieRowAllocatorTests() : logctx(queryDummyContextLogger())
+    {
+        setTotalMemoryLimit(40*HEAP_ALIGNMENT_SIZE, 0, NULL);
+    }
+
+    ~RoxieRowAllocatorTests()
+    {
+        releaseRoxieHeap();
+    }
+
+protected:
+    class CheckingRowAllocatorCache : public IRowAllocatorCache
+    {
+    public:
+        CheckingRowAllocatorCache() { numFailures = 0; }
+        virtual unsigned getActivityId(unsigned cacheId) const { return 0; }
+        virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const { return out.append(cacheId); }
+        virtual void onDestroy(unsigned cacheId, void *row) const
+        {
+            if (!RoxieRowCheckValid(cacheId, row))
+                ++numFailures;
+        }
+        virtual void checkValid(unsigned cacheId, const void *row) const
+        {
+            if (!RoxieRowCheckValid(cacheId, row))
+                ++numFailures;
+        }
+
+        mutable unsigned numFailures;
+    };
+
+    class DummyOutputMeta : public IOutputMetaData, public CInterface
+    {
+    public:
+        DummyOutputMeta(size32_t _minSize, size32_t _fixedSize) : minSize(_minSize), fixedSize(_fixedSize) {}
+        IMPLEMENT_IINTERFACE
+
+        virtual size32_t getRecordSize(const void *rec) { return minSize; }
+        virtual size32_t getFixedSize() const { return fixedSize; }
+        virtual size32_t getMinRecordSize() const { return minSize; }
+        virtual void toXML(const byte * self, IXmlWriter & out) {}
+        virtual unsigned getVersion() const { return 0; }
+        virtual unsigned getMetaFlags() { return 0; }
+        virtual IOutputMetaData * querySerializedMeta() { return this; }
+
+        virtual void destruct(byte * self) {}
+        virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+
+        size32_t minSize;
+        size32_t fixedSize;
+    };
+
+    void testAllocator(IOutputMetaData * meta, bool packed, unsigned low, unsigned high, int modify, bool checking)
+    {
+        CheckingRowAllocatorCache cache;
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, &cache);
+        Owned<IEngineRowAllocator> alloc = checking ? createCrcRoxieRowAllocator(*rm, meta, 0, 0, packed) : createRoxieRowAllocator(*rm, meta, 0, 0, packed);
+
+        for (unsigned size=low; size <= high; size++)
+        {
+            unsigned capacity;
+            unsigned prevFailures = cache.numFailures;
+            void * row = alloc->createRow(capacity);
+            if (low != high)
+                row = alloc->resizeRow(size, row, capacity);
+            for (unsigned i1=0; i1 < capacity; i1++)
+                ((byte *)row)[i1] = i1;
+            const void * final = alloc->finalizeRow(capacity, row, capacity);
+            for (unsigned i2=0; i2 < capacity; i2++)
+            {
+                ASSERT(((byte *)row)[i2] == i2);
+            }
+
+            if (modify != 0)
+            {
+                if (modify < 0)
+                    ((byte *)row)[0]++;
+                else
+                    ((byte *)row)[size-1]++;
+            }
+            ReleaseRoxieRow(row);
+            if (modify == 0)
+            {
+                ASSERT(prevFailures == cache.numFailures);
+            }
+            else
+            {
+                ASSERT(prevFailures+1 == cache.numFailures);
+            }
+        }
+    }
+
+    void testAllocator(IOutputMetaData * meta, bool packed, unsigned low, unsigned high)
+    {
+        testAllocator(meta, packed, low, high, 0, false);
+        testAllocator(meta, packed, low, high, 0, true);
+        testAllocator(meta, packed, low, high, -1, true);
+        testAllocator(meta, packed, low, high, +1, true);
+    }
+
+    void testChecking()
+    {
+        Owned<IRowManager> rm = createRowManager(0, NULL, logctx, NULL);
+
+        for (unsigned fixedSize=1; fixedSize<64; fixedSize++)
+        {
+            DummyOutputMeta meta(fixedSize, fixedSize);
+            testAllocator(&meta, false, fixedSize, fixedSize);
+            testAllocator(&meta, true, fixedSize, fixedSize);
+        }
+
+        for (unsigned varSize=1; varSize<64; varSize++)
+        {
+            DummyOutputMeta meta(varSize, 0);
+            testAllocator(&meta, false, varSize, varSize);
+            testAllocator(&meta, false, 1, varSize);
+        }
+    }
+
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieRowAllocatorTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieRowAllocatorTests, "RoxieRowAllocatorTests" );
+
+} // namespace roxiemem
+#endif

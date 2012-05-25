@@ -58,34 +58,6 @@ enum
 
 //-------------------------------------------------------------------------------------------------
 
-IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
-{
-    ForEachChild(i, transform)
-    {
-        IHqlExpression * cur = transform->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_assignall:
-            {
-                IHqlExpression * ret = queryTransformAssign(cur, searchField);
-                if (ret)
-                    return ret;
-                break;
-            }
-        case no_assign:
-            {
-                IHqlExpression * lhs = cur->queryChild(0)->queryChild(1);
-                if (lhs == searchField)
-                    return cur->queryChild(1);
-                break;
-            }
-        }
-    }
-    return NULL;
-}
-
-//-------------------------------------------------------------------------------------------------
-
 void UsedFieldSet::addUnique(IHqlExpression * field)
 {
     //MORE: Add if (!all test to short-circuit contains)
@@ -556,7 +528,7 @@ void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, SelectU
             }
             if (values)
             {
-                IHqlExpression * transformValue = queryTransformAssign(transform, &cur);
+                IHqlExpression * transformValue = queryTransformAssignValue(transform, &cur);
                 //If no transform value is found then we almost certainly have an invalid query (e.g, LEFT inside a
                 //global).  Don't add the value - you'll definitely get a later follow on error
                 assertex(transformValue);
@@ -573,7 +545,7 @@ void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, SelectU
         {
             IHqlExpression * field = curNested.field;
             OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(field)) : NULL;
-            IHqlExpression * transformValue = queryTransformAssign(transform, field);
+            IHqlExpression * transformValue = queryTransformAssignValue(transform, field);
             assertex(transformValue);
             bool includeThis = true;
             if (!curNested.includeAll() && transformValue->isPure())
@@ -3243,9 +3215,9 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
 
 const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsedForField(IHqlExpression * transform, IHqlExpression * field)
 {
-    IHqlExpression * transformValues = queryTransformAssign(transform, field);
+    IHqlExpression * transformValues = queryTransformAssignValue(transform, field);
     if (!transformValues)
-         transformValues = queryTransformAssign(transform, field);
+         transformValues = queryTransformAssignValue(transform, field);
     return querySelectsUsed(transformValues);
 }
 
