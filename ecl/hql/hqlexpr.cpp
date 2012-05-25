@@ -64,6 +64,8 @@
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
 
+// To debug a symbol in the C++ generated code, use SEARCH_NAME*
+// and set a breakpoint on debugMatchedName() below
 #ifdef _DEBUG
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSITENCY
