@@ -29,14 +29,14 @@ define([
 	"hpcc/SampleSelectControl",
 	"hpcc/ESPWorkunit"
 ], function (fx, baseWindow, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
-	var		wu = null,
+	var wu = null,
 			editorControl = null,
 			graphControl = null,
 			resultsControl = null,
 			sampleSelectControl = null,
 
 			initUi = function () {
-				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
 				on(dom.byId("submitBtn"), "click", doSubmit);
 
 				if (wuid) {
@@ -64,8 +64,8 @@ define([
 			},
 
 			initUiResults = function () {
-				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Wuid"];
-				var sequence = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search[0] === "?" ? 1 : 0)))["Sequence"];
+				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
+				var sequence = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Sequence"];
 				initResultsControl(sequence);
 				if (wuid) {
 					wu = new Workunit({

@@ -40,7 +40,6 @@ define([
 				value: "default.ecl",
 				maxHeight: -1,
 				style: {
-					overflow: "overflow: visible !important",
 					padding: 0
 				},
 				onChange: function () {
