@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -417,7 +417,7 @@ public class DFUFile
 						{
 							String type = spacetokens.nextToken();
 							String name = spacetokens.nextToken();
-							EclColumnMetaData columnmeta = new EclColumnMetaData(name, index, EclDatabaseMetaData.convertECLtype2SQLtype(type.toUpperCase()));
+							HPCCColumnMetaData columnmeta = new HPCCColumnMetaData(name, index, HPCCDatabaseMetaData.convertECLtype2SQLtype(type.toUpperCase()));
 							columnmeta.setEclType(type);
 							//columnmeta.setTableName(this.FileName);
 							columnmeta.setTableName(this.FullyQualifiedName);
@@ -455,9 +455,9 @@ public class DFUFile
 		return Fields.containsKey(fieldName.toUpperCase());
 	}
 
-	public EclColumnMetaData getFieldMetaData(String fieldName)
+	public HPCCColumnMetaData getFieldMetaData(String fieldName)
 	{
-		return (EclColumnMetaData) Fields.get(fieldName.toUpperCase());
+		return (HPCCColumnMetaData) Fields.get(fieldName.toUpperCase());
 	}
 
 	public String[] getAllTableFieldsStringArray()
@@ -466,7 +466,7 @@ public class DFUFile
 		Enumeration<Object> it = Fields.elements();
 		while(it.hasMoreElements())
 		{
-			EclColumnMetaData col = ((EclColumnMetaData)it.nextElement());
+			HPCCColumnMetaData col = ((HPCCColumnMetaData)it.nextElement());
 			fields[col.getIndex()] = col.getColumnName();
 		}
 		return fields;
@@ -534,10 +534,10 @@ public class DFUFile
 			setFileFields(ecl);
 	}
 
-	public EclColumnMetaData getCompatibleField(String keyName, String keyType) {
+	public HPCCColumnMetaData getCompatibleField(String keyName, String keyType) {
 		//EclColumnMetaData field = (EclColumnMetaData) Fields.get(keyName.toUpperCase());
 		//want to match up name and type, for now just check name.
-		return (EclColumnMetaData) Fields.get(keyName.toUpperCase());
+		return (HPCCColumnMetaData) Fields.get(keyName.toUpperCase());
 	}
 
 	public void  setKeyedColumns (Properties KeyFields)
@@ -665,7 +665,7 @@ public class DFUFile
 		return relatedIndexes == null ? 0 : relatedIndexes.size();
 	}
 
-	public Object getFileRecDefwithIndexpos(EclColumnMetaData fieldMetaData, String structname)
+	public Object getFileRecDefwithIndexpos(HPCCColumnMetaData fieldMetaData, String structname)
 	{
 		if(fieldMetaData != null)
 			//return "filerecstruct := RECORD " + Ecl + fieldMetaData.getEclType() + " " + fieldMetaData.getColumnName() + " {virtual(fileposition)}; END; ";
@@ -733,11 +733,11 @@ public class DFUFile
 		return relatedIndexes == null || relatedIndexes.size() <= 0 ? false : true;
 	}
 
-	public boolean containsField(EclColumnMetaData fieldMetaData, boolean verifyEclType)
+	public boolean containsField(HPCCColumnMetaData fieldMetaData, boolean verifyEclType)
 	{
 		String fieldName = fieldMetaData.getColumnName().toUpperCase();
 		if (Fields.containsKey(fieldName))
-			if (!verifyEclType || ((EclColumnMetaData)Fields.get(fieldName)).getEclType().equals(fieldMetaData.getEclType()))
+			if (!verifyEclType || ((HPCCColumnMetaData)Fields.get(fieldName)).getEclType().equals(fieldMetaData.getEclType()))
 				return true;
 		return false;
 	}
@@ -762,7 +762,7 @@ public class DFUFile
 		return NonKeyedColumns == null ? 0 : NonKeyedColumns.size();
 	}
 
-	public boolean containsField(EclColumnMetaData column)
+	public boolean containsField(HPCCColumnMetaData column)
 	{
 		return this.containsField(column.getColumnName());
 	}

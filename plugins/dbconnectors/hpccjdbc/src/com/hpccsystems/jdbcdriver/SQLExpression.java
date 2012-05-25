@@ -1,34 +1,34 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
-public class SqlExpression
+public class SQLExpression
 {
 	public static final int LOGICAL_OPERATOR_TYPE = 1;
 	public static final int LOGICAL_EXPRESSION_TYPE = 2;
 
 	private String name;
-	private SqlOperator operator;
+	private SQLOperator operator;
 	private String value;
 	private int type;
 	private boolean isParametrized;
 
-	public SqlExpression(String name, String operator, String value)
+	public SQLExpression(String name, String operator, String value)
 	{
 		this.name = name;
-		this.operator = new SqlOperator(operator);
+		this.operator = new SQLOperator(operator);
 		this.value = value;
 		type = LOGICAL_EXPRESSION_TYPE;
 	}
 
-	public SqlExpression(String operator)
+	public SQLExpression(String operator)
 	{
 		name = null;
-		this.operator = new SqlOperator(operator);
+		this.operator = new SQLOperator(operator);
 		value = null;
 		type = LOGICAL_OPERATOR_TYPE;
 		isParametrized = false;
 	}
 
-	public SqlExpression(int type)
+	public SQLExpression(int type)
 	{
 		name = null;
 		operator = null;
@@ -48,15 +48,15 @@ public class SqlExpression
 	public void setName(String name) {
 		this.name = name;
 	}
-	public SqlOperator getOperator() {
+	public SQLOperator getOperator() {
 		return operator;
 	}
-	public void setOperator(SqlOperator operator) {
+	public void setOperator(SQLOperator operator) {
 		this.operator = operator;
 	}
 
 	public void setOperator(String operator) {
-		this.operator = new SqlOperator(operator);
+		this.operator = new SQLOperator(operator);
 	}
 
 	public String getValue() {

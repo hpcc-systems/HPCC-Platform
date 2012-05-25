@@ -1,14 +1,14 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.List;
 
-public class SqlColumn
+public class SQLColumn
 {
 	private String name;
 	private String alias;
 	private String parenttable;
 	private int type;
-	private List<SqlColumn> functionParams;
+	private List<SQLColumn> functionParams;
 	private String constVal;
 	private int position;
 
@@ -18,7 +18,7 @@ public class SqlColumn
 	final static int FIELDNAME_COLUMN_TYPE = 2;
 	final static int FUNCTION_COLUMN_TYPE = 3;
 
-	public SqlColumn()
+	public SQLColumn()
 	{
 		name = null;
 		alias = null;
@@ -29,7 +29,7 @@ public class SqlColumn
 		position = -1;
 	}
 
-	public SqlColumn(String fullname, int coltype, int position)
+	public SQLColumn(String fullname, int coltype, int position)
 	{
 		String [] nameparts = name.split("\\.");
 		if (nameparts.length > 1)
@@ -47,7 +47,7 @@ public class SqlColumn
 		this.position = position;
 	}
 
-	public SqlColumn(String fullname, int position)
+	public SQLColumn(String fullname, int position)
 	{
 
 		String [] nameparts = fullname.split("\\.");
@@ -66,7 +66,7 @@ public class SqlColumn
 		this.position = position;
 	}
 
-	public SqlColumn(String parentname, String columnname, int position)
+	public SQLColumn(String parentname, String columnname, int position)
 	{
 		parenttable = parentname;
 		this.name = columnname;
@@ -77,7 +77,7 @@ public class SqlColumn
 		this.position = position;
 	}
 
-	public SqlColumn(String columnname, List<SqlColumn> funcols, int position)
+	public SQLColumn(String columnname, List<SQLColumn> funcols, int position)
 	{
 		this.name = columnname;
 		alias = null;
@@ -87,7 +87,7 @@ public class SqlColumn
 		this.position = position;
 	}
 
-	public SqlColumn(String columnname, String constVal, String alias, int position)
+	public SQLColumn(String columnname, String constVal, String alias, int position)
 	{
 		this.name = columnname;
 		this.alias = alias;
@@ -129,11 +129,11 @@ public class SqlColumn
 		this.type = type;
 	}
 
-	public List<SqlColumn> getFunctionParams() {
+	public List<SQLColumn> getFunctionParams() {
 		return functionParams;
 	}
 
-	public void setFunctionParams(List<SqlColumn> functionParams) {
+	public void setFunctionParams(List<SQLColumn> functionParams) {
 		this.functionParams = functionParams;
 	}
 

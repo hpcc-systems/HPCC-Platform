@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -10,13 +10,13 @@ import java.sql.SQLException;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
-public class EclDriver implements Driver
+public class HPCCDriver implements Driver
 {
 	static
 	{
 		try
 		{
-			EclDriver driver = new EclDriver();
+			HPCCDriver driver = new HPCCDriver();
 			DriverManager.registerDriver(driver);
 			System.out.println("EclDriver initialized");
 		}
@@ -26,7 +26,7 @@ public class EclDriver implements Driver
 		}
 	}
 
-	public EclDriver()
+	public HPCCDriver()
 	{
 	}
 
@@ -62,7 +62,7 @@ public class EclDriver implements Driver
 		String serverAddress = info.getProperty("ServerAddress");
 		System.out.println("EclDriver::connect" + serverAddress);
 		
-		return new EclConnection(info);
+		return new HPCCConnection(info);
 	}
 
 
@@ -81,12 +81,12 @@ public class EclDriver implements Driver
 
 	public int getMajorVersion()
 	{
-		return EclVersionTracker.HPCCMajor;
+		return HPCCVersionTracker.HPCCMajor;
 	}
 
 
 	public int getMinorVersion() {
-		return EclVersionTracker.HPCCMinor;
+		return HPCCVersionTracker.HPCCMinor;
 	}
 
 
@@ -95,8 +95,8 @@ public class EclDriver implements Driver
 	}
 
 	public static void main(String[] args) {
-		EclDriver d = new EclDriver();
-		EclConnection conn;
+		HPCCDriver d = new HPCCDriver();
+		HPCCConnection conn;
 		try
 		{
 			Properties info = new Properties();
@@ -111,7 +111,7 @@ public class EclDriver implements Driver
 			info.put("password", "myhpccpass");
 
 			//conn = (EclConnection) d.connect("url:jdbc:ecl;ServerAddress=10.239.219.10;Cluster=thor;EclResultLimit=8",info);
-			conn = (EclConnection) d.connect("url:jdbc:ecl;",info);
+			conn = (HPCCConnection) d.connect("url:jdbc:ecl;",info);
 
 			PreparedStatement p = conn.prepareStatement(
 			//"select  * from thor::full_test_distributed_index where lname = BRYANT , fname = whoknows group by zips order by birth_month DESC"
@@ -128,10 +128,10 @@ public class EclDriver implements Driver
 			//"select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000"
 			//"select city from tutorial::rp::tutorialperson USE INDEX(tutorial::rp::peoplebyzipindex2) where zip = ? "
 			//"select count(*) from tutorial::rp::tutorialperson USE INDEX(0) where zip > ?"
-			//"select count(city)  from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
+			"select count(city)  from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
 			//"select * from enron::final where tos = 'randy.young@enron.com' limit 1000"
 			//"select count(*), zip from tutorial::rp::tutorialperson where zip = '33445' "
-			"select zip from tutorial::rp::tutorialperson where zip < '32605' group by zip"
+			//"select zip from tutorial::rp::tutorialperson where zip < '32605' group by zip"
 			//"select MAX(firstname), lastname from tutorial::rp::tutorialperson  limit 1000"
 			//"select 1"
 			//"select zip, city from tutorial::rp::tutorialperson where city = 'ABBEVILLE' "
@@ -162,7 +162,7 @@ public class EclDriver implements Driver
 			p.setObject(1, "'33445'");
 			//p.setObject(1, "'A'");
 			//p.setObject(2, "'D'");
-			EclResultSet qrs = (EclResultSet)((EclPreparedStatement)p).executeQuery();
+			HPCCResultSet qrs = (HPCCResultSet)((HPCCPreparedStatement)p).executeQuery();
 
 			ResultSetMetaData meta = qrs.getMetaData();
 			System.out.println();
@@ -174,7 +174,7 @@ public class EclDriver implements Driver
 			System.out.println();
 			for (int i = 1; i <= meta.getColumnCount(); i++)
 			{
-				System.out.print("[*****" + EclDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i)) + "******]");
+				System.out.print("[*****" + HPCCDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i)) + "******]");
 			}
 
 			while (qrs.next())
