@@ -239,6 +239,7 @@ _ATOM deserializerSkipVUniAtom;
 _ATOM destroyRegexAtom;
 _ATOM destroyWRegexAtom;
 _ATOM destructMetaMemberAtom;
+_ATOM dictionaryLookupAtom;
 _ATOM doNotifyAtom;
 _ATOM doNotifyTargetAtom;
 _ATOM ebcdic2asciiAtom;
@@ -944,6 +945,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(destroyRegex);
     MAKEATOM(destroyWRegex);
     MAKEATOM(destructMetaMember);
+    MAKEATOM(dictionaryLookup);
     MAKEATOM(doNotify);
     MAKEATOM(doNotifyTarget);
     MAKEATOM(ebcdic2ascii);

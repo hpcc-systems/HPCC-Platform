@@ -6139,7 +6139,7 @@ bool CHqlRecord::assignableFrom(ITypeInfo * source)
 
     case type_record:
         {
-            if (recordTypesMatch(source, this))
+            if  (numChildren() == 0 || recordTypesMatch(source, this))
                 return true;
 
             //Record inheritance.  If the first entry in the source record is also a record, then check if compatible.
@@ -8806,7 +8806,7 @@ IHqlExpression * CHqlParameter::makeParameter(_ATOM _name, unsigned _idx, ITypeI
     switch (tc)
     {
     case type_dictionary:
-        UNIMPLEMENTED;
+        e = new CHqlDictionaryParameter(_name, _idx, _type);
         break;
     case type_table:
     case type_groupedtable:
@@ -10490,6 +10490,10 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
                         actual.setown(createDataset(no_hqlproject, actual.getClear(), createComma(transform.getClear(), LINK(seqAttr))));
                     }
                 }
+                break;
+            case type_dictionary:
+                // MORE - needs some code
+                // For now, never cast
                 break;
             case type_row:
             case type_transform:

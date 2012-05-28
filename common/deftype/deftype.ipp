@@ -642,6 +642,7 @@ public:
     virtual bool isScalar()                                 { return false; }
     virtual const char *queryTypeName()                     { return "dictionary"; }
     virtual StringBuffer &getECLType(StringBuffer & out);
+    virtual bool assignableFrom(ITypeInfo *t2);
 
     virtual void serialize(MemoryBuffer &tgt);
 };

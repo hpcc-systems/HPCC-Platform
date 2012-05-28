@@ -659,6 +659,24 @@ void RtlLinkedDictionaryBuilder::finalizeRow(size32_t rowSize)
     appendOwn(next);
 }
 
+extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow)
+{
+    IHash *hash  = hashInfo.queryHash();
+    ICompare *compare  = hashInfo.queryCompare();
+    unsigned rowidx = hash->hash(source) % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (compare->docompare(source, entry)==0)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
 //---------------------------------------------------------------------------
 
 //These definitions should be shared with thorcommon, but to do that

@@ -5281,11 +5281,37 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     errors->reportWarning(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
+IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
+{
+    // MORE - should probably use an attr to cache this?
+    IHqlExpression * payload = record ? record->queryProperty(_payload_Atom) : NULL;
+    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    unsigned max = record->numChildren() - payloadSize;
+    IHqlExpression *newrec = createRecord();
+    HqlExprArray fields;
+    for (unsigned idx = 0; idx < max; idx++)
+    {
+        IHqlExpression *child = record->queryChild(idx);
+        if (!child->isAttribute())  // Strip off the payload attribute
+            newrec->addOperand(LINK(child));
+    }
+    return newrec->closeExpr();
+}
+
+IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    TempTableTransformer transformer(errors, location);
+    OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
+    return createRow(no_selectmap, dict, createRow(no_createrow, newTransform.getClear()));
+}
+
+
 IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
-    OwnedHqlExpr values = normalizeListCasts(oldValues);
+    OwnedHqlExpr values = normalizeListCasts(oldValues); // ??? not used
 
     TempTableTransformer transformer(errors, location);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(oldValues, record);
