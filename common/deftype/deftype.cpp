@@ -1332,6 +1332,18 @@ bool CRowTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //===========================================================================
 
+bool CDictionaryTypeInfo::assignableFrom(ITypeInfo *t2)
+{
+    if (getTypeCode()==t2->getTypeCode())
+    {
+        ITypeInfo *c1 = queryChildType();
+        ITypeInfo *c2 = t2->queryChildType();
+        if (c1==NULL || c2==NULL || c1->assignableFrom(c2))
+            return true;
+    }
+    return false;
+}
+
 StringBuffer & CDictionaryTypeInfo::getECLType(StringBuffer & out)
 {
     ITypeInfo * recordType = ::queryRecordType(this);

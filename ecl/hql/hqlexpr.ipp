@@ -1326,6 +1326,33 @@ public:
     virtual IHqlSimpleScope* querySimpleScope() { return CHqlParameter::querySimpleScope(); }
 };
 
+class CHqlDictionaryParameter : public CHqlParameter, implements IHqlDataset
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CHqlParameter)
+
+    CHqlDictionaryParameter(_ATOM name, unsigned idx, ITypeInfo *type)
+     : CHqlParameter(name, idx, type) { }
+
+//IHqlExpression
+    virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_dictionary; }
+    virtual IHqlDataset *queryDataset() { return this; }
+
+//CHqlParameter
+
+    //virtual IHqlSimpleScope *querySimpleScope();
+
+//IHqlDataset
+    virtual IHqlDataset* queryTable() { return this; }
+    virtual IHqlDataset * queryRootTable() { return this; }
+    virtual IHqlExpression * queryContainer() { return NULL; }
+
+    virtual bool isAggregate() { return false; }
+
+//Overlapped methods
+    virtual IHqlSimpleScope* querySimpleScope() { return CHqlParameter::querySimpleScope(); }
+};
+
 class CHqlScopeParameter : public CHqlScope
 {
 protected:

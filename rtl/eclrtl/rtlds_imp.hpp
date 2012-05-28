@@ -436,6 +436,8 @@ protected:
     size32_t tableSize;
 };
 
+extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
+
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 
 

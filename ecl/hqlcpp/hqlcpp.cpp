@@ -5804,8 +5804,16 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             }
         case type_row:
             {
-                Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
-                selector->buildAddress(ctx, bound);
+                if (hasLinkCountedModifier(argType))
+                {
+                    doBuildAliasValue(ctx, castParam, bound);
+//                    buildTempExpr(ctx, castParam, bound, FormatLinkedDataset);
+                }
+                else
+                {
+                    Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
+                    selector->buildAddress(ctx, bound);
+                }
     //          buildExpr(ctx, castParam, bound);       // more this needs more work I think
                 break;
             }
