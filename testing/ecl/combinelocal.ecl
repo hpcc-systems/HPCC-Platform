@@ -16,35 +16,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//skip type==thorlcr TBD
-//nothor
 
-MyFixedRec := RECORD
-    STRING1 Value1;
-    STRING1 Value2;
-END;
+inrec := record
+unsigned6 did;
+    end;
 
-FixedFile := DATASET([{'C','G'},
-             {'C','C'},
-             {'A','X'},
-             {'B','G'},
-             {'A','B'}],MyFixedRec);
+outrec := record(inrec)
+string20        name;
+string10        ssn;
+unsigned8       dob;
+          end;
 
-MyVarRec := RECORD
-    STRING1 Value1;
-    STRING Value2;
-END;
+ds := dataset([1,2,3,4,5,6], inrec);
 
-VarFile := DATASET([{'C','G'},
-             {'C','C'},
-             {'A','X'},
-             {'B','G'},
-             {'A','B'}],MyVarRec);
+i1 := dataset([{1, 'Gavin'}, {2, 'Richard'}, {5,'Nigel'}], { unsigned6 did, string10 name });
+i2 := dataset([{3, '123462'}, {5, '1287234'}, {6,'007001002'}], { unsigned6 did, string10 ssn });
+i3 := dataset([{1, 19700117}, {4, 19831212}, {6,20000101}], { unsigned6 did, unsigned8 dob});
 
-dedup1 := DEDUP(VarFile, Value2, ALL, HASH);
-dedup2 := DEDUP(FixedFile, Value2, ALL, HASH);
+j1 := join(ds, i1, left.did = right.did, left outer, lookup);
+j2 := join(ds, i2, left.did = right.did, left outer, lookup);
+j3 := join(ds, i3, left.did = right.did, left outer, lookup);
 
-sequential(
-  output(dedup1),
-  output(dedup2)
-);
+combined1 := combine(j1, j2, transform(outRec, self := left; self := right; self := []), LOCAL);
+combined2 := combine(combined1, j3, transform(outRec, self.dob := right.dob; self := left), LOCAL);
+output(combined2);
