@@ -63,10 +63,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
-add_dependencies (WsDeploy espscm)
-install ( TARGETS WsDeploy DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( WsDeploy  
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( WsDeploy SHARED ${SRCS}  )
+    add_dependencies (WsDeploy espscm)
+    install ( TARGETS WsDeploy DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( WsDeploy  
          jlib
          xmllib 
          esphttp 
@@ -76,8 +77,8 @@ target_link_libraries ( WsDeploy
          eclrtl 
          hql 
          securesocket 
-     deploy 
-     deployutils     
+         deploy 
+         deployutils     
     )
-
+endif()
 

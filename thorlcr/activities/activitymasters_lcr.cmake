@@ -95,12 +95,13 @@ include_directories (
          ./../../rtl/eclrtl 
     )
 
-HPCC_ADD_LIBRARY( activitymasters_lcr SHARED ${SRCS} )
-set_target_properties(activitymasters_lcr PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL ACTIVITYMASTERS_EXPORTS )
-install ( TARGETS activitymasters_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( activitymasters_lcr
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( activitymasters_lcr SHARED ${SRCS} )
+    set_target_properties(activitymasters_lcr PROPERTIES 
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL ACTIVITYMASTERS_EXPORTS )
+    install ( TARGETS activitymasters_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( activitymasters_lcr
          jlib
          remote 
          thorsort_lcr 
@@ -120,5 +121,5 @@ target_link_libraries ( activitymasters_lcr
          mfilemanager_lcr 
          graphmaster_lcr 
     )
-
+endif()
 

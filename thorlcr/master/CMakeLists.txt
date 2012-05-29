@@ -65,9 +65,10 @@ if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable ( thormaster_lcr ${SRCS} )
-install ( TARGETS thormaster_lcr DESTINATION ${OSSDIR}/bin )
-target_link_libraries (  thormaster_lcr 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( thormaster_lcr ${SRCS} )
+    install ( TARGETS thormaster_lcr DESTINATION ${OSSDIR}/bin )
+    target_link_libraries (  thormaster_lcr 
          jlib
          jhtree 
          remote 
@@ -89,6 +90,5 @@ target_link_libraries (  thormaster_lcr
          activitymasters_lcr 
          swapnodelib
     )
-
-
+endif()
 

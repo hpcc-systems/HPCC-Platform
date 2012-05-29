@@ -151,7 +151,8 @@ set (    SRCS
     )
 
 # OBJS = 
-add_executable ( esp_compile_scm ${SRCS} )
-install ( TARGETS esp_compile_scm DESTINATION ${OSSDIR}/bin )
-
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( esp_compile_scm ${SRCS} )
+    install ( TARGETS esp_compile_scm DESTINATION ${OSSDIR}/bin )
+endif()
 

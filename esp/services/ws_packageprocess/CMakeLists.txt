@@ -44,10 +44,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
-install ( TARGETS ws_packageprocess DESTINATION ${DIR_NAME}/lib )
-add_dependencies (ws_packageprocess espscm)
-target_link_libraries ( ws_packageprocess
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
+    install ( TARGETS ws_packageprocess DESTINATION ${DIR_NAME}/lib )
+    add_dependencies (ws_packageprocess espscm)
+    target_link_libraries ( ws_packageprocess
          jlib
          xmllib
          esphttp
@@ -55,4 +56,5 @@ target_link_libraries ( ws_packageprocess
          dalibase
          ws_fs
     )
+endif()
 

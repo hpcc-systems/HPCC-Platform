@@ -39,10 +39,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( ldapsecuritytest ${SRCS} )
-target_link_libraries ( ldapsecuritytest 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( ldapsecuritytest ${SRCS} )
+    target_link_libraries ( ldapsecuritytest 
          jlib
          LdapSecurity 
     )
-
+endif()
 

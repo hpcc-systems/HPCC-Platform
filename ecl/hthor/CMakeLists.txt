@@ -73,9 +73,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DHTHOR_EXPORTS -DSTARTQUERY_EXPORTS )
 
-HPCC_ADD_LIBRARY( hthor SHARED ${SRCS} ${INCLUDES} )
-install ( TARGETS hthor DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( hthor
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( hthor SHARED ${SRCS} ${INCLUDES} )
+    install ( TARGETS hthor DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( hthor
          jlib
          mp
          hrpc
@@ -95,4 +96,4 @@ target_link_libraries ( hthor
          commonext
          schedulectrl
     )
-
+endif()

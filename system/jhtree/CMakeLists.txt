@@ -60,8 +60,7 @@ ADD_DEFINITIONS( -D_USRDLL -DJHTREE_EXPORTS -DECLRTL_LOCAL )
 HPCC_ADD_LIBRARY( jhtree SHARED ${SRCS} ${INCLUDES} )
 install ( TARGETS jhtree DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( jhtree 
-         jlib
-         ${CPPUNIT_LIBRARIES}
-    )
-
+     jlib
+     ${CPPUNIT_LIBRARIES}
+)
 

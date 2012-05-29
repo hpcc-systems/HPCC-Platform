@@ -44,12 +44,13 @@ include_directories (
          ./../../ecl/schedulectrl
     )
 
-add_executable ( eclscheduler ${SRCS} ${INCLUDES} )
-install ( TARGETS eclscheduler DESTINATION ${OSSDIR}/bin )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( eclscheduler ${SRCS} ${INCLUDES} )
+    install ( TARGETS eclscheduler DESTINATION ${OSSDIR}/bin )
 
-target_link_libraries ( eclscheduler 
+    target_link_libraries ( eclscheduler 
          jlib
          schedulectrl
          workunit
     )
-
+endif()

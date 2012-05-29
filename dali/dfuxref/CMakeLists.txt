@@ -44,9 +44,10 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE -DMAIN_DFUXREF )
 
-add_executable ( dfuxref ${SRCS} )
-install ( TARGETS dfuxref DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( dfuxref 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( dfuxref ${SRCS} )
+    install ( TARGETS dfuxref DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( dfuxref 
          jlib
          mp 
          hrpc 
@@ -55,5 +56,5 @@ target_link_libraries ( dfuxref
          environment 
          dfuXRefLib 
     )
-
+endif()
 

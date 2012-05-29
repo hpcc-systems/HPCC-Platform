@@ -38,7 +38,8 @@ ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )
 
 set ( SRCS fcached.cpp )
 
-add_executable ( fcached ${SRCS} )
-install ( TARGETS fcached DESTINATION ${OSSDIR}/bin )
-
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( fcached ${SRCS} )
+    install ( TARGETS fcached DESTINATION ${OSSDIR}/bin )
+endif()
 

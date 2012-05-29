@@ -48,9 +48,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DWORKUNITSERVICES_EXPORTS )
 
-HPCC_ADD_LIBRARY( workunitservices SHARED ${SRCS} )
-install ( TARGETS workunitservices DESTINATION ${OSSDIR}/plugins )
-target_link_LIBRARies ( workunitservices 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( workunitservices SHARED ${SRCS} )
+    install ( TARGETS workunitservices DESTINATION ${OSSDIR}/plugins )
+    target_link_LIBRARies ( workunitservices 
          jlib
          mp 
          hrpc 
@@ -59,5 +60,5 @@ target_link_LIBRARies ( workunitservices
          environment 
          workunit 
     )
-
+endif()
 

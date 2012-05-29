@@ -39,10 +39,11 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE -DRMTSSH_LOCAL)
 
-add_executable ( frunssh ${SRCS} )
-install ( TARGETS frunssh DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( frunssh 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( frunssh ${SRCS} )
+    install ( TARGETS frunssh DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( frunssh 
          jlib 
     )
-
+endif()
 

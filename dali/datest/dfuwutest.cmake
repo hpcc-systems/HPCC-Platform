@@ -41,9 +41,10 @@ include_directories (
          ../../common/environment 
     )
 
-add_executable ( dfuwutest ${SRCS} )
-set_target_properties (dfuwutest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-target_link_libraries ( dfuwutest
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( dfuwutest ${SRCS} )
+    set_target_properties (dfuwutest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
+    target_link_libraries ( dfuwutest
          workunit
          jlib
          mp 
@@ -53,4 +54,5 @@ target_link_libraries ( dfuwutest
          dfuwu 
          environment 
     )
+endif()
 

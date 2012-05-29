@@ -47,13 +47,14 @@ ADD_DEFINITIONS( -DROXIEHELPER_EXPORTS -D_USRDLL -DMODULE_PRIORITY=5 )
 set ( SRCS roxiehelper.cpp roxiedebug.cpp
            roxiehelper.hpp roxiedebug.hpp roxielmj.hpp)
 
-HPCC_ADD_LIBRARY( roxiehelper SHARED ${SRCS} )
-install ( TARGETS roxiehelper DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( roxiehelper
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( roxiehelper SHARED ${SRCS} )
+    install ( TARGETS roxiehelper DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( roxiehelper
          jlib 
          eclrtl 
          thorhelper 
          roxiemem 
          dalibase 
- ) 
-
+     ) 
+endif()

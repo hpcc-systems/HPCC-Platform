@@ -49,13 +49,14 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOYUTILS_EXPORTS )
 
-HPCC_ADD_LIBRARY( deployutils SHARED ${SRCS} )
-install ( TARGETS deployutils DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( deployutils
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( deployutils SHARED ${SRCS} )
+    install ( TARGETS deployutils DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( deployutils
          jlib 
          environment 
          xmllib
          deploy
     )
-
+endif()
 

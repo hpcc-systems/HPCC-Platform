@@ -63,16 +63,17 @@ HPCC_ADD_LIBRARY( SMCLib SHARED ${SRCS} )
 add_dependencies(SMCLib espscm)
 install ( TARGETS SMCLib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( SMCLib
-         jlib
-         remote 
-         xmllib 
-         esphttp 
-         dalibase 
-         environment 
-         dalift 
-         dllserver 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-    )
+    jlib
+    remote 
+    xmllib 
+    esphttp 
+    dalibase 
+    environment 
+    dalift 
+    dllserver 
+    nbcd 
+    eclrtl 
+    deftype 
+    workunit 
+)
+

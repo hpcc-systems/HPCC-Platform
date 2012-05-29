@@ -61,12 +61,11 @@ add_executable ( dfuplus ${SRCS} )
 add_dependencies ( dfuplus espscm )
 install ( TARGETS dfuplus DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dfuplus
-         jlib
-         remote
-         xmllib
-         esphttp
-         ws_fs
-         ws_dfu
-    )
-
+     jlib
+     remote
+     xmllib
+     esphttp
+     ws_fs
+     ws_dfu
+)
 

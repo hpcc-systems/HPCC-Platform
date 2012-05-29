@@ -35,7 +35,8 @@ include_directories (
 
 ADD_DEFINITIONS ( -DDEBUGSERVICES_EXPORTS -D_USRDLL )
 
-HPCC_ADD_LIBRARY( debugservices SHARED ${SRCS} )
-install ( TARGETS debugservices DESTINATION ${OSSDIR}/plugins )
-
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( debugservices SHARED ${SRCS} )
+    install ( TARGETS debugservices DESTINATION ${OSSDIR}/plugins )
+endif()
 

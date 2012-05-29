@@ -41,15 +41,16 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( backupnode ${SRCS} )
-install ( TARGETS backupnode DESTINATION ${OSSDIR}/bin )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( backupnode ${SRCS} )
+    install ( TARGETS backupnode DESTINATION ${OSSDIR}/bin )
 
-target_link_libraries (  backupnode 
+    target_link_libraries (  backupnode 
          jlib
          jhtree
          remote
          mp
          dalibase
     )
-
+endif()
 

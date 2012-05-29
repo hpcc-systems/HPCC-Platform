@@ -64,7 +64,7 @@ add_executable ( eclplus ${SRCS} )
 add_dependencies ( eclplus espscm )
 install ( TARGETS eclplus DESTINATION ${OSSDIR}/bin )
 target_link_libraries (  eclplus 
-         jlib
-         esphttp 
-    )
+     jlib
+     esphttp 
+)
 

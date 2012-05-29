@@ -55,9 +55,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
 
-HPCC_ADD_LIBRARY( mfilemanager_lcr SHARED ${SRCS} )
-install ( TARGETS mfilemanager_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( mfilemanager_lcr
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( mfilemanager_lcr SHARED ${SRCS} )
+    install ( TARGETS mfilemanager_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( mfilemanager_lcr
          jlib
          remote 
          dalibase 
@@ -72,5 +73,5 @@ target_link_libraries ( mfilemanager_lcr
          commonext 
          graph_lcr 
     )
-
+endif()
 

@@ -42,13 +42,15 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( daregress ${SRCS} )
-install ( TARGETS daregress DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( daregress  
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( daregress ${SRCS} )
+    install ( TARGETS daregress DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( daregress  
          jlib
          mp 
          hrpc 
          remote 
          dalibase 
     )
+endif()
 

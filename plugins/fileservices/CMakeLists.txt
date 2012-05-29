@@ -61,10 +61,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DFILESERVICES_EXPORTS )
 
-HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )  
-add_dependencies ( fileservices espscm )
-install ( TARGETS fileservices DESTINATION ${OSSDIR}/plugins )
-target_link_libraries ( fileservices
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( fileservices SHARED ${SRCS} )  
+    add_dependencies ( fileservices espscm )
+    install ( TARGETS fileservices DESTINATION ${OSSDIR}/plugins )
+    target_link_libraries ( fileservices
          jlib
          remote 
          dalibase 
@@ -76,5 +77,5 @@ target_link_libraries ( fileservices
          workunit 
          soaplib 
     )
-
+endif()
 

@@ -55,10 +55,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( EclDirect SHARED ${SRCS} )
-add_dependencies( EclDirect espscm )
-install ( TARGETS EclDirect DESTINATION ${OSSDIR}/lib COMPONENT Runtime)
-target_link_libraries ( EclDirect  
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( EclDirect SHARED ${SRCS} )
+    add_dependencies( EclDirect espscm )
+    install ( TARGETS EclDirect DESTINATION ${OSSDIR}/lib COMPONENT Runtime)
+    target_link_libraries ( EclDirect  
          jlib
          xmllib 
          esphttp 
@@ -79,4 +80,5 @@ target_link_libraries ( EclDirect
          fileview2 
          securesocket 
     )
+endif()
 

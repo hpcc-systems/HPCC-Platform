@@ -49,8 +49,7 @@ ADD_DEFINITIONS( -DLDAPSECURITY_EXPORTS -D_USRDLL )
 HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
 install ( TARGETS LdapSecurity DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( LdapSecurity
-         jlib
-         ${OPENLDAP_LIBRARIES}
-    )
-
+     jlib
+     ${OPENLDAP_LIBRARIES}
+)
 

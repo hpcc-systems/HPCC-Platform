@@ -49,14 +49,14 @@ HPCC_ADD_LIBRARY( dalift SHARED ${SRCS} )
 set_target_properties (dalift PROPERTIES 
     COMPILE_FLAGS -D_CONSOLE
     DEFINE_SYMBOL DALIFT_EXPORTS
-    )
+)
 install ( TARGETS dalift DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( dalift 
-         jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-    )
+    jlib
+    mp 
+    hrpc 
+    remote 
+    dalibase 
+    environment 
+)
 

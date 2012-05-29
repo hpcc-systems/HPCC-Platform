@@ -39,10 +39,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( mptest ${SRCS} )
-target_link_libraries ( mptest 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( mptest ${SRCS} )
+    target_link_libraries ( mptest 
          jlib
          mp 
     )
-
+endif()
 

@@ -58,10 +58,9 @@ ADD_DEFINITIONS ( -D_USRDLL -DDEPLOY_EXPORTS )
 HPCC_ADD_LIBRARY( deploy SHARED ${SRCS} )
 install ( TARGETS deploy DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( deploy 
-         jlib 
-         environment 
-         xmllib 
-         securesocket
-    )
-
+     jlib 
+     environment 
+     xmllib 
+     securesocket
+)
 

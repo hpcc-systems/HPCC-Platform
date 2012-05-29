@@ -42,10 +42,13 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( xmllibtest ${SRCS} )
-add_dependencies ( xmllibtest xmllib )
-install ( TARGETS xmllibtest DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( xmllibtest
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( xmllibtest ${SRCS} )
+    add_dependencies ( xmllibtest xmllib )
+    install ( TARGETS xmllibtest DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( xmllibtest
         jlib
         xmllib
     )
+endif()
+

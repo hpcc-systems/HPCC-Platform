@@ -38,8 +38,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( combine ${SRCS} )
-install ( TARGETS combine DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( combine
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( combine ${SRCS} )
+    install ( TARGETS combine DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( combine
          jlib
     )
+endif()
+

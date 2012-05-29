@@ -32,9 +32,12 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 set ( SRCS testsocket.cpp )
-add_executable ( testsocket ${SRCS} )
-target_link_libraries ( testsocket
-         jlib
-         )
-install ( TARGETS testsocket DESTINATION ${OSSDIR}/bin )
+
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( testsocket ${SRCS} )
+    target_link_libraries ( testsocket
+        jlib
+    )
+    install ( TARGETS testsocket DESTINATION ${OSSDIR}/bin )
+endif()
 

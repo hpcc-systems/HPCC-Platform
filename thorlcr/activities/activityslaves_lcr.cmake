@@ -110,12 +110,13 @@ include_directories (
          ./../../roxie/roxiemem
     )
 
-HPCC_ADD_LIBRARY( activityslaves_lcr SHARED ${SRCS} )
-set_target_properties(activityslaves_lcr PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL ACTIVITYSLAVES_EXPORTS )
-install ( TARGETS activityslaves_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( activityslaves_lcr 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( activityslaves_lcr SHARED ${SRCS} )
+    set_target_properties(activityslaves_lcr PROPERTIES 
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL ACTIVITYSLAVES_EXPORTS )
+    install ( TARGETS activityslaves_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( activityslaves_lcr 
          jlib
          thorsort_lcr 
          commonext 
@@ -134,5 +135,5 @@ target_link_libraries ( activityslaves_lcr
          graphslave_lcr 
          roxiemem
     )
-
+endif()
 

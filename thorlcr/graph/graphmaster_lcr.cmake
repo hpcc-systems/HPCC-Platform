@@ -53,12 +53,13 @@ include_directories (
          ./../../common/thorhelper 
     )
 
-HPCC_ADD_LIBRARY( graphmaster_lcr SHARED ${SRCS} )
-set_target_properties(graphmaster_lcr PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL GRAPHMASTER_EXPORTS )
-install ( TARGETS graphmaster_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( graphmaster_lcr
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( graphmaster_lcr SHARED ${SRCS} )
+    set_target_properties(graphmaster_lcr PROPERTIES 
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL GRAPHMASTER_EXPORTS )
+    install ( TARGETS graphmaster_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( graphmaster_lcr
          jlib
          commonext 
          jhtree 
@@ -76,5 +77,5 @@ target_link_libraries ( graphmaster_lcr
          dalift 
          mfilemanager_lcr 
     )
-
+endif()
 

@@ -62,10 +62,11 @@ include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS )
 
-HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
-add_dependencies ( ws_smc espscm )
-install ( TARGETS ws_smc DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( ws_smc 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
+    add_dependencies ( ws_smc espscm )
+    install ( TARGETS ws_smc DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( ws_smc 
          jlib
          xmllib 
          esphttp 
@@ -96,7 +97,8 @@ target_link_libraries ( ws_smc
          roxiemanager 
          ws_workunits 
     )
-IF (USE_OPENLDAP)
-target_link_libraries ( ws_smc LdapSecurity )
-ENDIF(USE_OPENLDAP)
+    IF (USE_OPENLDAP)
+        target_link_libraries ( ws_smc LdapSecurity )
+    ENDIF(USE_OPENLDAP)
+endif()
 

@@ -68,15 +68,15 @@ if (WIN32)
     endif ()
 endif()
 
-add_executable ( saserver ${SRCS} )
-install ( TARGETS saserver DESTINATION ${OSSDIR}/bin)
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( saserver ${SRCS} )
+    install ( TARGETS saserver DESTINATION ${OSSDIR}/bin)
 
+    if ( ${HAVE_LIBCRYPT} )
+        target_link_libraries ( saserver crypt)
+    endif ( ${HAVE_LIBCRYPT} )
 
-if ( ${HAVE_LIBCRYPT} )
-target_link_libraries ( saserver crypt)
-endif ( ${HAVE_LIBCRYPT} )
-
-target_link_libraries ( saserver 
+    target_link_libraries ( saserver 
          jlib 
          remote 
          dalibase 
@@ -87,6 +87,7 @@ target_link_libraries ( saserver
          deftype 
          workunit 
     )
+endif()
 
 set (    SRCS 
          sacmd.cpp 
@@ -103,15 +104,14 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-add_executable ( sasha ${SRCS} )
-install ( TARGETS sasha DESTINATION ${OSSDIR}/bin)
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( sasha ${SRCS} )
+    install ( TARGETS sasha DESTINATION ${OSSDIR}/bin)
 
-target_link_libraries ( sasha 
+    target_link_libraries ( sasha 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
          mp 
     )
-
-
-
+endif()
 

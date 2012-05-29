@@ -45,11 +45,13 @@ include_directories (
          ./../../system/jlib 
     )
 
-add_executable ( eclccserver ${SRCS} ${INCLUDES} )
-install ( TARGETS eclccserver DESTINATION ${OSSDIR}/bin )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( eclccserver ${SRCS} ${INCLUDES} )
+    install ( TARGETS eclccserver DESTINATION ${OSSDIR}/bin )
 
-target_link_libraries ( eclccserver 
+    target_link_libraries ( eclccserver 
          jlib
          workunit
     )
+endif()
 

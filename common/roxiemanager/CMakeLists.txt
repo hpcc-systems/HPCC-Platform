@@ -67,10 +67,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DROXIEMANAGER_EXPORTS )
 
-HPCC_ADD_LIBRARY( roxiemanager SHARED ${SRCS} )
-add_dependencies( roxiemanager espscm )
-install ( TARGETS roxiemanager DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( roxiemanager
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( roxiemanager SHARED ${SRCS} )
+    add_dependencies( roxiemanager espscm )
+    install ( TARGETS roxiemanager DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( roxiemanager
          jlib 
          roxiecommlib 
          mp 
@@ -87,5 +88,5 @@ target_link_libraries ( roxiemanager
          hql 
          fileview2 
     )
-
+endif()
 
