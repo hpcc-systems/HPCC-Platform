@@ -366,7 +366,7 @@
       data security using Secure Socket Layer (SSL) encryption. This ensures
       all data is encrypted as it travels across a network or the Internet. In
       addition, LDAP authentication is available to restrict access to a set
-      of users (LDAP security is only available in Enterprise Edition).</para>
+      of users.</para>
 
       <para>Custom applications using SOAP provides the most flexibility and
       functionality. The application development process is simplified by
@@ -510,8 +510,7 @@
   <chapter id="Packages">
     <title>Packages</title>
 
-    <para>Package files are only supported in the Enterprise Edition.</para>
-
+   
     <para>Packages are used as a means to separate data from queries. Newer
     Package files can be copied to and loaded on a Roxie cluster without
     recompiling queries. This allows you to refresh data and ensure you are
@@ -1339,9 +1338,6 @@
 
         <sect3>
           <title>To Search Roxie Files:</title>
-
-          <para><emphasis></emphasis>This feature is only available in
-          Enterprise Edition</para>
 
           <itemizedlist mark="bullet">
             <listitem>
