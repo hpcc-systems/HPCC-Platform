@@ -40,7 +40,7 @@ output(sort(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { unkname }, DATASET
 ServiceOutRecord doError(d l) := TRANSFORM
   SELF.name := 'ERROR: ' + if (l.unkname='FRED' AND failmessage='connection failed 127.0.0.1:9875','blacklisted socket 127.0.0.1:9875', failmessage);
   SELF.pic := x'01020304';
-  SELF.id := if (l.unkname='FRED' AND failcode=4294967293,4294967295,failcode);
+  SELF.id := if (l.unkname='FRED' AND failcode=-3,-1,failcode);
   SELF.novalue := 0;
 END;
 
