@@ -1,6 +1,4 @@
-﻿IMPORT TrainingBobForeman;
-
-MyRec := RECORD
+﻿MyRec := RECORD
 	STRING1  Value1;
 	STRING1  Value2;
 	INTEGER1 Value3;
@@ -26,10 +24,3 @@ EVALUATE(SortedRecs2[1],Value3 + 10);	//result = 12
 EVALUATE(SortedRecs3[1],Value3 + 10);	//result = 13
 EVALUATE(SortedRecs4[1],Value3 + 10);	//result = 11
 
-OUTPUT(CHOOSEN(TrainingBobForeman.DN.people,10),
-			 {lastname, firstname, TrainingBobForeman.DN.property[1].propertyid, 
-				EVALUATE(TrainingBobForeman.DN.property[1],TrainingBobForeman.DN.taxdata[1].tax_year)});
-	
-OUTPUT(CHOOSEN(TrainingBobForeman.DN.people,10),
-			 {lastname, firstname, TrainingBobForeman.DN.property[1].propertyid, 
-				TrainingBobForeman.DN.property[1].taxrecs[1].tax_year});	
