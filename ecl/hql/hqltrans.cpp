@@ -2101,6 +2101,14 @@ HoistingHqlTransformer::HoistingHqlTransformer(HqlTransformerInfo & _info, unsig
     containsUnknownIndependentContents = false;
 }
 
+void HoistingHqlTransformer::setParent(const HoistingHqlTransformer * parent)
+{
+    assertex(parent->independentCache);
+    independentCache.set(parent->independentCache);
+}
+
+
+
 void HoistingHqlTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & out)
 {
     HqlExprArray * savedTarget = target;
@@ -2308,6 +2316,39 @@ IHqlExpression * HoistingHqlTransformer::transformEnsureResult(IHqlExpression * 
         value.setown(createActionList(args));
 
     return replaceChild(expr, 0, value);
+}
+
+IHqlExpression * HoistingHqlTransformer::IndependentTransformMap::getTransformed(IHqlExpression * expr)
+{
+    for (unsigned i=0; i < cache.ordinality(); i+=2)
+    {
+        if (expr == &cache.item(i))
+            return LINK(&cache.item(i+1));
+    }
+    return NULL;
+}
+
+
+void HoistingHqlTransformer::IndependentTransformMap::setTransformed(IHqlExpression * expr, IHqlExpression * transformed)
+{
+    cache.append(*LINK(expr));
+    cache.append(*LINK(transformed));
+}
+
+IHqlExpression * HoistingHqlTransformer::transformIndependent(IHqlExpression * expr)
+{
+    if (!independentCache)
+        independentCache.setown(new IndependentTransformMap);
+
+    //Separately cache all transformations of independent expressions.  Otherwise highly nested independent
+    //expressions can cause a combinatorial explosion in the number of times the leaves are transformed.
+    IHqlExpression * prev = independentCache->getTransformed(expr);
+    if (prev)
+        return prev;
+
+    OwnedHqlExpr transformed = doTransformIndependent(expr);
+    independentCache->setTransformed(expr, transformed);
+    return transformed.getClear();
 }
 
 //---------------------------------------------------------------------------
