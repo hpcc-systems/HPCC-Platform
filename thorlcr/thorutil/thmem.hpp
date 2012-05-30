@@ -228,7 +228,8 @@ protected:
     rowidx_t numRows;  // rows that have been added can only be updated by writing thread.
 
     void init(rowidx_t initialSize, bool stable);
-    const void *allocateNewRows(rowidx_t requiredRows, OwnedConstThorRow &newStableSortTmp);
+    const void *allocateRowTable(size32_t newSize);
+    const void *allocateNewRows(rowidx_t requiredRows, size32_t &newSize);
     void serialize(IRowSerializerTarget &out);
     void doSort(unsigned n, void **const rows, ICompare &compare, unsigned maxCores);
 

@@ -389,9 +389,32 @@ void CThorExpandingRowArray::init(rowidx_t initialSize, bool _stableSort)
     numRows = 0;
 }
 
-const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows, OwnedConstThorRow &newStableSortTmp)
+const void *CThorExpandingRowArray::allocateRowTable(size32_t newSize)
 {
-    unsigned newSize = maxRows;
+    OwnedConstThorRow rowTable;
+    try
+    {
+        rowTable.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
+        if (!rowTable)
+            return NULL;
+    }
+    catch (IException * e)
+    {
+        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
+        unsigned code = e->errorCode();
+        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
+        {
+            e->Release();
+            return NULL;
+        }
+        throw;
+    }
+    return rowTable.getClear();
+}
+
+const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows, size32_t &newSize)
+{
+    newSize = maxRows;
     //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
     if (newSize <= 4)
         newSize = requiredRows;
@@ -405,30 +428,9 @@ const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows, Owned
         while (newSize < requiredRows)
             newSize += newSize/4;
     }
-    OwnedConstThorRow newRows;
-    try
-    {
-        newRows.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
-        if (!newRows)
-            return NULL;
-        if (stableSort)
-        {
-            newStableSortTmp.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
-            if (!newStableSortTmp)
-                return NULL;
-        }
-    }
-    catch (IException * e)
-    {
-        //Pahological cases - not enough memory to reallocate the target row buffer, or no contiguous pages available.
-        unsigned code = e->errorCode();
-        if ((code == ROXIEMM_MEMORY_LIMIT_EXCEEDED) || (code == ROXIEMM_MEMORY_POOL_EXHAUSTED))
-        {
-            e->Release();
-            return NULL;
-        }
-        throw;
-    }
+    OwnedConstThorRow newRows = allocateRowTable(newSize);
+    if (!newRows)
+        return NULL;
     return newRows.getClear();
 }
 
@@ -574,21 +576,28 @@ void CThorExpandingRowArray::clearUnused()
 
 bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
 {
-    OwnedConstThorRow newStableSortTmp;
-    OwnedConstThorRow newRows = allocateNewRows(requiredRows, newStableSortTmp);
-    if (!newRows)
-        throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RIPF"d, trying to allocate %"RIPF"d elements", ordinality(), requiredRows);
+    size32_t newSize = rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0;
+    if (newSize < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
+    {
+        OwnedConstThorRow newRows = allocateNewRows(requiredRows, newSize);
+        if (!newRows)
+            throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RIPF"d, trying to allocate %"RIPF"d elements", ordinality(), requiredRows);
 
-    const void **oldRows = rows;
-    void **oldStableSortTmp = stableSortTmp;
-
-    memcpy((void *)newRows.get(), rows, numRows * sizeof(void*));
-
-    rows = (const void **)newRows.getClear();
+        const void **oldRows = rows;
+        memcpy((void *)newRows.get(), rows, numRows * sizeof(void*));
+        rows = (const void **)newRows.getClear();
+        ReleaseThorRow(oldRows);
+    }
+    if (stableSort)
+    {
+        OwnedConstThorRow newStableSortTmp = allocateRowTable(newSize);
+        if (!newStableSortTmp)
+            throw MakeActivityException(&activity, 0, "Out of memory, allocating row array, had %"RIPF"d, trying to allocate %"RIPF"d elements", ordinality(), requiredRows);
+        void **oldStableSortTmp = stableSortTmp;
+        stableSortTmp = (void **)newStableSortTmp.getClear();
+        ReleaseThorRow(oldStableSortTmp);
+    }
     maxRows = RoxieRowCapacity(rows) / sizeof(void *);
-    stableSortTmp = (void **)newStableSortTmp.getClear();
-    ReleaseThorRow(oldRows);
-    ReleaseThorRow(oldStableSortTmp);
 
     return true;
 }
@@ -897,29 +906,42 @@ bool CThorSpillableRowArray::ensure(rowidx_t requiredRows)
 {
     //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
 
-    OwnedConstThorRow newStableSortTmp;
-    OwnedConstThorRow newRows = allocateNewRows(requiredRows, newStableSortTmp);
-    if (!newRows)
-        return false;
+    OwnedConstThorRow newRows;
+    size32_t newSize;
+    unsigned numRows = rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0;
+    if (numRows < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
+    {
+        newRows.setown(allocateNewRows(requiredRows, newSize));
+        if (!newRows)
+            return false;
+    }
 
-    const void **oldRows;
-    void **oldStableSortTmp;
     {
         CThorSpillableRowArrayLock block(*this);
+        if (newRows)
+        {
+            const void **oldRows = rows;
+            memcpy((void *)newRows.get(), rows+firstRow, (numRows - firstRow) * sizeof(void*));
+            numRows -= firstRow;
+            commitRows -= firstRow;
+            firstRow = 0;
 
-        oldRows = rows;
-        oldStableSortTmp = stableSortTmp;
-        memcpy((void *)newRows.get(), rows+firstRow, (numRows - firstRow) * sizeof(void*));
-        numRows -= firstRow;
-        commitRows -= firstRow;
-        firstRow = 0;
+            rows = (const void **)newRows.getClear();
+            ReleaseThorRow(oldRows);
+        }
 
-        rows = (const void **)newRows.getClear();
+        // NB: can't release lock, or change maxRows, until know this succeeds
+        if (stableSort)
+        {
+            OwnedConstThorRow newStableSortTmp = allocateRowTable(newSize);
+            if (!newStableSortTmp)
+                return false;
+            void **oldStableSortTmp = stableSortTmp;
+            stableSortTmp = (void **)newStableSortTmp.getClear();
+            ReleaseThorRow(oldStableSortTmp);
+        }
         maxRows = RoxieRowCapacity(rows) / sizeof(void *);
-        stableSortTmp = (void **)newStableSortTmp.getClear();
     }
-    ReleaseThorRow(oldRows);
-    ReleaseThorRow(oldStableSortTmp);
     return true;
 }
 
