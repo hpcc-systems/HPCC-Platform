@@ -602,6 +602,14 @@ private:
 //Useful for processing 
 class HQL_API HoistingHqlTransformer : public NewHqlTransformer
 {
+    class IndependentTransformMap : public CInterface
+    {
+    public:
+        IHqlExpression * getTransformed(IHqlExpression * expr);
+        void setTransformed(IHqlExpression * expr, IHqlExpression * transformed);
+    protected:
+        HqlExprArray cache;
+    };
 public:
     enum { HTFnoteconditionalactions = 0x01, 
            HTFnoteconditionaldatasets= 0x02,
@@ -613,6 +621,7 @@ public:
 
     void appendToTarget(IHqlExpression & curOwned);
     void setFlags(unsigned _flags) { flags = _flags; }
+    void setParent(const HoistingHqlTransformer * parent);
     void transformRoot(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformRoot(IHqlExpression * expr);
 
@@ -627,7 +636,8 @@ protected:
 
     virtual void analyseExpr(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr) = 0;
+    IHqlExpression * transformIndependent(IHqlExpression * expr);
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) = 0;
 
     void transformArray(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformEnsureResult(IHqlExpression * expr);
@@ -640,10 +650,10 @@ protected:
             ((flags & HTFnoteconditionaldatarows) && expr->isDatarow()));
     }
 
-
 private:
     HqlExprArray *      target;
     unsigned flags;
+    Owned<IndependentTransformMap> independentCache;
 
 protected:
     unsigned conditionDepth;
