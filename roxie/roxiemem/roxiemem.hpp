@@ -415,7 +415,7 @@ interface IRowManager : extends IInterface
     virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
     virtual unsigned numPagesAfterCleanup() = 0; // calls releaseEmptyPages() then returns
-    virtual void releaseEmptyPages() = 0; // ensures any empty pages are freed back to the heap
+    virtual bool releaseEmptyPages(bool forceFreeAll) = 0; // ensures any empty pages are freed back to the heap
     virtual unsigned getMemoryUsage() = 0;
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
