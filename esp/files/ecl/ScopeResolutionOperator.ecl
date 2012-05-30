@@ -1,5 +1,4 @@
 ﻿//This example shows the qualification order necessary to reach a specific attribute/parameter:
-//Page 24 LRM
 ds := DATASET([1], { INTEGER SomeValue });
 
 INTEGER SomeValue := 10; //local attribute
