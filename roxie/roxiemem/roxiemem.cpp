@@ -1406,7 +1406,7 @@ public:
         return total;
     }
 
-    unsigned releaseEmptyPages()
+    unsigned releaseEmptyPages(bool forceFreeAll)
     {
         unsigned total = 0;
         BigHeapletBase *prev = NULL;
@@ -1417,6 +1417,9 @@ public:
             BigHeapletBase *next = getNext(finger);
             if (finger->queryCount()==1)
             {
+                if (!next && !forceFreeAll)
+                    break;
+
                 if (memTraceLevel >= 3)
                     logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%u rowMgr=%p",
                             finger, finger->sizeInPages(), finger->_capacity(), this);
@@ -1433,6 +1436,7 @@ public:
             }
             finger = next;
         }
+
         return total;
     }
 
@@ -1688,7 +1692,7 @@ public:
         {
             //Increment first so that any called knows some rows may have been freed
             atomic_inc(&releaseSeq);
-            owner->releaseEmptyPages();
+            owner->releaseEmptyPages(critical);
             //incremented again because some rows may now have been freed.  A difference may give a
             //false positive, but better than a false negative.
             atomic_inc(&releaseSeq);
@@ -1922,7 +1926,7 @@ public:
 
     virtual unsigned numPagesAfterCleanup()
     {
-        releaseEmptyPages();
+        releaseEmptyPages(false);
         return dataBuffPages + atomic_read(&totalHeapPages);
     }
 
@@ -1943,12 +1947,12 @@ public:
                 i++;
         }
     }
-    virtual void releaseEmptyPages()
+    virtual bool releaseEmptyPages(bool forceFreeAll)
     {
         unsigned total = 0;
         ForEachItemIn(iNormal, normalHeaps)
-            total += normalHeaps.item(iNormal).releaseEmptyPages();
-        total += hugeHeap.releaseEmptyPages();
+            total += normalHeaps.item(iNormal).releaseEmptyPages(forceFreeAll);
+        total += hugeHeap.releaseEmptyPages(forceFreeAll);
 
         bool hadUnusedHeap = false;
         {
@@ -1956,7 +1960,7 @@ public:
             ForEachItemIn(i, fixedHeaps)
             {
                 CChunkingHeap & fixedHeap = fixedHeaps.item(i);
-                total += fixedHeap.releaseEmptyPages();
+                total += fixedHeap.releaseEmptyPages(forceFreeAll);
                 //if this heap has no pages, and no external references then it can be removed
                 if (fixedHeap.isEmpty() && !fixedHeap.IsShared())
                     hadUnusedHeap = true;
@@ -1968,6 +1972,7 @@ public:
 
         if (total)
             atomic_add(&totalHeapPages, -(int)total);
+        return (total != 0);
     }
 
     virtual void getPeakActivityUsage()
@@ -2204,7 +2209,7 @@ public:
     void checkLimit(unsigned numRequested)
     {
         unsigned totalPages;
-        releaseEmptyPages();
+        releaseEmptyPages(false);
         loop
         {
             unsigned lastReleaseSeq = callbacks.getReleaseSeq();
@@ -2227,6 +2232,9 @@ public:
                 break;
             }
 
+            if (releaseEmptyPages(true))
+                continue;
+
             //Try and directly free up some buffers.  It is worth trying again if one of the release functions thinks it
             //freed up some memory.
             //The following reduces the nubmer of times the callback is called, but I'm not sure how this affects
@@ -2240,7 +2248,7 @@ public:
                 {
                     //very unusual: another thread may have just released a lot of memory (e.g., it has finished), but
                     //the empty pages haven't been cleaned up
-                    releaseEmptyPages();
+                    releaseEmptyPages(true);
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
@@ -3936,8 +3944,55 @@ protected:
     }
 };
 
+
+const memsize_t memorySize = 0x60000000;
+class RoxieMemStressTests : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE( RoxieMemStressTests );
+        CPPUNIT_TEST(testSequential);
+    CPPUNIT_TEST_SUITE_END();
+    const IContextLogger &logctx;
+
+public:
+    RoxieMemStressTests() : logctx(queryDummyContextLogger())
+    {
+        setTotalMemoryLimit(memorySize, 0, NULL);
+    }
+
+    ~RoxieMemStressTests()
+    {
+        releaseRoxieHeap();
+    }
+
+protected:
+    void testSequential()
+    {
+        unsigned requestSize = 20;
+        unsigned allocSize = 32 + sizeof(void*);
+        memsize_t numAlloc = (memorySize / allocSize) * 3 /4;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        void * * rows = (void * *)rowManager->allocate(numAlloc * sizeof(void*), 0);
+        unsigned startTime = msTick();
+        for (memsize_t i=0; i < numAlloc; i++)
+        {
+            rows[i] = rowManager->allocate(requestSize, 1);
+            if (i % 0x100000 == 0xfffff)
+                DBGLOG("Time for sequential allocate %d = %d", (unsigned)(i / 0x100000), msTick()-startTime);
+        }
+        for (memsize_t i=0; i < numAlloc; i++)
+        {
+            ReleaseRoxieRow(rows[i]);
+        }
+        unsigned endTime = msTick();
+        ReleaseRoxieRow(rows);
+        DBGLOG("Time for sequential allocate = %d", endTime - startTime);
+    }
+};
+
 CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemTests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemTests, "RoxieMemTests" );
+CPPUNIT_TEST_SUITE_REGISTRATION( RoxieMemStressTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RoxieMemStressTests, "RoxieMemStressTests" );
 
 } // namespace roxiemem
 #endif
