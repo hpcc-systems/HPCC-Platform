@@ -50,4 +50,4 @@ topUrls := TOPN(GROUP(DISTRIBUTE(visitCountsCat,HASH32(category)),
 								10,
 								-visits_cnt);
 								
-OUTPUT(topurls,,'~CLASS::OUT::BMF::TOPURLs',overwrite);
+OUTPUT(topurls);
