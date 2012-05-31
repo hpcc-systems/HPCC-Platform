@@ -72,7 +72,7 @@ public:
     void appendResults(IConstWorkUnit *wu, const char *username, const char *pw)
     {
         StringBufferAdaptor resultXML(buffer);
-        getFullWorkUnitResultsXML(username, pw, wu, resultXML, false, ExceptionSeverityError, true);
+        getFullWorkUnitResultsXML(username, pw, wu, resultXML, WorkUnitXML_NoRoot, ExceptionSeverityError);
     }
 
     void appendSingleResult(IConstWorkUnit *wu, const char *resultname, const char *username, const char *pw)
@@ -545,7 +545,7 @@ void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags
 void WuWebView::expandResults(StringBuffer &out, unsigned flags)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml, false, ExceptionSeverityInformation);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml);
     expandResults(xml.str(), out, flags);
 }
 
@@ -569,7 +569,7 @@ void WuWebView::applyResultsXSLT(const char *filename, const char *xml, StringBu
 void WuWebView::applyResultsXSLT(const char *filename, StringBuffer &out)
 {
     SCMStringBuffer xml;
-    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml, false, ExceptionSeverityInformation);
+    getFullWorkUnitResultsXML(username.get(), pw.get(), cw, xml);
     applyResultsXSLT(filename, xml.str(), out);
 }
 
