@@ -736,7 +736,7 @@ public:
         if (eoi)
             return NULL;
         RtlDynamicRowBuilder row(allocator);
-        size32_t sz = helper->clearAggregate(row);
+        helper->clearAggregate(row);
         unsigned part = 0;
         while (!abortSoon && part<partDescs.ordinality())
         {
@@ -751,7 +751,6 @@ public:
                 {
                     hadElement = true;
                     helper->processRow(row, nextrow); // can change row size TBD
-                    sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf()); // kludge
                 }
             }
         }
@@ -759,13 +758,17 @@ public:
         if (container.queryLocalOrGrouped())
         {
             dataLinkIncrement();
+            size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
             return row.finalizeRowClear(sz);
         }
         else
         {
             OwnedConstThorRow ret;
             if (hadElement)
+            {
+                size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
                 ret.setown(row.finalizeRowClear(sz));
+            }
             aggregator.sendResult(ret.get());
             if (firstNode())
             {

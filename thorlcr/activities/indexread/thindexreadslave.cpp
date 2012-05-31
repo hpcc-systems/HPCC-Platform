@@ -1285,7 +1285,7 @@ public:
         eoi = true;
 
         RtlDynamicRowBuilder row(allocator);
-        size32_t sz = helper->clearAggregate(row);
+        helper->clearAggregate(row);
         if (partDescs.ordinality())
         {
             partHelper.setPart(&partDescs.item(0), 0);
@@ -1295,21 +1295,24 @@ public:
                 if (!r) 
                     break;
                 hadElement = true;
-                helper->processRow(row, r);     // should return new size TBD
-                sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf()); // kludge
+                helper->processRow(row, r);
                 callback.finishedRow();
             }
         }
         if (container.queryLocalOrGrouped())
         {
             dataLinkIncrement();
+            size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
             return row.finalizeRowClear(sz);
         }
         else
         {
             OwnedConstThorRow ret;
             if (hadElement)
+            {
+                size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
                 ret.setown(row.finalizeRowClear(sz));
+            }
             aggregator.sendResult(ret.get());
             if (firstNode())
             {
