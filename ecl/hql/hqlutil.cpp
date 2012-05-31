@@ -5036,7 +5036,9 @@ bool isNullList(IHqlExpression * expr)
 class TempTableTransformer
 {
 public:
-    TempTableTransformer(IErrorReceiver * _errors, ECLlocation & _location) : errors(_errors), defaultLocation(_location) {}
+    TempTableTransformer(IErrorReceiver * _errors, ECLlocation & _location, bool _strictTypeChecking = false)
+      : errors(_errors), defaultLocation(_location), strictTypeChecking(_strictTypeChecking)
+    {}
 
     IHqlExpression * createTempTableTransform(IHqlExpression * curRow, IHqlExpression * record);
 
@@ -5050,6 +5052,7 @@ protected:
 protected:
     IErrorReceiver * errors;
     ECLlocation & defaultLocation;
+    bool strictTypeChecking;
 };
 
 
@@ -5215,11 +5218,13 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     }
                     else if (type->isScalar() != src->queryType()->isScalar())
                     {
-//                  if (!type->assignableFrom(src->queryType()))            // stricter would be better, but might cause problems.
                         ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                         return;
                     }
-
+                    else if (strictTypeChecking && !type->assignableFrom(src->queryType()))
+                    {
+                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                    }
                     castValue.setown(ensureExprType(src, type));
                 }
                 else
@@ -5321,9 +5326,17 @@ IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
 {
     OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
-    TempTableTransformer transformer(errors, location);
+    TempTableTransformer transformer(errors, location, true);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
     return createRow(no_selectmap, dict, createRow(no_createrow, newTransform.getClear()));
+}
+
+IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    TempTableTransformer transformer(errors, location, true);
+    OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
+    return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), dict);
 }
 
 

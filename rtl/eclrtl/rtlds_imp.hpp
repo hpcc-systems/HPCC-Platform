@@ -406,9 +406,9 @@ public:
     byte * createRow()         { return builder.getSelf(); }
     void finalizeRow(size32_t len);
     inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
+    void cloneRow(size32_t len, const void * ptr);
     /*
         Not clear which if any of these we will want...
-    void cloneRow(size32_t len, const void * ptr);
     void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
     void expand(size32_t required);
@@ -416,10 +416,10 @@ public:
     void finalizeRows();
 
     inline void ensure(size32_t required) { if (required > max) expand(required); }
-    inline byte * * queryrows() { finalizeRows(); return rowset; }
-
+    */
+    inline byte * * queryrows() { return table; }
     inline byte * row() const { return builder.row(); }
-*/
+
 protected:
     void checkSpace();
     void init(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialTableSize);
@@ -436,7 +436,9 @@ protected:
     size32_t tableSize;
 };
 
+extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
 extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
+extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);
 
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 

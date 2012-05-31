@@ -4934,15 +4934,6 @@ IHqlExpression *HqlGram::createINExpression(node_operator op, IHqlExpression *ex
     return createBoolExpr(op, expr, normalized.getClear());
 }
 
-IHqlExpression *HqlGram::createINDict(node_operator op, IHqlExpression *expr, IHqlExpression *dict, attribute &errpos)
-{
-    ITypeInfo * exprType = expr->queryType();
-    IHqlExpression * record = dict->queryRecord();
-    // Check that we have a value for every keyed field
-    // MORE
-    return createBoolExpr(op, expr, dict);
-}
-
 void HqlGram::checkCaseForDuplicates(HqlExprArray & exprs, attribute &err)
 {
     TransformMutexBlock lock;

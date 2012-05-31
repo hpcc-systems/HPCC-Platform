@@ -2030,7 +2030,6 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             break;
         }
     case no_inlinetable:
-    case no_inlinedictionary:
         if (doBuildDatasetInlineTable(ctx, expr, tgt, format))
             return;
         break;
@@ -2103,15 +2102,22 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
-                IHqlExpression * choosenLimit = NULL;
-                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                if (expr->isDictionary())
                 {
-                    choosenLimit = expr->queryChild(1);
-                    expr = expr->queryChild(0);
+                    builder.setown(createLinkedDictionaryBuilder(record));
                 }
+                else
+                {
+                    IHqlExpression * choosenLimit = NULL;
+                    if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                    {
+                        choosenLimit = expr->queryChild(1);
+                        expr = expr->queryChild(0);
+                    }
 
-                //MORE: Extract limit and choosen and pass as parameters
-                builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                    //MORE: Extract limit and choosen and pass as parameters
+                    builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                }
             }
             else if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
             {

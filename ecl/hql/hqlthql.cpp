@@ -1243,6 +1243,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_order:
         case no_notin:
         case no_in:
+        case no_indict:
         case no_colon:
         case no_pat_select:
         case no_lshift:
