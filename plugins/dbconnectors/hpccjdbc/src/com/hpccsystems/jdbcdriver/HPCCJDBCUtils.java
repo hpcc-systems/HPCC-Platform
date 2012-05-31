@@ -1,10 +1,10 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
 
-public class Utils
+public class HPCCJDBCUtils
 {
 	static final char pad = '=';
 	static final char BASE64_enc[] =  {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',

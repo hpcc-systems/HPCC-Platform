@@ -1,19 +1,19 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EclResultSetMetadata implements ResultSetMetaData{
+public class HPCCResultSetMetadata implements ResultSetMetaData{
 
-    private List <EclColumnMetaData> columnList;
+    private List <HPCCColumnMetaData> columnList;
     private String tableName;
     private String schemaName 	= "HPCC";
     private String catalogName 	= "roxie";
     //private EclDatabaseMetaData dbmetadata;
 
-    public EclResultSetMetadata(List <EclColumnMetaData> columnList, String tableName)
+    public HPCCResultSetMetadata(List <HPCCColumnMetaData> columnList, String tableName)
     {
         this.columnList = columnList;
         this.tableName = tableName;
@@ -130,7 +130,7 @@ public class EclResultSetMetadata implements ResultSetMetaData{
     public String getColumnTypeName(int column) throws SQLException
     {
 		if (column >= 1 && column <= columnList.size())
-			return EclDatabaseMetaData.getFieldName(columnList.get(column - 1).getSQLType());
+			return HPCCDatabaseMetaData.getFieldName(columnList.get(column - 1).getSQLType());
 		else
 			throw new SQLException("Invalid Column Index = " + column);
     }
@@ -158,7 +158,7 @@ public class EclResultSetMetadata implements ResultSetMetaData{
     {
     	if (column >= 1 && column <= columnList.size())
     	{
-    		return EclDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSQLType());
+    		return HPCCDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSQLType());
 		}
 		else
 		{

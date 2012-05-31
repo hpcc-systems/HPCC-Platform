@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -36,13 +36,13 @@ import java.util.Properties;
  *
  * @author rpastrana
  */
-public class EclResultSet implements ResultSet
+public class HPCCResultSet implements ResultSet
 {
 	private boolean					closed		= false;
 	private List<List>				rows;
 	private int						index		= -1;
-	private EclResultSetMetadata	resultMetadata;
-	private EclDatabaseMetaData		dbMetadata;
+	private HPCCResultSetMetadata	resultMetadata;
+	private HPCCDatabaseMetaData		dbMetadata;
 	private Statement				statement;
 	private String					test_query	= "SELECT 1";
 	private String 					defaultEclQueryReturnDatasetName;
@@ -54,15 +54,15 @@ public class EclResultSet implements ResultSet
 	private static final int NumberofColsKeyedInThisIndex = 2;
 	private static final int INDEXSCORECRITERIA = 3;
 
-	public EclResultSet(List recrows, ArrayList<EclColumnMetaData> metadatacols, String tablename) throws SQLException
+	public HPCCResultSet(List recrows, ArrayList<HPCCColumnMetaData> metadatacols, String tablename) throws SQLException
 	{
-		resultMetadata = new EclResultSetMetadata(metadatacols, tablename);
+		resultMetadata = new HPCCResultSetMetadata(metadatacols, tablename);
 		rows = new ArrayList<List>(recrows);
 		lastResult = new Object();
 		warnings = new ArrayList<SQLWarning>();
 	}
 
-	public EclResultSet(Statement statement, String query, Map inParameters) throws SQLException
+	public HPCCResultSet(Statement statement, String query, Map inParameters) throws SQLException
 	{
 		warnings = new ArrayList<SQLWarning>();
 		try
@@ -81,24 +81,24 @@ public class EclResultSet implements ResultSet
 //			}
 
 			lastResult = new Object();
-			List<EclColumnMetaData> expectedretcolumns = null;
+			List<HPCCColumnMetaData> expectedretcolumns = null;
 			this.statement = statement;
-			EclConnection connection = (EclConnection) statement.getConnection();
+			HPCCConnection connection = (HPCCConnection) statement.getConnection();
 			dbMetadata = connection.getDatabaseMetaData();
 			ArrayList dsList = null;
 			rows = new ArrayList();
 			String indextousename = null;
 
-			SqlParser parser = new SqlParser();
+			SQLParser parser = new SQLParser();
 			parser.parse(query);
 			int sqlreqtype = parser.getSqlType();
 
 			//not sure this is actually needed...
 			parser.populateParametrizedExpressions(inParameters);
 
-			if(sqlreqtype == SqlParser.SQL_TYPE_SELECT)
+			if(sqlreqtype == SQLParser.SQL_TYPE_SELECT)
 			{
-				String hpccfilename = Utils.handleQuotedString(parser.getTableName());
+				String hpccfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
 				if(!dbMetadata.tableExists("", hpccfilename))
 					throw new Exception("Invalid table found: " + hpccfilename);
 
@@ -107,9 +107,9 @@ public class EclResultSet implements ResultSet
 
 				expectedretcolumns = parser.getSelectColumns();
 
-				if(((EclPreparedStatement)statement).isIndexSet())
+				if(((HPCCPreparedStatement)statement).isIndexSet())
 				{
-					indextousename = ((EclPreparedStatement)statement).getIndexToUse();
+					indextousename = ((HPCCPreparedStatement)statement).getIndexToUse();
 				}
 
 				else
@@ -137,22 +137,22 @@ public class EclResultSet implements ResultSet
 						indextousename = findAppropriateIndex(dfufile.getRelatedIndexesList(),  expectedretcolumns, parser);
 					}
 
-					((EclPreparedStatement)statement).setIndexToUse(indextousename);
+					((HPCCPreparedStatement)statement).setIndexToUse(indextousename);
 				}
 
 				//columns are base 1 indexed
-				resultMetadata = new EclResultSetMetadata(expectedretcolumns, hpccfilename);
+				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, hpccfilename);
 			}
-			else if(sqlreqtype == SqlParser.SQL_TYPE_SELECTCONST)
+			else if(sqlreqtype == SQLParser.SQL_TYPE_SELECTCONST)
 			{
 				expectedretcolumns = parser.getSelectColumns();
-				resultMetadata = new EclResultSetMetadata(expectedretcolumns, "Constants");
+				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, "Constants");
 			}
-			else if(sqlreqtype == SqlParser.SQL_TYPE_CALL)
+			else if(sqlreqtype == SQLParser.SQL_TYPE_CALL)
 			{
-				ArrayList<EclColumnMetaData> storeProcInParams = new ArrayList();
+				ArrayList<HPCCColumnMetaData> storeProcInParams = new ArrayList();
 
-				String hpccQuery = Utils.handleQuotedString(parser.getStoredProcName());
+				String hpccQuery = HPCCJDBCUtils.handleQuotedString(parser.getStoredProcName());
 				if(!dbMetadata.eclQueryExists("", hpccQuery))
 					throw new Exception("Invalid store procedure found");
 
@@ -161,14 +161,14 @@ public class EclResultSet implements ResultSet
 				expectedretcolumns = dbMetadata.getStoredProcOutColumns("", hpccQuery);
 				storeProcInParams = dbMetadata.getStoredProcInColumns("",hpccQuery);
 				//columns are base 1 indexed
-				resultMetadata = new EclResultSetMetadata(expectedretcolumns, hpccQuery);
+				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, hpccQuery);
 			}
 			else
 			{
 				throw new SQLException("SQL request type not determined");
 			}
 
-			EclEngine eclengine = new EclEngine(parser, dbMetadata, connection.getProperties(), indextousename);
+			ECLEngine eclengine = new ECLEngine(parser, dbMetadata, connection.getProperties(), indextousename);
 			dsList = eclengine.execute();
 
 			// Get the data
@@ -183,7 +183,7 @@ public class EclResultSet implements ResultSet
 		}
 	}
 
-	private void fetchData(ArrayList dsList, List<EclColumnMetaData> expectedretcolumns)
+	private void fetchData(ArrayList dsList, List<HPCCColumnMetaData> expectedretcolumns)
 	{
 		// Get the data
 		// Iterate the Datasets - need to find the appropriate result dataset
@@ -204,8 +204,8 @@ public class EclResultSet implements ResultSet
 				{
 					for (int k = 0; k < inColumnList.size(); k++)
 					{
-						EclColumn inColumn = (EclColumn) inColumnList.get(k);
-						EclColumnMetaData mthexpectedcol = expectedretcolumns.get(m);
+						HPCCColumn inColumn = (HPCCColumn) inColumnList.get(k);
+						HPCCColumnMetaData mthexpectedcol = expectedretcolumns.get(m);
 						if (mthexpectedcol.getColumnName().equalsIgnoreCase(inColumn.getName()) ||
 							mthexpectedcol.getAlias() != null && mthexpectedcol.getAlias().equalsIgnoreCase(inColumn.getName()))
 							rowValues.set(m, inColumn.getValue());
@@ -215,14 +215,14 @@ public class EclResultSet implements ResultSet
 		}
 	}
 
-	public String findAppropriateIndex(String index, List<EclColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SqlParser parser)
+	public String findAppropriateIndex(String index, List<HPCCColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SQLParser parser)
 	{
 		List<String> indexhint = new ArrayList<String>();
 		indexhint.add(index);
 		return findAppropriateIndex(indexhint, expectedretcolumns, parser);
 	}
 
-	public String findAppropriateIndex(List<String> relindexes, List<EclColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SqlParser parser)
+	public String findAppropriateIndex(List<String> relindexes, List<HPCCColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SQLParser parser)
 	{
 		String indextouse = null;
 		String [] sqlqueryparamnames = parser.getWhereClauseNames();

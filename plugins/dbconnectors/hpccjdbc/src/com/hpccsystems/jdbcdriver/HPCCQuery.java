@@ -1,11 +1,11 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class EclQuery
+public class HPCCQuery
 {
 	private String ID;
 	private String Name;
@@ -15,13 +15,13 @@ public class EclQuery
 
 	private boolean Suspended;
 	private List<String> ResultDatasets;
-	private List<EclColumnMetaData> schema;
+	private List<HPCCColumnMetaData> schema;
 	private String defaulttable;
-	private List<EclColumnMetaData> defaultfields;
+	private List<HPCCColumnMetaData> defaultfields;
 
 	private final static String DEFAULTDATASETNAME = "BIOUTPUT";
 
-	public EclQuery()
+	public HPCCQuery()
 	{
 		ID = "";
 		Name = "";
@@ -29,9 +29,9 @@ public class EclQuery
 		Suspended = false;
 		Alias = "";
 		ResultDatasets = new ArrayList<String>();
-		schema = new ArrayList<EclColumnMetaData>();
+		schema = new ArrayList<HPCCColumnMetaData>();
 		defaulttable = null;
-		defaultfields = new ArrayList<EclColumnMetaData>();;
+		defaultfields = new ArrayList<HPCCColumnMetaData>();;
 	}
 
 	public String getAlias() {
@@ -49,10 +49,10 @@ public class EclQuery
 		//Iterator<EclColumnMetaData> it = schema.iterator();
 		String fields [] = new String [defaultfields.size()];
 		int i = 0;
-		Iterator<EclColumnMetaData> it = defaultfields.iterator();
+		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
 			//if (field.getTableName().equals(tablename))
 				//fields.add(field.getColumnName());
 				fields[i++] = field.getColumnName();
@@ -68,7 +68,7 @@ public class EclQuery
 		return fields;
 	}
 
-	public void addResultElement(EclColumnMetaData elem) throws Exception
+	public void addResultElement(HPCCColumnMetaData elem) throws Exception
 	{
 		if (defaulttable != null)
 		{
@@ -101,7 +101,7 @@ public class EclQuery
 	}
 
 
-	public List<EclColumnMetaData> getAllFields()
+	public List<HPCCColumnMetaData> getAllFields()
 	{
 		return defaultfields;
 	}
@@ -162,7 +162,7 @@ public class EclQuery
 		tmp += "}";
 
 		tmp += "elements: {";
-		Iterator<EclColumnMetaData> iterator2 = schema.iterator();
+		Iterator<HPCCColumnMetaData> iterator2 = schema.iterator();
 		while (iterator2.hasNext()) {
 			tmp += " " + iterator2.next();
 		}
@@ -175,10 +175,10 @@ public class EclQuery
 	public boolean containsField(String tablename, String fieldname)
 	{
 		//Iterator<EclColumnMetaData> it = schema.iterator();
-		Iterator<EclColumnMetaData> it = defaultfields.iterator();
+		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
 			if (field.getTableName().equalsIgnoreCase(tablename) && field.getColumnName().equalsIgnoreCase(fieldname))
 				return true;
 		}
@@ -186,12 +186,12 @@ public class EclQuery
 		return false;
 	}
 
-	public EclColumnMetaData getFieldMetaData(String fieldname)
+	public HPCCColumnMetaData getFieldMetaData(String fieldname)
 	{
-		Iterator<EclColumnMetaData> it = schema.iterator();
+		Iterator<HPCCColumnMetaData> it = schema.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
 			if (field.getColumnName().equalsIgnoreCase(fieldname))
 				return field;
 		}
@@ -199,7 +199,7 @@ public class EclQuery
 		return null;
 	}
 
-	public Iterator<EclColumnMetaData> getColumnsMetaDataIterator()
+	public Iterator<HPCCColumnMetaData> getColumnsMetaDataIterator()
 	{
 		return schema.iterator();
 	}
@@ -210,10 +210,10 @@ public class EclQuery
 	}
 
 	public boolean containsField(String fieldname) {
-		Iterator<EclColumnMetaData> it = defaultfields.iterator();
+		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
 			if (field.getColumnName().equalsIgnoreCase(fieldname))
 				return true;
 		}
@@ -221,30 +221,30 @@ public class EclQuery
 		return false;
 	}
 
-	public ArrayList<EclColumnMetaData> getAllNonInFields()
+	public ArrayList<HPCCColumnMetaData> getAllNonInFields()
 	{
-		ArrayList<EclColumnMetaData> expectedretcolumns = new ArrayList();
+		ArrayList<HPCCColumnMetaData> expectedretcolumns = new ArrayList();
 
-		Iterator<EclColumnMetaData> it = defaultfields.iterator();
+		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
-			if (field.getParamType() != EclDatabaseMetaData.procedureColumnIn)
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
+			if (field.getParamType() != HPCCDatabaseMetaData.procedureColumnIn)
 				expectedretcolumns.add(field);
 		}
 
 		return expectedretcolumns;
 	}
 
-	public ArrayList<EclColumnMetaData> getAllInFields()
+	public ArrayList<HPCCColumnMetaData> getAllInFields()
 	{
-		ArrayList<EclColumnMetaData> inparams = new ArrayList();
+		ArrayList<HPCCColumnMetaData> inparams = new ArrayList();
 
-		Iterator<EclColumnMetaData> it = defaultfields.iterator();
+		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
-			EclColumnMetaData field = (EclColumnMetaData)it.next();
-			if (field.getParamType() == EclDatabaseMetaData.procedureColumnIn)
+			HPCCColumnMetaData field = (HPCCColumnMetaData)it.next();
+			if (field.getParamType() == HPCCDatabaseMetaData.procedureColumnIn)
 				inparams.add(field);
 		}
 

@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -28,7 +28,7 @@ import java.util.HashMap;
  *
  * @author rpastrana
  */
-public class EclPreparedStatement implements PreparedStatement {
+public class HPCCPreparedStatement implements PreparedStatement {
     private boolean closed = false;
     private int maxRows = 100;
     private String query;
@@ -37,9 +37,9 @@ public class EclPreparedStatement implements PreparedStatement {
     private ArrayList<SQLWarning> warnings;
     private String indexToUse;
 
-    private EclResultSet result;
+    private HPCCResultSet result;
 
-    public EclPreparedStatement(Connection connection, String query)
+    public HPCCPreparedStatement(Connection connection, String query)
     {
     	System.out.println("ECLPreparedStatement::ECLPreparedStatement: " + query);
         this.query = query;
@@ -66,7 +66,7 @@ public class EclPreparedStatement implements PreparedStatement {
 
     public ResultSet executeQuery() throws SQLException
     {
-    	return new EclResultSet(this, query, parameters);
+    	return new HPCCResultSet(this, query, parameters);
     }
 
 
@@ -180,7 +180,7 @@ public class EclPreparedStatement implements PreparedStatement {
 
     public boolean execute() throws SQLException
     {
-    	result = new EclResultSet(this, query, parameters);
+    	result = new HPCCResultSet(this, query, parameters);
     	System.out.println("ECLPreparedStatement: execute rowcount: " + result.getRowCount());
     	return result.getRowCount() > 0 ? true : false;
     }
@@ -355,7 +355,7 @@ public class EclPreparedStatement implements PreparedStatement {
     public ResultSet executeQuery(String query) throws SQLException
     {
     	System.out.println("ECLPreparedStatement: executeQuery(" + query +")");
-    	result = new EclResultSet(this, query, parameters);
+    	result = new HPCCResultSet(this, query, parameters);
     	System.out.println("ECLPreparedStatement: executeQuery returned " + result.getRowCount() + " rows, and " + result.getMetaData().getColumnCount() + " columns");
     	System.out.println("results object id: " + (Object)result.hashCode());
 
@@ -436,7 +436,7 @@ public class EclPreparedStatement implements PreparedStatement {
         //throw new UnsupportedOperationException("ECLPREPSTATEMNT:execute Not supported yet.");
     	System.out.println("ECLPREPSTMT execute(" + sql +")");
     	query = sql;
-    	result = new EclResultSet(this, query, parameters);
+    	result = new HPCCResultSet(this, query, parameters);
     	System.out.println("ECLPreparedStatement: execute rowcount: " + result.getRowCount());
     	return result.getRowCount() > 0 ? true : false;
     }
