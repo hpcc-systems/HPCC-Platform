@@ -171,8 +171,7 @@
               <para>Press the Next button.</para>
 
               <para>Alternatively, you could find the IP addresses using Auto
-              Discovery by selecting the Auto Discovery button. (Auto
-              Discovery is only available in Enterprise Edition)</para>
+              Discovery by selecting the Auto Discovery button.</para>
 
               <para>Now you will define how many nodes to use for the Roxie
               and Thor clusters.</para>
@@ -800,8 +799,7 @@ sudo configmgr</programlisting>
           <sect4>
             <title>DaliServer LDAP options</title>
 
-            <para>This section describes the DaliServer LDAP tab. (LDAP is
-            only available in Enterprise Edition)</para>
+            <para>This section describes the DaliServer LDAP tab. </para>
 
             <para><graphic fileref="images/CM-img04-4.jpg" /></para>
 

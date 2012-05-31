@@ -1,4 +1,4 @@
-﻿/*
+﻿
 ds := DATASET([{'the fox; and the hen'}], {STRING100 line});
 
 PATTERN ws        	:= PATTERN('[ \t\r\n]');
@@ -19,7 +19,7 @@ p2 := PARSE(ds, line, NounPhraseComp2, ps2,BEST, MANY, NOCASE);
 
 output(p1);
 output(p2);
-/**/
+
 
 datafile := DATASET([
 						{'Ge 34:2 And when Shechem the son of Hamor the Hivite, prince of the country, saw her,'+
@@ -28,15 +28,15 @@ datafile := DATASET([
 						 ' Reuel the son of Bashemath the wife of Esau.'}],
 										{STRING150 line}); 
 PATTERN ws1 		  := [' ','\t',','];
-PATTERN ws      	:= ws1 ws1?;
-PATTERN article  	:= ['A','The','Thou','a','the','thou'];
+PATTERN ws2      	:= ws1 ws1?;
+PATTERN article2 	:= ['A','The','Thou','a','the','thou'];
 TOKEN   Name     	:= PATTERN('[A-Z][a-zA-Z]+');	
-RULE    Namet     := name OPT(ws ['the','king of','prince of'] ws name);
-PATTERN produced 	:= OPT(article ws) ['begat','father of','mother of'];
-PATTERN produced_by   := OPT(article ws) ['son of','daughter of'];
-PATTERN produces_with := OPT(article ws) ['wife of'];
+RULE    Namet     := name OPT(ws2 ['the','king of','prince of'] ws2 name);
+PATTERN produced 	:= OPT(article2 ws2) ['begat','father of','mother of'];
+PATTERN produced_by   := OPT(article2 ws2) ['son of','daughter of'];
+PATTERN produces_with := OPT(article2 ws2) ['wife of'];
 RULE    relationtype  := ( produced | produced_by | produces_with );
-RULE    progeny       := namet ws relationtype ws namet;
+RULE    progeny       := namet ws2 relationtype ws2 namet;
 results := RECORD
      STRING60 Le :=  MATCHTEXT(Namet[1]);
 		 STRING60 Ri 	 :=  MATCHTEXT(Namet[2]);
@@ -45,8 +45,8 @@ results := RECORD
 outfile1 := PARSE(datafile,line,progeny,results,SCAN ALL);
 
 output(outfile1);
-/**/
-/* 
+
+ 
 d := DATASET([{'<library><book isbn="123456789X">' +
 	'<author>Bayliss</author><title>A Way Too Far</title></book>' +
 	'<book isbn="1234567801">' +
@@ -57,8 +57,8 @@ rform := RECORD
   STRING title 	:= XMLTEXT('title');
 END;
 books := PARSE(d,line,rform,XML('library/book'));
-output(books)
-/**/
+output(books);
+
 
 in1 := DATASET([{'<ENTITY eid="P101" type="PERSON" subtype="MILITARY">' +
 '<ATTR name="fullname">JOHN SMITH</ATTR>' +
@@ -80,4 +80,4 @@ END;
 Textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
 
 output(Textout)
-/**/
+

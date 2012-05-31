@@ -19,23 +19,10 @@ MyTable := TABLE(SomeFile,MyOutRec,Value1);
 
 
 OUTPUT(MyTable);
+
 /* MyTable result set is:
 	Rec#	Value1	GrpCount	GrpSum
 	1		C		2			3
 	2		A		2			8
 	3		B		1			4
 */
-/*
-r := RECORD
-  ThorFile.people_thor.lastname;
-	ThorFile.people_thor.gender;
-	GrpCnt := COUNT(GROUP);
-	MaxLen := MAX(GROUP,LENGTH(TRIM(ThorFile.people_thor.firstname)));
-
-END;
-
-tbl := TABLE(ThorFile.people_thor,r,lastname,gender);
-
-output(tbl);
-
-/**/

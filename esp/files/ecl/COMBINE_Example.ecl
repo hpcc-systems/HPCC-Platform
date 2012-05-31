@@ -1,1 +1,0 @@
-﻿// COMBINE is a deprecated function

@@ -275,6 +275,8 @@ private:
             s_configFileMonitorSingleton.setown(new CWsDeployFileInfo::CConfigFileMonitorThread(CONFIG_MONITOR_CHECK_INTERVAL, CONFIG_MONITOR_TIMEOUT_PERIOD));
             s_configFileMonitorSingleton->init();
           }
+
+          slock.unlock();
         }
 
         return s_configFileMonitorSingleton.get();

@@ -119,9 +119,10 @@ protected:
     virtual void setTransformed(IHqlExpression * expr, IHqlExpression * transformed);
     virtual void setTransformedSelector(IHqlExpression * expr, IHqlExpression * transformed);
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr)
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr)
     {
         ThorScalarTransformer nested(options);
+        nested.setParent(this);
         nested.analyse(expr, 0);
         if (nested.needToTransform())
             return nested.transformRoot(expr);
@@ -550,11 +551,12 @@ protected:
 
     virtual void doAnalyseExpr(IHqlExpression * expr);
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr)
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr)
     {
         if (containsUnknownIndependentContents || seenLocalGlobalScope)
         {
             ExplicitGlobalTransformer nested(wu, translator);
+            nested.setParent(this);
             nested.analyse(expr, 0);
             if (nested.needToTransform())
                 return nested.transformRoot(expr);
@@ -597,9 +599,10 @@ protected:
     virtual void doAnalyseExpr(IHqlExpression * expr);
     bool isComplex(IHqlExpression * expr, bool checkGlobal);
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr)
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr)
     {
         ScalarGlobalTransformer nested(translator);
+        nested.setParent(this);
         nested.analyse(expr, 0);
         return nested.transformRoot(expr);
     }
@@ -634,9 +637,10 @@ protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(ScopeMigrateInfo, expr); }
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr)
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr)
     {
         NewScopeMigrateTransformer nested(wu, translator);
+        nested.setParent(this);
         nested.analyse(expr, 0);
         return nested.transformRoot(expr);
     }
@@ -1036,11 +1040,12 @@ public:
 protected:
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr)
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr)
     {
         if (!containsCompound(expr))
             return LINK(expr);
         NestedCompoundTransformer nested(translator);
+        nested.setParent(this);
         nested.analyse(expr, 0);                    // analyse called so set up whether expressions are unconditional etc.
         return nested.transformRoot(expr);
     }

@@ -48,6 +48,7 @@ define([
 				if (nval.id in context.delayLoad) {
 					context.delayLoad[nval.id].placeAt(nval.containerNode, "last");
 					context.delayLoad[nval.id].startup();
+					nval.resize();
 					delete context.delayLoad[nval.id];
 				}
 			});

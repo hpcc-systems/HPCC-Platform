@@ -620,7 +620,7 @@ public:
         return transformed.getClear();
     }
 
-    virtual IHqlExpression * transformIndependent(IHqlExpression * expr) { return LINK(expr); }
+    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) { return LINK(expr); }
 
     bool hasCandidate() const { return candidate; }
     ChildGraphBuilder * getBuilder() { return builder.getClear(); };

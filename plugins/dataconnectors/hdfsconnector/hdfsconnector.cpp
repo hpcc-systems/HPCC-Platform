@@ -11,13 +11,14 @@ using std::string;
 using std::vector;
 
 #define EOL "\n"
+#define RETURN_FAILURE -1
 
 tOffset getBlockSize(hdfsFS * filefs, const char * filename)
 {
 	if (!*filefs)
 	{
 		fprintf(stderr, "Could not connect to hdfs");
-		exit(-1);
+		return RETURN_FAILURE;
 	}
 
 	hdfsFileInfo *fileInfo = NULL;
@@ -31,10 +32,10 @@ tOffset getBlockSize(hdfsFS * filefs, const char * filename)
 	else
 	{
 		fprintf(stderr, "Error: hdfsGetPathInfo for %s - FAILED!\n", filename);
-		exit(-1);
+		return RETURN_FAILURE;
 	}
 
-	return 0;
+	return RETURN_FAILURE;
 }
 
 
@@ -43,7 +44,7 @@ long getFileSize(hdfsFS * filefs, const char * filename)
 	if (!*filefs)
 	{
 		fprintf(stderr, "Could not connect to hdfs");
-		exit(-1);
+		return RETURN_FAILURE;
 	}
 
 	hdfsFileInfo *fileInfo = NULL;
@@ -57,10 +58,10 @@ long getFileSize(hdfsFS * filefs, const char * filename)
 	else
 	{
 		fprintf(stderr, "Error: hdfsGetPathInfo for %s - FAILED!\n", filename);
-		exit(-1);
+		return RETURN_FAILURE;
 	}
 
-	return 0;
+	return RETURN_FAILURE;
 }
 
 long getRecordCount(long fsize, int clustersize, int reclen, int nodeid)
@@ -69,7 +70,7 @@ long getRecordCount(long fsize, int clustersize, int reclen, int nodeid)
 	if (fsize % reclen)
 	{
 		fprintf(stderr, "filesize (%lu) not multiple of record length(%d)", fsize, reclen);
-		exit(-1);
+		return RETURN_FAILURE;
 	}
 	if ((fsize / reclen) % clustersize >= nodeid + 1)
 	{
@@ -87,7 +88,7 @@ void ouputhosts(hdfsFS * fs, const char * rfile)
 		return;
 	}
 
-	getBlockSize(fs, rfile);
+	tOffset blocksize = getBlockSize(fs, rfile);
 
 	char*** hosts = hdfsGetHosts(*fs, rfile, 1, 1);
 	if (hosts)
@@ -118,23 +119,6 @@ void outputFileInfo(hdfsFileInfo * fileInfo)
 	printf("Owner: %s, ", fileInfo->mOwner);
 	printf("Group: %s, ", fileInfo->mGroup);
 	printf("Permissions: %d \n", fileInfo->mPermissions);
-}
-
-int listDirectory(hdfsFS * fs, const char * directoryName)
-{
-	if (!*fs)
-	{
-		fprintf(stderr, "Could not connect to hdfs");
-		return -1;
-	}
-
-	int * tries = new int(2);
-	hdfsFileInfo * fileinf = hdfsListDirectory(*fs, directoryName, tries);
-	if (fileinf)
-		fprintf(stdout, "%s", fileinf->mName);
-	else
-		fprintf(stdout, "nofileinf");
-	return 0;
 }
 
 void getLastXMLElement(string * element, const char * xpath)
@@ -228,19 +212,14 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 	if (!readFile)
 	{
 		fprintf(stderr, "Failed to open %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
 
 	if (hdfsSeek(fs, readFile, seekPos))
 	{
 		fprintf(stderr, "Failed to seek %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
-
-	//unsigned long bytesAvailable = hdfsAvailable(*fs, readFile);
-
-	//if (bytesAvailable < readlen)
-		//readlen = bytesAvailable;
 
 	unsigned char buffer[bufferSize + 1];
 
@@ -258,8 +237,6 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 	getLastXMLElement(&closeRootTag, footerText);
 	closeRootTag.append(1, '>');
 
-	//unsigned long currentPos = seekPos;
-	//TODO --
 	unsigned long currentPos = seekPos + openRowTag.size();
 
 	string currentTag("");
@@ -406,7 +383,7 @@ int readXMLOffset(hdfsFS * fs, const char * filename,
 	xpath2xml(&xmlizedxpath, rowTag, false);
 	fprintf(stdout, "%s", xmlizedxpath.c_str());
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
@@ -421,7 +398,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 	if (!readFile)
 	{
 		fprintf(stderr, "Failed to open %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
 
 	unsigned eolseqlen = strlen(eolseq);
@@ -431,13 +408,8 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 	if (hdfsSeek(fs, readFile, seekPos))
 	{
 		fprintf(stderr, "Failed to seek %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
-
-	//unsigned long bytesAvailable = hdfsAvailable(*fs, readFile);
-
-	//if (bytesAvailable < readlen)
-		//readlen = bytesAvailable;
 
 	bool withinQuote = false;
 	unsigned char buffer[bufferSize + 1];
@@ -534,7 +506,6 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 					if (stopAtNextEOL)
 					{
 						fprintf(stderr, "\n--Stop piping: %ld--\n", currentPos);
-						//fprintf(stdout, "%s", eolseq);
 						bytesLeft = 0;
 						break;
 					}
@@ -549,7 +520,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 					if(hdfsSeek(fs, readFile, hdfsTell(fs, readFile)-extraNumOfBytesRead))
 					{
 							fprintf(stderr, "Error while attempting to correct seek position\n");
-							exit(-1);
+							return EXIT_FAILURE;
 					}
 				}
 			}
@@ -567,7 +538,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 				if(maxLen > 0 && currentPos-seekPos > maxLen * 10)
 				{
 					fprintf(stderr, "\nFirst EOL was not found within the first %lu bytes", currentPos-seekPos);
-					exit(-1);
+					return EXIT_FAILURE;
 				}
 			}
 
@@ -594,7 +565,7 @@ int readCSVOffset(hdfsFS * fs, const char * filename, unsigned long seekPos,
 	fprintf(stderr, "\nCurrentPos: %ld, RecsFound: %ld\n", currentPos, recsFound);
 	hdfsCloseFile(*fs, readFile);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int readFileOffset(hdfsFS * fs, const char * filename, tOffset seekPos,
@@ -604,19 +575,14 @@ int readFileOffset(hdfsFS * fs, const char * filename, tOffset seekPos,
 	if (!readFile)
 	{
 		fprintf(stderr, "Failed to open %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
 
 	if (hdfsSeek(fs, readFile, seekPos))
 	{
 		fprintf(stderr, "Failed to seek %s for reading!\n", filename);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
-
-	//unsigned long bytesAvailable = hdfsAvailable(*fs, readFile);
-
-	//if (bytesAvailable < readlen)
-		//readlen = bytesAvailable;
 
 	unsigned char buffer[bufferSize + 1];
 
@@ -640,7 +606,7 @@ int readFileOffset(hdfsFS * fs, const char * filename, tOffset seekPos,
 
 	hdfsCloseFile(*fs, readFile);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int streamInFile(hdfsFS * fs, const char * rfile, int bufferSize)
@@ -700,7 +666,7 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 		if(!writeFile)
 		{
 			fprintf(stderr, "Failed to open %s for writing!\n", filename);
-			exit(-1);
+			return EXIT_FAILURE;
 		}
 
 		tSize totalBytesWritten = 0;
@@ -708,7 +674,6 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 		{
 			if (node > 0)
 			{
-				//writeFile = hdfsOpenFile(*fs, filename, O_WRONLY|O_APPEND, 0, 0, 0);
 				writeFile = hdfsOpenFile(*fs, filename, O_WRONLY|O_APPEND, 0, filereplication, 0);
 				fprintf(stderr, "Re-opening %s for append!\n", filename);
 			}
@@ -725,7 +690,7 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 				if (!readFile)
 				{
 					fprintf(stderr, "Failed to open %s for reading!\n", filename);
-					exit(-1);
+					return EXIT_FAILURE;
 				}
 
 				unsigned char buffer[bufferSize + 1];
@@ -748,7 +713,7 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 							if (hdfsFlush(*fs, writeFile))
 							{
 								fprintf(stderr, "Failed to 'flush' %s\n", filename);
-								exit(-1);
+								return EXIT_FAILURE;
 							}
 							bytesWrittenSinceLastFlush = 0;
 						}
@@ -757,13 +722,13 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 					{
 						fprintf(stderr, "Issue detected during HDFSWrite\n");
 						fprintf(stderr, "Bytes written in current iteration: %d\n", bytesWritten);
-						exit(-1);
+						return EXIT_FAILURE;
 					}
 				}
 				if (hdfsFlush(*fs, writeFile))
 				{
 					fprintf(stderr, "Failed to 'flush' %s\n", filename);
-					exit(-1);
+					return EXIT_FAILURE;
 				}
 
 				fprintf(stderr, "Closing readfile  %s\n", filepartname);
@@ -777,14 +742,14 @@ int mergeFile(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clus
 			else
 			{
 				fprintf(stderr, "Could not merge, part %s was not located\n", filepartname);
-				exit(-1);
+				return EXIT_FAILURE;
 			}
 
 			fprintf(stderr, "Closing writefile %s\n", filename);
 			hdfsCloseFile(*fs, writeFile);
 		}
 	}
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigned clustercount, const char * fileorpipename)
@@ -802,7 +767,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
 	if(!writeFile)
 	{
 		fprintf(stderr, "Failed to open %s for writing!\n", filepartname);
-		exit(-1);
+		return EXIT_FAILURE;
 	}
 
     fprintf(stderr, "Opened HDFS file %s for writing successfully...\n", filepartname);
@@ -837,7 +802,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
 			if (hdfsFlush(*fs, writeFile))
 			{
 				fprintf(stderr, "Failed to 'flush' %s\n", filepartname);
-				exit(-1);
+				return EXIT_FAILURE;
 			}
  		}
  	}
@@ -846,7 +811,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
  	if (hdfsFlush(*fs, writeFile))
 	{
  		fprintf(stderr, "Failed to 'flush' %s\n", filepartname);
-		exit(-1);
+ 		return EXIT_FAILURE;
 	}
 
 	fprintf(stderr,"\n total read: %lu, total written: %lu\n", totalbytesread, totalbyteswritten);
@@ -854,7 +819,7 @@ int writeFlatOffset(hdfsFS * fs, const char * filename, unsigned nodeid, unsigne
 	int clos = hdfsCloseFile(*fs, writeFile);
 	fprintf(stderr, "hdfsCloseFile result: %d", clos);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void escapedStringToChars(const char * source, string & escaped)
@@ -922,11 +887,12 @@ void escapedStringToChars(const char * source, string & escaped)
 	}
 }
 
+
 int main(int argc, char **argv)
 {
 	unsigned int bufferSize = 1024 * 100;
 	unsigned int flushThreshold = bufferSize * 10;
-	int returnCode = -1;
+	int returnCode = EXIT_FAILURE;
 	unsigned clusterCount = 0;
 	unsigned nodeID = 0;
 	unsigned long recLen = 0;
@@ -943,17 +909,14 @@ int main(int argc, char **argv)
 	const char * wuid = "";
 	const char * rowTag = "Row";
 	const char * separator = "";
-	//const char * terminator = "";
 	string terminator (EOL);
 	bool outputTerminator = true;
-	//const char * quote = "";
 	string quote ("'");
 	const char * headerText = "<Dataset>";
 	const char * footerText = "</Dataset>";
 	const char * hdfsuser = "";
 	const char * hdfsgroup = "";
 	const char * pipepath = "";
-	const char * hdfsgroups[1];
 	bool cleanmerge = false;
 	short filereplication = 1;
 
@@ -1097,44 +1060,48 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr,
 					"Error: Found invalid input param: %s \n", argv[currParam]);
-			exit(-1);
+			return returnCode;
 		}
 		currParam++;
 	}
 
 	hdfsFS fs = NULL;
 	if (strlen(hdfsuser)>0)
-	{
-		if (strlen(hdfsgroup)>0)
-			hdfsgroups[0] = hdfsgroup;
-		else
-			hdfsgroups[0] = "supergroup";
-		//This was a pre HADOOP 1.0 API call
-		//fs = hdfsConnectAsUser(hadoopHost, hadoopPort,hdfsuser,hdfsgroups, 1);
 		fs = hdfsConnectAsUser(hadoopHost, hadoopPort,hdfsuser);
-	}
 	else
 		fs = hdfsConnect(hadoopHost, hadoopPort);
 
 	if (!fs)
 	{
-		fprintf(stderr, "Could not connect to hdfs on %s:%d", hadoopHost,
-				hadoopPort);
-		exit(-1);
+		fprintf(stderr, "Could not connect to hdfs on %s:%d", hadoopHost, hadoopPort);
+		return returnCode;
 	}
 
 	if (action == HPA_STREAMIN)
 	{
-		fprintf(stderr, "Streaming in %s...\n", fileName);
+		fprintf(stderr, "\nStreaming in %s...\n", fileName);
 
 		unsigned long fileSize = getFileSize(&fs, fileName);
+		if (fileSize == RETURN_FAILURE)
+		{
+			if (fs)
+				hdfsDisconnect(fs);
+
+			return EXIT_FAILURE;
+		}
 
 		if (strcmp(format.c_str(), "FLAT") == 0)
 		{
-			unsigned long recstoread = getRecordCount(fileSize, clusterCount,
-					recLen, nodeID);
-			unsigned long offset = nodeID * (fileSize / clusterCount / recLen)
-					* recLen;
+			unsigned long recstoread = getRecordCount(fileSize, clusterCount, recLen, nodeID);
+			if (recstoread == RETURN_FAILURE)
+			{
+				if (fs)
+					hdfsDisconnect(fs);
+
+				return EXIT_FAILURE;
+			}
+
+			unsigned long offset = nodeID * (fileSize / clusterCount / recLen) * recLen;
 			if ((fileSize / recLen) % clusterCount > 0)
 			{
 				if ((fileSize / recLen) % clusterCount > nodeID)
@@ -1143,9 +1110,7 @@ int main(int argc, char **argv)
 					offset += ((fileSize / recLen) % clusterCount) * recLen;
 			}
 
-			fprintf(
-					stderr,
-					"fileSize: %lu offset: %lu size bytes: %lu, recstoread:%lu\n",
+			fprintf(stderr,	"fileSize: %lu offset: %lu size bytes: %lu, recstoread:%lu\n",
 					fileSize, offset, recstoread * recLen, recstoread);
 			if (offset < fileSize)
 				returnCode = readFileOffset(&fs, fileName, offset,
@@ -1194,10 +1159,13 @@ int main(int argc, char **argv)
 	{
 		returnCode = mergeFile(&fs, fileName, nodeID, clusterCount, bufferSize, flushThreshold, filereplication, cleanmerge);
 	}
+	else
+	{
+		fprintf(stderr, "\nNo action type detected, exiting.");
+		returnCode = EXIT_FAILURE;
+	}
 
-	int dis = hdfsDisconnect(fs);
-
-	fprintf(stderr, "\nhdfsDisconnect return: %d\n", dis);
+	fprintf(stderr, "\nhdfsDisconnect returned: %d", hdfsDisconnect(fs));
 
 	return returnCode;
 }
