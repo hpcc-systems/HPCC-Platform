@@ -40,6 +40,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
+  option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
 
   option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" ON)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
@@ -74,8 +75,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( USE_XALAN )
       set(USE_XERCES ON)
   endif()
-  
-  if ( MAKE_DOCS_ONLY )
+
+  if ( MAKE_DOCS AND CLIENTTOOLS_ONLY )
+      set( MAKE_DOCS OFF )
+  endif()
+
+  if ( MAKE_DOCS_ONLY AND NOT CLIENTTOOLS_ONLY )
       set( MAKE_DOCS ON )
   endif()
   
@@ -161,6 +166,25 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   macro(HPCC_ADD_LIBRARY target)
     add_library(${target} ${ARGN})
   endmacro(HPCC_ADD_LIBRARY target)
+
+  # This macro allows for disabling a directory based on the value of a variable passed to the macro.
+  #
+  # ex. HPCC_ADD_SUBDIRECORY(roxie ${CLIENTTOOLS_ONLY})
+  #
+  # This call will disable the roxie dir if -DCLIENTTOOLS_ONLY=ON is set at config time.
+  #
+  macro(HPCC_ADD_SUBDIRECTORY subdir)
+    set(adddir 0)
+    foreach( f ${ARGN} )
+      if( f )
+        set(adddir 1)
+      endif()
+    endforeach() 
+
+    if ( NOT adddir )
+      add_subdirectory(${subdir})
+    endif()
+  endmacro(HPCC_ADD_SUBDIRECTORY)
 
   set ( SCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
   include_directories (${SCM_GENERATED_DIR})

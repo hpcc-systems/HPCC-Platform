@@ -27,6 +27,9 @@
 
 project (AllProjects)
 
-include ( dfuserver.cmake)
+if ( NOT CLIENTTOOLS_ONLY )
+    include ( dfuserver.cmake)
+endif()
+
 include ( dfuwu.cmake)
 

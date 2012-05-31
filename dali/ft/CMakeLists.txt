@@ -19,7 +19,9 @@
 
 project (all)
 
-include (ftslave.cmake)
+if ( NOT CLIENTTOOLS_ONLY )
+    include (ftslave.cmake)
+endif()
 include (dalift.cmake)
 
 
