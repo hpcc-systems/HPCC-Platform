@@ -93,7 +93,7 @@
              schema="esp.xsd"/>
    <BuildSet deployable="no"
              installSet="deploy_map.xml"
-             name="eclwatch"
+             name="espsmc"
              path="componentfiles/espsmc"
              processName="EspService"
              schema="espsmcservice.xsd">
