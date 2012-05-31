@@ -352,6 +352,23 @@ void FatalError(const char *format, ...)
     _exit(1);
 }
 
+// If changing these, please change roxie.cpp's roxie_server_usage() as well
+static void roxie_common_usage(const char * progName)
+{
+    StringBuffer program;
+    program.append(progName);
+    getFileNameOnly(program, false);
+    // Things that are also relevant to stand-alone executables
+    printf("Usage: %s [options]\n", program.str());
+    printf("\nOptions:\n");
+    printf("\t--daliServers=[host1,...]\t: List of Dali servers to use\n");
+    printf("\t--tracelevel=[integer]\t: Amount of information to dump on logs\n");
+    printf("\t--stdlog=[boolean]\t: Standard log format (based on tracelevel)\n");
+    printf("\t--logfile=[format]\t: Outputs to logfile, rather than stdout\n");
+    printf("\t--help|-h\t: This message\n");
+    printf("\n");
+}
+
 class MAbortHandler : implements IExceptionHandler
 {
     unsigned dummy; // to avoid complaints about an empty class...
@@ -420,6 +437,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     getDaliServixPort();
     init_signals();
 
+    // stand alone usage only, not server
+    for (unsigned i=0; i<argc; i++)
+    {
+        if (stricmp(argv[i], "--help")==0 ||
+            stricmp(argv[i], "-h")==0)
+        {
+            roxie_common_usage(argv[0]);
+            return EXIT_SUCCESS;
+        }
+    }
+
     #ifdef _USE_CPPUNIT
     if (argc>=2 && stricmp(argv[1], "-selftest")==0)
     {
@@ -432,6 +460,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else 
         {
+            // MORE - maybe add a 'list' function here?
             for (int name = 2; name < argc; name++)
             {
                 CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(argv[name]);
@@ -473,8 +502,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         removeSentinelFile(sentinelFile);
 
         StringBuffer topologyFile;
-        if (globals->hasProp("topology"))
-            globals->getProp("topology", topologyFile);
+        if (globals->hasProp("--topology"))
+            globals->getProp("--topology", topologyFile);
         else
             topologyFile.append(codeDirectory).append(PATHSEPCHAR).append("RoxieTopology.xml");
 
@@ -485,7 +514,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else
         {
-            if (globals->hasProp("topology"))
+            if (globals->hasProp("--topology"))
             {
                 // Explicitly-named topology file SHOULD exist...
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "topology file %s not found", topologyFile.str());
@@ -496,18 +525,18 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                  "<RoxieSlaveProcess dataDirectory='.' netAddress='.' channel='1'/>"
                 "</RoxieTopology>"
                 );
-            int port = globals->getPropInt("port", 9876);
+            int port = globals->getPropInt("--port", 9876);
             topology->setPropInt("RoxieServerProcess/@port", port);
-            topology->setProp("@daliServers", globals->queryProp("daliServers"));
-            topology->setProp("@traceLevel", globals->queryProp("traceLevel"));
+            topology->setProp("@daliServers", globals->queryProp("--daliServers"));
+            topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
         }
 
         topology->getProp("@name", roxieName);
         Owned<const IQueryDll> standAloneDll;
-        if (globals->hasProp("loadWorkunit"))
+        if (globals->hasProp("--loadWorkunit"))
         {
             StringBuffer workunitName;
-            globals->getProp("loadWorkunit", workunitName);
+            globals->getProp("--loadWorkunit", workunitName);
             standAloneDll.setown(createQueryDll(workunitName));
         }
         else
@@ -516,7 +545,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (checkEmbeddedWorkUnitXML(dll))
             {
                 standAloneDll.setown(createExeQueryDll(argv[0]));
-                runOnce = globals->getPropInt("port", 0) == 0;
+                runOnce = globals->getPropInt("--port", 0) == 0;
             }
         }
 
@@ -533,10 +562,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             getConfigurationDirectory(directoryTree,"query","roxie", roxieName, queryDirectory);
 
         //Logging stuff
-        if (globals->hasProp("logfile"))
+        if (globals->hasProp("--logfile"))
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
-            if (globals->getPropBool("stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
+            if (globals->getPropBool("--stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
                 lf->setMsgFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
@@ -553,7 +582,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 queryLogMsgManager()->enterQueueingMode();
                 queryLogMsgManager()->setQueueDroppingLimit(logQueueLen, logQueueDrop);
             }
-            if (globals->getPropBool("enableSysLog",true))
+            if (globals->getPropBool("--enableSysLog",true))
                 UseSysLogForOperatorMessages();
         }
 
@@ -571,7 +600,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid UserMetric element in topology file - name or regex missing");
         }
 
-        restarts = globals->getPropInt("restarts", 0);
+        restarts = globals->getPropInt("--restarts", 0);
         const char *preferredSubnet = topology->queryProp("@preferredSubnet");
         if (preferredSubnet)
         {
@@ -580,8 +609,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             if (!setPreferredSubnet(preferredSubnet, preferredSubnetMask))
                 throw MakeStringException(ROXIE_INTERNAL_ERROR, "Error setting preferred subnet %s mask %s", preferredSubnet, preferredSubnetMask);
         }
-        bool multiHostMode = globals->hasProp("host");
-        unsigned myHostNumber = globals->getPropInt("host", 0);
+        bool multiHostMode = globals->hasProp("--host");
+        unsigned myHostNumber = globals->getPropInt("--host", 0);
         if (restarts)
         {
             if (traceLevel)
