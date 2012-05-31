@@ -54,3 +54,10 @@ output(ds5);
 output(true);
 dsd := DATASET(10, t1(COUNTER), DISTRIBUTED);
 output(dsd);
+
+r t3(unsigned value) := transform,skip(value % 2 = 1)
+    SELF.i := value * 10;
+end;
+
+ds6 := DATASET(10, t3(COUNTER));
+output(ds6);
