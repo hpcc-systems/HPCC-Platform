@@ -973,11 +973,12 @@ const char *getOpString(node_operator op)
     case no_xor: return " XOR ";
     case no_notin: return " NOT IN ";
     case no_in: return " IN ";
+    case no_indict: return " IN ";
     case no_notbetween: return " NOT BETWEEN ";
     case no_between: return " BETWEEN ";
     case no_comma: return ",";
     case no_compound: return ",";
-    case no_count: case no_countlist: return "COUNT";
+    case no_count: case no_countlist: case no_countdict: return "COUNT";
     case no_counter: return "COUNTER";
     case no_countgroup: return "COUNT";
     case no_distribution: return "DISTRIBUTION";
@@ -1448,7 +1449,7 @@ const char *getOpString(node_operator op)
     case no_childquery: return "no_childquery";
     case no_inlinedictionary: return "DICTIONARY";
 
-    case no_unused4: case no_unused5: case no_unused6:
+    case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
@@ -1653,6 +1654,7 @@ int getPrecedence(node_operator op)
     case no_notbetween:
     case no_in:
     case no_notin:
+    case no_indict:
     case no_comma:
     case no_compound:
     case no_eq:
@@ -9882,9 +9884,6 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
 
     switch (op)
     {
-    case no_null:
-        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(0)))));
-        break;
     case no_inlinedictionary:
         type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(1)))));
         break;
@@ -9916,6 +9915,27 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
         //following is wrong, but they get removed pretty quickly so I don't really care
         type.set(parms.item(0).queryType());
         break;
+    case no_null:
+    case no_fail:
+    case no_anon:
+    {
+        IHqlExpression * record = &parms.item(0);
+        IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
+        bool linkCounted = (queryProperty(_linkCounted_Atom, parms) || recordRequiresSerialization(record));
+        if (!metadata)
+        {
+            ITypeInfo * recordType = createRecordType(record);
+            assertex(recordType->getTypeCode() == type_record);
+            ITypeInfo * rowType = makeRowType(recordType);
+            type.setown(makeDictionaryType(rowType));
+        }
+        else
+            type.setown(getTypeFromMeta(record, metadata, 0));
+
+        if (linkCounted)
+            type.setown(setLinkCountedAttr(type, true));
+        break;
+    }
     case no_nofold:
     case no_nohoist:
     case no_thor:
@@ -14854,7 +14874,7 @@ bool transformHasSkipAttr(IHqlExpression * transform)
 
 bool isPureInlineDataset(IHqlExpression * expr)
 {
-    assertex(expr->getOperator() == no_inlinetable);
+    assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_inlinedictionary);
     IHqlExpression * values = expr->queryChild(0);
     ForEachChild(i, values)
     {

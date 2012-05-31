@@ -503,7 +503,6 @@ public:
     ITypeInfo *promoteMapToSameType(HqlExprArray & exprs, attribute &eElse);
     ITypeInfo *promoteSetToSameType(HqlExprArray & exprs, attribute &errpos);
     ITypeInfo * queryElementType(const attribute & errpos, IHqlExpression * list);
-    IHqlExpression *createINDict(node_operator op, IHqlExpression *expr, IHqlExpression *dict, attribute &errpos);
     IHqlExpression *createINExpression(node_operator op, IHqlExpression *expr, IHqlExpression *set, attribute &errpos);
     IHqlExpression * createLoopCondition(IHqlExpression * left, IHqlExpression * arg1, IHqlExpression * arg2, IHqlExpression * seq, IHqlExpression * rowsid);
     void setTemplateAttribute();

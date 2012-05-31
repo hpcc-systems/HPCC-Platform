@@ -130,7 +130,19 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
 
 BoundRow * BaseDatasetCursor::buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr)
 {
+    // Should only be seen for dictionaries, for now
+    throwUnexpected();
+}
+
+void BaseDatasetCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
     // Should only be seen for dictionaries
+    throwUnexpected();
+}
+
+void BaseDatasetCursor::buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
+{
+    // Should only be seen for dictionaries, for now
     throwUnexpected();
 }
 
@@ -722,8 +734,32 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
     OwnedHqlExpr call = translator.bindFunctionCall(dictionaryLookupAtom, args, resultType);
     translator.buildExprAssign(ctx, target, call);
-
+    ctx.associate(*tempRow);
     return tempRow.getClear();
+}
+
+void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *record = ds->queryRecord();
+
+    StringBuffer lookupHelperName;
+    OwnedHqlExpr dict = createDictionary(no_null, LINK(record));
+    translator.buildDictionaryHashClass(ctx, record, dict, lookupHelperName);
+
+    HqlExprArray args;
+    args.append(*createQuoted(lookupHelperName, makeBoolType()));
+    args.append(*LINK(inExpr->queryChild(1)));
+    args.append(*LINK(inExpr->queryChild(0)));
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryLookupExistsAtom, args, makeBoolType());
+    translator.buildExpr(ctx, call, tgt);
+}
+
+void InlineLinkedDictionaryCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
+    HqlExprArray args;
+    args.append(*LINK(ds));
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountAtom, args, makeBoolType());
+    translator.buildExpr(ctx, call, tgt);
 }
 
 //---------------------------------------------------------------------------
@@ -1750,6 +1786,7 @@ void LinkedDatasetBuilder::buildDeclare(BuildCtx & ctx)
 
 LinkedDictionaryBuilder::LinkedDictionaryBuilder(HqlCppTranslator & _translator, IHqlExpression * _record) : LinkedDatasetBuilderBase(_translator, _record)
 {
+    dataset.setown(createDictionary(no_anon, LINK(record), createComma(getSelfAttr(), getLinkCountedAttr())));
 }
 
 void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)

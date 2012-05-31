@@ -5072,8 +5072,9 @@ compareExpr
                             parser->normalizeExpression($4);
                             parser->normalizeExpression($4, type_dictionary, false);
                             IHqlExpression *dict = $4.getExpr();
-                            IHqlExpression *expr = $1.getExpr();
-                            $$.setExpr(parser->createINDict(no_notin, expr, dict, $4));
+                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
+                            OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
+                            $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
     | dataRow NOT TOK_IN dictionary
@@ -5082,8 +5083,10 @@ compareExpr
                             parser->normalizeExpression($4);
                             parser->normalizeExpression($4, type_dictionary, false);
                             IHqlExpression *dict = $4.getExpr();
-                            IHqlExpression *expr = $1.getExpr();
-                            $$.setExpr(parser->createINDict(no_notin, expr, dict, $4));
+                            IHqlExpression *row = $1.getExpr();
+                            OwnedHqlExpr indict = createBoolExpr(no_indict, row, dict); // more - some type checking might be nice
+//                          OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
+                            $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
     | expr TOK_IN dictionary
@@ -5092,8 +5095,8 @@ compareExpr
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($3, type_dictionary, false);
                             IHqlExpression *dict = $3.getExpr();
-                            IHqlExpression *expr = $1.getExpr();
-                            $$.setExpr(parser->createINDict(no_in, expr, dict, $3));
+                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
+                            $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataRow TOK_IN dictionary
@@ -5102,8 +5105,9 @@ compareExpr
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($3, type_dictionary, false);
                             IHqlExpression *dict = $3.getExpr();
-                            IHqlExpression *expr = $1.getExpr();
-                            $$.setExpr(parser->createINDict(no_in, expr, dict, $3));
+                            IHqlExpression *row = $1.getExpr();
+                            $$.setExpr(createBoolExpr(no_indict, row, dict)); // more - some type checking might be nice
+//                            $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataSet EQ dataSet    
@@ -5430,6 +5434,10 @@ primexpr1
                             //list could either be a no_sortlist - in which case we want the number of elements,
                             //or a no_param, in which case it doesn't matter what we return
                             $$.setExpr(getSizetConstant(list->numChildren()), $1);
+                        }
+    | COUNT '(' dictionary ')'
+                        {
+                            $$.setExpr(createValue(no_countdict, LINK(parser->defaultIntegralType), $3.getExpr()));
                         }
     | CHOOSE '(' expression ',' chooseList ')'
                         {
@@ -6807,7 +6815,9 @@ dataRow
                         }
     | dictionary '[' expressionList ']'
                         {
-                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $3.getExpr());
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), args);
                             $$.setExpr(createSelectMapRow(parser->errorHandler, $3.pos, $1.getExpr(), row.getClear()));
                         }
     | dataSet '[' NOBOUNDCHECK expression ']'
@@ -7128,6 +7138,13 @@ simpleDictionary
                             $$.setPosition($1);
                         }
 */
+    | DICTIONARY '(' '[' ']' ',' recordDef ')'
+                        {
+                            HqlExprArray values;  // Empty list
+                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $6.getExpr());
+                            $$.setExpr(convertTempTableToInlineDictionary(parser->errorHandler, $4.pos, table));
+                            $$.setPosition($1);
+                        }
     | DICTIONARY '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
                         {
                             HqlExprArray values;

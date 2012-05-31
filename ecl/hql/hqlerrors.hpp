@@ -484,7 +484,7 @@
 #define HQLERR_IncompatiableInitailiser_Text    "Inline DATASET field '%s' cannot be initialized with a list of values"
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
-#define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s in inline dataset has the wrong type"
+#define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
 #define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
 
 /* parser error */
