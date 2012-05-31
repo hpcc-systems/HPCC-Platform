@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+//skip type==thorlcr TBD
+//nothor
 
 inrec := record
 unsigned6 did;
