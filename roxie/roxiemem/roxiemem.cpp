@@ -1350,8 +1350,8 @@ protected:
 class CChunkingHeap : public CInterface
 {
 public:
-    CChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache)
-        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), active(NULL)
+    CChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
+        : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), active(NULL), flags(_flags)
     {
     }
 
@@ -1464,6 +1464,7 @@ protected:
     inline void setNext(BigHeapletBase * ptr, BigHeapletBase * next) const { ptr->next = next; }
 
 protected:
+    unsigned flags; // before the pointer so it packs better in 64bit.
     BigHeapletBase *active;
     CChunkingRowManager * rowManager;
     const IRowAllocatorCache *allocatorCache;
@@ -1475,7 +1476,7 @@ class CHugeChunkingHeap : public CChunkingHeap
 {
 public:
     CHugeChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache)
-        : CChunkingHeap(_rowManager, _logctx, _allocatorCache)
+        : CChunkingHeap(_rowManager, _logctx, _allocatorCache, 0)
     {
     }
 
@@ -1488,8 +1489,8 @@ protected:
 class CNormalChunkingHeap : public CChunkingHeap
 {
 public:
-    CNormalChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _chunkSize)
-        : CChunkingHeap(_rowManager, _logctx, _allocatorCache), chunkSize(_chunkSize)
+    CNormalChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _chunkSize, unsigned _flags)
+        : CChunkingHeap(_rowManager, _logctx, _allocatorCache, _flags), chunkSize(_chunkSize)
     {
     }
 
@@ -1507,7 +1508,7 @@ class CFixedChunkingHeap : public CNormalChunkingHeap
 {
 public:
     CFixedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, unsigned _flags)
-        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize), flags(_flags)
+        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize, _flags)
     {
     }
 
@@ -1522,16 +1523,13 @@ public:
 
 protected:
     virtual BigHeapletBase * allocateHeaplet();
-
-protected:
-    unsigned flags;
 };
 
 class CPackedChunkingHeap : public CNormalChunkingHeap
 {
 public:
     CPackedChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, unsigned _flags, unsigned _allocatorId)
-        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize), flags(_flags), allocatorId(_allocatorId)
+        : CNormalChunkingHeap(_rowManager, _logctx, _allocatorCache, _chunkSize, _flags), allocatorId(_allocatorId)
     {
     }
 
@@ -1548,7 +1546,6 @@ protected:
     virtual BigHeapletBase * allocateHeaplet();
 
 protected:
-    unsigned flags;
     unsigned allocatorId;
 };
 
@@ -1924,9 +1921,9 @@ public:
         return total;
     }
 
-    virtual unsigned numPagesAfterCleanup()
+    virtual unsigned numPagesAfterCleanup(bool forceFreeAll)
     {
-        releaseEmptyPages(false);
+        releaseEmptyPages(forceFreeAll);
         return dataBuffPages + atomic_read(&totalHeapPages);
     }
 
@@ -1952,7 +1949,7 @@ public:
         unsigned total = 0;
         ForEachItemIn(iNormal, normalHeaps)
             total += normalHeaps.item(iNormal).releaseEmptyPages(forceFreeAll);
-        total += hugeHeap.releaseEmptyPages(forceFreeAll);
+        total += hugeHeap.releaseEmptyPages(true);
 
         bool hadUnusedHeap = false;
         {
@@ -3329,7 +3326,7 @@ protected:
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm1->allocate(1800000, 0));
-        ASSERT(rm1->numPagesAfterCleanup()==0);
+        ASSERT(rm1->numPagesAfterCleanup(false)==0); // page should be freed even if force not specified
         ASSERT(rm1->getMemoryUsage()==2);
     }
 
@@ -3361,7 +3358,7 @@ protected:
     {
         Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm1->allocate(1000, 0));
-        ASSERT(rm1->numPagesAfterCleanup()==0);
+        ASSERT(rm1->numPagesAfterCleanup(true)==0);
         ASSERT(rm1->getMemoryUsage()==1);
 
         void *r1 = rm1->allocate(1000, 0);
@@ -3372,13 +3369,13 @@ protected:
         r2 = rm1->allocate(1000, 0);
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
-        ASSERT(rm1->numPagesAfterCleanup()==0);
+        ASSERT(rm1->numPagesAfterCleanup(true)==0);
         ASSERT(rm1->getMemoryUsage()==1);
 
 
         Owned<IRowManager> rm2 = createRowManager(0, NULL, logctx, NULL);
         ReleaseRoxieRow(rm2->allocate(4000000, 0));
-        ASSERT(rm2->numPagesAfterCleanup()==0);
+        ASSERT(rm2->numPagesAfterCleanup(true)==0);
         ASSERT(rm2->getMemoryUsage()==4);
 
         r1 = rm2->allocate(4000000, 0);
@@ -3389,14 +3386,14 @@ protected:
         r2 = rm2->allocate(4000000, 0);
         ReleaseRoxieRow(r1);
         ReleaseRoxieRow(r2);
-        ASSERT(rm2->numPagesAfterCleanup()==0);
+        ASSERT(rm2->numPagesAfterCleanup(true)==0);
         ASSERT(rm2->getMemoryUsage()==8);
 
         for (unsigned d = 0; d < 50; d++)
         {
             Owned<IRowManager> rm3 = createRowManager(0, NULL, logctx, NULL);
             ReleaseRoxieRow(rm3->allocate(HEAP_ALIGNMENT_SIZE - d + 10, 0));
-            ASSERT(rm3->numPagesAfterCleanup()==0);
+            ASSERT(rm3->numPagesAfterCleanup(true)==0);
         }
 
         // test leak reporting does not crash....
@@ -3499,7 +3496,7 @@ protected:
             ASSERT(strcmp(E->errorMessage(s).str(), "memory limit exceeded")==0);
             E->Release();
         }
-        ASSERT(rm1->numPagesAfterCleanup()==20);
+        ASSERT(rm1->numPagesAfterCleanup(true)==20);
     }
     void testCycling()
     {
@@ -3588,7 +3585,7 @@ protected:
         memset(alloc1, 99, capacity);
         void * alloc2 = rm->allocate(capacity, 0);
         ASSERT(RoxieRowCapacity(alloc2)==capacity);
-        ASSERT(rm->numPagesAfterCleanup()==expectedPages);
+        ASSERT(rm->numPagesAfterCleanup(true)==expectedPages);
         memset(alloc2, 99, capacity);
         ReleaseRoxieRow(alloc1);
         ReleaseRoxieRow(alloc2);

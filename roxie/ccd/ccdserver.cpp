@@ -32368,7 +32368,7 @@ protected:
             ASSERT(in.state == TestInput::STATEreset);
             ASSERT(!input2 || in2.state == TestInput::STATEreset);
             ctx->queryRowManager().reportLeaks();
-            ASSERT(ctx->queryRowManager().numPagesAfterCleanup() == 0);
+            ASSERT(ctx->queryRowManager().numPagesAfterCleanup(true) == 0);
         }
     }
 
