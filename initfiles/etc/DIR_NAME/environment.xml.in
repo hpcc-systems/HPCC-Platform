@@ -86,7 +86,7 @@
              schema="esp.xsd"/>
    <BuildSet deployable="no"
              installSet="deploy_map.xml"
-             name="eclwatch"
+             name="espsmc"
              path="componentfiles/espsmc"
              processName="EspService"
              schema="espsmcservice.xsd">
@@ -668,7 +668,7 @@
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
               build="${projname}_${version}-${stagever}"
-              buildSet="eclwatch"
+              buildSet="espsmc"
               description="ESP services for Management Console"
               disableUppercaseTranslation="false"
               enableSystemUseRewrite="false"
