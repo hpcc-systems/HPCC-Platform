@@ -1249,7 +1249,6 @@ void CConfigEnvHelper::UpdateThorAttributes(IPropertyTree* pParentNode)
         }
     }
 
-    setAttribute(pParentNode, XML_ATTR_MULTISLAVES, multiSlaves ? "true" : "false");
     setAttribute(pParentNode, "@localThor", localThor ? "true" : "false");
 }
 
