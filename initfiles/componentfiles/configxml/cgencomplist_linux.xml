@@ -87,7 +87,7 @@
   <Component name="espjavelinapiau" processName='EspService' schema='espjavelinapi.xsd' deployable='no'>
     <File name="@temp/esp_service_javelinapiau.xsl" method="esp_service_module"/>
   </Component>
-  <Component name="espsmc" processName='EspService' schema='espsmcservice.xsd' deployable='no'>
+  <Component name="eclwatch" processName='EspService' schema='espsmcservice.xsd' deployable='no'>
     <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="@temp"/>
     <File name="@temp/esp_service_WsSMC.xsl" method="esp_service_module"/>
   </Component>
