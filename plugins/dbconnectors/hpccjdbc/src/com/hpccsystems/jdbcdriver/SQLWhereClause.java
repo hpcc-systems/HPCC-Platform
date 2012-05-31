@@ -1,30 +1,30 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class SqlWhereClause
+public class SQLWhereClause
 {
-	private List<SqlExpression> expressions;
+	private List<SQLExpression> expressions;
 	private List<String> expressionUniqueColumnNames;
 	private int expressionsCount;
 	private int operatorsCount;
 	private boolean orOperatorUsed;
 
-	public SqlWhereClause()
+	public SQLWhereClause()
 	{
-		expressions = new ArrayList<SqlExpression>();
+		expressions = new ArrayList<SQLExpression>();
 		expressionUniqueColumnNames = new ArrayList<String>();
 		expressionsCount = 0;
 		operatorsCount = 0;
 		orOperatorUsed = false;
 	}
 
-	public void addExpression(SqlExpression expression)
+	public void addExpression(SQLExpression expression)
 	{
 		expressions.add(expression);
-		if (expression.getType() == SqlExpression.LOGICAL_EXPRESSION_TYPE)
+		if (expression.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE)
 		{
 			expressionsCount++;
 			if (!expressionUniqueColumnNames.contains(expression.getName()))
@@ -33,12 +33,12 @@ public class SqlWhereClause
 		else
 		{
 			operatorsCount++;
-			if (expression.getOperator().getValue().equals(SqlOperator.or))
+			if (expression.getOperator().getValue().equals(SQLOperator.or))
 				orOperatorUsed = true;
 		}
 	}
 
-	public Iterator<SqlExpression> getExpressions()
+	public Iterator<SQLExpression> getExpressions()
 	{
 		return expressions.iterator();
 	}
@@ -55,10 +55,10 @@ public class SqlWhereClause
 	public String toString()
 	{
 		String clause = new String("");
-		Iterator<SqlExpression> it = expressions.iterator();
+		Iterator<SQLExpression> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			clause += ((SqlExpression)it.next()).toString();
+			clause += ((SQLExpression)it.next()).toString();
 		}
 		return clause;
 	}
@@ -66,12 +66,12 @@ public class SqlWhereClause
 	public String [] getExpressionNames()
 	{
 		String [] names = new String[getExpressionsCount()];
-		Iterator<SqlExpression> it = expressions.iterator();
+		Iterator<SQLExpression> it = expressions.iterator();
 		int i = 0;
 		while (it.hasNext())
 		{
-			SqlExpression exp = it.next();
-			if (exp.getType() == SqlExpression.LOGICAL_EXPRESSION_TYPE)
+			SQLExpression exp = it.next();
+			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE)
 			{
 				names[i++] = exp.getName();
 			}
@@ -79,13 +79,13 @@ public class SqlWhereClause
 		return names;
 	}
 
-	public SqlExpression getExpressionFromName(String name)
+	public SQLExpression getExpressionFromName(String name)
 	{
-		Iterator<SqlExpression> it = expressions.iterator();
+		Iterator<SQLExpression> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			SqlExpression exp = it.next();
-			if (exp.getType() == SqlExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
+			SQLExpression exp = it.next();
+			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
 			{
 				return exp;
 			}
@@ -95,11 +95,11 @@ public class SqlWhereClause
 
 	public boolean containsKey(String name)
 	{
-		Iterator<SqlExpression> it = expressions.iterator();
+		Iterator<SQLExpression> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			SqlExpression exp = it.next();
-			if (exp.getType() == SqlExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
+			SQLExpression exp = it.next();
+			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
 				return true;
 		}
 		return false;

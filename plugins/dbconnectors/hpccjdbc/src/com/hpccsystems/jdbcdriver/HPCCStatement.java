@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -10,7 +10,7 @@ import java.sql.Statement;
  *
  * @author ChalaAX
  */
-public class EclStatement implements Statement {
+public class HPCCStatement implements Statement {
 
     public ResultSet executeQuery(String sql) throws SQLException {
         throw new UnsupportedOperationException("EclStatement: executeQuery(String sql) Not supported yet.");
@@ -108,8 +108,7 @@ public class EclStatement implements Statement {
 
 
     public int getFetchDirection() throws SQLException {
-        //throw new UnsupportedOperationException("EclStatement: getFetchDirection() Not supported yet.");
-    	return ResultSet.FETCH_FORWARD;
+	return ResultSet.FETCH_FORWARD;
     }
 
 

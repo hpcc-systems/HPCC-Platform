@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,9 +39,9 @@ import org.xml.sax.SAXException;
  * @author  rpastrana
  */
 
-public class EclDatabaseMetaData implements DatabaseMetaData {
+public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
-	private EclQueries eclqueries;
+	private HPCCQueries eclqueries;
 	private Properties dfufiles;
 	private static Map<Integer, String> SQLFieldMapping;
 
@@ -64,7 +64,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	private String basicAuth;
 	private String UserName;
 
-	public EclDatabaseMetaData(Properties props)
+	public HPCCDatabaseMetaData(Properties props)
 	{
 		super();
 		this.serverAddress = props.getProperty("ServerAddress","localhost");
@@ -77,7 +77,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + cluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
 		dfufiles = new Properties();
-		eclqueries = new EclQueries(this.cluster);
+		eclqueries = new HPCCQueries(this.cluster);
 		SQLFieldMapping = new HashMap<Integer, String>();
 
 		System.out.println("EclDatabaseMetaData initialized");
@@ -120,7 +120,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	{
 		try
 		{
-			EclQuery query = (EclQuery)eclqueries.getQuery(eclqueryname);
+			HPCCQuery query = (HPCCQuery)eclqueries.getQuery(eclqueryname);
 			if (query != null && query.containsField(eclresultset, fieldName))
 				return query.getFieldMetaData(fieldName).getSqlType();
 			return java.sql.Types.NULL;
@@ -466,7 +466,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 					{
 						NodeList querysetquerychildren = currentNode.getChildNodes();
 
-						EclQuery query = new EclQuery();
+						HPCCQuery query = new HPCCQuery();
 						for (int j = 0; j < querysetquerychildren.getLength(); j++)
 						{
 							String NodeName = querysetquerychildren.item(j).getNodeName();
@@ -571,7 +571,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("Stored Procedures found: ");
 		Enumeration<Object> em1 = eclqueries.getQueries();
 		while (em1.hasMoreElements()) {
-			EclQuery query = (EclQuery) em1.nextElement();
+			HPCCQuery query = (HPCCQuery) em1.nextElement();
 			System.out.println("\t" + query.getName() + "#" + query.getDefaultTableName());
 		}
 
@@ -825,7 +825,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		return type;
 	}
 
-	public static int registerSchemaElements(Element node, EclQuery query)
+	public static int registerSchemaElements(Element node, HPCCQuery query)
 	{
 		NodeList results = node.getElementsByTagName("Results");
 		if (results.getLength()>0)
@@ -862,7 +862,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 									columntype = elem.getTextContent();
 								//System.out.println(schemaitemfields.item(y).getNodeName() + ": " + schemaitemfields.item(y).getTextContent());
 							}
-							EclColumnMetaData elemmeta = new EclColumnMetaData(columname.toUpperCase(), 0, convertECLtype2SQLtype(columntype.toUpperCase()));
+							HPCCColumnMetaData elemmeta = new HPCCColumnMetaData(columname.toUpperCase(), 0, convertECLtype2SQLtype(columntype.toUpperCase()));
 							elemmeta.setTableName(tablename);
 							elemmeta.setParamType(procedureColumnOut);
 							try {
@@ -913,7 +913,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 									columntype = elem.getTextContent();
 								//System.out.println(schemaitemfields.item(y).getNodeName() + ": " + schemaitemfields.item(y).getTextContent());
 							}
-							EclColumnMetaData elemmeta = new EclColumnMetaData(columname, i+1, convertECLtype2SQLtype(columntype.toUpperCase()));
+							HPCCColumnMetaData elemmeta = new HPCCColumnMetaData(columname, i+1, convertECLtype2SQLtype(columntype.toUpperCase()));
 							elemmeta.setTableName(query.getName());
 							elemmeta.setParamType(procedureColumnIn);
 							try {
@@ -989,25 +989,25 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 	@Override
 	public String getDriverName() throws SQLException {
-		return "HPCC ECLJDBC Driver";
+		return "HPCC JDBC Driver";
 	}
 
 	@Override
 	public String getDriverVersion() throws SQLException
 	{
-		return EclVersionTracker.HPCCMajor + "." + EclVersionTracker.HPCCMinor + "." + EclVersionTracker.HPCCPoint;
+		return HPCCVersionTracker.HPCCMajor + "." + HPCCVersionTracker.HPCCMinor + "." + HPCCVersionTracker.HPCCPoint;
 	}
 
 	@Override
 	public int getDriverMajorVersion()
 	{
-		return EclVersionTracker.HPCCMajor;
+		return HPCCVersionTracker.HPCCMajor;
 	}
 
 	@Override
 	public int getDriverMinorVersion()
 	{
-		return EclVersionTracker.HPCCMinor;
+		return HPCCVersionTracker.HPCCMinor;
 	}
 
 	@Override
@@ -1538,26 +1538,26 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern) throws SQLException
 	{
 		List<List> procedures = new ArrayList<List>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
 		if (!isMetaDataCached())
 			CacheMetaData();
 
 		System.out.println("ECLDATABASEMETADATA GETPROCS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", procedureNamePattern: " + procedureNamePattern);
 
-		metacols.add(new EclColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PROCEDURE_SCHEM", 2, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PROCEDURE_NAME", 3, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("R1", 4, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("R2", 5, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("R6", 6, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("REMARKS", 7, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PROCEDURE_TYPE", 8, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_SCHEM", 2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_NAME", 3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("R1", 4, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("R2", 5, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("R6", 6, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("REMARKS", 7, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_TYPE", 8, java.sql.Types.SMALLINT));
 
 		Enumeration<Object> queries = eclqueries.getQueries();
 		while (queries.hasMoreElements())
 		{
-			EclQuery query = (EclQuery) queries.nextElement();
+			HPCCQuery query = (HPCCQuery) queries.nextElement();
 			String queryname = query.getName();
 
 				//if(!wildproceduresearch && !procedureNamePattern.equalsIgnoreCase(queryname))
@@ -1577,7 +1577,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 				System.out.println("founc proc: " + queryname);
 		}
 
-		return new EclResultSet(procedures, metacols, "Procedures");
+		return new HPCCResultSet(procedures, metacols, "Procedures");
 	}
 
 	@Override
@@ -1586,7 +1586,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA getProcedureColumns catalog: " + catalog +", schemaPattern: " + schemaPattern + ", procedureNamePattern: " + procedureNamePattern + " columnanmepat: " +columnNamePattern);
 
 		List<List> procedurecols = new ArrayList<List>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
 		if (!isMetaDataCached())
 			CacheMetaData();
@@ -1596,37 +1596,37 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		boolean wildprocsearch = procedureNamePattern == null || procedureNamePattern.length()==0 || procedureNamePattern.contains("*") || procedureNamePattern.contains("%");
 		boolean wildcolumnsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.contains("*") || columnNamePattern.contains("%");
 
-		metacols.add(new EclColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PROCEDURE_SCHEM",2, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PROCEDURE_NAME",3, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("COLUMN_NAME", 	4, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("COLUMN_TYPE", 	5, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("DATA_TYPE", 	6, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("TYPE_NAME", 	7, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PRECISION", 	8, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("LENGTH", 		9, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("SCALE", 		10, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("RADIX",			11, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("NULLABLE", 		12, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("REMARKS", 		13, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_SCHEM",2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PROCEDURE_NAME",3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("COLUMN_NAME", 	4, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("COLUMN_TYPE", 	5, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 	6, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 	7, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PRECISION", 	8, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("LENGTH", 		9, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("SCALE", 		10, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("RADIX",			11, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("NULLABLE", 		12, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("REMARKS", 		13, java.sql.Types.VARCHAR));
 
 		int coltype = java.sql.Types.NULL;
 
 		Enumeration<Object> queries = eclqueries.getQueries();
 		while(queries.hasMoreElements())
 		{
-			EclQuery query = (EclQuery)queries.nextElement();
+			HPCCQuery query = (HPCCQuery)queries.nextElement();
 			String eclqueryname = query.getName();
 			if(!wildprocsearch && !procedureNamePattern.equalsIgnoreCase(eclqueryname))
 				continue;
 
 			String tablename = query.getDefaultTableName();
 
-			Iterator<EclColumnMetaData> e = query.getAllFields().iterator();
+			Iterator<HPCCColumnMetaData> e = query.getAllFields().iterator();
 			int index = 1;
 			while (e.hasNext())
 			{
-				EclColumnMetaData col = (EclColumnMetaData)e.next();
+				HPCCColumnMetaData col = (HPCCColumnMetaData)e.next();
 				String fieldname = col.getColumnName();
 				if(!wildcolumnsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
 					continue;
@@ -1660,7 +1660,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			if(!wildprocsearch)
 				break;
 		}
-		return new EclResultSet(procedurecols, metacols, "ProcedureColumns");
+		return new HPCCResultSet(procedurecols, metacols, "ProcedureColumns");
 	}
 
 	@Override
@@ -1689,19 +1689,19 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		boolean wildtablesearch = tableNamePattern == null || tableNamePattern.length()==0 || tableNamePattern.contains("*") || tableNamePattern.contains("%");
 
 		List<List<String>> tables = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TABLE_CAT", 1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_SCHEM", 2, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_NAME", 3, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_TYPE", 4, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("REMARKS", 5, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TYPE_CAT", 6, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_CAT", 7, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TYPE_SCHEM", 8, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TYPE_NAME", 9, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SELF_REFERENCING_COL_NAME", 10, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("REF_GENERATION", 11, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_NAME", 3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_TYPE", 4, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("REMARKS", 5, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TYPE_CAT", 6, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 7, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TYPE_SCHEM", 8, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 9, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SELF_REFERENCING_COL_NAME", 10, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("REF_GENERATION", 11, java.sql.Types.VARCHAR));
 
 		Enumeration<Object> files = dfufiles.elements();
 		while (files.hasMoreElements())
@@ -1729,7 +1729,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			if(!wildtablesearch)
 				break;
 		}
-		return new EclResultSet(tables, metacols, "Tables");
+		return new HPCCResultSet(tables, metacols, "Tables");
 	}
 
 	@Override
@@ -1741,10 +1741,10 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA GETSCHEMAS");
 
 		List<List<String>> tables = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TABLE_SCHEM", 1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_CATALOG", 2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_CATALOG", 2, java.sql.Types.VARCHAR));
 
 		Enumeration<Object> files = dfufiles.elements();
 		while (files.hasMoreElements())
@@ -1758,7 +1758,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			rowValues.add("Catalog");
 
 		}
-		return new EclResultSet(tables, metacols, "Schemas");
+		return new HPCCResultSet(tables, metacols, "Schemas");
 	}
 
 	@Override
@@ -1766,15 +1766,15 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA getCatalogs");
 
 		List<List<String>> catalogs = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TABLE_CAT", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 1, java.sql.Types.VARCHAR));
 
 		ArrayList<String> rowValues = new ArrayList<String>();
 		catalogs.add(rowValues);
 		rowValues.add("");
 
-		return new EclResultSet(catalogs, metacols, "Catalogs");
+		return new HPCCResultSet(catalogs, metacols, "Catalogs");
 	}
 
 	@Override
@@ -1783,15 +1783,15 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA getTableTypes");
 
 		List<List<String>> tabletypes = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TABLE_TYPE", 1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_TYPE", 1, java.sql.Types.VARCHAR));
 
 		ArrayList<String> rowValues = new ArrayList<String>();
 		tabletypes.add(rowValues);
 		rowValues.add("TABLE");
 
-		return new EclResultSet(tabletypes, metacols, "TableTypes");
+		return new HPCCResultSet(tabletypes, metacols, "TableTypes");
 	}
 
 	public String [] getAllTableFields(String dbname, String tablename)
@@ -1813,30 +1813,30 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		boolean wildfieldsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.contains("*") || columnNamePattern.contains("%");
 
 		List<List<String>> columns = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TABLE_CAT", 		1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_SCHEM", 		2, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("TABLE_NAME", 		3, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("COLUMN_NAME", 		4, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("DATA_TYPE", 		5, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("TYPE_NAME", 		6, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("COLUMN_SIZE", 		7, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("BUFFER_LENGTH", 	8, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("DECIMAL_DIGITS", 	9, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("NUM_PREC_RADIX", 	10, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("NULLABLE", 			11, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("REMARKS", 			12, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("COLUMN_DEF", 		13, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SQL_DATA_TYPE", 	14, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("SQL_DATETIME_SUB", 	15, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("CHAR_OCTET_LENGTH", 16, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("ORDINAL_POSITION", 	17, java.sql.Types.INTEGER));
-		metacols.add(new EclColumnMetaData("IS_NULLABLE", 		18, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SCOPE_CATLOG", 		19, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SCOPE_SCHEMA", 		20, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SCOPE_TABLE", 		21, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("SOURCE_DATA_TYPE", 	22, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 		1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 		2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("TABLE_NAME", 		3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("COLUMN_NAME", 		4, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 		5, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 		6, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("COLUMN_SIZE", 		7, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("BUFFER_LENGTH", 	8, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("DECIMAL_DIGITS", 	9, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("NUM_PREC_RADIX", 	10, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("NULLABLE", 			11, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("REMARKS", 			12, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("COLUMN_DEF", 		13, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SQL_DATA_TYPE", 	14, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("SQL_DATETIME_SUB", 	15, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("CHAR_OCTET_LENGTH", 16, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("ORDINAL_POSITION", 	17, java.sql.Types.INTEGER));
+		metacols.add(new HPCCColumnMetaData("IS_NULLABLE", 		18, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SCOPE_CATLOG", 		19, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SCOPE_SCHEMA", 		20, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SCOPE_TABLE", 		21, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("SOURCE_DATA_TYPE", 	22, java.sql.Types.SMALLINT));
 
 		int coltype = java.sql.Types.NULL;
 
@@ -1852,7 +1852,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			Enumeration<Object> e = file.getAllFields();
 			while (e.hasMoreElements())
 			{
-				EclColumnMetaData field = (EclColumnMetaData)e.nextElement();
+				HPCCColumnMetaData field = (HPCCColumnMetaData)e.nextElement();
 				String fieldname = field.getColumnName();
 				if(!wildfieldsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
 					continue;
@@ -1892,7 +1892,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			if(!wildtablesearch)
 				break;
 		}
-		return new EclResultSet(columns, metacols, tableNamePattern);
+		return new HPCCResultSet(columns, metacols, tableNamePattern);
 	}
 
 	@Override
@@ -1932,22 +1932,22 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA getExportedKeys catalog: " + catalog +", schema: " + schema + ", table: " + table);
 
 		List<List<String>> exportedkeys = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("PKTABLE_CAT", 		1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PKTABLE_SCHEM", 	2, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PKTABLE_NAME", 		3, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PKCOLUMN_NAME", 	4, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("FKTABLE_CAT", 		5, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("FKTABLE_SCHEM", 	6, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("FKTABLE_NAME", 		7, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("FKCOLUMN_NAME", 	8, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("KEY_SEQ", 			9, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("UPDATE_RULE", 		10, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("DELETE_RULE", 		11, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("FK_NAME", 			12, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("PK_NAME", 			13, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("DEFERRABILITY", 	14, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("PKTABLE_CAT", 		1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PKTABLE_SCHEM", 	2, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PKTABLE_NAME", 		3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PKCOLUMN_NAME", 	4, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("FKTABLE_CAT", 		5, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("FKTABLE_SCHEM", 	6, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("FKTABLE_NAME", 		7, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("FKCOLUMN_NAME", 	8, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("KEY_SEQ", 			9, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("UPDATE_RULE", 		10, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("DELETE_RULE", 		11, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("FK_NAME", 			12, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PK_NAME", 			13, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("DEFERRABILITY", 	14, java.sql.Types.SMALLINT));
 
 		DFUFile file = getDFUFile(table);
 //		if(file != null && file.getFileName().length()>0 && file.isKeyFile())
@@ -1976,7 +1976,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 //				/*14*/rowValues.add(importedKeyNotDeferrable);
 //			}
 //		}
-		return new EclResultSet(exportedkeys, metacols, "ExportedKeys");
+		return new HPCCResultSet(exportedkeys, metacols, "ExportedKeys");
 	}
 
 	@Override
@@ -1993,26 +1993,26 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		System.out.println("ECLDATABASEMETADATA GETTYPEINFO");
 
 		List<List<String>> types = new ArrayList<List<String>>();
-		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		metacols.add(new EclColumnMetaData("TYPE_NAME", 		1, java.sql.Types.VARCHAR));
-		metacols.add(new EclColumnMetaData("DATA_TYPE", 		2, java.sql.Types.INTEGER));//SQL data type from java.sql.Types
-		metacols.add(new EclColumnMetaData("PRECISION", 		3, java.sql.Types.INTEGER));//maximum precision
-		metacols.add(new EclColumnMetaData("LITERAL_PREFIX", 	4, java.sql.Types.VARCHAR));//prefix used to quote a literal (may be null)
-		metacols.add(new EclColumnMetaData("LITERAL_SUFFIX", 	5, java.sql.Types.VARCHAR));//suffix used to quote a literal (may be null)
-		metacols.add(new EclColumnMetaData("CREATE_PARAMS", 	6, java.sql.Types.VARCHAR));//parameters used in creating the type (may be null)
-		metacols.add(new EclColumnMetaData("NULLABLE", 			7, java.sql.Types.SMALLINT));//can you use NULL for this type.	    typeNoNulls - does not allow NULL values	    typeNullable - allows NULL values	    typeNullableUnknown - nullability unknown
-		metacols.add(new EclColumnMetaData("CASE_SENSITIVE", 	8, java.sql.Types.BOOLEAN));
-		metacols.add(new EclColumnMetaData("SEARCHABLE", 		9, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("UNSIGNED_ATTRIBUTE",10, java.sql.Types.BOOLEAN));
-		metacols.add(new EclColumnMetaData("FIXED_PREC_SCALE", 	11, java.sql.Types.BOOLEAN));//can it be a money value
-		metacols.add(new EclColumnMetaData("AUTO_INCREMENT", 	12, java.sql.Types.BOOLEAN));//can it be used for an auto-increment value
-		metacols.add(new EclColumnMetaData("LOCAL_TYPE_NAME", 	13, java.sql.Types.VARCHAR));//localized version of type name (may be null)
-		metacols.add(new EclColumnMetaData("MINIMUM_SCALE", 	14, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("MAXIMUM_SCALE", 	15, java.sql.Types.SMALLINT));
-		metacols.add(new EclColumnMetaData("SQL_DATA_TYPE", 	16, java.sql.Types.INTEGER));//unused
-		metacols.add(new EclColumnMetaData("SQL_DATETIME_SUB", 	17, java.sql.Types.INTEGER));//unused
-		metacols.add(new EclColumnMetaData("NUM_PREC_RADIX", 	18, java.sql.Types.INTEGER));//unused
+		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 		1, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 		2, java.sql.Types.INTEGER));//SQL data type from java.sql.Types
+		metacols.add(new HPCCColumnMetaData("PRECISION", 		3, java.sql.Types.INTEGER));//maximum precision
+		metacols.add(new HPCCColumnMetaData("LITERAL_PREFIX", 	4, java.sql.Types.VARCHAR));//prefix used to quote a literal (may be null)
+		metacols.add(new HPCCColumnMetaData("LITERAL_SUFFIX", 	5, java.sql.Types.VARCHAR));//suffix used to quote a literal (may be null)
+		metacols.add(new HPCCColumnMetaData("CREATE_PARAMS", 	6, java.sql.Types.VARCHAR));//parameters used in creating the type (may be null)
+		metacols.add(new HPCCColumnMetaData("NULLABLE", 			7, java.sql.Types.SMALLINT));//can you use NULL for this type.	    typeNoNulls - does not allow NULL values	    typeNullable - allows NULL values	    typeNullableUnknown - nullability unknown
+		metacols.add(new HPCCColumnMetaData("CASE_SENSITIVE", 	8, java.sql.Types.BOOLEAN));
+		metacols.add(new HPCCColumnMetaData("SEARCHABLE", 		9, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("UNSIGNED_ATTRIBUTE",10, java.sql.Types.BOOLEAN));
+		metacols.add(new HPCCColumnMetaData("FIXED_PREC_SCALE", 	11, java.sql.Types.BOOLEAN));//can it be a money value
+		metacols.add(new HPCCColumnMetaData("AUTO_INCREMENT", 	12, java.sql.Types.BOOLEAN));//can it be used for an auto-increment value
+		metacols.add(new HPCCColumnMetaData("LOCAL_TYPE_NAME", 	13, java.sql.Types.VARCHAR));//localized version of type name (may be null)
+		metacols.add(new HPCCColumnMetaData("MINIMUM_SCALE", 	14, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("MAXIMUM_SCALE", 	15, java.sql.Types.SMALLINT));
+		metacols.add(new HPCCColumnMetaData("SQL_DATA_TYPE", 	16, java.sql.Types.INTEGER));//unused
+		metacols.add(new HPCCColumnMetaData("SQL_DATETIME_SUB", 	17, java.sql.Types.INTEGER));//unused
+		metacols.add(new HPCCColumnMetaData("NUM_PREC_RADIX", 	18, java.sql.Types.INTEGER));//unused
 
 		for(EclTypes ecltype : EclTypes.values())
 		{
@@ -2039,7 +2039,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 			/*18*/rowValues.add(0);
 		}
 
-		return new EclResultSet(types, metacols, "Types");
+		return new HPCCResultSet(types, metacols, "Types");
 	}
 
 	@Override
@@ -2124,15 +2124,15 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	    	System.out.println("ECLDATABASEMETADATA GETTYPEINFO");
 
 	    		List<List<String>> udts = new ArrayList<List<String>>();
-	    		ArrayList<EclColumnMetaData> metacols = new ArrayList<EclColumnMetaData>();
+	    		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-	    		metacols.add(new EclColumnMetaData("TYPE_CAT", 		1, java.sql.Types.VARCHAR)); //the type's catalog (may be null)
-	    		metacols.add(new EclColumnMetaData("TYPE_SCHEM", 	2, java.sql.Types.VARCHAR)); //type's schema (may be null)
-	    		metacols.add(new EclColumnMetaData("TYPE_NAME", 	3, java.sql.Types.VARCHAR)); //type name
-	    		metacols.add(new EclColumnMetaData("CLASS_NAME", 	4, java.sql.Types.VARCHAR)); //Java class name
-	    		metacols.add(new EclColumnMetaData("DATA_TYPE", 	5, java.sql.Types.INTEGER)); //type value defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
-	    		metacols.add(new EclColumnMetaData("REMARKS", 		6, java.sql.Types.VARCHAR)); //explanatory comment on the type
-	    		metacols.add(new EclColumnMetaData("BASE_TYPE", 	7, java.sql.Types.SMALLINT)); //
+	    		metacols.add(new HPCCColumnMetaData("TYPE_CAT", 		1, java.sql.Types.VARCHAR)); //the type's catalog (may be null)
+	    		metacols.add(new HPCCColumnMetaData("TYPE_SCHEM", 	2, java.sql.Types.VARCHAR)); //type's schema (may be null)
+	    		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 	3, java.sql.Types.VARCHAR)); //type name
+	    		metacols.add(new HPCCColumnMetaData("CLASS_NAME", 	4, java.sql.Types.VARCHAR)); //Java class name
+	    		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 	5, java.sql.Types.INTEGER)); //type value defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
+	    		metacols.add(new HPCCColumnMetaData("REMARKS", 		6, java.sql.Types.VARCHAR)); //explanatory comment on the type
+	    		metacols.add(new HPCCColumnMetaData("BASE_TYPE", 	7, java.sql.Types.SMALLINT)); //
 
 	    		/*for(EclTypes ecltype : EclTypes.values())
 	    		{
@@ -2148,7 +2148,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 	    			rowValues.add(typeNullableUnknown);
 	    		}*/
 
-	    		return new EclResultSet(udts, metacols, "UDTs");
+	    		return new HPCCResultSet(udts, metacols, "UDTs");
 
 	}
 
@@ -2491,7 +2491,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 	public String getdefaultECLQueryResultDatasetName(String clustername,	String eclqueryname)
 	{
-		EclQuery query = eclqueries.getQuery(eclqueryname);
+		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		return query == null ? "" : query.getDefaultTableName();
 	}
 
@@ -2507,7 +2507,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 	public boolean allFieldsExist(String clustername, String eclqueryname, String[] columnNames)
 	{
-		EclQuery query = eclqueries.getQuery(eclqueryname);
+		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null  && columnNames != null)
 		{
 			for (int i = 0; i < columnNames.length; i++)
@@ -2538,9 +2538,9 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		return false;
 	}
 
-	public ArrayList<EclColumnMetaData> getStoredProcOutColumns(String cluster, String eclqueryname)
+	public ArrayList<HPCCColumnMetaData> getStoredProcOutColumns(String cluster, String eclqueryname)
 	{
-		EclQuery query = eclqueries.getQuery(eclqueryname);
+		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null)
 		{
 			return query.getAllNonInFields();
@@ -2548,9 +2548,9 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 		return null;
 	}
 
-	public ArrayList<EclColumnMetaData> getStoredProcInColumns(String cluster, String eclqueryname)
+	public ArrayList<HPCCColumnMetaData> getStoredProcInColumns(String cluster, String eclqueryname)
 	{
-		EclQuery query = eclqueries.getQuery(eclqueryname);
+		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null)
 		{
 			return query.getAllInFields();
@@ -2559,7 +2559,7 @@ public class EclDatabaseMetaData implements DatabaseMetaData {
 
 	}
 
-	public EclColumnMetaData getTableColumn(String hpccfilename, String fieldName)
+	public HPCCColumnMetaData getTableColumn(String hpccfilename, String fieldName)
 	{
 		try
 		{

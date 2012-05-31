@@ -1,14 +1,14 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 /**
  * @author ChalaAX
  */
-public class EclColumn
+public class HPCCColumn
 {
     private String name;
     private String value;
 
-    public EclColumn(String name, String value)
+    public HPCCColumn(String name, String value)
     {
         this.name = name;
         this.value = value;

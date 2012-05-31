@@ -1,20 +1,20 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.Enumeration;
 import java.util.Properties;
 
-public class EclQueries {
+public class HPCCQueries {
 
 	private Properties queries;
 	private String clusterName;
 
-	public EclQueries(String cluster)
+	public HPCCQueries(String cluster)
 	{
 		clusterName = cluster;
 		queries = new Properties();
 	}
 
-	public void put(String name, EclQuery query)
+	public void put(String name, HPCCQuery query)
 	{
 		queries.put(name, query);
 	}
@@ -28,8 +28,8 @@ public class EclQueries {
 		return queries.elements();
 	}
 
-	public EclQuery getQuery(String eclqueryname)
+	public HPCCQuery getQuery(String eclqueryname)
 	{
-		return (EclQuery)queries.get(eclqueryname);
+		return (HPCCQuery)queries.get(eclqueryname);
 	}
 }

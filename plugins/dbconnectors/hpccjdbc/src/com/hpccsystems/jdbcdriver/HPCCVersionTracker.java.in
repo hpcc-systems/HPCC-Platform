@@ -1,6 +1,6 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
-public class EclVersionTracker 
+public class HPCCVersionTracker
 {
 	static final String HPCCProject 	= "${HPCC_PROJECT}";
 	static final int HPCCMajor 			= ${HPCC_MAJOR};

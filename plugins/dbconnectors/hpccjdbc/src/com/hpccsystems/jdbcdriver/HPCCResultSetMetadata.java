@@ -1,19 +1,18 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EclResultSetMetadata implements ResultSetMetaData{
+public class HPCCResultSetMetadata implements ResultSetMetaData{
 
-    private List <EclColumnMetaData> columnList;
+    private List <HPCCColumnMetaData> columnList;
     private String tableName;
     private String schemaName 	= "HPCC";
     private String catalogName 	= "roxie";
-    //private EclDatabaseMetaData dbmetadata;
 
-    public EclResultSetMetadata(List <EclColumnMetaData> columnList, String tableName)
+    public HPCCResultSetMetadata(List <HPCCColumnMetaData> columnList, String tableName)
     {
         this.columnList = columnList;
         this.tableName = tableName;
@@ -36,54 +35,45 @@ public class EclResultSetMetadata implements ResultSetMetaData{
     	return rowValues;
     }
 
-
     public int getColumnCount() throws SQLException {
         return columnList.size();
     }
-
 
     public boolean isAutoIncrement(int column) throws SQLException {
         return false;
     }
 
-
     public boolean isCaseSensitive(int column) throws SQLException {
         return false;
     }
-
 
     public boolean isSearchable(int column) throws SQLException {
         return false;
     }
 
-
     public boolean isCurrency(int column) throws SQLException {
         return false;
     }
-
 
     public int isNullable(int column) throws SQLException {
         return 1;
     }
 
-
     public boolean isSigned(int column) throws SQLException {
         return false;
     }
-
 
     public int getColumnDisplaySize(int column) throws SQLException {
         return 255;
     }
 
-
-    public String getColumnLabel(int column) throws SQLException {
-        if (column >= 1 && column <= columnList.size())
-           return columnList.get(column-1).getColumnName();
-        else
-           throw new SQLException("Invalid Column Index = " + column);
-    }
-
+	public String getColumnLabel(int column) throws SQLException
+	{
+		if (column >= 1 && column <= columnList.size())
+			return columnList.get(column-1).getColumnNameOrAlias();
+		else
+			throw new SQLException("Invalid Column Index = " + column);
+	}
 
     public String getColumnName(int column) throws SQLException {
         if (column >= 1 && column <= columnList.size())
@@ -92,21 +82,17 @@ public class EclResultSetMetadata implements ResultSetMetaData{
            throw new SQLException("Invalid Column Index = column");
     }
 
-
     public String getSchemaName(int column) throws SQLException {
         return schemaName;
     }
 
-
-    public int getPrecision(int column) throws SQLException {
+   public int getPrecision(int column) throws SQLException {
         return 0;
     }
-
 
     public int getScale(int column) throws SQLException {
         return 0;
     }
-
 
     public String getTableName(int column) throws SQLException {
         return tableName;
@@ -117,7 +103,6 @@ public class EclResultSetMetadata implements ResultSetMetaData{
         return catalogName;
     }
 
-
     public int getColumnType(int column) throws SQLException
     {
 		if (column >= 1 && column <= columnList.size())
@@ -126,39 +111,34 @@ public class EclResultSetMetadata implements ResultSetMetaData{
 			throw new SQLException("Invalid Column Index = " + column);
     }
 
-
     public String getColumnTypeName(int column) throws SQLException
     {
 		if (column >= 1 && column <= columnList.size())
-			return EclDatabaseMetaData.getFieldName(columnList.get(column - 1).getSQLType());
+			return HPCCDatabaseMetaData.getFieldName(columnList.get(column - 1).getSQLType());
 		else
 			throw new SQLException("Invalid Column Index = " + column);
     }
-
 
     public boolean isReadOnly(int column) throws SQLException
     {
     	return true;
     }
 
-
     public boolean isWritable(int column) throws SQLException
     {
     	return false;
     }
-
 
     public boolean isDefinitelyWritable(int column) throws SQLException
     {
         return false;
     }
 
-
     public String getColumnClassName(int column) throws SQLException
     {
     	if (column >= 1 && column <= columnList.size())
     	{
-    		return EclDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSQLType());
+    		return HPCCDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSQLType());
 		}
 		else
 		{
@@ -166,11 +146,9 @@ public class EclResultSetMetadata implements ResultSetMetaData{
 		}
     }
 
-
     public <T> T unwrap(Class<T> iface) throws SQLException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
-
 
     public boolean isWrapperFor(Class<?> iface) throws SQLException {
         throw new UnsupportedOperationException("Not supported yet.");
@@ -178,22 +156,22 @@ public class EclResultSetMetadata implements ResultSetMetaData{
 
     public int getColumnIndex(String columnLabel)
 	{
-			int colindex = -1;
-			try
+		int colindex = -1;
+		try
+		{
+			int columCount = this.getColumnCount();
+			for (int col = 1; col <= columCount; col++)
 			{
-				int columCount = this.getColumnCount();
-				for (int col = 1; col <= columCount; col++)
+				if (this.getColumnLabel(col).equalsIgnoreCase(columnLabel))
 				{
-					if (this.getColumnLabel(col).equalsIgnoreCase(columnLabel))
-					{
-						colindex = col;
-						break;
-					}
+					colindex = col;
+					break;
 				}
 			}
-			catch (SQLException e){}
+		}
+		catch (SQLException e){}
 
-			return colindex;
+		return colindex;
 	}
 
 	public String[] getInParamNames()
@@ -206,9 +184,4 @@ public class EclResultSetMetadata implements ResultSetMetaData{
 
 		return inparams;
 	}
-
-	/*public void parseResultSchema(Node schema)
-	{
-		EclDatabaseMetaData.registerSchemaElements(schema, resultElements, "");
-	}*/
 }
