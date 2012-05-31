@@ -102,7 +102,7 @@ public class HPCCDriver implements Driver
 			Properties info = new Properties();
 			info.put("ServerAddress", "192.168.124.128");
 
-			info.put("Cluster", "thor");
+			//info.put("Cluster", "thor");
 			info.put("WsECLWatchPort", "8010");
 			info.put("EclResultLimit", "ALL");
 			info.put("WsECLPort", "8002");
@@ -128,14 +128,15 @@ public class HPCCDriver implements Driver
 			//"select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000"
 			//"select city from tutorial::rp::tutorialperson USE INDEX(tutorial::rp::peoplebyzipindex2) where zip = ? "
 			//"select count(*) from tutorial::rp::tutorialperson USE INDEX(0) where zip > ?"
-			"select count(city)  from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
+			//"select count(city) as citycount from tutorial::rp::tutorialperson where zip = '33445'"//where zip = '33445'"
 			//"select * from enron::final where tos = 'randy.young@enron.com' limit 1000"
 			//"select count(*), zip from tutorial::rp::tutorialperson where zip = '33445' "
 			//"select zip from tutorial::rp::tutorialperson where zip < '32605' group by zip"
 			//"select MAX(firstname), lastname from tutorial::rp::tutorialperson  limit 1000"
 			//"select 1"
-			//"select zip, city from tutorial::rp::tutorialperson where city = 'ABBEVILLE' "
-			//"select 1 "
+			//"select count(persons.zip) as zipcount, persons.city as mycity from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
+				"select min(zip) as maxzip from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
+			//"select 1 as ONE"
 
 			//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
@@ -169,12 +170,17 @@ public class HPCCDriver implements Driver
 
 			for (int i = 1; i <= meta.getColumnCount(); i++)
 			{
-				System.out.print("[*****" + meta.getColumnName(i) + "******]");
+				System.out.print("[*****" + meta.getColumnName(i) + "*****]");
+			}
+			System.out.println("");
+			for (int i = 1; i <= meta.getColumnCount(); i++)
+			{
+				System.out.print("[^^^^^" + meta.getColumnLabel(i) + "^^^^^]");
 			}
 			System.out.println();
 			for (int i = 1; i <= meta.getColumnCount(); i++)
 			{
-				System.out.print("[*****" + HPCCDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i)) + "******]");
+				System.out.print("[+++++" + HPCCDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i)) + "+++++]");
 			}
 
 			while (qrs.next())

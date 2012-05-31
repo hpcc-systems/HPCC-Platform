@@ -197,7 +197,7 @@ public class ECLEngine
 						if (col.getColumnName().equalsIgnoreCase("COUNT"))
 						{
 							eclEnteties.put("COUNTFN", "TRUE");
-							selectstruct.append("countout := ");
+							selectstruct.append(col.getAlias() + " := ");
 							if (parser.hasGroupByColumns())
 							{
 								selectstruct.append(col.getColumnName().toUpperCase()).append("( GROUP");
@@ -231,7 +231,7 @@ public class ECLEngine
 						else if (col.getColumnName().equalsIgnoreCase("MAX"))
 						{
 							eclEnteties.put("MAXFN", "TRUE");
-							selectstruct.append("maxout :=  ");
+							selectstruct.append(col.getAlias() + " := ");
 
 							if (parser.hasGroupByColumns())
 							{
@@ -262,7 +262,7 @@ public class ECLEngine
 						else if (col.getColumnName().equalsIgnoreCase("MIN"))
 						{
 							eclEnteties.put("MINFN", "TRUE");
-							selectstruct.append("minout :=  ");
+							selectstruct.append(col.getAlias() + " := ");
 
 							if (parser.hasGroupByColumns())
 							{

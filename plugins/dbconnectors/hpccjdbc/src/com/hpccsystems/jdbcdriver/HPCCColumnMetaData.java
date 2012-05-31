@@ -102,6 +102,14 @@ public class HPCCColumnMetaData {
 		return columnName;
 	}
 
+	public String getColumnNameOrAlias()
+	{
+		if (alias != null)
+			return alias;
+		else
+			return columnName;
+	}
+
 	public void setColumnName(String columnName)
 	{
 		this.columnName = columnName;

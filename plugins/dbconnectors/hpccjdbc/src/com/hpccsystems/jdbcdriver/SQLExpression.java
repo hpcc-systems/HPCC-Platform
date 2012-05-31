@@ -6,14 +6,16 @@ public class SQLExpression
 	public static final int LOGICAL_EXPRESSION_TYPE = 2;
 
 	private String name;
+	private String parentsource;
 	private SQLOperator operator;
 	private String value;
 	private int type;
 	private boolean isParametrized;
 
-	public SQLExpression(String name, String operator, String value)
+	public SQLExpression(String name, String parentsource, String operator, String value)
 	{
 		this.name = name;
+		this.parentsource = parentsource;
 		this.operator = new SQLOperator(operator);
 		this.value = value;
 		type = LOGICAL_EXPRESSION_TYPE;
@@ -26,6 +28,7 @@ public class SQLExpression
 		value = null;
 		type = LOGICAL_OPERATOR_TYPE;
 		isParametrized = false;
+		this.parentsource = null;
 	}
 
 	public SQLExpression(int type)
@@ -35,6 +38,7 @@ public class SQLExpression
 		value = null;
 		this.type = type;
 		isParametrized = false;
+		this.parentsource = null;
 	}
 
 	public int getType()
@@ -42,31 +46,41 @@ public class SQLExpression
 		return type;
 	}
 
-	public String getName() {
+	public String getName()
+	{
 		return name;
 	}
-	public void setName(String name) {
+
+	public void setName(String name)
+	{
 		this.name = name;
 	}
-	public SQLOperator getOperator() {
+
+	public SQLOperator getOperator()
+	{
 		return operator;
 	}
-	public void setOperator(SQLOperator operator) {
+
+	public void setOperator(SQLOperator operator)
+	{
 		this.operator = operator;
 	}
 
-	public void setOperator(String operator) {
+	public void setOperator(String operator)
+	{
 		this.operator = new SQLOperator(operator);
 	}
 
-	public String getValue() {
+	public String getValue()
+	{
 		return value;
 	}
+
 	public void setValue(String value)
 	{
 		this.value = value;
 
-		if (value != null && value.length() > 0 && (value.contains("${") || value.equals("?")))
+		if (value != null && value.length()> 0 && (value.contains("${")|| value.equals("?")))
 			isParametrized = true;
 		else
 			isParametrized = false;
@@ -85,6 +99,16 @@ public class SQLExpression
 	@Override
 	public String toString()
 	{
-		return (type == LOGICAL_EXPRESSION_TYPE ? name + " "  + operator.toString() + " " + value : " " + operator.toString() + " ");
+		return (type == LOGICAL_EXPRESSION_TYPE ? name + " "  + operator.toString()+ " " + value : " " + operator.toString()+ " ");
+	}
+
+	public void setParentSource(String source)
+	{
+		parentsource = source;
+	}
+
+	public String getParentSource()
+	{
+		return parentsource;
 	}
 }

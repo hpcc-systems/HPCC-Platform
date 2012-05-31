@@ -11,12 +11,6 @@ import java.util.*;
  */
 public class SQLParser {
 
-	//public static final String INSERT = "insert";
-	//public static final String UPDATE = "update";
-	//public static final String SELECT = "select";
-	//public static final String CONSTSELECT = "constselect";
-	//public static final String CALL = "call";
-	//private static final String QUOTE_ESCAPE = "''";
 	private static final String COMMA_ESCAPE = "~#####1~";
 
 	public final static short 	SQL_TYPE_UNKNOWN = -1;
@@ -28,7 +22,6 @@ public class SQLParser {
 	private String tableAlias;
 	private int sqlType;
 	private List<HPCCColumnMetaData> selectColumns;
-	private String[] columnValues;
 	private SQLWhereClause whereclause;
 	private String[] columnGroupByNames;
 	private String[] columnOrderByNames;
@@ -55,7 +48,6 @@ public class SQLParser {
 		tableName = null;
 		tableAlias = null;
 		selectColumns = new ArrayList<HPCCColumnMetaData>();
-		columnValues = new String[0];
 		whereclause = new SQLWhereClause();
 		procInParamValues = new String[0];
 		storedProcName = null;
@@ -277,24 +269,30 @@ public class SQLParser {
 				fullTableName = sql.substring(fromPos + 6, (useindexPos == -1) ? wherePos : useindexPos).trim();
 			}
 
-			int asPos = fullTableName.lastIndexOf(" AS ");
-			if (asPos == -1)
-				asPos = fullTableName.lastIndexOf(" ");
-
-			if (asPos != -1)
+			String splittablefromalias [] = fullTableName.split("\\s+(?i)as(\\s+|$)");
+			if (splittablefromalias != null && splittablefromalias.length > 0)
 			{
-				tableName = fullTableName.substring(0, asPos).trim();
-				tableAlias = fullTableName.substring(asPos+1).trim();
+				if (!splittablefromalias[0].contains(" "))
+					tableName = splittablefromalias[0].trim();
+				else
+					throw new Exception("Invalid SQL: " + splittablefromalias[0]);
 			}
 			else
-				tableName = fullTableName;
+				throw new Exception("Invalid SQL: Missing table name.");
+
+			if (splittablefromalias.length > 1)
+				tableAlias = splittablefromalias[1].trim();
+
+			if (fromPos <= 7)
+				throw new Exception("Invalid SQL: Missing select column(s).");
 
 			StringTokenizer comatokens = new StringTokenizer(sql.substring(7, fromPos), ",");
 
 			for(int sqlcolpos = 1; comatokens.hasMoreTokens();)
 			{
 				HPCCColumnMetaData colmetadata = null;
-				String col = comatokens.nextToken().trim();
+				String colassplit [] = comatokens.nextToken().split("\\s+(?i)as\\s+");
+				String col = colassplit [0].trim();
 				if (col.contains("("))
 				{
 					int funcparampos = 1;
@@ -306,8 +304,6 @@ public class SQLParser {
 					if (func == null)
 						throw new Exception("ECL Function " + funcname + "is not currently supported");
 
-					boolean a = func.acceptsWilCard();
-
 					col = col.substring(col.indexOf('(')+1).trim();
 
 					if (col.contains(")"))
@@ -315,11 +311,17 @@ public class SQLParser {
 						col = col.substring(0, col.indexOf(")")).trim();
 						if (col.length()>0)
 						{
+							if(col.contains("."))
+								col = handleComplexField(col);
+
 							funccols.add(new HPCCColumnMetaData(col,funcparampos++,java.sql.Types.OTHER));
 						}
 					}
 					else
 					{
+						if(col.contains("."))
+							col = handleComplexField(col);
+
 						funccols.add(new HPCCColumnMetaData(col,funcparampos++,java.sql.Types.OTHER));
 						while (comatokens.hasMoreTokens())
 						{
@@ -327,6 +329,8 @@ public class SQLParser {
 							if (col.contains(")"))
 							{
 								col = col.substring(0, col.indexOf(")"));
+								if(col.contains("."))
+									col = handleComplexField(col);
 								funccols.add(new HPCCColumnMetaData(col,funcparampos++,java.sql.Types.OTHER));
 								break;
 							}
@@ -339,21 +343,18 @@ public class SQLParser {
 					else
 						throw new Exception("Funtion " + funcname + " does not map to ECL as written");
 				}
-
-				if(col.contains("."))
+				else if(col.contains("."))
 				{
-					String colsplit [] = col.split("\\.");
-					if (colsplit.length > 1)
-					{
-						if (!colsplit[0].equals(tableName) && !colsplit[0].equals(tableAlias))
-							throw new SQLException("Invalid field found: " + col);
-						else
-							col = colsplit[colsplit.length-1];
-					}
+					col = handleComplexField(col);
 				}
 
 				if (colmetadata == null)
 					colmetadata = new HPCCColumnMetaData(col,sqlcolpos++,java.sql.Types.OTHER);
+
+				colmetadata.setTableName(tableName);
+
+				if (colassplit.length > 1)
+					colmetadata.setAlias(colassplit[1]);
 
 				selectColumns.add(colmetadata);
 			}
@@ -409,8 +410,24 @@ public class SQLParser {
 						if (splitedsqlexp.length <= 0 ) //something went wrong, only the operator was found?
 							throw new SQLException("Invalid SQL Where cluse found around: " + splitedwhereandors[y]);
 
-						exp.setName(splitedsqlexp[0].trim());
+						String wherecol = splitedsqlexp[0].trim();
+						String wherecoltable = tableName;
+						String colsplit [] = wherecol.split("\\.");
+						if(wherecol.contains("."))
+						{
+							if (colsplit.length > 1)
+							{
+								if (!colsplit[0].equals(tableName) && !colsplit[0].equals(tableAlias))
+									throw new SQLException("Invalid field found: " + wherecol);
+								else
+									wherecol = colsplit[colsplit.length-1];
+							}
+						}
+
+						exp.setName(wherecol);
+						exp.setParentSource(wherecoltable);
 						exp.setOperator(operator);
+
 						if (splitedsqlexp.length>1)
 							exp.setValue(splitedsqlexp[1].trim());
 
@@ -429,6 +446,18 @@ public class SQLParser {
 		}
 	}
 
+	private String handleComplexField(String fullFieldName) throws SQLException
+	{
+		String colsplit [] = fullFieldName.split("\\.");
+		if (colsplit.length > 1)
+		{
+			if (!colsplit[0].equals(tableName) && !colsplit[0].equals(tableAlias))
+				throw new SQLException("Invalid field found: " + fullFieldName);
+			else
+				return colsplit[colsplit.length-1];
+		}
+		return null;
+	}
 	private boolean parseConstantSelect(String sql) throws Exception
 	{
 		String sqlUpper = sql.toUpperCase();
@@ -453,28 +482,33 @@ public class SQLParser {
 		}
 
 		//At this point we have select <something>
-		StringTokenizer tokenizer = new StringTokenizer(sql.substring(6), ",");
+		StringTokenizer comatokens = new StringTokenizer(sql.substring(6), ",");
 
-		for (int pos = 1; tokenizer.hasMoreTokens();)
+		for (int pos = 1; comatokens.hasMoreTokens();)
 		{
-			String col = tokenizer.nextToken().trim();
-			HPCCColumnMetaData column = null;
+			String colassplit [] = comatokens.nextToken().split("\\s+(?i)as\\s+");
+			String col = colassplit [0].trim();
+
+			HPCCColumnMetaData colmetadata = null;
 
 			if(HPCCJDBCUtils.isLiteralString(col))
 			{
-				column = new HPCCColumnMetaData("ConstStr"+pos, pos++, java.sql.Types.VARCHAR);
-				column.setEclType("STRING");
+				colmetadata = new HPCCColumnMetaData("ConstStr"+pos, pos++, java.sql.Types.VARCHAR);
+				colmetadata.setEclType("STRING");
 			}
 			else if (HPCCJDBCUtils.isNumeric(col))
 			{
-				column = new HPCCColumnMetaData("ConstNum"+pos, pos++, java.sql.Types.NUMERIC);
-				column.setEclType("INTEGER");
+				colmetadata = new HPCCColumnMetaData("ConstNum"+pos, pos++, java.sql.Types.NUMERIC);
+				colmetadata.setEclType("INTEGER");
 			}
 
-			column.setColumnType(HPCCColumnMetaData.COLUMN_TYPE_CONSTANT);
-			column.setConstantValue(col);
+			colmetadata.setColumnType(HPCCColumnMetaData.COLUMN_TYPE_CONSTANT);
+			colmetadata.setConstantValue(col);
 
-			selectColumns.add(column);
+			if (colassplit.length > 1)
+				colmetadata.setAlias(colassplit[1]);
+
+			selectColumns.add(colmetadata);
 		}
 
 		return true;
@@ -630,7 +664,6 @@ public class SQLParser {
 						exp.setValue(value);
 					}
 				}
-				//System.out.println(whereclause);
 			}
 			else if (procInParamValues.length > 0)
 			{
@@ -652,18 +685,6 @@ public class SQLParser {
 	boolean isParametrized( String param)
 	{
 		return  (param.contains("${")|| param.equals("?"));
-	}
-
-//	public String[] getWhereColumnNames() {
-//		return columnWhereNames;
-//	}
-//
-//	public String[] getWhereColumnValues() {
-//		return columnWhereValues;
-//	}
-
-	public String[] getColumnValues() {
-		return columnValues;
 	}
 
 	public int getWhereClauseExpressionsCount()
@@ -703,13 +724,6 @@ public class SQLParser {
 	public boolean whereClauseContainsOrOperator()
 	{
 		return whereclause.isOrOperatorUsed();
-	}
-
-	public static void main(String[] args) throws Exception
-	{
-		SQLParser parser = new SQLParser();
-		parser.parse("select firstname from fetchpeoplebyzipservice USE INDEX(tutorial::rp::peoplebyzipindex2) where zipvalue=?");
-		System.out.println(parser.getTableName());
 	}
 
 	public List<HPCCColumnMetaData> getSelectColumns()
@@ -804,6 +818,13 @@ public class SQLParser {
 
 	public String getIndexHint() {
 		return indexHint;
+	}
+
+	public static void main(String[] args) throws Exception
+	{
+		SQLParser parser = new SQLParser();
+		parser.parse("select tg.people as mypeeps, zip as myzip from asfetchpeoplebyzipservice  as tg  USE INDEX(tutorial::rp::peoplebyzipindex2) where tg.zipvalue=?");
+		System.out.println(parser.getTableName());
 	}
 
 }
