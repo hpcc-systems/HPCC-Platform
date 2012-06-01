@@ -47,7 +47,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPBase.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPWorkunit.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPResult.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/WUResultStore.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/WsWorkunits.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectControl.js
