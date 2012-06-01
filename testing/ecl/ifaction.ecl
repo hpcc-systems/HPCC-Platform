@@ -18,6 +18,7 @@
 
 #option ('resourceConditionalActions', true)
 
+//skip type==thorlcr TBD
 //nothor
 
 r := { string x{maxlength(256)}; };

@@ -477,13 +477,19 @@ sub _check_ini_file($)
     my $clusters = '';
     my $xml_cl = $xml_sw->{Topology}->{Cluster};
     foreach my $name (keys %$xml_cl) {
-        # Name and type are always present
         my $type = '';
-        if ($name eq 'thor' and defined $xml_sw->{$name.'Cluster'}->{lcr}) {
-            $type = 'thorlcr';
-        } else {
-            $type = $name;
+        # Investigate processes, get name and legacy mode
+        foreach my $process (keys %{$xml_cl->{$name}}) {
+            if ($process =~ /(\w+)Cluster/) {
+                $type = lc($1);
+                if ($name eq 'thor' and not defined $xml_cl->{$name}->{$process}->{Legacy}) {
+                    $type .= "lcr";
+                }
+                last;
+            }
         }
+        # Hthor has no HThorCluster process, this is as good a gamble as hard-coded
+        $type = $name unless ($type);
         my %config = (
             'cluster' => $name,
             'type' => $type,
