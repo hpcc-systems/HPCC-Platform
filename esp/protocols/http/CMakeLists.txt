@@ -68,12 +68,11 @@ HPCC_ADD_LIBRARY( esphttp SHARED ${SRCS} )
 add_dependencies (esphttp  espscm )
 install ( TARGETS esphttp DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( esphttp 
-         ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
-         jlib
-         xmllib 
-    )
+     ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
+     jlib
+     xmllib 
+)
 IF (USE_OPENLDAP)
-target_link_libraries ( esphttp LdapSecurity )
+    target_link_libraries ( esphttp LdapSecurity )
 ENDIF(USE_OPENLDAP)
-
 

@@ -40,9 +40,12 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE -DENABLE_AUTOSWAP )
 
-add_executable ( swapnode ${SRCS} )
-install ( TARGETS swapnode DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( swapnode
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( swapnode ${SRCS} )
+    install ( TARGETS swapnode DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( swapnode
          jlib
          swapnodelib
     )
+endif()
+

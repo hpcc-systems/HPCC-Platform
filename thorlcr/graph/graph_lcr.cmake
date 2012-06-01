@@ -55,12 +55,13 @@ include_directories (
          ./../../roxie/roxiemem
     )
 
-HPCC_ADD_LIBRARY( graph_lcr SHARED ${SRCS} )
-set_target_properties(graph_lcr PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL GRAPH_EXPORTS )
-install ( TARGETS graph_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( graph_lcr 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( graph_lcr SHARED ${SRCS} )
+    set_target_properties(graph_lcr PROPERTIES 
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL GRAPH_EXPORTS )
+    install ( TARGETS graph_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( graph_lcr 
          jlib
          jhtree 
          remote 
@@ -75,5 +76,5 @@ target_link_libraries ( graph_lcr
          thorhelper
          roxiemem
     )
-
+endif()
 

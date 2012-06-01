@@ -60,22 +60,23 @@ include_directories (
          ./../../../bindings/SOAP/xpp 
     )
 
-
-if (WIN32)
-    ADD_DEFINITIONS( -D_LIB )
-    HPCC_ADD_LIBRARY( soaplib STATIC ${SRCS} )
+if ( NOT CLIENTTOOLS_ONLY )
+    if (WIN32)
+        ADD_DEFINITIONS( -D_LIB )
+        HPCC_ADD_LIBRARY( soaplib STATIC ${SRCS} )
+        add_dependencies (soaplib 
+            jlib
+            espscm
+        )
+    else (WIN32)
+        HPCC_ADD_LIBRARY( soaplib SHARED ${SRCS} )
+        install ( TARGETS soaplib DESTINATION ${OSSDIR}/lib )
+        target_link_libraries (soaplib 
+            jlib
+        )
+    endif (WIN32)
     add_dependencies (soaplib 
         jlib
-        espscm
-        )
-else (WIN32)
-    HPCC_ADD_LIBRARY( soaplib SHARED ${SRCS} )
-    install ( TARGETS soaplib DESTINATION ${OSSDIR}/lib )
-    target_link_libraries (soaplib 
-        jlib
-        )
-endif (WIN32)
-add_dependencies (soaplib 
-    jlib
     )
+endif()
 

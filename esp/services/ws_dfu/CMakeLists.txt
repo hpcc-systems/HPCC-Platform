@@ -72,28 +72,27 @@ HPCC_ADD_LIBRARY( ws_dfu SHARED ${SRCS} )
 add_dependencies ( ws_dfu espscm )
 install ( TARGETS ws_dfu DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( ws_dfu
-         jlib
-         mp 
-         hrpc 
-         remote 
-         nbcd 
-         eclrtl 
-         jhtree 
-         dalibase 
-         environment 
-         dllserver 
-         deftype 
-         workunit 
-         hql   
-         fileview2 
-         xmllib 
-         esphttp 
-         dalift 
-         SMCLib 
-         dfuXRefLib 
-         dfuwu 
-         securesocket 
-         roxiecommlib 
-    )
-
+     jlib
+     mp 
+     hrpc 
+     remote 
+     nbcd 
+     eclrtl 
+     jhtree 
+     dalibase 
+     environment 
+     dllserver 
+     deftype 
+     workunit 
+     hql   
+     fileview2 
+     xmllib 
+     esphttp 
+     dalift 
+     SMCLib 
+     dfuXRefLib 
+     dfuwu 
+     securesocket 
+     roxiecommlib 
+)
 

@@ -39,14 +39,15 @@ include_directories (
 
 ADD_DEFINITIONS ( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( keydiff ${SRCS} )
-install ( TARGETS keydiff DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( keydiff 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( keydiff ${SRCS} )
+    install ( TARGETS keydiff DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( keydiff 
          jlib
          jhtree 
          mp 
          hrpc 
          remote 
     )
-
+endif()
 

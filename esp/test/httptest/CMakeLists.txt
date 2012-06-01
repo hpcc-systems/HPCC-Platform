@@ -41,11 +41,12 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( httptest ${SRCS} )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( httptest ${SRCS} )
 
-target_link_libraries ( httptest 
+    target_link_libraries ( httptest 
          jlib
          securesocket 
     )
-
+endif()
 

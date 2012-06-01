@@ -39,7 +39,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DSTRINGLIB_EXPORTS )
 
-HPCC_ADD_LIBRARY( stringlib SHARED ${SRCS} )
-install ( TARGETS stringlib DESTINATION ${OSSDIR}/plugins )
-
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( stringlib SHARED ${SRCS} )
+    install ( TARGETS stringlib DESTINATION ${OSSDIR}/plugins )
+endif()
 

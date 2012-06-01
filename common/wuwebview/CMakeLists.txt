@@ -40,15 +40,17 @@ include_directories (
          ./../../system/xmllib
     )
 
-HPCC_ADD_LIBRARY( wuwebview SHARED ${SRCS} )
-set_target_properties(wuwebview PROPERTIES
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL WUWEBVIEW_EXPORTS )
-install ( TARGETS wuwebview DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( wuwebview
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( wuwebview SHARED ${SRCS} )
+    set_target_properties(wuwebview PROPERTIES
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL WUWEBVIEW_EXPORTS )
+    install ( TARGETS wuwebview DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( wuwebview
          jlib
          workunit
          fileview2
          dllserver
          xmllib
     )
+endif()

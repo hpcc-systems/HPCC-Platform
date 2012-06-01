@@ -63,9 +63,10 @@ if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable ( thorslave_lcr ${SRCS} )
-install ( TARGETS thorslave_lcr DESTINATION ${OSSDIR}/bin )
-target_link_libraries (  thorslave_lcr 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( thorslave_lcr ${SRCS} )
+    install ( TARGETS thorslave_lcr DESTINATION ${OSSDIR}/bin )
+    target_link_libraries (  thorslave_lcr 
          jlib
          remote 
          commonext 
@@ -84,5 +85,5 @@ target_link_libraries (  thorslave_lcr
          thorsort_lcr 
          activityslaves_lcr 
     )
-
+endif()
 

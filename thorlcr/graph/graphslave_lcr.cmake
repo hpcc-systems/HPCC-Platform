@@ -48,12 +48,13 @@ include_directories (
          ./../../common/thorhelper 
     )
 
-HPCC_ADD_LIBRARY( graphslave_lcr SHARED ${SRCS} )
-set_target_properties(graphslave_lcr PROPERTIES 
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL GRAPHSLAVE_EXPORTS )
-install ( TARGETS graphslave_lcr DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( graphslave_lcr 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( graphslave_lcr SHARED ${SRCS} )
+    set_target_properties(graphslave_lcr PROPERTIES 
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL GRAPHSLAVE_EXPORTS )
+    install ( TARGETS graphslave_lcr DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( graphslave_lcr 
          jlib
          commonext 
          nbcd 
@@ -69,5 +70,5 @@ target_link_libraries ( graphslave_lcr
          jhtree 
          graph_lcr 
     )
-
+endif()
 

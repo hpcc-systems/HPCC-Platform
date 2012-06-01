@@ -24,7 +24,7 @@
 
 project( pstart ) 
 
-if (WIN32)
+if (WIN32 AND NOT CLIENTTOOLS_ONLY)
     include_directories (../../system/win32)
     add_executable ( pskill main.cpp )
     target_link_libraries ( pskill psapi.lib)

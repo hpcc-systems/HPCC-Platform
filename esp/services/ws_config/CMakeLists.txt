@@ -53,10 +53,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( ws_config SHARED ${SRCS} )
-install ( TARGETS ws_config DESTINATION ${OSSDIR}/lib COMPONENT Runtime )
-add_dependencies (ws_config espscm)
-target_link_libraries ( ws_config 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_config SHARED ${SRCS} )
+    install ( TARGETS ws_config DESTINATION ${OSSDIR}/lib COMPONENT Runtime )
+    add_dependencies (ws_config espscm)
+    target_link_libraries ( ws_config 
          jlib
          mp 
          hrpc 
@@ -67,5 +68,5 @@ target_link_libraries ( ws_config
          xmllib 
          esphttp 
     )
-
+endif()
 

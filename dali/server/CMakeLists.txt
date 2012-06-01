@@ -53,15 +53,18 @@ if (WIN32)
     endif ()
 endif()
 
-add_executable ( daserver ${SRCS} )
-install ( TARGETS daserver DESTINATION ${OSSDIR}/bin)
-target_link_libraries ( daserver 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( daserver ${SRCS} )
+    install ( TARGETS daserver DESTINATION ${OSSDIR}/bin)
+    target_link_libraries ( daserver 
          jlib
          mp 
          hrpc 
          remote 
          dalibase 
     )
-IF (USE_OPENLDAP)
-target_link_libraries ( daserver LdapSecurity )
-ENDIF(USE_OPENLDAP)
+    IF (USE_OPENLDAP)
+        target_link_libraries ( daserver LdapSecurity )
+    ENDIF(USE_OPENLDAP)
+endif()
+

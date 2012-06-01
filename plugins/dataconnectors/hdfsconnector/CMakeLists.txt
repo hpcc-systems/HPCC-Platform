@@ -31,14 +31,15 @@ add_subdirectory (ecl)
 					${JAVA_INCLUDE_PATH}
 					${JAVA_INCLUDE_PATH2}
 					${LIBHDFS_INCLUDE_DIR}	)
+        if ( NOT CLIENTTOOLS_ONLY )
+   	    add_executable( hdfsconnector ${SRC} )
 
-	add_executable( hdfsconnector ${SRC} )
-
-	set ( INSTALLDIR "${OSSDIR}/bin")
-	Install ( TARGETS hdfsconnector DESTINATION ${INSTALLDIR} COMPONENT Runtime)
-	Install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hdfspipe DESTINATION ${INSTALLDIR} COMPONENT Runtime )
-	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsconnector.conf DESTINATION ${HPCC_CONF_DIR} COMPONENT Runtime )
-	target_link_libraries ( hdfsconnector
+	    set ( INSTALLDIR "${OSSDIR}/bin")
+	    Install ( TARGETS hdfsconnector DESTINATION ${INSTALLDIR} COMPONENT Runtime)
+	    Install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hdfspipe DESTINATION ${INSTALLDIR} COMPONENT Runtime )
+	    Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsconnector.conf DESTINATION ${HPCC_CONF_DIR} COMPONENT Runtime )
+	     target_link_libraries ( hdfsconnector
 					${JAVA_JVM_LIBRARY}
 					${LIBHDFS_LIBRARIES})
+        endif()
 endif()

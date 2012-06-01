@@ -54,15 +54,18 @@ include_directories ( ${OPENLDAP_INCLUDE_DIR} )
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( ws_account SHARED ${SRCS} )
-install ( TARGETS ws_account DESTINATION ${OSSDIR}/lib COMPONENT Runtime )
-add_dependencies (ws_account espscm)
-target_link_libraries ( ws_account 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_account SHARED ${SRCS} )
+    install ( TARGETS ws_account DESTINATION ${OSSDIR}/lib COMPONENT Runtime )
+    add_dependencies (ws_account espscm)
+    target_link_libraries ( ws_account 
          jlib
          xmllib 
          esphttp 
          securesocket 
     )
-IF (USE_OPENLDAP)
-target_link_libraries ( ws_account LdapSecurity )
-ENDIF(USE_OPENLDAP)
+    IF (USE_OPENLDAP)
+        target_link_libraries ( ws_account LdapSecurity )
+    ENDIF(USE_OPENLDAP)
+endif()
+

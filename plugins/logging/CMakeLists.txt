@@ -36,10 +36,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DLOGGING_EXPORTS )
 
-HPCC_ADD_LIBRARY( logging SHARED ${SRCS} )
-install ( TARGETS logging DESTINATION ${OSSDIR}/plugins )
-target_link_libraries ( logging 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( logging SHARED ${SRCS} )
+    install ( TARGETS logging DESTINATION ${OSSDIR}/plugins )
+    target_link_libraries ( logging 
          jlib 
     )
-
+endif()
 

@@ -36,9 +36,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DAUDITLIB_EXPORTS )
 
-HPCC_ADD_LIBRARY( auditlib SHARED ${SRCS} )
-install ( TARGETS auditlib DESTINATION ${OSSDIR}/plugins )
-target_link_libraries ( auditlib  
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( auditlib SHARED ${SRCS} )
+    install ( TARGETS auditlib DESTINATION ${OSSDIR}/plugins )
+    target_link_libraries ( auditlib  
          jlib 
     )
+endif()
 

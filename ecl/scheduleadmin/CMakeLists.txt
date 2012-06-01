@@ -41,9 +41,10 @@ include_directories (
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( scheduleadmin ${SRCS} )
-install ( TARGETS scheduleadmin DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( scheduleadmin 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( scheduleadmin ${SRCS} )
+    install ( TARGETS scheduleadmin DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( scheduleadmin 
          jlib
          remote 
          dalibase 
@@ -55,5 +56,5 @@ target_link_libraries ( scheduleadmin
          workunit 
          schedulectrl 
     )
-
+endif()
 

@@ -60,7 +60,6 @@ HPCC_ADD_LIBRARY( roxiecommlib SHARED ${SRCS} )
 add_dependencies( roxiecommlib espscm )
 install ( TARGETS roxiecommlib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( roxiecommlib
-         jlib 
-    )
-
+   jlib 
+)
 

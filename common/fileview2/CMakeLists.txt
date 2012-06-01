@@ -84,21 +84,21 @@ set_target_properties(fileview2 PROPERTIES
     DEFINE_SYMBOL FILEVIEW2_EXPORTS )
 install ( TARGETS fileview2 DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( fileview2 
-         jlib 
-         mp 
-         hrpc 
-         remote 
-         nbcd 
-         eclrtl 
-         jhtree 
-         dalibase 
-         environment 
-         dllserver 
-         deftype 
-         workunit 
-         thorhelper
-         hql 
-    )
+     jlib 
+     mp 
+     hrpc 
+     remote 
+     nbcd 
+     eclrtl 
+     jhtree 
+     dalibase 
+     environment 
+     dllserver 
+     deftype 
+     workunit 
+     thorhelper
+     hql 
+)
 
 set (    SRCS 
          fvserver.cpp 
@@ -109,25 +109,23 @@ ADD_DEFINITIONS ( -D_CONSOLE )
 add_executable ( fvserver ${SRCS} )
 set_target_properties(fvserver PROPERTIES 
     COMPILE_FLAGS -D_CONSOLE
-    )
+)
 #install ( TARGETS fvserver DESTINATION ${OSSDIR}/bin ) #not used at present
 
 target_link_libraries ( fvserver
-         jlib 
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-         dllserver 
-         jhtree 
-         nbcd 
-         eclrtl 
-         deftype 
-         workunit 
-         hql 
-         fileview2 
-    )
-
-
+    jlib 
+    mp 
+    hrpc 
+    remote 
+    dalibase 
+    environment 
+    dllserver 
+    jhtree 
+    nbcd 
+    eclrtl 
+    deftype 
+    workunit 
+    hql 
+    fileview2 
+)
 

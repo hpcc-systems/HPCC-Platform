@@ -40,10 +40,11 @@ include_directories (
          ./../../common/environment 
     )
 
-add_executable ( dafscontrol ${SRCS} )
-set_target_properties (dafscontrol PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-install ( TARGETS dafscontrol DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( dafscontrol  
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( dafscontrol ${SRCS} )
+    set_target_properties (dafscontrol PROPERTIES COMPILE_FLAGS -D_CONSOLE)
+    install ( TARGETS dafscontrol DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( dafscontrol  
          jlib
          mp 
          hrpc 
@@ -51,4 +52,5 @@ target_link_libraries ( dafscontrol
          dalibase 
          environment 
     )
+endif()
 

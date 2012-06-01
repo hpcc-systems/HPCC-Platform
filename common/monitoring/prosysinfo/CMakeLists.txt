@@ -29,5 +29,7 @@ set (    SRCS
          main.cpp 
     )
 
-add_executable ( prosysinfo ${SRCS} )
-install ( TARGETS prosysinfo DESTINATION ${OSSDIR}/bin )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( prosysinfo ${SRCS} )
+    install ( TARGETS prosysinfo DESTINATION ${OSSDIR}/bin )
+endif()

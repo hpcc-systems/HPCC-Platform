@@ -39,12 +39,13 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( dumpkey ${SRCS} )
-install ( TARGETS dumpkey DESTINATION ${OSSDIR}/bin )
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( dumpkey ${SRCS} )
+    install ( TARGETS dumpkey DESTINATION ${OSSDIR}/bin )
 
-target_link_libraries ( dumpkey 
+    target_link_libraries ( dumpkey 
          jlib
          jhtree
     )
-
+endif()
 

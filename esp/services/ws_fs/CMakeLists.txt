@@ -67,10 +67,10 @@ HPCC_ADD_LIBRARY( ws_fs SHARED ${SRCS} )
 add_dependencies ( ws_fs espscm )
 install ( TARGETS ws_fs DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( ws_fs
-         jlib
-         esphttp 
-         dalibase 
-         environment 
-         SMCLib 
-         dfuwu 
-    )
+     jlib
+     esphttp 
+     dalibase 
+     environment 
+     SMCLib 
+     dfuwu 
+)

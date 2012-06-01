@@ -38,11 +38,12 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( myssl ${SRCS} )
-install ( TARGETS myssl DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( myssl 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( myssl ${SRCS} )
+    install ( TARGETS myssl DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( myssl 
          jlib
          securesocket 
     )
-
+endif()
 

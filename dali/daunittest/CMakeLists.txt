@@ -42,8 +42,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( daunittest ${SRCS} )
-target_link_libraries ( daunittest
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( daunittest ${SRCS} )
+    target_link_libraries ( daunittest
          jlib
          mp 
          hrpc 
@@ -51,5 +52,5 @@ target_link_libraries ( daunittest
          dalibase 
          ${CPPUNIT_LIBRARIES}
     )
-
+endif()
 

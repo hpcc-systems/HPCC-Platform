@@ -59,10 +59,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( ws_ecl SHARED ${SRCS} )
-add_dependencies( ws_ecl espscm )
-install ( TARGETS ws_ecl DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( ws_ecl  
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_ecl SHARED ${SRCS} )
+    add_dependencies( ws_ecl espscm )
+    install ( TARGETS ws_ecl DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( ws_ecl  
          jlib
          xmllib 
          esphttp 
@@ -83,4 +84,5 @@ target_link_libraries ( ws_ecl
          securesocket 
          xmllib 
     )
+endif()
 

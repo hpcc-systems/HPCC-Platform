@@ -35,9 +35,12 @@ include_directories (
 ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )
 
 set ( SRCS vkey.cpp )
-add_executable ( vkey ${SRCS} )
-target_link_libraries ( vkey 
-         jlib
-         )
-install ( TARGETS vkey DESTINATION ${OSSDIR}/bin )
+
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( vkey ${SRCS} )
+    target_link_libraries ( vkey 
+        jlib
+    )
+    install ( TARGETS vkey DESTINATION ${OSSDIR}/bin )
+endif()
 

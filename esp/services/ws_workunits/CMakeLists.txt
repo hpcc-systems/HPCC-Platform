@@ -74,10 +74,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
 
-HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
-add_dependencies ( ws_workunits espscm )
-install ( TARGETS ws_workunits DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( ws_workunits
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
+    add_dependencies ( ws_workunits espscm )
+    install ( TARGETS ws_workunits DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( ws_workunits
          jlib
          mp
          hrpc
@@ -103,9 +104,11 @@ target_link_libraries ( ws_workunits
          securesocket
     )
 
-IF (USE_ZLIB)
-  target_link_libraries ( ws_workunits
-      ${ZLIB_LIBRARIES}
-      zcrypt
+    IF (USE_ZLIB)
+      target_link_libraries ( ws_workunits
+          ${ZLIB_LIBRARIES}
+          zcrypt
       )
-ENDIF()
+    ENDIF()
+endif()
+

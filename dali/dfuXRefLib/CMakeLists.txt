@@ -53,11 +53,11 @@ ADD_DEFINITIONS( -D_USRDLL -DDFUXREFLIB_EXPORTS )
 HPCC_ADD_LIBRARY( dfuXRefLib SHARED ${SRCS} )
 install ( TARGETS dfuXRefLib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( dfuXRefLib
-         jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-         environment 
-    )
+    jlib
+    mp 
+    hrpc 
+    remote 
+    dalibase 
+    environment 
+)
 

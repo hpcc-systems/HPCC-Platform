@@ -38,15 +38,18 @@ include_directories (
          ./../../common/workunit
     )
 
-HPCC_ADD_LIBRARY( swapnodelib SHARED ${SRCS} )
-set_target_properties(swapnodelib PROPERTIES
-    COMPILE_FLAGS -D_USRDLL
-    DEFINE_SYMBOL SWAPNODELIB_EXPORTS )
-install ( TARGETS swapnodelib DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( swapnodelib
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( swapnodelib SHARED ${SRCS} )
+    set_target_properties(swapnodelib PROPERTIES
+        COMPILE_FLAGS -D_USRDLL
+        DEFINE_SYMBOL SWAPNODELIB_EXPORTS )
+    install ( TARGETS swapnodelib DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( swapnodelib
          jlib
          remote
          dalibase
          workunit
          environment
     )
+endif()
+

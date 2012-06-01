@@ -57,13 +57,15 @@ if (RELEASE_BUILD EQUAL 1)
     ADD_DEFINITIONS( -DISC_NO_MAIN -DLOGGING_EXPORTS )
 endif (RELEASE_BUILD EQUAL 1)
 
-HPCC_ADD_LIBRARY( loggingclient SHARED ${SRCS} )
-add_dependencies( loggingclient espscm )
-install ( TARGETS loggingclient DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( loggingclient
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( loggingclient SHARED ${SRCS} )
+    add_dependencies( loggingclient espscm )
+    install ( TARGETS loggingclient DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( loggingclient
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
          xmllib 
          esphttp 
     )
+endif()
 

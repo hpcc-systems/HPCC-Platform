@@ -41,14 +41,16 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( hellodali ${SRCS} )
-install ( TARGETS hellodali DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( hellodali
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( hellodali ${SRCS} )
+    install ( TARGETS hellodali DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( hellodali
          jlib
          mp 
          hrpc 
          remote 
          dalibase 
- )
+     )
+endif()
 
 

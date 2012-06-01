@@ -69,10 +69,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL )
 
-HPCC_ADD_LIBRARY( ws_roxiequery SHARED ${SRCS} )
-add_dependencies ( ws_roxiequery espscm )
-install ( TARGETS ws_roxiequery DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( ws_roxiequery 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_roxiequery SHARED ${SRCS} )
+    add_dependencies ( ws_roxiequery espscm )
+    install ( TARGETS ws_roxiequery DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( ws_roxiequery 
          jlib
          fileview2
          remote 
@@ -91,4 +92,5 @@ target_link_libraries ( ws_roxiequery
          roxiecommlib 
          roxiemanager
     )
+endif()
 

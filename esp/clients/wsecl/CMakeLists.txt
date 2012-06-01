@@ -49,13 +49,14 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_ECL_CLIENT_EXPORTS )
 
-HPCC_ADD_LIBRARY( ws_ecl_client SHARED ${SRCS} )
-install ( TARGETS ws_ecl_client DESTINATION ${OSSDIR}/lib )
-target_link_libraries (  ws_ecl_client 
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( ws_ecl_client SHARED ${SRCS} )
+    install ( TARGETS ws_ecl_client DESTINATION ${OSSDIR}/lib )
+    target_link_libraries (  ws_ecl_client 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib
          xmllib 
          esphttp 
     )
-
+endif()
 

@@ -42,16 +42,16 @@ include_directories (
 
 HPCC_ADD_LIBRARY( dfuwu SHARED ${SRCS} )
 set_target_properties ( dfuwu PROPERTIES 
-        COMPILE_FLAGS "-DLOGMSGCOMPONENT=3 -D_USRDLL"
-        DEFINE_SYMBOL DALI_EXPORTS 
-        )
+    COMPILE_FLAGS "-DLOGMSGCOMPONENT=3 -D_USRDLL"
+    DEFINE_SYMBOL DALI_EXPORTS 
+    )
 install ( TARGETS dfuwu DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( dfuwu 
-         workunit
-         jlib
-         mp 
-         hrpc 
-         remote 
-         dalibase 
-    )
+    workunit
+    jlib
+    mp 
+    hrpc 
+    remote 
+    dalibase 
+)
 

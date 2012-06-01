@@ -38,10 +38,11 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( genht ${SRCS} )
-target_link_libraries ( genht
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( genht ${SRCS} )
+    target_link_libraries ( genht
         jlib 
     )
-install ( TARGETS genht DESTINATION ${OSSDIR}/bin )
-
+    install ( TARGETS genht DESTINATION ${OSSDIR}/bin )
+endif()
 

@@ -48,7 +48,11 @@
 #
 #########################################################
 
-project (hpccsystems-platform)
+if (CLIENTTOOLS_ONLY)
+    project(hpccsystems-clienttools)
+else()
+    project (hpccsystems-platform)
+endif()
 cmake_minimum_required (VERSION 2.6)
 
 include(CTest)

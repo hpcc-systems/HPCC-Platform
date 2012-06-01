@@ -49,13 +49,14 @@ if (${CMAKE_COMPILER_IS_GNUCXX})
     ADD_DEFINITIONS( -Wno-invalid-offsetof )
 endif (${CMAKE_COMPILER_IS_GNUCXX})
 
-HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
-install ( TARGETS roxiemem DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( roxiemem
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
+    install ( TARGETS roxiemem DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( roxiemem
          jlib
          thorhelper
          eclrtl
          ${CPPUNIT_LIBRARIES}
     )
-
+endif()
 

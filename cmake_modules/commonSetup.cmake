@@ -40,6 +40,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
+  option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
+
 
   option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" ON)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
@@ -74,8 +76,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( USE_XALAN )
       set(USE_XERCES ON)
   endif()
-  
-  if ( MAKE_DOCS_ONLY )
+
+  if ( MAKE_DOCS AND CLIENTTOOLS_ONLY )
+      set( MAKE_DOCS OFF )
+  endif()
+
+  if ( MAKE_DOCS_ONLY AND NOT CLIENTTOOLS_ONLY )
       set( MAKE_DOCS ON )
   endif()
   

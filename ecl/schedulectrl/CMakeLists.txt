@@ -44,9 +44,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DSCHEDULECTRL_EXPORTS )
 
-HPCC_ADD_LIBRARY( schedulectrl SHARED ${SRCS} )
-install ( TARGETS schedulectrl DESTINATION ${OSSDIR}/lib )
-target_link_libraries ( schedulectrl
+if ( NOT CLIENTTOOLS_ONLY )
+    HPCC_ADD_LIBRARY( schedulectrl SHARED ${SRCS} )
+    install ( TARGETS schedulectrl DESTINATION ${OSSDIR}/lib )
+    target_link_libraries ( schedulectrl
          jlib
          remote 
          dalibase 
@@ -57,5 +58,5 @@ target_link_libraries ( schedulectrl
          deftype 
          workunit 
     )
-
+endif()
 

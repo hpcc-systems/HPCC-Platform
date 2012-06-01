@@ -48,12 +48,13 @@ include_directories (
          ./../../common/workunit 
     )
 
-add_executable ( dfuserver ${SRCS} )
-set_target_properties ( dfuserver PROPERTIES 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( dfuserver ${SRCS} )
+    set_target_properties ( dfuserver PROPERTIES 
         COMPILE_FLAGS "-D_CONSOLE -D_DFUSERVER"
         )
-install ( TARGETS dfuserver DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( dfuserver 
+    install ( TARGETS dfuserver DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( dfuserver 
          jlib
          mp 
          hrpc 
@@ -70,3 +71,5 @@ target_link_libraries ( dfuserver
          jhtree 
          dfuwu 
     )
+endif()
+

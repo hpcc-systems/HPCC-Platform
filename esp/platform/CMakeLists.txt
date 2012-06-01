@@ -49,9 +49,10 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( esp ${SRCS} )
-install ( TARGETS esp DESTINATION ${OSSDIR}/bin )
-target_link_libraries ( esp 
+if ( NOT CLIENTTOOLS_ONLY )
+    add_executable ( esp ${SRCS} )
+    install ( TARGETS esp DESTINATION ${OSSDIR}/bin )
+    target_link_libraries ( esp 
          jlib
          mp 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
@@ -62,5 +63,5 @@ target_link_libraries ( esp
          dalibase 
          environment 
     )
-
+endif()
 
