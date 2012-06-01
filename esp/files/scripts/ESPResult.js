@@ -17,16 +17,16 @@
 define([
 	"dojo/_base/declare",
 	"dojo/data/ObjectStore",
-	"hpcc/WUResultStore",
+	"hpcc/WsWorkunits",
 	"hpcc/ESPBase"
-], function (declare, ObjectStore, WUResultStore, ESPBase) {
+], function (declare, ObjectStore, WsWorkunits, ESPBase) {
 	return declare(ESPBase, {
 		store: null,
 		Total: "-1",
 
 		constructor: function (args) {
 			declare.safeMixin(this, args);
-			this.store = new WUResultStore({
+			this.store = new WsWorkunits.WUResult({
 				wuid: this.wuid,
 				sequence: this.Sequence,
 				isComplete: this.isComplete()
