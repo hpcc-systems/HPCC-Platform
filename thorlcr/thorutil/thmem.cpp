@@ -1616,10 +1616,11 @@ protected:
     mutable IArrayOf<IEngineRowAllocator> allAllocators;
     mutable SpinLock allAllocatorsLock;
     Owned<roxiemem::IRowManager> rowManager;
+    bool usePacked;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(memsize_t memSize)
+    CThorAllocator(memsize_t memSize, bool _usePacked) : usePacked(_usePacked)
     {
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
         rtlSetReleaseRowHook(this);
@@ -1636,7 +1637,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
@@ -1734,7 +1735,7 @@ public:
 class CThorCrcCheckingAllocator : public CThorAllocator
 {
 public:
-    CThorCrcCheckingAllocator(memsize_t memSize) : CThorAllocator(memSize)
+    CThorCrcCheckingAllocator(memsize_t memSize, bool usePacked) : CThorAllocator(memSize, usePacked)
     {
     }
 // IThorAllocator
@@ -1742,7 +1743,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
@@ -1750,13 +1751,14 @@ public:
 };
 
 
-IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking)
+IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool usePacked)
 {
     PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
+    PROGLOG("Packed allocator %s", usePacked?"ON":"OFF");
     if (crcChecking)
-        return new CThorCrcCheckingAllocator(memSize);
+        return new CThorCrcCheckingAllocator(memSize, usePacked);
     else
-        return new CThorAllocator(memSize);
+        return new CThorAllocator(memSize, usePacked);
 }
 
 
