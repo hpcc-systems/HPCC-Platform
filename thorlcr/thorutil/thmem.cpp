@@ -376,7 +376,7 @@ void CThorExpandingRowArray::init(rowidx_t initialSize, StableSortFlag _stableSo
     if (initialSize)
     {
         rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
-        maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+        maxRows = getRowsCapacity();
         memset(rows, 0, maxRows * sizeof(void *));
         if (stableSort_earlyAlloc == stableSort)
             stableSortTmp = static_cast<void **>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
@@ -391,12 +391,12 @@ void CThorExpandingRowArray::init(rowidx_t initialSize, StableSortFlag _stableSo
     numRows = 0;
 }
 
-const void *CThorExpandingRowArray::allocateRowTable(rowidx_t newSize)
+const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
 {
     OwnedConstThorRow rowTable;
     try
     {
-        rowTable.setown(rowManager->allocate(newSize * sizeof(void*), activity.queryContainer().queryId()));
+        rowTable.setown(rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId()));
         if (!rowTable)
             return NULL;
     }
@@ -414,7 +414,7 @@ const void *CThorExpandingRowArray::allocateRowTable(rowidx_t newSize)
     return rowTable.getClear();
 }
 
-const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows, rowidx_t &_newSize)
+const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows)
 {
     rowidx_t newSize = maxRows;
     //This condition must be <= at least 1/scaling factor below otherwise you'll get an infinite loop.
@@ -430,17 +430,13 @@ const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows, rowid
         while (newSize < requiredRows)
             newSize += newSize/4;
     }
-    OwnedConstThorRow newRows = allocateRowTable(newSize);
-    if (!newRows)
-        return NULL;
-    _newSize = newSize;
-    return newRows.getClear();
+    return allocateRowTable(newSize);
 }
 
 void **CThorExpandingRowArray::allocateStableTable(bool error)
 {
     dbgassertex(NULL != rows);
-    rowidx_t rowsCapacity = RoxieRowCapacity(rows) / sizeof(void *);
+    rowidx_t rowsCapacity = getRowsCapacity();
     OwnedConstThorRow newStableSortTmp = allocateRowTable(rowsCapacity);
     if (!newStableSortTmp)
     {
@@ -608,10 +604,9 @@ void CThorExpandingRowArray::clearUnused()
 
 bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
 {
-    rowidx_t newSize = rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0;
-    if (newSize < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
+    if (getRowsCapacity() < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
     {
-        OwnedConstThorRow newRows = allocateNewRows(requiredRows, newSize);
+        OwnedConstThorRow newRows = allocateNewRows(requiredRows);
         if (!newRows)
         {
             if (throwOnOom)
@@ -633,7 +628,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
         stableSortTmp = (void **)newStableSortTmp.getClear();
         ReleaseThorRow(oldStableSortTmp);
     }
-    maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+    maxRows = getRowsCapacity();
 
     return true;
 }
@@ -943,11 +938,9 @@ bool CThorSpillableRowArray::ensure(rowidx_t requiredRows)
     //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
 
     OwnedConstThorRow newRows;
-    rowidx_t newSize;
-    rowidx_t numRows = rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0;
-    if (numRows < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
+    if (getRowsCapacity() < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
     {
-        newRows.setown(allocateNewRows(requiredRows, newSize));
+        newRows.setown(allocateNewRows(requiredRows));
         if (!newRows)
             return false;
     }
@@ -976,7 +969,7 @@ bool CThorSpillableRowArray::ensure(rowidx_t requiredRows)
             stableSortTmp = (void **)newStableSortTmp.getClear();
             ReleaseThorRow(oldStableSortTmp);
         }
-        maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+        maxRows = getRowsCapacity();
     }
     return true;
 }

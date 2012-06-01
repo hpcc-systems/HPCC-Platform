@@ -232,11 +232,11 @@ protected:
 
     void init(rowidx_t initialSize, StableSortFlag stableSort);
     void **allocateStableTable(bool error); // allocates stable table based on std. ptr table
-    const void *allocateRowTable(rowidx_t newSize);
-    const void *allocateNewRows(rowidx_t requiredRows, rowidx_t &newSize);
+    const void *allocateRowTable(rowidx_t num);
+    const void *allocateNewRows(rowidx_t requiredRows);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
-
+    inline rowidx_t getRowsCapacity() { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
 public:
     CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
