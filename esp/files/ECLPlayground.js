@@ -158,20 +158,16 @@ define([
 					wu.getInfo({
 						onGetExceptions: displayExceptions,
 						onGetResults: displayResults,
-						onGetGraphs: displayGraphs
+						onGetGraphs: displayGraphs,
+						onGetAll: displayAll
 					});
 				}
 			},
 
 			displayExceptions = function (exceptions) {
-				if (exceptions.length) {
-					editorControl.setErrors(wu.exceptions);
-					resultsControl.addExceptionTab(wu.exceptions);
-				}
 			},
 
 			displayResults = function (results) {
-				resultsControl.refreshResults(wu);
 			},
 
 			displayGraphs = function (graphs) {
@@ -180,6 +176,13 @@ define([
 						graphControl.loadXGMML(xgmml, true);
 					});
 				}
+			},
+
+			displayAll = function (workunit) {
+				if (wu.exceptions.length) {
+					editorControl.setErrors(wu.exceptions);
+				}
+				resultsControl.refresh(wu);
 			},
 
 			doSubmit = function (evt) {
