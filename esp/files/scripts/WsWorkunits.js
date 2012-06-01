@@ -16,13 +16,60 @@
 ############################################################################## */
 define([
 	"dojo/_base/declare",
-	"dojo/_base/xhr",
 	"dojo/_base/lang",
+	"dojo/_base/xhr",
 	"dojo/_base/Deferred",
 	"dojo/store/util/QueryResults",
 	"hpcc/ESPBase"
-], function (declare, xhr, lang, Deferred, QueryResults, ESPBase) {
-	return declare(ESPBase, {
+], function (declare, lang, xhr, Deferred, QueryResults, ESPBase) {
+	var WUQuery = declare(ESPBase, {
+		idProperty: "Wuid",
+
+		constructor: function (options) {
+			declare.safeMixin(this, options);
+		},
+
+		getIdentity: function (object) {
+			return object[this.idProperty];
+		},
+
+		query: function (query, options) {
+			var request = {};
+			lang.mixin(request, options.query);
+			if (options.start)
+				request['PageStartFrom'] = options.start;
+			if (options.count)
+				request['Count'] = options.count;
+			if (options.sort) {
+				request['Sortby'] = options.sort[0].attribute;
+				request['Descending'] = options.sort[0].descending;
+			}
+			request['rawxml_'] = "1";
+
+			var results = xhr.get({
+				url: this.getBaseURL("WsWorkunits") + "/WUQuery",
+				handleAs: "xml",
+				content: request
+			});
+
+			var context = this;
+			var parsedResults = results.then(function (domXml) {
+				data = context.getValues(domXml, "ECLWorkunit");
+				data.total = context.getValue(domXml, "NumWUs");
+				return data;
+			});
+
+			lang.mixin(parsedResults, {
+				total: Deferred.when(parsedResults, function (data) {
+					return data.total;
+				})
+			});
+	
+			return QueryResults(parsedResults);
+		}
+	});
+
+	var WUResult =  declare(ESPBase, {
 		idProperty: "myInjectedRowNum",
 		wuid: "",
 		sequence: 0,
@@ -47,7 +94,7 @@ define([
 				request['rawxml_'] = "1";
 
 				var results = xhr.post({
-					url: this.getBaseURL() + "/WUResult",
+					url: this.getBaseURL("WsWorkunits") + "/WUResult",
 					handleAs: "xml",
 					content: request,
 					load: function(domXml) {
@@ -80,4 +127,10 @@ define([
 			return QueryResults(retVal);
 		}
 	});
+
+	return {
+		WUQuery: WUQuery,
+		WUResult: WUResult
+	};
 });
+
