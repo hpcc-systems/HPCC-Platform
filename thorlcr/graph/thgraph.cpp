@@ -2347,7 +2347,14 @@ void CJobBase::init()
     resumed = false;
 
     unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
-    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000));
+#ifdef _DEBUG
+    bool defaultCrcChecking = true;
+#else
+    bool defaultCrcChecking = false;
+#endif
+    bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", defaultCrcChecking));
+    bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
+    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000, crcChecking, usePackedAllocator));
 
     unsigned defaultMemMB = gmemSize*3/4;
     unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
@@ -2355,15 +2362,6 @@ void CJobBase::init()
         throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
     PROGLOG("Global memory size = %d MB, large mem size = %d MB", gmemSize, largeMemSize);
     setLargeMemSize(largeMemSize);
-
-    setLCRrowCRCchecking(0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", 
-#ifdef _DEBUG
-        true
-#else
-        false
-#endif
-        )));
-
     graphExecutor.setown(new CGraphExecutor(*this));
 }
 

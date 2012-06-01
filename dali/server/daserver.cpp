@@ -208,9 +208,6 @@ int main(int argc, char* argv[])
                 try
                 {
                     addPathSepChar(mirrorPath);
-                    serverConfig->setProp("SDS/@remoteBackupLocation", mirrorPath.str());
-                    PROGLOG("Checking backup location: %s", mirrorPath.str());
-
                     try
                     {
                         StringBuffer backupURL;
@@ -227,6 +224,7 @@ int main(int argc, char* argv[])
                                 rfn.setLocalPath(mirrorPath.str());
                             }
                             rfn.getRemotePath(backupURL);
+                            mirrorPath.clear().append(backupURL);
                         }
                         else
                             backupURL.append(mirrorPath);
@@ -245,6 +243,7 @@ int main(int argc, char* argv[])
 
                     if (mirrorPath.length())
                     {
+                        PROGLOG("Checking backup location: %s", mirrorPath.str());
 #if defined(__linux__)
                         if (serverConfig->getPropBool("@useNFSBackupMount", false))
                         {

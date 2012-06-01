@@ -677,7 +677,7 @@ class CDiskAggregateSlave : public CDiskReadSlaveActivityRecord, public CThorDat
 {
     IHThorDiskAggregateArg *helper;
     Owned<IEngineRowAllocator> allocator;
-    bool eoi;
+    bool eoi, hadElement;
     CPartialResultAggregator aggregator;
 
 public:
@@ -721,7 +721,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
-        eoi = false;
+        eoi = hadElement = false;
         dataLinkStart("DISKAGGREGATE", container.queryId());
     }
 
@@ -736,31 +736,39 @@ public:
         if (eoi)
             return NULL;
         RtlDynamicRowBuilder row(allocator);
-        size32_t sz = helper->clearAggregate(row);
+        helper->clearAggregate(row);
         unsigned part = 0;
         while (!abortSoon && part<partDescs.ordinality())
         {
             partHandler->setPart(&partDescs.item(part), part);
             ++part;
-            loop {
+            loop
+            {
                 OwnedConstThorRow nextrow =  partHandler->nextRow();
                 if (!nextrow)
                     break;
-                if (segMonitorsMatch(nextrow)) {
+                if (segMonitorsMatch(nextrow))
+                {
+                    hadElement = true;
                     helper->processRow(row, nextrow); // can change row size TBD
-                    sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf()); // kludge
                 }
             }
         }
         eoi = true;
-        OwnedConstThorRow ret = row.finalizeRowClear(sz);
         if (container.queryLocalOrGrouped())
         {
             dataLinkIncrement();
-            return ret.getClear();
+            size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
+            return row.finalizeRowClear(sz);
         }
         else
         {
+            OwnedConstThorRow ret;
+            if (hadElement)
+            {
+                size32_t sz = allocator->queryOutputMeta()->getRecordSize(row.getSelf());
+                ret.setown(row.finalizeRowClear(sz));
+            }
             aggregator.sendResult(ret.get());
             if (firstNode())
             {

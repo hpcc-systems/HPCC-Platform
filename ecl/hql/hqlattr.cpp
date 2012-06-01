@@ -2614,7 +2614,14 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             IHqlExpression * count = expr->queryChild(0);
             IValue * value = count->queryValue();
             if (value)
-                info.setN(value->getIntValue());
+            {
+                IHqlExpression * transform = expr->queryChild(1);
+                __int64 maxCount = value->getIntValue();
+                if (containsSkip(transform))
+                    info.setRange(0, maxCount);
+                else
+                    info.setN(maxCount);
+            }
             // leave it be, if it's a constant expression or a variable
             break;
         }
