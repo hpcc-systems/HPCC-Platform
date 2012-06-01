@@ -60,7 +60,8 @@ protected:
             return firstRow;
 
         CThorExpandingRowArray partialResults(*this, this, true, false, true, numPartialResults);
-        partialResults.setRow(0, firstRow);
+        if (hadElement)
+            partialResults.setRow(0, firstRow);
         --numPartialResults;
 
         size32_t sz;
