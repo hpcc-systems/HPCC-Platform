@@ -3413,29 +3413,47 @@ extern "C" FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet 
     return getResultCursorBin(ret, cursor, start, count);
 }
 
+inline const char *getSeverityTagname(WUExceptionSeverity severity, unsigned flags)
+{
+    if (flags & WorkUnitXML_SeverityTags)
+    {
+        switch (severity)
+        {
+        case ExceptionSeverityInformation:
+            return "Info";
+        case ExceptionSeverityWarning:
+            return "Warning";
+        case ExceptionSeverityError:
+        default:
+            break;
+        }
+    }
+    return "Exception";
+}
 
-extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, bool inclschema, WUExceptionSeverity minSeverity, bool noroot)
+extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, WUExceptionSeverity minSeverity)
 {
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
     StringBuffer result;
-    if (!noroot)
-        result.append("<Result>");
+    if (!(flags & WorkUnitXML_NoRoot))
+        result.append("<Result>").newline();
 
     Owned<IConstWUExceptionIterator> exceptions = &cw->getExceptions();
     ForEach(*exceptions)
     {
-        if (exceptions->query().getSeverity()>=minSeverity)
+        WUExceptionSeverity severity = exceptions->query().getSeverity();
+        if (severity>=minSeverity)
         {
             SCMStringBuffer x, y;
             exceptions->query().getExceptionSource(x);
             exceptions->query().getExceptionMessage(y);
             
-            result.append("<Exception><Source>");
+            result.appendf("<%s><Source>", getSeverityTagname(severity, flags));
             encodeUtf8XML(x.str(), result);
             result.append("</Source><Message>");
             encodeUtf8XML(y.str(), result);
-            result.append("</Message></Exception>");
+            result.appendf("</Message></%s>", getSeverityTagname(severity, flags)).newline();
         }
     }
 
@@ -3454,7 +3472,7 @@ extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *userna
                     SCMStringBuffer resultXML, name;
                     ds.getResultName(name);
                     Owned<INewResultSet> nr = factory->createNewResultSet(&ds, wuid.str());
-                    getResultXml(resultXML, nr.get(), name.str(), 0, 0, inclschema ? name.str() : NULL);
+                    getResultXml(resultXML, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL);
                     result.append(resultXML);
                 }
             }
@@ -3465,7 +3483,7 @@ extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *userna
             result.append("<Exception><Source>System</Source><Message>Query aborted by operator</Message></Exception>");
             break;
     }
-    if (!noroot)
+    if (!(flags & WorkUnitXML_NoRoot))
         result.append("</Result>");
     str.set(result.str());
     return str;
