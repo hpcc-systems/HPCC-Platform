@@ -76,7 +76,8 @@ define([
 						dom.byId("loadingMessage").innerHTML = wu.state;
 						if (wu.isComplete() || ++monitorCount % 5 == 0) {
 							wu.getInfo({
-								onGetResults: displayResults
+								onGetResults: displayResults,
+								onGetAll: displayAll
 							});
 						}
 					});
@@ -158,20 +159,16 @@ define([
 					wu.getInfo({
 						onGetExceptions: displayExceptions,
 						onGetResults: displayResults,
-						onGetGraphs: displayGraphs
+						onGetGraphs: displayGraphs,
+						onGetAll: displayAll
 					});
 				}
 			},
 
 			displayExceptions = function (exceptions) {
-				if (exceptions.length) {
-					editorControl.setErrors(wu.exceptions);
-					resultsControl.addExceptionTab(wu.exceptions);
-				}
 			},
 
 			displayResults = function (results) {
-				resultsControl.refreshResults(wu);
 			},
 
 			displayGraphs = function (graphs) {
@@ -180,6 +177,13 @@ define([
 						graphControl.loadXGMML(xgmml, true);
 					});
 				}
+			},
+
+			displayAll = function (workunit) {
+				if (wu.exceptions.length) {
+					editorControl.setErrors(wu.exceptions);
+				}
+				resultsControl.refresh(wu);
 			},
 
 			doSubmit = function (evt) {

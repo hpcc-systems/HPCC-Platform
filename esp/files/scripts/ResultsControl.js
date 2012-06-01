@@ -113,13 +113,18 @@ define([
 			return this.addTab(result.getName(), paneID);
 		},
 
-		refreshResults: function (wu) {
+		refresh: function (wu) {
 			if (this.workunit != wu) {
 				this.clear();
 				this.workunit = wu;
 			}
-			for (var i = 0; i < this.workunit.results.length; ++i) {
-				var result = this.workunit.results[i];
+			this.addExceptionTab(this.workunit.exceptions);
+			this.addResultsTab(this.workunit.results);
+		},
+
+		addResultsTab: function (results) {
+			for (var i = 0; i < results.length; ++i) {
+				var result = results[i];
 				if (result.Sequence in this.sequenceResultStoreMap) {
 					this.sequenceResultStoreMap[result.Sequence].isComplete = result.isComplete();
 				} else {
@@ -132,32 +137,34 @@ define([
 		},
 
 		addExceptionTab: function (exceptions) {
-			var resultNode = this.addTab("Error/Warning(s)");
-			store = new Memory({ data: exceptions });
-			dataStore = new ObjectStore({ objectStore: store });
+			if (exceptions.length) {
+				var resultNode = this.addTab("Error/Warning(s)");
+				store = new Memory({ data: exceptions });
+				dataStore = new ObjectStore({ objectStore: store });
 
-			grid = new DataGrid({
-				store: dataStore,
-				query: { id: "*" },
-				structure: [
-					{ name: "Severity", field: "Severity" },
-					{ name: "Line", field: "LineNo" },
-					{ name: "Column", field: "Column" },
-					{ name: "Code", field: "Code" },
-					{ name: "Message", field: "Message", width: "auto" }
-					]
-			});
-			grid.placeAt(resultNode.containerNode, "last");
-			grid.startup();
+				grid = new DataGrid({
+					store: dataStore,
+					query: { id: "*" },
+					structure: [
+						{ name: "Severity", field: "Severity" },
+						{ name: "Line", field: "LineNo" },
+						{ name: "Column", field: "Column" },
+						{ name: "Code", field: "Code" },
+						{ name: "Message", field: "Message", width: "auto" }
+						]
+				});
+				grid.placeAt(resultNode.containerNode, "last");
+				grid.startup();
 
-			var context = this;
-			grid.on("RowClick", function (evt) {
-				var idx = evt.rowIndex;
-				var item = this.getItem(idx);
-				var line = parseInt(this.store.getValue(item, "LineNo"), 10);
-				var col = parseInt(this.store.getValue(item, "Column"), 10);
-				context.onErrorClick(line, col);
-			}, true);
+				var context = this;
+				grid.on("RowClick", function (evt) {
+					var idx = evt.rowIndex;
+					var item = this.getItem(idx);
+					var line = parseInt(this.store.getValue(item, "LineNo"), 10);
+					var col = parseInt(this.store.getValue(item, "Column"), 10);
+					context.onErrorClick(line, col);
+				}, true);
+			}
 		}
 	});
 });
