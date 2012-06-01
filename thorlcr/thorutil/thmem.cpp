@@ -1612,13 +1612,15 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
 
 class CThorAllocator : public CSimpleInterface, implements roxiemem::IRowAllocatorCache, implements IRtlRowCallback, implements IThorAllocator
 {
+protected:
     mutable IArrayOf<IEngineRowAllocator> allAllocators;
     mutable SpinLock allAllocatorsLock;
     Owned<roxiemem::IRowManager> rowManager;
+    bool usePacked;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(memsize_t memSize)
+    CThorAllocator(memsize_t memSize, bool _usePacked) : usePacked(_usePacked)
     {
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
         rtlSetReleaseRowHook(this);
@@ -1635,7 +1637,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
@@ -1729,9 +1731,34 @@ public:
     }
 };
 
-IThorAllocator *createThorAllocator(memsize_t memSize)
+// derived to avoid a 'crcChecking' check per getRowAllocator only
+class CThorCrcCheckingAllocator : public CThorAllocator
 {
-    return new CThorAllocator(memSize);
+public:
+    CThorCrcCheckingAllocator(memsize_t memSize, bool usePacked) : CThorAllocator(memSize, usePacked)
+    {
+    }
+// IThorAllocator
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    {
+        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
+        SpinBlock b(allAllocatorsLock);
+        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
+        LINK(ret);
+        allAllocators.append(*ret);
+        return ret;
+    }
+};
+
+
+IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool usePacked)
+{
+    PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
+    PROGLOG("Packed allocator %s", usePacked?"ON":"OFF");
+    if (crcChecking)
+        return new CThorCrcCheckingAllocator(memSize, usePacked);
+    else
+        return new CThorAllocator(memSize, usePacked);
 }
 
 
@@ -2014,9 +2041,4 @@ IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t s
 IPerfMonHook *createThorMemStatsPerfMonHook(IPerfMonHook *chain)
 {
     return LINK(chain);
-}
-
-void setLCRrowCRCchecking(bool on)
-{
-    // JCSMORE!
 }

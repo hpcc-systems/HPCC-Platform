@@ -168,7 +168,7 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
 
         SCMStringBuffer resultXML;
-        getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), resultXML, false);
+        getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), resultXML);
         resp.setResults(resultXML.str());
 
         cw.clear();

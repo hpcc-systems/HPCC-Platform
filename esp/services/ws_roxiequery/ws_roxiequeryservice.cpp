@@ -789,7 +789,6 @@ bool CWsRoxieQueryEx::onRoxieQueryProcessGraph(IEspContext &context, IEspRoxieQu
         SocketEndpoint ep;
         getClusterConfig(ROXIE_CLUSTER, cluster, ROXIE_FARMERPROCESS1, netAddress, port);
         ep.set(netAddress.str(), port);
-        ep.set("10.239.219.15", port); // jo remove
         Owned<IRoxieCommunicationClient> roxieClient = createRoxieCommunicationClient(ep, ROXIEMANAGER_TIMEOUT);
 
         Owned<IPropertyTree> xgmml = getXgmmlGraph(queryName, ep, graphName);
