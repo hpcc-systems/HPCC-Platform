@@ -281,7 +281,7 @@
 
           <listitem>
             <para>In your browser, go to the <emphasis role="bold">ECL
-            Watch</emphasis> URL For example, http://nnn.nnn.nnn.nnn:8010,
+            Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
             where nnn.nnn.nnn.nnn is your ESP<footnote>
                 <para>The ESP (Enterprise Services Platform) Server is the
                 communication layer server in you HPCC environment.</para>

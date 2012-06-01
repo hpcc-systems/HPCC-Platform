@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <bookinfo>
+    <title>ECL Playground</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2012</pubdate>
+  </bookinfo>
+
+  <chapter id="ECL_Playgd">
+    <title><emphasis role="bold">Using the ECL Playground</emphasis></title>
+
+    <sect1 id="ECL_Playground" role="nobrk">
+      <title>Using the ECL Playground</title>
+
+      <para>ECL Playground is a tool hosted on an ESP server. A page runs in
+      your browser, allowing you to access and execute self-contained ECL code
+      on your HPCC system without the use of any other tools. The ECL
+      Playground then shows you the results and the graph in your browser. The
+      view is very similar to what the ECL IDE displays.</para>
+
+      <sect2>
+        <title>Accessing ECL Playground</title>
+
+        <para>ECL Playground is installed with the HPCC platform. You can
+        access it through the ECL Watch page.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>In your browser, go to the <emphasis role="bold">ECL
+              Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
+              where nnn.nnn.nnn.nnn is your ESP server node's IP
+              address.</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="../../images/caution.png" /></entry>
+
+                        <entry>Your IP address could be different from the
+                        ones provided in the example images. Please use the IP
+                        address of <emphasis role="bold">your</emphasis>
+                        node.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>From ECL Watch page, click on the <emphasis
+              role="bold">ECL Playground </emphasis> link in the menu on the
+              left side.</para>
+
+              <para><figure>
+                  <title>ECL Playground link</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_001.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>The ECL Playground displays.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Introducing the ECL Playground</title>
+
+        <para>The ECL Playground page is a work area where you can see and run
+        self-contained ECL code. You can see the code, submit it, and see the
+        results. You can even change the code and resubmit it to instantly see
+        the new results right in your browser. This is an ideal tool for the
+        user who is not an ECL programming expert who wants to change some of
+        the ECL code and see the results.</para>
+
+        <para><figure>
+            <title>The ECL Playground</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_002d.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The ECL Playground page is divided into areas. The top portion
+        contains the <emphasis>Editor</emphasis> area and the <emphasis>Graph
+        Viewer</emphasis>. The Sample code drop list is at the top right. The
+        bottom portion of the page displays the results.</para>
+
+        <para>The ECL Playground comes with a set of ready to run sample ECL
+        code. The drop list contains code samples. Select any one of these
+        samples and it loads in the editor.</para>
+
+        <para><figure>
+            <title>Sample drop list</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_003b.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>The selected code displays in the <emphasis>Editor
+        </emphasis>area. You can then submit it as-is, or modify and submit.
+        The results display at the bottom portion of the page.</para>
+      </sect2>
+
+      <sect2>
+        <title>Running ECL Code</title>
+
+        <para>To run the code that you selected, press the <emphasis
+        role="bold">Submit</emphasis> button below the
+        <emphasis>Editor</emphasis> area.</para>
+
+        <para>A successful run displays the word <emphasis
+        role="bold">completed</emphasis> as the status and the results display
+        in the results viewer. You can also view the graph in the upper
+        right.</para>
+
+        <para><figure>
+            <title>Success</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_005.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>A completed job generates a graph. You can examine the graph in
+        greater detail by double-clicking the graph to zoom in. You can also
+        zoom in with the mouse wheel. A double-click on a blank area of the
+        graph will zoom out. You can use the scroll bars on the border of the
+        graph to navigate or you can drag the graph with your mouse.</para>
+
+        <para>Selecting a node in the graph highlights the relevant section of
+        the code in the Editor. This is helpful in troubleshooting or
+        modifying code since it shows you the code that corresponds to a node
+        in the graph.</para>
+
+        <para><figure>
+            <title>Error</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLP_004a.JPG" />
+              </imageobject>
+            </mediaobject>
+          </figure>The status area displays the job status. If a job fails,
+        errors display in the result viewer and the code is highlighted in red
+        in the <emphasis>Editor</emphasis>. If there are warnings they are
+        displayed in yellow.</para>
+
+        <sect3>
+          <title>Analyze the results</title>
+
+          <para>When running ECL Code that has multiple results, each result
+          is on a separate tab. Select a tab to see that set of results. You
+          can also change number of results displayed or page through the
+          results with the links at the bottom.</para>
+
+          <para><figure>
+              <title>Multiple results</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLP_006a.JPG" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ECL Playground from a Workunit</title>
+
+        <para>You can access ECL Playground from a Workunit Details page in
+        ECL Watch.<orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Select <emphasis role="bold">Browse Workunits</emphasis>
+              from the ECL Watch menu.</para>
+
+              <para><figure>
+                  <title>Browse Workunits</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_007.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Click on a workunit hyperlink to open the Workunit Details
+              page.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Click on the <emphasis role="bold">ECL Playground
+              </emphasis>hyperlink to open it in the ECL Playground.<figure>
+                  <title>ECL Playground link</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_008.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>You can then edit the ECL and resubmit to see the results.
+              This creates a new workunit. <figure>
+                  <title>Workunit in ECL Playground</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLP_009.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
