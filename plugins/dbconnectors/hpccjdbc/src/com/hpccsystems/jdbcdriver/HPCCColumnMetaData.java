@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import java.util.List;
  * @author rpastrana
  */
 
-public class EclColumnMetaData {
+public class HPCCColumnMetaData {
 	private String columnName;
 	private int index;
 	private int sqlType;
@@ -25,47 +25,47 @@ public class EclColumnMetaData {
 	private String constantValue;
 	private int columnType;
 	private String alias;
-	private List<EclColumnMetaData> funccols;
+	private List<HPCCColumnMetaData> funccols;
 
 
 	final static int COLUMN_TYPE_DATA 		= 1;
 	final static int COLUMN_TYPE_CONSTANT 	= 2;
 	final static int COLUMN_TYPE_FNCTION	= 3;
 
-	public EclColumnMetaData(String columnName, int index, int sqlType,	String constant, String eclType)
+	public HPCCColumnMetaData(String columnName, int index, int sqlType,	String constant, String eclType)
 	{
 		constantValue = constant;
 		this.columnName = columnName;
 		this.index = index;
 		this.sqlType = sqlType;
-		this.paramType = EclDatabaseMetaData.procedureColumnUnknown;
-		javaClassName = EclDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
+		this.paramType = HPCCDatabaseMetaData.procedureColumnUnknown;
+		javaClassName = HPCCDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
 		this.eclType = eclType;
 		columnType = COLUMN_TYPE_CONSTANT;
 		funccols = null;
 		alias = null;
 	}
 
-	public EclColumnMetaData(String columnName, int index, int sqlType)
+	public HPCCColumnMetaData(String columnName, int index, int sqlType)
 	{
 		this.columnName = columnName;
 		this.index = index;
 		this.sqlType = sqlType;
-		this.paramType = EclDatabaseMetaData.procedureColumnUnknown;
-		javaClassName = EclDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
+		this.paramType = HPCCDatabaseMetaData.procedureColumnUnknown;
+		javaClassName = HPCCDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
 		constantValue = null;
 		columnType = COLUMN_TYPE_DATA;
 		funccols = null;
 		alias = null;
 	}
 
-	public EclColumnMetaData(String columnName, int index, List<EclColumnMetaData> columns )
+	public HPCCColumnMetaData(String columnName, int index, List<HPCCColumnMetaData> columns )
 	{
 		this.columnName = columnName;
 		this.index = index;
 		this.sqlType = java.sql.Types.OTHER;
-		this.paramType = EclDatabaseMetaData.procedureColumnUnknown;
-		javaClassName = EclDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
+		this.paramType = HPCCDatabaseMetaData.procedureColumnUnknown;
+		javaClassName = HPCCDatabaseMetaData.convertSQLtype2JavaClassName(this.sqlType);
 		constantValue = null;
 		columnType = COLUMN_TYPE_FNCTION;
 		funccols = columns;
@@ -100,6 +100,14 @@ public class EclColumnMetaData {
 	public String getColumnName()
 	{
 		return columnName;
+	}
+
+	public String getColumnNameOrAlias()
+	{
+		if (alias != null)
+			return alias;
+		else
+			return columnName;
 	}
 
 	public void setColumnName(String columnName)
@@ -157,7 +165,7 @@ public class EclColumnMetaData {
 	public void setEclType(String eclType)
 	{
 		this.eclType = eclType;
-		this.sqlType = EclDatabaseMetaData.convertECLtype2SQLtype(eclType.toUpperCase());
+		this.sqlType = HPCCDatabaseMetaData.convertECLtype2SQLtype(eclType.toUpperCase());
 	}
 
 	public String getTableName()
@@ -243,7 +251,7 @@ public class EclColumnMetaData {
 		this.columnType = columnType;
 	}
 
-	public List<EclColumnMetaData> getFunccols() {
+	public List<HPCCColumnMetaData> getFunccols() {
 		return funccols;
 	}
 

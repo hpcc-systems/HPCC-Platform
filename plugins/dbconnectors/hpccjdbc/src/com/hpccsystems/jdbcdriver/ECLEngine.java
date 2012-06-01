@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -6,11 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +25,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-public class EclEngine
+public class ECLEngine
 {
 
 	private  		String		urlString;
@@ -38,12 +35,12 @@ public class EclEngine
 	private 		NodeList 	resultschema;
 	private final 	Properties 	props;
 	private 		ArrayList<SQLWarning> warnings;
-	private 		SqlParser 	parser;
-	private			EclDatabaseMetaData dbMetadata;
+	private 		SQLParser 	parser;
+	private			HPCCDatabaseMetaData dbMetadata;
 	private 		String 		indexToUseName;
 	private 		HashMap<String, String> 	eclEnteties;
 
-	public EclEngine(String eclqueryname, String datasetname, Properties props)
+	public ECLEngine(String eclqueryname, String datasetname, Properties props)
 	{
 		this.props = props;
 		this.datasetname = datasetname;
@@ -53,7 +50,7 @@ public class EclEngine
 		eclEnteties = new HashMap<String, String>();
 	}
 
-	public EclEngine(SqlParser parser, EclDatabaseMetaData dbmetadata, Properties props, String indextouse)
+	public ECLEngine(SQLParser parser, HPCCDatabaseMetaData dbmetadata, Properties props, String indextouse)
 	{
 		this.props = props;
 		this.dbMetadata = dbmetadata;
@@ -108,8 +105,8 @@ public class EclEngine
 	{
 		int sqlreqtype = parser.getSqlType();
 
-		List<EclColumnMetaData> expectedretcolumns = new ArrayList();
-		ArrayList<EclColumnMetaData> storeProcInParams = new ArrayList();
+		List<HPCCColumnMetaData> expectedretcolumns = new ArrayList();
+		ArrayList<HPCCColumnMetaData> storeProcInParams = new ArrayList();
 		String hpccfilename = "";
 		String indexposfield = null;
 		StringBuilder keyedandwild = new StringBuilder();
@@ -120,9 +117,9 @@ public class EclEngine
 
 		switch (sqlreqtype)
 		{
-			case SqlParser.SQL_TYPE_SELECT:
+			case SQLParser.SQL_TYPE_SELECT:
 			{
-				hpccfilename = Utils.handleQuotedString(parser.getTableName());
+				hpccfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
 				if(!dbMetadata.tableExists("", hpccfilename))
 					throw new Exception("Invalid table found: " + hpccfilename);
 
@@ -187,29 +184,29 @@ public class EclEngine
 
 				for (int i = 0; i < expectedretcolumns.size(); i++)
 				{
-					EclColumnMetaData col = expectedretcolumns.get(i);
-					if (col.getColumnType() == EclColumnMetaData.COLUMN_TYPE_CONSTANT)
+					HPCCColumnMetaData col = expectedretcolumns.get(i);
+					if (col.getColumnType() == HPCCColumnMetaData.COLUMN_TYPE_CONSTANT)
 					{
 						selectstruct.append(col.getEclType()).append(" ").append(col.getColumnName()).append(" := ").append(col.getConstantValue()).append("; ");
 						if (i == 0 && expectedretcolumns.size() == 1)
 							eclEnteties.put("SCALAROUTNAME", col.getColumnName());
 					}
 
-					else if (col.getColumnType() == EclColumnMetaData.COLUMN_TYPE_FNCTION)
+					else if (col.getColumnType() == HPCCColumnMetaData.COLUMN_TYPE_FNCTION)
 					{
 						if (col.getColumnName().equalsIgnoreCase("COUNT"))
 						{
 							eclEnteties.put("COUNTFN", "TRUE");
-							selectstruct.append("countout := ");
+							selectstruct.append(col.getAlias() + " := ");
 							if (parser.hasGroupByColumns())
 							{
 								selectstruct.append(col.getColumnName().toUpperCase()).append("( GROUP");
-								List<EclColumnMetaData> funccols = col.getFunccols();
+								List<HPCCColumnMetaData> funccols = col.getFunccols();
 
 								if (funccols.size() > 0)
 								{
 									String paramname = funccols.get(0).getColumnName();
-									if (!paramname.equals("*") && funccols.get(0).getColumnType() != EclColumnMetaData.COLUMN_TYPE_CONSTANT)
+									if (!paramname.equals("*") && funccols.get(0).getColumnType() != HPCCColumnMetaData.COLUMN_TYPE_CONSTANT)
 									{
 										selectstruct.append(", ");
 										selectstruct.append(datasource);
@@ -234,7 +231,7 @@ public class EclEngine
 						else if (col.getColumnName().equalsIgnoreCase("MAX"))
 						{
 							eclEnteties.put("MAXFN", "TRUE");
-							selectstruct.append("maxout :=  ");
+							selectstruct.append(col.getAlias() + " := ");
 
 							if (parser.hasGroupByColumns())
 							{
@@ -247,12 +244,12 @@ public class EclEngine
 									addFilterClause(selectstruct, eclEnteties);
 							}
 
-							List<EclColumnMetaData> funccols = col.getFunccols();
+							List<HPCCColumnMetaData> funccols = col.getFunccols();
 							if (funccols.size() > 0)
 							{
 								String paramname = funccols.get(0).getColumnName();
 								eclEnteties.put("FNCOLS", paramname);
-								if (!paramname.equals("*") && funccols.get(0).getColumnType() != EclColumnMetaData.COLUMN_TYPE_CONSTANT)
+								if (!paramname.equals("*") && funccols.get(0).getColumnType() != HPCCColumnMetaData.COLUMN_TYPE_CONSTANT)
 								{
 									selectstruct.append(", ");
 									selectstruct.append(datasource);
@@ -265,7 +262,7 @@ public class EclEngine
 						else if (col.getColumnName().equalsIgnoreCase("MIN"))
 						{
 							eclEnteties.put("MINFN", "TRUE");
-							selectstruct.append("minout :=  ");
+							selectstruct.append(col.getAlias() + " := ");
 
 							if (parser.hasGroupByColumns())
 							{
@@ -278,12 +275,12 @@ public class EclEngine
 									addFilterClause(selectstruct, eclEnteties);
 							}
 
-							List<EclColumnMetaData> funccols = col.getFunccols();
+							List<HPCCColumnMetaData> funccols = col.getFunccols();
 							if (funccols.size() > 0)
 							{
 								String paramname = funccols.get(0).getColumnName();
 								eclEnteties.put("FNCOLS", paramname);
-								if (!paramname.equals("*") && funccols.get(0).getColumnType() != EclColumnMetaData.COLUMN_TYPE_CONSTANT)
+								if (!paramname.equals("*") && funccols.get(0).getColumnType() != HPCCColumnMetaData.COLUMN_TYPE_CONSTANT)
 								{
 									selectstruct.append(", ");
 									selectstruct.append(datasource);
@@ -314,7 +311,7 @@ public class EclEngine
 
 				return executeSelect(eclcode.toString(), eclEnteties, indexfiletouse);
 			}
-			case SqlParser.SQL_TYPE_SELECTCONST:
+			case SQLParser.SQL_TYPE_SELECTCONST:
 			{
 				System.out.println("Processing test_query...");
 				eclcode.append("selectstruct:=RECORD ");
@@ -322,7 +319,7 @@ public class EclEngine
 				StringBuilder ecloutput = new StringBuilder(" OUTPUT(DATASET([{ ");
 				for (int i = 1;  i <= expectedretcolumns.size(); i++)
 				{
-					EclColumnMetaData col = expectedretcolumns.get(i-1);
+					HPCCColumnMetaData col = expectedretcolumns.get(i-1);
 					eclcode.append(col.getEclType()).append(" ").append(col.getColumnName()).append("; ");
 					ecloutput.append(col.getConstantValue());
 					if (i < expectedretcolumns.size())
@@ -337,9 +334,9 @@ public class EclEngine
 
 				return executeSelectConstant(eclcode.toString());
 			}
-			case SqlParser.SQL_TYPE_CALL:
+			case SQLParser.SQL_TYPE_CALL:
 			{
-				eclqueryname = Utils.handleQuotedString(parser.getStoredProcName());
+				eclqueryname = HPCCJDBCUtils.handleQuotedString(parser.getStoredProcName());
 				if(!dbMetadata.eclQueryExists("", eclqueryname))
 					throw new Exception("Invalid store procedure found");
 
@@ -407,16 +404,16 @@ public class EclEngine
 		return isPayloadIndex;
 	}
 
-	private boolean containsPayload(Properties indexfields,	Iterator<EclColumnMetaData> selectcolsit)
+	private boolean containsPayload(Properties indexfields,	Iterator<HPCCColumnMetaData> selectcolsit)
 	{
 		while(selectcolsit.hasNext())
 		{
-			EclColumnMetaData currentselectcol = selectcolsit.next();
+			HPCCColumnMetaData currentselectcol = selectcolsit.next();
 			String colname = currentselectcol.getColumnName();
 			int type = currentselectcol.getColumnType();
-			if (type == EclColumnMetaData.COLUMN_TYPE_DATA && !indexfields.containsKey(colname.toUpperCase()))
+			if (type == HPCCColumnMetaData.COLUMN_TYPE_DATA && !indexfields.containsKey(colname.toUpperCase()))
 				return false;
-			else if (type == EclColumnMetaData.COLUMN_TYPE_FNCTION && !containsPayload(indexfields, currentselectcol.getFunccols().iterator()))
+			else if (type == HPCCColumnMetaData.COLUMN_TYPE_FNCTION && !containsPayload(indexfields, currentselectcol.getFunccols().iterator()))
 				return false;
 		}
 		return true;
@@ -712,7 +709,7 @@ public class EclEngine
 			sb.append(URLEncoder.encode("submit_type_=xml", "UTF-8"));
 			sb.append("&").append(URLEncoder.encode("S1=Submit", "UTF-8"));
 
-			ArrayList<EclColumnMetaData> storeProcInParams = dbMetadata.getStoredProcInColumns("",eclqueryname);
+			ArrayList<HPCCColumnMetaData> storeProcInParams = dbMetadata.getStoredProcInColumns("",eclqueryname);
 			String[] procInParamValues = parser.getStoredProcInParamVals();
 
 			for (int i = 0; i < procInParamValues.length; i++)
@@ -810,7 +807,7 @@ public class EclEngine
 
 								for (int k = 0; k < columnList.getLength(); k++)
 								{
-									columnsArray.add(new EclColumn(columnList.item(k).getNodeName(), columnList.item(k).getTextContent()));
+									columnsArray.add(new HPCCColumn(columnList.item(k).getNodeName(), columnList.item(k).getTextContent()));
 								}
 							}
 						}
@@ -866,7 +863,7 @@ public class EclEngine
 
 							for (int k = 0; k < columnList.getLength(); k++)
 							{
-								columnsArray.add(new EclColumn(columnList.item(k).getNodeName(), columnList.item(k).getTextContent()));
+								columnsArray.add(new HPCCColumn(columnList.item(k).getNodeName(), columnList.item(k).getTextContent()));
 							}
 						}
 					}
@@ -892,7 +889,7 @@ public class EclEngine
 					Iterator itr3 = cols.iterator();
 					while (itr3.hasNext())
 					{
-						EclColumn element = (EclColumn) itr3.next();
+						HPCCColumn element = (HPCCColumn) itr3.next();
 					}
 				}
 			}
@@ -951,49 +948,5 @@ public class EclEngine
 	public NodeList getResultschema()
 	{
 		return resultschema;
-	}
-
-
-	public static void main(String[] args)
-	{
-		// WsEcl wsEcl = new WsEcl("localhost", "myroxie", "person_query.1");
-		//WsEcl wsEcl = new WsEcl("192.168.92.130", "myroxie",
-
-		Properties info = new Properties();
-		// info.put("ServerAddress",
-		// "192.168.92.130:8002/WsEcl/definitions/query");
-		//info.put("ServerAddress", "192.168.124.128");
-		info.put("ServerAddress", "10.239.20.80");
-
-		info.put("Cluster", "myroxie");
-		info.put("WsECLWatchPort", "8010");
-		info.put("WsECLPort", "8002");
-		info.put("username", "_rpastrana");
-		info.put("password", "a");
-
-
-		EclEngine wsEcl = new EclEngine("fetchpeoplebyzipservice.2","" ,info);
-		// http://192.168.56.102:8002/
-		HashMap params = new HashMap();
-		params.put("zipvalue", "30005");
-		ArrayList dataset = wsEcl.executeCall(params);
-
-		Iterator itr = dataset.iterator();
-		while (itr.hasNext())
-		{
-			ArrayList rows = (ArrayList) itr.next();
-			Iterator itr2 = rows.iterator();
-			while (itr2.hasNext())
-			{
-				ArrayList cols = (ArrayList) itr2.next();
-				Iterator itr3 = cols.iterator();
-				while (itr3.hasNext())
-				{
-					EclColumn element = (EclColumn) itr3.next();
-					System.out.print(element.getName() + " : "	+ element.getValue());
-				}
-			}
-		}
-		System.out.println();
 	}
 }

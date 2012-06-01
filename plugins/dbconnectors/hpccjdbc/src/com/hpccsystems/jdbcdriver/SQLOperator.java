@@ -1,9 +1,9 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqlOperator
+public class SQLOperator
 {
 	private static List<String> validOps;
 	public static final String eq = new String("=");
@@ -33,7 +33,7 @@ public class SqlOperator
 		return value == null ? false : true;
 	}
 
-	public SqlOperator(String operator)
+	public SQLOperator(String operator)
 	{
 		if (validOps == null)
 		{

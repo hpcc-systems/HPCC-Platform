@@ -1,4 +1,4 @@
-package com.hpccsystems.ecljdbc;
+package com.hpccsystems.jdbcdriver;
 
 import java.sql.Array;
 import java.sql.Blob;
@@ -23,17 +23,17 @@ import java.util.Properties;
  * @author rpastrana
  */
 
-public class EclConnection implements Connection
+public class HPCCConnection implements Connection
 {
 	public static final String ECLRESULTLIMDEFAULT = "100";
     private boolean closed;
-    private EclDatabaseMetaData metadata;
+    private HPCCDatabaseMetaData metadata;
     private Properties props;
     private String serverAddress;
     //private String cluster;
     private Properties clientInfo;
 
-    public EclConnection(Properties props)
+    public HPCCConnection(Properties props)
     {
 		closed = false;
 
@@ -79,7 +79,7 @@ public class EclConnection implements Connection
 			String eclreslim = this.props.getProperty("EclResultLimit").trim();
 			try
 			{
-				if(Utils.isNumeric(eclreslim))
+				if(HPCCJDBCUtils.isNumeric(eclreslim))
 				{
 					if (Integer.valueOf(eclreslim).intValue() <= 0)
 						setdefaultreslim = true;
@@ -108,10 +108,10 @@ public class EclConnection implements Connection
 		String userPassword = this.props.getProperty("username") + ":"
 				+ props.getProperty("password");
 
-       String basicAuth = "Basic " + Utils.Base64Encode(userPassword.getBytes(), false);
+       String basicAuth = "Basic " + HPCCJDBCUtils.Base64Encode(userPassword.getBytes(), false);
 
        this.props.put("BasicAuth", basicAuth);
-       metadata = new EclDatabaseMetaData(props);
+       metadata = new HPCCDatabaseMetaData(props);
 
        //TODO not doing anything w/ this yet, just exposing it to comply w/ API definition...
        clientInfo = new Properties();
@@ -137,22 +137,22 @@ public class EclConnection implements Connection
         this.serverAddress = serverAddress;
     }
 
-    public EclDatabaseMetaData getDatabaseMetaData() {
+    public HPCCDatabaseMetaData getDatabaseMetaData() {
         return metadata;
     }
 
-    public void setMetadata(EclDatabaseMetaData metadata) {
+    public void setMetadata(HPCCDatabaseMetaData metadata) {
         this.metadata = metadata;
     }
 
 
     public Statement createStatement() throws SQLException {
-        return new EclPreparedStatement(this, null);
+        return new HPCCPreparedStatement(this, null);
     }
 
 
     public PreparedStatement prepareStatement(String query) throws SQLException {
-        return new EclPreparedStatement(this, query);
+        return new HPCCPreparedStatement(this, query);
     }
 
 
@@ -245,13 +245,13 @@ public class EclConnection implements Connection
 
     public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
     	System.out.println("##Statement EclConnection::createStatement(resulttype, resultsetcon)##");
-        return new EclPreparedStatement(this, null);
+        return new HPCCPreparedStatement(this, null);
     }
 
 
     public PreparedStatement prepareStatement(String query, int resultSetType, int resultSetConcurrency) throws SQLException {
     	System.out.println("##EclConnection::createStatement("+ query +", resultsetype, resultsetcon)##");
-        return new EclPreparedStatement(this, query);
+        return new HPCCPreparedStatement(this, query);
     }
 
 
