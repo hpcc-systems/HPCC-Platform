@@ -210,6 +210,7 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 #define SPILL_PRIORITY_SPILLABLE_STREAM SPILL_PRIORITY_DEFAULT
 #define SPILL_PRIORITY_RESULT SPILL_PRIORITY_DEFAULT
 
+enum StableSortFlag { stableSort_none, stableSort_earlyAlloc, stableSort_lateAlloc };
 class CThorSpillableRowArray;
 class graph_decl CThorExpandingRowArray : public CSimpleInterface
 {
@@ -223,22 +224,25 @@ protected:
     roxiemem::IRowManager *rowManager;
     const void **rows;
     void **stableSortTmp;
-    bool stableSort, throwOnOom, allowNulls;
+    bool throwOnOom; // tested during array expansion (ensure())
+    bool allowNulls;
+    StableSortFlag stableSort;
     rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
     rowidx_t numRows;  // rows that have been added can only be updated by writing thread.
 
-    void init(rowidx_t initialSize, bool stable);
-    const void *allocateRowTable(size32_t newSize);
-    const void *allocateNewRows(rowidx_t requiredRows, size32_t &newSize);
+    void init(rowidx_t initialSize, StableSortFlag stableSort);
+    void **allocateStableTable(bool error); // allocates stable table based on std. ptr table
+    const void *allocateRowTable(rowidx_t newSize);
+    const void *allocateNewRows(rowidx_t requiredRows, rowidx_t &newSize);
     void serialize(IRowSerializerTarget &out);
-    void doSort(unsigned n, void **const rows, ICompare &compare, unsigned maxCores);
+    void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
 
 public:
-    CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
+    CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
     CActivityBase &queryActivity() { return activity; }
     // NB: throws error on OOM by default
-    void setup(IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=true);
+    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
     inline void setAllowNulls(bool b) { allowNulls = b; }
 
     void clearRows();
@@ -304,7 +308,7 @@ public:
     void removeRows(rowidx_t start, rowidx_t n);
     void clearUnused();
     void sort(ICompare &compare, unsigned maxCores);
-    void reorder(rowidx_t start, rowidx_t num, unsigned *neworder);
+    void reorder(rowidx_t start, rowidx_t num, rowidx_t *neworder);
 
     bool equal(ICompare *icmp, CThorExpandingRowArray &other);
     bool checkSorted(ICompare *icmp);
@@ -316,7 +320,7 @@ public:
     offset_t serializedSize();
     void serialize(MemoryBuffer &mb);
     void serializeCompress(MemoryBuffer &mb);
-    unsigned serializeBlock(MemoryBuffer &mb, size32_t dstmax, unsigned idx, unsigned count);
+    rowidx_t serializeBlock(MemoryBuffer &mb, size32_t dstmax, rowidx_t idx, rowidx_t count);
     void deserializeRow(IRowDeserializerSource &in); // NB single row not NULL
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
@@ -352,12 +356,12 @@ public:
         inline ~CThorSpillableRowArrayLock() { rows.unlock(); }
     };
 
-    CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
+    CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
     // NB: throwOnOom false
-    void setup(IRowInterfaces *rowIf, bool allowNulls=false, bool stableSort=false, bool throwOnOom=false)
+    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none)
     {
-        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, throwOnOom);
+        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, false);
     }
     void registerWriteCallback(IWritePosCallback &cb);
     void unregisterWriteCallback(IWritePosCallback &cb);
@@ -402,7 +406,7 @@ public:
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     void sort(ICompare & compare, unsigned maxcores);
-    unsigned save(IFile &file, rowidx_t watchRecNum=(rowidx_t)-1, offset_t *watchFilePosResult=NULL);
+    rowidx_t save(IFile &file, rowidx_t watchRecNum=(rowidx_t)-1, offset_t *watchFilePosResult=NULL);
     const void **getBlock(rowidx_t readRows);
     inline void noteSpilled(rowidx_t spilledRows)
     {
