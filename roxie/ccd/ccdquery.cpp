@@ -124,10 +124,14 @@ public:
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid, NULL);
         if (wu)
         {
-            SCMStringBuffer dllName;
+            SCMStringBuffer name;
             Owned<IConstWUQuery> q = wu->getQuery();
-            q->getQueryDllName(dllName);
-            return getQueryDll(dllName.str(), false);
+            q->getQueryDllName(name);
+            if (name.length() != 0)
+                return getQueryDll(name.str(), false);
+            q->getQueryCppName(name);
+            assertex(name.length() != 0);
+            return getQueryDll(name.str(), true);
         }
         else
             return NULL;
@@ -190,6 +194,7 @@ protected:
     unsigned priority;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
+    bool dynamicFiles;
 
     static SpinLock queriesCrit;
     static CopyMapXToMyClass<hash64_t, hash64_t, CQueryFactory> queryMap;
@@ -806,6 +811,7 @@ public:
                 memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
                 timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
                 warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
+                dynamicFiles = stateInfo->getPropBool("@dynamicFiles", false);
             }
 
             Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
@@ -1090,6 +1096,16 @@ public:
             graphs->query().getName(graphName);
             ret.append(graphName.str());
         }
+    }
+
+    virtual void setDynamicFileResolution(bool flag)
+    {
+        dynamicFiles = flag;
+    }
+
+    virtual bool dynamicFileResolution() const
+    {
+        return dynamicFiles;
     }
 
 protected:
