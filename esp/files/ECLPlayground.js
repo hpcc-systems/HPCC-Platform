@@ -76,7 +76,8 @@ define([
 						dom.byId("loadingMessage").innerHTML = wu.state;
 						if (wu.isComplete() || ++monitorCount % 5 == 0) {
 							wu.getInfo({
-								onGetResults: displayResults
+								onGetResults: displayResults,
+								onGetAll: displayAll
 							});
 						}
 					});
