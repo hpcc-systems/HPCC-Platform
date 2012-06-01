@@ -1111,7 +1111,10 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
             case WUStateUnknown:
             {
                 SCMStringBuffer result;
-                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, false, ExceptionSeverityInformation, req.getNoRootTag());
+                unsigned flags = WorkUnitXML_SeverityTags;
+                if (req.getNoRootTag())
+                    flags |= WorkUnitXML_NoRoot;
+                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, flags);
                 resp.setResults(result.str());
                 break;
             }
