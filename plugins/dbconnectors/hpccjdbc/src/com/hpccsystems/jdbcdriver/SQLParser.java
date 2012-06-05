@@ -300,7 +300,7 @@ public class SQLParser
 					if (ECLFunctions.verifyEclFunction(funcname, funccols))
 						colmetadata = new HPCCColumnMetaData(funcname, sqlcolpos++, funccols);
 					else
-						throw new SQLException("Funtion " + funcname + " does not map to ECL as written");
+						throw new SQLException("Function " + funcname + " does not map to ECL as written");
 				}
 				else if(col.contains("."))
 				{
