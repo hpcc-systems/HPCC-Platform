@@ -68,6 +68,32 @@ EclDirectWUExceptions::EclDirectWUExceptions(IConstWorkUnit& cw)
     }
 }
 
+void CEclDirectEx::refreshValidClusters()
+{
+    validClusters.kill();
+    Owned<IStringIterator> it = getTargetClusters(NULL, NULL);
+    ForEach(*it)
+    {
+        SCMStringBuffer s;
+        IStringVal &val = it->str(s);
+        if (!validClusters.getValue(val.str()))
+            validClusters.setValue(val.str(), true);
+    }
+}
+
+bool CEclDirectEx::isValidCluster(const char *cluster)
+{
+    CriticalBlock block(crit);
+    if (validClusters.getValue(cluster))
+        return true;
+    if (validateTargetClusterName(cluster))
+    {
+        refreshValidClusters();
+        return true;
+    }
+    return false;
+}
+
 void CEclDirectEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
     StringBuffer xpath;
@@ -84,6 +110,8 @@ void CEclDirectEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
     defaultWait = srvcfg->getPropInt("WuTimeout", 60000);
     deleteWorkunits = cfg->getPropBool("DeleteWorkUnits", false);
+
+    refreshValidClusters();
 }
 
 CEclDirectSoapBindingEx::CEclDirectSoapBindingEx(IPropertyTree* cfg, const char *binding, const char *process):CEclDirectSoapBinding(cfg, binding, process)
@@ -142,8 +170,14 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
     workunit->setUser((user.length()) ? user.str() : "user");
 
     const char* clustername = req.getCluster();
-    if (!clustername || *clustername==0 || strieq(clustername, "default")) 
+    if (!clustername || !*clustername || strieq(clustername, "default"))
         clustername = defaultCluster.str();
+
+    if (!clustername || !*clustername)
+        throw MakeStringException(-1, "No Cluster Specified");
+
+    if (!isValidCluster(clustername))
+        throw MakeStringException(-1, "Invalid TargetCluster %s Specified", clustername);
 
     workunit->setClusterName(clustername);
     if (req.getLimitResults())
@@ -215,6 +249,13 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     const char* cluster = req.getCluster();
     if (!cluster || !*cluster || !stricmp(cluster, "default"))
         cluster = defaultCluster.str();
+
+    if (!cluster || !*cluster)
+        throw MakeStringException(-1, "No Cluster Specified");
+
+    if (!isValidCluster(cluster))
+        throw MakeStringException(-1, "Invalid TargetCluster %s Specified", cluster);
+
     workunit->setClusterName(cluster);
 
     const char* snapshot = req.getSnapshot();
