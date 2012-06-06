@@ -206,7 +206,7 @@ private:
             {
               bool bDoNotify = true;
 
-              if ( (diffIter->getFlags() == IDDIunchanged) || (pConfigFileObserver != NULL && (strcmp( pConfigFileObserver->getConfigFilePath(), diffIter->query().queryFilename() ) != 0)) )
+              if ( diffIter->getFlags() == IDDIunchanged || diffIter->query().queryFilename() == NULL || pConfigFileObserver == NULL || pConfigFileObserver->getConfigFilePath() == NULL || (strcmp( pConfigFileObserver->getConfigFilePath(), diffIter->query().queryFilename() ) != 0) )
               {
                 bDoNotify = false;
               }
@@ -448,7 +448,12 @@ public:
     };
     virtual const char* getConfigFilePath()
     {
-       return m_pFile->queryFilename();
+      if (m_pFile == NULL)
+      {
+        return NULL;
+      } 
+       
+      return m_pFile->queryFilename();
     };
     virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
