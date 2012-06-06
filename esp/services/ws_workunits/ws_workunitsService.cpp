@@ -533,6 +533,8 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
+    refreshValidClusters();
+
     wuActionTable.setValue("delete", ActionDelete);
     wuActionTable.setValue("abort", ActionAbort);
     wuActionTable.setValue("pausenow", ActionPauseNow);
@@ -564,6 +566,32 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
 
     m_sched.start();
+}
+
+void CWsWorkunitsEx::refreshValidClusters()
+{
+    validClusters.kill();
+    Owned<IStringIterator> it = getTargetClusters(NULL, NULL);
+    ForEach(*it)
+    {
+        SCMStringBuffer s;
+        IStringVal &val = it->str(s);
+        if (!validClusters.getValue(val.str()))
+            validClusters.setValue(val.str(), true);
+    }
+}
+
+bool CWsWorkunitsEx::isValidCluster(const char *cluster)
+{
+    CriticalBlock block(crit);
+    if (validClusters.getValue(cluster))
+        return true;
+    if (validateTargetClusterName(cluster))
+    {
+        refreshValidClusters();
+        return true;
+    }
+    return false;
 }
 
 bool CWsWorkunitsEx::onWUCreate(IEspContext &context, IEspWUCreateRequest &req, IEspWUCreateResponse &resp)
@@ -981,6 +1009,8 @@ bool CWsWorkunitsEx::onWUSchedule(IEspContext &context, IEspWUScheduleRequest &r
         const char* cluster = req.getCluster();
         if (isEmpty(cluster))
              throw MakeStringException(ECLWATCH_INVALID_INPUT,"No Cluster defined.");
+        if (!isValidCluster(cluster))
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         WorkunitUpdate wu(factory->updateWorkUnit(req.getWuid()));
@@ -1037,9 +1067,11 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "No workunit ID provided.");
 
         DBGLOG("Submit workunit: %s", req.getWuid());
-
-        if (isEmpty(req.getCluster()))
+        const char *cluster = req.getCluster();
+        if (isEmpty(cluster))
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"No Cluster defined.");
+        if (!isValidCluster(cluster))
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
@@ -1052,10 +1084,10 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
                 throw noteException(wu, MakeStringException(ECLWATCH_INVALID_INPUT,"Queryset and/or query not specified"));
             }
 
-            runWsWuQuery(context, cw, info.queryset.sget(), info.query.sget(), req.getCluster(), NULL);
+            runWsWuQuery(context, cw, info.queryset.sget(), info.query.sget(), cluster, NULL);
         }
         else
-            submitWsWorkunit(context, cw, req.getCluster(), req.getSnapshot(), req.getMaxRunTime(), true, false);
+            submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), true, false);
 
         if (req.getBlockTillFinishTimer() != 0)
             waitForWorkUnitToComplete(req.getWuid(), req.getBlockTillFinishTimer());
@@ -1073,21 +1105,25 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
 {
     try
     {
+        const char *cluster = req.getCluster();
+        if (notEmpty(cluster) && !isValidCluster(cluster))
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+
         const char *runWuid = req.getWuid();
         StringBuffer wuid;
 
         if (runWuid && *runWuid)
         {
             if (req.getCloneWorkunit())
-                runWsWorkunit(context, wuid, runWuid, req.getCluster(), req.getInput());
+                runWsWorkunit(context, wuid, runWuid, cluster, req.getInput());
             else
             {
-                submitWsWorkunit(context, runWuid, req.getCluster(), NULL, 0, false, true, req.getInput());
+                submitWsWorkunit(context, runWuid, cluster, NULL, 0, false, true, req.getInput());
                 wuid.set(runWuid);
             }
         }
         else if (notEmpty(req.getQuerySet()) && notEmpty(req.getQuery()))
-            runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), req.getCluster(), req.getInput());
+            runWsWuQuery(context, wuid, req.getQuerySet(), req.getQuery(), cluster, req.getInput());
         else
             throw MakeStringException(ECLWATCH_MISSING_PARAMS,"Workunit or Query required");
 
@@ -3460,8 +3496,11 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
     io->write(0, obj.length(), obj.toByteArray());
 }
 
-void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
+void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
 {
+    if (notEmpty(cluster) && !isValidCluster(cluster))
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
+
     StringBuffer dllpath, dllname;
     StringBuffer srcname(filename);
     if (!srcname.length())
@@ -3507,16 +3546,17 @@ void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *fi
     AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid.str());
 }
 
-void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL)
+void CWsWorkunitsEx::deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml)
 {
     if (isEmpty(req.getFileName()))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "File name required when deploying a shared object.");
 
-    if (isEmpty(req.getCluster()))
+    const char *cluster = req.getCluster();
+    if (isEmpty(cluster))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cluster name required when deploying a shared object.");
 
     StringBuffer wuid;
-    deploySharedObject(context, wuid, req.getFileName(), req.getCluster(), req.getName(), req.getObject(), dir, xml);
+    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), req.getObject(), dir, xml);
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);

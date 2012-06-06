@@ -1141,6 +1141,7 @@ extern WORKUNIT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &r
 extern WORKUNIT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName);
+extern WORKUNIT_API bool validateTargetClusterName(const char *clustname);
 extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
 typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);

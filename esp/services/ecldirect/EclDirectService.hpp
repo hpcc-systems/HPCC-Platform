@@ -27,6 +27,8 @@ private:
     StringBuffer defaultCluster;
     int defaultWait;
     bool deleteWorkunits;
+    BoolHash validClusters;
+    CriticalSection crit;
 
 public:
    IMPLEMENT_IINTERFACE;
@@ -34,6 +36,8 @@ public:
     CEclDirectEx() : defaultWait(0){}
 
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
+    void refreshValidClusters();
+    bool isValidCluster(const char *cluster);
 
     bool onRunEcl(IEspContext &context, IEspRunEclRequest &req, IEspRunEclResponse &resp);
     bool onRunEclEx(IEspContext &context, IEspRunEclExRequest &req, IEspRunEclExResponse &resp);
