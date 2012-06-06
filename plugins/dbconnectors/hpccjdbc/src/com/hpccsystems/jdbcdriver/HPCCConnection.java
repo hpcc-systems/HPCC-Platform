@@ -30,7 +30,6 @@ public class HPCCConnection implements Connection
     private HPCCDatabaseMetaData metadata;
     private Properties props;
     private String serverAddress;
-    //private String cluster;
     private Properties clientInfo;
 
     public HPCCConnection(Properties props)
@@ -48,6 +47,9 @@ public class HPCCConnection implements Connection
 
 		if (!this.props.containsKey("Cluster"))
 			this.props.setProperty("Cluster", "hthor");
+
+		if (!this.props.containsKey("QuerySet"))
+			this.props.setProperty("QuerySet", "hthor");
 
 		if (!this.props.containsKey("WsECLWatchAddress"))
 			this.props.setProperty("WsECLWatchAddress", serverAddress);
@@ -109,8 +111,11 @@ public class HPCCConnection implements Connection
 				+ props.getProperty("password");
 
        String basicAuth = "Basic " + HPCCJDBCUtils.Base64Encode(userPassword.getBytes(), false);
-
        this.props.put("BasicAuth", basicAuth);
+
+       if (!this.props.containsKey("LazyLoad"))
+			this.props.setProperty("LazyLoad", "True");
+
        metadata = new HPCCDatabaseMetaData(props);
 
        //TODO not doing anything w/ this yet, just exposing it to comply w/ API definition...
