@@ -1633,6 +1633,29 @@ public:
         callbackRanges.append(rowBufferCallbacks.ordinality());
     }
 
+    bool callbackReleasesRows(IBufferedRowCallback * callback, bool critical)
+    {
+        //If already processing this callback then don't call it again
+        if (activeCallbacks.contains(callback))
+        {
+            DBGLOG("RoxieMemMgr: IBufferedRowCallback[%p]::freeBufferdRows() allocated memory", callback);
+            return false;
+        }
+
+        activeCallbacks.append(callback);
+        try
+        {
+            bool ok = callback->freeBufferedRows(critical);
+            activeCallbacks.pop();
+            return ok;
+        }
+        catch (...)
+        {
+            activeCallbacks.pop();
+            throw;
+        }
+    }
+
     bool doReleaseBuffers(const bool critical, const unsigned minSuccess)
     {
         const unsigned numCallbacks = rowBufferCallbacks.ordinality();
@@ -1656,7 +1679,8 @@ public:
                 if (next == last)
                     next = first;
 
-                if (curCallback->freeBufferedRows(critical))
+
+                if (callbackReleasesRows(curCallback, critical))
                 {
                     if (++numSuccess >= minSuccess)
                     {
@@ -1744,6 +1768,7 @@ protected:
     CriticalSection callbackCrit;
     Semaphore releaseBuffersSem;
     PointerArrayOf<IBufferedRowCallback> rowBufferCallbacks;
+    PointerArrayOf<IBufferedRowCallback> activeCallbacks;
     Owned<ReleaseBufferThread> releaseBuffersThread;
     UnsignedArray callbackRanges;  // the maximum index of the callbacks for the nth priority
     UnsignedArray nextCallbacks;  // the next call back to try and free for the nth priority
@@ -3002,6 +3027,74 @@ protected:
     unsigned priority;
 };
 
+//A buffered row class - used for testing
+class CallbackBlockAllocator : implements IBufferedRowCallback
+{
+public:
+    CallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _priority) : priority(_priority), rowManager(_rowManager), size(_size)
+    {
+        rowManager->addRowBuffer(this);
+    }
+    ~CallbackBlockAllocator()
+    {
+        rowManager->removeRowBuffer(this);
+    }
+
+//interface IBufferedRowCallback
+    virtual unsigned getPriority() const { return priority; }
+
+    void allocate()
+    {
+        row.setown(rowManager->allocate(size, 0));
+    }
+
+protected:
+    OwnedRoxieRow row;
+    IRowManager * rowManager;
+    unsigned size;
+    unsigned priority;
+};
+
+
+//Free the block as soon as requested
+class SimpleCallbackBlockAllocator : public CallbackBlockAllocator
+{
+public:
+    SimpleCallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _priority)
+        : CallbackBlockAllocator(_rowManager, _size, _priority)
+    {
+    }
+
+    virtual bool freeBufferedRows(bool critical)
+    {
+        if (!row)
+            return false;
+        row.clear();
+        return true;
+    }
+};
+
+//Allocate another row before disposing of the first
+class NastyCallbackBlockAllocator : public CallbackBlockAllocator
+{
+public:
+    NastyCallbackBlockAllocator(IRowManager * _rowManager, unsigned _size, unsigned _priority)
+        : CallbackBlockAllocator(_rowManager, _size, _priority)
+    {
+    }
+
+    virtual bool freeBufferedRows(bool critical)
+    {
+        if (!row)
+            return false;
+
+        OwnedRoxieRow tempRow = rowManager->allocate(size, 0);
+        row.clear();
+        return true;
+    }
+};
+
+
 class IStdException : extends std::exception
 {
     Owned<IException> jException;
@@ -3022,6 +3115,7 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testBitmap);
         CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCallbacks);
+        CPPUNIT_TEST(testRecursiveCallbacks);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
@@ -3938,6 +4032,49 @@ protected:
         testCallback(16, 10, 5, 0.25, RHFunique);  // 4 at each priority level
         testCallback(128, 10, 5, 0.25, RHFunique);  // 4 at each priority level
         testCallback(1024, 10, 5, 0.25, RHFunique);  // 4 at each priority level
+    }
+    void testRecursiveCallbacks1()
+    {
+        const size32_t bigRowSize = HEAP_ALIGNMENT_SIZE * 2 / 3;
+        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+
+        //The lower priority allocator allocates an extra row when it is called to free all its rows.
+        //this will only succeed if the higher priority allocator is then called to free its data.
+        NastyCallbackBlockAllocator alloc1(rowManager, bigRowSize, 10);
+        SimpleCallbackBlockAllocator alloc2(rowManager, bigRowSize, 20);
+
+        alloc1.allocate();
+        alloc2.allocate();
+        OwnedRoxieRow tempRow = rowManager->allocate(bigRowSize, 0);
+    }
+    void testRecursiveCallbacks2()
+    {
+        const size32_t bigRowSize = HEAP_ALIGNMENT_SIZE * 2 / 3;
+        Owned<IRowManager> rowManager = createRowManager(2 * HEAP_ALIGNMENT_SIZE, NULL, logctx, NULL);
+
+        //Both allocators allocate extra memory when they are requested to free.  Ensure that an exception
+        //is thrown instead of the previous stack fault.
+        NastyCallbackBlockAllocator alloc1(rowManager, bigRowSize, 10);
+        NastyCallbackBlockAllocator alloc2(rowManager, bigRowSize, 20);
+
+        alloc1.allocate();
+        alloc2.allocate();
+        bool ok = false;
+        try
+        {
+            OwnedRoxieRow tempRow = rowManager->allocate(bigRowSize, 0);
+        }
+        catch (IException * e)
+        {
+            e->Release();
+            ok = true;
+        }
+        ASSERT(ok);
+    }
+    void testRecursiveCallbacks()
+    {
+        testRecursiveCallbacks1();
+        testRecursiveCallbacks2();
     }
 };
 
