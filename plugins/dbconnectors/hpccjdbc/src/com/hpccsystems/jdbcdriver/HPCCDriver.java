@@ -5,6 +5,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Properties;
@@ -102,7 +103,9 @@ public class HPCCDriver implements Driver
 			Properties info = new Properties();
 			info.put("ServerAddress", "192.168.124.128");
 
-			//info.put("Cluster", "thor");
+			info.put("LazyLoad", "false");
+			info.put("Cluster", "myroxie");
+			info.put("QuerySet", "thor");
 			info.put("WsECLWatchPort", "8010");
 			info.put("EclResultLimit", "ALL");
 			info.put("WsECLPort", "8002");
@@ -135,8 +138,10 @@ public class HPCCDriver implements Driver
 			//"select MAX(firstname), lastname from tutorial::rp::tutorialperson  limit 1000"
 			//"select 1"
 			//"select count(persons.zip) as zipcount, persons.city as mycity from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
-				"select min(zip) as maxzip from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
+			//"select min(zip) as maxzip from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
 			//"select 1 as ONE"
+			"call myroxie::fetchpeoplebyzipservice(33445)"
+			//"call fetchpeoplebyzipservice(33445)"
 
 			//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
@@ -284,15 +289,19 @@ public class HPCCDriver implements Driver
 			//	System.out.println("   " + tables.getString("TABLE_NAME") + " Remarks: \'" + tables.getString("REMARKS")+"\'");
 		//	}
 
-
-			/*
 			ResultSet procs = conn.getMetaData().getProcedures(null, null, null);
 
 			System.out.println("procs found: ");
 			while (procs.next()) {
 				System.out.println("   " + procs.getString("PROCEDURE_NAME"));
 			}
-			*/
+
+			ResultSet procs2 = conn.getMetaData().getProcedures(null, null, null);
+
+			System.out.println("procs found: ");
+			while (procs2.next()) {
+				System.out.println("   " + procs2.getString("PROCEDURE_NAME"));
+			}
 			/*
 			ResultSet proccols = conn.getMetaData().getProcedureColumns(null, null, null, null);
 
