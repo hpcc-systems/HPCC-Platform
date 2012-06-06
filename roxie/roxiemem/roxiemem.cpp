@@ -1638,7 +1638,7 @@ public:
         //If already processing this callback then don't call it again
         if (activeCallbacks.contains(callback))
         {
-            DBGLOG("RoxieMemMgr: IBufferedRowCallback[%p]::freeBufferdRows() allocated memory", callback);
+            DBGLOG("RoxieMemMgr: allocation in IBufferedRowCallback[%p]::freeBufferedRows() requested new page", callback);
             return false;
         }
 
