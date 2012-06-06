@@ -236,7 +236,7 @@ protected:
     const void *allocateNewRows(rowidx_t requiredRows);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
-    inline rowidx_t getRowsCapacity() { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
+    inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
 public:
     CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
