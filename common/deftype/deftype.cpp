@@ -1673,6 +1673,9 @@ extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale)
 
 extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale)
 {
+    if(!locale)
+        locale = emptyAtom;
+
     CUnicodeTypeKey key;
     key.length = len;
     key.locale.set(locale);
