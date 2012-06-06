@@ -16,8 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-//nothor
-
 MyRec := RECORD
     STRING50 Value1;
     unsigned Value2;
