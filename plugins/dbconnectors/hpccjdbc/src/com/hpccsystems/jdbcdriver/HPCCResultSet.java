@@ -70,7 +70,7 @@ public class HPCCResultSet implements ResultSet
 			rows = new ArrayList();
 			String indextousename = null;
 			SQLParser parser = new SQLParser();
-			parser.parse(query);
+			parser.process(query);
 			int sqlreqtype = parser.getSqlType();
 			//not sure this is actually needed...
 			parser.populateParametrizedExpressions(inParameters);
