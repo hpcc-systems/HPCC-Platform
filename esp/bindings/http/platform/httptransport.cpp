@@ -2411,13 +2411,22 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         text.append('\n');
         WARNLOG("Exception(s) in %s::%s - %s", serv, meth, text.str());
 
-        if (errorXslt)
+        bool returnXml = context->queryRequestParameters()->hasProp("rawxml_");
+        if (errorXslt || returnXml)
         {
             me->serialize(text.clear());
-            StringBuffer theOutput;
-            xslTransformHelper(xslp, text.str(), errorXslt, theOutput, context->queryXslParameters());
-            setContent(theOutput.str());
-            setContentType("text/html");
+            if (returnXml)
+            {
+                setContent(text.str());
+                setContentType("text/xml");
+            }
+            else
+            {
+                StringBuffer theOutput;
+                xslTransformHelper(xslp, text.str(), errorXslt, theOutput, context->queryXslParameters());
+                setContent(theOutput.str());
+                setContentType("text/html");
+            }
             send();
             return true;
         }
