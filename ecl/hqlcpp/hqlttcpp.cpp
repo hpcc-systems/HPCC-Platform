@@ -949,6 +949,11 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             {
             case no_fromxml:
                 return option;
+            case no_createrow:
+                //MORE: There are more cases that could be evaluated outside of thor, but playing safe.
+                if (expr->queryChild(0)->isConstant())
+                    return option;
+                break;
             }
             return OptionYes;
         case type_groupedtable:
