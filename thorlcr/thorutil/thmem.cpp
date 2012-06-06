@@ -379,7 +379,7 @@ void CThorExpandingRowArray::init(rowidx_t initialSize, StableSortFlag _stableSo
         maxRows = getRowsCapacity();
         memset(rows, 0, maxRows * sizeof(void *));
         if (stableSort_earlyAlloc == stableSort)
-            stableSortTmp = static_cast<void **>(rowManager->allocate(initialSize * sizeof(void*), activity.queryContainer().queryId()));
+            stableSortTmp = static_cast<void **>(rowManager->allocate(maxRows * sizeof(void*), activity.queryContainer().queryId()));
         else
             stableSortTmp = NULL;
     }
@@ -393,12 +393,9 @@ void CThorExpandingRowArray::init(rowidx_t initialSize, StableSortFlag _stableSo
 
 const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
 {
-    OwnedConstThorRow rowTable;
     try
     {
-        rowTable.setown(rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId()));
-        if (!rowTable)
-            return NULL;
+        return rowManager->allocate(num * sizeof(void*), activity.queryContainer().queryId());
     }
     catch (IException * e)
     {
@@ -411,7 +408,6 @@ const void *CThorExpandingRowArray::allocateRowTable(rowidx_t num)
         }
         throw;
     }
-    return rowTable.getClear();
 }
 
 const void *CThorExpandingRowArray::allocateNewRows(rowidx_t requiredRows)
@@ -444,7 +440,6 @@ void **CThorExpandingRowArray::allocateStableTable(bool error)
             throw MakeActivityException(&activity, 0, "Out of memory, allocating stable row array, trying to allocate %"RIPF"d elements", rowsCapacity);
         return NULL;
     }
-    dbgassertex(RoxieRowCapacity(newStableSortTmp.get()) / sizeof(void *) >= rowsCapacity); // in all likelihood, it will be equal
     return (void **)newStableSortTmp.getClear();
 }
 
