@@ -1523,32 +1523,32 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             getArchivedWUInfo(context, req, resp);
         else
         {
+            unsigned flags=0;
+            if (req.getTruncateEclTo64k())
+                flags|=WUINFO_TruncateEclTo64k;
+            if (req.getIncludeExceptions())
+                flags|=WUINFO_IncludeExceptions;
+            if (req.getIncludeGraphs())
+                flags|=WUINFO_IncludeGraphs;
+            if (req.getIncludeSourceFiles())
+                flags|=WUINFO_IncludeSourceFiles;
+            if (req.getIncludeResults())
+                flags|=WUINFO_IncludeResults;
+            if (req.getIncludeVariables())
+                flags|=WUINFO_IncludeVariables;
+            if (req.getIncludeTimers())
+                flags|=WUINFO_IncludeTimers;
+            if (req.getIncludeDebugValues())
+                flags|=WUINFO_IncludeDebugValues;
+            if (req.getIncludeApplicationValues())
+                flags|=WUINFO_IncludeApplicationValues;
+            if (req.getIncludeWorkflows())
+                flags|=WUINFO_IncludeWorkflows;
+            if (!req.getSuppressResultSchemas())
+                flags|=WUINFO_IncludeEclSchemas;
+
             try
             {
-                unsigned flags=0;
-                if (req.getTruncateEclTo64k())
-                    flags|=WUINFO_TruncateEclTo64k;
-                if (req.getIncludeExceptions())
-                    flags|=WUINFO_IncludeExceptions;
-                if (req.getIncludeGraphs())
-                    flags|=WUINFO_IncludeGraphs;
-                if (req.getIncludeSourceFiles())
-                    flags|=WUINFO_IncludeSourceFiles;
-                if (req.getIncludeResults())
-                    flags|=WUINFO_IncludeResults;
-                if (req.getIncludeVariables())
-                    flags|=WUINFO_IncludeVariables;
-                if (req.getIncludeTimers())
-                    flags|=WUINFO_IncludeTimers;
-                if (req.getIncludeDebugValues())
-                    flags|=WUINFO_IncludeDebugValues;
-                if (req.getIncludeApplicationValues())
-                    flags|=WUINFO_IncludeApplicationValues;
-                if (req.getIncludeWorkflows())
-                    flags|=WUINFO_IncludeWorkflows;
-                if (!req.getSuppressResultSchemas())
-                    flags|=WUINFO_IncludeEclSchemas;
-
                 WsWuInfo winfo(context, req.getWuid());
                 winfo.getInfo(resp.updateWorkunit(), flags);
 
@@ -1558,37 +1558,36 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     winfo.getResultViews(views, WUINFO_IncludeResultsViewNames);
                     resp.setResultViews(views);
                 }
-
-                switch (resp.getWorkunit().getStateID())
-                {
-                    case WUStateCompiling:
-                    case WUStateCompiled:
-                    case WUStateScheduled:
-                    case WUStateSubmitted:
-                    case WUStateRunning:
-                    case WUStateAborting:
-                    case WUStateWait:
-                    case WUStateUploadingFiles:
-                    case WUStateDebugPaused:
-                    case WUStateDebugRunning:
-                        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
-                        break;
-                    case WUStateBlocked:
-                        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS*5);
-                        break;
-                }
-
-                resp.setCanCompile(notEmpty(context.queryUserId()));
-                if (context.getClientVersion() > 1.24 && notEmpty(req.getThorSlaveIP()))
-                    resp.setThorSlaveIP(req.getThorSlaveIP());
             }
             catch (IException *e)
             {
-                StringBuffer errMsg;
-                if (strnicmp(e->errorMessage(errMsg), "Could not open workunit", 23))
+                if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
                 getArchivedWUInfo(context, req, resp);
             }
+
+            switch (resp.getWorkunit().getStateID())
+            {
+                case WUStateCompiling:
+                case WUStateCompiled:
+                case WUStateScheduled:
+                case WUStateSubmitted:
+                case WUStateRunning:
+                case WUStateAborting:
+                case WUStateWait:
+                case WUStateUploadingFiles:
+                case WUStateDebugPaused:
+                case WUStateDebugRunning:
+                    resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
+                    break;
+                case WUStateBlocked:
+                    resp.setAutoRefresh(WUDETAILS_REFRESH_MINS*5);
+                    break;
+            }
+
+            resp.setCanCompile(notEmpty(context.queryUserId()));
+            if (context.getClientVersion() > 1.24 && notEmpty(req.getThorSlaveIP()))
+                resp.setThorSlaveIP(req.getThorSlaveIP());
         }
     }
     catch(IException* e)
