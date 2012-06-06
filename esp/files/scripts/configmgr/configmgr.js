@@ -1609,6 +1609,8 @@ function createMultiColTreeCtrlForComp(rows, compName, subRecordIndex) {
         lazyload: true
       });
 
+      top.document.ContextMenu = oContextMenu;
+
       oContextMenu.dt = dt;
       oContextMenu.subscribe("beforeShow", onContextMenuBeforeShow);
       dt.expandRecord = function(id) {
