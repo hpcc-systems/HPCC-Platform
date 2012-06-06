@@ -51,97 +51,14 @@ public:
         {
             ensureNavLink(*folder, "My Account", "/Ws_Access/SecurityNotEnabled?form_", "My Account", NULL, NULL, 0, true);//Force the menu to use this setting
             ensureNavLink(*folder, "Change Password", "/Ws_Access/SecurityNotEnabled?form_", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
-            if (!isFF)
-                ensureNavLink(*folder, "Relogin", "/Ws_Access/SecurityNotEnabled?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
-            else
-                ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
         }
         else
         {
             ensureNavLink(*folder, "My Account", "/Ws_Account/MyAccount", "MyAccount", NULL, NULL, 0, true);//Force the menu to use this setting
             ensureNavLink(*folder, "Change Password", "/Ws_Account/UpdateUserInput", "Change Password", NULL, NULL, 0, true);//Force the menu to use this setting
-            if (!isFF)
-                ensureNavLink(*folder, "Relogin", "/Ws_Account/LogoutUser", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
-            else
-                ensureNavLink(*folder, "Relogin", "/Ws_Access/FirefoxNotSupport?form_", "Relogin", NULL, NULL, 0, true);//Force the menu to use this setting
         }
 #endif
     }
-
-#ifdef _USE_OPENLDAP
-    int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method)
-    {
-        if(!stricmp(method, "LogoutUser")||!stricmp(method, "LogoutUserRequest"))
-        {
-            CEspCookie* logincookie = request->queryCookie("RELOGIN");
-            if(logincookie == NULL || stricmp(logincookie->getValue(), "1") == 0)
-            {
-                response->addCookie(new CEspCookie("RELOGIN", "0"));
-
-                StringBuffer content(
-                "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                    "<head>"
-                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                        "<title>Enterprise Services Platform</title>"
-                    "</head>"
-                    "<body onLoad=\"location.href='/ws_account/LogoutUserCancel'\">"
-                    "</body>"
-                "</html>");
-
-                response->sendBasicChallenge("ESP", content.str());
-            }
-            else
-            {
-                response->addCookie(new CEspCookie("RELOGIN", "1"));
-                response->setContentType("text/html; charset=UTF-8");
-                StringBuffer content(
-                "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                    "<head>"
-                        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                        "<title>Enterprise Services Platform</title>"
-                    "</head>"
-                    "<body>"
-                    "<br/><b>Relogin successful, you're now logged in as ");
-                content.append(context.queryUserId()).append(
-                    "</b>"
-                    "</body>"
-                    "</html>");
-
-                response->setContent(content.str());
-                response->send();
-            }
-
-            return 0;
-        }
-        else if(!stricmp(method, "LogoutUserCancel")||!stricmp(method, "LogoutUserRequest"))
-        {
-            CEspCookie* logincookie = request->queryCookie("RELOGIN");
-            response->addCookie(new CEspCookie("RELOGIN", "1"));
-            response->setContentType("text/html; charset=UTF-8");
-            StringBuffer content(
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                "<head>"
-                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                    "<title>Enterprise Services Platform</title>"
-                    "<script type='text/javascript'>"
-                        "function closeWin() { top.opener=top; top.close(); }"
-                    "</script>"
-                "</head>"
-                "<body onload=\"javascript:closeWin();\">"
-                    "<br/><b>Relogin canceled, you're now still logged in as ");
-            content.append(context.queryUserId()).append(
-                "</b>"
-                "</body>"
-            "</html>");
-
-            response->setContent(content.str());
-            response->send();
-            return 0;
-        }
-        else
-            return Cws_accountSoapBinding::onGetInstantQuery(context, request, response, service, method);
-    }
-#endif
 };
 
 class Cws_accountEx : public Cws_account
