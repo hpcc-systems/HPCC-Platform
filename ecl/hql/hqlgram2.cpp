@@ -8737,7 +8737,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     IHqlExpression * failure = NULL;
     DefineIdSt* defineid = nameattr.getDefineId();
     _ATOM name = defineid->id;
-    ITypeInfo *type = defineid->getType();
+    Owned<ITypeInfo> type = defineid->getType();
     assertex(name);
 
     ActiveScopeInfo & activeScope = defineScopes.tos();
@@ -8747,7 +8747,6 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         {
             activeScope.resetParameters();
             delete defineid;
-            ::Release(type);
             return;
         }
 
@@ -8786,8 +8785,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         if (type)
         {
             reportError(ERR_SVC_NOYPENEEDED, nameattr, "Service can not have a type");
-            type->Release();
-            type = NULL;
+            type.clear();
         }
         if (activeScope.isParametered)
         {
@@ -8824,7 +8822,13 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
             }
             break;
         }
+    }
 
+    if (type && expr->isTransform())
+    {
+        ITypeInfo * recordType = queryRecordType(type);
+        assertex(recordType);
+        type.setown(makeTransformType(LINK(recordType)));
     }
 
     IHqlScope * localScope = activeScope.localScope;
@@ -8862,15 +8866,14 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                 //check the parameters and return type (if specified) are compatible, promote expression return type to same
                 if (type)
                 {
-                    if (!isSameUnqualifiedType(type, matchType))
+                    if (!isSameFullyUnqualifiedType(type, matchType))
                     {
                         //allow dataset with no record to match, as long as base type is the same
                         if (queryRecord(type) != queryNullRecord() || (type->getTypeCode() != matchType->getTypeCode()))
                             reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", name->str());
                         else
                         {
-                            type->Release();
-                            type = LINK(matchType);
+                            type.set(matchType);
                         }
                     }
                 }
@@ -8885,7 +8888,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                         }
                     }
                     else
-                        type = LINK(matchType);
+                        type.set(matchType);
                 }
             }
         }
@@ -8894,51 +8897,41 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     // type cast if necessary
     if (type && etype)
     {
-        if (op == no_transform)
+        if (type != etype)
         {
-            if (!recordTypesMatch(type, etype))
-                canNotAssignTypeError(type,etype,paramattr);
-        }
-        else
-        {
-            if (type != etype)
+            if (!type->assignableFrom(etype))
             {
-                if (!type->assignableFrom(etype))
+                if (queryRecord(type) != queryNullRecord())
                 {
-                    if (queryRecord(type) != queryNullRecord())
+                    canNotAssignTypeError(type,etype,paramattr);
+                    switch (type->getTypeCode())
                     {
-                        canNotAssignTypeError(type,etype,paramattr);
-                        switch (type->getTypeCode())
-                        {
-                        case type_record:
-                            expr.set(queryNullRecord());
-                            break;
-                        default:
-                            expr.setown(createNullExpr(type));
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    switch (etype->getTypeCode())
-                    {
-                    case type_table:
-                    case type_groupedtable:
                     case type_record:
-                    case type_row:
-                    case type_transform:
+                        expr.set(queryNullRecord());
                         break;
                     default:
-                        expr.setown(forceEnsureExprType(expr, type));
+                        expr.setown(createNullExpr(type));
                         break;
                     }
                 }
             }
+            else
+            {
+                switch (etype->getTypeCode())
+                {
+                case type_table:
+                case type_groupedtable:
+                case type_record:
+                case type_row:
+                case type_transform:
+                    break;
+                default:
+                    expr.setown(forceEnsureExprType(expr, type));
+                    break;
+                }
+            }
         }
     }
-
-    ::Release(type);
 
     // env symbol
     doDefineSymbol(defineid, expr.getClear(), failure, nameattr, assignattr.pos.position, semiattr.pos.position, activeScope.isParametered);
