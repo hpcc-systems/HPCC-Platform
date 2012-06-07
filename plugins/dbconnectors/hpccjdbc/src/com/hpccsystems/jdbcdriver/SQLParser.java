@@ -3,16 +3,8 @@ package com.hpccsystems.jdbcdriver;
 import java.sql.SQLException;
 import java.util.*;
 
-
-/**
- * Class is used for parsing sql statements.
- *
- * @author Zoran Milakovic <-- just noticed this need to ask Arjuna about this
- */
-public class SQLParser {
-
-	private static final String COMMA_ESCAPE = "~#####1~";
-
+public class SQLParser
+{
 	public final static short 	SQL_TYPE_UNKNOWN = -1;
 	public final static short 	SQL_TYPE_SELECT = 1;
 	public final static short 	SQL_TYPE_SELECTCONST = 2;
@@ -31,18 +23,9 @@ public class SQLParser {
 	private boolean columnsVerified;
 	private String indexHint;
 
-	/**
-	 * Parse sql statement.
-	 *
-	 * @param sql
-	 *            defines SQL statement
-	 * @exception Exception
-	 *                Description of Exception
-	 * @since
-	 */
-	public void parse(String sql) throws Exception
+	public void process(String insql) throws SQLException
 	{
-		System.out.println("#####INCOMING SQL: " + sql);
+		System.out.println("INCOMING SQL: " + insql);
 		columnsVerified = false;
 		limit = -1;
 		tableName = null;
@@ -52,69 +35,43 @@ public class SQLParser {
 		procInParamValues = new String[0];
 		storedProcName = null;
 		sqlType = SQL_TYPE_UNKNOWN;
-		sql = sql.trim();
-		sql = HPCCJDBCUtils.removeAllNewLines(sql);
 		indexHint = null;
 
-		// replace comma(,) in values between quotes(')
-		StringTokenizer tokQuote = new StringTokenizer(sql.toString(), "'",	true);
-		StringBuffer sb = new StringBuffer();
-		boolean openParent1 = false;
-		while (tokQuote.hasMoreTokens()) {
-			String next = tokQuote.nextToken();
-			if (openParent1) {
-				next = HPCCJDBCUtils.replaceAll(next, ",", COMMA_ESCAPE);
-			}
-			sb.append(next);
-			if (next.equalsIgnoreCase("'")) {
-				if (openParent1 == true) {
-					openParent1 = false;
-				} else {
-					openParent1 = true;
-				}
-			}
-		}
-		// END replacement
-		sql = sb.toString();
-		String upperSql = sql.toUpperCase();
+		insql = HPCCJDBCUtils.removeAllNewLines(insql);
+		String insqlupcase = insql.toUpperCase();
 
-		// handle unsupported statements
-		if (upperSql.startsWith("ALTER ")) {
-			throw new Exception("ALTER TABLE statements are not supported.");
+		if (insql.matches("^(?i)alter\\s+(.*?)"))
+		{
+			throw new SQLException("ALTER TABLE statements are not supported.");
 		}
-		if (upperSql.startsWith("DROP ")) {
-			throw new Exception("DROP statements are not supported.");
+		else if (insql.matches("^(?i)drop\\s+(.*?)"))
+		{
+			throw new SQLException("DROP statements are not supported.");
 		}
-		if (upperSql.startsWith("INSERT ")) {
-			throw new Exception("INSERT statements are not supported.");
+		else if (insql.matches("^(?i)insert\\s+(.*?)"))
+		{
+			throw new SQLException("INSERT statements are not supported.");
 		}
-		if (upperSql.startsWith("UPDATE ")) {
-			throw new Exception("UPDATE statements are not supported.");
+		else if (insql.matches("^(?i)update\\s+(.*?)"))
+		{
+			throw new SQLException("UPDATE statements are not supported.");
 		}
-		if (upperSql.contains(" UNION ")) {
-			throw new Exception("UNIONS are not supported.");
-		}
-		if (upperSql.contains(" JOIN ")) {
-			throw new Exception("JOINS are not supported.");
-		}
-
-		// CALL SP
-		if (upperSql.startsWith("CALL"))
+		else if (insql.matches("^(?i)call\\s+(.*?)"))
 		{
 			sqlType = SQL_TYPE_CALL;
-			int callPos = upperSql.lastIndexOf("CALL ");
-			int storedProcPos = sql.lastIndexOf("(");
-			int paramlistend =  sql.lastIndexOf(")");
+			int callstrpos = insqlupcase.lastIndexOf("CALL ");
+			int storedprocstrpos = insql.lastIndexOf("(");
+			int paramlistend =  insql.lastIndexOf(")");
 			String paramToken = "";
 
-			if (storedProcPos == -1)
-				storedProcName = sql.substring(callPos+5);
+			if (storedprocstrpos == -1)
+				storedProcName = insql.substring(callstrpos+5);
 			else
 			{
 				if (paramlistend == -1)
-					throw new SQLException("Missing closing param in: " + sql);
-				storedProcName = sql.substring(callPos+5, storedProcPos);
-				paramToken = sql.substring(storedProcPos+1, paramlistend);
+					throw new SQLException("Missing closing param in: " + insql);
+				storedProcName = insql.substring(callstrpos+5, storedprocstrpos);
+				paramToken = insql.substring(storedprocstrpos+1, paramlistend);
 			}
 
 			if(paramToken.length() >0 )
@@ -124,34 +81,37 @@ public class SQLParser {
 				int i = 0;
 				while (tokenizer.hasMoreTokens())
 				{
-					procInParamValues[i] = tokenizer.nextToken().trim();
+					procInParamValues[i++] = tokenizer.nextToken().trim();
 				}
-
 			}
 		}
-		// SELECT
-		if (upperSql.startsWith("SELECT "))
+		else if (insql.matches("^(?i)select\\s+(.*?)"))
 		{
-			sqlType = SQL_TYPE_SELECT;
-			int fromPos  = upperSql.lastIndexOf(" FROM ");
+			if (insql.matches("^(?i)select(.*?)\\s+(?i)union\\s+.*"))
+				throw new SQLException("SELECT UNIONS are not supported.");
+			if (insql.matches("^(?i)select(.*?)\\s+(?i)join\\s+.*"))
+				throw new SQLException("SELECT JOINS are not supported.");
 
-			if (fromPos == -1)
+			sqlType = SQL_TYPE_SELECT;
+			int fromstrpos  = insqlupcase.lastIndexOf(" FROM ");
+
+			if (fromstrpos == -1)
 			{
-				if (parseConstantSelect(sql))
+				if (parseConstantSelect(insql))
 				{
 					System.out.println("Found Select <constant>");
 					sqlType = SQL_TYPE_SELECTCONST;
 					return;
 				}
 				else
-					throw new Exception("Malformed SQL. Missing FROM statement.");
+					throw new SQLException("Malformed SQL. Missing FROM statement.");
 			}
 
-			int useindexPos = upperSql.lastIndexOf(" USE INDEX(");
+			int useindexstrpos = insqlupcase.lastIndexOf(" USE INDEX(");
 			/* Allow multiple spaces between USE and INDEX?
-			 * if (useindexPos > 0)
+			 * if (useindexstrpos > 0)
 			{
-				String afterUSE = upperSql.substring(useindexPos+4);
+				String afterUSE = upperSql.substring(useindexstrpos+4);
 				int inderelativepos = afterUSE.indexOf("INDEX(");
 
 				if(inderelativepos < 0)
@@ -165,28 +125,28 @@ public class SQLParser {
 
 			}*/
 
-			int wherePos = upperSql.lastIndexOf(" WHERE ");
-			int groupPos = upperSql.lastIndexOf(" GROUP BY ");
-			int orderPos = upperSql.lastIndexOf(" ORDER BY ");
-			int limitPos = upperSql.lastIndexOf(" LIMIT ");
+			int wherePos = insqlupcase.lastIndexOf(" WHERE ");
+			int groupPos = insqlupcase.lastIndexOf(" GROUP BY ");
+			int orderPos = insqlupcase.lastIndexOf(" ORDER BY ");
+			int limitPos = insqlupcase.lastIndexOf(" LIMIT ");
 
-			if ( useindexPos != -1 && useindexPos < fromPos)
-				throw new Exception("Malformed SQL. USING clause placement.");
+			if ( useindexstrpos != -1 && useindexstrpos < fromstrpos)
+				throw new SQLException("Malformed SQL. USING clause placement.");
 
-			if (wherePos != -1 && wherePos < fromPos)
-				throw new Exception("Malformed SQL. WHERE clause placement.");
+			if (wherePos != -1 && wherePos < fromstrpos)
+				throw new SQLException("Malformed SQL. WHERE clause placement.");
 
 			try
 			{
 				if (limitPos != -1)
 				{
-					limit = Integer.valueOf(upperSql.substring(limitPos+6).trim());
-					upperSql = upperSql.substring(0, limitPos);
+					limit = Integer.valueOf(insqlupcase.substring(limitPos+6).trim());
+					insqlupcase = insqlupcase.substring(0, limitPos);
 				}
 			}
 			catch (NumberFormatException ne)
 			{
-				throw new Exception("Error near :\'" + upperSql.substring(limitPos)+"\'");
+				throw new SQLException("Error near :\'" + insqlupcase.substring(limitPos)+"\'");
 			}
 
 			String orderByToken = "";
@@ -196,30 +156,29 @@ public class SQLParser {
 			{
 				if (orderPos == -1)
 				{
-					groupByToken = upperSql.substring(groupPos + 10);
+					groupByToken = insqlupcase.substring(groupPos + 10);
 				}
 				else
 				{
-					groupByToken = upperSql.substring(groupPos + 10, orderPos);
-					orderByToken = upperSql.substring(orderPos + 10);
+					groupByToken = insqlupcase.substring(groupPos + 10, orderPos);
+					orderByToken = insqlupcase.substring(orderPos + 10);
 				}
 
-				upperSql = upperSql.substring(0, groupPos);
+				insqlupcase = insqlupcase.substring(0, groupPos);
 
 			}
 			else if (orderPos != -1 && (groupPos == -1 || orderPos < groupPos))
 			{
 				if (groupPos == -1)
 				{
-					orderByToken = upperSql.substring(orderPos + 10);
+					orderByToken = insqlupcase.substring(orderPos + 10);
 				}
 				else
 				{
-					orderByToken = upperSql.substring(orderPos + 10, groupPos);
-					groupByToken = upperSql.substring(groupPos + 10);
-
+					orderByToken = insqlupcase.substring(orderPos + 10, groupPos);
+					groupByToken = insqlupcase.substring(groupPos + 10);
 				}
-				upperSql = upperSql.substring(0, orderPos);
+				insqlupcase = insqlupcase.substring(0, orderPos);
 			}
 
 			if (orderByToken.length()>0)
@@ -258,15 +217,15 @@ public class SQLParser {
 				}
 			}
 
-			sql = sql.substring(0,upperSql.length());
+			insql = insql.substring(0,insqlupcase.length());
 			String fullTableName = null;
-			if (wherePos == -1 && useindexPos == -1)
+			if (wherePos == -1 && useindexstrpos == -1)
 			{
-				fullTableName = sql.substring(fromPos + 6).trim();
+				fullTableName = insql.substring(fromstrpos + 6).trim();
 			}
 			else
 			{
-				fullTableName = sql.substring(fromPos + 6, (useindexPos == -1) ? wherePos : useindexPos).trim();
+				fullTableName = insql.substring(fromstrpos + 6, (useindexstrpos == -1) ? wherePos : useindexstrpos).trim();
 			}
 
 			String splittablefromalias [] = fullTableName.split("\\s+(?i)as(\\s+|$)");
@@ -275,18 +234,18 @@ public class SQLParser {
 				if (!splittablefromalias[0].contains(" "))
 					tableName = splittablefromalias[0].trim();
 				else
-					throw new Exception("Invalid SQL: " + splittablefromalias[0]);
+					throw new SQLException("Invalid SQL: " + splittablefromalias[0]);
 			}
 			else
-				throw new Exception("Invalid SQL: Missing table name.");
+				throw new SQLException("Invalid SQL: Missing table name.");
 
 			if (splittablefromalias.length > 1)
 				tableAlias = splittablefromalias[1].trim();
 
-			if (fromPos <= 7)
-				throw new Exception("Invalid SQL: Missing select column(s).");
+			if (fromstrpos <= 7)
+				throw new SQLException("Invalid SQL: Missing select column(s).");
 
-			StringTokenizer comatokens = new StringTokenizer(sql.substring(7, fromPos), ",");
+			StringTokenizer comatokens = new StringTokenizer(insql.substring(7, fromstrpos), ",");
 
 			for(int sqlcolpos = 1; comatokens.hasMoreTokens();)
 			{
@@ -302,7 +261,7 @@ public class SQLParser {
 					ECLFunction func= ECLFunctions.getEclFunction(funcname.toUpperCase());
 
 					if (func == null)
-						throw new Exception("ECL Function " + funcname + "is not currently supported");
+						throw new SQLException("ECL Function " + funcname + "is not currently supported");
 
 					col = col.substring(col.indexOf('(')+1).trim();
 
@@ -341,7 +300,7 @@ public class SQLParser {
 					if (ECLFunctions.verifyEclFunction(funcname, funccols))
 						colmetadata = new HPCCColumnMetaData(funcname, sqlcolpos++, funccols);
 					else
-						throw new Exception("Funtion " + funcname + " does not map to ECL as written");
+						throw new SQLException("Funtion " + funcname + " does not map to ECL as written");
 				}
 				else if(col.contains("."))
 				{
@@ -359,9 +318,9 @@ public class SQLParser {
 				selectColumns.add(colmetadata);
 			}
 
-			if (useindexPos != -1)
+			if (useindexstrpos != -1)
 			{
-				String useindexstr = sql.substring(useindexPos + 11);
+				String useindexstr = insql.substring(useindexstrpos + 11);
 				int useindexend = useindexstr.indexOf(")");
 				if (useindexend < 0 )
 					throw new SQLException("Malformed USE INDEX() clause.");
@@ -371,7 +330,7 @@ public class SQLParser {
 
 			if (wherePos != -1)
 			{
-				String strWhere = sql.substring(wherePos + 7);
+				String strWhere = insql.substring(wherePos + 7);
 				String splitedwhereands [] = strWhere.split(" and | AND |,");
 
 				for (int i = 0; i < splitedwhereands.length; i++)
@@ -440,10 +399,11 @@ public class SQLParser {
 					if (i < splitedwhereands.length-1)
 						whereclause.addExpression(andoperator);
 				}
-
-				System.out.println(whereclause);
+				//System.out.println(whereclause);
 			}
 		}
+		else
+			throw new SQLException("Invalid SQL found - only supports CALL and/or SELECT statements.");
 	}
 
 	private String handleComplexField(String fullFieldName) throws SQLException
@@ -458,7 +418,7 @@ public class SQLParser {
 		}
 		return null;
 	}
-	private boolean parseConstantSelect(String sql) throws Exception
+	private boolean parseConstantSelect(String sql) throws SQLException
 	{
 		String sqlUpper = sql.toUpperCase();
 		int wherePos = sqlUpper.lastIndexOf(" WHERE ");
@@ -478,7 +438,7 @@ public class SQLParser {
 		}
 		catch (NumberFormatException ne)
 		{
-			throw new Exception("Error near :\'" + sql.substring(limitPos)+"\'");
+			throw new SQLException("Error near :\'" + sql.substring(limitPos)+"\'");
 		}
 
 		//At this point we have select <something>
@@ -610,27 +570,33 @@ public class SQLParser {
 		return limit == -1 ? false : true;
 	}
 
-	public String [] getStoredProcInParamVals() {
+	public String [] getStoredProcInParamVals()
+	{
 		return procInParamValues;
 	}
 
-	public String getStoredProcName() {
+	public String getStoredProcName()
+	{
 		return storedProcName;
 	}
 
-	public String getTableAlias() {
+	public String getTableAlias()
+	{
 		return tableAlias;
 	}
 
-	public int getSqlType() {
+	public int getSqlType()
+	{
 		return sqlType;
 	}
 
-	public int getLimit() {
+	public int getLimit()
+	{
 		return limit;
 	}
 
-	public String getTableName() {
+	public String getTableName()
+	{
 		return tableName;
 	}
 
@@ -707,7 +673,8 @@ public class SQLParser {
 		return whereclause.getExpressionFromName(name);
 	}
 
-	public boolean whereClauseContainsKey(String name) {
+	public boolean whereClauseContainsKey(String name)
+	{
 		return whereclause.containsKey(name);
 	}
 
@@ -788,7 +755,6 @@ public class SQLParser {
 					{
 						verifyColumn(funccols.get(i), dfufile);
 					}
-
 				}
 				else if(HPCCJDBCUtils.isLiteralString(fieldName))
 				{
@@ -816,15 +782,18 @@ public class SQLParser {
 		}
 	}
 
-	public String getIndexHint() {
+	public String getIndexHint()
+	{
 		return indexHint;
 	}
 
 	public static void main(String[] args) throws Exception
 	{
 		SQLParser parser = new SQLParser();
-		parser.parse("select tg.people as mypeeps, zip as myzip from asfetchpeoplebyzipservice  as tg  USE INDEX(tutorial::rp::peoplebyzipindex2) where tg.zipvalue=?");
+		parser.process("select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000");
+		System.out.println(parser.getWhereClauseString());
 		System.out.println(parser.getTableName());
+		if (parser.hasLimitBy())
+			System.out.println(parser.getLimit());
 	}
-
 }
