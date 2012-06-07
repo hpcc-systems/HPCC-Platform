@@ -213,6 +213,7 @@
              </xsl:if>
              <input type="hidden" name="Path" value="{$reqInfo/Path}"/>
              <input type="hidden" name="Cluster" value="{$clusterName}"/>
+             <input type="hidden" name="Addresses.itemcount" value="{count(Machines/MachineInfoEx)}"/>
                <xsl:choose>
                   <xsl:when test="Exceptions">
                      <h1><xsl:value-of select="Exceptions"/></h1>
@@ -383,10 +384,10 @@
             </xsl:if-->
            <xsl:choose>
             <xsl:when test="string(ComponentName)='AgentExec'">
-               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
+               <input type="checkbox" name="Addresses.{position()-1}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:when>
             <xsl:otherwise>
-              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)" checked="true"/>
+              <input type="checkbox" name="Addresses.{position()-1}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:otherwise>
            </xsl:choose>
          </td>

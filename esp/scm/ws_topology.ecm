@@ -248,19 +248,19 @@ ESPStruct TpQueue
 ESPStruct TpServices
 {
     ESParray<ESPstruct TpDali>        TpDalis;
+    ESParray<ESPstruct TpDfuServer>   TpDfuServers;
+    ESParray<ESPstruct TpDkcSlave>    TpDkcSlaves;
+    ESParray<ESPstruct TpDropZone>    TpDropZones;
+    ESParray<ESPstruct TpEclAgent>    TpEclAgents;
     ESParray<ESPstruct TpEclServer>   TpEclServers;
     ESParray<ESPstruct TpEclServer>   TpEclCCServers;
-    ESParray<ESPstruct TpEclAgent>    TpEclAgents;
     [min_ver("1.16")] ESParray<ESPstruct TpEclScheduler>  TpEclSchedulers;
     ESParray<ESPstruct TpEspServer>   TpEspServers;
-    ESParray<ESPstruct TpDfuServer>   TpDfuServers;
-    ESParray<ESPstruct TpSashaServer> TpSashaServers;
-    ESParray<ESPstruct TpMySqlServer> TpMySqlServers;
-    ESParray<ESPstruct TpLdapServer>  TpLdapServers;
-    ESParray<ESPstruct TpDropZone>    TpDropZones;
     ESParray<ESPstruct TpFTSlave>     TpFTSlaves;
-    ESParray<ESPstruct TpDkcSlave>    TpDkcSlaves;
     ESParray<ESPstruct TpGenesisServer> TpGenesisServers;
+    ESParray<ESPstruct TpLdapServer>  TpLdapServers;
+    ESParray<ESPstruct TpMySqlServer> TpMySqlServers;
+    ESParray<ESPstruct TpSashaServer> TpSashaServers;
 };
 
 //  ===========================================================================
