@@ -27,10 +27,7 @@ public class HPCCDriver implements Driver
 		}
 	}
 
-	public HPCCDriver()
-	{
-	}
-
+	public HPCCDriver()	{}
 
 	public Connection connect(String url, Properties info) throws SQLException
 	{
@@ -66,11 +63,9 @@ public class HPCCDriver implements Driver
 		return new HPCCConnection(info);
 	}
 
-
 	public boolean acceptsURL(String url) throws SQLException {
 		return true;
 	}
-
 
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
 	{
@@ -79,17 +74,15 @@ public class HPCCDriver implements Driver
 		return infoArray;
 	}
 
-
 	public int getMajorVersion()
 	{
 		return HPCCVersionTracker.HPCCMajor;
 	}
 
-
-	public int getMinorVersion() {
+	public int getMinorVersion()
+	{
 		return HPCCVersionTracker.HPCCMinor;
 	}
-
 
 	public boolean jdbcCompliant() {
 		return true;
@@ -140,9 +133,9 @@ public class HPCCDriver implements Driver
 			//"select count(persons.zip) as zipcount, persons.city as mycity from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
 			//"select min(zip) as maxzip from tutorial::rp::tutorialperson as persons where persons.city = 'ABBEVILLE' "
 			//"select 1 as ONE"
-			"call myroxie::fetchpeoplebyzipservice(33445)"
+			//"call myroxie::fetchpeoplebyzipservice(33445)"
 			//"call fetchpeoplebyzipservice(33445)"
-
+			"call fetchpeoplebyzipservice()"
 			//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
 			//"select tbl.* from progguide::exampledata::peopleaccts tbl"
@@ -287,7 +280,7 @@ public class HPCCDriver implements Driver
 			//System.out.println("Tables found: ");
 			//while (tables.next()) {
 			//	System.out.println("   " + tables.getString("TABLE_NAME") + " Remarks: \'" + tables.getString("REMARKS")+"\'");
-		//	}
+			//}
 
 			ResultSet procs = conn.getMetaData().getProcedures(null, null, null);
 
@@ -296,12 +289,6 @@ public class HPCCDriver implements Driver
 				System.out.println("   " + procs.getString("PROCEDURE_NAME"));
 			}
 
-			ResultSet procs2 = conn.getMetaData().getProcedures(null, null, null);
-
-			System.out.println("procs found: ");
-			while (procs2.next()) {
-				System.out.println("   " + procs2.getString("PROCEDURE_NAME"));
-			}
 			/*
 			ResultSet proccols = conn.getMetaData().getProcedureColumns(null, null, null, null);
 
@@ -311,10 +298,10 @@ public class HPCCDriver implements Driver
 			}
 			*/
 			//getProcedureColumns catalog: null, schemaPattern: null, procedureNamePattern: fetchpeoplebyzipservice columnanmepat: null
-
 		}
-		catch (SQLException e) {
-			e.printStackTrace();
+		catch (SQLException e)
+		{
+			System.err.println(e.getMessage());
 		}
 	}
 }
