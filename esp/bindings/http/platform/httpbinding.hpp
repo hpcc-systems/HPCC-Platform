@@ -91,7 +91,6 @@ interface IEspHttpBinding
     virtual int onGetContent(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName)=0;
     virtual int onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName)=0;
     virtual int onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName)=0;
-    virtual int onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response)=0;
     virtual int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method)=0;
     virtual int onGetReqSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)=0;
     virtual int onGetRespSampleXml(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)=0;
@@ -222,7 +221,6 @@ public:
     virtual int onGetItext(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *path);
     virtual int onGetIframe(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *path);
     virtual int onGetContent(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
-    virtual int onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response);
     virtual int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method);
     
     virtual int onSoapRequest(CHttpRequest* request, CHttpResponse* response){return 0;}
