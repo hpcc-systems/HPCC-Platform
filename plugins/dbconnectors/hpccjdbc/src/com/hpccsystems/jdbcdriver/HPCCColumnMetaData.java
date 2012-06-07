@@ -87,16 +87,6 @@ public class HPCCColumnMetaData {
 		return constantValue;
 	}
 
-	public int getSQLType()
-	{
-		return sqlType;
-	}
-
-	public void setSQLType(int type)
-	{
-		this.sqlType = type;
-	}
-
 	public String getColumnName()
 	{
 		return columnName;
@@ -151,6 +141,11 @@ public class HPCCColumnMetaData {
 	// {
 	// return (String)this.restrictions.get(restriction);
 	// }
+
+	public void setSqlType(int type)
+	{
+		sqlType = type;
+	}
 
 	public int getSqlType()
 	{
