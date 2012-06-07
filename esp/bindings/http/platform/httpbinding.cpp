@@ -654,8 +654,6 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             return onGetRoot(context, request, response);
         case sub_serv_config:
             return onGetConfig(context, request, response);
-        case sub_serv_relogin:
-            return onRelogin(context, request, response);
         case sub_serv_getversion:
             return onGetVersion(context, request, response, serviceName.str());
         case sub_serv_index:
@@ -1123,82 +1121,6 @@ int EspHttpBinding::onGetVersion(IEspContext &context, CHttpRequest* request, CH
     response->setContentType("text/xml; charset=UTF-8");
     response->setStatus(HTTP_STATUS_OK);
     response->send();
-    return 0;
-}
-
-int EspHttpBinding::onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
-{
-    StringBuffer action;
-    request->getParameter("action", action);
-
-    if(action.length() == 0 || stricmp(action.str(), "ok") == 0)
-    {
-        CEspCookie* logincookie = request->queryCookie("RELOGIN");
-        if(logincookie == NULL || stricmp(logincookie->getValue(), "1") == 0)
-        {
-            response->addCookie(new CEspCookie("RELOGIN", "0"));
-
-            StringBuffer content(
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                "<head>"
-                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                    "<title>Enterprise Services Platform</title>"
-                "</head>"
-                "<body onLoad=\"location.href='relogin_?action=cancel'\">"
-                "</body>"
-            "</html>");
-
-            response->sendBasicChallenge(getChallengeRealm(), content.str());
-        }
-        else
-        {
-            response->addCookie(new CEspCookie("RELOGIN", "1"));
-            response->setContentType("text/html; charset=UTF-8");
-            StringBuffer content(
-            "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-                "<head>"
-                    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                    "<title>Enterprise Services Platform</title>"
-                "</head>"
-                "<body>"
-                "<br/><b>Relogin successful, you're now logged in as ");
-            content.append(context.queryUserId()).append(
-                "</b>"
-                "</body>"
-                "</html>");
-
-            response->setContent(content.str());
-            response->send();
-        }
-            
-        return 0;
-    }
-    else if(stricmp(action.str(), "cancel") == 0)
-    {
-        CEspCookie* logincookie = request->queryCookie("RELOGIN");
-        response->addCookie(new CEspCookie("RELOGIN", "1"));
-        response->setContentType("text/html; charset=UTF-8");
-        StringBuffer content(
-        "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-            "<head>"
-            "<script type='text/javascript'>"
-            "function closeWin() { top.opener=top; top.close(); }"
-            "</script>"
-                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                "<title>Enterprise Services Platform</title>"
-            "</head>"
-            "<body onload=\"javascript:closeWin();\">"
-                "<br/><b>Relogin canceled, you're now still logged in as ");
-        content.append(context.queryUserId()).append(
-            "</b>"
-            "</body>"
-        "</html>");
-
-        response->setContent(content.str());
-        response->send();
-        return 0;
-    }
-
     return 0;
 }
 

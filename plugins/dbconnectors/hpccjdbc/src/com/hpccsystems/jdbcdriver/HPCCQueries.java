@@ -6,30 +6,53 @@ import java.util.Properties;
 public class HPCCQueries {
 
 	private Properties queries;
-	private String clusterName;
 
-	public HPCCQueries(String cluster)
+	public HPCCQueries()
 	{
-		clusterName = cluster;
 		queries = new Properties();
 	}
 
-	public void put(String name, HPCCQuery query)
+	public void put(HPCCQuery query)
 	{
-		queries.put(name, query);
+		queries.put(query.getQuerySet()+"::"+query.getName(), query);
 	}
 
-	public String getClusterName()
-	{
-		return clusterName;
-	}
 	public Enumeration<Object> getQueries()
 	{
 		return queries.elements();
 	}
 
+	public HPCCQuery getQuerysetQuery(String eclqueryname)
+	{
+		String querysplit [] = eclqueryname.split("::");
+		if(querysplit.length > 2)
+		{
+			String name ="";
+			for (int i = 1; i < querysplit.length; i++)
+				name += "::" + querysplit[i];
+
+			return getQuery(querysplit[0], name);
+		}
+		else if (querysplit.length == 2)
+			return getQuery(querysplit[0], querysplit[1]);
+		else if (querysplit.length == 1)
+			return getQuery(querysplit[0]);
+		else
+			return null;
+	}
+
+	public HPCCQuery getQuery(String queryset, String eclqueryname)
+	{
+		return (HPCCQuery)queries.get(queryset+"::"+eclqueryname);
+	}
+
 	public HPCCQuery getQuery(String eclqueryname)
 	{
 		return (HPCCQuery)queries.get(eclqueryname);
+	}
+
+	public int getLength()
+	{
+		return queries.size();
 	}
 }

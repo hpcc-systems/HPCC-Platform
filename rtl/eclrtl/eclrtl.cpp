@@ -225,6 +225,7 @@ bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out
 
 RTLLocale * queryRTLLocale(char const * locale)
 {
+    if (!locale) locale = "";
     CriticalBlock b(localeCrit);
     RTLLocale * loc = localeMap->getValue(locale);
     if(!loc)

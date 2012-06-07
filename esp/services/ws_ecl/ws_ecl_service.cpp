@@ -2381,34 +2381,6 @@ int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* respons
     return 0;
 }
 
-int CWsEclBinding::onRelogin(IEspContext &context, CHttpRequest* request, CHttpResponse* response)
-{
-    const char* build_level = getBuildLevel();
-    if (!build_level || !*build_level || streq(build_level, "COMMUNITY") || 
-        strieq(wsecl->auth_method.sget(), "none") || strieq(wsecl->auth_method.sget(), "local"))
-    {
-        StringBuffer html;
-
-        html.append(
-          "<html>"
-            "<head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /><title>Advanced feature in Enterprise Edition</title></head>"
-            "<body>"
-              "<h3 style=\"text-align:centre;\">Advanced feature in the Enterprise Edition</h4>"
-              "<p style=\"text-align:centre;\">Support for this feature is coming soon. Further information can be found at ");
-        html.appendf("<a href=\"%s\" target=\"_blank\">%s</a>.", wsecl->portal_URL.sget(), wsecl->portal_URL.sget());
-        html.append(
-              "</p>"
-            "</body>"
-          "</html>");
-        response->setContent(html.str());
-        response->setContentType(HTTP_TYPE_TEXT_HTML_UTF8);
-        response->send();
-        return 0;
-    }
-    
-    return EspHttpBinding::onRelogin(context, request, response);
-}
-
 int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 {
     Owned<IMultiException> me = MakeMultiException("WsEcl");

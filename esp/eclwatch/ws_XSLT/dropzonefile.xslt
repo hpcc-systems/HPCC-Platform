@@ -251,7 +251,7 @@
                                 <xsl:attribute name="title">
                                   <xsl:value-of select="Path"/>;<xsl:value-of select="Linux"/>
                                 </xsl:attribute>
-                                <xsl:if test="$netAddress0=NetAddress and $path0=Path">
+                                <xsl:if test="$netAddress0=NetAddress and ($path0=Path or $path0=concat(Path,'/') or $path0=concat(Path,'\\'))">
                                   <xsl:attribute name="selected">selected</xsl:attribute>
                                 </xsl:if>
                                 <xsl:value-of select="Computer"/>/<xsl:value-of select="Name"/>

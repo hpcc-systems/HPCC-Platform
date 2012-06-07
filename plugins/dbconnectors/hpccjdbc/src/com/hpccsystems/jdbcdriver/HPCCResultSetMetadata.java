@@ -98,7 +98,6 @@ public class HPCCResultSetMetadata implements ResultSetMetaData{
         return tableName;
     }
 
-
     public String getCatalogName(int column) throws SQLException {
         return catalogName;
     }

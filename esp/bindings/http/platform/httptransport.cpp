@@ -1507,8 +1507,6 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_iframe;
                 else if (!stricmp(m_espMethodName.str(), "itext"))
                     m_sstype=sub_serv_itext;
-                else if (!stricmp(m_espMethodName.str(), "relogin_"))
-                    m_sstype=sub_serv_relogin;
                 else if (!stricmp(m_espMethodName.str(), "version_"))
                     m_sstype=sub_serv_getversion;
             }
@@ -2411,13 +2409,22 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         text.append('\n');
         WARNLOG("Exception(s) in %s::%s - %s", serv, meth, text.str());
 
-        if (errorXslt)
+        bool returnXml = context->queryRequestParameters()->hasProp("rawxml_");
+        if (errorXslt || returnXml)
         {
             me->serialize(text.clear());
-            StringBuffer theOutput;
-            xslTransformHelper(xslp, text.str(), errorXslt, theOutput, context->queryXslParameters());
-            setContent(theOutput.str());
-            setContentType("text/html");
+            if (returnXml)
+            {
+                setContent(text.str());
+                setContentType("text/xml");
+            }
+            else
+            {
+                StringBuffer theOutput;
+                xslTransformHelper(xslp, text.str(), errorXslt, theOutput, context->queryXslParameters());
+                setContent(theOutput.str());
+                setContentType("text/html");
+            }
             send();
             return true;
         }

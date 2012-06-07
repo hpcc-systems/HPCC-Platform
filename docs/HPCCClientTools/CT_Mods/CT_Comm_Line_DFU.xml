@@ -182,6 +182,41 @@
                   to split file parts to multiple target parts. If omitted,
                   the default is 0.</entry>
                 </row>
+
+                <row>
+                  <entry>compress</entry>
+
+                  <entry>Optional. A boolean flag (0 | 1) indicating whether
+                  to compress the target file.</entry>
+                </row>
+
+                <row>
+                  <entry>push</entry>
+
+                  <entry>Optional. A boolean flag (0 | 1) indicating whether
+                  to override push/pull default.</entry>
+                </row>
+
+                <row>
+                  <entry>encrypt=&lt;password&gt;</entry>
+
+                  <entry>Optional. Specifies to encrypt the target filename
+                  using the supplied password.</entry>
+                </row>
+
+                <row>
+                  <entry>decrypt=&lt;password&gt;</entry>
+
+                  <entry>Optional. Specifies to decrypt the source filename
+                  using the supplied password.</entry>
+                </row>
+
+                <row>
+                  <entry>jobname=&lt;jobname&gt;</entry>
+
+                  <entry>Specify a jobname for the DFU operation's
+                  workunit.</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
@@ -213,8 +248,8 @@ replicate=1</programlisting>
 
                 <tbody>
                   <row>
-                    <entry><graphic xml:base="../../" fileref="images/caution.png"
-                    scale="noin" /></entry>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../" /></entry>
 
                     <entry>We do not recommend storing your password in the
                     INI file (which is clear text). The password is included

@@ -12,6 +12,7 @@ public class HPCCQuery
 	private String WUID;
 	private String DLL;
 	private String Alias;
+	private String QuerySet;
 
 	private boolean Suspended;
 	private List<String> ResultDatasets;
@@ -28,10 +29,11 @@ public class HPCCQuery
 		WUID = "";
 		Suspended = false;
 		Alias = "";
+		QuerySet = "";
 		ResultDatasets = new ArrayList<String>();
 		schema = new ArrayList<HPCCColumnMetaData>();
 		defaulttable = null;
-		defaultfields = new ArrayList<HPCCColumnMetaData>();;
+		defaultfields = new ArrayList<HPCCColumnMetaData>();
 	}
 
 	public String getAlias() {
@@ -174,7 +176,6 @@ public class HPCCQuery
 
 	public boolean containsField(String tablename, String fieldname)
 	{
-		//Iterator<EclColumnMetaData> it = schema.iterator();
 		Iterator<HPCCColumnMetaData> it = defaultfields.iterator();
 		while (it.hasNext())
 		{
@@ -249,5 +250,15 @@ public class HPCCQuery
 		}
 
 		return inparams;
+	}
+
+	public String getQuerySet()
+	{
+		return QuerySet;
+	}
+
+	public void setQueryset(String qsname)
+	{
+		QuerySet = qsname;
 	}
 }
