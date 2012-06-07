@@ -130,18 +130,6 @@
                     <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                     <img border="0" src="files_/img/topurl.png" title="No Frames" width="13" height="15" style="cursor:pointer"
                     onclick="top.location.href=top.frames['main'].location.href"/>
-                    <xsl:if test="NoUser != '1'">
-                    <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-                    <a href="relogin_?action=ok" onclick="return go('relogin_?action=ok'); return false;">
-                      <img border="0" src="files_/img/relogin.png" width="13" height="15">
-                        <xsl:attribute name="title">
-                          <xsl:text disable-output-escaping="yes">You are logged in as '</xsl:text>
-                          <xsl:value-of select="LoginId"/>
-                          <xsl:text disable-output-escaping="yes">'. Click here to log in as a different user.</xsl:text>
-                        </xsl:attribute>
-                      </img>
-                    </a>
-                    </xsl:if>
                     <noscript>
                       <span style="color:red;">
                         <small>JavaScript needs to be enabled for the Enterprise Services Platform to work correctly.</small>

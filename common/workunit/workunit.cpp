@@ -4119,16 +4119,29 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
     return new CEnvironmentClusterInfo(clustname, prefix, querySetName, agent, thors, roxie);
 }
 
-IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
+IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *clustname)
 {
-    if (!clustname)
+    if (!clustname || !*clustname)
         return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    conn.setown(querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT));
     if (!conn)
         return NULL;
     StringBuffer xpath;
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
-    Owned<IPropertyTree> cluster = conn->queryRoot()->getPropTree(xpath.str());
+    return conn->queryRoot()->getPropTree(xpath.str());
+}
+
+bool validateTargetClusterName(const char *clustname)
+{
+    Owned<IRemoteConnection> conn;
+    Owned<IPropertyTree> cluster = getTopologyCluster(conn, clustname);
+    return (cluster.get()!=NULL);
+}
+
+IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
+{
+    Owned<IRemoteConnection> conn;
+    Owned<IPropertyTree> cluster = getTopologyCluster(conn, clustname);
     if (!cluster)
         return NULL;
     return getTargetClusterInfo(conn->queryRoot(), cluster);

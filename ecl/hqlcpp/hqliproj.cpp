@@ -1448,66 +1448,64 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             return;
         default:
             {
+                unsigned numArgs = expr->numChildren();
+                unsigned first = 0;
+                unsigned last = numArgs;
+                unsigned start = 0;
                 if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow())
                 {
                     switch (op)
                     {
                     case NO_AGGREGATE:
-                    case no_call:
-                    case no_externalcall:
                     case no_createset:
+                        last = 1;
                         break;
                     case no_sizeof:
-                        //MORE: Is this the best way to handle this?
-                        allowActivity = false;
-                        Parent::analyseExpr(expr);
-                        allowActivity = true;
-                        return;
+                        last = 0;
+                        break;
                     default:
                         extra->kind = NonActivity;
-                        Parent::analyseExpr(expr);
-                        gatherFieldsUsed(expr, extra);
-                        return;
+                        break;
                     }
                 }
-
-                IHqlExpression * record = expr->queryRecord();
-                if (!record && expr->queryChild(0))
-                    record = expr->queryChild(0)->queryRecord();
-                if (!record || !isSensibleRecord(record))
-                    extra->preventOptimization();
-
-                unsigned first = getFirstActivityArgument(expr);
-                unsigned last = first + getNumActivityArguments(expr);
-                unsigned numArgs = expr->numChildren();
-                unsigned start = 0;
-                switch (expr->getOperator())
+                else
                 {
-                case no_dedup:
-                    if (dedupMatchesWholeRecord(expr))
+                    IHqlExpression * record = expr->queryRecord();
+                    if (!record && expr->queryChild(0))
+                        record = expr->queryChild(0)->queryRecord();
+                    if (!record || !isSensibleRecord(record))
                         extra->preventOptimization();
-                    break;
-                case no_process:
-                    extra->preventOptimization();
-                    break;
-                case no_executewhen:
-                    last = 1;
-                    break;
-                case no_newkeyindex:
-//              case no_dataset:
-                    //No point walking the transform for an index
-                    start = 3;
-                    numArgs = 4;
-                    break;
-                case no_compound_diskaggregate:
-                case no_compound_diskcount:
-                case no_compound_diskgroupaggregate:
-                case no_compound_indexaggregate:
-                case no_compound_indexcount:
-                case no_compound_indexgroupaggregate:
-                    //walk inside these... they're not compoundable, but they may be able to lose some fields from the transform.
-                    last = 1;
-                    break;
+
+                    first = getFirstActivityArgument(expr);
+                    last = first + getNumActivityArguments(expr);
+                    switch (expr->getOperator())
+                    {
+                    case no_dedup:
+                        if (dedupMatchesWholeRecord(expr))
+                            extra->preventOptimization();
+                        break;
+                    case no_process:
+                        extra->preventOptimization();
+                        break;
+                    case no_executewhen:
+                        last = 1;
+                        break;
+                    case no_newkeyindex:
+    //              case no_dataset:
+                        //No point walking the transform for an index
+                        start = 3;
+                        numArgs = 4;
+                        break;
+                    case no_compound_diskaggregate:
+                    case no_compound_diskcount:
+                    case no_compound_diskgroupaggregate:
+                    case no_compound_indexaggregate:
+                    case no_compound_indexcount:
+                    case no_compound_indexgroupaggregate:
+                        //walk inside these... they're not compoundable, but they may be able to lose some fields from the transform.
+                        last = 1;
+                        break;
+                    }
                 }
 
                 for (unsigned i =start; i < numArgs; i++)
@@ -1515,12 +1513,23 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                     IHqlExpression * cur = expr->queryChild(i);
                     allowActivity = (i >= first) && (i < last);
                     analyseExpr(cur);
-                    if (allowActivity && !cur->isAction() && !cur->isAttribute())
+                    if (allowActivity)
                     {
-                        assertex(queryBodyExtra(cur)->activityKind() != NonActivity);
-                        connect(cur, expr);
+                        if (extra->kind == NonActivity)
+                        {
+                            ImplicitProjectInfo * childExtra = queryBodyExtra(cur);
+                            childExtra->preventOptimization();
+                        }
+                        else if (!cur->isAction() && !cur->isAttribute())
+                        {
+                            connect(cur, expr);
+                        }
                     }
                 }
+
+                if (extra->kind == NonActivity)
+                    gatherFieldsUsed(expr, extra);
+
                 allowActivity = true;
             }
         }

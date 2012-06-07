@@ -134,7 +134,7 @@ public:
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(ctx.querySecManager(), ctx.queryUser());
         cw.setown(factory->openWorkUnit(wuid_, false));
         if(!cw)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.", wuid_);
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
     }
 
     bool getResultViews(StringArray &resultViews, unsigned flags);

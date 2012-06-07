@@ -33,7 +33,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-
 /**
  *
  * @author  rpastrana
@@ -44,6 +43,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private HPCCQueries eclqueries;
 	private Properties dfufiles;
 	private static Map<Integer, String> SQLFieldMapping;
+	private List<String> targetclusters;
+	private List<String> querysets;
 
 	public static final short JDBCVerMajor = 3;
 	public static final short JDBCVerMinor = 0;
@@ -54,36 +55,58 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private static short HPCCBuildMajor = 0;
 	private static float HPCCBuildMinor = 0;
 
-	private boolean isMetaDataCached;
+	private boolean isHPCCMetaDataCached = false;
+	private boolean isDFUMetaDataCached = false;
+	private boolean isQuerySetMetaDataCached = false;
+
 	private String serverAddress;
-	private String cluster;
+	private String targetcluster;
+	private String queryset;
 	private String wseclwatchaddress;
-	private String wsecladdress;
 	private String wseclwatchport;
-	//private String wseclport;
 	private String basicAuth;
 	private String UserName;
+	private boolean lazyLoad;
 
 	public HPCCDatabaseMetaData(Properties props)
 	{
 		super();
-		this.serverAddress = props.getProperty("ServerAddress","localhost");
-		this.cluster = props.getProperty("Cluster","myroxie");
+		this.serverAddress = props.getProperty("ServerAddress");
+		this.targetcluster = props.getProperty("Cluster");
+		this.queryset = props.getProperty("QuerySet");
 		this.wseclwatchport  = props.getProperty("WsECLWatchPort");
 		this.wseclwatchaddress  = props.getProperty("WsECLWatchAddress");
 		this.UserName = props.getProperty("username");
 		this.basicAuth = props.getProperty("BasicAuth");
+		this.lazyLoad = Boolean.parseBoolean(props.getProperty("LazyLoad"));
 
-		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + cluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
+		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + targetcluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
+		targetclusters = new ArrayList<String>();
+		querysets = new ArrayList<String>();
 		dfufiles = new Properties();
-		eclqueries = new HPCCQueries(this.cluster);
+		eclqueries = new HPCCQueries();
 		SQLFieldMapping = new HashMap<Integer, String>();
 
 		System.out.println("EclDatabaseMetaData initialized");
 
-		if (!isMetaDataCached())
-			setMetaDataCached(CacheMetaData());
+		if (!isHPCCMetaDataCached())
+		{
+			setHPCCMetaDataCached(CacheMetaData());
+			if (targetclusters.size()>0 && !targetclusters.contains(this.targetcluster))
+			{
+				props.setProperty("Cluster", targetclusters.get(0));
+				System.out.println("Invalid cluster name found: " + this.targetcluster + ". using: " + targetclusters.get(0) );
+				this.targetcluster = targetclusters.get(0);
+			}
+
+			if (querysets.size()>0 && !querysets.contains(this.queryset))
+			{
+				props.setProperty("QuerySet", querysets.get(0));
+				System.out.println("Invalid query set name found: " + this.queryset + ". using: " + querysets.get(0) );
+				this.queryset = querysets.get(0);
+			}
+		}
 
 		setSQLTypeNames();
 	}
@@ -118,6 +141,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public int getProcFieldType(String eclqueryname, String eclresultset, String fieldName)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		try
 		{
 			HPCCQuery query = (HPCCQuery)eclqueries.getQuery(eclqueryname);
@@ -132,6 +158,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	}
 	public int getTableFieldType(String hpccfilename, String fieldName)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		try
 		{
 			DFUFile file = (DFUFile)dfufiles.get(hpccfilename);
@@ -145,435 +174,77 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		}
 	}
 
-	public boolean isMetaDataCached() {
-		return isMetaDataCached;
+	public boolean isDFUMetaDataCached()
+	{
+		return isDFUMetaDataCached;
 	}
 
-	public void setMetaDataCached(boolean isMetaDataCached) {
-		this.isMetaDataCached = isMetaDataCached;
+	public void setDFUMetaDataCached(boolean cached)
+	{
+		this.isDFUMetaDataCached = cached;
+	}
+
+	public boolean isQuerySetMetaDataCached()
+	{
+		return isQuerySetMetaDataCached;
+	}
+
+	public void setQuerySetMetaDataCached(boolean cached)
+	{
+		this.isQuerySetMetaDataCached = cached;
+	}
+
+	public boolean isHPCCMetaDataCached()
+	{
+		return isHPCCMetaDataCached;
+	}
+
+	public void setHPCCMetaDataCached(boolean isMetaDataCached)
+	{
+		this.isHPCCMetaDataCached = isMetaDataCached;
 	}
 
 	private boolean CacheMetaData()
 	{
 		boolean isSuccess = true;
-		if (serverAddress == null || cluster == null)
+
+		if (serverAddress == null || targetcluster == null)
 			return false;
 
-		getHPCCInfo();
+		isSuccess &= fetchHPCCInfo();
 
-		try
+		isSuccess &= fetchClusterInfo();
+
+		if (!lazyLoad)
 		{
-			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsDfu/DFUQuery?rawxml_";
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-			URL dfuLogicalFilesURL;
-			dfuLogicalFilesURL = new URL(urlString);
-
-			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
-			dfulogfilesConn.setInstanceFollowRedirects(false);
-			System.out.println("Setting auth: " + basicAuth);
-			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
-			dfulogfilesConn.setRequestMethod("GET");
-			dfulogfilesConn.setDoOutput(true);
-			dfulogfilesConn.setDoInput(true);
-
-			InputStream xml = dfulogfilesConn.getInputStream();
-
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document dom = db.parse(xml);
-
-			NodeList querySetList = dom.getElementsByTagName("DFULogicalFiles");
-
-			if (querySetList.getLength() > 0)
+			if (isDFUMetaDataCached())
 			{
-				NumberFormat format = NumberFormat.getInstance(Locale.US);
-
-				NodeList queryList = querySetList.item(0).getChildNodes();
-				for (int i = 0; i < queryList.getLength(); i++)
+				System.out.println("Tables found: ");
+				Enumeration<Object> em = dfufiles.elements();
+				while (em.hasMoreElements())
 				{
-					Node currentNode = queryList.item(i);
-					if (currentNode.getNodeName().equals("DFULogicalFile"))
-					{
-						NodeList querysetquerychildren = currentNode.getChildNodes();
-
-						DFUFile file = new DFUFile();
-						for (int j = 0; j < querysetquerychildren.getLength(); j++)
-						{
-							if (!querysetquerychildren.item(j).getTextContent().equals(""))
-							{
-								String NodeName = querysetquerychildren.item(j).getNodeName();
-								if (NodeName.equals("Prefix"))
-								{
-									file.setPrefix(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("ClusterName"))
-								{
-									file.setClusterName(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Directory"))
-								{
-									file.setDirectory(querysetquerychildren.item(j).getTextContent());
-								}
-								//else if (NodeName.equals("Description"))
-								//{
-								//	file.setDescription((querysetquerychildren.item(j).getTextContent()));
-								//}
-								else if (NodeName.equals("Parts"))
-								{
-									file.setParts((Integer.parseInt(querysetquerychildren.item(j).getTextContent())));
-								}
-								else if (NodeName.equals("Name"))
-								{
-									file.setFullyQualifiedName(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Owner"))
-								{
-									file.setOwner(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Totalsize"))
-								{
-									file.setTotalSize(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
-								}
-								else if (NodeName.equals("RecordCount"))
-								{
-									file.setRecordCount(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
-								}
-								else if (NodeName.equals("Modified"))
-								{
-									file.setModified(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("LongSize"))
-								{
-									file.setLongSize(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
-								}
-								else if (NodeName.equals("LongRecordCount"))
-								{
-									file.setLongRecordCount(Long.parseLong(querysetquerychildren.item(j).getTextContent()));
-								}
-								else if (NodeName.equals("isSuperfile"))
-								{
-									file.setSuperFile(querysetquerychildren.item(j).getTextContent().equals("1"));
-								}
-								else if (NodeName.equals("isZipfile"))
-								{
-									file.setZipFile(querysetquerychildren.item(j).getTextContent().equals("1"));
-								}
-								else if (NodeName.equals("isDirectory"))
-								{
-									file.setDirectory(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Replicate"))
-								{
-									file.setReplicate(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
-								}
-								else if (NodeName.equals("IntSize"))
-								{
-									file.setIntSize(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
-								}
-								else if (NodeName.equals("IntRecordCount"))
-								{
-									file.setIntRecordCount(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
-								}
-								else if (NodeName.equals("FromRoxieCluster"))
-								{
-									file.setFromRoxieCluster(querysetquerychildren.item(j).getTextContent().equals("1"));
-								}
-								else if (NodeName.equals("BrowseData"))
-								{
-									file.setBrowseData(querysetquerychildren.item(j).getTextContent().equals("1"));
-								}
-								else if (NodeName.equals("IsKeyFile"))
-								{
-									file.setIsKeyFile(querysetquerychildren.item(j).getTextContent().equals("1"));
-								}
-								else
-									System.out.println("Unknow QuerySetElement found: " + NodeName);
-							}
-
-						}
-
-						if (file.getFullyQualifiedName().length() > 0 && file.getClusterName()!=null)
-						{
-							String filedetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-									"/WsDfu/DFUInfo?Name=" +
-									URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
-									"&Cluster=" +
-									file.getClusterName() +
-									"&rawxml_";
-
-							//now request the schema for each roxy query
-							URL queryschema = new URL(filedetailUrl);
-							HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-							queryschemaconnection.setInstanceFollowRedirects(false);
-							queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-							queryschemaconnection.setRequestMethod("GET");
-							queryschemaconnection.setDoOutput(true);
-							queryschemaconnection.setDoInput(true);
-
-							InputStream schema = queryschemaconnection.getInputStream();
-							Document dom2 = db.parse(schema);
-
-							Element docElement = dom2.getDocumentElement();
-
-							// Get all pertinent detail info regarding this file (files are being treated as DB tables)
-							registerFileDetails(docElement, file);
-
-							//we might need more info if this file is actually an index:
-							if(file.isKeyFile())
-							{
-								String openfiledetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-										"/WsDfu/DFUSearchData?OpenLogicalName=" +
-										URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
-										"&Cluster=" +
-										file.getClusterName() +
-										"&RoxieSelections=0"+
-										"&rawxml_";
-
-								//now request the schema for each roxy query
-								URL queryfiledata = new URL(openfiledetailUrl);
-								HttpURLConnection queryfiledataconnection = (HttpURLConnection)queryfiledata.openConnection();
-								queryfiledataconnection.setInstanceFollowRedirects(false);
-								queryfiledataconnection.setRequestProperty("Authorization", basicAuth);
-								queryfiledataconnection.setRequestMethod("GET");
-								queryfiledataconnection.setDoOutput(true);
-								queryfiledataconnection.setDoInput(true);
-
-								InputStream filesearchinfo = queryfiledataconnection.getInputStream();
-								Document dom3 = db.parse(filesearchinfo);
-
-								Element docElement2 = dom3.getDocumentElement();
-
-								NodeList keyfiledetail = docElement2.getChildNodes();
-								if (keyfiledetail.getLength()>0)
-								{
-									for (int k = 0; k< keyfiledetail.getLength(); k++)
-									{
-										Node currentnode = keyfiledetail.item(k);
-										if(currentnode.getNodeName().startsWith("DFUDataKeyedColumns"))
-										{
-											NodeList keyedColumns = currentnode.getChildNodes();
-											for (int fieldindex = 0 ; fieldindex < keyedColumns.getLength(); fieldindex++)
-											{
-												Node KeyedColumn = keyedColumns.item(fieldindex);
-												NodeList KeyedColumnFields = KeyedColumn.getChildNodes();
-												for (int q = 0; q < KeyedColumnFields.getLength(); q++)
-												{
-													Node keyedcolumnfield = KeyedColumnFields.item(q);
-													if (keyedcolumnfield.getNodeName().equals("ColumnLabel"))
-													{
-														file.addKeyedColumnInOrder(keyedcolumnfield.getTextContent());
-														break;
-													}
-													/*currently not interested in any other field, if we need
-													 * other field values, remove above break;
-													 */
-												}
-
-											}
-										}
-										else if(currentnode.getNodeName().startsWith("DFUDataNonKeyedColumns"))
-										{
-											NodeList nonKeyedColumns = currentnode.getChildNodes();
-
-											for (int fieldindex = 0 ; fieldindex < nonKeyedColumns.getLength(); fieldindex++)
-											{
-												Node nonKeyedColumn = nonKeyedColumns.item(fieldindex);
-												NodeList nonKeyedColumnFields = nonKeyedColumn.getChildNodes();
-												for (int q = 0; q < nonKeyedColumnFields.getLength(); q++)
-												{
-													Node nonkeyedcolumnfield = nonKeyedColumnFields.item(q);
-													if (nonkeyedcolumnfield.getNodeName().equals("ColumnLabel"))
-													{
-														file.addNonKeyedColumnInOrder(nonkeyedcolumnfield.getTextContent());
-														break;
-													}
-													//currently not interested in any other field, if we need
-													 // other field values, remove above break;
-												}
-											}
-										}
-									}
-								}
-							}
-
-							// Add this file name to files structure
-							dfufiles.put(file.getFullyQualifiedName(), file);
-						}
-						else
-							System.out.println("Found DFU file but could not determine name and/or cluster");
-					}
+					 DFUFile file = (DFUFile)em.nextElement();
+					 System.out.println("\t" + file.getClusterName() + "." +file.getFileName() +"("+ file.getFullyQualifiedName()+")");
 				}
 			}
-			else
-				System.out.println("No DFU files found, check server address and ECL watch port");
-		}
-		catch (MalformedURLException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (ParserConfigurationException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (SAXException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (ParseException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
 
-		try
-		{
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
 
-			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + cluster + "&rawxml_";
-
-			URL querysetURL;
-			querysetURL = new URL(urlString);
-
-			HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
-			querysetconnection.setInstanceFollowRedirects(false);
-			querysetconnection.setRequestProperty("Authorization", basicAuth);
-			querysetconnection.setRequestMethod("GET");
-			querysetconnection.setDoOutput(true);
-			querysetconnection.setDoInput(true);
-
-			InputStream xml = querysetconnection.getInputStream();
-
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-			DocumentBuilder db = dbf.newDocumentBuilder();
-			Document dom = db.parse(xml);
-
-			NodeList querySetList = dom.getElementsByTagName("QuerysetQueries");
-
-			if (querySetList.getLength() > 0)
+			if (isQuerySetMetaDataCached())
 			{
-				NodeList queryList = querySetList.item(0).getChildNodes();
-				for (int i = 0; i < queryList.getLength(); i++)
+				System.out.println("Stored Procedures found: ");
+				Enumeration<Object> em1 = eclqueries.getQueries();
+				while (em1.hasMoreElements())
 				{
-					Node currentNode = queryList.item(i);
-					if (currentNode.getNodeName().equals("QuerySetQuery"))
-					{
-						NodeList querysetquerychildren = currentNode.getChildNodes();
-
-						HPCCQuery query = new HPCCQuery();
-						for (int j = 0; j < querysetquerychildren.getLength(); j++)
-						{
-							String NodeName = querysetquerychildren.item(j).getNodeName();
-							if (NodeName.equals("Id"))
-							{
-								query.setID(querysetquerychildren.item(j).getTextContent());
-							}
-							else if (NodeName.equals("Name"))
-							{
-								query.setName(querysetquerychildren.item(j).getTextContent());
-							}
-							else if (NodeName.equals("Wuid"))
-							{
-								query.setWUID(querysetquerychildren.item(j).getTextContent());
-							}
-							else if (NodeName.equals("Dll"))
-							{
-								query.setDLL(querysetquerychildren.item(j).getTextContent());
-							}
-							else if (NodeName.equals("Suspended"))
-							{
-								query.setSuspended(Boolean.parseBoolean(querysetquerychildren.item(j).getTextContent()));
-							}
-							else
-								System.out.println("Unknow QuerySetElement found: " + NodeName);
-
-						}
-						//for each QuerySetQuery found above, get all schema related info:
-						String queryinfourl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-								"/WsWorkunits/WUInfo/WUInfoRequest?Wuid=" +
-								query.getWUID() +
-								"&IncludeExceptions=0" +
-								"&IncludeGraphs=0" +
-								"&IncludeSourceFiles=0" +
-								"&IncludeTimers=0" +
-								"&IncludeDebugValues=0" +
-								"&IncludeApplicationValues=0" +
-								"&IncludeWorkflows=0" +
-								"&IncludeHelpers=0" +
-								"&rawxml_";
-
-						//now request the schema for each roxy query
-						URL queryschema = new URL(queryinfourl);
-						HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-						queryschemaconnection.setInstanceFollowRedirects(false);
-						queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-						queryschemaconnection.setRequestMethod("GET");
-						queryschemaconnection.setDoOutput(true);
-						queryschemaconnection.setDoInput(true);
-
-						InputStream schema = queryschemaconnection.getInputStream();
-						try
-						{
-							Document dom2 = db.parse(schema);
-
-							Element docElement = dom2.getDocumentElement();
-
-							// 	Get all pertinent info regarding this query (analogous to SQL DB)
-							registerSchemaElements(docElement, query);
-
-							// Add this query name to queries structure
-							eclqueries.put(query.getName(),query);
-						}
-						catch (SAXException e)
-						{
-							System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
-						}
-						catch (Exception e)
-						{
-							System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
-						}
-					}
+					HPCCQuery query = (HPCCQuery) em1.nextElement();
+					System.out.println("\t" + query.getQuerySet() + "::" +query.getName());
 				}
 			}
-			else
-				System.out.println("No ECL queries found, check server address, ECL cluster, and ECL watch port");
 		}
-		catch (IOException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (SAXException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (ParserConfigurationException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-
-		System.out.println("Tables found: ");
-		Enumeration<Object> em = dfufiles.elements();
-		while (em.hasMoreElements())
-		{
-			 DFUFile file = (DFUFile)em.nextElement();
-			System.out.println("\t" + file.getClusterName() + "." +file.getFileName() +"("+ file.getFullyQualifiedName()+")");
-		}
-
-		System.out.println("Stored Procedures found: ");
-		Enumeration<Object> em1 = eclqueries.getQueries();
-		while (em1.hasMoreElements()) {
-			HPCCQuery query = (HPCCQuery) em1.nextElement();
-			System.out.println("\t" + query.getName() + "#" + query.getDefaultTableName());
-		}
+		else
+			System.out.println("HPCC info not fetched (LazyLoad enabled)");
 
 		if (!isSuccess)
 			System.out.println("Could not query DB metadata check server address, cluster name, wsecl, and wseclwatch ports");
@@ -1540,8 +1211,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		List<List> procedures = new ArrayList<List>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		if (!isMetaDataCached())
-			CacheMetaData();
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
 
 		System.out.println("ECLDATABASEMETADATA GETPROCS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", procedureNamePattern: " + procedureNamePattern);
 
@@ -1566,15 +1237,13 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 				ArrayList rowValues = new ArrayList();
 				procedures.add(rowValues);
 				rowValues.add("");
-				rowValues.add("");
-				rowValues.add(queryname);
-				rowValues.add("");
-				rowValues.add("");
+				rowValues.add(query.getQuerySet());
+				rowValues.add(query.getQuerySet()+"::"+queryname);
 				rowValues.add("");
 				rowValues.add("");
+				rowValues.add("");
+				rowValues.add("QuerySet: " + query.getQuerySet());
 				rowValues.add(procedureResultUnknown);
-
-				System.out.println("founc proc: " + queryname);
 		}
 
 		return new HPCCResultSet(procedures, metacols, "Procedures");
@@ -1588,8 +1257,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		List<List> procedurecols = new ArrayList<List>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		if (!isMetaDataCached())
-			CacheMetaData();
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
 
 		System.out.println("ECLDATABASEMETADATA GETPROCS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", procedureNamePattern: " + procedureNamePattern);
 
@@ -1623,7 +1292,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			String tablename = query.getDefaultTableName();
 
 			Iterator<HPCCColumnMetaData> e = query.getAllFields().iterator();
-			int index = 1;
+
 			while (e.hasNext())
 			{
 				HPCCColumnMetaData col = (HPCCColumnMetaData)e.next();
@@ -1654,8 +1323,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 				if(!wildcolumnsearch)
 					break;
-
-				index++;
 			}
 			if(!wildprocsearch)
 				break;
@@ -1680,8 +1347,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		 * created. Values are "SYSTEM", "USER", "DERIVED". (may be null)
 		 */
 
-		if (!isMetaDataCached())
-			CacheMetaData();
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
 		System.out.println("ECLDATABASEMETADATA GETTABLES catalog: " + catalog +", schemaPattern: " + schemaPattern + ", tableNamePattern: " + tableNamePattern);
 
@@ -1735,8 +1402,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	@Override
 	public ResultSet getSchemas() throws SQLException
 	{
-		if (!isMetaDataCached())
-			CacheMetaData();
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
 		System.out.println("ECLDATABASEMETADATA GETSCHEMAS");
 
@@ -1796,6 +1463,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public String [] getAllTableFields(String dbname, String tablename)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		DFUFile file = (DFUFile)dfufiles.get(tablename);
 		if (file != null)
 			return file.getAllTableFieldsStringArray();
@@ -1808,6 +1478,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			String tableNamePattern, String columnNamePattern)	throws SQLException
 	{
 		System.out.println("ECLDATABASEMETADATA GETCOLUMNS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", tableNamePattern: " + tableNamePattern + ", columnNamePattern: " + columnNamePattern);
+
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
 		boolean wildtablesearch = tableNamePattern == null || tableNamePattern.length()==0 || tableNamePattern.contains("*") || tableNamePattern.contains("%");
 		boolean wildfieldsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.contains("*") || columnNamePattern.contains("%");
@@ -2112,44 +1785,44 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	public ResultSet getUDTs(String catalog, String schemaPattern,
 			String typeNamePattern, int[] types) throws SQLException {
 		/*
-				TYPE_CAT String => the type's catalog (may be null)
-	    	    TYPE_SCHEM String => type's schema (may be null)
-	    	    TYPE_NAME String => type name
-	    	    CLASS_NAME String => Java class name
-	    	    DATA_TYPE int => type value defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
-	    	    REMARKS String => explanatory comment on the type
-	    	    BASE_TYPE short => type code of the source type of a DISTINCT type or the type that implements the user-generated reference type of the SELF_REFERENCING_COLUMN of a structured type as defined in java.sql.Types (null if DATA_TYPE is not DISTINCT or not STRUCT with REFERENCE_GENERATION = USER_DEFINED)
+		 * TYPE_CAT String => the type's catalog (may be null) TYPE_SCHEM String
+		 * => type's schema (may be null) TYPE_NAME String => type name
+		 * CLASS_NAME String => Java class name DATA_TYPE int => type value
+		 * defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
+		 * REMARKS String => explanatory comment on the type BASE_TYPE short =>
+		 * type code of the source type of a DISTINCT type or the type that
+		 * implements the user-generated reference type of the
+		 * SELF_REFERENCING_COLUMN of a structured type as defined in
+		 * java.sql.Types (null if DATA_TYPE is not DISTINCT or not STRUCT with
+		 * REFERENCE_GENERATION = USER_DEFINED)
+		 * 
+		 * Note: If the driver does not support UDTs, an empty result set is
+		 * returned.
+		 */
+		System.out.println("ECLDATABASEMETADATA GETTYPEINFO");
 
-	    	Note: If the driver does not support UDTs, an empty result set is returned.*/
-	    	System.out.println("ECLDATABASEMETADATA GETTYPEINFO");
+		List<List<String>> udts = new ArrayList<List<String>>();
+		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-	    		List<List<String>> udts = new ArrayList<List<String>>();
-	    		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
+		metacols.add(new HPCCColumnMetaData("TYPE_CAT", 1,		java.sql.Types.VARCHAR)); // the type's catalog (may be null)
+		metacols.add(new HPCCColumnMetaData("TYPE_SCHEM", 2,	java.sql.Types.VARCHAR)); // type's schema (may be null)
+		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 3,		java.sql.Types.VARCHAR)); // type name
+		metacols.add(new HPCCColumnMetaData("CLASS_NAME", 4,	java.sql.Types.VARCHAR)); // Java class name
+		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 5,		java.sql.Types.INTEGER)); // type value defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
+		metacols.add(new HPCCColumnMetaData("REMARKS", 6,		java.sql.Types.VARCHAR)); // explanatory comment on the type
+		metacols.add(new HPCCColumnMetaData("BASE_TYPE", 7,		java.sql.Types.SMALLINT)); //
 
-	    		metacols.add(new HPCCColumnMetaData("TYPE_CAT", 		1, java.sql.Types.VARCHAR)); //the type's catalog (may be null)
-	    		metacols.add(new HPCCColumnMetaData("TYPE_SCHEM", 	2, java.sql.Types.VARCHAR)); //type's schema (may be null)
-	    		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 	3, java.sql.Types.VARCHAR)); //type name
-	    		metacols.add(new HPCCColumnMetaData("CLASS_NAME", 	4, java.sql.Types.VARCHAR)); //Java class name
-	    		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 	5, java.sql.Types.INTEGER)); //type value defined in java.sql.Types. One of JAVA_OBJECT, STRUCT, or DISTINCT
-	    		metacols.add(new HPCCColumnMetaData("REMARKS", 		6, java.sql.Types.VARCHAR)); //explanatory comment on the type
-	    		metacols.add(new HPCCColumnMetaData("BASE_TYPE", 	7, java.sql.Types.SMALLINT)); //
+		/*
+		 * for(EclTypes ecltype : EclTypes.values()) { ArrayList rowValues = new
+		 * ArrayList(); udts.add(rowValues);
+		 * 
+		 * rowValues.add(String.valueOf(ecltype));
+		 * rowValues.add(convertECLtypeCode2SQLtype(ecltype.ordinal()));
+		 * rowValues.add(0); rowValues.add(null); rowValues.add(null);
+		 * rowValues.add(null); rowValues.add(typeNullableUnknown); }
+		 */
 
-	    		/*for(EclTypes ecltype : EclTypes.values())
-	    		{
-	    			ArrayList rowValues = new ArrayList();
-	    			udts.add(rowValues);
-
-	    			rowValues.add(String.valueOf(ecltype));
-	    			rowValues.add(convertECLtypeCode2SQLtype(ecltype.ordinal()));
-	    			rowValues.add(0);
-	    			rowValues.add(null);
-	    			rowValues.add(null);
-	    			rowValues.add(null);
-	    			rowValues.add(typeNullableUnknown);
-	    		}*/
-
-	    		return new HPCCResultSet(udts, metacols, "UDTs");
-
+		return new HPCCResultSet(udts, metacols, "UDTs");
 	}
 
 	@Override
@@ -2213,19 +1886,557 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		return (int)HPCCBuildMinor;
 	}
 
-	private boolean getHPCCInfo()
+	private boolean fetchHPCCFilesInfo()
 	{
-		if (serverAddress == null || cluster == null)
+		boolean isSuccess = true;
+
+		if (isDFUMetaDataCached())
+		{
+			System.out.println("HPCC dfufile info already present (reconnect to force fetch)");
+			return true;
+		}
+
+		if (wseclwatchaddress == null || wseclwatchport == null)
 			return false;
-
-		//String urlString = "http://" + serverAddress + ":"+wseclwatchport+"/WsSMC/Activity?rawxml_";
-		String urlString = "http://" + wseclwatchaddress + ":"+wseclwatchport+"/WsSMC/Activity?rawxml_";
-
-		URL querysetURL;
 
 		try
 		{
-			querysetURL = new URL(urlString);
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsDfu/DFUQuery?rawxml_";
+
+			URL dfuLogicalFilesURL;
+			dfuLogicalFilesURL = new URL(urlString);
+
+			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
+			dfulogfilesConn.setInstanceFollowRedirects(false);
+			System.out.println("Setting auth: " + basicAuth);
+			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
+			dfulogfilesConn.setRequestMethod("GET");
+			dfulogfilesConn.setDoOutput(true);
+			dfulogfilesConn.setDoInput(true);
+
+			InputStream xml = dfulogfilesConn.getInputStream();
+
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document dom = db.parse(xml);
+
+			NodeList querySetList = dom.getElementsByTagName("DFULogicalFiles");
+
+			if (querySetList.getLength() > 0)
+			{
+				NumberFormat format = NumberFormat.getInstance(Locale.US);
+
+				NodeList queryList = querySetList.item(0).getChildNodes();
+				for (int i = 0; i < queryList.getLength(); i++)
+				{
+					Node currentNode = queryList.item(i);
+					if (currentNode.getNodeName().equals("DFULogicalFile"))
+					{
+						NodeList querysetquerychildren = currentNode.getChildNodes();
+
+						DFUFile file = new DFUFile();
+						for (int j = 0; j < querysetquerychildren.getLength(); j++)
+						{
+							if (!querysetquerychildren.item(j).getTextContent().equals(""))
+							{
+								String NodeName = querysetquerychildren.item(j).getNodeName();
+								if (NodeName.equals("Prefix"))
+								{
+									file.setPrefix(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("ClusterName"))
+								{
+									file.setClusterName(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Directory"))
+								{
+									file.setDirectory(querysetquerychildren.item(j).getTextContent());
+								}
+								//else if (NodeName.equals("Description"))
+								//{
+								//	file.setDescription((querysetquerychildren.item(j).getTextContent()));
+								//}
+								else if (NodeName.equals("Parts"))
+								{
+									file.setParts((Integer.parseInt(querysetquerychildren.item(j).getTextContent())));
+								}
+								else if (NodeName.equals("Name"))
+								{
+									file.setFullyQualifiedName(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Owner"))
+								{
+									file.setOwner(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Totalsize"))
+								{
+									file.setTotalSize(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
+								}
+								else if (NodeName.equals("RecordCount"))
+								{
+									file.setRecordCount(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
+								}
+								else if (NodeName.equals("Modified"))
+								{
+									file.setModified(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("LongSize"))
+								{
+									file.setLongSize(format.parse(querysetquerychildren.item(j).getTextContent()).longValue());
+								}
+								else if (NodeName.equals("LongRecordCount"))
+								{
+									file.setLongRecordCount(Long.parseLong(querysetquerychildren.item(j).getTextContent()));
+								}
+								else if (NodeName.equals("isSuperfile"))
+								{
+									file.setSuperFile(querysetquerychildren.item(j).getTextContent().equals("1"));
+								}
+								else if (NodeName.equals("isZipfile"))
+								{
+									file.setZipFile(querysetquerychildren.item(j).getTextContent().equals("1"));
+								}
+								else if (NodeName.equals("isDirectory"))
+								{
+									file.setDirectory(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Replicate"))
+								{
+									file.setReplicate(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
+								}
+								else if (NodeName.equals("IntSize"))
+								{
+									file.setIntSize(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
+								}
+								else if (NodeName.equals("IntRecordCount"))
+								{
+									file.setIntRecordCount(Integer.parseInt(querysetquerychildren.item(j).getTextContent()));
+								}
+								else if (NodeName.equals("FromRoxieCluster"))
+								{
+									file.setFromRoxieCluster(querysetquerychildren.item(j).getTextContent().equals("1"));
+								}
+								else if (NodeName.equals("BrowseData"))
+								{
+									file.setBrowseData(querysetquerychildren.item(j).getTextContent().equals("1"));
+								}
+								else if (NodeName.equals("IsKeyFile"))
+								{
+									file.setIsKeyFile(querysetquerychildren.item(j).getTextContent().equals("1"));
+								}
+								//else
+									//System.out.println("Unknow QuerySetElement found: " + NodeName);
+							}
+
+						}
+
+						if (file.getFullyQualifiedName().length() > 0 && file.getClusterName()!=null)
+						{
+							String filedetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+									"/WsDfu/DFUInfo?Name=" +
+									URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
+									"&Cluster=" +
+									file.getClusterName() +
+									"&rawxml_";
+
+							//now request the schema for each roxy query
+							URL queryschema = new URL(filedetailUrl);
+							HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
+							queryschemaconnection.setInstanceFollowRedirects(false);
+							queryschemaconnection.setRequestProperty("Authorization", basicAuth);
+							queryschemaconnection.setRequestMethod("GET");
+							queryschemaconnection.setDoOutput(true);
+							queryschemaconnection.setDoInput(true);
+
+							InputStream schema = queryschemaconnection.getInputStream();
+							Document dom2 = db.parse(schema);
+
+							Element docElement = dom2.getDocumentElement();
+
+							// Get all pertinent detail info regarding this file (files are being treated as DB tables)
+							registerFileDetails(docElement, file);
+
+							//we might need more info if this file is actually an index:
+							if(file.isKeyFile())
+							{
+								String openfiledetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+										"/WsDfu/DFUSearchData?OpenLogicalName=" +
+										URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
+										"&Cluster=" +
+										file.getClusterName() +
+										"&RoxieSelections=0"+
+										"&rawxml_";
+
+								//now request the schema for each roxy query
+								URL queryfiledata = new URL(openfiledetailUrl);
+								HttpURLConnection queryfiledataconnection = (HttpURLConnection)queryfiledata.openConnection();
+								queryfiledataconnection.setInstanceFollowRedirects(false);
+								queryfiledataconnection.setRequestProperty("Authorization", basicAuth);
+								queryfiledataconnection.setRequestMethod("GET");
+								queryfiledataconnection.setDoOutput(true);
+								queryfiledataconnection.setDoInput(true);
+
+								InputStream filesearchinfo = queryfiledataconnection.getInputStream();
+								Document dom3 = db.parse(filesearchinfo);
+
+								Element docElement2 = dom3.getDocumentElement();
+
+								NodeList keyfiledetail = docElement2.getChildNodes();
+								if (keyfiledetail.getLength()>0)
+								{
+									for (int k = 0; k< keyfiledetail.getLength(); k++)
+									{
+										Node currentnode = keyfiledetail.item(k);
+										if(currentnode.getNodeName().startsWith("DFUDataKeyedColumns"))
+										{
+											NodeList keyedColumns = currentnode.getChildNodes();
+											for (int fieldindex = 0 ; fieldindex < keyedColumns.getLength(); fieldindex++)
+											{
+												Node KeyedColumn = keyedColumns.item(fieldindex);
+												NodeList KeyedColumnFields = KeyedColumn.getChildNodes();
+												for (int q = 0; q < KeyedColumnFields.getLength(); q++)
+												{
+													Node keyedcolumnfield = KeyedColumnFields.item(q);
+													if (keyedcolumnfield.getNodeName().equals("ColumnLabel"))
+													{
+														file.addKeyedColumnInOrder(keyedcolumnfield.getTextContent());
+														break;
+													}
+													/*currently not interested in any other field, if we need
+													 * other field values, remove above break;
+													 */
+												}
+
+											}
+										}
+										else if(currentnode.getNodeName().startsWith("DFUDataNonKeyedColumns"))
+										{
+											NodeList nonKeyedColumns = currentnode.getChildNodes();
+
+											for (int fieldindex = 0 ; fieldindex < nonKeyedColumns.getLength(); fieldindex++)
+											{
+												Node nonKeyedColumn = nonKeyedColumns.item(fieldindex);
+												NodeList nonKeyedColumnFields = nonKeyedColumn.getChildNodes();
+												for (int q = 0; q < nonKeyedColumnFields.getLength(); q++)
+												{
+													Node nonkeyedcolumnfield = nonKeyedColumnFields.item(q);
+													if (nonkeyedcolumnfield.getNodeName().equals("ColumnLabel"))
+													{
+														file.addNonKeyedColumnInOrder(nonkeyedcolumnfield.getTextContent());
+														break;
+													}
+													//currently not interested in any other field, if we need
+													 // other field values, remove above break;
+												}
+											}
+										}
+									}
+								}
+							}
+
+							// Add this file name to files structure
+							dfufiles.put(file.getFullyQualifiedName(), file);
+						}
+						else
+							System.out.println("Found DFU file but could not determine name and/or cluster");
+					}
+				}
+			}
+			else
+				System.out.println("No DFU files found, check server address and ECL watch port");
+		}
+		catch (MalformedURLException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (ParserConfigurationException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (SAXException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (ParseException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+
+		return isSuccess;
+	}
+
+	private boolean fetchHPCCQueriesInfo()
+	{
+		boolean isSuccess = true;
+
+		if (isQuerySetMetaDataCached())
+		{
+			System.out.println("HPCC query info already present (reconnect to force fetch)");
+			return true;
+		}
+
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		if (querysets.size() == 0)
+			isSuccess &= fetchQuerysetsInfo();
+
+		try
+		{
+			for (int z = 0; z < querysets.size(); z++)
+			{
+				String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+									"/WsWorkunits/WUQuerysetDetails?QuerySetName=" +
+									querysets.get(z) + "&rawxml_";
+
+				URL querysetURL;
+				querysetURL = new URL(urlString);
+
+				HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
+				querysetconnection.setInstanceFollowRedirects(false);
+				querysetconnection.setRequestProperty("Authorization", basicAuth);
+				querysetconnection.setRequestMethod("GET");
+				querysetconnection.setDoOutput(true);
+				querysetconnection.setDoInput(true);
+
+				InputStream xml = querysetconnection.getInputStream();
+
+				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+				DocumentBuilder db = dbf.newDocumentBuilder();
+				Document dom = db.parse(xml);
+
+				NodeList querySetList = dom.getElementsByTagName("QuerysetQueries");
+
+				if (querySetList.getLength() > 0)
+				{
+					NodeList queryList = querySetList.item(0).getChildNodes();
+					for (int i = 0; i < queryList.getLength(); i++)
+					{
+						Node currentNode = queryList.item(i);
+						if (currentNode.getNodeName().equals("QuerySetQuery"))
+						{
+							NodeList querysetquerychildren = currentNode.getChildNodes();
+
+							HPCCQuery query = new HPCCQuery();
+							query.setQueryset(querysets.get(z));
+
+							for (int j = 0; j < querysetquerychildren.getLength(); j++)
+							{
+								String NodeName = querysetquerychildren.item(j).getNodeName();
+								if (NodeName.equals("Id"))
+								{
+									query.setID(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Name"))
+								{
+									query.setName(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Wuid"))
+								{
+									query.setWUID(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Dll"))
+								{
+									query.setDLL(querysetquerychildren.item(j).getTextContent());
+								}
+								else if (NodeName.equals("Suspended"))
+								{
+									query.setSuspended(Boolean.parseBoolean(querysetquerychildren.item(j).getTextContent()));
+								}
+							}
+							//for each QuerySetQuery found above, get all schema related info:
+							String queryinfourl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+									"/WsWorkunits/WUInfo/WUInfoRequest?Wuid=" +
+									query.getWUID() +
+									"&IncludeExceptions=1" +
+									"&IncludeGraphs=0" +
+									"&IncludeSourceFiles=0" +
+									"&IncludeTimers=0" +
+									"&IncludeDebugValues=0" +
+									"&IncludeApplicationValues=0" +
+									"&IncludeWorkflows=0" +
+									"&IncludeHelpers=0" +
+									"&rawxml_";
+
+							//now request the schema for each hpcc query
+							URL queryschema = new URL(queryinfourl);
+							HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
+							queryschemaconnection.setInstanceFollowRedirects(false);
+							queryschemaconnection.setRequestProperty("Authorization", basicAuth);
+							queryschemaconnection.setRequestMethod("GET");
+							queryschemaconnection.setDoOutput(true);
+							queryschemaconnection.setDoInput(true);
+
+							InputStream schema = queryschemaconnection.getInputStream();
+
+							try
+							{
+								Document dom2 = db.parse(schema);
+
+								Element docElement = dom2.getDocumentElement();
+
+								// 	Get all pertinent info regarding this query (analogous to SQL Stored Procedure)
+								registerSchemaElements(docElement, query);
+
+								System.out.println("______" + targetclusters.get(z)+"::"+query.getName());
+								// Add this query name to queries structure
+								eclqueries.put(query);
+							}
+							catch (java.util.NoSuchElementException e)
+							{
+								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+						    }
+							catch (SAXException e)
+							{
+								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+							}
+							catch (Exception e)
+							{
+								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (IOException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (SAXException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (ParserConfigurationException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+
+		return isSuccess;
+	}
+
+	private boolean fetchQuerysetsInfo()
+	{
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		if (querysets.size() > 0)
+		{
+			System.out.println("QuerySet info already present (reconnect to force fetch)");
+			return true;
+		}
+
+		try
+		{
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsWorkunits/WUQuerysets?rawxml_";
+
+			URL cluserInfoURL = new URL(urlString);
+
+			HttpURLConnection clusterInfoConnection = (HttpURLConnection)cluserInfoURL.openConnection();
+			clusterInfoConnection.setInstanceFollowRedirects(false);
+			clusterInfoConnection.setRequestProperty("Authorization", basicAuth);
+			clusterInfoConnection.setRequestMethod("GET");
+			clusterInfoConnection.setDoOutput(true);
+			clusterInfoConnection.setDoInput(true);
+
+			InputStream xml = clusterInfoConnection.getInputStream();
+
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document dom = db.parse(xml);
+
+			String querysetname;
+			NodeList querysetsList = dom.getElementsByTagName("QuerySetName");
+			for (int i = 0; i < querysetsList.getLength(); i++)
+			{
+				querysetname = querysetsList.item(i).getTextContent();
+				if (querysetname.length()>0)
+					querysets.add(querysetname);
+			}
+		}
+		catch (Exception e)
+		{
+			System.out.println("Could not fetch cluster information.");
+			return false;
+		}
+
+		return true;
+	}
+	private boolean fetchClusterInfo()
+	{
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		if (targetclusters.size() > 0)
+		{
+			System.out.println("Cluster info already present (reconnect to force fetch)");
+			return true;
+		}
+
+		try
+		{
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsTopology/TpTargetClusterQuery?Type=ROOT&rawxml_&ShowDetails=0";
+
+			URL cluserInfoURL = new URL(urlString);
+
+			HttpURLConnection clusterInfoConnection = (HttpURLConnection)cluserInfoURL.openConnection();
+			clusterInfoConnection.setInstanceFollowRedirects(false);
+			clusterInfoConnection.setRequestProperty("Authorization", basicAuth);
+			clusterInfoConnection.setRequestMethod("GET");
+			clusterInfoConnection.setDoOutput(true);
+			clusterInfoConnection.setDoInput(true);
+
+			InputStream xml = clusterInfoConnection.getInputStream();
+
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document dom = db.parse(xml);
+
+			NodeList clusterList = dom.getElementsByTagName("TpTargetCluster");
+			for (int i = 0; i < clusterList.getLength(); i++)
+			{
+				NodeList clusterElements = clusterList.item(i).getChildNodes();
+				for (int y = 0; y < clusterElements.getLength(); y++)
+				{
+					if (clusterElements.item(y).getNodeName().equals("Name"))
+					{
+						targetclusters.add(clusterElements.item(y).getTextContent());
+						break;
+					}
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			System.out.println("Could not fetch cluster information.");
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean fetchHPCCInfo()
+	{
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		try
+		{
+			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsSMC/Activity?rawxml_";
+
+			URL querysetURL = new URL(urlString);
 
 			HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
 			querysetconnection.setInstanceFollowRedirects(false);
@@ -2272,6 +2483,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		}
 		catch (Exception e)
 		{
+			System.out.println("Could not fetch HPCC info.");
 			return false;
 		}
 
@@ -2484,29 +2696,55 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	}
 
-	/*public String findAlias(String name)
-	{
-		return eclQueryAliases.getProperty(name, null);
-	}*/
-
 	public String getdefaultECLQueryResultDatasetName(String clustername,	String eclqueryname)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		return query == null ? "" : query.getDefaultTableName();
 	}
 
 	public boolean tableExists(String clustername, String eclqueryname)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		return dfufiles.containsKey(eclqueryname);
+	}
+
+	public HPCCQuery getHpccQuery(String clustername, String eclqueryname)
+	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
+		return eclqueries.getQuery(clustername, eclqueryname);
+	}
+
+	public HPCCQuery getHpccQuery(String eclqueryname)
+	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
+		if (eclqueryname.contains("::"))
+			return eclqueries.getQuerysetQuery(eclqueryname);
+		else
+			return eclqueries.getQuery(this.queryset, eclqueryname);
 	}
 
 	public boolean eclQueryExists(String clustername, String eclqueryname)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		return eclqueries.getQuery(eclqueryname) == null ? false : true;
 	}
 
 	public boolean allFieldsExist(String clustername, String eclqueryname, String[] columnNames)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null  && columnNames != null)
 		{
@@ -2523,6 +2761,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public boolean allDFUFileFieldsExist(String clustername, String dfufilename, String[] columnNames)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		DFUFile file = (DFUFile)dfufiles.get(dfufilename);
 
 		if(file != null  && columnNames != null)
@@ -2540,6 +2781,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public ArrayList<HPCCColumnMetaData> getStoredProcOutColumns(String cluster, String eclqueryname)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null)
 		{
@@ -2550,6 +2794,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public ArrayList<HPCCColumnMetaData> getStoredProcInColumns(String cluster, String eclqueryname)
 	{
+		if (!isQuerySetMetaDataCached())
+			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+
 		HPCCQuery query = eclqueries.getQuery(eclqueryname);
 		if(query != null)
 		{
@@ -2561,6 +2808,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public HPCCColumnMetaData getTableColumn(String hpccfilename, String fieldName)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		try
 		{
 			DFUFile file = (DFUFile)dfufiles.get(hpccfilename);
@@ -2576,6 +2826,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public DFUFile getDFUFile(String hpccfilename)
 	{
+		if (!isDFUMetaDataCached())
+			setDFUMetaDataCached(fetchHPCCFilesInfo());
+
 		return (DFUFile)dfufiles.get(hpccfilename);
 	}
 }

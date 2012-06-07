@@ -30,7 +30,7 @@ public class ECLEngine
 
 	private  		String		urlString;
 	private final 	String 		basicAuth;
-	private 	 	String 		eclqueryname;
+	private 	 	HPCCQuery 	hpccquery;
 	private final 	String 		datasetname;
 	private 		NodeList 	resultschema;
 	private final 	Properties 	props;
@@ -40,13 +40,15 @@ public class ECLEngine
 	private 		String 		indexToUseName;
 	private 		HashMap<String, String> 	eclEnteties;
 
-	public ECLEngine(String eclqueryname, String datasetname, Properties props)
+	public ECLEngine(SQLParser parser, HPCCDatabaseMetaData dbmetadata, Properties props, HPCCQuery query)
 	{
 		this.props = props;
-		this.datasetname = datasetname;
-		this.eclqueryname = eclqueryname;
+		this.dbMetadata = dbmetadata;
+		this.parser = parser;
 		basicAuth = props.getProperty("BasicAuth");
+		datasetname = null;
 		resultschema = null;
+		hpccquery = query;
 		eclEnteties = new HashMap<String, String>();
 	}
 
@@ -59,7 +61,7 @@ public class ECLEngine
 		this.indexToUseName = indextouse;
 		datasetname = null;
 		resultschema = null;
-		eclqueryname = null;
+		hpccquery = null;
 		eclEnteties = new HashMap<String, String>();
 	}
 
@@ -336,8 +338,7 @@ public class ECLEngine
 			}
 			case SQLParser.SQL_TYPE_CALL:
 			{
-				eclqueryname = HPCCJDBCUtils.handleQuotedString(parser.getStoredProcName());
-				if(!dbMetadata.eclQueryExists("", eclqueryname))
+				if(hpccquery == null)
 					throw new Exception("Invalid store procedure found");
 
 				return executeCall(null);
@@ -701,7 +702,11 @@ public class ECLEngine
 	{
 		try
 		{
-			urlString = "http://" + props.getProperty("WsECLAddress") + ":" + props.getProperty("WsECLPort") + "/WsEcl/submit/query/" + props.getProperty("Cluster") + "/" + eclqueryname + "/expanded";
+			urlString = "http://" + props.getProperty("WsECLAddress") + ":" +
+						props.getProperty("WsECLPort") +
+						"/WsEcl/submit/query/" +
+						hpccquery.getQuerySet() + "/" +
+						hpccquery.getName() + "/expanded";			
 			System.out.println("WSECL:executeCall: " + urlString);
 
 			// Construct data
@@ -709,7 +714,7 @@ public class ECLEngine
 			sb.append(URLEncoder.encode("submit_type_=xml", "UTF-8"));
 			sb.append("&").append(URLEncoder.encode("S1=Submit", "UTF-8"));
 
-			ArrayList<HPCCColumnMetaData> storeProcInParams = dbMetadata.getStoredProcInColumns("",eclqueryname);
+			ArrayList<HPCCColumnMetaData> storeProcInParams = hpccquery.getAllInFields();
 			String[] procInParamValues = parser.getStoredProcInParamVals();
 
 			for (int i = 0; i < procInParamValues.length; i++)

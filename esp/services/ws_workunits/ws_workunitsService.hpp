@@ -37,6 +37,10 @@ public:
         CWsWorkunits::setContainer(container);
         m_sched.setContainer(container);
     }
+    void refreshValidClusters();
+    bool isValidCluster(const char *cluster);
+    void deploySharedObject(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp, const char *dir, const char *xml=NULL);
+    void deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
 
     bool onWUQuery(IEspContext &context, IEspWUQueryRequest &req, IEspWUQueryResponse &resp);
     bool onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp);
@@ -105,6 +109,8 @@ private:
     StringBuffer queryDirectory;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
+    BoolHash validClusters;
+    CriticalSection crit;
     WUSchedule m_sched;
     unsigned short port;
 };
@@ -146,7 +152,5 @@ public:
 private:
     bool batchWatchFeaturesOnly;
 };
-
-void deploySharedObject(IEspContext &context, StringBuffer &newWuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml=NULL);
 
 #endif
