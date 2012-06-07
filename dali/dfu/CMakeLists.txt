@@ -27,7 +27,7 @@
 
 project (AllProjects)
 
-if ( NOT CLIENTTOOLS_ONLY )
+if ( PLATFORM )
     include ( dfuserver.cmake)
 endif()
 

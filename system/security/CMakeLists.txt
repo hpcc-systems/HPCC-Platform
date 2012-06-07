@@ -17,9 +17,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 IF (USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (LdapSecurity "ALL")
+HPCC_ADD_SUBDIRECTORY (LdapSecurity)
 ENDIF(USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (securesocket "ALL")
+HPCC_ADD_SUBDIRECTORY (securesocket)
 HPCC_ADD_SUBDIRECTORY (test "PLATFORM")
 if (USE_ZLIB)
   HPCC_ADD_SUBDIRECTORY (zcrypt "PLATFORM")

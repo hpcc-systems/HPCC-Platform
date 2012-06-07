@@ -16,8 +16,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (esdl "ALL")
-HPCC_ADD_SUBDIRECTORY (hidl "ALL")
+HPCC_ADD_SUBDIRECTORY (esdl)
+HPCC_ADD_SUBDIRECTORY (hidl)
 HPCC_ADD_SUBDIRECTORY (backupnode "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (combine "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dumpkey "PLATFORM")
@@ -35,5 +35,5 @@ HPCC_ADD_SUBDIRECTORY (genht "PLATFORM")
 # start-stop-daemon is linux only.
 if ( CMAKE_SYSTEM MATCHES Linux )
     message ("-- Building start-stop-daemon")
-    HPCC_ADD_SUBDIRECTORY (start-stop-daemon "ALL")
+    HPCC_ADD_SUBDIRECTORY (start-stop-daemon)
 endif()

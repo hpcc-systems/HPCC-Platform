@@ -18,6 +18,6 @@
 
 
 include (dafilesrv.cmake)
-if ( NOT CLIENTTOOLS_ONLY)
+if ( PLATFORM )
     include (dafscontrol.cmake)
 endif()

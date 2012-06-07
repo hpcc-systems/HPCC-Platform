@@ -106,7 +106,7 @@ set (    SRCS
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-if( NOT CLIENTTOOLS_ONLY )
+if( PLATFORM )
     add_executable ( fvserver ${SRCS} )
     set_target_properties(fvserver PROPERTIES 
         COMPILE_FLAGS -D_CONSOLE
