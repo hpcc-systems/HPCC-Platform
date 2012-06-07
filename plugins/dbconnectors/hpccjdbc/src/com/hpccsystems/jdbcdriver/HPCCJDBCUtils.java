@@ -122,7 +122,7 @@ public class HPCCJDBCUtils
 
 	public static String removeAllNewLines(String str)
 	{
-		return str.replaceAll("\\r\\n|\\r|\\n", " ");
+		return str.trim().replaceAll("\\r\\n|\\r|\\n", " ");
 	}
 
 	public static boolean isLiteralString(String str)
