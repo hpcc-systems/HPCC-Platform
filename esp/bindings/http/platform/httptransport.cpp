@@ -1507,8 +1507,6 @@ void CHttpRequest::parseEspPathInfo()
                     m_sstype=sub_serv_iframe;
                 else if (!stricmp(m_espMethodName.str(), "itext"))
                     m_sstype=sub_serv_itext;
-                else if (!stricmp(m_espMethodName.str(), "relogin_"))
-                    m_sstype=sub_serv_relogin;
                 else if (!stricmp(m_espMethodName.str(), "version_"))
                     m_sstype=sub_serv_getversion;
             }
