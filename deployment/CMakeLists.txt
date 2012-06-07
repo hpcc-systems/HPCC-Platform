@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-HPCC_ADD_SUBDIRECTORY (configgen)
-HPCC_ADD_SUBDIRECTORY (deploy)
-HPCC_ADD_SUBDIRECTORY (deployutils ${CLIENTTOOLS_ONLY})
-HPCC_ADD_SUBDIRECTORY (envgen ${CLIENTTOOLS_ONLY})
+HPCC_ADD_SUBDIRECTORY (configgen "ALL")
+HPCC_ADD_SUBDIRECTORY (deploy "ALL")
+HPCC_ADD_SUBDIRECTORY (deployutils "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (envgen "PLATFORM")

@@ -40,6 +40,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
+  set(ALL ON) #Enable the building/inclusion of any component/dir marked as ALL
+  option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
+  option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
+  option(DEVEL "Enable the building/inclusion of a Development component." OFF)
   option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
 
   option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" ON)
@@ -82,6 +86,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   if ( MAKE_DOCS_ONLY AND NOT CLIENTTOOLS_ONLY )
       set( MAKE_DOCS ON )
+  endif()
+
+  if ( CLIENTTOOLS_ONLY )
+      set(PLATFORM OFF)
+      set(DEVEL OFF)
   endif()
   
   option(PORTALURL "Set url to hpccsystems portal download page")
@@ -173,15 +182,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   #
   # This call will disable the roxie dir if -DCLIENTTOOLS_ONLY=ON is set at config time.
   #
-  macro(HPCC_ADD_SUBDIRECTORY subdir)
-    set(adddir 0)
-    foreach( f ${ARGN} )
-      if( f )
-        set(adddir 1)
-      endif()
-    endforeach() 
-
-    if ( NOT adddir )
+  macro(HPCC_ADD_SUBDIRECTORY subdir flag)
+    if ( ${flag} )
       add_subdirectory(${subdir})
     endif()
   endmacro(HPCC_ADD_SUBDIRECTORY)
