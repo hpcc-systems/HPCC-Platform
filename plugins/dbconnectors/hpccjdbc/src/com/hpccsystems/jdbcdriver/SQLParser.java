@@ -301,6 +301,8 @@ public class SQLParser
 						colmetadata = new HPCCColumnMetaData(funcname, sqlcolpos++, funccols);
 					else
 						throw new SQLException("Function " + funcname + " does not map to ECL as written");
+
+					colmetadata.setSqlType(func.getReturnType().getSqlType());
 				}
 				else if(col.contains("."))
 				{
@@ -760,7 +762,7 @@ public class SQLParser
 				{
 					column.setColumnName("ConstStr"+ column.getIndex());
 					column.setEclType("STRING");
-					column.setSQLType(java.sql.Types.VARCHAR);
+					column.setSqlType(java.sql.Types.VARCHAR);
 					column.setColumnType(HPCCColumnMetaData.COLUMN_TYPE_CONSTANT);
 					column.setConstantValue(fieldName);
 				}
@@ -768,7 +770,7 @@ public class SQLParser
 				{
 					column.setColumnName("ConstNum" + column.getIndex());
 					column.setEclType("INTEGER");
-					column.setSQLType(java.sql.Types.NUMERIC);
+					column.setSqlType(java.sql.Types.NUMERIC);
 					column.setColumnType(HPCCColumnMetaData.COLUMN_TYPE_CONSTANT);
 					column.setConstantValue(fieldName);
 				}
