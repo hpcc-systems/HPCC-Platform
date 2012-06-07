@@ -65,6 +65,7 @@
 
    <xsl:variable name="autoRefresh" select="$reqInfo/AutoRefresh"/>
    <xsl:variable name="numColumns" select="count(/GetTargetClusterInfoResponse/Columns/Item)"/>
+   <xsl:variable name="countTargetClusters" select="count(/GetTargetClusterInfoResponse/TargetClusterInfoList/TargetClusterInfo)"/>
 
     <xsl:template match="/GetTargetClusterInfoResponse">
       <html>
@@ -89,6 +90,7 @@
               </script>
 
               <script language="JavaScript1.2">
+                var countTCs=<xsl:value-of select="$countTargetClusters"/>;
                 <xsl:text disable-output-escaping="yes"><![CDATA[
                   var allowReloadPage = true;
                   var sortableTable = null;
@@ -97,6 +99,7 @@
 
                   function onLoad()
                   {
+                    document.getElementsByName('TargetClusters.itemcount')[0].value = countTCs;
                     initSelection('resultsTable');
                     initPreflightControls();
 
@@ -254,6 +257,7 @@
           <form id="listitems" action="/ws_machine/GetTargetClusterInfo" method="post">
             <input type="hidden" name="Path" value="{$reqInfo/Path}"/>
             <input type="hidden" name="Cluster" value="{$clusterName}"/>
+            <input type="hidden" name="TargetClusters.itemcount" value=""/>
                <xsl:choose>
                   <xsl:when test="Exceptions">
                      <h1><xsl:value-of select="Exceptions"/></h1>
@@ -328,7 +332,7 @@
     <table id="resultsTable" class="sort-table" width="100%">
       <tr class="grey">
         <td valign="top" width="20">
-          <input type="checkbox" name="TargetClusters_i{count(preceding::TargetClusterInfo)}" checked="1"
+          <input type="checkbox" name="TargetClusters.{count(preceding::TargetClusterInfo)}" checked="1"
                                 value="{$type}:{$name}" title="Select this target cluster" onclick="return clickTCCheckbox('{$type}', '{$name}', this);"></input>
         </td>
         <td align="left" width="20">

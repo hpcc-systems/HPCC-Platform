@@ -112,9 +112,9 @@
             function onLoad()
             {
                 initSelection('resultsTable');
+                document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
                 initPreflightControls();
                 onRowCheck(true);
-                //alert(totalItems);
             }
             function toggleDetails(id)
             {
@@ -193,7 +193,8 @@
                 <th>Network Address</th>
                 <th>Directory</th>
             </tr>
-            
+
+            <input type="hidden" name="Addresses.itemcount" value=""/>
             <xsl:call-template name="showMachines">
                 <xsl:with-param name="caption" select="'DALI Servers'"/>
                 <xsl:with-param name="nodes" select="TpDalis/TpDali"/>
@@ -353,7 +354,7 @@
                     </xsl:if>
                     <td width="1%" valign="top">
                         <xsl:if test="$showCheckbox">
-                            <input type="checkbox" name="Addresses_i{count(preceding::TpMachine)}" 
+                            <input type="checkbox" name="Addresses.{count(preceding::TpMachine)}"
                                 value="{Netaddress}|{ConfigNetaddress}:{Type}:{$compName}:{OS}:{translate(Directory, ':', '$')}" onclick="return clicked(this, event)">
                                 <xsl:if test="$checked">
                                     <xsl:attribute name="checked">true</xsl:attribute>
