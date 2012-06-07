@@ -3916,7 +3916,7 @@ protected:
         }
 
         //Check small allocations are also aligned
-        size32_t limitSize = FixedSizeHeaplet::dataAreaSize() / firstFractionalHeap;
+        size32_t limitSize = firstFractionalHeap;
         for (size_t nextSize = 1; nextSize < limitSize; nextSize++)
         {
             OwnedRoxieRow row = rowManager->allocate(nextSize, 0);
