@@ -20,6 +20,9 @@ PATH_PRE=`type -path hpcc_setenv`
 INSTALL_DIR=`dirname ${PATH_PRE}`/..
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 
+source ${PATH_PRE} ""
+export MASTER_PID_NAME="$PID/`basename $PWD`_master.pid" ## this needed when we use bash_init_system
+
 which_pidof
 
 if [ $# -lt 1 ]; then
@@ -44,23 +47,31 @@ if [ "$#" -lt "2" ] || [ "$2" != "keep_sentinel" ]; then
     sleep 1
 fi
 
-masterproc="$instancedir/thormaster_$THORNAME"
-while [ "`${PIDOF} $masterproc`" != "" ]
-do
-  echo --------------------------
-  echo stopping thormaster $THORMASTER 
-  killall $masterproc
-  sleep 8
-  killall -9 $masterproc
-  sleep 1
-done
+masterpid=`cat ${MASTER_PID_NAME} 2> /dev/null`
+if [ ! -z $masterpid ]; then
+  while :
+  do
+    kill -0 $masterpid >& /dev/null
+    masterRunning=$(( $? == 0 ? 1 : 0 ))
+    if [ 0 == $masterRunning ]; then
+      break
+    fi
+    echo --------------------------
+    echo stopping thormaster $THORMASTER 
+    kill $masterpid >& /dev/null
+    sleep 8
+    kill -9 $masterpid >& /dev/null
+    sleep 1
+  done
+fi
 
 echo --------------------------
 echo stopping thor slaves 
 
-slaveproc="$instancedir/thorslave_$THORNAME"
+SLAVE_PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
 if [ "$localthor" = "true" ]; then
-    killall -9 $slaveproc
+    slavepid=`cat ${SLAVE_PID_NAME} 2> /dev/null`
+    kill -9 $slavepid > /dev/null
 else
     # use 20 threads
     # timeout of 60 seconds (in case slave busy)
@@ -78,7 +89,7 @@ else
             exit 1
         fi
     fi
-    $deploydir/frunssh $instancedir/slaves "/bin/sh -c 'killall -9 $slaveproc'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
+    $deploydir/frunssh uniq $instancedir/slaves "/bin/sh -c '$deploydir/stop_slaves ${hpcc_compname} $PATH_PRE'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
 
