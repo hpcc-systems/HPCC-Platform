@@ -3904,18 +3904,23 @@ protected:
                 ASSERT((thisSize & (ALLOC_ALIGNMENT-1)) == 0);
             }
 
-            //Only test if heaps exist for all fractions of a page
-            if (hasAnyStepBlocks)
+            //Ensure you can allocate frac allocations in a single page (The row manager only has 1 page.)
+            size32_t testSize = (fracSize - FixedSizeHeaplet::chunkHeaderSize) & ~(ALLOC_ALIGNMENT-1);
+            for (unsigned i1=0; i1 < frac; i1++)
             {
-                //Ensure you can allocate frac allocations in a single page
-                size32_t testSize = (fracSize - FixedSizeHeaplet::chunkHeaderSize) & ~(ALLOC_ALIGNMENT-1);
-                for (unsigned i1=0; i1 < frac; i1++)
-                {
-                    tempRow[i1] = rowManager->allocate(testSize, 0);
-                }
-                for (unsigned i2=0; i2 < frac; i2++)
-                    ReleaseRoxieRow(tempRow[i2]);
+                tempRow[i1] = rowManager->allocate(testSize, 0);
+                ASSERT(((memsize_t)tempRow[i1] & (ALLOC_ALIGNMENT-1)) == 0);
             }
+            for (unsigned i2=0; i2 < frac; i2++)
+                ReleaseRoxieRow(tempRow[i2]);
+        }
+
+        //Check small allocations are also aligned
+        size32_t limitSize = FixedSizeHeaplet::dataAreaSize() / firstFractionalHeap;
+        for (size_t nextSize = 1; nextSize < limitSize; nextSize++)
+        {
+            OwnedRoxieRow row = rowManager->allocate(nextSize, 0);
+            ASSERT(((memsize_t)row.get() & (ALLOC_ALIGNMENT-1)) == 0);
         }
     }
     void testFixedRelease()
