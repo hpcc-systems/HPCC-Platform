@@ -54,6 +54,11 @@
 #define ACTIVITY_FLAG_ISREGISTERED      0x00400000
 #define MAX_ACTIVITY_ID                 0x003fffff
 
+#define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
+#define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
+
+#define MAX_FRAC_ALLOCATOR              20
+
 //================================================================================
 // Roxie heap
 

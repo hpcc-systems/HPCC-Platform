@@ -1756,11 +1756,11 @@ protected:
 //Constants are here to ensure they can all be constant folded
 const unsigned roundupDoubleLimit = 2048;  // Values up to this limit are rounded to the nearest power of 2
 const unsigned roundupStepSize = 4096;  // Above the roundupDoubleLimit memory for a row is allocated in this size step
-const unsigned limitStepBlock = FixedSizeHeaplet::maxHeapSize()/20;  // until it gets to this size
+const unsigned limitStepBlock = FixedSizeHeaplet::maxHeapSize()/MAX_FRAC_ALLOCATOR;  // until it gets to this size
 const unsigned numStepBlocks = PAGES(limitStepBlock, roundupStepSize); // how many step blocks are there?
 const unsigned maxStepSize = numStepBlocks * roundupStepSize;
 const bool hasAnyStepBlocks = roundupDoubleLimit <= roundupStepSize;
-const unsigned firstFractionalHeap = (FixedSizeHeaplet::dataAreaSize()/(maxStepSize+1))+1;
+const unsigned firstFractionalHeap = (FixedSizeHeaplet::dataAreaSize()/(maxStepSize+ALLOC_ALIGNMENT))+1;
 
 class CChunkingRowManager : public CInterface, implements IRowManager
 {
@@ -2030,10 +2030,19 @@ public:
         if (hasAnyStepBlocks)
             baseBlock += numStepBlocks;
 
-        // Round up to nearest whole fraction of available heap space
-        unsigned frac = FixedSizeHeaplet::dataAreaSize()/size;
-        unsigned usesize = FixedSizeHeaplet::dataAreaSize()/frac;
-        return ROUNDED(baseBlock + (firstFractionalHeap-frac), usesize);
+        // Ensure the size is rounded up so it is correctly aligned. (Note the size already includes chunk overhead.)
+        unsigned minsize = align_pow2(size, ALLOC_ALIGNMENT);
+
+        // What fraction of the data area would this allocation take up?
+        unsigned frac = FixedSizeHeaplet::dataAreaSize()/minsize;
+
+        // Calculate the size of that fraction of the data.  Round down the divided size to ensure it is correctly aligned.
+        // (Round down to guarantee that frac allocations will fit in the data area).
+        size32_t usesize = FixedSizeHeaplet::dataAreaSize()/frac;
+        size32_t alignedsize = usesize &~ (ALLOC_ALIGNMENT-1);
+        dbgassertex(alignedsize >= size);
+
+        return ROUNDED(baseBlock + (firstFractionalHeap-frac), alignedsize);
     }
 
     inline void beforeAllocate(unsigned _size, unsigned activityId)
@@ -2346,7 +2355,7 @@ protected:
         dbgassertex(flags & RHFpacked);
         //Must be 4 byte aligned otherwise the atomic increments on the counts may not be atomic
         //Should this have a larger granularity (e.g., sizeof(void * *) if size is above a threshold?
-        size32_t chunkSize = align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, 4);
+        size32_t chunkSize = align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
 
         //Not time critical, so don't worry about the scope of the spinblock around the new
         SpinBlock block(fixedCrit);
@@ -3013,6 +3022,7 @@ public:
 class RoxieMemTests : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
+        CPPUNIT_TEST(testRoundup);
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
         CPPUNIT_TEST(testHuge);
@@ -3870,11 +3880,43 @@ protected:
             unsigned base = seed & 32767;
             unsigned shift = (seed / 32768) % 12;
             unsigned size = (base >> shift) + 4;
-            total += CChunkingRowManager::roundup(size+FixedSizeHeaplet::chunkHeaderSize);
+            size32_t thisSize = CChunkingRowManager::roundup(size+FixedSizeHeaplet::chunkHeaderSize);
+            ASSERT((thisSize & (ALLOC_ALIGNMENT-1)) == 0);
+            total += thisSize;
         }
         unsigned endTime = msTick();
 
         DBGLOG("Time to calculate %u = %d", total, endTime-startTime);
+    }
+    void testRoundup()
+    {
+        Owned<IRowManager> rowManager = createRowManager(1, NULL, logctx, NULL);
+        const unsigned maxFrac = firstFractionalHeap;
+
+        const void * tempRow[MAX_FRAC_ALLOCATOR];
+        for (unsigned frac=1; frac < maxFrac; frac++)
+        {
+            size32_t fracSize = FixedSizeHeaplet::dataAreaSize() / frac;
+            for (unsigned j = 0; j < ALLOC_ALIGNMENT; j++)
+            {
+                size32_t allocSize = fracSize - j;
+                size32_t thisSize = CChunkingRowManager::roundup(allocSize);
+                ASSERT((thisSize & (ALLOC_ALIGNMENT-1)) == 0);
+            }
+
+            //Only test if heaps exist for all fractions of a page
+            if (hasAnyStepBlocks)
+            {
+                //Ensure you can allocate frac allocations in a single page
+                size32_t testSize = (fracSize - FixedSizeHeaplet::chunkHeaderSize) & ~(ALLOC_ALIGNMENT-1);
+                for (unsigned i1=0; i1 < frac; i1++)
+                {
+                    tempRow[i1] = rowManager->allocate(testSize, 0);
+                }
+                for (unsigned i2=0; i2 < frac; i2++)
+                    ReleaseRoxieRow(tempRow[i2]);
+            }
+        }
     }
     void testFixedRelease()
     {
