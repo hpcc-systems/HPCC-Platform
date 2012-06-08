@@ -57,7 +57,7 @@ killed() {
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
-nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout & 
+nohup roxie --topology=RoxieTopology.xml --logfile=$logfilename --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
 echo $! > $PID_NAME 
 wait
 
@@ -66,7 +66,7 @@ while [ -e ${SENTINEL} ]; do
     export restarts=$(($restarts+1))
     echo Restarting $restarts >> $logfilename.stderr
     echo Restarting $restarts >> $logfilename.stdout
-    nohup roxie topology=RoxieTopology.xml logfile=$logfilename restarts=$restarts stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
+    nohup roxie --topology=RoxieTopology.xml --logfile=$logfilename --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
     echo $! > $PID_NAME
     wait
 done
