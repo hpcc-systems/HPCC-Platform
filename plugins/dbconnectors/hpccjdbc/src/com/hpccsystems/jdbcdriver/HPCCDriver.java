@@ -135,7 +135,7 @@ public class HPCCDriver implements Driver
 			//"select 1 as ONE"
 			//"call myroxie::fetchpeoplebyzipservice(33445)"
 			//"call fetchpeoplebyzipservice(33445)"
-			"call fetchpeoplebyzipservice()"
+			"call fetchpeoplebyzipservice(33445)"
 			//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
 			//"select tbl.* from progguide::exampledata::peopleaccts tbl"
@@ -285,8 +285,14 @@ public class HPCCDriver implements Driver
 			ResultSet procs = conn.getMetaData().getProcedures(null, null, null);
 
 			System.out.println("procs found: ");
-			while (procs.next()) {
+			while (procs.next())
+			{
 				System.out.println("   " + procs.getString("PROCEDURE_NAME"));
+				ResultSet proccols = conn.getMetaData().getProcedureColumns(null,null,procs.getString("PROCEDURE_NAME"),"%");
+				while (proccols.next())
+				{
+					System.out.println(proccols.getString("PROCEDURE_NAME")+"."+ proccols.getString("COLUMN_NAME"));
+				}
 			}
 
 			/*

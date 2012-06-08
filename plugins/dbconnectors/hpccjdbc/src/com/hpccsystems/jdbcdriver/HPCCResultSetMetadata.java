@@ -105,7 +105,7 @@ public class HPCCResultSetMetadata implements ResultSetMetaData{
     public int getColumnType(int column) throws SQLException
     {
 		if (column >= 1 && column <= columnList.size())
-			return columnList.get(column - 1).getSQLType();
+			return columnList.get(column - 1).getSqlType();
 		else
 			throw new SQLException("Invalid Column Index = " + column);
     }
@@ -113,7 +113,7 @@ public class HPCCResultSetMetadata implements ResultSetMetaData{
     public String getColumnTypeName(int column) throws SQLException
     {
 		if (column >= 1 && column <= columnList.size())
-			return HPCCDatabaseMetaData.getFieldName(columnList.get(column - 1).getSQLType());
+			return HPCCDatabaseMetaData.getFieldName(columnList.get(column - 1).getSqlType());
 		else
 			throw new SQLException("Invalid Column Index = " + column);
     }
@@ -137,7 +137,7 @@ public class HPCCResultSetMetadata implements ResultSetMetaData{
     {
     	if (column >= 1 && column <= columnList.size())
     	{
-    		return HPCCDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSQLType());
+			return HPCCDatabaseMetaData.convertSQLtype2JavaClassName(columnList.get(column - 1).getSqlType());
 		}
 		else
 		{
