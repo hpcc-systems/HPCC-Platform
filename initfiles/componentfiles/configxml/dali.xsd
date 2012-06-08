@@ -328,7 +328,7 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="filesBasedn" type="xs:string" use="optional" default="ou=Files,ou=ecl">
+    <xs:attribute name="filesBasedn" type="xs:string" use="required" default="ou=Files,ou=ecl">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>base location for ldap file scopes</tooltip>
