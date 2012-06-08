@@ -81,13 +81,46 @@
     <para>Access to the permission settings for each of these areas is
     available using the <emphasis role="bold">Users/Permissions</emphasis>
     area in ECL Watch.</para>
+
+    <sect3 role="brk">
+      <title>Information about your account</title>
+
+      <para>To find out more information about your account, in ECL Watch
+      click on the <emphasis role="bold">My Account</emphasis> link.</para>
+
+      <para><graphic fileref="../images/ECLWMyAccount.jpg" /> <orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">My Account</emphasis>
+            link.</para>
+
+            <para>Information about your account is displayed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Confirm the User Name that you are logged in as.</para>
+
+            <para>Note that Administrator rights are needed to manage users
+            and permissions.</para>
+
+            <para>Ensure you are using an account with Administrator rights if
+            you intend to manage users or permissions.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verify the password expiration date, or if password is set
+            to expire.</para>
+          </listitem>
+        </orderedlist></para>
+
+      <para></para>
+    </sect3>
   </sect2>
 
   <sect2>
     <title>Security Administration using ECL Watch</title>
 
-    <para>Administrator rights are needed to manager permissions. Once you
-    have administrator access rights, open ECL Watch in your browser using the
+    <para>Administrator rights are needed to manage permissions. Once you have
+    administrator access rights, open ECL Watch in your browser using the
     following URL:</para>
 
     <itemizedlist>
@@ -298,7 +331,7 @@
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm. </para>
+              <para>Click OK to confirm.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -327,7 +360,7 @@
             </listitem>
 
             <listitem>
-              <para>Click <emphasis role="bold">Submit</emphasis>. </para>
+              <para>Click <emphasis role="bold">Submit</emphasis>.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>
@@ -347,7 +380,7 @@
             </listitem>
 
             <listitem>
-              <para>Click <emphasis role="bold">Delete</emphasis>. </para>
+              <para>Click <emphasis role="bold">Delete</emphasis>.</para>
 
               <para>Confirmation of the request is shown.</para>
             </listitem>

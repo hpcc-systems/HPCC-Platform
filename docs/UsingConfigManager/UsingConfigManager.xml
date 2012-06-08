@@ -799,7 +799,7 @@ sudo configmgr</programlisting>
           <sect4>
             <title>DaliServer LDAP options</title>
 
-            <para>This section describes the DaliServer LDAP tab. </para>
+            <para>This section describes the DaliServer LDAP tab.</para>
 
             <para><graphic fileref="images/CM-img04-4.jpg" /></para>
 
@@ -1761,6 +1761,12 @@ sudo configmgr</programlisting>
 
                       <entry>Provides Web access to published queries</entry>
                     </row>
+
+                    <row>
+                      <entry><emphasis>myecldirect</emphasis></entry>
+
+                      <entry>Provides Ecl direct access</entry>
+                    </row>
                   </tbody>
                 </tgroup>
               </informaltable></para>
@@ -1791,12 +1797,6 @@ sudo configmgr</programlisting>
                     </row>
 
                     <row>
-                      <entry><emphasis>AccurintSecurity</emphasis></entry>
-
-                      <entry>the AccurintSecurity pass...</entry>
-                    </row>
-
-                    <row>
                       <entry><emphasis>ldapAuthMethod</emphasis></entry>
 
                       <entry>the LDAP Authentication Method</entry>
@@ -1818,6 +1818,13 @@ sudo configmgr</programlisting>
                       <entry><emphasis>method</emphasis></entry>
 
                       <entry>the method...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>passwordExpirationWarningDays</emphasis></entry>
+
+                      <entry>the number of days advance warning of password
+                      expiration</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1940,68 +1947,6 @@ sudo configmgr</programlisting>
                       <entry><emphasis>TrustedPeers</emphasis></entry>
 
                       <entry>The names of trusted peers.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
-          </sect4>
-
-          <sect4>
-            <title>Esp - myesp Protocol XTab</title>
-
-            <para>This section describes the Esp - myesp Protocol X
-            tab.</para>
-
-            <para><graphic fileref="images/CM-img08-5.jpg" /></para>
-
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
-
-                  <colspec />
-
-                  <tbody>
-                    <row>
-                      <entry>Attribute name</entry>
-
-                      <entry>Definition</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>Authentication
-                      Timeout</emphasis></entry>
-
-                      <entry>The Authentication timeout value...</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>Default Time out </emphasis></entry>
-
-                      <entry>The default timeout value...</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>ldle Timeout</emphasis></entry>
-
-                      <entry>The timeout value...</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>Maximum Timeout</emphasis></entry>
-
-                      <entry>The maximum timeout value...</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>Minimum Timeout</emphasis></entry>
-
-                      <entry>The minimum timeout value...</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>Thread Count</emphasis></entry>
-
-                      <entry>the number of threads...</entry>
                     </row>
                   </tbody>
                 </tgroup>
