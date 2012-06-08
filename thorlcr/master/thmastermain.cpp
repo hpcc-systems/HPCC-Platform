@@ -486,13 +486,15 @@ int main( int argc, char *argv[]  )
     StringBuffer nodeGroup, logUrl;
     Owned<IPerfMonHook> perfmonhook;
 
-    try {
+    ILogMsgHandler *logHandler;
+    try
+    {
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
             lf->setName("thormaster");//override default filename
             lf->setCreateAliasFile(false);
             lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
-            lf->beginLogging();
+            logHandler = lf->beginLogging();
             createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
         }
         LOG(MCdebugProgress, thorJob, "Opened log file %s", logUrl.toCharArray());
@@ -738,7 +740,7 @@ int main( int argc, char *argv[]  )
             LOG(daliAuditLogCat, ",Progress,Thor,Startup,%s,%s,%s,%s",nodeGroup.str(),thorname,queueName.str(),logUrl.str());
             auditStartLogged = true;
 
-            thorMain();
+            thorMain(logHandler);
             LOG(daliAuditLogCat, ",Progress,Thor,Terminate,%s,%s,%s",thorname,nodeGroup.str(),queueName.str());
         }
         else
