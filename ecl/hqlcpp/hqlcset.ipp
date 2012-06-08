@@ -31,7 +31,7 @@ public:
 
 protected:
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) = 0;
-    IHqlExpression * createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName);
+    IHqlExpression * createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName, bool conditional);
 
 protected:
     HqlCppTranslator & translator;

@@ -2939,6 +2939,13 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
 
         if (!done)
         {
+            BoundRow * match = static_cast<BoundRow *>(ctx.queryAssociation(expr, AssocRow, NULL));
+            if (match && target->buildLinkRow(subctx, match))
+                done = true;
+        }
+
+        if (!done)
+        {
             BoundRow * targetRow = target->buildCreateRow(subctx);
             Owned<IReferenceSelector> targetRef = buildActiveRow(subctx, targetRow->querySelector());
             buildRowAssign(subctx, targetRef, expr);
