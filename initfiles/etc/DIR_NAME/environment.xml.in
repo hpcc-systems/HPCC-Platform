@@ -384,6 +384,7 @@
   <DaliServerProcess build="${projname}_${version}-${stagever}"
                      buildSet="dali"
                      environment="${CONFIG_DIR}/${ENV_XML_FILE}"
+                     filesBasedn="ou=Files,ou=ecl"
                      name="mydali"
                      recoverFromIncErrors="true">
    <Instance computer="localhost"
