@@ -11090,6 +11090,8 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_record:
         {
             OwnedHqlExpr transformed = completeTransform(expr);
+            if (transformed->hasProperty(packedAtom))
+                transformed.setown(getPackedRecord(transformed));
 
             if (options.ensureRecordsHaveSymbols)
             {
