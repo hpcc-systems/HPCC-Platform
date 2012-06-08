@@ -792,14 +792,4 @@ public class SQLParser
 	{
 		return indexHint;
 	}
-
-	public static void main(String[] args) throws Exception
-	{
-		SQLParser parser = new SQLParser();
-		parser.process("select city, zip, count(*) from tutorial::rp::tutorialperson where zip ='33445' limit 1000");
-		System.out.println(parser.getWhereClauseString());
-		System.out.println(parser.getTableName());
-		if (parser.hasLimitBy())
-			System.out.println(parser.getLimit());
-	}
 }
