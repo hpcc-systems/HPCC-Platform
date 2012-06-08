@@ -166,12 +166,12 @@ public:
 
     void getWorkunitEclAgentLog(MemoryBuffer& buf);
     void getWorkunitThorLog(MemoryBuffer& buf);
-    void getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf);
+    void getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(MemoryBuffer& buf);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
-    void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf);
+    void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
     void getEventScheduleFlag(IEspECLWorkunit &info);
 
 public:
