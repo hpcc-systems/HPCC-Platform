@@ -309,11 +309,11 @@ public:
 
         if (groupStream)
         {
-			loop
-			{
-				OwnedConstThorRow row = groupStream->nextRow();
-				if (!row)
-					break;
+            loop
+            {
+                OwnedConstThorRow row = groupStream->nextRow();
+                if (!row)
+                break;
                 if (stepCompare->docompare(row, seek, numFields) >= 0)
                 {
                     dataLinkIncrement();

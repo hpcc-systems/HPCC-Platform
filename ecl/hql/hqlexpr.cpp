@@ -9643,7 +9643,9 @@ protected:
                     }
 
                     HqlDummyLookupContext dummyctx(ctx.errors);
-                    return newModule->queryScope()->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+                    IHqlScope * newScope = newModule->queryScope();
+                    assertex(newScope);
+                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
                 }
                 break;
             }

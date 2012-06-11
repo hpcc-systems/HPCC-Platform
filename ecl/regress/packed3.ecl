@@ -16,17 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-#ifndef _THGRAPHMANAGER_HPP
-#define _THGRAPHMANAGER_HPP
+rec := RECORD,packed
+  STRING name;
+  unsigned1 flag;
+  real value;
+END;
 
-class CSDSServerStatus;
-interface IException;
-CSDSServerStatus &queryServerStatus();
-CSDSServerStatus &openThorServerStatus();
-void closeThorServerStatus();
-void thorMain(ILogMsgHandler *logHandler);
-void abortThor(IException *e=NULL, bool abortCurrentJob=true);
-void setExitCode(int code);
-int queryExitCode();
 
-#endif
+ds := DATASET([{'Gavin',1,100.0},{'James',2,98.6}], rec);
+
+output(ds);
