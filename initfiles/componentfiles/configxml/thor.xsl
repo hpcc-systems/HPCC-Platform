@@ -104,6 +104,35 @@
   </xsl:template>
 
   <xsl:template match="ThorCluster">
+    <xsl:variable name="masterport" select="@masterport"/>
+    <xsl:variable name="slaveport" select="@slaveport"/>
+    <xsl:variable name="masternode" select="ThorMasterProcess/@computer"/>
+    <xsl:for-each select="/Environment/Software/ThorCluster[@name!=string($process)]">
+      <xsl:variable name="thismasterport" select="@masterport"/>
+      <xsl:variable name="thisthor" select="@name"/>
+        <xsl:for-each select="ThorMasterProcess[@computer=$masternode]">
+          <xsl:if test="string($thismasterport)=string($masterport)">
+            <xsl:message terminate="yes">
+              There cannot be more than one ThorCluster ('<xsl:value-of select="$process"/>' and '<xsl:value-of select="$thisthor"/>') with the same thor master '"<xsl:value-of select="$masternode"/>' and same thor master port '<xsl:value-of select="$masterport"/>!
+            </xsl:message>
+          </xsl:if>
+        </xsl:for-each>
+    </xsl:for-each>
+
+    <xsl:for-each select="ThorSlaveProcess">
+      <xsl:variable name="slavenode" select="@computer"/>
+      <xsl:for-each select="/Environment/Software/ThorCluster[@name!=string($process)]">
+        <xsl:variable name="thisslaveport" select="@slaveport"/>
+        <xsl:if test="string($thisslaveport)=string($slaveport)">
+            <xsl:if test="count(ThorSlaveProcess[@computer=$slavenode]) > 0">
+              <xsl:message terminate="yes">
+                There cannot be more than one ThorCluster ('<xsl:value-of select="$process"/>' and '<xsl:value-of select="@name"/>') with the same thor slave '"<xsl:value-of select="$slavenode"/>' and thor slave port '<xsl:value-of select="$slaveport"/>'!
+              </xsl:message>
+          </xsl:if>
+        </xsl:if>
+      </xsl:for-each>
+    </xsl:for-each>
+
     <Thor>
       <xsl:attribute name="name">
         <xsl:value-of select="@name"/>
