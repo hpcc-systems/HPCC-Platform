@@ -63,30 +63,95 @@
             var Jobname = '<xsl:value-of select="$jobName"/>';
 
           <xsl:text disable-output-escaping="yes"><![CDATA[
-           var url0 = '';
-           var reloadTimer = null;
-                     var reloadTimeout = 0;
-           var sections = new Array("Exceptions","Graphs","SourceFiles","Results","Variables","Timers","DebugValues","ApplicationValues","Workflows");
-           var activeSections = new Array();
+            var url0 = '';
+            var reloadTimer = null;
+            var reloadTimeout = 0;
+            var sections = new Array("Exceptions","Graphs","SourceFiles","Results","Variables","Timers","DebugValues","ApplicationValues","Workflows");
+            var activeSections = new Array();
+            var thorProcess;
+            var thorGroup;
+            var thorLogDate;
+            var numberOfSlaves;
          
-                     // This function gets called when the window has completely loaded.
-                     // It starts the reload timer with a default time value.
+            function CheckSlaveNum(e)
+            {
+                if (document.getElementById('NumberSlaves').disabled == 'true')
+                    return false;
 
-     function onLoad()
-     {
-        /*
-        initialize();
-            
-          if (isarchived)
-        {
-          return;
-        }
-        UpdateAutoRefresh();
-        //reloadSection('Exceptions');
-        checkPreloadedSections();
-        */
-        return;
-     } 
+                var key;
+                if (window.event)
+                   key = window.event.keyCode;
+                else if (e)
+                   key = e.which;
+                else
+                   return true;
+
+                var keychar = String.fromCharCode(key);
+
+                if ((("0123456789").indexOf(keychar) > -1))
+                   return true;
+                else
+                   return false;
+            }
+
+            function thorProcessChanged(value)
+            {
+                pos = value.indexOf('@');
+                thorLogDate = value.substring(pos+1);
+                numberOfSlaves = value.substring(0, pos);
+                pos1 = thorLogDate.indexOf('@');
+                thorProcess = thorLogDate.substring(pos1+1);
+                thorLogDate = thorLogDate.substring(0, pos1);
+                pos2 = thorProcess.indexOf('@');
+                thorGroup = thorProcess.substring(pos2+1);
+                thorProcess = thorProcess.substring(0, pos2);
+
+                var el = document.getElementById('NumberSlaves');
+                if (el == undefined)
+                    return;
+
+                if (numberOfSlaves == '1')
+                {
+                    el.innerText = '';
+                    document.getElementById('SlaveNum').disabled=true;
+                }
+                else
+                {
+                    el.innerText = ' (from 1 to ' + numberOfSlaves + ')';
+                    document.getElementById('SlaveNum').disabled = false;
+                }
+                document.getElementById('SlaveNum').value = '1';
+            }
+
+            function GetThorSlaveLog()
+            {
+                var el = document.getElementById('NumberSlaves');
+                if (el != undefined)
+                {
+                    var slaveNum = document.getElementById('SlaveNum').value;
+                    if (slaveNum > numberOfSlaves)
+                    {
+                        alert('Slave Number cannot be greater than ' + numberOfSlaves);
+                        return;
+                    }
+                }
+
+                getOptions('ThorSlave.log', '/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&Process='
+                +thorProcess+'&ClusterGroup='+thorGroup+'&LogDate='+thorLogDate+'&SlaveNumber='+slaveNum, true);
+            }
+
+            // This function gets called when the window has completely loaded.
+            // It starts the reload timer with a default time value.
+            function onLoad()
+            {
+                var thorProcessDropDown = document.getElementById('ThorProcess');
+                if (thorProcessDropDown == undefined)
+                    return;
+
+                thorProcessChanged(thorProcessDropDown.options[thorProcessDropDown.selectedIndex].value);
+
+                return;
+            }
 
    function onUnload()
    {
@@ -273,12 +338,6 @@
                             logBtn.disabled = false;
                         else
                             logBtn.disabled = true;
-                   }
-
-                   function GetThorSlaveLog() 
-                   {
-                      //document.location.href='/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&SlaveIP='+document.getElementById('ThorSlaveIP').value;
-            getOptions('ThorSlave.log', '/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&SlaveIP='+document.getElementById('ThorSlaveIP').value, true); 
                    }
 
            var downloadWnds = new Array();

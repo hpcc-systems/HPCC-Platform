@@ -113,6 +113,7 @@ private:
     CriticalSection crit;
     WUSchedule m_sched;
     unsigned short port;
+    Owned<IPropertyTree> directories;
 };
 
 class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding

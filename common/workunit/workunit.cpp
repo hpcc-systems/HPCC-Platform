@@ -4043,6 +4043,23 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
     return ret.append(cluster).append(THOR_QUEUE_EXT);
 }
 
+extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (conn)
+    {
+        StringBuffer xpath;
+        xpath.appendf("Software/ThorCluster[@name=\"%s\"]", cluster);
+        IPropertyTree* cluster= conn->queryRoot()->getPropTree(xpath.str());
+        if (cluster)
+        {
+            getClusterGroupName(*cluster, ret);
+        }
+    }
+
+    return ret;
+}
+
 extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
 {
     return ret.append(cluster).append(ROXIE_QUEUE_EXT);

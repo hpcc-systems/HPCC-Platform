@@ -551,8 +551,10 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
 
+    directories.set(cfg->queryPropTree("Software/Directories"));
+
     const char *name = cfg->queryProp("Software/EspProcess/@name");
-    getConfigurationDirectory(cfg->queryPropTree("Software/Directories"), "query", "esp", name ? name : "esp", queryDirectory);
+    getConfigurationDirectory(directories, "query", "esp", name ? name : "esp", queryDirectory);
     recursiveCreateDirectory(queryDirectory.str());
 
     dataCache.setown(new DataCache(DATA_SIZE));
@@ -2421,17 +2423,20 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorLog(mb);
+                winfo.getWorkunitThorLog(req.getProcess(), mb);
                 openSaveFile(context, opt, "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                winfo.getWorkunitThorSlaveLog(req.getSlaveIP(), mb, opt > 0);
+                StringBuffer logDir;
+                getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
+
+                winfo.getWorkunitThorSlaveLog(req.getProcess(), req.getClusterGroup(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
                 openSaveFile(context, opt, "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(mb);
+                winfo.getWorkunitEclAgentLog(req.getProcess(), mb);
                 openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()))

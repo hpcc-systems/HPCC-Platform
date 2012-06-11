@@ -164,15 +164,16 @@ public:
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags);
 
-    void getWorkunitEclAgentLog(MemoryBuffer& buf);
-    void getWorkunitThorLog(MemoryBuffer& buf);
-    void getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, bool forDownload);
+    void getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer& buf);
+    void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
+    void getWorkunitThorSlaveLog(const char *processName, const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(MemoryBuffer& buf);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
     void getEventScheduleFlag(IEspECLWorkunit &info);
+    unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info);
 
 public:
     IEspContext &context;

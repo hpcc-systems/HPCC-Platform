@@ -465,36 +465,51 @@ bool WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
             getHelpFiles(query, FileTypeDll, helpers);
             getHelpFiles(query, FileTypeResText, helpers);
 
-            SCMStringBuffer name;
-            for (int i0 = 1; i0 < MAXTHORS; i0++)
-            {
-                StringBuffer fileType;
-                if (i0 < 2)
-                    fileType.append(File_ThorLog);
-                else
-                    fileType.appendf("%s%d", File_ThorLog, i0);
-                cw->getDebugValue(fileType.str(), name);
-                if(name.length() < 1)
-                    break;
+            getWorkunitThorLogInfo(helpers, info);
 
-                Owned<IEspECLHelpFile> h= createECLHelpFile("","");
-                h->setName(name.str());
-                h->setType(fileType.str());
-                helpers.append(*h.getLink());
-                name.clear();
+            if (cw->getWuidVersion() > 0)
+            {
+                Owned<IStringIterator> eclAgentInstances = cw->getProcesses("EclAgent");
+                ForEach (*eclAgentInstances)
+                {
+                    SCMStringBuffer processName;
+                    eclAgentInstances->str(processName);
+                    if (processName.length() < 1)
+                        continue;
+
+                    Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent", processName.str());
+                    ForEach (*eclAgentLogs)
+                    {
+                        SCMStringBuffer logName;
+                        eclAgentLogs->str(logName);
+                        if (logName.length() < 1)
+                            continue;
+
+                        Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+                        h->setName(logName.str());
+                        h->setDescription(processName.str());
+                        h->setType(File_EclAgentLog);
+                        helpers.append(*h.getLink());
+                    }
+                }
+            }
+            else // legacy wuid
+            {
+                SCMStringBuffer name;
+                cw->getDebugValue("EclAgentLog", name);
+                if(name.length())
+                {
+                    Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+                    h->setName(name.str());
+                    h->setType(File_EclAgentLog);
+                    helpers.append(*h.getLink());
+                    name.clear();
+                }
             }
 
-            cw->getDebugValue("EclAgentLog", name);
-            if(name.length())
-            {
-                Owned<IEspECLHelpFile> h= createECLHelpFile("","");
-                h->setName(name.str());
-                h->setType("EclAgentLog");
-                helpers.append(*h.getLink());
-                name.clear();
-            }
-         info.setHelpers(helpers);
-         return true;
+            info.setHelpers(helpers);
+
+            return true;
         }
     }
      catch(IException* e)
@@ -873,6 +888,153 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
         info.setApplicationValuesDesc(msg);
     if (!getWorkflow(info, flags))
         info.setWorkflowsDesc(msg);
+}
+
+unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info)
+{
+    unsigned countThorLog = 0;
+
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo("thor");
+    unsigned numberOfSlaves = clusterInfo->getSize();
+
+    IArrayOf<IConstThorLogInfo> thorLogList;
+    if (cw->getWuidVersion() > 0)
+    {
+        Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
+        ForEach (*thorInstances)
+        {
+            SCMStringBuffer processName;
+            thorInstances->str(processName);
+            if (processName.length() < 1)
+                continue;
+
+            StringBuffer groupName;
+            getClusterThorGroupName(groupName, processName.str());
+
+            Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
+            ForEach (*thorLogs)
+            {
+                SCMStringBuffer logName;
+                thorLogs->str(logName);
+                if (logName.length() < 1)
+                    continue;
+
+                countThorLog++;
+
+                StringBuffer fileType;
+                if (countThorLog < 2)
+                    fileType.append(File_ThorLog);
+                else
+                    fileType.appendf("%s%d", File_ThorLog, countThorLog);
+
+                Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+                h->setName(logName.str());
+                h->setDescription(processName.str());
+                h->setType(fileType.str());
+                helpers.append(*h.getLink());
+
+                if (version < 1.38)
+                    continue;
+
+                const char* pStr = logName.str();
+                const char* ppStr = strstr(pStr, "/thormaster.");
+                if (!ppStr)
+                {
+                    WARNLOG("Invalid thorlog entry in workunit xml: %s", logName.str());
+                    continue;
+                }
+
+                ppStr += 12;
+                StringBuffer logDate = ppStr;
+                logDate.setLength(10);
+
+                Owned<IEspThorLogInfo> thorLog = createThorLogInfo("","");
+                thorLog->setProcessName(processName.str());
+                thorLog->setClusterGroup(groupName.str());
+                thorLog->setLogDate(logDate.str());
+                thorLog->setNumberSlaves(numberOfSlaves);
+                thorLogList.append(*thorLog.getLink());
+            }
+        }
+    }
+    else //legacy wuid
+    {
+        SCMStringBuffer name;
+        for (int i0 = 1; i0 < MAXTHORS; i0++)
+        {
+            StringBuffer fileType;
+            if (i0 < 2)
+                fileType.append(File_ThorLog);
+            else
+                fileType.appendf("%s%d", File_ThorLog, i0);
+            cw->getDebugValue(fileType.str(), name);
+            if(name.length() < 1)
+                break;
+
+            Owned<IEspECLHelpFile> h= createECLHelpFile("","");
+            h->setName(name.str());
+            h->setType(fileType.str());
+            helpers.append(*h.getLink());
+            name.clear();
+        }
+
+        StringBuffer logDir;
+        Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        constEnv->getPTree().getProp("EnvSettings/log", logDir);
+        if (logDir.length() > 0)
+        {
+            Owned<IStringIterator> debugs(&cw->getDebugValues("thorlog*"));
+            ForEach(*debugs)
+            {
+                SCMStringBuffer name, val;
+                debugs->str(name);
+                cw->getDebugValue(name.str(),val);
+                if (val.length() < 1)
+                    continue;
+
+                const char* pStr = val.str();
+                const char* ppStr = strstr(pStr, logDir.str());
+                if (!ppStr)
+                {
+                    WARNLOG("Invalid thorlog entry in workunit xml: %s", val.str());
+                    continue;
+                }
+
+                const char* pProcessName = ppStr + logDir.length();
+                char sep = pProcessName[0];
+                StringBuffer processName = pProcessName + 1;
+                ppStr = strchr(pProcessName + 1, sep);
+                if (!ppStr)
+                {
+                    WARNLOG("Invalid thorlog entry in workunit xml: %s", val.str());
+                    continue;
+                }
+                processName.setLength(ppStr - pProcessName - 1);
+
+                StringBuffer groupName;
+                getClusterThorGroupName(groupName, processName.str());
+
+                StringBuffer logDate = ppStr + 12;
+                logDate.setLength(10);
+
+                Owned<IEspThorLogInfo> thorLog = createThorLogInfo("","");
+                thorLog->setProcessName(processName.str());
+                thorLog->setClusterGroup(groupName.str());
+                thorLog->setLogDate(logDate.str());
+                //for legacy wuid, the log name does not contain slaveNum. So, a user may not specify
+                //a slaveNum and we only display the first slave log if > 1 per IP.
+                thorLog->setNumberSlaves(0);
+                thorLogList.append(*thorLog.getLink());
+            }
+        }
+    }
+
+    if (thorLogList.length() > 0)
+        info.setThorLogList(thorLogList);
+    thorLogList.kill();
+
+    return countThorLog;
 }
 
 bool WsWuInfo::getClusterInfo(IEspECLWorkunit &info, unsigned flags)
@@ -1429,10 +1591,23 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
     }
 }
 
-void WsWuInfo::getWorkunitEclAgentLog(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer& buf)
 {
     SCMStringBuffer logname;
-    cw->getDebugValue("EclAgentLog", logname);
+    if (cw->getWuidVersion() > 0)
+    {
+        Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent", eclAgentInstance);
+        ForEach (*eclAgentLogs)
+        {
+            eclAgentLogs->str(logname);
+            if (logname.length() > 0)
+                break;
+        }
+    }
+    else
+    {//legacy wuid
+        cw->getDebugValue(File_EclAgentLog, logname);
+    }
 
     unsigned pid = cw->getAgentPID();
     if(logname.length() == 0)
@@ -1490,10 +1665,23 @@ void WsWuInfo::getWorkunitEclAgentLog(MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorLog(MemoryBuffer& buf)
+void WsWuInfo::getWorkunitThorLog(const char* processName, MemoryBuffer& buf)
 {
     SCMStringBuffer logname;
-    cw->getDebugValue(File_ThorLog, logname);
+    if (cw->getWuidVersion() > 0)
+    {
+        Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName);
+        ForEach (*thorLogs)
+        {
+            thorLogs->str(logname);
+            if (logname.length() > 0)
+                break;
+        }
+    }
+    else
+    {//legacy wuid
+        cw->getDebugValue(File_ThorLog, logname);
+    }
 
     Owned<IFile> rFile = createIFile(logname.str());
     if (!rFile)
@@ -1538,26 +1726,52 @@ void WsWuInfo::getWorkunitThorLog(MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *processName, const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
 {
-   if (isEmpty(slaveip))
-      throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave IP not specified.");
+    if (isEmpty(processName))
+      throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave process not specified.");
+    if (isEmpty(groupName))
+      throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
+    if (isEmpty(logDir))
+      throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
+    if (isEmpty(logDate))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log date not specified.");
 
-    SCMStringBuffer logname;
-    cw->getDebugValue(File_ThorLog, logname);
+    StringBuffer slaveIPAddress, logName;
+    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
+    if (!nodeGroup || (nodeGroup->ordinality() == 0))
+    {
+        WARNLOG("Node group %s not found", groupName);
+        return;
+    }
 
-    StringBuffer logdir;
-    splitDirTail(logname.str(),logdir);
+    if (slaveNum > 0)
+    {
+        nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
+        if (slaveIPAddress.length() < 1)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log network address not found.");
+
+        logName.appendf("thorslave.%d.%s.log", slaveNum, logDate);
+    }
+    else
+    {//legacy wuid
+        nodeGroup->queryNode(0).endpoint().getIpText(slaveIPAddress);
+        if (slaveIPAddress.length() < 1)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log network address not found.");
+
+        //thorslave.10.239.219.6_20100.2012_05_23.log
+        logName.appendf("thorslave.%s_*.%s.log", slaveIPAddress.str(), logDate);
+    }
 
     RemoteFilename rfn;
-    rfn.setRemotePath(logdir.str());
-    SocketEndpoint ep(slaveip);
+    rfn.setRemotePath(logDir);
+    SocketEndpoint ep(slaveIPAddress.str());
     rfn.setIp(ep);
 
     Owned<IFile> dir = createIFile(rfn);
-    Owned<IDirectoryIterator> diriter = dir->directoryFiles("*.log");
+    Owned<IDirectoryIterator> diriter = dir->directoryFiles(logName.str());
     if (!diriter->first())
-      throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find Thor slave log file %s.", logdir.str());
+      throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find Thor slave log file %s.", logName.str());
 
     Linked<IFile> logfile = &diriter->query();
     diriter.clear();
@@ -1566,10 +1780,49 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, b
 
     OwnedIFileIO rIO = logfile->openShared(IFOread,IFSHfull);
     if (!rIO)
-        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",logdir.str());
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",logName.str());
 
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
-    appendIOStreamContent(buf, ios.get(), forDownload);
+    if (slaveNum > 0)
+    {
+        StringBuffer line;
+        bool eof = false;
+        bool include = false;
+
+        VStringBuffer startwuid("Started wuid=%s", wuid.str());
+        VStringBuffer endwuid("Finished wuid=%s", wuid.str());
+
+        const char *sw = startwuid.str();
+        const char *ew = endwuid.str();
+
+        while (!eof)
+        {
+            line.clear();
+            loop
+            {
+                char c;
+                size32_t numRead = ios->read(1, &c);
+                if (!numRead)
+                {
+                    eof = true;
+                    break;
+                }
+                line.append(c);
+                if (c=='\n')
+                    break;
+            }
+            if (strstr(line.str(), sw))
+                include = true;
+            if (include)
+                buf.append(line.length(), line.str());
+            if (strstr(line.str(), ew))
+                include = false;
+        }
+    }
+    else
+    {//legacy wuid
+        appendIOStreamContent(buf, ios.get(), forDownload);
+    }
 }
 
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
