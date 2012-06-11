@@ -509,10 +509,9 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
       }
    }
 
-   typedef multimap<unsigned, string> AddressMap;
-   AddressMap addressMap; //maps <numeric address> to <process>:<comp name>:<os>:<path>
     std::vector<unsigned> numAddrVector;
     std::vector<std::string> propsVector;
+    BoolHash uniqueRequestValues;
     UnsignedArray threadHandles;
     set<string>   columnSet;
     IpAddress     ipAddr;
@@ -538,46 +537,46 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
             configAddress = address;
         }
 
+        StringBuffer sProcessType;
+        StringBuffer sCompName;
+        OpSysType    os = OS_Windows;
+        StringBuffer sPath;
+        unsigned processNumber = 0;
+        if (reqInfo.getGetSoftwareInfo())
+            parseProperties( props, sProcessType, sCompName, os, sPath, processNumber);
+
         IpAddress ipAddr;
         unsigned numIps = ipAddr.ipsetrange(address);
         //address is like 192.168.1.4-6:ThorSlaveProcess:thor1:2:path1
         //so process each address in the range
-        for (unsigned j=0;j<numIps;j++)
+
+        if (!ipAddr.isIp4())
+            IPV6_NOT_IMPLEMENTED();
+
+        while (numIps--)
         {
-            if (!ipAddr.isIp4())
-                IPV6_NOT_IMPLEMENTED();
             unsigned numAddr;
             if (ipAddr.getNetAddress(sizeof(numAddr),&numAddr)!=sizeof(numAddr))
-                IPV6_NOT_IMPLEMENTED(); // Not quite right exception, but will use when IPv4 hack sanity check fails
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid network address.");
 
-            StringBuffer sBuf;
-            sBuf.appendf("%s:%s", configAddress, props);
-
-            //if no mapping exists for numAddr yet or if we are using filters and props are different then
-            //insert in the map
-            AddressMap::const_iterator i = addressMap.find(numAddr);
-            bool bInsert = true;
-            while (i != addressMap.end())
-            {
-                if (!reqInfo.getGetSoftwareInfo() || streq((*i).second.c_str(), sBuf.str()))
-                {
-                    bInsert = false;
-                    break;
-                }
-                i++;
-            }
-
-            if (bInsert)
-            {
-                numAddrVector.push_back(numAddr);
-                propsVector.push_back(sBuf.str());
-                addressMap.insert(pair<unsigned, string>(numAddr, sBuf.str()));
-            }
             ipAddr.ipincrement(1);
+
+            StringBuffer valuesToBeChecked;
+            valuesToBeChecked.append(numAddr);
+            if (reqInfo.getGetSoftwareInfo())
+                valuesToBeChecked.appendf(":%s:%s:%d", sProcessType.str(), sCompName.str(), processNumber);
+            if (uniqueRequestValues.getValue(valuesToBeChecked.str()))
+                continue;
+
+            StringBuffer propsToBeUsed;
+            propsToBeUsed.appendf("%s:%s", configAddress, props);
+
+            numAddrVector.push_back(numAddr);
+            propsVector.push_back(propsToBeUsed.str());
+            uniqueRequestValues.setValue(valuesToBeChecked.str(), true);
         }
         free(address);
     }
-
 
     std::vector<unsigned>::iterator iAddr = numAddrVector.begin();
     std::vector<unsigned>::iterator iEndAddr = numAddrVector.end();
