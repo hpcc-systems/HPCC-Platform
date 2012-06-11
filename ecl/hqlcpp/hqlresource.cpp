@@ -970,6 +970,13 @@ void ResourceGraphInfo::removeResources(const CResources & value)
 
 //---------------------------------------------------------------------------
 
+static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, _ATOM name)
+{
+    IHqlExpression * prop = expr->queryProperty(name);
+    if (prop)
+        args.append(*LINK(prop));
+}
+
 ResourcerInfo::ResourcerInfo(IHqlExpression * _original, CResourceOptions * _options) 
 { 
     original.set(_original); 
@@ -1015,8 +1022,9 @@ void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
     if (outputToUseForSpill)
     {
         assertex(isRead);
-        if (outputToUseForSpill->hasProperty(__compressed__Atom))
-            args.append(*createAttribute(__compressed__Atom));
+        appendCloneProperty(args, outputToUseForSpill, __compressed__Atom);
+        appendCloneProperty(args, outputToUseForSpill, jobTempAtom);
+        appendCloneProperty(args, outputToUseForSpill, _spill_Atom);
     }
     else
     {

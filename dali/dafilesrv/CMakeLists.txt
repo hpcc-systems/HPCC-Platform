@@ -18,4 +18,6 @@
 
 
 include (dafilesrv.cmake)
-include (dafscontrol.cmake)
+if ( PLATFORM )
+    include (dafscontrol.cmake)
+endif()

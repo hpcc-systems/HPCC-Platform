@@ -40,6 +40,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
+  option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
+  option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
+  option(DEVEL "Enable the building/inclusion of a Development component." OFF)
+  option(CLIENTTOOLS_ONLY "Enable the building of Client Tools only." OFF)
 
   option(USE_BINUTILS "Enable use of binutils to embed workunit info into shared objects" ON)
   option(USE_CPPUNIT "Enable unit tests (requires cppunit)" OFF)
@@ -74,9 +78,18 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   if ( USE_XALAN )
       set(USE_XERCES ON)
   endif()
-  
-  if ( MAKE_DOCS_ONLY )
+
+  if ( MAKE_DOCS AND CLIENTTOOLS_ONLY )
+      set( MAKE_DOCS OFF )
+  endif()
+
+  if ( MAKE_DOCS_ONLY AND NOT CLIENTTOOLS_ONLY )
       set( MAKE_DOCS ON )
+  endif()
+
+  if ( CLIENTTOOLS_ONLY )
+      set(PLATFORM OFF)
+      set(DEVEL OFF)
   endif()
   
   option(PORTALURL "Set url to hpccsystems portal download page")
@@ -161,6 +174,66 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   macro(HPCC_ADD_LIBRARY target)
     add_library(${target} ${ARGN})
   endmacro(HPCC_ADD_LIBRARY target)
+
+  # This Macro is provided as Public domain from 
+  # http://www.cmake.org/Wiki/CMakeMacroParseArguments
+  MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
+    SET(DEFAULT_ARGS)
+    FOREACH(arg_name ${arg_names})    
+      SET(${prefix}_${arg_name})
+    ENDFOREACH(arg_name)
+    FOREACH(option ${option_names})
+      SET(${prefix}_${option} FALSE)
+    ENDFOREACH(option)
+
+    SET(current_arg_name DEFAULT_ARGS)
+    SET(current_arg_list)
+    FOREACH(arg ${ARGN})            
+      SET(larg_names ${arg_names})    
+      LIST(FIND larg_names "${arg}" is_arg_name)                   
+      IF (is_arg_name GREATER -1)
+        SET(${prefix}_${current_arg_name} ${current_arg_list})
+        SET(current_arg_name ${arg})
+        SET(current_arg_list)
+      ELSE (is_arg_name GREATER -1)
+        SET(loption_names ${option_names})    
+        LIST(FIND loption_names "${arg}" is_option)            
+        IF (is_option GREATER -1)
+          SET(${prefix}_${arg} TRUE)
+        ELSE (is_option GREATER -1)
+          SET(current_arg_list ${current_arg_list} ${arg})
+        ENDIF (is_option GREATER -1)
+      ENDIF (is_arg_name GREATER -1)
+    ENDFOREACH(arg)
+    SET(${prefix}_${current_arg_name} ${current_arg_list})
+  ENDMACRO(PARSE_ARGUMENTS)
+
+  # This macro allows for disabling a directory based on the value of a variable passed to the macro.
+  #
+  # ex. HPCC_ADD_SUBDIRECORY(roxie ${CLIENTTOOLS_ONLY})
+  #
+  # This call will disable the roxie dir if -DCLIENTTOOLS_ONLY=ON is set at config time.
+  #
+  macro(HPCC_ADD_SUBDIRECTORY)
+    set(adddir OFF)
+    PARSE_ARGUMENTS(_HPCC_SUB "" "" ${ARGN})
+    LIST(GET _HPCC_SUB_DEFAULT_ARGS 0 subdir)
+    set(flags ${_HPCC_SUB_DEFAULT_ARGS})
+    LIST(REMOVE_AT flags 0)
+    LIST(LENGTH flags length)
+    if(NOT length)
+      set(adddir ON)
+    else()
+      foreach(f ${flags})
+        if(${f})
+          set(adddir ON)
+        endif()
+      endforeach()
+    endif()
+    if ( adddir )
+      add_subdirectory(${subdir})
+    endif()
+  endmacro(HPCC_ADD_SUBDIRECTORY)
 
   set ( SCM_GENERATED_DIR ${CMAKE_BINARY_DIR}/generated )
   include_directories (${SCM_GENERATED_DIR})
