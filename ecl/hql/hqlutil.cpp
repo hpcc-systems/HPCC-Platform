@@ -5049,6 +5049,24 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
     OwnedHqlExpr self = getSelf(record);
     HqlMapTransformer mapping;
     unsigned col = 0;
+    IHqlExpression * rowPayloadAttr = curRow->queryProperty(_payload_Atom);
+    IHqlExpression * recordPayloadAttr = record->queryProperty(_payload_Atom);
+    if (rowPayloadAttr)
+    {
+        unsigned rowPayload =  (unsigned) getIntValue(rowPayloadAttr->queryChild(0));
+        col++;
+        if (recordPayloadAttr)
+        {
+            unsigned recordPayload =  (unsigned) getIntValue(recordPayloadAttr->queryChild(0));
+            if (rowPayload != recordPayload)
+                ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+        }
+        else
+            ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+    }
+    else if (recordPayloadAttr)
+        ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+
     OwnedHqlExpr ret = createTempTableTransform(self, curRow, record, col, self, mapping, true);
     if (queryRealChild(curRow, col))
     {
@@ -5383,6 +5401,27 @@ IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocat
 IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
     return convertTempTableToInline(errors, location, expr, true);
+}
+
+void setPayloadAttribute(HqlExprArray &args)
+{
+    // Locate a payload attribute in  an initializer value list. If found, move it to front and give it a position
+    int payloadPos = -1;
+    ForEachItemIn(idx, args)
+    {
+        IHqlExpression *cur = &args.item(idx);
+        if (cur->isAttribute())
+        {
+            assertex(payloadPos==-1);
+            assertex(cur->queryName()==_payload_Atom);
+            payloadPos = idx;
+        }
+    }
+    if (payloadPos != -1)
+    {
+        args.remove(payloadPos);
+        args.add(*createAttribute(_payload_Atom, createConstant((__int64) args.length()-payloadPos)), 0);
+    }
 }
 
 bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)

@@ -458,6 +458,7 @@
 #define HQLWRN_CouldNotConstantFoldIf           3124
 #define HQLERR_UnexpectedOperator               3125
 #define HQLERR_UnexpectedType                   3126
+#define HQLERR_PayloadMismatch                  3127
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -486,6 +487,7 @@
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
 #define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
 #define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
+#define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

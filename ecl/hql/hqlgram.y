@@ -9737,6 +9737,14 @@ inlineFieldValue
                         }
     ;
 
+inlineFieldValueGoesTo
+        : GOESTO        {
+                            parser->addListElement(createAttribute(_payload_Atom));
+                            $$.clear();
+                            $$.setPosition($1);
+                        }
+        ;
+
 inlineFieldValues
     : inlineFieldValue
     | inlineFieldValues ';' inlineFieldValue
@@ -9745,7 +9753,7 @@ inlineFieldValues
 
 inlineFieldValuesWithGoesto
     : inlineFieldValues optSemiComma
-    | inlineFieldValues GOESTO inlineFieldValues optSemiComma
+    | inlineFieldValues inlineFieldValueGoesTo  inlineFieldValues optSemiComma
     ;
 
 inlineDatasetValue
@@ -9753,6 +9761,7 @@ inlineDatasetValue
                         {
                             HqlExprArray args;
                             parser->endList(args);
+                            setPayloadAttribute(args);
 //                          args.append(*createLocationAttr($1));           // improves the error reporting, but slows it down, and changes the expression crcs
                             $$.setExpr(createValue(no_rowvalue, makeNullType(), args));
                         }
