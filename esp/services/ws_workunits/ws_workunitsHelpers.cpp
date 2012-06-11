@@ -1546,6 +1546,21 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, b
     SCMStringBuffer logname;
     cw->getDebugValue(File_ThorLog, logname);
 
+    StringBuffer slaveIPPortStr;
+    slaveIPPortStr.appendf("thorslave.%s", slaveip);
+    const char* port = strchr(slaveip, ':');
+    if (port)
+    {
+        slaveIPPortStr.replace(':', '_');
+    }
+    else
+    {
+        slaveIPPortStr.appendf("_*");
+    }
+
+    StringBuffer thorLogFile = pathTail(logname.str());
+    thorLogFile.replaceString("thormaster", slaveIPPortStr.str());
+
     StringBuffer logdir;
     splitDirTail(logname.str(),logdir);
 
@@ -1555,7 +1570,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, b
     rfn.setIp(ep);
 
     Owned<IFile> dir = createIFile(rfn);
-    Owned<IDirectoryIterator> diriter = dir->directoryFiles("*.log");
+    Owned<IDirectoryIterator> diriter = dir->directoryFiles(thorLogFile.str());
     if (!diriter->first())
       throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find Thor slave log file %s.", logdir.str());
 
