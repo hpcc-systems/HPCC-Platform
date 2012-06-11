@@ -209,6 +209,7 @@ public class HPCCDriverTest
 		}
 		catch (Exception e)
 		{
+			System.err.println(e.getMessage());
 			success = false;
 		}
 		return success;
@@ -238,6 +239,7 @@ public class HPCCDriverTest
 		}
 		catch (Exception e)
 		{
+			System.out.println(e.getMessage());
 			success = false;
 		}
 		return success;
@@ -248,7 +250,7 @@ public class HPCCDriverTest
 		boolean success = true;
 		try
 		{
-			success &= testLazyLoading(propsinfo);
+			//success &= testLazyLoading(propsinfo);
 
 			HPCCConnection connectionprops = connectViaProps(propsinfo);
 			if (connectionprops == null)
@@ -386,27 +388,80 @@ public class HPCCDriverTest
 		try
 		{
 			Properties info = new Properties();
-			info.put("ServerAddress", "192.168.124.128");
-			info.put("LazyLoad", "false");
-			info.put("Cluster", "myroxie");
-			info.put("QuerySet", "thor");
-			info.put("WsECLWatchPort", "8010");
-			info.put("EclResultLimit", "ALL");
-			info.put("WsECLPort", "8002");
-			info.put("WsECLDirectPort", "8008");
-			info.put("username", "myhpccusername");
-			info.put("password", "myhpccpass");
-
-			String infourl = "url:jdbc:ecl;ServerAddress=192.168.124.128;Cluster=myroxie;EclResultLimit=8";
 			List<String> params = new ArrayList<String>();
+			String infourl = "";
 
-			success &= runFullTest(info, infourl);
+			if (args.length == 0)
+			{
+				info.put("ServerAddress", "192.168.124.128");
+				info.put("LazyLoad", "false");
+				info.put("Cluster", "myroxie");
+				info.put("QuerySet", "thor");
+				info.put("WsECLWatchPort", "8010");
+				info.put("EclResultLimit", "ALL");
+				info.put("WsECLPort", "8002");
+				info.put("WsECLDirectPort", "8008");
+				info.put("username", "myhpccusername");
+				info.put("password", "myhpccpass");
 
-			//params.add("'33445'");
-			//params.add("'90210'");
+				infourl = "url:jdbc:ecl;ServerAddress=192.168.124.128;Cluster=myroxie;EclResultLimit=8";
 
-			//success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
+				//success &= runFullTest(info, infourl);
 
+				params.add("'33445'");
+				params.add("'90210'");
+
+				success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from super::tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
+			}
+			else
+			{
+				System.out.println("********************************************************************");
+				System.out.println("HPCC JDBC Test Package Usage:");
+				System.out.println(" Connection Parameters: paramname==paramvalue");
+				System.out.println(" eg. ServerAddress==192.168.124.128");
+				System.out.println(" Prepared Statement param value: \"param\"==paramvalue");
+				System.out.println(" eg. param==\'33445\'");
+				System.out.println("");
+				System.out.println(" By default full test is executed.");
+				System.out.println(" To execute free hand sql:");
+				System.out.println("  freehandsql==<SQL STATEMENT>");
+				System.out.println("  eg. freehandsql==\"select * from tablename where zip=? limit 100\"");
+				System.out.println("********************************************************************\n");
+
+				String freehand = null;
+				for (int i = 0; i < args.length; i++)
+				{
+					String [] propsplit = args[i].split("==");
+					if( propsplit.length == 1)
+					{
+						info.put(propsplit[0], "true");
+						System.out.println("added prop: " + propsplit[0] + " = true");
+					}
+					else if ( propsplit.length == 2)
+					{
+						if (propsplit[0].equalsIgnoreCase("param"))
+						{
+							params.add(propsplit[1]);
+							System.out.println("added param( " + (params.size()) + " ) = " + propsplit[1]);
+						}
+						else
+						{
+							info.put(propsplit[0], propsplit[1]);
+							System.out.println("added prop: " + propsplit[0] + " = " + propsplit[1]);
+						}
+					}
+					else
+						System.out.println("arg["+i+"] ignored");
+				}
+
+				if (info.containsKey("freehandsql"))
+				{
+					freehand = info.getProperty("freehandsql");
+					success &= executeFreeHandSQL(info, freehand, params);
+				}
+				else
+					success &= runFullTest(info, infourl);
+			}
 		}
 		catch (Exception e)
 		{

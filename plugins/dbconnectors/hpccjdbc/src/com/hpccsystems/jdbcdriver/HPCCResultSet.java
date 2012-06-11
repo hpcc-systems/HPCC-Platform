@@ -81,6 +81,8 @@ public class HPCCResultSet implements ResultSet
 				if(!dbMetadata.tableExists("", hpccfilename))
 					throw new Exception("Invalid table found: " + hpccfilename);
 				DFUFile dfufile = dbMetadata.getDFUFile(hpccfilename);
+				if (!dfufile.hasFileRecDef())
+					throw new Exception("Cannot query: " + hpccfilename + " because it does not contain a record definition.");
 				parser.verifySelectColumns(dfufile);
 				expectedretcolumns = parser.getSelectColumns();
 				if(((HPCCPreparedStatement)statement).isIndexSet())

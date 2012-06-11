@@ -40,6 +40,7 @@ public class DFUFile
 	private Properties KeyedColumns;
 	private Properties NonKeyedColumns;
 	private List<String> relatedIndexes;
+	private List<String> subFiles;
 	private String IdxFilePosField;
 	private boolean HasPayLoad;
 
@@ -82,6 +83,7 @@ public class DFUFile
 		relatedIndexes = null;
 		IdxFilePosField = null;
 		HasPayLoad = false;
+		subFiles = null;
 	}
 
 	public DFUFile(String prefix, String clusterName, String directory,
@@ -130,6 +132,7 @@ public class DFUFile
 		relatedIndexes = null;
 		IdxFilePosField = null;
 		HasPayLoad = false;
+		subFiles = null;
 	}
 
 	public DFUFile()
@@ -167,6 +170,7 @@ public class DFUFile
 		relatedIndexes = null;
 		IdxFilePosField = null;
 		HasPayLoad = false;
+		subFiles = null;
 	}
 
 	public String getFileName() {
@@ -529,7 +533,8 @@ public class DFUFile
 		return Ecl == null ? null : structname + " := RECORD " + Ecl + "END; ";
 	}
 
-	public void setFileRecDef(String ecl) {
+	public void setFileRecDef(String ecl)
+	{
 		if (ecl != null && ecl.length()>0)
 			setFileFields(ecl);
 	}
@@ -668,7 +673,6 @@ public class DFUFile
 	public Object getFileRecDefwithIndexpos(HPCCColumnMetaData fieldMetaData, String structname)
 	{
 		if(fieldMetaData != null)
-			//return "filerecstruct := RECORD " + Ecl + fieldMetaData.getEclType() + " " + fieldMetaData.getColumnName() + " {virtual(fileposition)}; END; ";
 			return structname + " := RECORD " + Ecl + fieldMetaData.getEclType() + " " + fieldMetaData.getColumnName() + " {virtual(fileposition)}; END; ";
 
 		return structname + " := RECORD " + Ecl +  " END; "; //might need to throw exception instead
@@ -765,5 +769,55 @@ public class DFUFile
 	public boolean containsField(HPCCColumnMetaData column)
 	{
 		return this.containsField(column.getColumnName());
+	}
+
+	public int getSubfilesCount()
+	{
+		return (subFiles != null) ? 0 : subFiles.size();
+	}
+
+	public boolean containsSubfiles()
+	{
+		return (subFiles != null && subFiles.size() > 0) ? true : false;
+	}
+
+	public List<String> getSubfiles()
+	{
+		return subFiles;
+	}
+
+	public String getSubfile(int index)
+	{
+		String subfilename = "";
+
+		try
+		{
+			if (subFiles != null)
+				subfilename = subFiles.get(index);
+		}
+		catch (Exception e) {}
+
+		return subfilename;
+	}
+
+	public boolean addSubfile(String subfilename)
+	{
+		boolean isSuccess = false;
+
+		if (subfilename.length() > 0)
+		{
+			if (subFiles == null)
+				subFiles = new ArrayList<String>();
+			try
+			{
+				isSuccess = subFiles.add(subfilename);
+			}
+			catch (Exception e)
+			{
+				isSuccess = false;
+			}
+		}
+
+		return isSuccess;
 	}
 }
