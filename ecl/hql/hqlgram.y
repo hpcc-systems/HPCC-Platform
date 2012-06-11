@@ -3976,8 +3976,6 @@ endrecord
                             record->Link();     // link should be in startrecord, but can only link after closeExpr()
                             parser->popSelfScope();
                             OwnedHqlExpr newRecord = record->closeExpr();
-                            if (newRecord->hasProperty(packedAtom))
-                                newRecord.setown(getPackedRecord(newRecord));
                             $$.setExpr(newRecord.getClear());
                             parser->popLocale();
                             $$.setPosition($1);
