@@ -229,18 +229,22 @@ public class SQLParser
 			}
 
 			String splittablefromalias [] = fullTableName.split("\\s+(?i)as(\\s+|$)");
-			if (splittablefromalias != null && splittablefromalias.length > 0)
+			if (splittablefromalias.length == 1)
 			{
-				if (!splittablefromalias[0].contains(" "))
-					tableName = splittablefromalias[0].trim();
-				else
+				String splittablebyblank [] = splittablefromalias[0].trim().split("\\s+");
+				tableName = splittablebyblank[0];
+				if (splittablebyblank.length==2)
+					tableAlias = splittablebyblank[1].trim();
+				else if (splittablebyblank.length>2)
 					throw new SQLException("Invalid SQL: " + splittablefromalias[0]);
 			}
-			else
-				throw new SQLException("Invalid SQL: Missing table name.");
-
-			if (splittablefromalias.length > 1)
+			else if (splittablefromalias.length == 2)
+			{
+				tableName = splittablefromalias[0].trim();
 				tableAlias = splittablefromalias[1].trim();
+			}
+			else
+				throw new SQLException("Invalid SQL: " + fullTableName);
 
 			if (fromstrpos <= 7)
 				throw new SQLException("Invalid SQL: Missing select column(s).");
