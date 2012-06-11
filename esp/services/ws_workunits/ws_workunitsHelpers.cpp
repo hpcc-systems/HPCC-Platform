@@ -1402,7 +1402,7 @@ bool WsWuInfo::getResultViews(StringArray &viewnames, unsigned flags)
     return false;
 }
 
-void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios)
+void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload)
 {
     StringBuffer line;
     bool eof = false;
@@ -1424,7 +1424,7 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios)
         }
 
         mb.append(line.length(), line.str());
-        if (mb.length() > 640000)
+        if (!forDownload && (mb.length() > 640000))
             break;
     }
 }
@@ -1538,7 +1538,7 @@ void WsWuInfo::getWorkunitThorLog(MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf, bool forDownload)
 {
    if (isEmpty(slaveip))
       throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave IP not specified.");
@@ -1569,7 +1569,7 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *slaveip, MemoryBuffer& buf)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read file %s.",logdir.str());
 
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
-    appendIOStreamContent(buf, ios.get());
+    appendIOStreamContent(buf, ios.get(), forDownload);
 }
 
 void WsWuInfo::getWorkunitResTxt(MemoryBuffer& buf)
@@ -1621,7 +1621,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
     buf.append(xml.length(), xml.str());
 }
 
-void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, const char* ipAddress, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload)
 {
     if (isEmpty(description))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
@@ -1644,7 +1644,7 @@ void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, cons
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
-    appendIOStreamContent(buf, ios.get());
+    appendIOStreamContent(buf, ios.get(), forDownload);
 }
 
 
