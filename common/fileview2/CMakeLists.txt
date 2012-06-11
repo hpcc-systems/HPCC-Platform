@@ -106,13 +106,14 @@ set (    SRCS
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-add_executable ( fvserver ${SRCS} )
-set_target_properties(fvserver PROPERTIES 
-    COMPILE_FLAGS -D_CONSOLE
+if( PLATFORM )
+    add_executable ( fvserver ${SRCS} )
+    set_target_properties(fvserver PROPERTIES 
+        COMPILE_FLAGS -D_CONSOLE
     )
-#install ( TARGETS fvserver DESTINATION ${OSSDIR}/bin ) #not used at present
+    #install ( TARGETS fvserver DESTINATION ${OSSDIR}/bin ) #not used at present
 
-target_link_libraries ( fvserver
+    target_link_libraries ( fvserver
          jlib 
          mp 
          hrpc 
@@ -128,6 +129,6 @@ target_link_libraries ( fvserver
          hql 
          fileview2 
     )
-
+endif()
 
 

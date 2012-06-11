@@ -64,4 +64,6 @@ target_link_libraries ( deploy
          securesocket
     )
 
-
+if ( PLATFORM )
+    install ( PROGRAMS configesp.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+endif()
