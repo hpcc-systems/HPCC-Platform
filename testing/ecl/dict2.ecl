@@ -11,10 +11,6 @@ d3n := nofold(d3);
 d4n := nofold(d4);
 d5n := nofold(d5);
 
-// Invalid...
-d1a := dictionary([{1 => 'Richard'}], { integer id, string name });
-d2a := dictionary([{1 => 2, 'Richard'}], { integer id1, integer id2 => string name });
-
 d1[5].name = 'Richard';
 5 in d1;
 d1[1].name = '';
