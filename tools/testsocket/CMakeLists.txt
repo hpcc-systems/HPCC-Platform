@@ -38,3 +38,6 @@ target_link_libraries ( testsocket
          )
 install ( TARGETS testsocket DESTINATION ${OSSDIR}/bin )
 
+if ( PLATFORM )
+    install ( PROGRAMS testsocket.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+endif()

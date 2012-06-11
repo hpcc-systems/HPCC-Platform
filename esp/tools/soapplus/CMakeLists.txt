@@ -61,3 +61,6 @@ FOREACH( iFILES
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles COMPONENT Runtime )
 ENDFOREACH ( iFILES )
 
+if ( PLATFORM )
+    install ( PROGRAMS soapplus.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+endif()

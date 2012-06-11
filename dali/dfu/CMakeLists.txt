@@ -27,6 +27,9 @@
 
 project (AllProjects)
 
-include ( dfuserver.cmake)
+if ( PLATFORM )
+    include ( dfuserver.cmake)
+endif()
+
 include ( dfuwu.cmake)
 

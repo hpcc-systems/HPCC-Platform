@@ -16,12 +16,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-add_subdirectory (hrpc)
-add_subdirectory (include)
-add_subdirectory (jhtree)
-add_subdirectory (jlib)
-add_subdirectory (lzma)
-add_subdirectory (mp)
-add_subdirectory (security)
-add_subdirectory (xmllib)
-add_subdirectory (xmllibtest)
+HPCC_ADD_SUBDIRECTORY (hrpc)
+HPCC_ADD_SUBDIRECTORY (include "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (jhtree)
+HPCC_ADD_SUBDIRECTORY (jlib)
+HPCC_ADD_SUBDIRECTORY (lzma)
+HPCC_ADD_SUBDIRECTORY (mp)
+HPCC_ADD_SUBDIRECTORY (security)
+HPCC_ADD_SUBDIRECTORY (xmllib)
+HPCC_ADD_SUBDIRECTORY (xmllibtest "PLATFORM")
