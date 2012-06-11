@@ -65,7 +65,6 @@ public:
     {
         IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);
         ensureNavLink(*folder, "Run Ecl", "/EclDirect/RunEclEx/Form", "Submit ECL text for execution", NULL, NULL, 3);
-        ensureNavLink(*folder, "ECL Playground", "/esp/files/ECLPlayground.htm", "ECL Editor, Executor, Graph and Result Viewer", NULL, NULL, 4);
     }
 
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
