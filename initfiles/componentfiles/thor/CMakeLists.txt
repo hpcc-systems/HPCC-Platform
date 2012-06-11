@@ -17,6 +17,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/start_thor
     ${CMAKE_CURRENT_SOURCE_DIR}/run_thor
     ${CMAKE_CURRENT_SOURCE_DIR}/stop_thor
+    ${CMAKE_CURRENT_SOURCE_DIR}/stop_slaves
 )
     Install ( PROGRAMS ${iFILES} DESTINATION ${OSSDIR}/bin )
 ENDFOREACH ( iFILES )
