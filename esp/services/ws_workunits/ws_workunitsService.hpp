@@ -131,6 +131,7 @@ public:
             IPropertyTree *folder = ensureNavFolder(data, "ECL", "Run Ecl code and review Ecl workunits", NULL, false, 2);
             ensureNavLink(*folder, "Search Workunits", "/WsWorkunits/WUQuery?form_", "Search Workunits", NULL, NULL, 1);
             ensureNavLink(*folder, "Browse Workunits", "/WsWorkunits/WUQuery", "Browse Workunits", NULL, NULL, 2);
+            ensureNavLink(*folder, "ECL Playground", "/esp/files/ECLPlayground.htm", "ECL Editor, Executor, Graph and Result Viewer", NULL, NULL, 4);
 
             IPropertyTree *folderQueryset = ensureNavFolder(data, "Query Sets", NULL, NULL, false, 3);
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Published Queries");
