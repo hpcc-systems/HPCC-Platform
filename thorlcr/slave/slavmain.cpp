@@ -229,8 +229,14 @@ public:
                         }
                         else
                             soPath.append(remoteSoPath);
-                        PROGLOG("Using query: %s", soPath.str());
+
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
+                        StringBuffer user;
+                        workUnitInfo->getProp("user", user);
+
+                        PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
+
+                        PROGLOG("Using query: %s", soPath.str());
                         Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
                         jobs.replace(*LINK(job));
 
@@ -245,11 +251,15 @@ public:
                     {
                         StringAttr key;
                         msg.read(key);
-                        PROGLOG("QueryDone, removing %s from jobs", key.get());
                         CJobSlave *job = jobs.find(key.get());
+                        StringAttr wuid = job->queryWuid();
+                        StringAttr graphName = job->queryGraphName();
+
+                        PROGLOG("QueryDone, removing %s from jobs", key.get());
                         jobs.removeExact(job);
                         PROGLOG("QueryDone, removed %s from jobs", key.get());
 
+                        PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
                         msg.clear();
                         msg.append(false);
                         break;

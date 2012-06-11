@@ -46,7 +46,7 @@
 #include "thdemonserver.hpp"
 #include "thgraphmanager.hpp"
 
-class CJobManager: public CSimpleInterface, implements IJobManager, implements IExceptionHandler
+class CJobManager : public CSimpleInterface, implements IJobManager, implements IExceptionHandler
 {
     bool stopped, handlingConversation;
     Owned<IConversation> conversation;
@@ -59,6 +59,7 @@ class CJobManager: public CSimpleInterface, implements IJobManager, implements I
     Owned<IDeMonServer> demonServer;
     atomic_t            activeTasks;
     StringAttr          currentWuid;
+    ILogMsgHandler *logHandler;
 
     bool executeGraph(IConstWorkUnit &workunit, const char *graphName, const SocketEndpoint &agentEp);
     void addJob(CJobMaster &job) { CriticalBlock b(jobCrit); jobs.append(job); }
@@ -67,7 +68,7 @@ class CJobManager: public CSimpleInterface, implements IJobManager, implements I
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJobManager();
+    CJobManager(ILogMsgHandler *logHandler);
     ~CJobManager();
 
     bool doit(IConstWorkUnit *workunit, const char *graphName, const SocketEndpoint &agentep);
@@ -89,7 +90,7 @@ public:
 
 // CJobManager impl.
 
-CJobManager::CJobManager()
+CJobManager::CJobManager(ILogMsgHandler *_logHandler) : logHandler(_logHandler)
 {
     stopped = handlingConversation = false;
     addThreadExceptionHandler(this);
@@ -643,7 +644,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
         // expect there to be 1 or 2 of these, so scan/check if log exists already and add if not
-        const char *nLog = globals->queryProp("@logURL");
+        StringBuffer log, logUrl;
+        logHandler->getLogName(log);
+        createUNCFilename(log, logUrl, false);
+        const char *nLog = logUrl.str();
         Owned<IStringIterator> siter = &wu->getDebugValues("ThorLog*");
         unsigned last=0;
         bool found=false;
@@ -718,7 +722,7 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     SCMStringBuffer user, eclstr;
     workunit.getUser(user);
 
-    LOG(MCdebugProgress, thorJob, "Started wuid=%s, user=%s, graph=%s\n**", wuid.str(), user.str(), graphName);
+    PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.str(), user.str(), graphName);
 
     PROGLOG("Query %s loaded", compoundPath.str());
     Owned<IConstWUGraph> graph = workunit.getGraph(graphName);
@@ -767,7 +771,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         throw;
     }
     job.clear();
-    LOG(MCdebugProgress, thorJob, "Finished wuid=%s", wuid.str());
+    PROGLOG("Finished wuid=%s, graph=%s", wuid.str(), graphName);
+
     setWuid(NULL);
     return allDone;
 }
@@ -852,7 +857,7 @@ void closeThorServerStatus()
     }
 }
 
-void thorMain()
+void thorMain(ILogMsgHandler *logHandler)
 {
     aborting = 0;
     unsigned multiThorMemoryThreshold = globals->getPropInt("@multiThorMemoryThreshold")*0x100000;
@@ -876,7 +881,7 @@ void thorMain()
         CThorResourceMaster masterResource;
         setIThorResource(masterResource);
 
-        Owned<CJobManager> jobManager = new CJobManager();
+        Owned<CJobManager> jobManager = new CJobManager(logHandler);
         try {
             LOG(MCdebugProgress, thorJob, "Listening for graph");
             jobManager->run();
