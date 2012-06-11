@@ -568,7 +568,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
             if(access < required)
             {
                 const char *desc=curres->getDescription();
-                ESPLOG(LogMax, "Access denied to: %s. Access=%d, Required=%d\n", desc?desc:"<no-desc>", access, required);
+                ESPLOG(LogMin, "Access for user '%s' denied to: %s. Access=%d, Required=%d", user->getName(), desc?desc:"<no-desc>", access, required);
                 ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: Not Authorized", "Resource: %s [%s]", curres->getName(), (desc) ? desc : "");
                 authorized = false;
                 break;

@@ -1180,7 +1180,7 @@ public:
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     ldap_unbind(user_ld);
                 }
-                DBGLOG("finished LdapBind for user %s", username);
+                DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
                 if(!LdapServerDown(rc) || retries > LDAPSEC_MAX_RETRIES)
                     break;
                 sleep(LDAPSEC_RETRY_WAIT);
