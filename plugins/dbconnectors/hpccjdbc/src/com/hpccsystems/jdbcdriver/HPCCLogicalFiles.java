@@ -45,6 +45,31 @@ public class HPCCLogicalFiles
 		return files.elements();
 	}
 
+	private String getSubfileRecDef(DFUFile superfile)
+	{
+		String eclrecdef = "";
+
+		List<String> subfiles = superfile.getSubfiles();
+		for (int y = 0; y < subfiles.size(); y++)
+		{
+			DFUFile subfile =((DFUFile) files.get(subfiles.get(y)));
+			if (subfile.hasFileRecDef())
+			{
+				eclrecdef = subfile.getFileRecDef("recdef");
+				System.out.println("\tUsing record definition from: " + subfile.getFullyQualifiedName());
+				break;
+			}
+			else if (subfile.isSuperFile())
+			{
+				eclrecdef = getSubfileRecDef(subfile);
+				if (!eclrecdef.equals(""))
+					break;
+			}
+		}
+
+		return eclrecdef;
+	}
+
 	public void updateSuperFiles()
 	{
 		int superfilescount = superfiles.size();
@@ -57,22 +82,10 @@ public class HPCCLogicalFiles
 			{
 				if(superfile.containsSubfiles())
 				{
-					List<String> subfiles = superfile.getSubfiles();
-					for (int y = 0; y < subfiles.size(); y++)
-					{
-						DFUFile subfile =((DFUFile) files.get(subfiles.get(y)));
-						if (subfile.hasFileRecDef())
-						{
-							superfile.setFileRecDef(subfile.getFileRecDef("recdef"));
-
-							if(superfile.hasFileRecDef())
-							{
-								System.out.println(superfile.getFullyQualifiedName() + " set to use record definition from subfile " + subfile.getFullyQualifiedName());
-								superfilesupdated++;
-								break;
-							}
-						}
-					}
+					System.out.println("Processing superfile: " + superfile.getFullyQualifiedName());
+					superfile.setFileRecDef(getSubfileRecDef(superfile));
+					if(superfile.hasFileRecDef())
+						superfilesupdated++;
 				}
 			}
 		}

@@ -773,12 +773,12 @@ public class DFUFile
 
 	public int getSubfilesCount()
 	{
-		return (subFiles != null) ? 0 : subFiles.size();
+		return (subFiles == null) ? 0 : subFiles.size();
 	}
 
 	public boolean containsSubfiles()
 	{
-		return (subFiles != null && subFiles.size() > 0) ? true : false;
+		return (getSubfilesCount() > 0) ? true : false;
 	}
 
 	public List<String> getSubfiles()
