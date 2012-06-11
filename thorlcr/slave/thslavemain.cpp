@@ -67,6 +67,7 @@ USE_JLIB_ALLOC_HOOK;
 #endif
 
 static SocketEndpoint slfEp;
+static unsigned mySlaveNum;
 
 static char **cmdArgs;
 void mergeCmdParams(IPropertyTree *props)
@@ -113,9 +114,16 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         setClusterGroup(group);
 
         SocketEndpoint myEp = queryMyNode()->endpoint();
-        if (RANK_NULL == group->rank(queryMyNode()))
+        rank_t groupPos = group->rank(queryMyNode());
+        if (RANK_NULL == groupPos)
         {
             replyError("Node not part of thorgroup");
+            return false;
+        }
+        if (globals->hasProp("@SLAVENUM") && (mySlaveNum != (unsigned)groupPos))
+        {
+            VStringBuffer errStr("Slave group rank[%d] does not match provided cmd line slaveNum[%d]", mySlaveNum, (unsigned)groupPos);
+            replyError(errStr.str());
             return false;
         }
         globals->Release();
@@ -207,13 +215,10 @@ public:
 
 void startSlaveLog()
 {
-    StringBuffer fileName("thorslave.");
-    SocketEndpoint ep;
-    ep.setLocalHost(0);
-    ep.getUrlStr(fileName);
-    fileName.append("_").append(getMachinePortBase());
-
+    StringBuffer fileName("thorslave");
     Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals->queryProp("@logDir"), "thor");
+    StringBuffer slaveNumStr;
+    lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
     lf->setCreateAliasFile(false);
     lf->setName(fileName.str());//override default filename
     lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
@@ -280,7 +285,12 @@ int main( int argc, char *argv[]  )
             localHostToNIC(slfEp);
         }
         else 
-            slfEp.setLocalHost(0); 
+            slfEp.setLocalHost(0);
+
+        if (globals->hasProp("@SLAVENUM"))
+            mySlaveNum = atoi(globals->queryProp("@SLAVENUM"));
+        else
+            mySlaveNum = slfEp.port; // shouldn't happen, provided by script
 
         setMachinePortBase(slfEp.port);
         slfEp.port = getMachinePortBase();
