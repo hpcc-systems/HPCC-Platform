@@ -141,7 +141,7 @@ public:
         }
         return NULL;
     }
-	virtual void stop() { }
+    virtual void stop() { }
 };
 
 class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput

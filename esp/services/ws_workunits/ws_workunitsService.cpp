@@ -2404,7 +2404,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
             {
-                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb);
+                winfo.getWorkunitCpp(req.getName(), req.getDescription(), req.getIPAddress(),mb, opt > 0);
                 openSaveFile(context, opt, req.getName(), HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_DLL,req.getType()))
@@ -2426,7 +2426,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
             {
-                winfo.getWorkunitThorSlaveLog(req.getSlaveIP(), mb);
+                winfo.getWorkunitThorSlaveLog(req.getSlaveIP(), mb, opt > 0);
                 openSaveFile(context, opt, "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))

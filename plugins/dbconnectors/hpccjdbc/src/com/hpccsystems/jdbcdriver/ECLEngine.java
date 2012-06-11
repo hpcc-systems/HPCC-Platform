@@ -228,7 +228,7 @@ public class ECLEngine
 									eclEnteties.put("SCALAROUTNAME", col.getColumnName());
 							}
 
-							col.setSQLType(java.sql.Types.NUMERIC);
+							col.setSqlType(java.sql.Types.NUMERIC);
 						}
 						else if (col.getColumnName().equalsIgnoreCase("MAX"))
 						{

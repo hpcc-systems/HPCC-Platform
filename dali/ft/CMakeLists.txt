@@ -19,7 +19,9 @@
 
 project (all)
 
-include (ftslave.cmake)
+if ( PLATFORM )
+    include (ftslave.cmake)
+endif()
 include (dalift.cmake)
 
 

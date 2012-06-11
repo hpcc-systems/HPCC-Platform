@@ -69,8 +69,8 @@ ln -s -f `which $prog` $slaveproc
 
 echo "slave starting `date`"
 
-echo $instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth
-$instancedir/$slaveproc master=$master slave=.:$slaveport logDir=$logpth 2>/dev/null 1>/dev/null &
+echo $instancedir/$slaveproc master=$master slave=.:$slaveport slavenum=$slavenum logDir=$logpth
+$instancedir/$slaveproc master=$master slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
 slavepid=$!
 echo $slavepid > $PID_NAME
 if [ "$slavepid" -eq "0" ]; then

@@ -261,4 +261,32 @@ public class HPCCQuery
 	{
 		QuerySet = qsname;
 	}
+
+	public boolean isQueryNameMatch(String fullname)
+	{
+		String querysplit [] = fullname.split("::");
+		String inname ="";
+		String inqs ="";
+		if(querysplit.length > 2)
+		{
+			for (int i = 1; i < querysplit.length; i++)
+				inname += "::" + querysplit[i];
+			inqs = querysplit[0];
+		}
+		else if (querysplit.length == 2)
+		{
+			inqs = querysplit[0];
+			inname = querysplit[1];
+		}
+		else if (querysplit.length == 1)
+			inname = querysplit[0];
+		else
+			return false;
+
+		if (!inname.equalsIgnoreCase(this.Name) ||
+			(inqs.length() > 0 && !inqs.equalsIgnoreCase(this.QuerySet)))
+			return false;
+
+		return true;
+	}
 }
