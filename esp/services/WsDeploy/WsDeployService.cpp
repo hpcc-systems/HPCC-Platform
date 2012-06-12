@@ -4344,7 +4344,7 @@ bool CWsDeployFileInfo::addReqdComps(IEspContext &context, IEspAddReqdCompsReque
   {
     IPropertyTree& pComputer = iterComp->query();
 
-    if (!checkForRequiredComponents(pEnvRoot, pComputer.queryProp(XML_ATTR_NETADDRESS), reqCompNames, "",true))
+    if (!checkForRequiredComponents(pEnvRoot, pComputer.queryProp(XML_ATTR_NETADDRESS), reqCompNames, NULL, true))
       failed.appendf("\n%s", pComputer.queryProp(XML_ATTR_NETADDRESS));
   }
 
@@ -6872,7 +6872,7 @@ CWsDeployExCE* createWsDeployCE(IPropertyTree *cfg, const char* name)
 }
 
 bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip,
-                                                   StringBuffer& reqdCompNames, const StringBuffer& buildSet, bool autoadd/*=false*/)
+                                                   StringBuffer& reqdCompNames, const char* buildSet, bool autoadd/*=false*/)
 {
   StringBuffer prop, prop2, xpath, genEnvConf;
   Owned<IProperties> algProps;
@@ -6916,9 +6916,9 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
       DelimToStringArray(prop.str(), compOnAllNodes, ",");
       DelimToStringArray(prop2.str(), compExcludeOnAllNodes, ",");
 
-      for (unsigned i = 0; buildSet.length() != 0 && i < compExcludeOnAllNodes.ordinality(); i++)
+      for (unsigned i = 0; buildSet != NULL && i < compExcludeOnAllNodes.ordinality(); i++)
       {
-        if (strcmp(compExcludeOnAllNodes.item(i),buildSet.toCharArray()) == 0)
+        if (strcmp(compExcludeOnAllNodes.item(i),buildSet) == 0)
         {
           bExclude = true;
           break;
