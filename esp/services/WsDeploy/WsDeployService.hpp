@@ -532,7 +532,7 @@ private:
     void saveEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, StringBuffer& errMsg, bool saveAs = false);
     void unlockEnvironment(IEspContext* pContext, IConstWsDeployReqInfo *reqInfo, const char* xmlarg, StringBuffer& sbMsg, bool saveEnv = false);
     void setEnvironment(IEspContext &context, IConstWsDeployReqInfo *reqInfo, const char* newEnv, const char* fnName, StringBuffer& sbBackup, bool validate = true, bool updateDali = true);
-    bool checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip, StringBuffer& reqdCompNames, bool autoAdd=false);
+    bool checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip, StringBuffer& reqdCompNames, const StringBuffer& buildSet, bool autoAdd=false);
   
     Owned<CSdsSubscription>   m_pSubscription;
     Owned<IConstEnvironment>  m_constEnvRdOnly;
