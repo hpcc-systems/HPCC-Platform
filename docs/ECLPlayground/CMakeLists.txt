@@ -15,5 +15,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} ECLPlayground-includer.xml "ECL_Playground")
+DOCBOOK_TO_PDF( ${FO_XSL} ECLPlayground-includer.xml "ECL_Playground" "ECLPlay-Mods")
 
