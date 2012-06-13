@@ -676,6 +676,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             s.append('N');
         if (containsWorkflow(expr))
             s.append('W');
+        if (containsSelf(expr))
+            s.append('S');
         if (isContextDependent(expr))
         {
             s.append('X');

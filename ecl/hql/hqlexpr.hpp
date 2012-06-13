@@ -179,7 +179,7 @@ enum
     HEF2mustHoist               = 0x00000002,
     HEF2assertstepped           = 0x00000004,
     HEF2containsNonGlobalAlias  = 0x00000008,
-    //no longer used            = 0x00000010,
+    HEF2containsSelf            = 0x00000010,
     HEF2containsNewDataset      = 0x00000020,
     HEF2constant                = 0x00000040,
     HEF2____unused1____         = 0x00000080,
@@ -190,7 +190,7 @@ enum
     //NB: infoFlags2 is currently 2 bytes
     HEF2alwaysInherit           = (HEF2workflow|HEF2containsCall|HEF2containsDelayedCall),
     HEF2intersectionFlags       = (HEF2constant),
-    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction),
+    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction|HEF2containsSelf),
     HEF2assigninheritFlags      = ~(HEF2alwaysInherit),         // An assign inherits all but this list from the rhs value 
 };
 
@@ -1095,6 +1095,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryBody(bool singleLevel = false) = 0;
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
+    virtual bool usesSelector(IHqlExpression * selector) = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
@@ -1645,6 +1646,7 @@ inline bool containsAssertStepped(IHqlExpression * expr){ return (expr->getInfoF
 inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoFlags() & HEFcontainsCounter) != 0; }
 inline bool isCountProject(IHqlExpression * expr)       { return expr->hasProperty(_countProject_Atom); }
 inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips)) != 0; }
+inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
                                                         { return (expr->getInfoFlags() & (HEFcontextDependent & ~HEFgraphDependent)) != 0; }
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }

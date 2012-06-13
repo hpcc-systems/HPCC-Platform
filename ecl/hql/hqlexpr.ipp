@@ -171,6 +171,7 @@ public:
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const ;
     virtual bool isIndependentOfScope();
+    virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
 
     virtual ITypeInfo *queryRecordType();
@@ -352,6 +353,7 @@ public:
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const;
     virtual bool isIndependentOfScope();
+    virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
     virtual IValue *queryValue() const;
     virtual IInterface *queryUnknownExtra();
