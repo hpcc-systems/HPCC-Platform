@@ -4918,6 +4918,12 @@ bool CHqlExpression::isIndependentOfScope()
     return (inScopeTables.ordinality() == 0);
 }
 
+bool CHqlExpression::usesSelector(IHqlExpression * selector)
+{
+    cacheTablesUsed();
+    return inScopeTables.contains(*selector);
+}
+
 void CHqlExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
 {
     cacheTablesUsed();
@@ -5845,6 +5851,11 @@ IHqlExpression * CHqlAnnotation::cloneAllAnnotations(IHqlExpression * newbody)
 bool CHqlAnnotation::isIndependentOfScope()
 {
     return body->isIndependentOfScope();
+}
+
+bool CHqlAnnotation::usesSelector(IHqlExpression * selector)
+{
+    return body->usesSelector(selector);
 }
 
 void CHqlAnnotation::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
@@ -11844,9 +11855,7 @@ bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, IHqlExpression * 
 
 bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset)
 {
-    HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
-    return scopeUsed.contains(*dataset->queryNormalizedSelector());
+    return expr->usesSelector(dataset->queryNormalizedSelector());
 }
 
 void gatherChildTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope, IHqlExpression * expr, unsigned firstChild)

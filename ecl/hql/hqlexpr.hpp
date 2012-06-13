@@ -1095,6 +1095,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryBody(bool singleLevel = false) = 0;
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
+    virtual bool usesSelector(IHqlExpression * selector) = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
