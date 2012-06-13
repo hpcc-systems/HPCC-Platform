@@ -3,6 +3,7 @@ package com.hpccsystems.test.jdbcdriver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -82,6 +83,40 @@ public class HPCCDriverTest
 		return connection;
 	}
 
+	private static boolean printouttable(HPCCConnection connection, String tablename)
+	{
+		boolean success = true;
+		try
+		{
+			ResultSet table = connection.getMetaData().getTables(null, null, tablename, null);
+
+			while (table.next())
+				System.out.println("\t" + table.getString("TABLE_NAME"));
+		}
+		catch (Exception e)
+		{
+			success = false;
+		}
+		return success;
+	}
+
+	private static boolean printoutExportedKeys(HPCCConnection connection)
+	{
+		boolean success = true;
+		try
+		{
+			ResultSet keys = connection.getMetaData().getExportedKeys(null,null, null);
+
+			//while (table.next())
+				//System.out.println("\t" + table.getString("TABLE_NAME"));
+		}
+		catch (Exception e)
+		{
+			success = false;
+		}
+		return success;
+	}
+
 	private static boolean printouttables(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -100,7 +135,28 @@ public class HPCCDriverTest
 		return success;
 	}
 
-	private static boolean printouttablecols(HPCCConnection connection)
+	private static boolean printouttablecols(HPCCConnection connection, String tablename)
+	{
+		boolean success = true;
+		try
+		{
+			ResultSet tablecols = connection.getMetaData().getColumns(null, null, tablename, "%");
+
+			System.out.println("Table cols found: ");
+			while (tablecols.next())
+				System.out.println("\t" +
+			tablecols.getString("TABLE_NAME") +
+			"::" +
+			tablecols.getString("COLUMN_NAME") +
+			"( " + tablecols.getString("TYPE_NAME") + " )");
+		}
+		catch (Exception e)
+		{
+			success = false;
+		}
+		return success;
+	}
+	private static boolean printoutalltablescols(HPCCConnection connection)
 	{
 		boolean success = true;
 		try
@@ -290,7 +346,8 @@ public class HPCCDriverTest
 					//"select 1 as ONE"
 					//"call myroxie::fetchpeoplebyzipservice(33445)"
 					//"call fetchpeoplebyzipservice(33445)"
-					"call fetchpeoplebyzipservice(33445)"
+					//"call fetchpeoplebyzipservice(33445)"
+					"select * from .::doughenschen__infinity_rollup_best1"
 					//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
 					//"select tbl.* from progguide::exampledata::peopleaccts tbl"
@@ -317,7 +374,7 @@ public class HPCCDriverTest
 					//p.setObject(1, "'A'");
 					//p.setObject(2, "'D'");
 
-					HPCCResultSet qrs = (HPCCResultSet)((HPCCPreparedStatement)p).executeQuery();
+				/*	HPCCResultSet qrs =(HPCCResultSet)((HPCCPreparedStatement)p).executeQuery();
 
 					ResultSetMetaData meta = qrs.getMetaData();
 					System.out.println();
@@ -367,15 +424,20 @@ public class HPCCDriverTest
 //						}
 //					}
 //					System.out.println("\nTotal Records found: " + qrs.getRowCount());
-
-					success &= printouttables(connectionprops);
-					success &= printouttablecols(connectionprops);
-					success &= printoutprocs(connectionprops);
-					success &= printoutproccols(connectionprops);
+*/
+					//success &= printoutExportedKeys(connectionprops);
+					//success &= printouttable(connectionprops, ".::doughenschen__infinity_rollup_best1");
+					//success &= printouttables(connectionprops);
+					success &= printoutalltablescols(connectionprops);
+					//success &= printouttablecols(connectionprops,".::doughenschen__infinity_rollup_best1");
+					//success &= printoutprocs(connectionprops);
+					//success &= printoutproccols(connectionprops);
 
 		}
 		catch (Exception e)
 		{
+			e.printStackTrace();
+			System.out.println(e.getMessage());
 			success = false;
 		}
 		return success;
@@ -391,7 +453,7 @@ public class HPCCDriverTest
 			List<String> params = new ArrayList<String>();
 			String infourl = "";
 
-			if (args.length == 0)
+			if(args.length <= 0)
 			{
 				info.put("ServerAddress", "192.168.124.128");
 				info.put("LazyLoad", "false");
@@ -399,19 +461,17 @@ public class HPCCDriverTest
 				info.put("QuerySet", "thor");
 				info.put("WsECLWatchPort", "8010");
 				info.put("EclResultLimit", "ALL");
-				info.put("WsECLPort", "8002");
-				info.put("WsECLDirectPort", "8008");
-				info.put("username", "myhpccusername");
-				info.put("password", "myhpccpass");
 
 				infourl = "url:jdbc:ecl;ServerAddress=192.168.124.128;Cluster=myroxie;EclResultLimit=8";
 
-				//success &= runFullTest(info, infourl);
+				success &= runFullTest(info, infourl);
 
-				params.add("'33445'");
-				params.add("'90210'");
+				//params.add("'33445'");
+				//params.add("'90210'");
 
-				success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from super::super::tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
+				//success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
+				//success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from super::super::tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
+				success &= executeFreeHandSQL(info, "select count(persons.lastname) as zipcount, persons.city as mycity , zip from tutorial::rp::tutorialperson persons USE INDEX(0) limit 100", params);
 			}
 			else
 			{

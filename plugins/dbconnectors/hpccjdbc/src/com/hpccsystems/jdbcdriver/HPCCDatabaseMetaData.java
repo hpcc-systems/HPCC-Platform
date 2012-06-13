@@ -67,6 +67,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private String basicAuth;
 	private String UserName;
 	private boolean lazyLoad;
+	private int pageSize;
 
 	public HPCCDatabaseMetaData(Properties props)
 	{
@@ -79,6 +80,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		this.UserName = props.getProperty("username");
 		this.basicAuth = props.getProperty("BasicAuth");
 		this.lazyLoad = Boolean.parseBoolean(props.getProperty("LazyLoad"));
+		this.pageSize = HPCCJDBCUtils.stringToInt(props.getProperty("PageSize"));
 
 		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + targetcluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
@@ -93,6 +95,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		if (!isHPCCMetaDataCached())
 		{
 			setHPCCMetaDataCached(CacheMetaData());
+
 			if (targetclusters.size()>0 && !targetclusters.contains(this.targetcluster))
 			{
 				props.setProperty("Cluster", targetclusters.get(0));
@@ -139,42 +142,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		return SQLFieldMapping.get(type);
 	}
 
-	public int getProcFieldType(String eclqueryname, String eclresultset, String fieldName)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		try
-		{
-			HPCCQuery query = (HPCCQuery)eclqueries.getQuery(eclqueryname);
-			if (query != null && query.containsField(eclresultset, fieldName))
-				return query.getFieldMetaData(fieldName).getSqlType();
-			return java.sql.Types.NULL;
-		}
-		catch (NumberFormatException e)
-		{
-			return java.sql.Types.NULL;
-		}
-	}
-
-	public int getTableFieldType(String hpccfilename, String fieldName)
-	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
-
-		try
-		{
-			DFUFile file = dfufiles.getFile(hpccfilename);
-			if (file != null && file.containsField(fieldName))
-				return file.getFieldMetaData(fieldName).getSqlType();
-			return java.sql.Types.NULL;
-		}
-		catch (NumberFormatException e)
-		{
-			return java.sql.Types.NULL;
-		}
-	}
-
 	public boolean isDFUMetaDataCached()
 	{
 		return isDFUMetaDataCached;
@@ -216,13 +183,15 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		isSuccess &= fetchClusterInfo();
 
+		isSuccess &= fetchQuerysetsInfo();
+
 		if (!lazyLoad)
 		{
 			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
 			if (isDFUMetaDataCached())
 			{
-				System.out.println("Tables found: ");
+				System.out.println("Tables' Metadata fetched: ");
 				Enumeration<Object> em = dfufiles.getFiles();
 				while (em.hasMoreElements())
 				{
@@ -235,7 +204,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 			if (isQuerySetMetaDataCached())
 			{
-				System.out.println("Stored Procedures found: ");
+				System.out.println("Stored Procedures' Metadata fetched: ");
 				Enumeration<Object> em1 = eclqueries.getQueries();
 				while (em1.hasMoreElements())
 				{
@@ -614,13 +583,15 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	}
 
 	@Override
-	public boolean allProceduresAreCallable() throws SQLException {
-		return false;
+	public boolean allProceduresAreCallable() throws SQLException
+	{
+		return true;
 	}
 
 	@Override
-	public boolean allTablesAreSelectable() throws SQLException {
-		return true;
+	public boolean allTablesAreSelectable() throws SQLException
+	{
+		return false;
 	}
 
 	@Override
@@ -1222,10 +1193,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		List<List> procedures = new ArrayList<List>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		boolean wildprocsearch = procedureNamePattern == null || procedureNamePattern.length()==0 || procedureNamePattern.contains("*") || procedureNamePattern.contains("%");
+		boolean allprocsearch = procedureNamePattern == null || procedureNamePattern.length()==0 || procedureNamePattern.trim().equals("*") || procedureNamePattern.trim().equals("%");
 		System.out.println("ECLDATABASEMETADATA GETPROCS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", procedureNamePattern: " + procedureNamePattern);
 
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
@@ -1237,31 +1205,43 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("REMARKS", 7, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_TYPE", 8, java.sql.Types.SMALLINT));
 
-		Enumeration<Object> queries = eclqueries.getQueries();
-		while (queries.hasMoreElements())
+		if(allprocsearch)
 		{
-			HPCCQuery query = (HPCCQuery) queries.nextElement();
-			String queryname = query.getName();
+			if (!isQuerySetMetaDataCached())
+				setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
 
-			if(!wildprocsearch && !query.isQueryNameMatch(procedureNamePattern))
-				continue;
+			Enumeration<Object> queries = eclqueries.getQueries();
+			while (queries.hasMoreElements())
+			{
+				HPCCQuery query = (HPCCQuery) queries.nextElement();
+				procedures.add(populateProcedureRow(query));
+			}
+		}
+		else
+		{
+			procedures.add(populateProcedureRow(getHpccQuery(procedureNamePattern)));
+		}
 
-			ArrayList rowValues = new ArrayList();
-			procedures.add(rowValues);
+		return new HPCCResultSet(procedures, metacols, "Procedures");
+	}
+
+	private ArrayList populateProcedureRow(HPCCQuery query)
+	{
+		ArrayList rowValues = new ArrayList();
+
+		if (query != null)
+		{
 			rowValues.add("");
 			rowValues.add(query.getQuerySet());
-			rowValues.add(query.getQuerySet()+"::"+queryname);
+			rowValues.add(query.getQuerySet()+"::"+query.getName());
 			rowValues.add("");
 			rowValues.add("");
 			rowValues.add("");
 			rowValues.add("QuerySet: " + query.getQuerySet());
 			rowValues.add(procedureResultUnknown);
-
-			if(!wildprocsearch)
-				break;
 		}
 
-		return new HPCCResultSet(procedures, metacols, "Procedures");
+		return rowValues;
 	}
 
 	@Override
@@ -1272,11 +1252,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		List<List> procedurecols = new ArrayList<List>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
 
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		boolean wildprocsearch = procedureNamePattern == null || procedureNamePattern.length()==0 || procedureNamePattern.contains("*") || procedureNamePattern.contains("%");
-		boolean wildcolumnsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.contains("*") || columnNamePattern.contains("%");
+		boolean allcolumnsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.trim().equals("*") || columnNamePattern.trim().equals("%");
 
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_SCHEM",2, java.sql.Types.VARCHAR));
@@ -1293,14 +1269,12 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("REMARKS", 		13, java.sql.Types.VARCHAR));
 
 		int coltype = java.sql.Types.NULL;
+		ResultSet procs = getProcedures(catalog, schemaPattern, procedureNamePattern);
 
-		Enumeration<Object> queries = eclqueries.getQueries();
-		while(queries.hasMoreElements())
+		while (procs.next())
 		{
-			HPCCQuery query = (HPCCQuery)queries.nextElement();
-
-			if(!wildprocsearch && !query.isQueryNameMatch(procedureNamePattern))
-				continue;
+			System.out.println(procs.getString("PROCEDURE_NAME"));
+			HPCCQuery query = getHpccQuery(procs.getString("PROCEDURE_NAME"));
 
 			Iterator<HPCCColumnMetaData> queryfields = query.getAllFields().iterator();
 
@@ -1308,9 +1282,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			{
 				HPCCColumnMetaData col = (HPCCColumnMetaData)queryfields.next();
 				String fieldname = col.getColumnName();
-				if(!wildcolumnsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
+				if(!allcolumnsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
 					continue;
-
 				coltype = col.getSqlType();
 
 				System.out.println("Proc col Found: "  + query.getName() + "." + fieldname + " of type: " + coltype + "("+convertSQLtype2JavaClassName(coltype)+")");
@@ -1332,18 +1305,18 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 				/*12*/rowValues.add(procedureNoNulls);
 				/*13*/rowValues.add("");
 
-				if(!wildcolumnsearch)
+				if(!allcolumnsearch)
 					break;
 			}
-			if(!wildprocsearch)
-				break;
 		}
+
 		return new HPCCResultSet(procedurecols, metacols, "ProcedureColumns");
 	}
 
 	@Override
 	public ResultSet getTables(String catalog, String schemaPattern,
-			String tableNamePattern, String[] types) throws SQLException {
+			String tableNamePattern, String[] types) throws SQLException
+	{
 		/*
 		 * TABLE_CAT String => table catalog (may be null) TABLE_SCHEM String =>
 		 * table schema (may be null) TABLE_NAME String => table name TABLE_TYPE
@@ -1358,13 +1331,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		 * created. Values are "SYSTEM", "USER", "DERIVED". (may be null)
 		 */
 
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
-
 		System.out.println("ECLDATABASEMETADATA GETTABLES catalog: " + catalog +", schemaPattern: " + schemaPattern + ", tableNamePattern: " + tableNamePattern);
 
-		//boolean wilddbsearch = schemaPattern == null || schemaPattern.length()==0 || schemaPattern.contains("*");
-		boolean wildtablesearch = tableNamePattern == null || tableNamePattern.length()==0 || tableNamePattern.contains("*") || tableNamePattern.contains("%");
+		boolean alltablesearch = tableNamePattern == null || tableNamePattern.length()==0 || tableNamePattern.trim().equals("*") || tableNamePattern.trim().equals("%");
 
 		List<List<String>> tables = new ArrayList<List<String>>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
@@ -1381,33 +1350,44 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("SELF_REFERENCING_COL_NAME", 10, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("REF_GENERATION", 11, java.sql.Types.VARCHAR));
 
-		Enumeration<Object> files = dfufiles.getFiles();
-		while (files.hasMoreElements())
+		if (alltablesearch)
 		{
-			DFUFile file = (DFUFile) files.nextElement();
-			//String filename = file.getFileName();
-			String filename = file.getFullyQualifiedName();
+			if(!isDFUMetaDataCached())
+				setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-			if(!wildtablesearch && !tableNamePattern.equalsIgnoreCase(filename))
-				continue;
-			System.out.println("Found table: " + filename);
-			ArrayList<String> rowValues = new ArrayList<String>();
-			tables.add(rowValues);
-			rowValues.add(file.getClusterName());
-			rowValues.add(filename);
-			rowValues.add(filename);
-			rowValues.add("TABLE");
-			rowValues.add(file.getDescription() + (!file.hasFileRecDef() ? "**HPCC FILE DOESNOT CONTAIN ECL RECORD LAYOUT**" : "") + (file.hasRelatedIndexes() ? "Has " + file.getRelatedIndexesCount() + " related Indexes": "") +(file.isKeyFile() ? "-Keyed File " : "") + (file.isSuperFile() ? "-SuperFile " : "") + (file.isFromRoxieCluster() ? "-FromRoxieCluster" : ""));
-			rowValues.add("null");
-			rowValues.add("null");
-			rowValues.add("null");
-			rowValues.add("null");
-			rowValues.add("null");
-
-			if(!wildtablesearch)
-				break;
+			Enumeration<Object> files = dfufiles.getFiles();
+			while (files.hasMoreElements())
+			{
+				DFUFile file = (DFUFile) files.nextElement();
+				tables.add(populateTableInfo(file));
+			}
+		}
+		else
+		{
+			DFUFile file = getDFUFile(tableNamePattern);
+			if (file != null)
+				tables.add(populateTableInfo(file));
 		}
 		return new HPCCResultSet(tables, metacols, "Tables");
+	}
+
+	private ArrayList<String> populateTableInfo(DFUFile table)
+	{
+		ArrayList<String> rowValues = new ArrayList<String>();
+		if (table != null)
+		{
+			rowValues.add(table.getClusterName());
+			rowValues.add(table.getFullyQualifiedName());
+			rowValues.add(table.getFullyQualifiedName());
+			rowValues.add("TABLE");
+			rowValues.add(table.getDescription() + (!table.hasFileRecDef() ? "**HPCC FILE DOESNOT CONTAIN ECL RECORD LAYOUT**" : "") + (table.hasRelatedIndexes() ? "Has " + table.getRelatedIndexesCount() + " related Indexes": "") +(table.isKeyFile() ? "-Keyed File " : "") + (table.isSuperFile() ? "-SuperFile " : "") + (table.isFromRoxieCluster() ? "-FromRoxieCluster" : ""));
+			rowValues.add("null");
+			rowValues.add("null");
+			rowValues.add("null");
+			rowValues.add("null");
+			rowValues.add("null");
+		}
+		return rowValues;
 	}
 
 	@Override
@@ -1474,10 +1454,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	public String [] getAllTableFields(String dbname, String tablename)
 	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
+		DFUFile file = getDFUFile(tablename);
 
-		DFUFile file = (DFUFile)dfufiles.getFile(tablename);
 		if (file != null)
 			return file.getAllTableFieldsStringArray();
 
@@ -1490,11 +1468,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	{
 		System.out.println("ECLDATABASEMETADATA GETCOLUMNS catalog: " + catalog +", schemaPattern: " + schemaPattern + ", tableNamePattern: " + tableNamePattern + ", columnNamePattern: " + columnNamePattern);
 
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
-
-		boolean wildtablesearch = tableNamePattern == null || tableNamePattern.length()==0 || tableNamePattern.contains("*") || tableNamePattern.contains("%");
-		boolean wildfieldsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.contains("*") || columnNamePattern.contains("%");
+		boolean allfieldsearch = columnNamePattern == null || columnNamePattern.length()==0 || columnNamePattern.trim().equals("*") || columnNamePattern.trim().equals("%");
 
 		List<List<String>> columns = new ArrayList<List<String>>();
 		ArrayList<HPCCColumnMetaData> metacols = new ArrayList<HPCCColumnMetaData>();
@@ -1522,30 +1496,28 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("SCOPE_TABLE", 		21, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("SOURCE_DATA_TYPE", 	22, java.sql.Types.SMALLINT));
 
-		int coltype = java.sql.Types.NULL;
+		ResultSet tables = getTables(catalog, schemaPattern, tableNamePattern, null);
 
-		Enumeration<Object> files = dfufiles.getFiles();
-		while(files.hasMoreElements())
+		while (tables.next())
 		{
-			DFUFile file = (DFUFile)files.nextElement();
-			String filename = file.getFullyQualifiedName();
-			if(!wildtablesearch && !tableNamePattern.equalsIgnoreCase(filename))
-				continue;
+			System.out.println(tables.getString("TABLE_NAME"));
+			DFUFile file = getDFUFile(tables.getString("TABLE_NAME"));
 
 			Enumeration<Object> e = file.getAllFields();
 			while (e.hasMoreElements())
 			{
 				HPCCColumnMetaData field = (HPCCColumnMetaData)e.nextElement();
 				String fieldname = field.getColumnName();
-				if(!wildfieldsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
+				if(!allfieldsearch && !columnNamePattern.equalsIgnoreCase(fieldname))
 					continue;
 
+				int coltype = java.sql.Types.NULL;
 				coltype = field.getSqlType();
-				System.out.println("Table col found: "  + filename+"."+fieldname + " of type: " + coltype + "("+convertSQLtype2JavaClassName(coltype)+")");
+
+				System.out.println("Table col found: "  + file.getFileName() + "." + fieldname + " of type: " + coltype + "("+convertSQLtype2JavaClassName(coltype)+")");
 
 				ArrayList rowValues = new ArrayList();
 				columns.add(rowValues);
-
 				/* 1*/rowValues.add(catalog);
 				/* 2*/rowValues.add(schemaPattern);
 				/* 3*/rowValues.add(file.getFullyQualifiedName());
@@ -1569,12 +1541,11 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 				/*21*/rowValues.add(coltype == java.sql.Types.REF ? null : "");
 				/*22*/rowValues.add(coltype == java.sql.Types.REF ? null : "");
 
-				if(!wildfieldsearch)
+				if(!allfieldsearch)
 					break;
 			}
-			if(!wildtablesearch)
-				break;
 		}
+
 		return new HPCCResultSet(columns, metacols, tableNamePattern);
 	}
 
@@ -1619,11 +1590,11 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		metacols.add(new HPCCColumnMetaData("PKTABLE_CAT", 		1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PKTABLE_SCHEM", 	2, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("PKTABLE_NAME", 		3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("PKTABLE_NAME", 	3, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PKCOLUMN_NAME", 	4, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("FKTABLE_CAT", 		5, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("FKTABLE_SCHEM", 	6, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("FKTABLE_NAME", 		7, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData("FKTABLE_NAME", 	7, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("FKCOLUMN_NAME", 	8, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("KEY_SEQ", 			9, java.sql.Types.SMALLINT));
 		metacols.add(new HPCCColumnMetaData("UPDATE_RULE", 		10, java.sql.Types.SMALLINT));
@@ -1805,7 +1776,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		 * SELF_REFERENCING_COLUMN of a structured type as defined in
 		 * java.sql.Types (null if DATA_TYPE is not DISTINCT or not STRUCT with
 		 * REFERENCE_GENERATION = USER_DEFINED)
-		 * 
+		 *
 		 * Note: If the driver does not support UDTs, an empty result set is
 		 * returned.
 		 */
@@ -1825,7 +1796,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		/*
 		 * for(EclTypes ecltype : EclTypes.values()) { ArrayList rowValues = new
 		 * ArrayList(); udts.add(rowValues);
-		 * 
+		 *
 		 * rowValues.add(String.valueOf(ecltype));
 		 * rowValues.add(convertECLtypeCode2SQLtype(ecltype.ordinal()));
 		 * rowValues.add(0); rowValues.add(null); rowValues.add(null);
@@ -2019,40 +1990,33 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		return isSuccess;
 	}
 
-	private boolean fetchHPCCFilesInfo()
+	private int parseDFULogicalFiles(InputStream xml, boolean setReportedFileCount)
 	{
-		boolean isSuccess = true;
-
-		if (isDFUMetaDataCached())
-		{
-			System.out.println("HPCC dfufile info already present (reconnect to force fetch)");
-			return true;
-		}
-
-		if (wseclwatchaddress == null || wseclwatchport == null)
-			return false;
+		int dfuFileParsedCount = 0;
 
 		try
 		{
-			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsDfu/DFUQuery?rawxml_";
-
-			URL dfuLogicalFilesURL;
-			dfuLogicalFilesURL = new URL(urlString);
-
-			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
-			dfulogfilesConn.setInstanceFollowRedirects(false);
-			System.out.println("Setting auth: " + basicAuth);
-			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
-			dfulogfilesConn.setRequestMethod("GET");
-			dfulogfilesConn.setDoOutput(true);
-			dfulogfilesConn.setDoInput(true);
-
-			InputStream xml = dfulogfilesConn.getInputStream();
-
 			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
 
+			if (setReportedFileCount)
+			{
+				try
+				{
+					NodeList NumFilesCount = dom.getElementsByTagName("NumFiles");
+
+					if (NumFilesCount.getLength() > 0)
+					{
+						dfufiles.setReportedFileCount(NumFilesCount.item(0).getTextContent());
+						System.out.println("Fetching " + pageSize + " files (tables) out of " + dfufiles.getReportedFileCount() + " reported files.");
+					}
+				}
+				catch (Exception e)
+				{
+					System.out.println("Could not determine total HPCC Logical file count");
+				}
+			}
 			NodeList querySetList = dom.getElementsByTagName("DFULogicalFiles");
 
 			if (querySetList.getLength() > 0)
@@ -2162,16 +2126,64 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 						if (file.getFullyQualifiedName().length() > 0)
 						{
-							fetchHPCCFileColumnInfo(file, db);
+							if (fetchHPCCFileColumnInfo(file, db))
+								dfuFileParsedCount++;
 						}
 						else
-							System.out.println("Found DFU file but could not determine name and/or cluster");
+							System.out.println("Found DFU file but could not determine name");
 					}
 				}
-				dfufiles.updateSuperFiles();
 			}
-			else
-				System.out.println("No DFU files found, check server address and ECL watch port");
+		}
+		catch (ParserConfigurationException e)
+		{
+			e.printStackTrace();
+		}
+		catch (SAXException e)
+		{
+			e.printStackTrace();
+		}
+		catch (ParseException e)
+		{
+			e.printStackTrace();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+
+		return dfuFileParsedCount;
+	}
+
+	private boolean fetchHPCCFileInfo(String filename)
+	{
+		boolean isSuccess = true;
+
+		if (wseclwatchaddress == null || wseclwatchport == null || filename.length() <= 0)
+			return false;
+
+		try
+		{
+			String urlString =
+					"http://" +
+					wseclwatchaddress +
+					":" +
+					wseclwatchport +
+					"/WsDfu/DFUQuery?" +
+					"LogicalName=" +
+					filename +
+					"&rawxml_";
+
+			URL dfuLogicalFilesURL;
+			dfuLogicalFilesURL = new URL(urlString);
+
+			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
+			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
+			dfulogfilesConn.setRequestMethod("GET");
+			dfulogfilesConn.setDoOutput(true);
+			dfulogfilesConn.setDoInput(true);
+
+			isSuccess = parseDFULogicalFiles(dfulogfilesConn.getInputStream(), false) > 0 ? true : false;
 		}
 		catch (MalformedURLException e)
 		{
@@ -2183,19 +2195,209 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			isSuccess = false;
 			e.printStackTrace();
 		}
-		catch (ParserConfigurationException e)
+
+		return isSuccess;
+	}
+
+	private boolean fetchHPCCFilesInfo()
+	{
+		boolean isSuccess = true;
+
+		if (isDFUMetaDataCached())
+		{
+			System.out.println("HPCC dfufile info already present (reconnect to force fetch)");
+			return true;
+		}
+
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		try
+		{
+			String urlString =
+					"http://" +
+					wseclwatchaddress +
+					":" +
+					wseclwatchport +
+					"/WsDfu/DFUQuery" +
+					"?rawxml_" +
+					"&FirstN=" +
+					pageSize;
+
+			URL dfuLogicalFilesURL;
+			dfuLogicalFilesURL = new URL(urlString);
+
+			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
+			dfulogfilesConn.setInstanceFollowRedirects(false);
+			System.out.println("Setting auth: " + basicAuth);
+			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
+			dfulogfilesConn.setRequestMethod("GET");
+			dfulogfilesConn.setDoOutput(true);
+			dfulogfilesConn.setDoInput(true);
+
+			isSuccess = parseDFULogicalFiles(dfulogfilesConn.getInputStream(), true) > 0 ? true : false;
+		}
+		catch (MalformedURLException e)
 		{
 			isSuccess = false;
 			e.printStackTrace();
 		}
-		catch (SAXException e)
+		catch (IOException e)
 		{
 			isSuccess = false;
 			e.printStackTrace();
 		}
-		catch (ParseException e)
+
+		return isSuccess;
+	}
+
+	private int parseHPCCQuery(InputStream xml)
+	{
+		int hpccQueryParsedCount = 0;
+
+		String querysetname = this.queryset;
+
+		try
 		{
-			isSuccess = false;
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document dom = db.parse(xml);
+
+			NodeList querySetNameNode = dom.getElementsByTagName("QuerySetName");
+			if (querySetNameNode.getLength() > 0)
+			{
+				querysetname = querySetNameNode.item(0).getTextContent();
+			}
+
+			NodeList querySetqueryList = dom.getElementsByTagName("QuerySetQuery");
+
+			for (int i = 0; i < querySetqueryList.getLength() && i < this.pageSize; i++)
+			{
+				NodeList querysetquerychildren = querySetqueryList.item(i).getChildNodes();
+
+				HPCCQuery query = new HPCCQuery();
+				query.setQueryset(querysetname);
+
+				for (int j = 0; j < querysetquerychildren.getLength(); j++)
+				{
+					String NodeName = querysetquerychildren.item(j).getNodeName();
+					if (NodeName.equals("Id"))
+					{
+						query.setID(querysetquerychildren.item(j).getTextContent());
+					}
+					else if (NodeName.equals("Name"))
+					{
+						query.setName(querysetquerychildren.item(j).getTextContent());
+					}
+					else if (NodeName.equals("Wuid"))
+					{
+						query.setWUID(querysetquerychildren.item(j).getTextContent());
+					}
+					else if (NodeName.equals("Dll"))
+					{
+						query.setDLL(querysetquerychildren.item(j).getTextContent());
+					}
+					else if (NodeName.equals("Suspended"))
+					{
+						query.setSuspended(Boolean.parseBoolean(querysetquerychildren.item(j).getTextContent()));
+					}
+				}
+				//for each QuerySetQuery found above, get all schema related info:
+				String queryinfourl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+						"/WsWorkunits/WUInfo/WUInfoRequest?Wuid=" +
+						query.getWUID() +
+						"&IncludeExceptions=1" +
+						"&IncludeGraphs=0" +
+						"&IncludeSourceFiles=0" +
+						"&IncludeTimers=0" +
+						"&IncludeDebugValues=0" +
+						"&IncludeApplicationValues=0" +
+						"&IncludeWorkflows=0" +
+						"&IncludeHelpers=0" +
+						"&rawxml_";
+
+				//now request the schema for each hpcc query
+				URL queryschema = new URL(queryinfourl);
+				HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
+				queryschemaconnection.setInstanceFollowRedirects(false);
+				queryschemaconnection.setRequestProperty("Authorization", basicAuth);
+				queryschemaconnection.setRequestMethod("GET");
+				queryschemaconnection.setDoOutput(true);
+				queryschemaconnection.setDoInput(true);
+
+				InputStream schema = queryschemaconnection.getInputStream();
+
+				try
+				{
+					Document dom2 = db.parse(schema);
+
+					Element docElement = dom2.getDocumentElement();
+
+					// 	Get all pertinent info regarding this query (analogous to SQL Stored Procedure)
+					registerSchemaElements(docElement, query);
+
+					// Add this query name to queries structure
+					eclqueries.put(query);
+					//isSuccess = true;
+					hpccQueryParsedCount++;
+				}
+				catch (java.util.NoSuchElementException e)
+				{
+					System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+			    }
+				catch (SAXException e)
+				{
+					System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+				}
+				catch (Exception e)
+				{
+					System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
+				}
+			}
+		}
+		catch (Exception e)
+		{
+
+		}
+
+		return hpccQueryParsedCount;
+	}
+
+	private boolean fetchHPCCQueryInfo(String queryset, String eclqueryname)
+	{
+		boolean isSuccess = false;
+
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		try
+		{
+			String urlString = "http://" +
+								wseclwatchaddress+":"+wseclwatchport +
+								"/WsWorkunits/WUQuerysetDetails?QuerySetName=" +
+								queryset +
+								"&Filter=" +
+								eclqueryname +
+								"&FilterType=Name" +
+								"&rawxml_";
+
+			URL querysetURL;
+			querysetURL = new URL(urlString);
+
+			HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
+			querysetconnection.setInstanceFollowRedirects(false);
+			querysetconnection.setRequestProperty("Authorization", basicAuth);
+			querysetconnection.setRequestMethod("GET");
+			querysetconnection.setDoOutput(true);
+			querysetconnection.setDoInput(true);
+
+			InputStream xml = querysetconnection.getInputStream();
+
+			isSuccess = parseHPCCQuery(xml) > 0 ? true : false;
+
+		}
+		catch (IOException e)
+		{
 			e.printStackTrace();
 		}
 
@@ -2222,6 +2424,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		{
 			for (int z = 0; z < querysets.size(); z++)
 			{
+				System.out.println("Fetching up to " + pageSize + " Stored Procedures' Metadata from QuerySet " + querysets.get(z));
+
 				String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport +
 									"/WsWorkunits/WUQuerysetDetails?QuerySetName=" +
 									querysets.get(z) + "&rawxml_";
@@ -2238,102 +2442,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 				InputStream xml = querysetconnection.getInputStream();
 
-				DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-				DocumentBuilder db = dbf.newDocumentBuilder();
-				Document dom = db.parse(xml);
-
-				NodeList querySetList = dom.getElementsByTagName("QuerysetQueries");
-
-				if (querySetList.getLength() > 0)
-				{
-					NodeList queryList = querySetList.item(0).getChildNodes();
-					for (int i = 0; i < queryList.getLength(); i++)
-					{
-						Node currentNode = queryList.item(i);
-						if (currentNode.getNodeName().equals("QuerySetQuery"))
-						{
-							NodeList querysetquerychildren = currentNode.getChildNodes();
-
-							HPCCQuery query = new HPCCQuery();
-							query.setQueryset(querysets.get(z));
-
-							for (int j = 0; j < querysetquerychildren.getLength(); j++)
-							{
-								String NodeName = querysetquerychildren.item(j).getNodeName();
-								if (NodeName.equals("Id"))
-								{
-									query.setID(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Name"))
-								{
-									query.setName(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Wuid"))
-								{
-									query.setWUID(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Dll"))
-								{
-									query.setDLL(querysetquerychildren.item(j).getTextContent());
-								}
-								else if (NodeName.equals("Suspended"))
-								{
-									query.setSuspended(Boolean.parseBoolean(querysetquerychildren.item(j).getTextContent()));
-								}
-							}
-							//for each QuerySetQuery found above, get all schema related info:
-							String queryinfourl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-									"/WsWorkunits/WUInfo/WUInfoRequest?Wuid=" +
-									query.getWUID() +
-									"&IncludeExceptions=1" +
-									"&IncludeGraphs=0" +
-									"&IncludeSourceFiles=0" +
-									"&IncludeTimers=0" +
-									"&IncludeDebugValues=0" +
-									"&IncludeApplicationValues=0" +
-									"&IncludeWorkflows=0" +
-									"&IncludeHelpers=0" +
-									"&rawxml_";
-
-							//now request the schema for each hpcc query
-							URL queryschema = new URL(queryinfourl);
-							HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-							queryschemaconnection.setInstanceFollowRedirects(false);
-							queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-							queryschemaconnection.setRequestMethod("GET");
-							queryschemaconnection.setDoOutput(true);
-							queryschemaconnection.setDoInput(true);
-
-							InputStream schema = queryschemaconnection.getInputStream();
-
-							try
-							{
-								Document dom2 = db.parse(schema);
-
-								Element docElement = dom2.getDocumentElement();
-
-								// 	Get all pertinent info regarding this query (analogous to SQL Stored Procedure)
-								registerSchemaElements(docElement, query);
-
-								System.out.println("______" + targetclusters.get(z)+"::"+query.getName());
-								// Add this query name to queries structure
-								eclqueries.put(query);
-							}
-							catch (java.util.NoSuchElementException e)
-							{
-								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
-						    }
-							catch (SAXException e)
-							{
-								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
-							}
-							catch (Exception e)
-							{
-								System.out.println("Could not retreive Query info for: " + query.getName() + "(" + query.getWUID() +")");
-							}
-						}
-					}
-				}
+				parseHPCCQuery(xml);
 			}
 		}
 		catch (IOException e)
@@ -2341,17 +2450,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			isSuccess = false;
 			e.printStackTrace();
 		}
-		catch (SAXException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-		catch (ParserConfigurationException e)
-		{
-			isSuccess = false;
-			e.printStackTrace();
-		}
-
 		return isSuccess;
 	}
 
@@ -2721,142 +2819,92 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	    	}
 	    	return "";
 	    }*/
-
 	}
 
-	public String getdefaultECLQueryResultDatasetName(String clustername,	String eclqueryname)
+	public boolean tableExists(String clustername, String filename)
 	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
+		boolean found = dfufiles.containsFileName(filename);
 
-		HPCCQuery query = eclqueries.getQuery(eclqueryname);
-		return query == null ? "" : query.getDefaultTableName();
+		if(!found)
+			found = fetchHPCCFileInfo(filename);
+
+		return found;
 	}
 
-	public boolean tableExists(String clustername, String eclqueryname)
+	public HPCCQuery getHpccQuery(String hpccqueryname)
 	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
+		HPCCQuery query = null;
+		String querysetname;
+		String queryname;
 
-		return dfufiles.containsFileName(eclqueryname);
-	}
-
-	public HPCCQuery getHpccQuery(String clustername, String eclqueryname)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		return eclqueries.getQuery(clustername, eclqueryname);
-	}
-
-	public HPCCQuery getHpccQuery(String eclqueryname)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		if (eclqueryname.contains("::"))
-			return eclqueries.getQuerysetQuery(eclqueryname);
+		String split [] = hpccqueryname.split("::",2);
+		if (split.length <= 1)
+		{
+			querysetname = this.queryset;
+			queryname = hpccqueryname;
+		}
 		else
-			return eclqueries.getQuery(this.queryset, eclqueryname);
-	}
-
-	public boolean eclQueryExists(String clustername, String eclqueryname)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		return eclqueries.getQuery(eclqueryname) == null ? false : true;
-	}
-
-	public boolean allFieldsExist(String clustername, String eclqueryname, String[] columnNames)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		HPCCQuery query = eclqueries.getQuery(eclqueryname);
-		if(query != null  && columnNames != null)
 		{
-			for (int i = 0; i < columnNames.length; i++)
+			querysetname = split[0];
+			queryname = split[1];
+		}
+
+		if (hpcclQueryExists(querysetname, queryname))
+			query = eclqueries.getQuery(querysetname, queryname);
+
+		return query;
+	}
+
+	public boolean hpcclQueryExists(String querysetname, String hpccqueryname)
+	{
+		boolean found = eclqueries.containsQueryName(querysetname, hpccqueryname);
+
+		if(!found)
+			found = fetchHPCCQueryInfo(querysetname, hpccqueryname);
+
+		return found;
+	}
+
+	private boolean fetchSuperFileSubfile(DFUFile file)
+	{
+		boolean isSuccess = false;
+
+		List<String> subfiles = file.getSubfiles();
+		for (String subfilename : subfiles)
+		{
+			if (tableExists("", subfilename))
 			{
-				if(!query.containsField(columnNames[i]))
-					return false;
+				DFUFile subfile = dfufiles.getFile(subfilename);
+				if (subfile.hasFileRecDef())
+				{
+					isSuccess = true;
+					break;
+				}
+				else if (subfile.isSuperFile())
+				{
+					fetchSuperFileSubfile(subfile);
+				}
 			}
-			return true;
 		}
-
-		return false;
-	}
-
-	public boolean allDFUFileFieldsExist(String clustername, String dfufilename, String[] columnNames)
-	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
-
-		DFUFile file = (DFUFile)dfufiles.getFile(dfufilename);
-
-		if(file != null  && columnNames != null)
-		{
-			for (int i = 0; i < columnNames.length; i++)
-			{
-				if(!file.containsField(columnNames[i]))
-					return false;
-			}
-			return true;
-		}
-
-		return false;
-	}
-
-	public ArrayList<HPCCColumnMetaData> getStoredProcOutColumns(String cluster, String eclqueryname)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		HPCCQuery query = eclqueries.getQuery(eclqueryname);
-		if(query != null)
-		{
-			return query.getAllNonInFields();
-		}
-		return null;
-	}
-
-	public ArrayList<HPCCColumnMetaData> getStoredProcInColumns(String cluster, String eclqueryname)
-	{
-		if (!isQuerySetMetaDataCached())
-			setQuerySetMetaDataCached(fetchHPCCQueriesInfo());
-
-		HPCCQuery query = eclqueries.getQuery(eclqueryname);
-		if(query != null)
-		{
-			return query.getAllInFields();
-		}
-		return null;
-
-	}
-
-	public HPCCColumnMetaData getTableColumn(String hpccfilename, String fieldName)
-	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
-
-		try
-		{
-			DFUFile file = dfufiles.getFile(hpccfilename);
-			if (file != null && file.containsField(fieldName))
-				return file.getFieldMetaData(fieldName);
-			return null;
-		}
-		catch (NumberFormatException e)
-		{
-			return null;
-		}
+		return isSuccess;
 	}
 
 	public DFUFile getDFUFile(String hpccfilename)
 	{
-		if (!isDFUMetaDataCached())
-			setDFUMetaDataCached(fetchHPCCFilesInfo());
+		DFUFile file = null;
+		if(tableExists("", hpccfilename))
+		{
+			file = dfufiles.getFile(hpccfilename);
+			if (file.isSuperFile() && !file.hasFileRecDef())
+			{
+				if(file.containsSubfiles())
+				{
+					if (fetchSuperFileSubfile(file))
+						dfufiles.updateSuperFile(hpccfilename);
+				}
+			}
+		}
 
-		return dfufiles.getFile(hpccfilename);
+		return file;
 	}
 }

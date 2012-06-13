@@ -26,6 +26,15 @@ import java.util.Properties;
 public class HPCCConnection implements Connection
 {
 	public static final String ECLRESULTLIMDEFAULT = "100";
+	public static final String CLUSTERDEFAULT = "hthor";
+	public static final String QUERYSETDEFAULT = "hthor";
+	public static final String SERVERADDRESSDEFAULT = "localhost";
+	public static final String WSECLWATCHPORTDEFAULT = "8010";
+	public static final String WSECLPORTDEFAULT = "8002";
+	public static final String WSECLDIRECTPORTDEFAULT = "8008";
+	public static final String FETCHPAGESIZEDEFAULT = "100";
+	public static final String LAZYLOADDEFAULT = "true";
+
     private boolean closed;
     private HPCCDatabaseMetaData metadata;
     private Properties props;
@@ -36,7 +45,7 @@ public class HPCCConnection implements Connection
     {
 		closed = false;
 
-		this.serverAddress = "localhost";
+		this.serverAddress = SERVERADDRESSDEFAULT;
 
 		if (props.containsKey("ServerAddress"))
 			this.serverAddress = props.getProperty("ServerAddress");
@@ -46,34 +55,37 @@ public class HPCCConnection implements Connection
 		this.props = props;
 
 		if (!this.props.containsKey("Cluster"))
-			this.props.setProperty("Cluster", "hthor");
+			this.props.setProperty("Cluster", CLUSTERDEFAULT);
 
 		if (!this.props.containsKey("QuerySet"))
-			this.props.setProperty("QuerySet", "hthor");
+			this.props.setProperty("QuerySet", QUERYSETDEFAULT);
 
 		if (!this.props.containsKey("WsECLWatchAddress"))
 			this.props.setProperty("WsECLWatchAddress", serverAddress);
 
 		if (!this.props.containsKey("WsECLWatchPort"))
-			this.props.setProperty("WsECLWatchPort", "8010");
+			this.props.setProperty("WsECLWatchPort", WSECLWATCHPORTDEFAULT);
 
 		if (!this.props.containsKey("WsECLAddress"))
 			this.props.setProperty("WsECLAddress", serverAddress);
 
 		if (!this.props.containsKey("WsECLPort"))
-			this.props.setProperty("WsECLPort", "8002");
+			this.props.setProperty("WsECLPort", WSECLPORTDEFAULT);
 
 		if (!this.props.containsKey("WsECLDirectAddress"))
 			this.props.setProperty("WsECLDirectAddress", serverAddress);
 
 		if (!this.props.containsKey("WsECLDirectPort"))
-			this.props.setProperty("WsECLDirectPort", "8008");
+			this.props.setProperty("WsECLDirectPort", WSECLDIRECTPORTDEFAULT);
 
 		if (!this.props.containsKey("username"))
 			this.props.setProperty("username", "");
 
 		if (!this.props.containsKey("password"))
 			this.props.setProperty("password", "");
+
+		if (!this.props.containsKey("PageSize") || !HPCCJDBCUtils.isNumeric(this.props.getProperty("PageSize")))
+			this.props.setProperty("PageSize", FETCHPAGESIZEDEFAULT);
 
 		boolean setdefaultreslim = false;
 		if (this.props.containsKey("EclResultLimit"))
@@ -114,7 +126,7 @@ public class HPCCConnection implements Connection
        this.props.put("BasicAuth", basicAuth);
 
        if (!this.props.containsKey("LazyLoad"))
-			this.props.setProperty("LazyLoad", "True");
+			this.props.setProperty("LazyLoad", LAZYLOADDEFAULT);
 
        metadata = new HPCCDatabaseMetaData(props);
 
