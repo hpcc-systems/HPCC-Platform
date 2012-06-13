@@ -392,7 +392,6 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     m_maxErrorsAllowed = DEFAULT_MAX_ERRORS;
     sortDepth = 0;
     serviceScope.clear();
-    selfUsedOnRhs = false;
 
     if (globalScope->isPlugin())
     {
@@ -1449,7 +1448,7 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
     if (containsSkip(rhs) && field->queryChild(0)->getOperator() != no_self)
         reportError(ERR_SKIP_IN_NESTEDCHILD, errpos, "SKIP in an assignment to a field in a nested record is not supported");
 
-    if (selfUsedOnRhs)
+    if (containsSelf(rhs))
     {
         OwnedHqlExpr self = getSelf(curTransform);
         rhs.setown(replaceSelfReferences(curTransform, rhs, self, errpos));
@@ -1809,12 +1808,6 @@ IHqlExpression * HqlGram::createClearTransform(IHqlExpression * record, const at
 {
     OwnedHqlExpr null = createValue(no_null);
     return createDefaultAssignTransform(record, null, errpos);
-}
-
-
-void HqlGram::setSelfUsedOnRhs()
-{
-    selfUsedOnRhs = true;
 }
 
 
@@ -2846,7 +2839,6 @@ IHqlExpression * HqlGram::getSelfDotExpr(const attribute & errpos)
         reportError(ERR_SELF_ILL_HERE, errpos, "SELF not legal here");
     if (curTransform && dotScope && recordTypesMatch(dotScope, curTransform))
     {
-        setSelfUsedOnRhs();
         return getSelf(curTransform);
     }
     return LINK(querySelfReference());
@@ -10765,7 +10757,6 @@ void HqlGram::beginTransform(ITypeInfo * type)
         TransformSaveInfo * saved = new TransformSaveInfo;
         saved->curTransform.setown(curTransform);
         saved->transformScope.setown(transformScope);
-        saved->selfUsedOnRhs = selfUsedOnRhs;
         transformSaveStack.append(*saved);
     }
     curTransform = createOpenValue(no_transform, makeTransformType(LINK(type)));
@@ -10789,13 +10780,11 @@ IHqlExpression * HqlGram::endTransform(const attribute &errpos)
 #endif
     IHqlExpression *ret = curTransform->closeExpr();
     curTransform = NULL;
-    selfUsedOnRhs = false;
     if (transformSaveStack.ordinality())
     {
         Owned<TransformSaveInfo> saved = &transformSaveStack.popGet();
         transformScope = saved->transformScope.getClear();
         curTransform = saved->curTransform.getClear();
-        selfUsedOnRhs = saved->selfUsedOnRhs;
     }
     return ret;
 }

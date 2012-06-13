@@ -3139,6 +3139,12 @@ void CHqlExpression::initFlagsBeforeOperands()
         infoFlags |= HEFcontainsActiveDataset;
         break;
     case no_self:
+        if (!type || !isPatternType(type))
+        {
+            infoFlags |= (HEFtransformDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);
+            infoFlags2 |= HEF2containsSelf;
+        }
+        break;
     case no_selfref:            // not sure about what flags
         if (!type || !isPatternType(type))
             infoFlags |= (HEFtransformDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);

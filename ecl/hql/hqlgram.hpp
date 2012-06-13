@@ -318,7 +318,6 @@ class TransformSaveInfo : public CInterface
 public:
     Owned<IHqlScope> transformScope;
     Owned<IHqlExpression> curTransform;
-    bool selfUsedOnRhs;
 };
 
 class FunctionCallInfo : public CInterface
@@ -709,7 +708,6 @@ protected:
     void expandWholeAndExcept(IHqlExpression * dataset, attribute & a);
     void cleanCurTransform();
     void unwindSelect(IHqlExpression* expr, HqlExprArray& r);
-    void setSelfUsedOnRhs();
     void setDefaultString(attribute &a);
 
     void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
@@ -875,7 +873,6 @@ protected:
     ConstPointerArray validAttributesStack;
     unsigned minimumScopeIndex;
     const TokenMap * pendingAttributes;
-    bool selfUsedOnRhs;
     bool aborting;
 
     void setIdUnknown(bool expected) { expectedUnknownId = expected; }
