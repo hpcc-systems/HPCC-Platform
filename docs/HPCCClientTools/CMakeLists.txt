@@ -15,5 +15,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} ClientTools.xml "HPCCClientTools")
+DOCBOOK_TO_PDF( ${FO_XSL} ClientTools.xml "HPCCClientTools" "CT_Mods")
 
