@@ -578,7 +578,7 @@ void InlineLinkedDatasetCursor::buildIterateClass(BuildCtx & ctx, StringBuffer &
     ctx.addQuoted(decl);
 }
 
-BoundRow * InlineLinkedDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
+BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool needToBreak, bool checkForNull)
 {
     StringBuffer rowName;
     OwnedHqlExpr row = createRow(ctx, "row", rowName, false);
@@ -620,6 +620,8 @@ BoundRow * InlineLinkedDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool need
 
     ctx.addLoop(test, NULL, false);
     ctx.addQuoted(s.clear().append(rowName).append(" = *").append(cursorName).append("++;"));
+    if (checkForNull)
+        ctx.addQuoted(s.clear().append("if (!").append(rowName).append(") continue;"));
     BoundRow * cursor = translator.bindTableCursor(ctx, ds, row);
 
     return cursor;
@@ -1677,7 +1679,7 @@ void LinkedDatasetBuilderBase::buildFinish(BuildCtx & ctx, CHqlBoundExpr & bound
 bool LinkedDatasetBuilderBase::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow)
 {
     IHqlExpression * sourceRecord = sourceRow->queryRecord();
-    if (recordTypesMatch(sourceRecord, record) && sourceRow->isBinary())
+    if (recordTypesMatchIgnorePayload(sourceRecord, record) && sourceRow->isBinary())
     {
         OwnedHqlExpr source = getPointer(sourceRow->queryBound());
         BuildCtx subctx(ctx);

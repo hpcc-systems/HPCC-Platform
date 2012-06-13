@@ -5583,6 +5583,8 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         //all bets are off.
         break;
 
+    case no_newuserdictionary:
+    case no_userdictionary:
     case no_inlinedictionary:
     case no_selectmap:
         // MORE - maybe should be something here?

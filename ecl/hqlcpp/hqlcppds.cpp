@@ -2665,6 +2665,11 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
 
     if (sourceCursor)
     {
+        if (isNullProject(expr, false))
+        {
+            if (target->buildLinkRow(iterctx, sourceCursor))
+                return;
+        }
         BoundRow * targetRow = target->buildCreateRow(iterctx);
         HqlExprAssociation * skipAssociation = NULL;
         if (containsSkip)
@@ -2679,6 +2684,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         case no_hqlproject:
             doBuildRowAssignProject(iterctx, targetRef, expr);
             break;
+        case no_newuserdictionary:
         case no_newusertable:
             doBuildRowAssignUserTable(iterctx, targetRef, expr);
             break;
@@ -2814,6 +2820,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         return;
     case no_hqlproject:
     case no_newusertable:
+    case no_newuserdictionary:
         buildDatasetAssignProject(subctx, target, expr);
         return;
     case no_compound_childread:
