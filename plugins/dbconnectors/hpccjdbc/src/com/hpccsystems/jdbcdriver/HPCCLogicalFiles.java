@@ -9,11 +9,14 @@ public class HPCCLogicalFiles
 {
 	private Properties files;
 	private List<String> superfiles;
+	private long reportedFileCount;
 
 	public HPCCLogicalFiles()
 	{
 		files = new Properties();
 		superfiles = new ArrayList<String>();
+
+		reportedFileCount = 0;
 	}
 
 	public void putFile(String fullyQualifiedName, DFUFile file)
@@ -70,6 +73,20 @@ public class HPCCLogicalFiles
 		return eclrecdef;
 	}
 
+	public void updateSuperFile(String superfilename)
+	{
+		DFUFile superfile = (DFUFile) files.get(superfilename);
+		if (!superfile.hasFileRecDef())
+		{
+			if(superfile.containsSubfiles())
+			{
+				System.out.println("Processing superfile: " + superfile.getFullyQualifiedName());
+				superfile.setFileRecDef(getSubfileRecDef(superfile));
+				files.put(superfile.getFullyQualifiedName(), superfile);
+			}
+		}
+	}
+
 	public void updateSuperFiles()
 	{
 		int superfilescount = superfiles.size();
@@ -85,10 +102,38 @@ public class HPCCLogicalFiles
 					System.out.println("Processing superfile: " + superfile.getFullyQualifiedName());
 					superfile.setFileRecDef(getSubfileRecDef(superfile));
 					if(superfile.hasFileRecDef())
+					{
+						files.put(superfile.getFullyQualifiedName(), superfile);
 						superfilesupdated++;
+					}
 				}
 			}
 		}
 		System.out.println("Update superfiles' record definition ( " + superfilesupdated + " out of " + superfilescount + " )");
+	}
+
+	public long getReportedFileCount()
+	{
+		return reportedFileCount;
+	}
+
+	public void setReportedFileCount(long reportedFileCount)
+	{
+		this.reportedFileCount = reportedFileCount;
+	}
+
+	public void setReportedFileCount(String reportedFileCountStr)
+	{
+		this.reportedFileCount = HPCCJDBCUtils.stringToLong(reportedFileCountStr);
+	}
+
+	public int getCachedFileCount()
+	{
+		return files.size();
+	}
+
+	public int getCachedSuperFileCount()
+	{
+		return superfiles.size();
 	}
 }

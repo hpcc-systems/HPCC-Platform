@@ -6,6 +6,7 @@ import java.util.Locale;
 
 public class HPCCJDBCUtils
 {
+	public static NumberFormat format = NumberFormat.getInstance(Locale.US);
 	static final char pad = '=';
 	static final char BASE64_enc[] =  {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
             						  'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
@@ -138,7 +139,6 @@ public class HPCCJDBCUtils
 
 	public static boolean isNumeric(String str)
 	{
-		NumberFormat format = NumberFormat.getInstance(Locale.US);
 		try
 		{
 			format.parse(str);
@@ -150,6 +150,33 @@ public class HPCCJDBCUtils
 
 		return true;
 	}
+
+	public static long stringToLong(String str)
+	{
+		try
+		{
+			Number num = format.parse(str);
+			return num.longValue();
+		}
+		catch (ParseException e)
+		{
+			return 0;
+		}
+	}
+
+	public static int stringToInt(String str)
+	{
+		try
+		{
+			Number num = format.parse(str);
+			return num.intValue();
+		}
+		catch (ParseException e)
+		{
+			return 0;
+		}
+	}
+
 	public static String replaceAll(String input, String forReplace, String replaceWith)
 	{
 		if (input == null)

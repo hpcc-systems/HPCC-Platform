@@ -360,6 +360,8 @@ public class SQLParser
 							operator = SQLOperator.lte;
 						else if (trimmedExpression.indexOf(SQLOperator.neq)!=-1)
 							operator = SQLOperator.neq;
+						else if (trimmedExpression.indexOf(SQLOperator.neq2)!=-1)
+							operator = SQLOperator.neq2;
 						else if (trimmedExpression.indexOf(SQLOperator.eq)!=-1)
 							operator = SQLOperator.eq;
 						else if (trimmedExpression.indexOf(SQLOperator.gt)!=-1)

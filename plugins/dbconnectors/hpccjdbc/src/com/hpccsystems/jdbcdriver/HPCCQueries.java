@@ -55,4 +55,14 @@ public class HPCCQueries {
 	{
 		return queries.size();
 	}
+
+	public boolean containsQueryName(String eclqueryname)
+	{
+		return queries.containsKey(eclqueryname);
+	}
+
+	public boolean containsQueryName(String clustername, String eclqueryname)
+	{
+		return queries.containsKey((clustername.length()>0 ? clustername +"::" : "") + eclqueryname);
+	}
 }
