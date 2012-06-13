@@ -16,6 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+//skip type==thorlcr TBD
+
 r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
 
 r t(unsigned a, unsigned b, unsigned c, unsigned d) := TRANSFORM
