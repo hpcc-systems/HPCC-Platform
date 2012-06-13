@@ -1042,6 +1042,177 @@ void DebugDifferenceAnalyser::doAnalyse(IHqlExpression * expr)
 
 //-------------------------------------------------------------------------------------------------
 
+static HqlTransformerInfo expressionDumper("ExpressionDumper");
+ExpressionDumper::ExpressionDumper(int _maxDepth)
+    : QuickHqlTransformer(expressionDumper, NULL), depth(0), maxDepth(_maxDepth)
+{
+}
+
+void ExpressionDumper::analyse(IHqlExpression * expr)
+{
+    bool recurse = true;
+    IHqlExpression * match = static_cast<IHqlExpression *>(expr->queryTransformExtra());
+    if (match)
+        recurse = false;
+
+    doAnalyseBody(expr, recurse);
+    expr->setTransformExtraUnlinked(alreadyVisitedMarker);
+}
+
+void ExpressionDumper::dumpType(IHqlExpression * expr)
+{
+    if (expr->getType())
+        string.append(" (").append(dumpExpressionType(expr->getType()->getTypeCode())).append(")");
+}
+
+void ExpressionDumper::dumpAnnotation(IHqlExpression * expr)
+{
+    StringBuffer symbol, position;
+    bool hasSym = false, hasPos = false;
+
+    // Look for symbol name and position
+    while (expr)
+    {
+        if (!hasSym)
+        {
+            IHqlExpression * annotation = queryAnnotation(expr, annotate_symbol);
+            if (annotation)
+            {
+                _ATOM name = annotation->queryName();
+                symbol.append(name->getAtomNamePtr());
+                hasSym = true;
+            }
+        }
+        if (!hasPos)
+        {
+            IHqlExpression * annotation = queryAnnotation(expr, annotate_location);
+            if (annotation)
+            {
+                position.append(annotation->querySourcePath()->getNamePtr());
+                position.append(":").append(annotation->getStartLine());
+                hasPos = true;
+            }
+        }
+        if (hasSym && hasPos)
+            break;
+
+        IHqlExpression * newExpr = expr->queryBody(true);
+        if (newExpr == expr)
+            break;
+        expr = newExpr;
+    }
+    // Print either, neither or both
+    if (hasSym || hasPos)
+        string.append(" [");
+    if (hasSym)
+    {
+        string.append("%").append(symbol.str());
+        if (hasPos)
+            string.append(" ");
+    }
+    if (position.length())
+        string.append("at ").append(position.str());
+    if (hasSym || hasPos)
+        string.append("]");
+}
+
+void ExpressionDumper::doAnalyseBody(IHqlExpression * expr, bool recurse)
+{
+    depth++;
+
+    node_operator op = expr->getOperator();
+    string.appendN(depth, ' ');
+    string.append(dumpOperator(expr->getOperator()));
+
+    switch(op)
+    {
+    // Symbols that have no internal structure apart from other symbols,
+    // whose types don't add information and has no values or names
+    case no_getresult:
+    case no_newtransform:
+    case no_transform:
+    case no_record:
+    case no_recordlist:
+        break;
+    // Purely recursive symbols
+    case no_scope:
+    case no_virtualscope:
+    case no_concretescope:
+    case no_libraryscope:
+    case no_forwardscope:
+        {
+            string.append(" {").newline();
+            IHqlScope * scope = expr->queryScope();
+            HqlExprArray oldsyms;
+            scope->getSymbols(oldsyms);
+            oldsyms.sort(compareSymbolsByName);
+            for (unsigned idx = 0; idx < oldsyms.length(); idx++)
+            {
+                IHqlExpression *oldkid = &oldsyms.item(idx);
+                analyse(oldkid);
+            }
+            string.append("}");
+            depth--;
+            return;
+        }
+    // Symbols that have a value (and a type) associated
+    case no_constant:
+        {
+            dumpType(expr);
+            if (expr->queryValue())
+            {
+                string.append(", ");
+                expr->queryValue()->getStringValue(string);
+            }
+            break;
+        }
+    // Symbols that have a name, and possibly a not-null type
+    case no_field:
+        dumpType(expr);
+        // fall-through
+    case no_attr:
+    case no_attr_expr:
+        {
+            _ATOM name = expr->queryName();
+            string.appendf(", %s", name->getAtomNamePtr());
+            break;
+        }
+    // All the rest, just print the type and hope it's enough
+    default:
+        dumpType(expr);
+        break;
+    }
+    dumpAnnotation(expr);
+    string.newline();
+
+    if (recurse && depth <= maxDepth)
+    {
+        unsigned max = expr->numChildren();
+        for (unsigned i=0; i < max; i++)
+        {
+            IHqlExpression * child = expr->queryChild(i);
+            if (!child->queryAnnotation())
+                analyse(child);
+        }
+    }
+
+    depth--;
+}
+
+const char* ExpressionDumper::getString()
+{
+    return string.str();
+}
+
+HQL_API void dump_expression(IHqlExpression * expr, int depth)
+{
+    ExpressionDumper dump(depth);
+    dump.analyse(expr);
+    printf("%s", dump.getString());
+}
+
+//-------------------------------------------------------------------------------------------------
+
 //NB: Derived from QuickHqlTransformer since it is called before the tree is normalised
 static HqlTransformerInfo hqlSectionAnnotatorInfo("HqlSectionAnnotator");
 HqlSectionAnnotator::HqlSectionAnnotator(IHqlExpression * sectionWorkflow) 
