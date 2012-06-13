@@ -7113,13 +7113,20 @@ simpleDictionary
                             $$.setExpr(createDictionary(no_nohoist, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
-/*
-    | DICTIONARY '(' dataSet ',' recordDef ')'
+
+    | DICTIONARY '(' startTopFilter ',' recordDef ')' endTopFilter
                         {
-                            $$.setExpr($3.getExpr()); // MORE!
+                            OwnedHqlExpr dataset = $3.getExpr();
+                            parser->checkOutputRecord($5, false);
+                            OwnedHqlExpr record = $5.getExpr();
+                            HqlExprArray args;
+                            args.append(*LINK(dataset));
+                            args.append(*LINK(record));
+                            $$.setExpr(createDictionary(no_userdictionary, args));
+                            parser->checkProjectedFields($$.queryExpr(), $5);
                             $$.setPosition($1);
                         }
-*/
+
     | DICTIONARY '(' '[' ']' ',' recordDef ')'
                         {
                             HqlExprArray values;  // Empty list

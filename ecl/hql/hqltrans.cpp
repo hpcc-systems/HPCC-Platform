@@ -3375,6 +3375,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_setgraphresult:
     case no_setgraphloopresult:
     case no_extractresult:
+    case no_newuserdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
             pushScope();
@@ -3752,6 +3753,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_setgraphresult:
     case no_setgraphloopresult:
     case no_extractresult:
+    case no_newuserdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
             pushScope();

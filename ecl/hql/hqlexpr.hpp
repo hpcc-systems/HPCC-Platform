@@ -362,8 +362,8 @@ enum _node_operator {
         no_indict,
         no_countdict,
         no_any,
-    no_unused27,
-    no_unused26,
+        no_userdictionary,
+        no_newuserdictionary,
     no_unused25,
     no_unused28,  
     no_unused29,
@@ -1564,6 +1564,7 @@ extern HQL_API IHqlExpression * extractChildren(IHqlExpression * value);
 extern HQL_API IHqlExpression * queryOnlyField(IHqlExpression * record);
 extern HQL_API bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
 extern HQL_API bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
+extern HQL_API bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right);
 extern HQL_API IHqlExpression * queryOriginalRecord(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryOriginalRecord(ITypeInfo * type);
 extern HQL_API IHqlExpression * queryOriginalTypeExpression(ITypeInfo * type);

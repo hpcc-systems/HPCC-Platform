@@ -344,11 +344,21 @@ void RtlLinkedDatasetBuilder::appendRows(size32_t num, byte * * rows)
 {
     if (num && (count < choosenLimit))
     {
-        unsigned numToAdd = (count + num < choosenLimit) ? num : choosenLimit - count;
-        ensure(count+numToAdd);
-        for (unsigned i=0; i < numToAdd; i++)
-            rowset[count+i] = (byte *)rowAllocator->linkRow(rows[i]);
-        count += numToAdd;
+        unsigned maxNumToAdd = (count + num < choosenLimit) ? num : choosenLimit - count;
+        unsigned numAdded = 0;
+        ensure(count+maxNumToAdd);
+        for (unsigned i=0; i < num; i++)
+        {
+            byte *row = rows[i];
+            if (row)
+            {
+                rowset[count+numAdded] = (byte *)rowAllocator->linkRow(row);
+                numAdded++;
+                if (numAdded == maxNumToAdd)
+                    break;
+            }
+        }
+        count += numAdded;
     }
 }
 
@@ -501,9 +511,17 @@ void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngine
     {
         size32_t prevCount = targetCount;
         byte * * expandedRowset = rowAllocator->reallocRows(targetRowset, prevCount, prevCount+extraCount);
+        unsigned numAdded = 0;
         for (unsigned i=0; i < extraCount; i++)
-            expandedRowset[prevCount+i] = (byte *)rowAllocator->linkRow(extraRows[i]);
-        targetCount = prevCount + extraCount;
+        {
+            byte *extraRow = extraRows[i];
+            if (extraRow)
+            {
+                expandedRowset[prevCount+numAdded] = (byte *)rowAllocator->linkRow(extraRow);
+                numAdded++;
+            }
+        }
+        targetCount = prevCount + numAdded;
         targetRowset = expandedRowset;
     }
 }

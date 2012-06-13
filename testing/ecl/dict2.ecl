@@ -37,3 +37,6 @@ count(d2n) = 1;
 count(d3) = 0;
 5 not in d3n;
 count(d3n) = 0;
+
+ds6 := dataset([{5, 'Richard'}], { integer id, string name });
+d6 := DICTIONARY(ds6, { id => name });

@@ -74,9 +74,12 @@ public:
 
     virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);
-    virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak);
+    virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) { return doBuildIterateLoop(ctx, needToBreak, false); }
     virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx);
+
+protected:
+    BoundRow * doBuildIterateLoop(BuildCtx & ctx, bool needToBreak, bool checkForNull);
 };
 
 class InlineLinkedDictionaryCursor : public InlineLinkedDatasetCursor
@@ -84,7 +87,7 @@ class InlineLinkedDictionaryCursor : public InlineLinkedDatasetCursor
 public:
     InlineLinkedDictionaryCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
-    virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) { throwUnexpected(); }
+    virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) { return doBuildIterateLoop(ctx, needToBreak, true); }
     virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr);
     virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { throwUnexpected(); }
