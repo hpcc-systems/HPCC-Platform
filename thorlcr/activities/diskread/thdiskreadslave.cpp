@@ -115,19 +115,23 @@ class CDiskRecordPartHandler : public CDiskPartHandlerBase
 protected:
     offset_t localRowOffset;
     CDiskReadSlaveActivityRecord &activity;
+    bool needsFileOffset;
 public:
     CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &activity);
     ~CDiskRecordPartHandler();
+    inline void setNeedsFileOffset(bool tf) { needsFileOffset = tf; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info, IPartDescriptor *partDesc);
     virtual void open();
     virtual void close(CRC32 &fileCRC);
     offset_t getLocalOffset()
     {
+        dbgassertex(needsFileOffset);
         return localRowOffset;
     }
     inline const void *nextRow()
     {
-        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
+        if (needsFileOffset)
+            localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
         const void *ret = in->nextRow();
         if (ret)
             ++activity.diskProgress;
@@ -135,7 +139,8 @@ public:
     }
     inline const void *prefetchRow()
     {
-        localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
+        if (needsFileOffset)
+            localRowOffset = in->getOffset();       // shame this needed as a bit inefficient
         const void *ret = in->prefetchRow();
         if (ret)
             ++activity.diskProgress;
@@ -153,6 +158,7 @@ CDiskRecordPartHandler::CDiskRecordPartHandler(CDiskReadSlaveActivityRecord &_ac
 : CDiskPartHandlerBase(_activity), activity(_activity)
 {
     localRowOffset = 0;
+    needsFileOffset = true; // default
 }
 
 CDiskRecordPartHandler::~CDiskRecordPartHandler()
@@ -245,12 +251,11 @@ class CDiskReadSlaveActivity : public CDiskReadSlaveActivityRecord, public CThor
 public:
         CDiskPartHandler(CDiskReadSlaveActivity &_activity) 
             : CDiskRecordPartHandler(_activity), activity(_activity), outBuilder(NULL)
-
         {
             if (activity.needTransform)
                 outBuilder.setAllocator(activity.queryRowAllocator()); // NB this doesn't link but hopefully OK during activity lifetime
+            setNeedsFileOffset(activity.needTransform); // if no transform, no need for fileoffset
         }
-
         virtual const void *nextRow()
         {
             if (!eoi && !activity.queryAbortSoon()) {
