@@ -17,7 +17,7 @@
 
       <tbody>
         <row>
-          <entry><inlinegraphic fileref="../images/caution.png" /></entry>
+          <entry><inlinegraphic fileref="../../images/caution.png" /></entry>
 
           <entry><emphasis role="bold">You should not attempt this until you
           have already deployed, configured, and certified the environment you
@@ -101,7 +101,7 @@
         <para>Rt-click on the table below computers and select <emphasis
         role="bold">New </emphasis>from the pop up menu.</para>
 
-        <para><graphic fileref="../images/LDAP_001.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_001.jpg" /></para>
 
         <para>The <emphasis role="bold">Add New Computers</emphasis> dialog
         displays.</para>
@@ -111,7 +111,7 @@
         <para>Fill in the values for the <emphasis role="bold">Computer
         Attributes</emphasis></para>
 
-        <para><graphic fileref="../images/LDAP_002.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_002.jpg" /></para>
       </listitem>
     </orderedlist>
 
@@ -164,7 +164,7 @@
         <para>Rt-click on <emphasis role="bold">Navigator</emphasis> Pane and
         choose <emphasis role="bold">New Components</emphasis> from the pop up
         menu, then choose <emphasis role="bold">ldapServer</emphasis> from the
-        pop-up menu. <graphic fileref="../images/LDAP_003.jpg" /></para>
+        pop-up menu. <graphic fileref="../../images/LDAP_003.jpg" /></para>
 
         <para><emphasis role="bold">Note</emphasis>: The ldapServer component
         is merely a definition that specifies an existing LDAP server. It does
@@ -177,7 +177,7 @@
         <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
         properties:</para>
 
-        <para><graphic fileref="../images/LDAP_004.jpg" /><orderedlist
+        <para><graphic fileref="../../images/LDAP_004.jpg" /><orderedlist
             numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
@@ -237,7 +237,7 @@
         right hand side, select the <emphasis
         role="bold">Authentication</emphasis> tab.</para>
 
-        <para><graphic fileref="../images/LDAP_005.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_005.jpg" /></para>
 
         <para>Fill in the appropriate values:</para>
 
@@ -283,7 +283,7 @@
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
         Server – mydali </emphasis><graphic
-        fileref="../images/LDAP_006.jpg" /></para>
+        fileref="../../images/LDAP_006.jpg" /></para>
 
         <para>Fill in the values as appropriate:</para>
 
@@ -319,7 +319,7 @@
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
         Clusrer – myroxie </emphasis><graphic
-        fileref="../images/LDAP_007.jpg" /></para>
+        fileref="../../images/LDAP_007.jpg" /></para>
 
         <para><orderedlist continuation="restarts" numeration="loweralpha">
             <listitem>
@@ -353,7 +353,7 @@
 
           <tbody>
             <row>
-              <entry><inlinegraphic fileref="../images/caution.png" /></entry>
+              <entry><inlinegraphic fileref="../../images/caution.png" /></entry>
 
               <entry><para>In order to run Roxie queries with File Scope
               security, ensure that the roxie user is created in the list of
