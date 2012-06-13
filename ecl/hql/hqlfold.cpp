@@ -3966,6 +3966,16 @@ bool expressionsEquivalent(IHqlExpression * left, IHqlExpression * right)
     return false;
 }
 
+bool exprsReferencesDataset(const HqlExprArray & source, IHqlExpression * exprSelector)
+{
+    ForEachItemIn(i, source)
+    {
+        if (exprReferencesDataset(&source.item(i), exprSelector))
+            return true;
+    }
+    return false;
+}
+
 class HqlConstantPercolator : public CInterface
 {
 public:
@@ -3986,6 +3996,8 @@ public:
     {
         if (!isWorthPercolating(expr))
             return LINK(expr);
+        if (!exprReferencesDataset(expr, exprSelector))
+            return LINK(expr);
         ConstantReplacingTransformer transformer(exprSelector);
         initTransformer(exprSelector, transformer);
         return transformer.transformRoot(expr);
@@ -4003,9 +4015,18 @@ public:
     {
         if (!isWorthPercolating(source))
             return false;
+        if (!exprsReferencesDataset(source, exprSelector))
+            return false;
         ConstantReplacingTransformer transformer(exprSelector);
         initTransformer(exprSelector, transformer);
-        transformer.transformRoot(source, target);
+        ForEachItemIn(i, source)
+        {
+            IHqlExpression & cur = source.item(i);
+            if (exprReferencesDataset(&cur, exprSelector))
+                target.append(*transformer.transformRoot(&cur));
+            else
+                target.append(*LINK(&cur));
+        }
         return true;
     }
     void inheritMapping(const HqlConstantPercolator * other)
