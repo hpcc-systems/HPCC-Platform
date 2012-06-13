@@ -4270,7 +4270,7 @@ bool CWsDeployFileInfo::handleInstance(IEspContext &context, IEspHandleInstanceR
         }
       }
 
-      if (!checkForRequiredComponents(pEnvRoot, pComputerNode->queryProp(XML_ATTR_NETADDRESS), reqdCompNames))
+      if (!checkForRequiredComponents(pEnvRoot, pComputerNode->queryProp(XML_ATTR_NETADDRESS), reqdCompNames, buildSet))
         reqdComps.appendf("\n%s", pComputerNode->queryProp(XML_ATTR_NETADDRESS));
     }
 
@@ -4344,7 +4344,7 @@ bool CWsDeployFileInfo::addReqdComps(IEspContext &context, IEspAddReqdCompsReque
   {
     IPropertyTree& pComputer = iterComp->query();
 
-    if (!checkForRequiredComponents(pEnvRoot, pComputer.queryProp(XML_ATTR_NETADDRESS), reqCompNames, true))
+    if (!checkForRequiredComponents(pEnvRoot, pComputer.queryProp(XML_ATTR_NETADDRESS), reqCompNames, NULL, true))
       failed.appendf("\n%s", pComputer.queryProp(XML_ATTR_NETADDRESS));
   }
 
@@ -6872,12 +6872,13 @@ CWsDeployExCE* createWsDeployCE(IPropertyTree *cfg, const char* name)
 }
 
 bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, const char* ip,
-                                                   StringBuffer& reqdCompNames, bool autoadd/*=false*/)
+                                                   StringBuffer& reqdCompNames, const char* buildSet, bool autoadd/*=false*/)
 {
-  StringBuffer prop, xpath, genEnvConf;
+  StringBuffer prop, prop2, xpath, genEnvConf;
   Owned<IProperties> algProps;
-  StringArray compOnAllNodes;
+  StringArray compOnAllNodes,compExcludeOnAllNodes;
   bool retVal = true;
+  bool bExclude = false;
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_pService->getName());
   const char* pConfFile = m_pService->getCfg()->queryProp(xpath.str());
@@ -6910,7 +6911,20 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
         throw MakeStringException( -1 , "The algorithm file %s does not exists", genEnvConf.str());
 
       algProps->getProp("comps_on_all_nodes", prop);
+      algProps->getProp("exclude_from_comps_on_all_nodes", prop2);
+
       DelimToStringArray(prop.str(), compOnAllNodes, ",");
+      DelimToStringArray(prop2.str(), compExcludeOnAllNodes, ",");
+
+      for (unsigned i = 0; buildSet != NULL && i < compExcludeOnAllNodes.ordinality(); i++)
+      {
+        if (strcmp(compExcludeOnAllNodes.item(i),buildSet) == 0)
+        {
+          bExclude = true;
+          break;
+        }
+      }
+
       const char* flag = pParams->queryProp("autoaddallnodescomp");
 
       if (!autoadd)
@@ -6918,7 +6932,7 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
     }
   }
 
-  for(unsigned i = 0; i < compOnAllNodes.ordinality(); i++)
+  for(unsigned i = 0; bExclude == false && i < compOnAllNodes.ordinality(); i++)
   {
     xpath.clear().appendf("./Programs/Build/BuildSet[@name=\"%s\"]", compOnAllNodes.item(i));
     Owned<IPropertyTreeIterator> buildSetIter = pEnvRoot->getElements(xpath.str());
