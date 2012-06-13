@@ -3898,9 +3898,18 @@ public:
         if (numNonHidden == 0)
             return NewHqlTransformer::createTransformed(expr);
 
+        bool same = true;
         HqlExprArray children;
         for (unsigned i=0; i < numNonHidden; i++)
-            children.append(*transform(expr->queryChild(i)));
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * mapped = transform(cur);
+            children.append(*mapped);
+            if (cur != mapped)
+                same = false;
+        }
+        if (same)
+            return LINK(expr);
 
         unwindChildren(children, expr, numNonHidden);
         return expr->clone(children);
