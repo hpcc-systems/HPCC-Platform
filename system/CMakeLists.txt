@@ -17,7 +17,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (hrpc)
-HPCC_ADD_SUBDIRECTORY (include "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (jhtree)
 HPCC_ADD_SUBDIRECTORY (jlib)
 HPCC_ADD_SUBDIRECTORY (lzma)
