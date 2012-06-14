@@ -1853,8 +1853,8 @@ void EclAgent::doProcess()
             LOG(MCrunlock, unknownJob, "Obtained workunit lock");
             if (w->hasDebugValue("traceLevel"))
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
-            w->setTracingValue("EclAgentBuild", BUILD_TAG);  
-            w->setDebugValue("EclAgentLog", logname.str(), true);
+            w->setTracingValue("EclAgentBuild", BUILD_TAG);
+            w->addProcess("EclAgent", agentTopology->queryProp("@name"), logname.str());
             if (checkVersion && ((w->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (w->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION)))
                 failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", w->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             if(noRetry && (w->getState() == WUStateFailed))

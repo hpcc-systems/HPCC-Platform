@@ -622,6 +622,8 @@ public:
     virtual IStringVal & getXmlParams(IStringVal & params) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
+    virtual IStringIterator *getLogs(const char *type, const char *component) const;
+    virtual IStringIterator *getProcesses(const char *type) const;
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
@@ -663,6 +665,7 @@ public:
     IWUException *createException();
     void setTimeStamp(const char *name, const char *instance, const char *event);
     void addTimeStamp(const char * name, const char * instance, const char *event);
+    void addProcess(const char *type, const char *instance, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
     void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);
@@ -1076,6 +1079,10 @@ public:
             { return c->getXmlParams(); }
     virtual unsigned __int64 getHash() const
             { return c->getHash(); }
+    virtual IStringIterator *getLogs(const char *type, const char *instance) const
+            { return c->getLogs(type, instance); }
+    virtual IStringIterator *getProcesses(const char *type) const
+            { return c->getProcesses(type); }
 
     virtual void clearExceptions()
             { c->clearExceptions(); }
@@ -1087,6 +1094,8 @@ public:
             { c->setTimeStamp(name, instance, event); }
     virtual void addTimeStamp(const char * name, const char * instance, const char *event)
             { c->addTimeStamp(name, instance, event); }
+    virtual void addProcess(const char *type, const char *instance, const char *log)
+            { c->addProcess(type, instance, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setBilled(bool billed)
@@ -1839,6 +1848,7 @@ public:
     }
 };      
 
+#define WUID_VERSION 1 // recorded in each wuid created, useful for bkwd compat. checks
 
 class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory, implements IDaliClientShutdown
 {
@@ -1898,6 +1908,7 @@ public:
         IWorkUnit* ret = &cw->lockRemote(false);
         ret->setDebugValue("CREATED_BY", app, true);
         ret->setDebugValue("CREATED_FOR", user, true);
+        ret->setDebugValueInt("WUID_VERSION", WUID_VERSION, true);
         if (user)
             cw->setWuScope(user);
         return ret;
@@ -4642,6 +4653,51 @@ bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
     StringBuffer prop("Debug/");
     prop.append(lower);
     return p->getPropBool(prop.str(), defVal); 
+}
+
+IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
+{
+    VStringBuffer xpath("Process/%s/", type);
+    if (instance)
+        xpath.append(instance);
+    else
+        xpath.append("*");
+    CriticalBlock block(crit);
+    if (p->getPropInt("WUID_VERSION") < 1) // legacy wuid
+    {
+        if (!instance)
+            return new CStringPTreeTagIterator(p->getElements("Debug/*log*"));
+        else if(streq("EclAgent", instance))
+            return new CStringPTreeTagIterator(p->getElements("Debug/eclagentlog"));
+        else if (streq("Thor", instance))
+            return new CStringPTreeTagIterator(p->getElements("Debug/thorlog*"));
+        VStringBuffer xpath("Debug/%s", instance);
+        return new CStringPTreeAttrIterator(p->getElements(xpath.str()), xpath.str());
+    }
+    else
+        return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
+}
+
+IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const
+{
+    VStringBuffer xpath("Process/%s/*", type);
+    CriticalBlock block(crit);
+    return new CStringPTreeTagIterator(p->getElements(xpath.str()));
+}
+
+void CLocalWorkUnit::addProcess(const char *type, const char *instance, const char *log)
+{
+    VStringBuffer processType("Process/%s", type);
+    VStringBuffer xpath("%s/%s", processType.str(), instance);
+    if (log)
+        xpath.appendf("[@log=\"%s\"]", log);
+    CriticalBlock block(crit);
+    if (!p->hasProp(xpath))
+    {
+        IPropertyTree *node = ensurePTree(p, processType.str());
+        node = node->addPropTree(instance, createPTree());
+        node->setProp("@log", log);
+    }
 }
 
 void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool overwrite)
