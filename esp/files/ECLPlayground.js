@@ -17,6 +17,7 @@
 define([
 	"dojo/_base/fx",
 	"dojo/_base/window",
+	"dojo/_base/sniff",
 	"dojo/dom",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
@@ -28,7 +29,7 @@ define([
 	"hpcc/ResultsControl",
 	"hpcc/SampleSelectControl",
 	"hpcc/ESPWorkunit"
-], function (fx, baseWindow, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
+], function (fx, baseWindow, sniff, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
 	var wu = null,
 			editorControl = null,
 			graphControl = null,
@@ -61,6 +62,11 @@ define([
 						wu.monitor(monitorEclPlayground);
 					}
 				}, 1);
+
+				if (!sniff("chrome")) {
+					watchSplitters(dijit.byId("appLayout").getSplitter("right"));
+					watchSplitters(dijit.byId("appLayout").getSplitter("bottom"));
+				}
 			},
 
 			initUiResults = function () {
@@ -143,6 +149,15 @@ define([
 					onErrorClick: function (line, col) {
 						editorControl.setCursor(line, col);
 					}
+				});
+			},
+
+			watchSplitters = function (spl) {
+				dojo.connect(spl, "_startDrag", function () {
+					dojo.style(dojo.byId('gvc'), "display", "none");
+				});
+				dojo.connect(spl, "_stopDrag", function (evt) {
+					dojo.style(dojo.byId('gvc'), "display", "block");
 				});
 			},
 
