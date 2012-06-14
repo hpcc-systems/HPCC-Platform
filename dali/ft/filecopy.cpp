@@ -654,7 +654,7 @@ void FileSprayer::addEmptyFilesToPartition()
 
 void FileSprayer::afterTransfer()
 {
-    if (calcInputCRC())
+    if (!compressedInput && calcInputCRC())
     {
         LOG(MCdebugProgressDetail, job, "Checking input CRCs");
         CRC32Merger partCRC;
