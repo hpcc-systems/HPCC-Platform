@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../../">
+<book>
   <bookinfo>
     <title>Client Tools Overview</title>
 
@@ -248,8 +248,8 @@ replicate=1</programlisting>
 
                 <tbody>
                   <row>
-                    <entry><graphic fileref="images/caution.png" scale="noin"
-                    xml:base="../../" /></entry>
+                    <entry><graphic fileref="../../images/caution.png"
+                    scale="noin" /></entry>
 
                     <entry>We do not recommend storing your password in the
                     INI file (which is clear text). The password is included
