@@ -4149,9 +4149,11 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
 
             if (record->numChildren() != 0)
             {
-                OwnedHqlExpr anon = createDataset(no_anon, LINK(instance.queryRecord()));
                 if (!useTypeForXML || (recordTypeFlags & (RFTMinvalidxml|RFTMhasxmlattr)))
+                {
+                    OwnedHqlExpr anon = createDataset(no_anon, LINK(instance.queryRecord()));
                     buildXmlSerialize(metactx, anon, "toXML", true);
+                }
             }
 
             if (record)
