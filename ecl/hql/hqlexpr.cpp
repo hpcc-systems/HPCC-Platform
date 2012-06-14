@@ -7466,7 +7466,7 @@ inline bool canMergeDefinition(IHqlExpression * expr)
 IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     CriticalBlock block(cs);
-    IHqlExpression * resolved = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
+    OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
     if (resolved)
     {
         node_operator resolvedOp = resolved->getOperator();
@@ -7479,7 +7479,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
         if (resolvedOp == no_merge_nomatch)
             return NULL;
         if (resolvedOp != no_nobody)
-            return resolved;
+            return resolved.getClear();
     }
     else
     {
