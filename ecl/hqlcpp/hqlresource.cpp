@@ -2212,6 +2212,7 @@ protected:
         case no_sizeof:
         case no_allnodes:
         case no_nohoist:
+        case no_forcegraph:
             return;
         case no_globalscope:
         case no_evalonce:
