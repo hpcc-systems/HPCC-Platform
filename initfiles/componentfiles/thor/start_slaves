@@ -42,9 +42,10 @@ else
                     slaveport=$THORSLAVEPORT
                 fi
                 logredirect="$logdir/start_slave_$logpthtail.$n.log"
-                frunssh $ip "/bin/sh -c '$deploydir/start_slave $n thorslave${LCR} $THORMASTER:$THORMASTERPORT $logdir $instancedir $slaveport $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+                frunssh $ip "/bin/sh -c '$deploydir/start_slave $n thorslave${LCR} $THORMASTER:$THORMASTERPORT $logdir $instancedir $slaveport $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 &
                 let "n += 1";
             done
+            wait
         else
             if [ -e $instancedir/thorgroup ]; then
                 mv $instancedir/thorgroup $instancedir/thorgroup.local
