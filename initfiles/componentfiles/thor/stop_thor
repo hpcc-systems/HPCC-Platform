@@ -68,10 +68,10 @@ fi
 echo --------------------------
 echo stopping thor slaves 
 
-SLAVE_PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
 if [ "$localthor" = "true" ]; then
+    SLAVE_PID_NAME="$PID/`basename $PWD`_slave_*.pid"
     slavepid=`cat ${SLAVE_PID_NAME} 2> /dev/null`
-    kill -9 $slavepid > /dev/null
+    kill -9 $slavepid 2> /dev/null
 else
     # use 20 threads
     # timeout of 60 seconds (in case slave busy)
