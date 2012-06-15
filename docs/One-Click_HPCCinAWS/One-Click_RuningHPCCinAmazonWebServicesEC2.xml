@@ -250,7 +250,7 @@
 
       <!--Include follows-->
 
-      <xi:include href="RuningHPCCinAmazonWebServicesEC2/AWSIncludes.xml" xpointer="Find_AWS_Keys"
+      <xi:include href="One-Click_HPCCinAWS/AWS-Mods/AWSIncludes.xml" xpointer="Find_AWS_Keys"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
