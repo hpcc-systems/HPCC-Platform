@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../../">
+<book>
   <bookinfo>
     <title>Client Tools Overview</title>
 
@@ -156,7 +156,7 @@
 
         <para>To create or edit configuration files:</para>
 
-        <para><graphic xml:base="../../" fileref="images/CT02.jpg" /></para>
+        <para><graphic fileref="../../images/CT02.jpg" /></para>
 
         <para>Press the <emphasis role="bold">Preferences</emphasis> button on
         the Orb button drop menu.</para>
@@ -182,7 +182,7 @@
               enter the IP address of the ESP in the Server field, but do not
               include the port details:</para>
 
-              <para><graphic xml:base="../../" fileref="images/CT03.jpg" /></para>
+              <para><graphic fileref="../../images/CT03.jpg" /></para>
             </listitem>
 
             <listitem>
@@ -191,7 +191,7 @@
               <para>Select the <emphasis role="bold">Compiler</emphasis> tab.
               The compiler details are automatically specified:</para>
 
-              <para><graphic xml:base="../../" fileref="images/CT03a.jpg" /></para>
+              <para><graphic fileref="../../images/CT03a.jpg" /></para>
             </listitem>
 
             <listitem>
@@ -275,7 +275,7 @@
           <para>Check the <emphasis role="bold">Advanced</emphasis> box to use
           Advanced Mode.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT03.jpg" /></para>
+          <para><graphic fileref="../../images/CT03.jpg" /></para>
 
           <para>The Server settings, can only be changed by accessing the
           preferences through the Login window.</para>
@@ -295,7 +295,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                   <entry>Press the <emphasis role="bold">Locate</emphasis>
                   button to find the folder containing a configuration file
@@ -558,7 +558,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                   <entry>If you are running under Windows and want to compile
                   locally, you need to install the Microsoft VS 2008 C++
@@ -753,7 +753,7 @@
               information) if it cannot connect properly as shown
               below.</para>
 
-              <para><graphic xml:base="../../" fileref="images/CT01a.jpg" /></para>
+              <para><graphic fileref="../../images/CT01a.jpg" /></para>
             </listitem>
           </itemizedlist></para>
 
@@ -765,7 +765,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/tip.jpg" /></entry>
+                  <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                   <entry>The title bar of the login window also displays the
                   version of the ECL IDE.</entry>
@@ -786,7 +786,7 @@
         <para>In this manual, you will see screen representations using the
         locations of toolboxes pinned right.</para>
 
-        <para><graphic xml:base="../../" fileref="images/CT06.jpg" /></para>
+        <para><graphic fileref="../../images/CT06.jpg" /></para>
 
         <sect3>
           <title>Using the Ribbon</title>
@@ -794,7 +794,7 @@
           <para>The Ribbon makes the commands that you need use to complete a
           task easy to find.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT07.jpg" /></para>
+          <para><graphic fileref="../../images/CT07.jpg" /></para>
 
           <para>Commands are organized in similar groups contained in a tab.
           Each tab contains commands that relates to a type of activity, such
@@ -812,7 +812,7 @@
 
                 <tbody>
                   <row>
-                    <entry><graphic xml:base="../../" fileref="images/tip.jpg" /></entry>
+                    <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                     <entry>After you have learned the locations of commonly
                     used commands, you can gain more available space by
@@ -827,9 +827,10 @@
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic xml:base="../../" fileref="images/CT08.png"
-              scale="noin" /> button on the right side of the <emphasis
-              role="bold">Quick Access Toolbar. </emphasis></para>
+              <para>Press the <inlinegraphic
+              fileref="../../images/CT08.png" /> button on the right side of
+              the <emphasis role="bold">Quick Access Toolbar.
+              </emphasis></para>
             </listitem>
           </itemizedlist>
 
@@ -844,8 +845,6 @@
 
           <para>To use the Ribbon while minimized, CLICK on a tab, then CLICK
           the option or command you want.</para>
-
-          <beginpage />
         </sect3>
 
         <sect3>
@@ -857,16 +856,17 @@
           want on the toolbar. You can also choose to display it beneath the
           Ribbon.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT10.jpg" /></para>
+          <para><graphic fileref="../../images/CT10.jpg" /></para>
 
           <para><emphasis role="bold">To customize the Quick Access
           Toolbar:</emphasis></para>
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic xml:base="../../" fileref="images/CT08.png" />
-              button on the right side of the <emphasis role="bold">Quick
-              Access Toolbar. </emphasis></para>
+              <para>Press the <inlinegraphic
+              fileref="../../images/CT08.png" /> button on the right side of
+              the <emphasis role="bold">Quick Access Toolbar.
+              </emphasis></para>
             </listitem>
 
             <listitem>
@@ -892,7 +892,7 @@
           ungrouped. AutoHide mode (unpinned state) also acts upon the
           group.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT11.jpg" /></para>
+          <para><graphic fileref="../../images/CT11.jpg" /></para>
 
           <para>In the upper right corner, two toolboxes (Workunits and Active
           Workunits) are shown grouped. Navigate between grouped toolboxes by
@@ -911,8 +911,6 @@
           the View menu.</para>
 
           <para></para>
-
-          <beginpage />
         </sect3>
 
         <sect3 role="brk">
@@ -923,7 +921,7 @@
           tree format. Expand any folder branch to see the ECL files within
           it.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT12.jpg" /></para>
+          <para><graphic fileref="../../images/CT12.jpg" /></para>
 
           <para>In addition to folders, plug-in service libraries are also
           displayed at the bottom of the repository. These special folders are
@@ -955,8 +953,8 @@
           Results are organized by folder and displayed in a tree format.
           Expand any folder to see the ECL files within it.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT13.jpg" /><informaltable colsep="0"
-              frame="none" rowsep="0">
+          <para><graphic fileref="../../images/CT13.jpg" /><informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1088,8 +1086,8 @@
           <para>This toolbox allows you to search online Workunits in the
           environment to which you are connected.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT14.jpg" /><informaltable colsep="0"
-              frame="none" rowsep="0">
+          <para><graphic fileref="../../images/CT14.jpg" /> <informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1174,8 +1172,8 @@
           <para>This toolbox allows you to search for Logical files in the
           environment to which you are connected.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT15.jpg" /><informaltable colsep="0"
-              frame="none" rowsep="0">
+          <para><graphic fileref="../../images/CT15.jpg" /> <informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1237,7 +1235,7 @@
           <para>For example, referencing an ECL file which has not yet been
           defined will display a syntax error as shown below.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT16.jpg" /></para>
+          <para><graphic fileref="../../images/CT16.jpg" /></para>
 
           <para>DOUBLE-CLICK on any error displayed to take you to the line
           containing the error. If the error is in a different attribute, a
@@ -1255,7 +1253,7 @@
           without WRITE permission will display an access denied error as
           shown below:</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT17.png" /></para>
+          <para><graphic fileref="../../images/CT17.png" /></para>
 
           <para></para>
 
@@ -1267,7 +1265,7 @@
 
                 <tbody>
                   <row>
-                    <entry><graphic xml:base="../../" fileref="images/tip.jpg" /></entry>
+                    <entry><graphic fileref="../../images/tip.jpg" /></entry>
 
                     <entry>You can copy the error message text using the
                     RT-CLICK pop up menu option.</entry>
@@ -1279,8 +1277,6 @@
           <para></para>
 
           <para></para>
-
-          <beginpage />
         </sect3>
       </sect2>
 
@@ -1290,7 +1286,7 @@
         <sect3>
           <title>Orb Menu</title>
 
-          <para><graphic xml:base="../../" fileref="images/CT02.jpg" /></para>
+          <para><graphic fileref="../../images/CT02.jpg" /></para>
 
           <para>The Orb button menu provides a list of basic actions enabling
           you to create and gain access to files and workspaces. It also
@@ -1413,7 +1409,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT20.png" /></entry>
+                  <entry><graphic fileref="../../images/CT20.png" /></entry>
 
                   <entry><emphasis role="bold">Submit</emphasis></entry>
 
@@ -1422,7 +1418,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT21.png" /></entry>
+                  <entry><graphic fileref="../../images/CT21.png" /></entry>
 
                   <entry><emphasis role="bold">Locate</emphasis></entry>
 
@@ -1450,7 +1446,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT22.png" /></entry>
+                  <entry><graphic fileref="../../images/CT22.png" /></entry>
 
                   <entry><emphasis role="bold">Paste</emphasis></entry>
 
@@ -1458,7 +1454,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT23.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT23.jpg" /></entry>
 
                   <entry><emphasis role="bold">Cut</emphasis></entry>
 
@@ -1466,7 +1462,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT24.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT24.jpg" /></entry>
 
                   <entry><emphasis role="bold">Copy</emphasis></entry>
 
@@ -1494,7 +1490,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT25.png" /></entry>
+                  <entry><graphic fileref="../../images/CT25.png" /></entry>
 
                   <entry><emphasis role="bold">Undo</emphasis></entry>
 
@@ -1505,7 +1501,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT26.png" /></entry>
+                  <entry><graphic fileref="../../images/CT26.png" /></entry>
 
                   <entry><emphasis role="bold">Redo</emphasis></entry>
 
@@ -1516,7 +1512,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT28.png" /></entry>
+                  <entry><graphic fileref="../../images/CT28.png" /></entry>
 
                   <entry><emphasis role="bold">Select All</emphasis></entry>
 
@@ -1525,7 +1521,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT27.png" /></entry>
+                  <entry><graphic fileref="../../images/CT27.png" /></entry>
 
                   <entry><emphasis role="bold">Delete</emphasis></entry>
 
@@ -1534,7 +1530,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT29.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT29.jpg" /></entry>
 
                   <entry><emphasis role="bold">Record\Stop</emphasis></entry>
 
@@ -1543,7 +1539,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT30.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT30.jpg" /></entry>
 
                   <entry><emphasis role="bold">Play</emphasis></entry>
 
@@ -1552,7 +1548,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT81.jpg"
+                  <entry><graphic fileref="../../images/CT81.jpg"
                   scale="50" /></entry>
 
                   <entry><emphasis role="bold">Advanced...</emphasis></entry>
@@ -1563,7 +1559,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Complete Word</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Complete Word</emphasis></programlisting></entry>
 
                   <entry>A list of keywords and folders from which you can
                   select. This allows you to complete a word by selecting from
@@ -1573,7 +1569,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Match Brace</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Match Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
@@ -1584,7 +1580,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Select to Brace</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Select to Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
@@ -1595,7 +1591,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Toggle Comment</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Toggle Comment</emphasis></programlisting></entry>
 
                   <entry>Toggles comment characters before selected lines.
                   CTRL-Q</entry>
@@ -1604,7 +1600,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Box Comment</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Box Comment</emphasis></programlisting></entry>
 
                   <entry>Encloses selected text in a comment structure.
                   CTRL-SHIFT-Q</entry>
@@ -1613,7 +1609,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Uppercase</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Uppercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to uppercase.
                   CTRL-SHIFT-U</entry>
@@ -1622,7 +1618,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Lowercase</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Lowercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to lowercase.
                   CTRL-U</entry>
@@ -1631,7 +1627,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Line Numbers</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Line Numbers</emphasis></programlisting></entry>
 
                   <entry>Toggles line numbers in the editor. CTRL-L</entry>
                 </row>
@@ -1639,7 +1635,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Word Wrap</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Word Wrap</emphasis></programlisting></entry>
 
                   <entry>Toggles word wrapping in the editor. CTRL-W</entry>
                 </row>
@@ -1647,7 +1643,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Set Tab Size</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Set Tab Size</emphasis></programlisting></entry>
 
                   <entry>Select to set a tab width of between 1-16.</entry>
                 </row>
@@ -1672,7 +1668,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT33.png" /></entry>
+                  <entry><graphic fileref="../../images/CT33.png" /></entry>
 
                   <entry><emphasis role="bold">Find </emphasis></entry>
 
@@ -1681,7 +1677,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT34.png" /></entry>
+                  <entry><graphic fileref="../../images/CT34.png" /></entry>
 
                   <entry><emphasis role="bold">Find Next</emphasis></entry>
 
@@ -1690,7 +1686,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT35.png" /></entry>
+                  <entry><graphic fileref="../../images/CT35.png" /></entry>
 
                   <entry><emphasis role="bold">Find
                   Previous</emphasis></entry>
@@ -1700,7 +1696,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT36.png" /></entry>
+                  <entry><graphic fileref="../../images/CT36.png" /></entry>
 
                   <entry><emphasis role="bold">Replace</emphasis></entry>
 
@@ -1728,7 +1724,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT37.png" /></entry>
+                  <entry><graphic fileref="../../images/CT37.png" /></entry>
 
                   <entry><emphasis role="bold">Check Syntax</emphasis></entry>
 
@@ -1737,7 +1733,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT38.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT38.jpg" /></entry>
 
                   <entry><emphasis role="bold">Next Error</emphasis></entry>
 
@@ -1746,7 +1742,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT39.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT39.jpg" /></entry>
 
                   <entry><emphasis role="bold">Previous
                   Error</emphasis></entry>
@@ -1756,7 +1752,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT40.jpg" /></entry>
+                  <entry><graphic fileref="../../images/CT40.jpg" /></entry>
 
                   <entry><emphasis role="bold">Clear Errors</emphasis></entry>
 
@@ -1776,7 +1772,7 @@
           <para>The <emphasis role="bold">ECL Tab</emphasis> contains the
           following selections:</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT41.png" /></para>
+          <para><graphic fileref="../../images/CT41.png" /></para>
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1858,7 +1854,7 @@
 
               <tbody>
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT45.png" /></entry>
+                  <entry><graphic fileref="../../images/CT45.png" /></entry>
 
                   <entry><emphasis role="bold">Stop</emphasis></entry>
 
@@ -1866,7 +1862,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT46.png" /></entry>
+                  <entry><graphic fileref="../../images/CT46.png" /></entry>
 
                   <entry><emphasis role="bold">Refresh</emphasis></entry>
 
@@ -1875,7 +1871,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT42.png" /></entry>
+                  <entry><graphic fileref="../../images/CT42.png" /></entry>
 
                   <entry><emphasis role="bold">Launch New
                   Window</emphasis></entry>
@@ -1885,7 +1881,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT43.png" /></entry>
+                  <entry><graphic fileref="../../images/CT43.png" /></entry>
 
                   <entry><emphasis role="bold">Back</emphasis></entry>
 
@@ -1893,7 +1889,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic xml:base="../../" fileref="images/CT44.png" /></entry>
+                  <entry><graphic fileref="../../images/CT44.png" /></entry>
 
                   <entry><emphasis role="bold">Forward</emphasis></entry>
 
@@ -1913,7 +1909,7 @@
           <para>The <emphasis role="bold">Window </emphasis>Tab contains
           general actions for controlling open windows on the desktop.</para>
 
-          <graphic xml:base="../../" fileref="images/CT48.png" />
+          <graphic fileref="../../images/CT48.png" />
 
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2011,7 +2007,7 @@
         <sect3 role="brk">
           <title>Workspace(s) Tab</title>
 
-          <graphic xml:base="../../" fileref="images/CT82.jpg" />
+          <graphic fileref="../../images/CT82.jpg" />
 
           <para>The <emphasis role="bold">Workspace Tab </emphasis>tab allows
           you to preserve the workspace you are using for future use or remove
@@ -2030,7 +2026,7 @@
         <sect3>
           <title>View Tab</title>
 
-          <para><graphic xml:base="../../" fileref="images/CT47.jpg" /></para>
+          <para><graphic fileref="../../images/CT47.jpg" /></para>
 
           <para>The <emphasis role="bold">View </emphasis>tab allows you to
           choose which toolboxes to view. In addition, it has options to reset
@@ -2653,7 +2649,7 @@ ENDMACRO;
         also shows results and Workunit information for each Workunit created
         by submitting the ECL code.</para>
 
-        <para><graphic xml:base="../../" fileref="images/CT49.jpg" /></para>
+        <para><graphic fileref="../../images/CT49.jpg" /></para>
 
         <para>The <emphasis role="bold">More</emphasis> button displays
         advanced options. See the Advanced Builder Window Options section
@@ -2682,7 +2678,7 @@ ENDMACRO;
           display the advanced options. Press the <emphasis
           role="bold">Less</emphasis> button to close this area.</para>
 
-          <para><graphic xml:base="../../" fileref="images/CT50.jpg" /></para>
+          <para><graphic fileref="../../images/CT50.jpg" /></para>
 
           <para>The <emphasis role="bold">Submit </emphasis>button submits the
           workunit. Select the options you want to use when running the
@@ -2738,7 +2734,7 @@ ENDMACRO;
 
         <para>The Builder Window also supports editing ECL files.</para>
 
-        <para><graphic xml:base="../../" fileref="images/CT49.jpg" /></para>
+        <para><graphic fileref="../../images/CT49.jpg" /></para>
 
         <para>Using CTRL+MOUSEWHEEL will grow or shrink the font size used in
         the window.</para>
@@ -2779,7 +2775,7 @@ ENDMACRO;
 
             <para>Autosize one column or all columns.</para>
 
-            <para><graphic xml:base="../../" fileref="images/CT53.jpg" /></para>
+            <para><graphic fileref="../../images/CT53.jpg" /></para>
           </listitem>
         </itemizedlist>
 
@@ -2789,9 +2785,7 @@ ENDMACRO;
 
         <para></para>
 
-        <para><graphic xml:base="../../" fileref="images/CT54.jpg" /></para>
-
-        <beginpage />
+        <para><graphic fileref="../../images/CT54.jpg" /></para>
       </sect2>
 
       <sect2 id="Graph_Viewer">
@@ -2820,11 +2814,9 @@ ENDMACRO;
             a running workunit, refreshing the graph as it runs. Options are
             provided so you can Follow Active or Minimise Inactive areas of
             the graph according to your preference .<graphic
-            xml:base="../../" fileref="images/CT55.jpg" scalefit="1" /></para>
+            fileref="../../images/CT55.jpg" scalefit="1" /></para>
           </listitem>
         </itemizedlist>
-
-        <beginpage />
       </sect2>
     </sect1>
 
@@ -2887,7 +2879,7 @@ ENDMACRO;
         <para>The two graph windows are displayed side by side within the ECL
         IDE.</para>
 
-        <para><graphic xml:base="../../" fileref="images/CT57.png" scalefit="1" /></para>
+        <para><graphic fileref="../../images/CT57.png" scalefit="1" /></para>
 
         <para></para>
 
@@ -3013,8 +3005,6 @@ ENDMACRO;
         <para>Each breakpoint you set on your graph is shown in the list in
         the Breakpoints window showing the settings used to create each one
         including, for example, Edge ID, Mode, Condition, etc.</para>
-
-        <beginpage />
       </sect2>
 
       <sect2 id="Starting_the_ECL_Debugger">
@@ -3044,10 +3034,8 @@ ENDMACRO;
 
         <para></para>
 
-        <para><graphic xml:base="../../" fileref="images/CT58.png" scale="90"
+        <para><graphic fileref="../../images/CT58.png" scale="90"
         scalefit="1" /></para>
-
-        <beginpage />
       </sect2>
 
       <sect2 id="Debugger_Menus">
@@ -3387,8 +3375,6 @@ ENDMACRO;
           <listitem>
             <para>Once the debugging process has completed, the results of
             your query are displayed.</para>
-
-            <beginpage />
           </listitem>
         </itemizedlist>
 
@@ -3450,9 +3436,7 @@ ENDMACRO;
 
         <para></para>
 
-        <para><graphic xml:base="../../" fileref="images/CT59.png" /></para>
-
-        <beginpage />
+        <para><graphic fileref="../../images/CT59.png" /></para>
       </sect2>
 
       <sect2 id="Setting_Local_Breakpoints">
@@ -3483,7 +3467,7 @@ ENDMACRO;
           </listitem>
         </itemizedlist>
 
-        <para><graphic xml:base="../../" fileref="images/CT60.png" /></para>
+        <para><graphic fileref="../../images/CT60.png" /></para>
 
         <para></para>
 
@@ -3537,8 +3521,6 @@ ENDMACRO;
         <itemizedlist mark="bullet">
           <listitem>
             <para>Click on Breakpoint(s)/Clear All.</para>
-
-            <beginpage />
           </listitem>
         </itemizedlist>
 
@@ -3567,8 +3549,6 @@ ENDMACRO;
 
         <para><emphasis role="bold">Note</emphasis>: Only the last 10 rows of
         data that flowed through any given edge are searched.</para>
-
-        <beginpage />
       </sect2>
     </sect1>
   </chapter>

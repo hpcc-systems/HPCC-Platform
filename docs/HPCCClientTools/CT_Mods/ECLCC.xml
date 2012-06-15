@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../../">
+<book>
   <bookinfo>
     <title>The ECL Compiler</title>
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -34,7 +34,7 @@
 
     <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
 
-    <date><emphasis role="bold">BETA</emphasis> </date>
+    <date><emphasis role="bold">BETA</emphasis></date>
 
     <corpname>HPCC Systems</corpname>
 
@@ -44,7 +44,7 @@
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -54,8 +54,8 @@
 
     <para>The ECL Compiler is the compiler component of the High Performance
     Computing Cluster (HPCC). It is embedded and included when you install the
-    HPCC. The compiler is the component that actually compiles the ECL code.
-    </para>
+    HPCC. The compiler is the component that actually compiles the ECL
+    code.</para>
 
     <para>The syntax and many of the compiler options implemented are similar
     to the gcc compiler. You can execute either the Linux or Windows version
@@ -74,7 +74,8 @@
 
           <tbody>
             <row>
-              <entry><inlinegraphic xml:base="../../" fileref="images/OSSgr3.png" /></entry>
+              <entry><inlinegraphic
+              fileref="../../images/OSSgr3.png" /></entry>
 
               <entry>To compile and run ECL code locally on your Windows
               machine, you will need the Microsoft Visual Studio 2008 C++
@@ -125,7 +126,7 @@
       The resulting program, when executed, runs the job, writing any output
       to standard output. Alternatively, you could redirect the output to a
       file or pipe into another process. With the ECL Compiler, you do not
-      need a supercomputer cluster to develop and run ECL code. </para>
+      need a supercomputer cluster to develop and run ECL code.</para>
 
       <para>Running the ECL Compiler without any options (or specifying –help)
       will display the syntax.</para>
@@ -137,14 +138,14 @@
 
       <para>General options:</para>
 
-      <para> <informaltable colsep="0" frame="none" rowsep="0">
-
+      <para><informaltable colsep="0" frame="none" rowsep="0">
           <?dbfo keep-together="always"?>
 
-								            <tgroup cols="2">
-								              <colspec align="left" colwidth="125.55pt" />
-								
-				              <colspec />
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
             <tbody>
               <row>
                 <entry>-g</entry>
@@ -198,12 +199,14 @@
           <?dbfo keep-together="always"?>
 
           <tgroup cols="2">
-           <colspec colwidth="49.50pt" />
-					
-           <colspec />
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
             <tbody>
               <row>
-                <entry><inlinegraphic xml:base="../../" fileref="images/OSSgr3.png" /></entry>
+                <entry><inlinegraphic
+                fileref="../../images/tip.jpg" /></entry>
 
                 <entry><emphasis role="bold">NOTE: </emphasis>If there are
                 spaces in the path you specify, put it in quotes. For example:
@@ -215,15 +218,14 @@
 
       <para>ECL options:</para>
 
-      <para>
-          <informaltable colsep="0" frame="none" rowsep="0">
-					
-					          <?dbfo keep-together="always"?>
-					
-													            <tgroup cols="2">
-													              <colspec align="left" colwidth="125.55pt" />
-													
-				              <colspec />
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
             <tbody>
               <row>
                 <entry>-E</entry>
@@ -273,14 +275,14 @@
 
                 <entry>Only generate workunit informaton as xml file</entry>
               </row>
-              
+
               <row>
                 <entry>-manifest=&lt;manifest file path&gt;</entry>
 
-                <entry>Specifies the manifest file containing the resources to include</entry>
+                <entry>Specifies the manifest file containing the resources to
+                include</entry>
               </row>
-              
-              </tbody>
+            </tbody>
           </tgroup>
         </informaltable></para>
 
@@ -291,13 +293,13 @@
       <para>Other options:</para>
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
-
           <?dbfo keep-together="always"?>
 
-								            <tgroup cols="2">
-								              <colspec align="left" colwidth="125.55pt" />
-								
-				              <colspec />
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
             <tbody>
               <row>
                 <entry>-b</entry>
@@ -371,13 +373,13 @@
       <para>Usage: a.out &lt;options&gt;</para>
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
-
           <?dbfo keep-together="always"?>
 
-								            <tgroup cols="2">
-								              <colspec align="left" colwidth="125.55pt" />
-								
-				              <colspec />
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
             <tbody>
               <row>
                 <entry>-wu=&lt;file&gt;</entry>
