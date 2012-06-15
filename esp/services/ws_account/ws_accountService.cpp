@@ -165,7 +165,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             else
             {
                 dt.getString(sb);
-                sb.replace('T', (char)' ');
+                sb.replace('T', (char)0);//chop off timestring
             }
             resp.setPasswordExpiration(sb.str());
             resp.setPasswordDaysRemaining(user->getPasswordDaysRemaining());
