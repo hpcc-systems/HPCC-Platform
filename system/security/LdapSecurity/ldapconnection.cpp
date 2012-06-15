@@ -887,7 +887,9 @@ private:
     //int                  m_defaultWorkunitScopePermission;
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
-    bool                 m_passwordNeverExpires;
+    bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
+    __int64              m_maxPwdAge;
+
     class CLDAPMessage
     {
     public:
@@ -992,6 +994,16 @@ public:
         return maxAge;
     }
 
+    void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
+    {
+        __int64 time = 0;
+        for (unsigned x=0; x < len; x++)
+            time = time * 10 + ( (int)val[x] - '0');
+        time += m_maxPwdAge;
+        dt.setFromFILETIME(time);
+        dt.adjustTime(dt.queryUtcToLocalDelta());
+    }
+
     virtual bool authenticate(ISecUser& user)
     {
         {
@@ -1005,11 +1017,11 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            __int64 maxPWAge = getMaxPwdAge();
-            if (maxPWAge != (__int64)0x8000000000000000)
-                m_passwordNeverExpires = false;
+            m_maxPwdAge = getMaxPwdAge();
+            if (m_maxPwdAge != (__int64)0x8000000000000000)
+                m_domainPwdsNeverExpire = false;
             else
-                m_passwordNeverExpires = true;
+                m_domainPwdsNeverExpire = true;
 
             const char* sysuser = m_ldapconfig->getSysUser();
             if(sysuser && *sysuser && (strcmp(username, sysuser) == 0))
@@ -1087,7 +1099,7 @@ public:
                 DBGLOG("LDAP: Can't find entry for user %s", username);
                 return false;
             }
-
+            bool accountPwdNeverExpires = false;
             for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
             {
                 if((stricmp(attribute, "cn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
@@ -1112,7 +1124,7 @@ public:
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
                     if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
-                        m_passwordNeverExpires = true;
+                        accountPwdNeverExpires = true;
                     ldap_value_free( values );
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
@@ -1123,36 +1135,19 @@ public:
                       to 0 and the User-Account-Control attribute does not contain the UF_DONT_EXPIRE_PASSWD
                       flag, then the user must set the password at the next logon.
                       */
-                    if (!m_passwordNeverExpires)
+                    CDateTime expiry;
+                    if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
                     {
-                        CDateTime expiry;
                         struct berval* val = bvalues[0];
-                        if(val != NULL)
-                        {
-                            __int64 time = 0;
-                            for (int x=0; x < (int)val->bv_len; x++)
-                                time = time * 10 + ( (int)val->bv_val[x] - '0');
-                            ldap_value_free_len(bvalues);
-
-                            time += maxPWAge;
-                            expiry.setFromFILETIME(time);
-                            expiry.adjustTime(expiry.queryUtcToLocalDelta());
-                            user.setPasswordExpiration(expiry);
-                        }
-                        else
-                        {
-                            DBGLOG("LDAP: Can't find entry for %s pwdLastSet", username);
-                            return false;
-                        }
+                        calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                        ldap_value_free_len(bvalues);
                     }
                     else
                     {
-                        CDateTime never;
-                        never.clear();
-                        assertex(never.isNull());
-                        user.setPasswordExpiration(never);
+                        expiry.clear();
                         DBGLOG("LDAP: Password never expires for user %s", username);
                     }
+                    user.setPasswordExpiration(expiry);
                 }
             }
             ber_free(ber, 0);
@@ -1983,10 +1978,9 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
         }
 
-        char        *attrs[] = {act_fieldname, sid_fieldname, "cn", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
-
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
@@ -1997,6 +1991,7 @@ public:
         // Go through the search results by checking message types
         for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
         {
+            bool accountPwdNeverExpires = false;
             Owned<ISecUser> user = new CLdapSecUser("", "");
             for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
                 attribute != NULL; 
@@ -2012,6 +2007,34 @@ public:
                             user->setFullName(values[0]);
                         ldap_value_free( values );
                     }
+                }
+                else if (stricmp(attribute, "userAccountControl") == 0)
+                {
+                    if ((values = ldap_get_values( ld, message, attribute))
+                        != NULL )
+                    {
+                        //UF_DONT_EXPIRE_PASSWD 0x10000
+                        if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                            accountPwdNeverExpires = true;
+                        ldap_value_free( values );
+                    }
+                }
+                else if(stricmp(attribute, "pwdLastSet") == 0)
+                {
+                    CDateTime expiry;
+                    if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
+                    {
+                        if ((bvalues = ldap_get_values_len(ld, message, attribute))
+                            != NULL )
+                        {
+                            struct berval* val = bvalues[0];
+                            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                            ldap_value_free_len(bvalues);
+                        }
+                    }
+                    else
+                        expiry.clear();
+                    user->setPasswordExpiration(expiry);
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {
@@ -4822,7 +4845,7 @@ private:
         act_ctrl_val &= 0xFFFFFFFD;
 #ifdef _DONT_EXPIRE_PASSWORD
         // UF_DONT_EXPIRE_PASSWD 0x10000
-        if (m_passwordNeverExpires)
+        if (m_domainPwdsNeverExpire)
             act_ctrl_val |= 0x10000;
 #endif
 

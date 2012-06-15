@@ -131,8 +131,9 @@
                 <colgroup>
                     <col width="5"/>
                     <col width="150"/>
-                    <col width="200"/>
-                    <col width="250"/>
+                    <col width="175"/>
+                    <col width="100"/>
+                    <col width="300"/>
                 </colgroup>
                 <thead>
                 <tr class="grey">
@@ -144,6 +145,7 @@
                 </th>
                 <th align="left">User ID</th>
                 <th>Full Name</th>
+                <th>Password Expires</th>
                 <th>Operation</th>
                 </tr>
                 </thead>
@@ -211,6 +213,9 @@
         </td>
         <td>
         <xsl:value-of select="fullname"/>
+        </td>
+        <td>
+        <xsl:value-of select="passwordexpiration"/>
         </td>
         <td>
             <a href="javascript:go('/ws_access/UserInfoEditInput?username={username}')">Edit</a>
