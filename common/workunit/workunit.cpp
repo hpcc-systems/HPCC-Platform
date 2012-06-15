@@ -622,6 +622,8 @@ public:
     virtual IStringVal & getXmlParams(IStringVal & params) const;
     virtual const IPropertyTree *getXmlParams() const;
     virtual unsigned __int64 getHash() const;
+    virtual IStringIterator *getLogs(const char *type, const char *component) const;
+    virtual IStringIterator *getProcesses(const char *type) const;
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
@@ -646,6 +648,7 @@ public:
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
     virtual unsigned getCodeVersion() const;
+    virtual unsigned getWuidVersion() const;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
     virtual IPropertyTree * getDiskUsageStats();
     virtual IPropertyTreeIterator & getFileIterator() const;
@@ -663,6 +666,7 @@ public:
     IWUException *createException();
     void setTimeStamp(const char *name, const char *instance, const char *event);
     void addTimeStamp(const char * name, const char * instance, const char *event);
+    void addProcess(const char *type, const char *instance, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
     void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);
@@ -910,6 +914,8 @@ public:
             { return c->getClusterName(str); }
     virtual unsigned getCodeVersion() const
             { return c->getCodeVersion(); }
+    virtual unsigned getWuidVersion() const
+            { return c->getWuidVersion(); }
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
             { c->getBuildVersion(buildVersion, eclVersion); }
     virtual unsigned getCombineQueries() const
@@ -1076,6 +1082,10 @@ public:
             { return c->getXmlParams(); }
     virtual unsigned __int64 getHash() const
             { return c->getHash(); }
+    virtual IStringIterator *getLogs(const char *type, const char *instance) const
+            { return c->getLogs(type, instance); }
+    virtual IStringIterator *getProcesses(const char *type) const
+            { return c->getProcesses(type); }
 
     virtual void clearExceptions()
             { c->clearExceptions(); }
@@ -1087,6 +1097,8 @@ public:
             { c->setTimeStamp(name, instance, event); }
     virtual void addTimeStamp(const char * name, const char * instance, const char *event)
             { c->addTimeStamp(name, instance, event); }
+    virtual void addProcess(const char *type, const char *instance, const char *log)
+            { c->addProcess(type, instance, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setBilled(bool billed)
@@ -1839,6 +1851,7 @@ public:
     }
 };      
 
+#define WUID_VERSION 1 // recorded in each wuid created, useful for bkwd compat. checks
 
 class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory, implements IDaliClientShutdown
 {
@@ -1894,6 +1907,7 @@ public:
         else
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
         Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL, parentWuid);
         IWorkUnit* ret = &cw->lockRemote(false);
         ret->setDebugValue("CREATED_BY", app, true);
@@ -4290,6 +4304,12 @@ unsigned CLocalWorkUnit::getCodeVersion() const
     return p->getPropInt("@codeVersion");
 }
 
+unsigned CLocalWorkUnit::getWuidVersion() const 
+{
+    CriticalBlock block(crit);
+    return p->getPropInt("@wuidVersion");
+}
+
 void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const 
 {
     CriticalBlock block(crit);
@@ -4642,6 +4662,51 @@ bool CLocalWorkUnit::getDebugValueBool(const char * propname, bool defVal) const
     StringBuffer prop("Debug/");
     prop.append(lower);
     return p->getPropBool(prop.str(), defVal); 
+}
+
+IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance) const
+{
+    VStringBuffer xpath("Process/%s/", type);
+    if (instance)
+        xpath.append(instance);
+    else
+        xpath.append("*");
+    CriticalBlock block(crit);
+    if (p->getPropInt("@wuidVersion") < 1) // legacy wuid
+    {
+        if (!instance)
+            return new CStringPTreeTagIterator(p->getElements("Debug/*log*"));
+        else if(streq("EclAgent", instance))
+            return new CStringPTreeTagIterator(p->getElements("Debug/eclagentlog"));
+        else if (streq("Thor", instance))
+            return new CStringPTreeTagIterator(p->getElements("Debug/thorlog*"));
+        VStringBuffer xpath("Debug/%s", instance);
+        return new CStringPTreeAttrIterator(p->getElements(xpath.str()), xpath.str());
+    }
+    else
+        return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
+}
+
+IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const
+{
+    VStringBuffer xpath("Process/%s/*", type);
+    CriticalBlock block(crit);
+    return new CStringPTreeTagIterator(p->getElements(xpath.str()));
+}
+
+void CLocalWorkUnit::addProcess(const char *type, const char *instance, const char *log)
+{
+    VStringBuffer processType("Process/%s", type);
+    VStringBuffer xpath("%s/%s", processType.str(), instance);
+    if (log)
+        xpath.appendf("[@log=\"%s\"]", log);
+    CriticalBlock block(crit);
+    if (!p->hasProp(xpath))
+    {
+        IPropertyTree *node = ensurePTree(p, processType.str());
+        node = node->addPropTree(instance, createPTree());
+        node->setProp("@log", log);
+    }
 }
 
 void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool overwrite)

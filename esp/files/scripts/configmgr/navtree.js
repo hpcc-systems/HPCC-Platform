@@ -51,8 +51,17 @@
         invokeWiz = false;
       }
       document.getElementById('top1').style.display = 'none';
-      document.getElementById('top1').addEventListener("click", function() {
-            top.document.ContextMenu.clearContent()  } );
+
+      if (typeof(addEventListener) != 'undefined')
+      {
+        document.getElementById('top1').addEventListener("click", function() {
+              top.document.ContextMenu.clearContent() } );
+      }
+      else
+      {
+         document.getElementById('top1').attachEvent('onclick',function() {
+              top.document.ContextMenu.clearContent() } );
+      }
 
       getWaitDlg().show();
       var params = "queryType=customType::params=environment,laststarted,defenvfile,username,wizops";

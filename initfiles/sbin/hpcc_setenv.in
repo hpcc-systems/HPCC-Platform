@@ -36,6 +36,13 @@ function pidwait_fn () {
         fi
 }
 
+platform='unknown'
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+   platform='linux'
+elif [[ "$unamestr" == 'Darwin' ]]; then
+   platform='mac'
+fi
 HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
 #SECTION=${1:-DEFAULT}
 SECTION="DEFAULT"
@@ -55,21 +62,39 @@ if [ -n "${NEW_PATH}" ]; then
     NEW_PATH="${NEW_PATH}:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d"
 fi
 
-NEW_LIB="${PATH_PREFIX}/lib"
-for D in ${LD_LIBRARY_PATH//:/ } ; do
-    if [ "${D}" = "${NEW_LIB}" ]; then
-        unset NEW_LIB
-        break
-    fi
-done
-
-NEW_LIB2="${PATH_PREFIX}/plugins"
-for D in ${LD_LIBRARY_PATH//:/ } ; do
-        if [ "${D}" = "${NEW_LIB2}" ]; then
-                unset NEW_LIB2
-                break
+if [[ $platform == 'linux' ]]; then
+    NEW_LIB="${PATH_PREFIX}/lib"
+    for D in ${LD_LIBRARY_PATH//:/ } ; do
+        if [ "${D}" = "${NEW_LIB}" ]; then
+            unset NEW_LIB
+            break
         fi
-done
+    done
+
+    NEW_LIB2="${PATH_PREFIX}/plugins"
+    for D in ${LD_LIBRARY_PATH//:/ } ; do
+            if [ "${D}" = "${NEW_LIB2}" ]; then
+                    unset NEW_LIB2
+                    break
+            fi
+    done
+elif [[ $platform == 'mac' ]]; then
+    NEW_LIB="${PATH_PREFIX}/lib"
+    for D in ${DYLD_LIBRARY_PATH//:/ } ; do
+        if [ "${D}" = "${NEW_LIB}" ]; then
+            unset NEW_LIB
+            break
+        fi
+    done
+
+    NEW_LIB2="${PATH_PREFIX}/plugins"
+    for D in ${DYLD_LIBRARY_PATH//:/ } ; do
+            if [ "${D}" = "${NEW_LIB2}" ]; then
+                    unset NEW_LIB2
+                    break
+            fi
+    done
+fi
 
 if [ `basename -- "$0"` = "hpcc_setenv" ]; then
     if [ -z ${PATH_PREFIX} ]; then
@@ -82,17 +107,32 @@ if [ `basename -- "$0"` = "hpcc_setenv" ]; then
     else
         echo "# \$PATH already contains ${PATH_PREFIX}/bin"
     fi
-    if [ -n "${NEW_LIB}" ]; then
-        echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}"
-    else
-        echo "# \$LD_LIBRARY_PATH already contains ${PATH_PREFIX}/lib"
-    fi
+    if [[ $platform == 'linux' ]]; then
+        if [ -n "${NEW_LIB}" ]; then
+            echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}"
+        else
+            echo "# \$LD_LIBRARY_PATH already contains ${PATH_PREFIX}/lib"
+        fi
 
-    if [ -n "${NEW_LIB2}" ]; then
+        if [ -n "${NEW_LIB2}" ]; then
                 echo "export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB2}"
         else
                 echo "# \$LD_LIBRARY_PATH already contains ${PATH_PREFIX}/plugins"
         fi
+    elif [[ $platform == 'mac' ]]; then
+        if [ -n "${NEW_LIB}" ]; then
+            echo "export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH:+${DYLD_LIBRARY_PATH}:}${NEW_LIB}"
+        else
+            echo "# \$DYLD_LIBRARY_PATH already contains ${PATH_PREFIX}/lib"
+        fi
+
+        if [ -n "${NEW_LIB2}" ]; then
+                echo "export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH:+${DYLD_LIBRARY_PATH}:}${NEW_LIB2}"
+        else
+                echo "# \$DYLD_LIBRARY_PATH already contains ${PATH_PREFIX}/plugins"
+        fi
+    fi
+    
 else
     if [ -z ${PATH_PREFIX} ]; then
         return
@@ -101,11 +141,19 @@ else
     if [ -n "${NEW_PATH}" ]; then
         export PATH=${PATH:+${PATH}:}${NEW_PATH}
     fi
-    if [ -n "${NEW_LIB}" ]; then
-        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}
-    fi
-    if [ -n "${NEW_LIB2}" ]; then
+    if [[ $platform == 'linux' ]]; then
+        if [ -n "${NEW_LIB}" ]; then
+            export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB}
+        fi
+        if [ -n "${NEW_LIB2}" ]; then
                 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}${NEW_LIB2}
         fi
-
+    elif [[ $platform == 'mac' ]]; then
+        if [ -n "${NEW_LIB}" ]; then
+            export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH:+${DYLD_LIBRARY_PATH}:}${NEW_LIB}
+        fi
+        if [ -n "${NEW_LIB2}" ]; then
+                export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH:+${DYLD_LIBRARY_PATH}:}${NEW_LIB2}
+        fi
+    fi
 fi

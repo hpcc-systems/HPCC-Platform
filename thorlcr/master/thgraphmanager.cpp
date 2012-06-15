@@ -643,35 +643,10 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        // expect there to be 1 or 2 of these, so scan/check if log exists already and add if not
         StringBuffer log, logUrl;
         logHandler->getLogName(log);
         createUNCFilename(log, logUrl, false);
-        const char *nLog = logUrl.str();
-        Owned<IStringIterator> siter = &wu->getDebugValues("ThorLog*");
-        unsigned last=0;
-        bool found=false;
-        ForEach(*siter)
-        {
-            SCMStringBuffer istr;
-            const char *prop = siter->str(istr).str();
-            SCMStringBuffer dV;
-            workunit.getDebugValue(prop, dV);
-            if (0 == stricmp(dV.str(), nLog))
-            {
-                found = true;
-                break;
-            }
-            const char *tail = prop+7;
-            unsigned n = (*tail) ? atoi(tail) : 1;
-            if (n>=last) last = n;
-        }
-        if (!found)
-        {
-            StringBuffer newThorLog("ThorLog");
-            if (last) newThorLog.append(++last);
-            wu->setDebugValue(newThorLog.str(), nLog, true);
-        }
+        wu->addProcess("Thor", globals->queryProp("@name"), logUrl.str());
         StringBuffer tsStr("Thor - ");
         wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Started");
     }
@@ -746,6 +721,8 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
         {
             Owned<IWorkUnit> wu = &workunit.lock();
             wu->setState(WUStateRunning);
+            VStringBuffer version("%d.%d", THOR_VERSION_MAJOR, THOR_VERSION_MINOR);
+            wu->setDebugValue("ThorVersion", version.str(), true);
         }
 
         SCMStringBuffer wuid, clusterName;
