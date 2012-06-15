@@ -648,6 +648,7 @@ public:
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
     virtual unsigned getCodeVersion() const;
+    virtual unsigned getWuidVersion() const;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const;
     virtual IPropertyTree * getDiskUsageStats();
     virtual IPropertyTreeIterator & getFileIterator() const;
@@ -913,6 +914,8 @@ public:
             { return c->getClusterName(str); }
     virtual unsigned getCodeVersion() const
             { return c->getCodeVersion(); }
+    virtual unsigned getWuidVersion() const
+            { return c->getWuidVersion(); }
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const
             { c->getBuildVersion(buildVersion, eclVersion); }
     virtual unsigned getCombineQueries() const
@@ -1904,11 +1907,11 @@ public:
         else
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
         conn->queryRoot()->setProp("@xmlns:xsi", "http://www.w3.org/1999/XMLSchema-instance");
+        conn->queryRoot()->setPropInt("@wuidVersion", WUID_VERSION);
         Owned<CLocalWorkUnit> cw = new CLocalWorkUnit(conn, (ISecManager*)NULL, NULL, parentWuid);
         IWorkUnit* ret = &cw->lockRemote(false);
         ret->setDebugValue("CREATED_BY", app, true);
         ret->setDebugValue("CREATED_FOR", user, true);
-        ret->setDebugValueInt("WUID_VERSION", WUID_VERSION, true);
         if (user)
             cw->setWuScope(user);
         return ret;
@@ -4301,6 +4304,12 @@ unsigned CLocalWorkUnit::getCodeVersion() const
     return p->getPropInt("@codeVersion");
 }
 
+unsigned CLocalWorkUnit::getWuidVersion() const 
+{
+    CriticalBlock block(crit);
+    return p->getPropInt("@wuidVersion");
+}
+
 void CLocalWorkUnit::getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const 
 {
     CriticalBlock block(crit);
@@ -4663,7 +4672,7 @@ IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance)
     else
         xpath.append("*");
     CriticalBlock block(crit);
-    if (p->getPropInt("WUID_VERSION") < 1) // legacy wuid
+    if (p->getPropInt("@wuidVersion") < 1) // legacy wuid
     {
         if (!instance)
             return new CStringPTreeTagIterator(p->getElements("Debug/*log*"));

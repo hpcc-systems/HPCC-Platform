@@ -891,6 +891,7 @@ interface IConstWorkUnit : extends IInterface
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual unsigned getCodeVersion() const = 0;
+    virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
     virtual bool isBilled() const = 0;
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
