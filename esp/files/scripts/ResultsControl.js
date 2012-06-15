@@ -32,6 +32,7 @@ define([
 		resultsSheetID: "",
 		resultSheet: {},
 		sequenceResultStoreMap: [],
+		sequenceResultGridMap: [],
 		delayLoad: [],
 
 		//  Callbacks
@@ -46,6 +47,10 @@ define([
 			var context = this;
 			this.resultSheet.watch("selectedChildWidget", function (name, oval, nval) {
 				if (nval.id in context.delayLoad) {
+					var result = context.workunit.results[context.delayLoad[nval.id].resultIndex];
+					if (!result.isComplete()) {
+						context.delayLoad[nval.id].loadingMessage = context.getLoadingMessage();
+					}
 					context.delayLoad[nval.id].placeAt(nval.containerNode, "last");
 					context.delayLoad[nval.id].startup();
 					nval.resize();
@@ -57,6 +62,7 @@ define([
 		clear: function () {
 			this.delayLoad = [];
 			this.sequenceResultStoreMap = [];
+			this.sequenceResultGridMap = [];
 			var tabs = this.resultSheet.getChildren();
 			for (var i = 0; i < tabs.length; ++i) {
 				this.resultSheet.removeChild(tabs[i]);
@@ -84,16 +90,17 @@ define([
 			return pane;
 		},
 
-		addResultTab: function (result) {
+		addResultTab: function (resultIndex) {
+			var result = this.workunit.results[resultIndex];
 			var paneID = this.getNextPaneID();
 			var grid = EnhancedGrid({
+				resultIndex: resultIndex,
 				store: result.getObjectStore(),
 				query: { id: "*" },
 				structure: result.getStructure(),
 				canSort: function (col) {
 					return false;
 				},
-				loadingMessage: result.isComplete() ? "<span class=\'dojoxGridLoading\'>Loading...</span>" : "<span class=\'dojoxGridLoading\'>Calculating...</span>",
 				plugins: {
 					//					nestedSorting: true,
 					pagination: {
@@ -110,6 +117,7 @@ define([
 			});
 			this.delayLoad[paneID] = grid;
 			this.sequenceResultStoreMap[result.Sequence] = result.store;
+			this.sequenceResultGridMap[result.Sequence] = grid;
 			return this.addTab(result.getName(), paneID);
 		},
 
@@ -128,12 +136,19 @@ define([
 				if (result.Sequence in this.sequenceResultStoreMap) {
 					this.sequenceResultStoreMap[result.Sequence].isComplete = result.isComplete();
 				} else {
-					pane = this.addResultTab(result);
+					pane = this.addResultTab(i);
 					if (this.sequence && this.sequence == result.Sequence) {
 						this.resultSheet.selectChild(pane);
 					}
 				}
+				if (!result.isComplete()) {
+					this.sequenceResultGridMap[result.Sequence].showMessage(this.getLoadingMessage());
+				}
 			}
+		},
+
+		getLoadingMessage: function () {
+			return "<span class=\'dojoxGridWating\'>[" + this.workunit.state + "]</span>";
 		},
 
 		addExceptionTab: function (exceptions) {
