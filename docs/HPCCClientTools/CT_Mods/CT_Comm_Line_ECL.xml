@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../../">
+<book>
   <bookinfo>
     <title>Client Tools Overview</title>
 
@@ -190,7 +190,7 @@ password=password</programlisting>
 
                 <tbody>
                   <row>
-                    <entry><graphic xml:base="../../" fileref="images/caution.png"
+                    <entry><graphic fileref="../../images/caution.png"
                     scale="noin" /></entry>
 
                     <entry>We do not recommend storing your password in the
@@ -382,8 +382,6 @@ Richard Chapman</programlisting>
 
           <para>You can list/view the workunit associated with the query to
           monitor its status.</para>
-
-          <beginpage />
         </sect3>
 
         <sect3>
@@ -582,8 +580,6 @@ firstname lastname
 Yanrui  Ma
 Richard Taylor
 Richard Chapman</programlisting>
-
-          <beginpage />
         </sect3>
 
         <sect3>

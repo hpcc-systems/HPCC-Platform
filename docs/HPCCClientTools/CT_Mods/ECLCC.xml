@@ -7,7 +7,7 @@
 
     <mediaobject>
       <imageobject>
-        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
       </imageobject>
     </mediaobject>
 
@@ -44,7 +44,7 @@
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/LN_Rightjustified.jpg" />
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -206,7 +206,7 @@
             <tbody>
               <row>
                 <entry><inlinegraphic
-                fileref="../../images/OSSgr3.png" /></entry>
+                fileref="../../images/tip.jpg" /></entry>
 
                 <entry><emphasis role="bold">NOTE: </emphasis>If there are
                 spaces in the path you specify, put it in quotes. For example:

@@ -442,8 +442,6 @@ replicate=1</programlisting>
               </tgroup>
             </informaltable></para>
 
-          <beginpage />
-
           <para>Examples:</para>
 
           <programlisting>//fixed spray example:
@@ -1380,8 +1378,6 @@ C:\&gt;dfuplus action=monitor event=MyEvent ip=10.150.10.75
             file=c:\dz\* shotlimit=-1 sub=1
 C:\&gt;dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
 C:\&gt;dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
-
-          <beginpage />
         </sect3>
       </sect2>
     </sect1>

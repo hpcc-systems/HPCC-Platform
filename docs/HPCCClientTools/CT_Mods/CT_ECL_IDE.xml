@@ -827,7 +827,8 @@
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic fileref="../../images/CT08.png" /> button on the right side of
+              <para>Press the <inlinegraphic
+              fileref="../../images/CT08.png" /> button on the right side of
               the <emphasis role="bold">Quick Access Toolbar.
               </emphasis></para>
             </listitem>
@@ -844,8 +845,6 @@
 
           <para>To use the Ribbon while minimized, CLICK on a tab, then CLICK
           the option or command you want.</para>
-
-          <beginpage />
         </sect3>
 
         <sect3>
@@ -864,8 +863,10 @@
 
           <itemizedlist mark="bullet">
             <listitem>
-              <para>Press the <inlinegraphic fileref="../../images/CT08.png" /> button on the right side of the <emphasis
-              role="bold">Quick Access Toolbar. </emphasis></para>
+              <para>Press the <inlinegraphic
+              fileref="../../images/CT08.png" /> button on the right side of
+              the <emphasis role="bold">Quick Access Toolbar.
+              </emphasis></para>
             </listitem>
 
             <listitem>
@@ -910,8 +911,6 @@
           the View menu.</para>
 
           <para></para>
-
-          <beginpage />
         </sect3>
 
         <sect3 role="brk">
@@ -954,8 +953,8 @@
           Results are organized by folder and displayed in a tree format.
           Expand any folder to see the ECL files within it.</para>
 
-          <para><graphic fileref="../../images/CT13.jpg" /><informaltable colsep="0" frame="none"
-              rowsep="0">
+          <para><graphic fileref="../../images/CT13.jpg" /><informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1087,9 +1086,8 @@
           <para>This toolbox allows you to search online Workunits in the
           environment to which you are connected.</para>
 
-          <para><graphic fileref="../../images/CT14.jpg" />
-           <informaltable colsep="0" frame="none"
-              rowsep="0">
+          <para><graphic fileref="../../images/CT14.jpg" /> <informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1174,9 +1172,8 @@
           <para>This toolbox allows you to search for Logical files in the
           environment to which you are connected.</para>
 
-          <para><graphic fileref="../../images/CT15.jpg" />
-           <informaltable colsep="0" frame="none"
-              rowsep="0">
+          <para><graphic fileref="../../images/CT15.jpg" /> <informaltable
+              colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
@@ -1280,8 +1277,6 @@
           <para></para>
 
           <para></para>
-
-          <beginpage />
         </sect3>
       </sect2>
 
@@ -1553,7 +1548,8 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT81.jpg" scale="50" /></entry>
+                  <entry><graphic fileref="../../images/CT81.jpg"
+                  scale="50" /></entry>
 
                   <entry><emphasis role="bold">Advanced...</emphasis></entry>
 
@@ -1563,7 +1559,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Complete Word</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Complete Word</emphasis></programlisting></entry>
 
                   <entry>A list of keywords and folders from which you can
                   select. This allows you to complete a word by selecting from
@@ -1573,7 +1569,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Match Brace</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Match Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
@@ -1584,7 +1580,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Select to Brace</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Select to Brace</emphasis></programlisting></entry>
 
                   <entry>When the insertion point is adjacent to a grouping
                   character (parenthesis, square bracket, or curly brace)
@@ -1595,7 +1591,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Toggle Comment</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Toggle Comment</emphasis></programlisting></entry>
 
                   <entry>Toggles comment characters before selected lines.
                   CTRL-Q</entry>
@@ -1604,7 +1600,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Box Comment</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Box Comment</emphasis></programlisting></entry>
 
                   <entry>Encloses selected text in a comment structure.
                   CTRL-SHIFT-Q</entry>
@@ -1613,7 +1609,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Uppercase</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Uppercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to uppercase.
                   CTRL-SHIFT-U</entry>
@@ -1622,7 +1618,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Lowercase</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Lowercase</emphasis></programlisting></entry>
 
                   <entry>Changes case of selected text to lowercase.
                   CTRL-U</entry>
@@ -1631,7 +1627,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Line Numbers</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Line Numbers</emphasis></programlisting></entry>
 
                   <entry>Toggles line numbers in the editor. CTRL-L</entry>
                 </row>
@@ -1639,7 +1635,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Word Wrap</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Word Wrap</emphasis></programlisting></entry>
 
                   <entry>Toggles word wrapping in the editor. CTRL-W</entry>
                 </row>
@@ -1647,7 +1643,7 @@
                 <row>
                   <entry></entry>
 
-                  <entry><programlisting role="tab"><emphasis role="bold">  Set Tab Size</emphasis></programlisting></entry>
+                  <entry><programlisting role="tab"><emphasis role="bold">   Set Tab Size</emphasis></programlisting></entry>
 
                   <entry>Select to set a tab width of between 1-16.</entry>
                 </row>
@@ -1885,8 +1881,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT43.png"
-                  /></entry>
+                  <entry><graphic fileref="../../images/CT43.png" /></entry>
 
                   <entry><emphasis role="bold">Back</emphasis></entry>
 
@@ -1894,8 +1889,7 @@
                 </row>
 
                 <row>
-                  <entry><graphic fileref="../../images/CT44.png"
-                  /></entry>
+                  <entry><graphic fileref="../../images/CT44.png" /></entry>
 
                   <entry><emphasis role="bold">Forward</emphasis></entry>
 
@@ -2781,8 +2775,7 @@ ENDMACRO;
 
             <para>Autosize one column or all columns.</para>
 
-            <para><graphic fileref="../../images/CT53.jpg"
-            /></para>
+            <para><graphic fileref="../../images/CT53.jpg" /></para>
           </listitem>
         </itemizedlist>
 
@@ -2793,8 +2786,6 @@ ENDMACRO;
         <para></para>
 
         <para><graphic fileref="../../images/CT54.jpg" /></para>
-
-        <beginpage />
       </sect2>
 
       <sect2 id="Graph_Viewer">
@@ -2826,8 +2817,6 @@ ENDMACRO;
             fileref="../../images/CT55.jpg" scalefit="1" /></para>
           </listitem>
         </itemizedlist>
-
-        <beginpage />
       </sect2>
     </sect1>
 
@@ -2890,8 +2879,7 @@ ENDMACRO;
         <para>The two graph windows are displayed side by side within the ECL
         IDE.</para>
 
-        <para><graphic fileref="../../images/CT57.png" scalefit="1"
-        /></para>
+        <para><graphic fileref="../../images/CT57.png" scalefit="1" /></para>
 
         <para></para>
 
@@ -3017,8 +3005,6 @@ ENDMACRO;
         <para>Each breakpoint you set on your graph is shown in the list in
         the Breakpoints window showing the settings used to create each one
         including, for example, Edge ID, Mode, Condition, etc.</para>
-
-        <beginpage />
       </sect2>
 
       <sect2 id="Starting_the_ECL_Debugger">
@@ -3048,10 +3034,8 @@ ENDMACRO;
 
         <para></para>
 
-        <para><graphic fileref="../../images/CT58.png" scale="90" scalefit="1"
-        /></para>
-
-        <beginpage />
+        <para><graphic fileref="../../images/CT58.png" scale="90"
+        scalefit="1" /></para>
       </sect2>
 
       <sect2 id="Debugger_Menus">
@@ -3391,8 +3375,6 @@ ENDMACRO;
           <listitem>
             <para>Once the debugging process has completed, the results of
             your query are displayed.</para>
-
-            <beginpage />
           </listitem>
         </itemizedlist>
 
@@ -3455,8 +3437,6 @@ ENDMACRO;
         <para></para>
 
         <para><graphic fileref="../../images/CT59.png" /></para>
-
-        <beginpage />
       </sect2>
 
       <sect2 id="Setting_Local_Breakpoints">
@@ -3541,8 +3521,6 @@ ENDMACRO;
         <itemizedlist mark="bullet">
           <listitem>
             <para>Click on Breakpoint(s)/Clear All.</para>
-
-            <beginpage />
           </listitem>
         </itemizedlist>
 
@@ -3571,8 +3549,6 @@ ENDMACRO;
 
         <para><emphasis role="bold">Note</emphasis>: Only the last 10 rows of
         data that flowed through any given edge are searched.</para>
-
-        <beginpage />
       </sect2>
     </sect1>
   </chapter>
