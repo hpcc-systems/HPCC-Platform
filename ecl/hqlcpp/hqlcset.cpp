@@ -74,7 +74,7 @@ BoundRow * BaseDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
     buildIterateClass(ctx, iterName, NULL);
 
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, false);
 
     //row = iter.first()
     s.clear().append(rowName).append(" = ").append(iterName).append(".first();");
@@ -97,7 +97,7 @@ void BaseDatasetCursor::buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, 
     buildIterateClass(ctx, cursorName, NULL);
 
     iter.setown(createVariable(cursorName.str(), makeBoolType()));
-    row.setown(createRow(ctx, "row", rowName));
+    row.setown(createRow(ctx, "row", rowName, false));
 }
 
 void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx)
@@ -106,7 +106,7 @@ void BaseDatasetCursor::buildIterateMembers(BuildCtx & declarectx, BuildCtx & in
     buildIterateClass(declarectx, iterName, &initctx);
 
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(declarectx, "row", rowName);
+    OwnedHqlExpr row = createRow(declarectx, "row", rowName, false);
 
     //row = iter.first()
     BuildCtx firstctx(declarectx);
@@ -135,10 +135,12 @@ BoundRow * BaseDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * index
     StringBuffer cursorName;
     buildIterateClass(ctx, cursorName, NULL);
 
+    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+
     //create a unique dataset and associate it with a call to select
     //set value to be the field selection from the dataset
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, conditional && CREATE_DEAULT_ROW_IF_NULL_VALUE);
 
     CHqlBoundExpr boundIndex;
     OwnedHqlExpr index = adjustIndexBaseToZero(indexExpr->queryChild(1));
@@ -151,7 +153,6 @@ BoundRow * BaseDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * index
     s.append(");");
     ctx.addQuoted(s);
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
 #ifdef CREATE_DEAULT_ROW_IF_NULL
     if (conditional)
     {
@@ -173,7 +174,7 @@ BoundRow * BaseDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression * index
 }
 
 
-IHqlExpression * BaseDatasetCursor::createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName)
+IHqlExpression * BaseDatasetCursor::createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName, bool conditional)
 {
     translator.getUniqueId(rowName.append(prefix));
     OwnedITypeInfo type;
@@ -181,6 +182,9 @@ IHqlExpression * BaseDatasetCursor::createRow(BuildCtx & ctx, const char * prefi
         type.setown(makeConstantModifier(makeRowReferenceType(boundDs)));
     else
         type.setown(makeConstantModifier(makeRowReferenceType(ds)));
+    if (conditional)
+        type.setown(setLinkCountedAttr(type, false));
+
     OwnedHqlExpr row = createVariable(rowName, type.getClear());
     ctx.addDeclare(row);
     return row.getClear();
@@ -266,7 +270,7 @@ InlineBlockDatasetCursor::InlineBlockDatasetCursor(HqlCppTranslator & _translato
 BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
 {
     StringBuffer rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, false);
     if (isEmptyDataset(boundDs))
     {
         ctx.addFilter(queryBoolExpr(false));
@@ -285,7 +289,7 @@ BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needT
     {
         OwnedHqlExpr length = translator.getBoundLength(boundDs);
         StringBuffer endName;
-        OwnedHqlExpr end = createRow(ctx, "end", endName);
+        OwnedHqlExpr end = createRow(ctx, "end", endName, false);
 
         //end = row+length;
         s.clear().append(endName).append(" = ").append(rowName).append("+");
@@ -338,10 +342,10 @@ BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needT
 BoundRow * InlineBlockDatasetCursor::buildSelectFirst(BuildCtx & ctx, IHqlExpression * indexExpr, bool createDefaultRowIfNull)
 {
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && createDefaultRowIfNull));
 
     BuildCtx subctx(ctx);
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
     if (conditional)
     {
         HqlExprAttr test;
@@ -419,9 +423,10 @@ BoundRow * InlineBlockDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression 
     if (matchesConstantValue(index, 1))
         return buildSelectFirst(ctx, indexExpr, CREATE_DEAULT_ROW_IF_NULL_VALUE);
 
+    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
     //row = NULL
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && CREATE_DEAULT_ROW_IF_NULL_VALUE));
 
     //if (index > 0 && (index <= count) or (index * fixedSize <= size)
     //MORE: Need to be very careful about the types...
@@ -429,7 +434,6 @@ BoundRow * InlineBlockDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression 
     unsigned fixedSize = translator.getFixedRecordSize(record);
 
     BuildCtx subctx(ctx);
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
     if (conditional)
     {
         OwnedHqlExpr simpleIndex = translator.buildSimplifyExpr(ctx, index);
@@ -559,7 +563,7 @@ void InlineLinkedDatasetCursor::buildIterateClass(BuildCtx & ctx, StringBuffer &
 BoundRow * InlineLinkedDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needToBreak)
 {
     StringBuffer rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, false);
     if (isEmptyDataset(boundDs))
     {
         ctx.addFilter(queryBoolExpr(false));
@@ -607,15 +611,16 @@ BoundRow * InlineLinkedDatasetCursor::buildSelect(BuildCtx & ctx, IHqlExpression
 {
     OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
 
+    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+
     //row = NULL
     StringBuffer s, rowName;
-    OwnedHqlExpr row = createRow(ctx, "row", rowName);
+    OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && CREATE_DEAULT_ROW_IF_NULL_VALUE));
 
     //if (index > 0 && (index <= count)
     //MORE: Need to be very careful about the types...
     CHqlBoundExpr boundBase0Index;
     BuildCtx subctx(ctx);
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
     if (conditional)
     {
         IValue * indexValue = index->queryValue();
