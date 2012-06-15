@@ -215,6 +215,7 @@ subcnt3 := COUNT(srtbfnl) - COUNT(mrgsrtb);
 ok3 := IF(subcnt3=0, 'counts okay', 'counts wrong');
 diff3 := IF(subcnt3=0, COUNT(JOIN(PROJECT(srtbfnl,AddSeq(LEFT,COUNTER)), PROJECT(DISTRIBUTED(mrgsrtb,j),AddSeq(LEFT,COUNTER)),(LEFT.k=RIGHT.k)AND(LEFT.i=RIGHT.i)AND(LEFT.j=RIGHT.j), LEFT ONLY, LOCAL)), subcnt3);
 //diff3 := IF(subcnt3=0, COUNT(COMBINE(srtbfnl, mrgsrtb, diff(LEFT, RIGHT))((i != 0) OR (j != 0))), subcnt3);
+
 ddpbfnl := DEDUP(srtbfnl, i, LOCAL);
 mrgddpb := MERGE(ddpb1, ddpb2, ddpb3, ddpb4, ddpb5, ddpb6, ddpb7, ddpb8, ddpb9, ddpb10, ddpb11, ddpb12, ddpb13, ddpb14, ddpb15, ddpb16, ddpb17, ddpb18, ddpb19, ddpb20, ddpb21, ddpb22, ddpb23, ddpb24, ddpb25, DEDUP, sorted(i),LOCAL);
 subcnt4 := COUNT(ddpbfnl) - COUNT(mrgddpb);
@@ -222,18 +223,11 @@ ok4 := IF(subcnt4=0, 'counts okay', 'counts wrong');
 diff4 := IF(subcnt4=0, COUNT(JOIN(PROJECT(ddpbfnl,AddSeq(LEFT,COUNTER)), PROJECT(DISTRIBUTED(mrgddpb,j),AddSeq(LEFT,COUNTER)),(LEFT.k=RIGHT.k)AND(LEFT.i=RIGHT.i)AND(LEFT.j=RIGHT.j), LEFT ONLY, LOCAL)), subcnt4);
 //diff4 := IF(subcnt4=0, COUNT(COMBINE(ddpbfnl, mrgddpb, diff(LEFT, RIGHT))((i != 0) OR (j != 0))), subcnt4);
 
-mrgsrtc := MERGE([srtb1, srtb2, srtb3, srtb4, srtb5, srtb6, srtb7, srtb8, srtb9, srtb10, srtb11, srtb12, srtb13, srtb14, srtb15, srtb16, srtb17, srtb18, srtb19, srtb20, srtb21, srtb22, srtb23, srtb24, srtb25], sorted(i));
-subcnt5 := COUNT(srtbfnl) - COUNT(mrgsrtc);
-ok5 := IF(subcnt5=0, 'counts okay', 'counts wrong');
-diff5 := IF(subcnt5=0, COUNT(JOIN(PROJECT(srtbfnl,AddSeq(LEFT,COUNTER)), PROJECT(DISTRIBUTED(mrgsrtc,j),AddSeq(LEFT,COUNTER)),(LEFT.k=RIGHT.k)AND(LEFT.i=RIGHT.i)AND(LEFT.j=RIGHT.j), LEFT ONLY, LOCAL)), subcnt5);
-
-
 output(JOIN(PROJECT(srtfnl,AddSeq(LEFT,COUNTER)), PROJECT(mrgsrt,AddSeq(LEFT,COUNTER)),(LEFT.k=RIGHT.k)AND(LEFT.i=RIGHT.i)AND(LEFT.j=RIGHT.j), LEFT ONLY));
-SEQUENTIAL(OUTPUT(ok1), OUTPUT(diff1), OUTPUT(ok2), OUTPUT(diff2), OUTPUT(ok3), OUTPUT(diff3), OUTPUT(ok4), OUTPUT(diff4), OUTPUT(ok5), OUTPUT(diff5));
+SEQUENTIAL(OUTPUT(ok1), OUTPUT(diff1), OUTPUT(ok2), OUTPUT(diff2), OUTPUT(ok3), OUTPUT(diff3), OUTPUT(ok4), OUTPUT(diff4));
 
 
 // Global tests for Thor
-
 unsigned numrecs := 1000 : stored('numrecs');
 
 trec := record
