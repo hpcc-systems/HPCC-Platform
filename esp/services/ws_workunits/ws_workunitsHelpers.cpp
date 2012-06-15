@@ -1726,25 +1726,26 @@ void WsWuInfo::getWorkunitThorLog(const char* processName, MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
 {
-    if (isEmpty(groupName))
-      throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
     if (isEmpty(logDir))
       throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log path not specified.");
     if (isEmpty(logDate))
         throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log date not specified.");
 
     StringBuffer slaveIPAddress, logName;
-    Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
-    if (!nodeGroup || (nodeGroup->ordinality() == 0))
-    {
-        WARNLOG("Node group %s not found", groupName);
-        return;
-    }
-
     if (slaveNum > 0)
     {
+        if (isEmpty(groupName))
+          throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
+
+        Owned<IGroup> nodeGroup = queryNamedGroupStore().lookup(groupName);
+        if (!nodeGroup || (nodeGroup->ordinality() == 0))
+        {
+            WARNLOG("Node group %s not found", groupName);
+            return;
+        }
+
         nodeGroup->queryNode(slaveNum-1).endpoint().getIpText(slaveIPAddress);
         if (slaveIPAddress.length() < 1)
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log network address not found.");
@@ -1752,13 +1753,13 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char* logDat
         logName.appendf("thorslave.%d.%s.log", slaveNum, logDate);
     }
     else
-    {//legacy wuid
-        nodeGroup->queryNode(0).endpoint().getIpText(slaveIPAddress);
-        if (slaveIPAddress.length() < 1)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave log network address not found.");
+    {//legacy wuid: a user types in an IP address for a thor slave
+        if (isEmpty(ipAddress))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave address not specified.");
 
         //thorslave.10.239.219.6_20100.2012_05_23.log
-        logName.appendf("thorslave.%s_*.%s.log", slaveIPAddress.str(), logDate);
+        logName.appendf("thorslave.%s_*.%s.log", ipAddress, logDate);
+        slaveIPAddress.append(ipAddress);
     }
 
     RemoteFilename rfn;

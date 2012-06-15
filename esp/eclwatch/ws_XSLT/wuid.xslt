@@ -94,6 +94,27 @@
                    return false;
             }
 
+            function CheckSlaveAddress(e)
+            {
+                if (document.getElementById('SlaveAddress').disabled == 'true')
+                    return false;
+
+                var key;
+                if (window.event)
+                   key = window.event.keyCode;
+                else if (e)
+                   key = e.which;
+                else
+                   return true;
+
+                var keychar = String.fromCharCode(key);
+
+                if ((("0123456789_.").indexOf(keychar) > -1))
+                   return true;
+                else
+                   return false;
+            }
+
             function thorProcessChanged(value)
             {
                 pos = value.indexOf('@');
@@ -125,8 +146,7 @@
 
             function GetThorSlaveLog()
             {
-                var el = document.getElementById('NumberSlaves');
-                if (el != undefined)
+                if (document.getElementById('NumberSlaves') != undefined)
                 {
                     var slaveNum = document.getElementById('SlaveNum').value;
                     if (slaveNum > numberOfSlaves)
@@ -134,10 +154,23 @@
                         alert('Slave Number cannot be greater than ' + numberOfSlaves);
                         return;
                     }
-                }
 
-                getOptions('ThorSlave.log', '/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&Process='
-                +thorProcess+'&ClusterGroup='+thorGroup+'&LogDate='+thorLogDate+'&SlaveNumber='+slaveNum, true);
+                    getOptions('ThorSlave.log', '/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&Process='
+                    +thorProcess+'&ClusterGroup='+thorGroup+'&LogDate='+thorLogDate+'&SlaveNumber='+slaveNum, true);
+                }
+                else
+                {
+                    var el = document.getElementById('SlaveAddress');
+                    if (el.value == '')
+                    {
+                        alert('Slave address not specified');
+                        return;
+                    }
+
+                    getOptions('ThorSlave.log', '/WsWorkunits/WUFile?Wuid='+wid+'&Type=ThorSlaveLog&SlaveNumber=0&Process='
+                    +document.getElementById('ProcessName').value+'&IPAddress='+el.value+'&LogDate='
+                    +document.getElementById('LogDate').value, true);
+                }
             }
 
             // This function gets called when the window has completely loaded.

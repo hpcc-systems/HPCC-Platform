@@ -166,7 +166,7 @@ public:
 
     void getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer& buf);
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
-    void getWorkunitThorSlaveLog(const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
+    void getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
     void getWorkunitArchiveQuery(MemoryBuffer& buf);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);

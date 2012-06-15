@@ -731,19 +731,26 @@
                     <td colspan="3">
                         <div style="border:1px solid grey;">
                             <input id="getthorslavelog" type="button" value="Get slave log" onclick="GetThorSlaveLog()"> </input>
-                            Thor Process: <select id="ThorProcess" name="ThorProcess" onchange="thorProcessChanged(options[selectedIndex].value)">
-                                <xsl:for-each select="ThorLogList/ThorLogInfo">
-                                    <xsl:variable name="val">
-                                        <xsl:value-of select="./NumberSlaves"/>@<xsl:value-of select="./LogDate"/>@<xsl:value-of select="./ProcessName"/>@<xsl:value-of select="./ClusterGroup"/>
-                                    </xsl:variable>
-                                    <option value="{$val}">
-                                        <xsl:value-of select="./ProcessName"/>
-                                    </option>
-                                </xsl:for-each>
-                            </select>
-                            <xsl:if test="number(ThorLogList/ThorLogInfo[1]/NumberSlaves) != 0">
-                                Slave Number<span id="NumberSlaves"></span>: <input type="text" id="SlaveNum" name="SlaveNum" value="1" size="4" onkeypress="return CheckSlaveNum(event);"/>
-                            </xsl:if>
+                            <xsl:choose>
+                                <xsl:when test="number(ThorLogList/ThorLogInfo[1]/NumberSlaves) != 0">
+                                    Thor Process: <select id="ThorProcess" name="ThorProcess" onchange="thorProcessChanged(options[selectedIndex].value)">
+                                    <xsl:for-each select="ThorLogList/ThorLogInfo">
+                                        <xsl:variable name="val">
+                                            <xsl:value-of select="./NumberSlaves"/>@<xsl:value-of select="./LogDate"/>@<xsl:value-of select="./ProcessName"/>@<xsl:value-of select="./ClusterGroup"/>
+                                        </xsl:variable>
+                                        <option value="{$val}">
+                                            <xsl:value-of select="./ProcessName"/>
+                                        </option>
+                                    </xsl:for-each>
+                                    </select>
+                                    Slave Number<span id="NumberSlaves"></span>: <input type="text" id="SlaveNum" name="SlaveNum" value="1" size="4" onkeypress="return CheckSlaveNum(event);"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <input type="hidden" id="ProcessName" value="{ThorLogList/ThorLogInfo[1]/ProcessName}"/>
+                                    <input type="hidden" id="LogDate" value="{ThorLogList/ThorLogInfo[1]/LogDate}"/>
+                                    on: <input type="text" id="SlaveAddress" name="SlaveAddress" value="" size="16" onkeypress="return CheckSlaveAddress(event);"/>
+                                </xsl:otherwise>
+                            </xsl:choose>
                         </div>
                     </td>
                 </tr>
