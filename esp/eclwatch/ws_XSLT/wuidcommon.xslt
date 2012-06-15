@@ -400,7 +400,7 @@
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=ECL Playground (Results) - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">
@@ -1046,8 +1046,6 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="number(IsSupplied)"> supplied</xsl:if>
-        &nbsp;-&nbsp;
-        <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/esp/files/ECLPlaygroundResults.htm?Wuid={$wuid}&amp;Sequence={Link}');return false;">Show</a>
       </td>
      <xsl:choose>
        <xsl:when test="number(ShowFileContent) and string-length(Link)">
