@@ -2431,7 +2431,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 StringBuffer logDir;
                 getConfigurationDirectory(directories, "log", "thor", req.getProcess(), logDir);
 
-                winfo.getWorkunitThorSlaveLog(req.getProcess(), req.getClusterGroup(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
+                winfo.getWorkunitThorSlaveLog(req.getClusterGroup(), req.getLogDate(), logDir.str(), req.getSlaveNumber(), mb, false);
                 openSaveFile(context, opt, "ThorSlave.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_EclAgentLog,req.getType()))

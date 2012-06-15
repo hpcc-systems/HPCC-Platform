@@ -894,12 +894,12 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 {
     unsigned countThorLog = 0;
 
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo("thor");
-    unsigned numberOfSlaves = clusterInfo->getSize();
-
     IArrayOf<IConstThorLogInfo> thorLogList;
     if (cw->getWuidVersion() > 0)
     {
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo("thor");
+        unsigned numberOfSlaves = clusterInfo->getSize();
+
         Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
         ForEach (*thorInstances)
         {
@@ -1726,10 +1726,8 @@ void WsWuInfo::getWorkunitThorLog(const char* processName, MemoryBuffer& buf)
     }
 }
 
-void WsWuInfo::getWorkunitThorSlaveLog(const char *processName, const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
+void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload)
 {
-    if (isEmpty(processName))
-      throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave process not specified.");
     if (isEmpty(groupName))
       throw MakeStringException(ECLWATCH_INVALID_INPUT,"Thor group not specified.");
     if (isEmpty(logDir))
