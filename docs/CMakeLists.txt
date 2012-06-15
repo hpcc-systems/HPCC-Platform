@@ -38,6 +38,8 @@ else()
 	set (DOC_VERSION "${DOC_VERSION}.${HPCC_SEQUENCE}${HPCC_MATURITY}")
 endif()
 
+# Build image file list to add to source watch.
+file(GLOB_RECURSE DOC_IMAGES_LIST images/*)
 
 # Required directories to add.
 add_subdirectory(common)

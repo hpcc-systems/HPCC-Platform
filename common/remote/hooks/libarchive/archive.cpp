@@ -391,7 +391,7 @@ static IFile *createIFileInArchive(const char *containedFileName)
         // Create an IFile representing the root of the archive as a directory
         struct archive_entry *rootEntry = archive_entry_new();
         archive_entry_set_pathname(rootEntry, ".");
-        archive_entry_set_mode(rootEntry, __S_IFDIR);
+        archive_entry_set_mode(rootEntry, S_IFDIR);
         archive_entry_set_size(rootEntry, 0);
         return new ArchiveFile(containedFileName, new ArchiveEntry(rootEntry));
     }

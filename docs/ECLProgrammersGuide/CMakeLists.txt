@@ -16,5 +16,5 @@
 ################################################################################
 
 
-DOCBOOK_TO_PDF( ${FO_XSL} PrGd-Includer.xml "ECLProgrammersGuide")
+DOCBOOK_TO_PDF( ${FO_XSL} PrGd-Includer.xml "ECLProgrammersGuide" "PRG_Mods")
 
