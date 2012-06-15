@@ -545,11 +545,13 @@ public:
     {
         CThorNarySlaveActivity::start();
         merger.initInputs(expandedInputs.length(), expandedInputs.getArray());
+        dataLinkStart();
     }
     void stop()
     {
         merger.done();
         CThorNarySlaveActivity::stop();
+        dataLinkStop();
     }
     void reset()
     {
