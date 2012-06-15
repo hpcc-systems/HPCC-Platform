@@ -4229,8 +4229,8 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
         IHqlExpression * resultInstance = queryPropertyChild(expr, externalAtom, 0);
         if (!ctx.queryMatchExpr(resultInstance))
         {
-            //Very unusual - a result is required from a child query, but that child query is actually in the
-            //the parent/grandparent.
+            //Very unusual - a result is required from a child query, but that child query is actually in
+            //the parent/grandparent.  We need to evaluate in the parent instead.
             CHqlBoundExpr match;
             if (!buildExprInCorrectContext(ctx, expr, match, false))
                 throwUnexpected();
