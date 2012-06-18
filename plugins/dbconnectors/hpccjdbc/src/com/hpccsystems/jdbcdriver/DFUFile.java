@@ -395,29 +395,29 @@ public class DFUFile
 		{
 			try
 			{
-				StringTokenizer comatokens = null;
+				StringTokenizer commatokens = null;
 				//ECL RECORD can be defined as { type name,...,type name}; or RECORD type name;...;type name;END;
 				//TODO we should handle nested file types
 				if (eclString.toUpperCase().contains("RECORD"))
 				{
 					String tmp = eclString.substring(eclString.indexOf("RECORD")+6, eclString.indexOf("END"));
-					comatokens = new StringTokenizer(tmp, ";");
+					commatokens = new StringTokenizer(tmp, ";");
 				}
 				else if (eclString.contains("{"))
 				{
 					String tmp = eclString.substring(eclString.indexOf('{')+1, eclString.indexOf('}'));
-					comatokens = new StringTokenizer(tmp, ",");
+					commatokens = new StringTokenizer(tmp, ",");
 				}
 
-				if (comatokens != null)
+				if (commatokens != null)
 				{
 					int index = 0;
-					while (comatokens.hasMoreTokens())
+					while (commatokens.hasMoreTokens())
 					{
-						String comatoken = comatokens.nextToken().trim();
-						String spacesplit [] = comatoken.split("\\s+");
+						String commatoken = commatokens.nextToken().trim();
+						String spacesplit [] = commatoken.split("\\s+");
 
-						String name = spacesplit[spacesplit.length-1].trim();
+						String name = spacesplit[spacesplit.length-1];
 						if (name.length() > 0)
 						{
 							StringBuffer type = new StringBuffer();
