@@ -1573,6 +1573,7 @@ public:
     virtual void        setResultIsAll(bool value);
     virtual void        setResultFormat(WUResultFormat format);
     virtual void        setResultXML(const char *val);
+    virtual void        setResultRow(unsigned len, const void * data);
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -7442,6 +7443,13 @@ void CLocalWUResult::setResultDecimal(const void *val, unsigned len)
     setResultTotalRowCount(1);
 }
 
+void CLocalWUResult::setResultRow(unsigned len, const void * data)
+{
+    p->setPropBin("Value", len, data);
+    setResultRowCount(1);
+    setResultTotalRowCount(1);
+    setResultFormat(ResultFormatRaw);
+}
 void CLocalWUResult::setResultIsAll(bool value)
 {
     p->setPropBool("@isAll", value);
