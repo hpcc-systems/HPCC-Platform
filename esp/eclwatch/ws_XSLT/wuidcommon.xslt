@@ -748,7 +748,7 @@
                                 <xsl:otherwise>
                                     <input type="hidden" id="ProcessName" value="{ThorLogList/ThorLogInfo[1]/ProcessName}"/>
                                     <input type="hidden" id="LogDate" value="{ThorLogList/ThorLogInfo[1]/LogDate}"/>
-                                    on: <input type="text" id="SlaveAddress" name="SlaveAddress" value="" size="16" onkeypress="return CheckSlaveAddress(event);"/>
+                                    on: <input type="text" id="SlaveAddress" name="SlaveAddress" title="Type in NetworkAddress or NetworkAddress_Port where the slave run" value="" size="16" onkeypress="return CheckSlaveAddress(event);"/>
                                 </xsl:otherwise>
                             </xsl:choose>
                         </div>

@@ -1747,8 +1747,16 @@ void WsWuInfo::getWorkunitThorSlaveLog(const char *groupName, const char *ipAddr
             throw MakeStringException(ECLWATCH_INVALID_INPUT,"ThorSlave address not specified.");
 
         //thorslave.10.239.219.6_20100.2012_05_23.log
-        logName.appendf("thorslave.%s_*.%s.log", ipAddress, logDate);
-        slaveIPAddress.append(ipAddress);
+        logName.appendf("thorslave.%s*.%s.log", ipAddress, logDate);
+        const char* portPtr = strchr(ipAddress, '_');
+        if (!portPtr)
+            slaveIPAddress.append(ipAddress);
+        else
+        {
+            StringBuffer ipAddressStr = ipAddress;
+            ipAddressStr.setLength(portPtr - ipAddress);
+            slaveIPAddress.append(ipAddressStr.str());
+        }
     }
 
     RemoteFilename rfn;
