@@ -414,6 +414,29 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
                 Owned<IEspUserInfo> oneusr = createUserInfo();
                 oneusr->setUsername(usr->getName());
                 oneusr->setFullname(usr->getFullName());
+
+                double version = context.getClientVersion();
+                if (version >= 1.07)
+                {
+                    StringBuffer sb;
+                    switch (usr->getPasswordDaysRemaining())//-1 if expired, -2 if never expires
+                    {
+                    case -1:
+                        sb.set("Expired");
+                        break;
+                    case -2:
+                        sb.set("Never");
+                        break;
+                    default:
+                        {
+                            CDateTime dt;
+                            usr->getPasswordExpiration(dt);
+                            dt.getDateString(sb);
+                            break;
+                        }
+                    }
+                    oneusr->setPasswordexpiration(sb.str());
+                }
                 espusers.append(*oneusr.getLink());
             }
         }
