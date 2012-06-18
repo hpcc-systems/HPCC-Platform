@@ -19,4 +19,3 @@
 d := dataset('x', { string10 parent, dataset( {string10 id}) child }, thor);
 
 output(sort(d, record));
-

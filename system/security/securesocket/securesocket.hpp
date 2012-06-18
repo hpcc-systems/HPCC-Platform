@@ -99,4 +99,3 @@ SECURESOCKET_API int signCertificate(const char* csr, const char* ca_certificate
 };
 
 #endif
-

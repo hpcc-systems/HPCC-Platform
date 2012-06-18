@@ -166,5 +166,3 @@ void KeyCompressor::close()
         comp = NULL;
     }
 }
-
-

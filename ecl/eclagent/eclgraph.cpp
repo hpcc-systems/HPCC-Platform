@@ -1847,4 +1847,3 @@ void EclBoundLoopGraph::execute(void * counterRow, IHThorGraphResults * graphLoo
 
     graph->executeChild(parentExtract, results, graphLoopResults);
 }
-

@@ -56,4 +56,3 @@ public:
 CMasterWatchdogBase *createMasterWatchdog(bool udp=false);
 
 #endif
-

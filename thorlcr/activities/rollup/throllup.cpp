@@ -50,4 +50,3 @@ CActivityBase *createDedupRollupActivityMaster(CMasterGraphElement *container)
         return new DedupRollupActivityMaster(container);
     }
 }
-

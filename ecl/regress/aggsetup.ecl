@@ -28,4 +28,3 @@ d := dataset([{'Hawthorn','Gavin',35,['Pride and Predudice','Treasure Island']},
 
 output(d,,aggTableName,overwrite);
 buildindex(i,overwrite);
-

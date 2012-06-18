@@ -38,4 +38,3 @@ Key_Relatives := INDEX(d, {person1,same_lname,person2, fpos}, '~thor::key::relat
 relas := Key_Relatives(person1=%did%);
 
 output(relas)
-

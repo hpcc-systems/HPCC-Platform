@@ -27,5 +27,3 @@ CActivityBase *createChooseSetsPlusActivityMaster(CMasterGraphElement *container
 
 
 #endif
-
-

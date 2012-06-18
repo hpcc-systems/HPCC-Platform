@@ -53,4 +53,3 @@ target_link_libraries ( dfuwutest
          dfuwu 
          environment 
     )
-

@@ -106,5 +106,3 @@ end;
 
 
 output(project(choiceTable, t2(left.value)));
-
-

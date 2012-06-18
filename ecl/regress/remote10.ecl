@@ -71,4 +71,3 @@ end;
 initial := dataset([], resultRecord);
 
 output(runPlan(initial, optPlan));
-

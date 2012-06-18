@@ -78,4 +78,3 @@ endif (WIN32)
 add_dependencies (soaplib 
     jlib
     )
-

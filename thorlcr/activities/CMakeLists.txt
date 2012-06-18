@@ -28,4 +28,3 @@ project (AllProjects)
 
 include ( ${CMAKE_CURRENT_SOURCE_DIR}/activitymasters_lcr.cmake)
 include ( ${CMAKE_CURRENT_SOURCE_DIR}/activityslaves_lcr.cmake)
-

@@ -9260,4 +9260,3 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     makeAbsolutePath(name, fullPathname);
     query->addAssociatedFile(type, fullPathname, hostname, description, crc);
 }
-

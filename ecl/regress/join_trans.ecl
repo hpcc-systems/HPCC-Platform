@@ -52,4 +52,3 @@ join_with_trans := join (namesTable, addressTable,
   tranx(LEFT,RIGHT),LEFT RIGHT OUTER);
 
 output(join_with_trans,,'out.d00');
-

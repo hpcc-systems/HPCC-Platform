@@ -22,7 +22,3 @@ TYPEOF(5) x2 := 10;
 STRING20 s  := 'ABC';
 TYPEOF(s) x3 := 'DEF';
 TYPEOF(x1) x4 := 'GHI';
-
-
-
-

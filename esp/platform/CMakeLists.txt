@@ -62,5 +62,3 @@ target_link_libraries ( esp
          dalibase 
          environment 
     )
-
-

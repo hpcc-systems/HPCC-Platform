@@ -54,4 +54,3 @@ string20        extra;
 
 //This doesn't work, but I don't really care at the moment.
 //output(dataset('out.d00', crazyNameRecordEx, thor));
-

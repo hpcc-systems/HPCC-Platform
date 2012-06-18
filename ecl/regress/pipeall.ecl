@@ -34,4 +34,3 @@ output(t,,PIPE('pipeWriteNext ' ,repeat));
 //output(t,{surname},PIPE('pipeWrite \\thordata\\names.all '+t.surname,repeat));        // currently unsupported
 
 output(PIPE(t,'pipeWrite \\thordata\\names.all '+t.surname,repeat));
-

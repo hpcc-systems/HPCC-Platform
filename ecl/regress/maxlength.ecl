@@ -40,4 +40,3 @@ r3 := record
 
 t3 := dataset('d3', r3, thor);
 output(t3);
-

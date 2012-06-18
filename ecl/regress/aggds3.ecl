@@ -42,4 +42,3 @@ output(table(sqNamesTable5, { secondBookName, sumage := sum(group, aage) }, seco
 
 // An out of line subquery (caused problems accessing parent inside sort criteria
 output(table(sqNamesTable7, { count(books(id != 0)), sumage := sum(group, aage) }, count(books(id != 0)), few, keyed));
-

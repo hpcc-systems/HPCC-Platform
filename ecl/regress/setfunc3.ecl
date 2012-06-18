@@ -25,4 +25,3 @@ integer r2 := 20;
 
 SetFuncLibYMA.SumRealYMA([10, 20]);
 SetFuncLibYMA.SumRealYMA([10.1, 20.1]);
-

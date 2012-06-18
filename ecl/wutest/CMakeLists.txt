@@ -53,5 +53,3 @@ target_link_libraries ( wutest
          deftype 
          workunit 
     )
-
-

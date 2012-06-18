@@ -140,4 +140,3 @@ end;
 
 
 output(project(choiceTable2, t3(left.include1, left.include2)));
-

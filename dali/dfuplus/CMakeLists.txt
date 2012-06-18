@@ -68,5 +68,3 @@ target_link_libraries ( dfuplus
          ws_fs
          ws_dfu
     )
-
-

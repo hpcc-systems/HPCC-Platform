@@ -1486,4 +1486,3 @@ IEsdlTransformer *createEsdlXFormerFromXMLFiles(StringArray &files, StringArray 
     //DBGLOG("serialized esdl xformer: %s", out.str());
     return etx;
 }
-

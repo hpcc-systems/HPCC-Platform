@@ -81,5 +81,3 @@ target_link_libraries ( thorhelper
          deftype 
          securesocket 
     )
-
-

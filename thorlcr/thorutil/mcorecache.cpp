@@ -333,5 +333,3 @@ IMultiCoreCache *createMultiCoreCache(IMultiCoreRowIntercept &wrapped, IRecordSi
         return new CPassThroughMultiCoreCache(wrapped,recsize);
     return new CMultiCoreCache(wrapped,recsize,numCPUs);
 }
-
-

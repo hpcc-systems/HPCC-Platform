@@ -12,6 +12,3 @@ SEQUENTIAL(
 	Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX1),
 	Std.File.AddSuperFile($.DeclareData.AcctSKname,$.DeclareData.SubIDX2),
 	Std.File.FinishSuperFileTransaction());
-
-
-

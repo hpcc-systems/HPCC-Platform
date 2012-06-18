@@ -32,4 +32,3 @@ ds := DATASET('test',r,FLAT);
 
 // this causes mem leak
 output(ds,,'out.d00');
-

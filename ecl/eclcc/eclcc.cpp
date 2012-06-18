@@ -1764,5 +1764,3 @@ void EclCC::processBatchFiles()
     fclose(batchLog);
     batchLog = NULL;
 }
-
-

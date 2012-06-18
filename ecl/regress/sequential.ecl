@@ -45,6 +45,3 @@ o2;
 sequential(o1, o2);
 
 sequential(parallel(o2,o3),parallel(o1,o4));
-
-
-

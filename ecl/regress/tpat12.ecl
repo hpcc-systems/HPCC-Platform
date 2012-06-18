@@ -34,5 +34,3 @@ results :=
     end;
 
 output(PARSE(ds,line,S,results));
-
-

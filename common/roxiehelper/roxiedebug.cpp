@@ -2279,4 +2279,3 @@ void CBaseDebugGraphManager::endChildGraph(IProbeManager *child, IActivityBase *
         node->childGraphs.append(*LINK(childManager));
     }
 }
-

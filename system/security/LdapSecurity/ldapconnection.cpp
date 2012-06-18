@@ -5128,4 +5128,3 @@ ILdapClient* createLdapClient(IPropertyTree* cfg)
 {
     return new CLdapClient(cfg);
 }
-

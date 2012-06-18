@@ -22,4 +22,3 @@
 
 OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['boy', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
 OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['b%%%', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
-

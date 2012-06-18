@@ -33,4 +33,3 @@ show(target);
 show(platform);
 show(os);
 evaluate(job.logString('This is a line of tracing'));
-

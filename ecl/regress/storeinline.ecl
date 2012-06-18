@@ -20,4 +20,3 @@ integer a := 1 : stored ('a');
 
 d := dataset([{ a }], {integer myfield});
 output(d);
-

@@ -38,6 +38,3 @@ r2                f4;
 d := DATASET('d3', r3, FLAT);
 
 output(d,{r3f1, r3f2.r2f1, r3f3.r2f2.r1f1}, 'o.d00');
-
-
-

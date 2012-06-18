@@ -76,4 +76,3 @@ LOADXML('<xml>dummy</xml>');
 %'s1x'%;
 %'s2x'%;
 %'s3x'%;
-

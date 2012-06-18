@@ -46,5 +46,3 @@ target_link_libraries ( dumpkey
          jlib
          jhtree
     )
-
-

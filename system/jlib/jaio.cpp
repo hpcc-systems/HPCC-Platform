@@ -412,4 +412,3 @@ void CW32AsyncBlockReader::getinfo(offset_t &of, offset_t &p, offset_t &sz)
 
 
 #endif
-

@@ -143,6 +143,3 @@ IEclPlusHelper * createEclPlusHelper(IProperties * globals)
     }
     return helper;
 }
-
-
-

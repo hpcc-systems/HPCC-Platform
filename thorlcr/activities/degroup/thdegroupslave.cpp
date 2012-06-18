@@ -115,6 +115,3 @@ CActivityBase *createDegroupSlave(CGraphElementBase *container)
 {
     return new CDegroupSlaveActivity(container);
 }
-
-
-

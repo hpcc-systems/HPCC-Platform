@@ -224,4 +224,3 @@ CActivityBase *createSelectNthSlave(CGraphElementBase *container)
 {
     return new CSelectNthSlaveActivity(container, false);
 }
-

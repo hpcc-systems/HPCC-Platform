@@ -37,4 +37,3 @@ export abc := %s%;
 #ELSE
     #APPEND(S, 'x := 2; ')
 #END
-

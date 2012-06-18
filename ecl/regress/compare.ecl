@@ -37,4 +37,3 @@ output(nofold(names),{
         trim(surname)=vsurname,
         true
         },'out.d00');
-

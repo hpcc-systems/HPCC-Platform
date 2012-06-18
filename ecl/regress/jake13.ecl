@@ -37,4 +37,3 @@ s0 := DEDUP(tmptable, forename, ALL);
 s1 := SORT(tmptable, surname) : STORED('jaketest_stored11', few);
 
 OUTPUT(s1, , 'out1.d00', OVERWRITE);
-

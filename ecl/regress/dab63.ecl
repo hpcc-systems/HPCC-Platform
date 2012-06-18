@@ -39,6 +39,3 @@ output(d1);
 
 d2 := dataset('~thor::in::docket_data_cr20041111',r,csv(separator(U'¦')));
 output(d2);
-
-
-

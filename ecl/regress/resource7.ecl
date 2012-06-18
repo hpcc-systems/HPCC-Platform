@@ -41,4 +41,3 @@ baseRecord t(baseRecord l) :=
 x := JOIN(baseTable, filteredTable2, LEFT.forename = RIGHT.forename, t(LEFT));
 
 output(x,,'out.d00');
-

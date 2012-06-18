@@ -11,4 +11,3 @@ Filter := IDX.State = 'LA' AND IDX.City = 'ABBEVILLE';
 OUTPUT(SORT(IDX(Filter),FirstName),all);		//the old way 
 
 OUTPUT(STEPPED(IDX(Filter),FirstName),all);	//Smart Stepping
-

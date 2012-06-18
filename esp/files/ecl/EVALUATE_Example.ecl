@@ -23,4 +23,3 @@ EVALUATE(SortedRecs1[1],Value3 + 10);	//result = 15
 EVALUATE(SortedRecs2[1],Value3 + 10);	//result = 12
 EVALUATE(SortedRecs3[1],Value3 + 10);	//result = 13
 EVALUATE(SortedRecs4[1],Value3 + 10);	//result = 11
-

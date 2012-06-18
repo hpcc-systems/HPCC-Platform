@@ -81,4 +81,3 @@
 #define INIT_PRIORITY_DALI_DASDS                100
 #define INIT_PRIORITY_DALI_DASESS               100
 #define INIT_PRIORITY_DALI_DASERVER             100
-

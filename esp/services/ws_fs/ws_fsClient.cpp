@@ -31,4 +31,3 @@ FileSpray_API IClientFileSpray * createFileSprayClient()
 {
     return new CClientFileSpray();
 }
-

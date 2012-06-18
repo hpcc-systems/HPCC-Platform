@@ -301,4 +301,3 @@ int main(int argc, char* argv[])
     releaseAtoms();
     return 0;
 }
-

@@ -107,6 +107,3 @@ CActivityBase *createGroupAggregateSlave(CGraphElementBase *container)
 {
     return new GroupAggregateSlaveActivity(container);
 }
-
-
-

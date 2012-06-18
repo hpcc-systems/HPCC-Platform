@@ -175,4 +175,3 @@ CActivityBase *createPipeWriteSlave(CGraphElementBase *container)
 {
     return new CPipeWriteSlaveActivity(container);
 }
-

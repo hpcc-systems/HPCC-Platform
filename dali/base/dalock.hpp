@@ -52,5 +52,3 @@ extern da_decl IDaliServer *createDaliLockServer(); // called for coven members
 
 
 #endif
-
-

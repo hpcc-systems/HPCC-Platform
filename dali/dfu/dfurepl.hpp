@@ -29,4 +29,3 @@ IReplicateServer *createReplicateServer(const char *qname);
 
 
 #endif
-

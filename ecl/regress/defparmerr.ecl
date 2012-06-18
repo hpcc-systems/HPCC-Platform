@@ -44,4 +44,3 @@ mymacro(1,2,3);
 mymacro();
 mymacro(,);
 mymacro(,2);
-

@@ -179,4 +179,3 @@ CActivityBase *createIfActionSlave(CGraphElementBase *container)
 {
     return new CIfActionSlaveActivity(container);
 }
-

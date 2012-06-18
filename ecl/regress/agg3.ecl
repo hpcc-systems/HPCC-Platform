@@ -58,4 +58,3 @@ evaluate(counts[1],counts.NInc2+1);
 count_inc;
 //count_age;
 // ---------------------------------------------------
-

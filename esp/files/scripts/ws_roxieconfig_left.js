@@ -126,4 +126,3 @@ function loadNodeData(node, fnLoadComplete)  {
     //asyncRequest method:
     YAHOO.util.Connect.asyncRequest('GET', sUrl, callback);
 }
-

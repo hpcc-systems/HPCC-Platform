@@ -565,4 +565,3 @@ void CPooledHttpThread::main()
     }
 
 }
-

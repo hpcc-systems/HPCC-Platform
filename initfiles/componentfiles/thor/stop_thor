@@ -92,4 +92,3 @@ else
     $deploydir/frunssh uniq $instancedir/slaves "/bin/sh -c '$deploydir/stop_slaves ${hpcc_compname} $PATH_PRE'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
-

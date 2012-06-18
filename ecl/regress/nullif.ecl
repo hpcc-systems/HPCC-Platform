@@ -60,4 +60,3 @@ personRecord t2(personRecord l) := transform
 end;
 
 output(t2(personDataset));
-

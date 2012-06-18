@@ -38,4 +38,3 @@ output(fake_data,,'RTTEMP::fake_data',OVERWRITE);
 
 foo := DATASET('RTTEMP::fake_data',layout,THOR);
 output(foo(field4='ZZZZZZ'));
-

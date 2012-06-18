@@ -28,5 +28,3 @@ sequential(
     output(i(keyed(name = 'Gavin'),keyed(myBool = true)));
     output(i(keyed(name = 'Gavin'),keyed(myBool)))
 );
-
-

@@ -510,4 +510,3 @@ END;
 OUTPUT(SUM(in, TS_WordIndex(KEYED(word = in.word))[1].doc, prefetch(5, parallel))) : independent;
 OUTPUT(TABLE(in, { sum(group, TS_WordIndex(KEYED(word = in.word))[1].doc), count(group) }, prefetch(5, parallel))) : independent;
 OUTPUT(TABLE(in, { sum(group, TS_WordIndex(KEYED(word = in.word))[1].doc), count(group) }, word[1], prefetch(5, parallel))) : independent;
-

@@ -53,5 +53,3 @@ r2 t(r1 u1, r1 u2) := transform
 j := join(t1, t2, left.fname = right.fname, t(left, right));
 
 output(j);
-
-

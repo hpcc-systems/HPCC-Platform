@@ -321,4 +321,3 @@ IRoxieQueryCompiler *createRoxieQueryCompiler()
 {
     return new CRoxieQueryCompiler();
 }
-

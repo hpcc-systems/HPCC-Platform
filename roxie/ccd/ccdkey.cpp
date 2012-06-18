@@ -2603,4 +2603,3 @@ CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( InMemoryIndexTest, "InMemoryIndexTest" );
 CPPUNIT_TEST_SUITE_REGISTRATION( InMemoryIndexTest );
 
 #endif
-

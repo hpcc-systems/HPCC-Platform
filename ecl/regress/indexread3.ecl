@@ -28,4 +28,3 @@ a2 := sort(i, -f_name)(f_name='GAVIN');
 
 output(a1);
 output(a2);
-

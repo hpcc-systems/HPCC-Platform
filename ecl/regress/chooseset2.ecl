@@ -47,4 +47,3 @@ output(x1,,'out3.d00');
 
 y1 := choosesets(zperson, surname='Hawthorn'=>2,forename='Mia'=>3,LAST);
 output(y1,,'out4.d00');
-

@@ -42,4 +42,3 @@ max(x1, surname);
 min(x1, surname);
 
 output(x1(forename <> 'x'),,'out.d00');
-

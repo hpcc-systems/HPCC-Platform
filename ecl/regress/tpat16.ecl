@@ -40,4 +40,3 @@ output(outfile1);
 //Should match.
 outfile2 := PARSE(d,line,s,results,maxlength(21));
 output(outfile2);
-

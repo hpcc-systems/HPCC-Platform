@@ -69,4 +69,3 @@ end;
 getstuff := parse(fc1, body, caselist, parserec, first, scan);
 output(getstuff);
 output(fc1, { length(body), body });
-

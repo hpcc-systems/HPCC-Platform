@@ -47,5 +47,3 @@ target_link_libraries ( datest
          dalibase 
                  ${CPPUNIT_LIBRARIES}
     )
-
-

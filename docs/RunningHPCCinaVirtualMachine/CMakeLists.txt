@@ -16,4 +16,3 @@
 ################################################################################
 
 DOCBOOK_TO_PDF( ${FO_XSL} RunningHPCCinaVirtualMachine.xml "RunningHPCCinaVirtualMachine")
-

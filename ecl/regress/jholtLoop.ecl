@@ -96,4 +96,3 @@ OUTPUT(LOOP(namesTable2,
                                LEFT.age < 100,
                               EXISTS(ROWS(LEFT)) and SUM(ROWS(LEFT), age) < 1000,
                                loopBody(ROWS(LEFT), COUNTER)));
-

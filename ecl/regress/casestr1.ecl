@@ -30,4 +30,3 @@ xval := (string1) CASE
                            );
 
 output(person, {xval})
-

@@ -35,4 +35,3 @@ output(PARSE(infile,text,sentance,results,first,scan));     // One. Two? Three.
 output(PARSE(infile,text,sentance,results,first,scan all)); // One. ne. e. . Two? wo? o? ? Three. hree. ree. ee. e. .
 output(PARSE(infile,text,sentance,results,noscan,all));     // One. One.Two? One.Two?Three
 output(PARSE(infile,text,sentance,results,scan,all));   // One. One.Two? One.Two?Three Two? Two?Three Three
-

@@ -30,6 +30,3 @@ typedef DALI_UID SubscriptionId; // allocated by queryCoven().getUniqueId()
 
 
 #endif
-
-
-

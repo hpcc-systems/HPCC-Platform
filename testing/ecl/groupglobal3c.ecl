@@ -34,4 +34,3 @@ f(unsigned x) := sort(project(gr, transform(recordof(gr), self.i := left.i + x; 
 d2 := dataset([1,2], { unsigned val });
 p := project(d2, transform({ unsigned cnt, dataset(recordof(gr)) cd; }, SELF.cnt := count(table(f(left.val), { count(group) })); self.cd := ungroup(f(left.val))));
 output(p);
-

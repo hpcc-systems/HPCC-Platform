@@ -306,4 +306,3 @@ IHqlExpression * buildQueryViewerEcl(IHqlExpression * selectFields)
     OwnedHqlExpr output = addOutput(filtered);
     return output.getClear();
 }
-

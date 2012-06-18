@@ -34,4 +34,3 @@ outRec concat(outRec l, outRec r) := TRANSFORM
 END;
 
 output(AGGREGATE(p2, outRec, concat(LEFT, RIGHT)), { lout, '!\n' });
-

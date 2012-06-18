@@ -2689,4 +2689,3 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     return 0;
 }
-

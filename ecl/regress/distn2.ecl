@@ -56,4 +56,3 @@ extractedRec t1 := transform
 
 p := parse(x, line, t1, xml('/XML/Field'));
 output(p);
-

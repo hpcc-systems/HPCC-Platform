@@ -27,4 +27,3 @@ unsigned2           size{virtual(sizeof)};
 
 d := DATASET('names.d00', namesRecord, THOR);
 output(d);
-

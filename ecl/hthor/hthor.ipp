@@ -2760,4 +2760,3 @@ extern HTHOR_API IHThorActivity * create ## NAME ## Activity(IAgentContext &_age
 {   return new CHThor ## NAME ##Activity(_agent, _activityId, _subgraphId, arg, kind, extra); }
 
 #endif // HTHOR_IPP_INCL
-

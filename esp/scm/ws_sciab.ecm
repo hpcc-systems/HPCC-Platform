@@ -55,4 +55,3 @@ ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsSciab
 SCMexportdef(WsSciab);
 
 SCMapi(WsSciab) IClientWsSciab *createWsSciabClient();
-

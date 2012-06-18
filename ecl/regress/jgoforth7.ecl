@@ -136,4 +136,3 @@ SELF := [];
 
 p8 := project(namesTable, t8(LEFT));
 output(p8);
-

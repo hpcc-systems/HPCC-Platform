@@ -24,5 +24,3 @@
 //varskip varload TBD
 
 KEYDIFF(DG_FetchIndex1, DG_FetchIndex2, DG_FetchIndexDiffName, OVERWRITE);
-
-

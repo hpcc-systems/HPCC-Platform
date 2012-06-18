@@ -111,7 +111,3 @@ target_link_libraries ( sasha
          jlib
          mp 
     )
-
-
-
-

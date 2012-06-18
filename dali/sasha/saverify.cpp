@@ -654,5 +654,3 @@ ISashaServer *createSashaDaFSMonitorServer()
     sashaDaFSMonitorServer = new CSashaDaFSMonitorServer();
     return sashaDaFSMonitorServer;
 }
-
-

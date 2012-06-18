@@ -47,6 +47,3 @@ pperson := DATASET('in.d00', ppersonRecord, FLAT);
 ppersonEx := project(sort(pperson,surname), projectFunction(left, COUNTER));
 
 output(ppersonEx, , 'out.d00');
-
-
-

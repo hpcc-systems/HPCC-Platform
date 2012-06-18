@@ -761,4 +761,3 @@ IEspPlugin* CEspConfig::getPlugin(const char* name)
 
     return NULL;
 }
-

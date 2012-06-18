@@ -54,4 +54,3 @@ interface IRoxieWuProcessor : extends IInterface
 extern IRoxieWuProcessor *createRoxieWuProcessor(const char *roxieClusterName, IRoxieCommunicationClient *_roxieCommClient, int logLevel);
 
 #endif
-

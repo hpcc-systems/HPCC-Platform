@@ -39,4 +39,3 @@ peopleDataset := dataset('people',mainRecord,THOR);
 j := join(peopleDataset, nameKey, left.surname = right.surname and left.forename = right.forename, transform(right));
 o := output(j);
 o;
-

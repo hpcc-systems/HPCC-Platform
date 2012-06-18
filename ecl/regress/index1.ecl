@@ -22,4 +22,3 @@ d := dataset('~local::rkc::person', { string15 name }, flat);
 i := index(d, { string11) name }, '\\home\\perosn.name_first.key');
 
 output(i(name='RICHARD'));
-

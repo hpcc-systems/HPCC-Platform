@@ -88,4 +88,3 @@ int soap_serve()
         return soap_return_fault();
     return soap_error;
 }
-

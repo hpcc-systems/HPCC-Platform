@@ -34,4 +34,3 @@
 extern thcommonext_decl const char *activityKindStr(ThorActivityKind kind);
 
 #endif
-

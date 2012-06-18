@@ -42,4 +42,3 @@ output(nonempty(d1(age != 20), d2(age != 21)));
 output(nonempty(d1, d2, d3, d4));
 output(nonempty(d1(age = 0), d2(age = 0), d3(age = 0), d4));
 output(nonempty(d1(age = 0), d2(age = 0), d3, d4));
-

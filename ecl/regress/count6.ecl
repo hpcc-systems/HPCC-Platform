@@ -44,4 +44,3 @@ agesum := sum(zNamesTable, (decimal20_2)age);
 
 output(namesTable, {sum(group, (decimal20_2)age); });
 output(namesTable, r);
-

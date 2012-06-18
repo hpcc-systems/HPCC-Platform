@@ -58,5 +58,3 @@ BldIDX := PARALLEL(
 					 BUILDINDEX(i4)));
 
 SEQUENTIAL(BldDat,BldIDX);
-
-

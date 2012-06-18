@@ -67,5 +67,3 @@ private:
    StringArray m_processTypes;
 };
 #endif // !defined(AFX_WSMACHINEBINDING_H__01817C00_79D1_4CAC_9890_A5F33437028B__INCLUDED_)
-
-

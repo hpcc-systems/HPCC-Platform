@@ -41,4 +41,3 @@ s1 := sort(ds, surname, joined(badSort));
 
 output(s1,,'a.out'); </Query>
 </Archive>
-

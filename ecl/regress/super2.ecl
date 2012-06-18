@@ -25,4 +25,3 @@ SEQUENTIAL(
     apply(x, FileServices.AddSuperFile('super',line)),
     FileServices.FinishSuperFileTransaction()
     );
-

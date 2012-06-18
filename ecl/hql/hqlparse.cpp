@@ -2141,5 +2141,3 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
         return ret;
     }
 }
-
-

@@ -38,4 +38,3 @@ END;
 
 EXPORT counttable_482 := TABLE(qset, countrec, 1, segmentid);
 OUTPUT(counttable_482) ;
-

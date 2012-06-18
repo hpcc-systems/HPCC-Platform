@@ -33,4 +33,3 @@ END;
 norm := NORMALIZE(ds, 2, Copy(LEFT));
 norm2 := norm  : SUCCESS(OUTPUT(norm,, 'adtemp::wf_test', OVERWRITE));
 OUTPUT(COUNT(norm2));
-

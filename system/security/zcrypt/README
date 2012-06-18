@@ -64,4 +64,3 @@
     
 3. Use the test proggram.
     usage: zcrypttest <file-to-encrypt> <trace-level> <iteration-times>
-

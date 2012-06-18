@@ -102,5 +102,3 @@ protected:
 };
 
 #endif
-
-

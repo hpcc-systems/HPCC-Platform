@@ -56,4 +56,3 @@ output(t3,,named('NumPeopleExceedBookLimitDsDs'));
 output(allnodes(local(t1)),,named('NumPeopleExceedBookLimitLocal'));
 output(allnodes(local(t2)),,named('NumPeopleExceedBookLimitDsLocal'));
 output(allnodes(local(t3)),,named('NumPeopleExceedBookLimitDsDsLocal'));
-

@@ -84,4 +84,3 @@ ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsFileIO
 SCMexportdef(WsFileIO);
 
 SCMapi(WsFileIO) IClientWsFileIO *createWsFileIOClient();
-

@@ -52,5 +52,3 @@ output(ppersonEx, , 'out.d00');
 ppersonExL := project(pperson, projectFunction(left, COUNTER), local);
 
 output(ppersonExL, , 'out.d00');
-
-

@@ -28,4 +28,3 @@ decimal8_2 total;
 ds := PIPE('cmd /C type c:\\temp\\acc.csv', r, csv);
 output(ds, { date, ',', line, ',', value, ',', total, '\n'} );
 output(TABLE(ds, { line, ',', cnt := COUNT(group), ',', sum_value := sum(group, value), '\n'    }, line)(cnt > 1));
-

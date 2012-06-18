@@ -23,4 +23,3 @@ z := '2' : stored('z');
 
    y := (integer)( -((real)z)/10 );
    output(y,named('run_time')); // result is 0
-

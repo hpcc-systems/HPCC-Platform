@@ -36,4 +36,3 @@ end;
 X1 := project(T1,P1(LEFT,COUNTER));
 
 output(x1);
-

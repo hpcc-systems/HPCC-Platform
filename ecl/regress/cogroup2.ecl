@@ -75,4 +75,3 @@ innerJ2 := having(j2, exists(rows(left)(exists(leftDs))) and exists(rows(left)(e
 
 result2 := rollup(innerJ2, group, transform({ string20 surname, unsigned4 cnt}, self.surname := LEFT.surname, self.cnt := sum(rows(left), count(leftDs) + count(rightDs))));
 output(result2);
-

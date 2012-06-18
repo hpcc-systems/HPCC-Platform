@@ -335,4 +335,3 @@ bool RerunHelper::doit(FILE * fp)
     // Execute it
     return doSubmitWorkUnit(fp, wuid.str(), cluster.str());
 }
-

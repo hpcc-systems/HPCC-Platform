@@ -76,5 +76,3 @@ target_link_libraries ( graphmaster_lcr
          dalift 
          mfilemanager_lcr 
     )
-
-

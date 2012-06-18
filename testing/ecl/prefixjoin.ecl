@@ -689,4 +689,3 @@ JTBS := JOIN(sdsS,sdsS,left.name[1..*]=right.name[1..*] and left.val<=right.val,
 OUTPUT(JT);
 OUTPUT(JTB);
 OUTPUT(JTBS);
-

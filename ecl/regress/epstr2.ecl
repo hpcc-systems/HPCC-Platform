@@ -51,4 +51,3 @@ r1 := record
       end;
 
 output(d,r1);
-

@@ -51,4 +51,3 @@ myRecord t(myRecord l) :=
 y := project(x, t(LEFT));
 
 output(y);
-

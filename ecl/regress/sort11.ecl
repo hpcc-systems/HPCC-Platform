@@ -33,4 +33,3 @@ namesTable := dataset('x',xRec,FLAT);
 //output(sort(namesTable, record));
 //output(sort(namesTable, owner.surname,owner.forename,-user.surname,-user.forename,record));
 output(sort(namesTable, owner,-user));
-

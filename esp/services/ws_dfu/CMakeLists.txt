@@ -95,5 +95,3 @@ target_link_libraries ( ws_dfu
          securesocket 
          roxiecommlib 
     )
-
-

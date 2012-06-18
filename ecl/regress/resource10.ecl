@@ -41,5 +41,3 @@ count(x1);
 max(x1, surname);
 min(x1, surname);
 sum(x1, id);
-
-

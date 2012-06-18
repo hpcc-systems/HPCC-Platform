@@ -45,4 +45,3 @@ integer dd4 := 123+0;
 STRING10 eee4 := (STRING4)dd4 + 'TEST';
 
 display.echo('$'+eee4+'$');
-

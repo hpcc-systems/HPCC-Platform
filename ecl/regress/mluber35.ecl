@@ -24,5 +24,3 @@ MACRO
 ENDMACRO;
 
 m()
-
-

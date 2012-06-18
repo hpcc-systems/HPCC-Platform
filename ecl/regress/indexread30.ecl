@@ -23,5 +23,3 @@ x := 'x' : stored('x');
 i := index(d, { d } ,'\\home\\person.name_first.key.' + x);
 
 output(i(forename = 'Gavin'));
-
-

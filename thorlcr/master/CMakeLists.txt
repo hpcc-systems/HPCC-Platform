@@ -89,6 +89,3 @@ target_link_libraries (  thormaster_lcr
          activitymasters_lcr 
          swapnodelib
     )
-
-
-

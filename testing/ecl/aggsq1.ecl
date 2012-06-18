@@ -64,4 +64,3 @@ output(table(houseTable, { addr, numFamilies := count(dedup(occupants(age != 0),
 p := table(houseTable.occupants(age != 0), { surname });
 
 output(table(houseTable, { addr, numFamilies := count(dedup(p, surname, all)); }));
-

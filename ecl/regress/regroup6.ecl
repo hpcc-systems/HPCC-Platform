@@ -81,4 +81,3 @@ resultRec t2(inrec l, dataset(recordof(combined)) r) := transform
 
 results2 := combine(dsg, combined, group, t2(LEFT, ROWS(RIGHT)(score != 0)));
 output(results2);
-

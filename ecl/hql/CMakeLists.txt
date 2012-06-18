@@ -136,5 +136,3 @@ target_link_libraries ( hql
          eclrtl 
          deftype 
     )
-
-

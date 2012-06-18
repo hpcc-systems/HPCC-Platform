@@ -289,6 +289,3 @@ ISashaServer *createSashaQMonitorServer()
     sashaQMonitorServer = new CSashaQMonitorServer();
     return sashaQMonitorServer;
 }
-
-
-

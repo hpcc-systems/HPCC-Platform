@@ -40,4 +40,3 @@ results :=
 outfile1 := PARSE(d,line,engnoun.NOUN,results,scan,skip(ws));// : persist('kjv::relationships');
 
 output(outfile1);
-

@@ -33,4 +33,3 @@ interface ISlaveWatchdog : extends IInterface
 ISlaveWatchdog *createProgressHandler(bool udp=false);
 
 #endif
-

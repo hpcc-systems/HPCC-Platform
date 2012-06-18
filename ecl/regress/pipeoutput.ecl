@@ -25,4 +25,3 @@ end;
 ds := dataset([{'Sally','Blow'},{'Joe','Slow'},{'Fred','Crow'}],rec);
 
 output(ds,,pipe('cmd'));
-

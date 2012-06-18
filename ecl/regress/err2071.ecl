@@ -26,4 +26,3 @@ INTFORMAT(10, c(y), 1);
 
 ct := COUNT(Person());
 INTFORMAT(10, ct, 1);
-

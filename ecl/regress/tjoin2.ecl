@@ -66,4 +66,3 @@ JoinedCompare := join (SuperComputerOutput, fileProject6_formatted,
                        JoinTransform (LEFT, RIGHT));
 
 output (choosen (JoinedCompare, 100), , 'out.d00');
-

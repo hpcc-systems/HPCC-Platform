@@ -2696,4 +2696,3 @@ bool CProximityRangeJoinGenerator::gatherNextCandidates()
         }
     }
 }
-

@@ -58,5 +58,3 @@ END;
 
 rst2 := ITERATE(ds,tranx2(LEFT));
 rst2x := ITERATE(ds,tranx2(LEFT,RIGHT,ds));
-
-

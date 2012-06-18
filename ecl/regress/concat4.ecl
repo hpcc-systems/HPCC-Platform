@@ -24,4 +24,3 @@ CleanPhone('561-740-0123');
 string10 cleanPhone10(string x) := (x[1..3]+x[5..7]+x[9..12]);
 
 CleanPhone10('561-740-0124');
-

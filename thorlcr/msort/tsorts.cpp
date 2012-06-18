@@ -1246,4 +1246,3 @@ IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskU
 {
     return new CThorSorter(activity, ep, iDiskUsage, clusterComm, _mpTagRPC);
 }
-

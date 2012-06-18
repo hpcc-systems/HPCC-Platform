@@ -40,4 +40,3 @@ export value2 := 21;
 
 
 output(m4(m3).g(99));       // Expected 246.
-

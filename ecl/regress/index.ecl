@@ -22,5 +22,3 @@ myNames := [ person.per_last_name+'x', person.per_last_name+'a', person.per_last
 myValues := [person.per_xval+10,person.per_xval, person.per_xval+20, person.per_xval+5 ];
 
 output(person,{myNames[RANKED(1,myNames)],myValues[RANKED(1,myValues)]});
-
-

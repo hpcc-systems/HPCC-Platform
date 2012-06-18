@@ -589,4 +589,3 @@ ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions
 SCMexportdef(WSWU);
 
 SCMapi(WSWU) IClientWsTopology *createWsTopologyClient();
-

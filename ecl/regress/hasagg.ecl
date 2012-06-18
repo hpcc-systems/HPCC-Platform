@@ -58,4 +58,3 @@ t6 := table(t4(seqNum > 20), r2);
 t7 := t5 + t6(per_sex or per_suffix);
 
 count(t7);
-

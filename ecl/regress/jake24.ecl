@@ -79,4 +79,3 @@ output(loop(namesTable2, 10, matches(rows(left),3).result));
 
 
 // OUTPUT(IF(COUNT(dostuff1(namesTable2))>20,dostuff1(namesTable2),dostuff2(namesTable2)));
-

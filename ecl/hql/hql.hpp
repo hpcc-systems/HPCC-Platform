@@ -196,4 +196,3 @@ interface IEclRepositoryCallback : public IEclRepository
 extern bool HQL_API extractVersion(unsigned & major, unsigned & minor, unsigned & sub, const char * version);
 
 #endif
-

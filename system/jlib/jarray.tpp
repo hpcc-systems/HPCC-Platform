@@ -392,5 +392,3 @@ PARAM PtrArrayOf<MEMBER, PARAM>::tos(aindex_t n) const
 }
 
 #endif
-
-

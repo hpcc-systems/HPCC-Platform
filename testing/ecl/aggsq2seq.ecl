@@ -70,4 +70,3 @@ sequential(
 
     output(count(dedup(p, surname, all)))
 );
-

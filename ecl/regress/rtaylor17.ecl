@@ -36,4 +36,3 @@ end;
 
 x := project(ds,xform(left));
 output(X);
-

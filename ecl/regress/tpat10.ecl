@@ -53,4 +53,3 @@ output(PARSE(ds,line,S2,results,scan all));
 pattern z := ['a','b','c'] or nocase(['d','e','f']);
 
 output(PARSE(ds,line,z,{MATCHTEXT},scan all));
-

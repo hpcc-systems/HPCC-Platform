@@ -40,5 +40,3 @@ t5 := dedup(t4, d, f);
 t6 := table(t5, {a, b, c, count(group)}, a, b, c, local);
 
 output(t6,,'out.d00');
-
-

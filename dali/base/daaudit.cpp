@@ -374,4 +374,3 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
     }
     return n;
 }
-

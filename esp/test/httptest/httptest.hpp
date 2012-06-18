@@ -162,4 +162,3 @@ public:
 void SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password,StringBuffer& host, StringBuffer& port, StringBuffer& path);
 
 #endif
-

@@ -37,4 +37,3 @@ urls := dataset([{'http://www.google.com'}, {'http://www.somewhereelse.org'}], {
 crawled := project(urls, TRANSFORM(crawlrec, SELF.url := LEFT.url, self.contents := wget(LEFT.url)));
 output(crawled);
 count(crawled)
-

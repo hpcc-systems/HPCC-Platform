@@ -36,4 +36,3 @@ r1 trans(r l) := transform
 p := project(d,trans(left));
 
 output(p)
-

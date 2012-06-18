@@ -48,5 +48,3 @@ target_link_libraries ( keydiff
          hrpc 
          remote 
     )
-
-

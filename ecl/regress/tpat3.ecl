@@ -47,4 +47,3 @@ results :=
 outfile1 := PARSE(d,line,S,results,first,whole,parse);
 
 output(outfile1);
-

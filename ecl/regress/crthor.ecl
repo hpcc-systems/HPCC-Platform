@@ -22,4 +22,3 @@ integer1 age;
 end;
 age_data1:=dataset([{'A', 10}, {'B', 20}],layout1);
 output(age_data1);
-

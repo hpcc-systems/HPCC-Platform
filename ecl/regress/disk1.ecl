@@ -73,4 +73,3 @@ output(o9b,,'out9.d00');
 o10a := personDataset(forename <> 'Richard');
 o10b := table(o10a,{count(group),surname},surname);
 output(o10b,,'out10.d00');
-

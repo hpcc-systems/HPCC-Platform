@@ -123,4 +123,3 @@ public:
 };
 
 #endif //__HTMLPAGE_HPP_
-

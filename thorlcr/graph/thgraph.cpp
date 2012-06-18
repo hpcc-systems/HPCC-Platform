@@ -2728,4 +2728,3 @@ void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
     if (receiving)
         container.queryJob().queryJobComm().cancel(rank, mpTag);
 }
-

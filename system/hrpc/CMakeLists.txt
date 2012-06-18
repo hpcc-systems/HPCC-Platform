@@ -52,5 +52,3 @@ else ()
         )
 endif ()
 install ( TARGETS hrpc DESTINATION ${OSSDIR}/lib )
-
-

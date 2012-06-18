@@ -27,4 +27,3 @@ show(nodes());
 show(daliServer());
 show(group());
 show(logicalToPhysical('abc.out', true));
-

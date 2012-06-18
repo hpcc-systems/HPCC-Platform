@@ -80,5 +80,3 @@ bestRecord t3(infile l) :=
 
 p3 := project(infile, t3(LEFT));
 output(p3);
-
-

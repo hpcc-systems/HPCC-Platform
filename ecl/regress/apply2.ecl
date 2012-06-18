@@ -33,4 +33,3 @@ namesTable2 := dataset([
         {'X','Z'}], namesRecord);
 
 apply(namesTable,output(namesTable.surname));
-

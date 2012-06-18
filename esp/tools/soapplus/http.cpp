@@ -1867,4 +1867,3 @@ int SimpleServer::start()
 
     return 0;
 }
-

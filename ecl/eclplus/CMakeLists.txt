@@ -67,4 +67,3 @@ target_link_libraries (  eclplus
          jlib
          esphttp 
     )
-

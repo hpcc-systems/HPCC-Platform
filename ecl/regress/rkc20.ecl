@@ -22,4 +22,3 @@ d := dataset('f', { unsigned a }, THOR);
 i := index(d, {a, (unsigned8) 0}, '~thor::base::HSS_Name_SSN20030604');
 
 output(i(a < 3));
-

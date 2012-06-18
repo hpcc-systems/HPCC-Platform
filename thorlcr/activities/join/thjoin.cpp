@@ -363,5 +363,3 @@ CActivityBase *createJoinActivityMaster(CMasterGraphElement *container)
 {
     return new JoinActivityMaster(container, container->queryLocalOrGrouped());
 }
-
-

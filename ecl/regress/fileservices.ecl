@@ -21,4 +21,3 @@ integer filesize(const varstring lfn) : library='fileservices',entrypoint='getLo
 end;
 
 s.filesize('rkc::rkc');
-

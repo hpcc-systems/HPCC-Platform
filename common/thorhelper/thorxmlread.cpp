@@ -2024,4 +2024,3 @@ IXMLParse *createXMLParseString(const char *string, const char *xpath, IXMLSelec
     parser->provideXML(string);
     return parser;
 }
-

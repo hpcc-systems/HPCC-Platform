@@ -30,4 +30,3 @@ LOADXML('<xml>dummy</xml>');
 //#END
 
 %s%
-

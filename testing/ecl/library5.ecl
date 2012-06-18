@@ -66,4 +66,3 @@ addressTable := dataset([
     
 output(addressTable, { dataset filterDataset(ds, 'Halliday').matches });
 output(addressTable, { dataset filterDataset(ds, 'Halliday').others });
-

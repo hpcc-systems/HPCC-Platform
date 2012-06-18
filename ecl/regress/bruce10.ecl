@@ -60,4 +60,3 @@ outset := exset + newports+dsaddthem;
 outsort := sort(outset, portnumber);
 outdedup := dedup(outsort, portnumber);
 output(outdedup,,'customs::usports', overwrite);
-

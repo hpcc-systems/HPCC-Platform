@@ -1029,4 +1029,3 @@ ii) How is it stored internally in an IHqlExpression * ?
     b) Need to work out how to generate no_ifblock.
       - ifblock is context dependent, so need to generate as part of the parent record, and in the parent record context.
 */
-

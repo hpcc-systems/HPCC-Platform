@@ -39,4 +39,3 @@ rec3.child2.child1 t(rec3 l) := transform
     end;
 
 output(project(ds, t(LEFT)));
-

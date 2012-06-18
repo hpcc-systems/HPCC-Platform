@@ -42,4 +42,3 @@ if [ "$useSSH" = "true" ]; then
 else
   frunagent @slaves start "PATH=$PATH LD_LIBRARY_PATH=$LD_LIBRARY_PATH init_startccd $roxiedir $logfile 1>/dev/null 2>/dev/null &"  
 fi
-

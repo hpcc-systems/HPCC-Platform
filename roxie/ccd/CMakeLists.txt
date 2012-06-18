@@ -100,6 +100,3 @@ target_link_libraries ( ccd
          roxiehelper 
          workunit 
     )
-
-
-

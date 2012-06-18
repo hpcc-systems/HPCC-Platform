@@ -4603,4 +4603,3 @@ IRemoteFileServer * createRemoteFileServer()
 #endif
     return new CRemoteFileServer();
 }
-

@@ -31,4 +31,3 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 
 output(namesTable[1].surname1);
-

@@ -22,4 +22,3 @@ string2 dig2(integer1 a) := dig1(a div 10)+'a';
 person := dataset('person', { unsigned8 person_id, unsigned per_update_cnt }, thor);
 
 output(person,{dig2(per_update_cnt  )})
-

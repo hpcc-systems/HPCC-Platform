@@ -760,4 +760,3 @@ activityslaves_decl ICodeContext *queryCodeContext(IThorDataLink *link) { CActiv
 void dummyProc()    // to force static linking
 {
 }
-

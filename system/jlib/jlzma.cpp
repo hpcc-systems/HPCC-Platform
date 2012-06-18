@@ -171,8 +171,3 @@ void LZMALZDecompressToBuffer(MemoryAttr & out, MemoryBuffer & in)
     else
         memcpy(o,in.readDirect(cmpsz),expsz);
 }
-
-
-
-
-

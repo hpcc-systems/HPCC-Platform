@@ -1555,6 +1555,3 @@ KeyDiffVersion const CKeyDiff::minDiffVersionForPatch(0, 8);
 KeyDiffVersion const CKeyDiff::minPatchVersionForDiff(1, 0);        // version 1 for fastLZ
 size32_t const CKeyDiff::streambuffsize = 0x20000;
 size32_t const CKeyDiff::compressThreshold = 0x1000;
-
-
-

@@ -82,4 +82,3 @@ t := table(p_claims,results2,le,ri);*/
 //output(t); 
 count(outfile1);
 output(choosen(outfile1,1000));
-

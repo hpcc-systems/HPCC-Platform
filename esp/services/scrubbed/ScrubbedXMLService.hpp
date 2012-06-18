@@ -89,4 +89,3 @@ public:
 };
 
 #endif //_SCRUBBED_XML_SERVICE_HPP__
-

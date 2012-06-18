@@ -30,7 +30,3 @@ MyRec := RECORD
     aaa;
     STRING1 sex;
 END;
-
-
-
-

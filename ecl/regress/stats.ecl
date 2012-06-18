@@ -57,4 +57,3 @@ ds3 := dataset([{1,rx(1)},{2,rx(2)},{3,rx(3)},{4,rx(4)},{5,rx(5)},{6,rx(6)}], po
 analyse(ds1);
 analyse(ds2);
 analyse(ds3);
-

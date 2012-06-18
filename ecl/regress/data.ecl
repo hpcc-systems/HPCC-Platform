@@ -22,5 +22,3 @@ data10 name2 := (data)'name2' : stored('name2');
 
 name;
 name2;
-
-

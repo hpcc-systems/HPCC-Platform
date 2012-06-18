@@ -30,4 +30,3 @@ JoinRecord JoinTransform (S l, S r) := transform
 JoinedCompare := join (S, S, LEFT.per_cid = RIGHT.per_cid, JoinTransform(LEFT, RIGHT));
 
 output (JoinedCompare);
-

@@ -54,5 +54,3 @@ target_link_libraries ( frunagent
          mp 
          hrpc 
     )
-
-

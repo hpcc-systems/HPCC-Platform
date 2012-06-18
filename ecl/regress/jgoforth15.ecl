@@ -37,4 +37,3 @@ STRING1 s4 := 'C';
 EBCDIC STRING1 sp4 := (ebcdic string1)s4;
 output(stringlib.data2string((data)s4));
 output(stringlib.data2string((data)sp4));
-

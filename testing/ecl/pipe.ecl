@@ -38,5 +38,3 @@ output(p1, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
 output(p2, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
 output(p3, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
 output(p4, { string20 l := Str.FindReplace(lout, '\r', ' ') } );
-
-

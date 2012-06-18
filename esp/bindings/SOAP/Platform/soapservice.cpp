@@ -246,4 +246,3 @@ int CSoapService::processRequest(ISoapMessage &req, ISoapMessage& resp)
 
     return 0;
 }
-

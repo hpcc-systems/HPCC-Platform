@@ -1900,4 +1900,3 @@ unsigned calcTotalChildren(IHqlStmt * stmt)
         total += calcTotalChildren(stmt->queryChild(i));
     return total;
 }
-

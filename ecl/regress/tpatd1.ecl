@@ -60,4 +60,3 @@ outfile1 := PARSE(d,line,progeny,results,scan all,skip(ws),terminator([' ','\t',
 
 count(outfile1);
 output(choosen(outfile1,1000));
-

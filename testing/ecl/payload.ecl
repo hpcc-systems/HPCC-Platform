@@ -29,4 +29,3 @@ ds3 := FETCH(sqPersonExDs, ds2, RIGHT.filepos);
 output(ds1);
 output(ds2);
 output(ds3);
-

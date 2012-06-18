@@ -19,4 +19,3 @@
 s := 'abc;cdbbcdc
 
 d := 'ab\'
-

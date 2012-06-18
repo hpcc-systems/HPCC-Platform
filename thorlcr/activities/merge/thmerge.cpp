@@ -135,5 +135,3 @@ CActivityBase *createMergeActivityMaster(CMasterGraphElement *container)
     else
         return new GlobalMergeActivityMaster(container);
 }
-
-

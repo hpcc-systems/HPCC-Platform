@@ -36,4 +36,3 @@ valuesS[20];
 testNumber IN valuesS;  // true
 
 evaluate(100);
-

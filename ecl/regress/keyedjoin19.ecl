@@ -64,5 +64,3 @@ output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left
 output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] = left.idx.id or
                                                right.surname[1..length(trim(left.idx.id))] = left.id2)));
 output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] in [left.idx.id, left.id2]), atmost(100)));
-
-

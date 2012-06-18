@@ -606,4 +606,3 @@ SEQUENTIAL(
   FileServices.FinishSuperFileTransaction(),
   OUTPUT(SORT(FETCH(albumTable, albumIndex, RIGHT.filepos),Title,filepos))
 );
-

@@ -52,4 +52,3 @@ NOT(REGEXFIND(u'.ook(?=ahead)', u'bookmarks'));
 NOT(REGEXFIND(u'.ook(?!ahead)', u'lookahead'));
 REGEXFIND(u'.ook(?!ahead)', u'bookmarks');
 REGEXFIND(u'.ook(?!ahead)', u'bookmarks', 0) = u'book';
-

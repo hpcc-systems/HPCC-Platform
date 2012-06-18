@@ -21,4 +21,3 @@ j := 4 - TRUE;
 
 STRING20 s  := 'ABC';
 TYPEOF(s) y := 10;
-

@@ -1925,4 +1925,3 @@ void HqlCppTranslator::doBuildAssignAddSets(BuildCtx & ctx, const CHqlBoundTarge
     OwnedHqlExpr call = bindFunctionCall(appendSetXAtom, args, left->queryType());
     buildExprAssign(ctx, target, call);
 }
-

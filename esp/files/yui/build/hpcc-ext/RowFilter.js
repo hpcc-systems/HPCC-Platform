@@ -188,4 +188,3 @@ YAHOO.dpu.util.StringFilter.prototype.fnFilter=function(sQuery) {
         return aResults;
 
 }
-

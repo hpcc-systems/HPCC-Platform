@@ -46,4 +46,3 @@ install ( TARGETS xmlsize DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( xmlsize
          jlib
     )
-

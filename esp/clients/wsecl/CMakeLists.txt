@@ -57,5 +57,3 @@ target_link_libraries (  ws_ecl_client
          xmllib 
          esphttp 
     )
-
-

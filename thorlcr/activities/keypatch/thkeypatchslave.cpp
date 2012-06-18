@@ -195,4 +195,3 @@ activityslaves_decl CActivityBase *createKeyPatchSlave(CGraphElementBase *contai
 {
     return new CKeyPatchSlave(container);
 }
-

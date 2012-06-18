@@ -43,4 +43,3 @@ install ( TARGETS roxiepipe DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( roxiepipe
          jlib
     )
-

@@ -47,5 +47,3 @@ outRecord t(inRecord l) := transform
     end;
 
 output(project(z, t(LEFT)));
-
-

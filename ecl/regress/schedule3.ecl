@@ -36,4 +36,3 @@ sequential(
         notify(EVENT('TestScheduleResult', '<Event><name>' + EVENTEXTRA('name') + '</name><result>ok</result></Event>'), EVENTEXTRA('from'));
         output('Line4')
 ) : when('TestScheduleEvent', count(1));
-

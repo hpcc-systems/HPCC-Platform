@@ -57,4 +57,3 @@ output(f2, , 'out.d00');
 ppersonEx3 := project(pperson, projectFunction(left, COUNTER, 'N'));
 f3 := ppersonEx3(age = 10);
 output(f3, , 'out.d00');
-

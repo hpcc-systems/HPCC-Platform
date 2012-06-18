@@ -15,5 +15,3 @@ $$//    if name starts with / => create new subdir
 
 
 ROOT.CPP    $$root$$.cpp
-
-

@@ -31,4 +31,3 @@ sequential(
     output(agg1);
     output(agg2)
 );
-

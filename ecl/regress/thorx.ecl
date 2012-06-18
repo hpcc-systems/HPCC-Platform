@@ -44,4 +44,3 @@ cityascii fixem(citylayout input) :=
     end;
 
 output(project(cityzips, fixem(left)));
-

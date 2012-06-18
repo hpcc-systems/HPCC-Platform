@@ -813,4 +813,3 @@ void sendEmailAttachData(const char * to, const char * subject, const char * bod
     CMultiMailPart multiPart(inlinedPart, attachmentPart);
     doSendEmail(info, multiPart);
 }
-

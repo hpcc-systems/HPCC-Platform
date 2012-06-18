@@ -31,4 +31,3 @@ pssh root@$HOSTADDR -o StrictHostKeyChecking=no -o password=$ROOTPASSWD "umount 
 
 echo mounting directories /thor, /mnt/lib, /mnt/usr/lib ...
 pssh root@$HOSTADDR -o StrictHostKeyChecking=no -o password=$ROOTPASSWD "mkdir /thor; mount $NFSSERVER:/thor /thor -o hard,intr; mkdir /mnt/lib; mount $NFSSERVER:/lib /mnt/lib -o hard,intr; mkdir /mnt/usrlib; mount $NFSSERVER:/usr/lib /mnt/usrlib -o hard,intr; mkdir /mnt/bin; mount $NFSSERVER:/bin /mnt/bin -o hard,intr; mkdir /mnt/usrbin; mount $NFSSERVER:/usr/bin /mnt/usrbin -o hard,intr;"
-

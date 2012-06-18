@@ -221,4 +221,3 @@ extern jlib_decl time_t timelocal(struct tm * local);
 #endif
 
 #endif
-

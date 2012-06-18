@@ -27,6 +27,3 @@ endmacro;
 
 did('<root/>');
 did('<root2/>');
-
-
-

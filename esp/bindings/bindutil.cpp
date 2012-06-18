@@ -817,4 +817,3 @@ void xslTransformHelper(IXslProcessor *xslp, const char* xml, const char* xslFil
         xform->transform(output.clear());
     }
 }
-

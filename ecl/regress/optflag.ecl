@@ -47,4 +47,3 @@ j1 := JOIN(d(f='NOT'), d, KEYED(LEFT.f = right.f), KEYED(i));
 output(j1);
 
 output(FETCH(d, i(f='not'), 0));
-

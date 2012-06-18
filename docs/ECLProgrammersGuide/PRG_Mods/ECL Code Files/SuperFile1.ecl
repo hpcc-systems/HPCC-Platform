@@ -37,4 +37,3 @@ IF(~Std.File.FileExists($.DeclareData.SubFile6),
 // Result 4 134000   
 // Result 5 103000   
 // Result 6 277000 
-

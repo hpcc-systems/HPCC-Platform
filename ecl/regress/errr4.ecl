@@ -26,4 +26,3 @@ ENDMACRO;
 
 x := f(10);
 x;
-

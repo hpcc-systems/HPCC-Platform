@@ -407,5 +407,3 @@ int main(int argc, char * const * argv)
     releaseAtoms();
     return ret;
 }
-
-

@@ -76,4 +76,3 @@ extern jlib_decl IProperties *querySystemProperties();
 extern jlib_decl IProperties *getSystemProperties();
 
 #endif
-

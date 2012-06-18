@@ -105,5 +105,3 @@ CActivityBase *createSampleSlave(CGraphElementBase *container)
 {
     return new SampleSlaveActivity(container);
 }
-
-

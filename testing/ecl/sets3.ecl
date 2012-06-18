@@ -65,4 +65,3 @@ p3 := project(d, t3(left));
 f3 := p3(id*2 in zips);
 
 output(f3, {id});
-

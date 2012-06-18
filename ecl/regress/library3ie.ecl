@@ -45,4 +45,3 @@ end;
 namesTable := dataset('x',namesRecord,FLAT);
 
 output(LIBRARY('hallidayLibrary', hallidayLibrary(namesTable)).included,,named('Included'));
-

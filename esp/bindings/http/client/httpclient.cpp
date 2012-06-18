@@ -770,4 +770,3 @@ IHttpClientContext* createHttpClientContext(IPropertyTree* config)
 {
     return new CHttpClientContext(config);
 }
-

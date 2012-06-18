@@ -1240,5 +1240,3 @@ ISendManager *createSendManager(int server_flow_port, int data_port, int client_
 {
     return new CSendManager(server_flow_port, data_port, client_flow_port, sniffer_port, sniffer_multicast_ip, queue_size_pr_server, queues_pr_server, maxRetryData, myNodeIndex, rateLimiter);
 }
-
-

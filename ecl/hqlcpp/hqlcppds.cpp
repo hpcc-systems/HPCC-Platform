@@ -4608,4 +4608,3 @@ void HqlCppTranslator::doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr)
     if (end)
         buildStmt(ctx, end->queryChild(0));
 }
-

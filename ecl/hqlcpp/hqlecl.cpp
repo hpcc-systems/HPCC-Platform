@@ -547,4 +547,3 @@ void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
     cacheCRC = ewu->calculateHash(cacheCRC);
     wu->setHash(cacheCRC);
 }
-

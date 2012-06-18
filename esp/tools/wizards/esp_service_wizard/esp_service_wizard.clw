@@ -106,4 +106,3 @@ Class=?
 ControlCount=2
 Control1=IDOK,button,1342242817
 Control2=IDCANCEL,button,1342242816
-

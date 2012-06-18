@@ -79,4 +79,3 @@ target_link_libraries ( EclDirect
          fileview2 
          securesocket 
     )
-

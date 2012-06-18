@@ -594,4 +594,3 @@ void deserializeQStrX(size32_t & len, char * & data, MemoryBuffer &in)
     data = (char *)malloc(size);
     in.read(size, data);
 }
-

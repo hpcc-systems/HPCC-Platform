@@ -110,4 +110,3 @@ public:
 };
 
 #endif //_ESPWIZ_WsSMC_HPP__
-

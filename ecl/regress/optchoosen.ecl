@@ -28,4 +28,3 @@ ascd := ascii(ebcd);
 OUTPUT(choosen(d1,100));
 OUTPUT(choosen(ebcd,100));
 OUTPUT(choosen(ascd,100));
-

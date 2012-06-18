@@ -32,4 +32,3 @@ export value := 20;
         END;
 
 output(m2.f(10));       //Error still abstract - all members need to be defined
-

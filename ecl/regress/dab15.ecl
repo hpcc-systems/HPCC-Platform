@@ -26,4 +26,3 @@ balrec := record
 baltab := table(person,balrec,person.per_st);
 
 output(baltab)
-

@@ -24,4 +24,3 @@ unicoderead := dataset('~gnt',r,CSV(MAXLENGTH(10000)));
 
 count(unicoderead);
 output(unicoderead);
-

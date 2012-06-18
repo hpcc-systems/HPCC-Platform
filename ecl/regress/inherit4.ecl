@@ -43,4 +43,3 @@ x := TABLE(namesTable, { SumRecord x, ifblock(self.x.cnt <> 0) surname end }, su
 output(x);
 
 output(TABLE(namesTable, { Sum2Record }, forename));
-

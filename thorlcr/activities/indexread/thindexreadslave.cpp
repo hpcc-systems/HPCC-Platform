@@ -1329,4 +1329,3 @@ public:
 };
 
 CActivityBase *createIndexAggregateSlave(CGraphElementBase *container) { return new CIndexAggregateSlaveActivity(container); }
-

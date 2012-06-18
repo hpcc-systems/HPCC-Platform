@@ -217,5 +217,3 @@ bool ArgvIterator::matchPathFlag(StringBuffer & option, const char * name)
     ERRLOG("Error: %s needs to specify a directory", arg);
     return false;
 }
-
-

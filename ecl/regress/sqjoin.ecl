@@ -100,4 +100,3 @@ simpleResultRec t4(sqPersonRelatedIdRec l) :=
             self := l;
         end;
 output(project(sqPersonDs, t4(LEFT)));
-

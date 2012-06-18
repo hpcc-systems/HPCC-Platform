@@ -95,4 +95,3 @@ This report type launches Beyond Compare on the output and key directories.
 =cut
 
 1;
-

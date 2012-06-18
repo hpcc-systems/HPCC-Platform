@@ -34,4 +34,3 @@ p1 := person(per_first_name='C');
 p2 := person(per_first_name='D');
 p := p1 + p2;
 count(p);
-

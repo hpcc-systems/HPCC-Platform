@@ -107,4 +107,3 @@ void reportException(IException * e)
     MessageBox(NULL, msg, "Connection Error", MB_OK | MB_ICONEXCLAMATION);
     e->Release();
 }
-

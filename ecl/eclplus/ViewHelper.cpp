@@ -190,6 +190,3 @@ bool ViewHelper::doit(FILE * fp)
     }
     return true;
 }
-
-
-

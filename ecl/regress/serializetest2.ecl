@@ -451,6 +451,3 @@ resultRecord t1(DG_FetchIndex1 l) := transform
 
 p1 := projectmight (DG_FetchIndex1, t1(left));
 output(p1);
-
-
-

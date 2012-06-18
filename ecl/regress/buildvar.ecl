@@ -48,4 +48,3 @@ varRecord t(mainRecord l) :=
 x := project(d, t(left));
 
 output(x,,'var.d00');
-

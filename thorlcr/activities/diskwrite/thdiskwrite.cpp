@@ -92,4 +92,3 @@ CActivityBase *createCsvWriteActivityMaster(CMasterGraphElement *info)
 {
     return new CsvWriteActivityMaster(info);
 }
-

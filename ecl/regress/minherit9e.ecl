@@ -60,4 +60,3 @@ optionsa := module(options3, options4)      // clashing names - pure with instan
 
 output(f1(optionsa));
 output(f2(optionsa));
-

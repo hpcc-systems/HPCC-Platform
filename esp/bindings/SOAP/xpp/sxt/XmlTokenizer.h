@@ -1075,4 +1075,3 @@ inline ostream& operator<<(ostream& output,
 #pragma warning(pop)
 
 #endif // SXT_XML_TOKENIZER_H_
-

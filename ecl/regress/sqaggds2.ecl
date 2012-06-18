@@ -36,4 +36,3 @@ summary1 := table(persons, { numBooks := sum(group, count(books)), maxRating := 
 summary2 := table(books, { numBooks := count(group), aveRating := ave(group, rating100), maxRating := max(group, rating100)})[1];
 output(sqHouseDs, { addr, summary1.numBooks, summary1.maxRating });
 output(sqHouseDs, { addr, summary2.numBooks, summary2.aveRating, summary2.maxRating });
-

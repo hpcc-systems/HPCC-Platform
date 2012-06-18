@@ -5,5 +5,3 @@ execute_process(COMMAND "@XSLTPROC_EXECUTABLE@" -nonet @xinclude@ -o @_out_dir@/
 if(CMDRESULT)
   message(FATAL_ERROR "xsltproc build failure: ${CMDRESULT}")
 endif(CMDRESULT)
-
-

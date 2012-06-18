@@ -72,4 +72,3 @@ output(JoinedF,,'out.d00',overwrite);
 
 
 output(join (dNamesTable, dAddressTable, LEFT.forename = RIGHT.addr, JoinTransform (LEFT, RIGHT), LEFT OUTER));
-

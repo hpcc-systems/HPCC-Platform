@@ -1129,4 +1129,3 @@ bool RtlSimpleIterator::next()
     *cursor = (byte *)cur;
     return (cur != NULL);
 }
-

@@ -89,4 +89,3 @@ function setReloadFunction(TargetFunction) {
 function go(url) {
     document.location.href = url;
 }                     
-

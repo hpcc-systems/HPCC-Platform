@@ -68,4 +68,3 @@ assignId2(namesRecord l) := assignId(l, 2);
 
 output(project(namesTable, assignId1(LEFT)));
 output(project(namesTable, assignId2(LEFT)));
-

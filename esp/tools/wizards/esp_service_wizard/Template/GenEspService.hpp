@@ -14,4 +14,3 @@ public:
 };
 
 #endif //_ESPWIZ_$$ESP_SERVICE$$_HPP__
-

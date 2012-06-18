@@ -30,4 +30,3 @@ integer8 i := 1 : stored('i');
 
 output(case(s, '1'=>d1, '2'=>d2, '3'=>d3, d4));
 output(case(i, 1=>d1, 2=>d2, 3=>d3, d4));
-

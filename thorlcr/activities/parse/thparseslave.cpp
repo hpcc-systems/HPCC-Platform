@@ -140,6 +140,3 @@ CActivityBase *createParseSlave(CGraphElementBase *container)
 {
     return new CParseSlaveActivity(container);
 }
-
-
-

@@ -1830,4 +1830,3 @@ void decrypt(StringBuffer &ret, const char *in)
         ret.append(out1.length(), out1.toByteArray());
     }
 }
-

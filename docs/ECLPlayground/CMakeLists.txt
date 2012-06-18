@@ -16,4 +16,3 @@
 ################################################################################
 
 DOCBOOK_TO_PDF( ${FO_XSL} ECLPlayground-includer.xml "ECL_Playground" "ECLPlay-Mods")
-

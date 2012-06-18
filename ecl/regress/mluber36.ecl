@@ -29,6 +29,3 @@ endmacro;
 
 loadxml('<xml/>');
 did('<root><did>81093191</did></root>');
-
-
-

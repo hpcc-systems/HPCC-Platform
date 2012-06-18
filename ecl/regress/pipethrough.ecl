@@ -26,4 +26,3 @@ string2             nl := '\r\n';
 d := dataset('names.d00', namesRecord, THOR);
 t := PIPE(d, 'pipeThrough');
 output(t,,'lower.d00');
-

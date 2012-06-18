@@ -55,4 +55,3 @@ output(pperson, { ISVALID(dec1), ISVALID(dec2), ISVALID(dec3), ISVALID(r1), ISVA
 transfer(transfer(dec1,string5)[3],integer1) IN [0,1,2,3,4],
 ISNULL(dec3), ISNULL(r1)
  }, 'out.d00');
-

@@ -22,4 +22,3 @@ loadxml('myxml.xml');
 
 #FOR (x)
   #APPEND(s, '1')
-

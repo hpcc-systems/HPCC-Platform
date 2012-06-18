@@ -223,4 +223,3 @@ const char *activityKindStr(ThorActivityKind kind)
     itoa(kind,num,10);
     return num;
 }
-

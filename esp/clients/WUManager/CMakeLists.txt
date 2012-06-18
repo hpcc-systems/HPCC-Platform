@@ -56,5 +56,3 @@ target_link_libraries ( wumanager
          esphttp
          securesocket
     )
-
-

@@ -44,4 +44,3 @@ mostBooks := sort(ageSummary, -cntbooks)[1];
 
 //Each address, and the summary for the decade which has the most books.
 output(sqHousePersonBookDs, { addr, summaryRec rec := mostBooks });
-

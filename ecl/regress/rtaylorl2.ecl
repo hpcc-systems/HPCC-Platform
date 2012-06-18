@@ -69,4 +69,3 @@ result := LIBRARY('FilterDatasetLibrary', FilterLibraryInterface(NamesTable, 'Ho
 
 OUTPUT(result.matches);
 OUTPUT(COUNT(result.others));
-

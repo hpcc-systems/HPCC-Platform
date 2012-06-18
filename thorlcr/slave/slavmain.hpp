@@ -23,5 +23,3 @@ void abortSlave();
 void slaveMain();
 
 #endif
-
-

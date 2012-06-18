@@ -95,4 +95,3 @@ void rtlIntegerToBcdFixed(char * tgt, unsigned digits, __int64 value)
 }
 
 //=============================================================================
-

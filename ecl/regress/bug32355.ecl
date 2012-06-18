@@ -75,4 +75,3 @@ output(d2); // wrong
 d3 := PARSE(ds, text, getIt2(LEFT), XML('XML'));
 d4 := TABLE(d3.concurs.paragraphs, { text });
 output(d4); // correct
-

@@ -37,4 +37,3 @@ filterByAge(dataset(recordof(i)) in) := in(keyed(age = 10, opt));
 output(filterByAge(i(keyed(surname='Hawthorn'),WILD(forename))));
 //output(filterByAge(i(keyed(surname='Hawthorn' and forename='Gavin'))));
 //output(filterByAge(i(keyed(surname='Hawthorn' and forename in searchForenames))));
-

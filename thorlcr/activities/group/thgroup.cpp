@@ -40,4 +40,3 @@ CActivityBase *createGroupActivityMaster(CMasterGraphElement *container)
     else
         return new CGroupActivityMaster(container);
 }
-

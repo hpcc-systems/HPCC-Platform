@@ -18,5 +18,3 @@
 
 pattern x := PATTERN ('[<][/][F][R][A][M][E]');
 pattern y := PATTERN ('[<][/][F][R]AME');
-
-

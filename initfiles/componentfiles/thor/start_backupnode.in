@@ -125,5 +125,3 @@ trap "echo start_backupnode exiting, backupnode process $pid still continuing; e
 if [ -n "$pid" ]; then
   tail --pid $pid -f $LOGFILE 2>/dev/null
 fi
-
-

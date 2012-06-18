@@ -133,4 +133,3 @@ define([
 		WUResult: WUResult
 	};
 });
-

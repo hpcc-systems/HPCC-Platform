@@ -19,4 +19,3 @@ F1  := FETCH($.DeclareData.sf1,$.DeclareData.sk1(personid=$.DeclareData.ds1[1].p
 F2  := FETCH($.DeclareData.sf1,$.DeclareData.sk1(personid=$.DeclareData.ds2[1].personid),RIGHT.RecPos);
 Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
 SEQUENTIAL(BldSF,Get);
-

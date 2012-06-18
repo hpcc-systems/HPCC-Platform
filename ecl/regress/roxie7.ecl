@@ -28,4 +28,3 @@ integer8 i := 1 : stored('i');
 
 output(if(s='1',d1,d2));
 output(if(i=1,d1,d2));
-

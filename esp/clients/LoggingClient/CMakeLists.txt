@@ -66,4 +66,3 @@ target_link_libraries ( loggingclient
          xmllib 
          esphttp 
     )
-

@@ -30,5 +30,3 @@ outrec := if(myint<2,myDS,FAIL(myrec,99,'ouch')) : RECOVERY(output(dataset([true
 output(count(outrec),NAMED('Count'));
 
 output(outrec,NAMED('Outrec'));
-
-

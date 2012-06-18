@@ -34,4 +34,3 @@ Matches :=
 ret := PARSE(ds, line, WORD, Matches, scan);
 
 output(ret);
-

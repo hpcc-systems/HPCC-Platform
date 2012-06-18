@@ -45,4 +45,3 @@ y2 := x2 + x1;
 z := JOIN(y1, y2, LEFT.forename = RIGHT.forename, t(LEFT));
 
 output(z,,'out.d00');
-

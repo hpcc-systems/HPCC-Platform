@@ -46,4 +46,3 @@ output(z,,'out'+outname);
 if (count(z) != count(namesTable2), 'Counts differ' + count(z) + ',' + count(namesTable2), 'Same');
 //output( ['Counts differ' + count(z) + ',' + count(namesTable2), 'Same'][if (count(z) != count(namesTable2),1,2)]);
 output(z(surname != ''),,'outx'+outname);
-

@@ -28,4 +28,3 @@ ResultRec Trans(aaa x, bbb y) := TRANSFORM
 //  SELF := x;
         SELF.x := '1'; //SELF.x + 'a';
     END;
-

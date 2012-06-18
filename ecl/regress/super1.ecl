@@ -24,4 +24,3 @@ SEQUENTIAL(
     FileServices.AddSuperFile('super','part2'),
     FileServices.FinishSuperFileTransaction()
     );
-

@@ -70,4 +70,3 @@ joinedRecord doJoin(peopleRecord l, mainRecord r) := TRANSFORM
 
 FilledRecs2 := join(peopleDataset, sequenceKey, left.id=right.sequence,transform(right), limit(100), left outer);
 output(FilledRecs2);
-

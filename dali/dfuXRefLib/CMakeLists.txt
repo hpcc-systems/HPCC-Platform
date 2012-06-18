@@ -60,4 +60,3 @@ target_link_libraries ( dfuXRefLib
          dalibase 
          environment 
     )
-

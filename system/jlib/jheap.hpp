@@ -29,4 +29,3 @@ jlib_decl void * chunkedNew(size32_t len);
 jlib_decl void chunkedFree(void * data);
 
 #endif
-

@@ -39,4 +39,3 @@ y := x[1] : stored('counts');
 y.c1;
 y.c2;
 y.c3;
-

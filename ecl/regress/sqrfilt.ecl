@@ -58,4 +58,3 @@ output(sqHousePersonBookDs, { addr, count(personsDs(exists(booksDsDs(price>ave(b
 output(sqHouseDs, { addr, count(personsDsDs(exists(booksDsDsDs(price>ave(booksDsDsDs, price)*2)))) })
 
 );
-

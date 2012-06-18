@@ -39,4 +39,3 @@ myModule(integer SomeValue) := module
 end;
 
 output(myModule(1000).result);
-

@@ -19,4 +19,3 @@
 set of string myStored := ['abcdef'] : stored('myStored');
 
 output(dataset(myStored, { string line }));
-

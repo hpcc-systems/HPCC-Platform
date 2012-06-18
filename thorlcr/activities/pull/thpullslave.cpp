@@ -80,4 +80,3 @@ CActivityBase *createPullSlave(CGraphElementBase *container)
 {
     return new PullSlaveActivity(container);
 }
-

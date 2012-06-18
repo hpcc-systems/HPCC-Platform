@@ -41,6 +41,3 @@ EXPORTS
   ?Listen@HRPCserver@@QAEXPAVIHRPCtransport@@@Z
   ?MakeTcpTransport@@YAPAVIHRPCtransport@@PBDHH@Z
  
-
-
-

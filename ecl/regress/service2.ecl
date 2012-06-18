@@ -30,5 +30,3 @@ export string svc3 :=
     SERVICE
         echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlEcho';
     END;
-
-

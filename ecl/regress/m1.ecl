@@ -22,4 +22,3 @@ b := 2;
 export c := a+b;
 a := 4;
 c+a+a;
-

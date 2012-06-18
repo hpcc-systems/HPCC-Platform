@@ -76,4 +76,3 @@ output(x,,'out.d00');
 JoinedF2 := join (dNamesTable, dNamesTable, LEFT.surname = RIGHT.surname, local);
 x2 := sort(JoinedF2, age);
 output(x2,,'out.d00');
-

@@ -253,4 +253,3 @@ try \
 #endif //SIGNAL_TO_EXCEPTION not defined
 
 #endif
-

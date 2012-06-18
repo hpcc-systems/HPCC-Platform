@@ -49,4 +49,3 @@ for computer in `cat $fileName`; do
     pscp -o password=$THORPASSWD  "$1" $THORUSER@$computer:"$2"
     let COUNTER=COUNTER+1
 done
-

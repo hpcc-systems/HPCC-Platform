@@ -172,5 +172,3 @@ interface IStopInput
 };
 
 #endif
-
-

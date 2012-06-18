@@ -71,4 +71,3 @@ lim9 := LIMIT(grpd, 0, ONFAIL(noCreateError));
 OUTPUT(SORT(lim7, -i));
 OUTPUT(SORT(lim8, -i));
 OUTPUT(SORT(lim9, -i));
-

@@ -28,4 +28,3 @@ g(x) := macro
 ENDMACRO;
 
 c := f(4);
-

@@ -29,4 +29,3 @@ LOADXML('<xml></xml>');
 // recovered
 #SET(d, 'abc')
 #APPEND(d, 'def')
-

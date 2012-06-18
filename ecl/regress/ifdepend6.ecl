@@ -65,5 +65,3 @@ if (trueSimple1,
         output(complex1, named('IncorrectOutput4')),
         output(complex3, named('CorrectOutput5'))),
     output(complex2, named('IncorrectOutput5')));
-
-

@@ -79,4 +79,3 @@ interface IRemoteAgent : extends IInterface
 extern "C" WINREMOTE_API IRemoteAgent* createRemoteAgent();
 
 #endif // WINREMOTE_INCL
-

@@ -193,4 +193,3 @@ MemoryBuffer& CLocalDataLogger::readData(MemoryBuffer& dataCached,const char* ca
     }
     return dataCached;
 }
-

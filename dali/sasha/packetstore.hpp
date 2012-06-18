@@ -52,9 +52,3 @@ extern sa_decl IPacketStore * connectPacketStore(IGroup *psgroup);
 extern sa_decl void runPacketStoreServer(IGroup *grp);      // server side
 
 #endif
-
-
-
-
-
-

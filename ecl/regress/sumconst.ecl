@@ -30,4 +30,3 @@ r2 := record
 end;
 
 output(choosen(table(t, r2),ALL));
-

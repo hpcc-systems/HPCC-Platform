@@ -11289,4 +11289,3 @@ IHqlExpression *HqlGram::doParse()
     containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 1, 1, 0, 0, lengthText);
     return NULL;
 }
-

@@ -63,5 +63,3 @@ target_link_libraries ( jhtree
          jlib
          ${CPPUNIT_LIBRARIES}
     )
-
-

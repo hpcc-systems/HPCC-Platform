@@ -42,4 +42,3 @@ end;
 
 
 output(join(main, dobs, left.id = right.id, myjoin(left, right)));
-

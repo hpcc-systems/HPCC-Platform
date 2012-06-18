@@ -23,4 +23,3 @@
         OUTPUT(s20);
         OUTPUT(s20a);
         OUTPUT(s20b);
-

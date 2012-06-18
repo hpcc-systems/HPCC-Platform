@@ -28,4 +28,3 @@ WelcomeFunction := WelcomeFrench;
 #end
 
 WelcomeFunction('Gavin Hawthorn');
-

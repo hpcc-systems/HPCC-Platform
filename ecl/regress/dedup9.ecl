@@ -28,4 +28,3 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 d := dedup(namesTable,surname,all);
 count(d);
-

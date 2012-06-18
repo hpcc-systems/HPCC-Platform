@@ -50,5 +50,3 @@ target_link_libraries ( hellodali
          remote 
          dalibase 
  )
-
-

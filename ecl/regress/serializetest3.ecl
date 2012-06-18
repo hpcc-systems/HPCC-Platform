@@ -453,6 +453,3 @@ end;
 
 p1 := px(c1(px) != 0);
 output(p1);
-
-
-

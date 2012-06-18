@@ -104,4 +104,3 @@ IAuthMap * CLocalSecurityManager::createAuthMap(IPropertyTree * authconfig)
 
     return authmap;
 }
-

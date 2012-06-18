@@ -60,5 +60,3 @@ f2c := f1c(storedFalse);
 f3c := f2c(letter not in ['G','H','I']);
 f4c := table(f3c, { letter, sm := seg*number });
 output(f4c);            // Should generate a single filter project activity, and short circuited readings
-
-

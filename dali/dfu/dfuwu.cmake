@@ -54,4 +54,3 @@ target_link_libraries ( dfuwu
          remote 
          dalibase 
     )
-

@@ -5968,4 +5968,3 @@ IPropertyTree *createPTree(const char *name, byte flags)
     else
         return new LocalPTree(name, flags);
 }
-

@@ -76,4 +76,3 @@ protected:
 };
 
 #endif // _ESPWIZ_CWUWrapper_HPP__
-

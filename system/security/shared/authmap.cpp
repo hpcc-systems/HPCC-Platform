@@ -182,4 +182,3 @@ const char* resTypeDesc(SecResourceType type)
     default: return "<unknown>";
     }
 }       
-

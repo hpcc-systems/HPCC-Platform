@@ -762,5 +762,3 @@ AColumnInfo * CChildLinkedDatasetColumnInfo::lookupColumn(IHqlExpression * searc
     throwError1(HQLERR_LookupNotActiveDataset, search->queryName()->str());
     return NULL;
 }
-
-

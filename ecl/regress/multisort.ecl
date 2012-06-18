@@ -107,10 +107,3 @@ rec fillRow(rec L, unsigned4 c) := transform
 
   #set(MYCLUSTERSIZE,%MYCLUSTERSIZE%+%CLUSTERINC%)
 #end
-
-
-
-
-
-
-

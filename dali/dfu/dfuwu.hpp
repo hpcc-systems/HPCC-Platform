@@ -501,4 +501,3 @@ extern dfuwu_decl IDfuFileCopier *createRemoteFileCopier(const char *qname,const
 
 
 #endif 
-

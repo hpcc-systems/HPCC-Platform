@@ -779,4 +779,3 @@ int main(int _argc, char* argv[])
     releaseAtoms();
     return 0;
 }
-

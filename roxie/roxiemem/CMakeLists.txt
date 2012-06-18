@@ -57,5 +57,3 @@ target_link_libraries ( roxiemem
          eclrtl
          ${CPPUNIT_LIBRARIES}
     )
-
-

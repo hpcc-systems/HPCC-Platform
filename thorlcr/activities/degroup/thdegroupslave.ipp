@@ -27,4 +27,3 @@
 activityslaves_decl CActivityBase *createDegroupSlave(CGraphElementBase *container);
 
 #endif
-

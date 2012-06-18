@@ -27,4 +27,3 @@ rec noSeed(l) :=
     self := 3;
     self := l;
   end;
-

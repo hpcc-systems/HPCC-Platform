@@ -34,4 +34,3 @@ q(x) := MACRO
 ENDMACRO;
 
 d := q(5);
-

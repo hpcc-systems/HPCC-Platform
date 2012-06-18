@@ -42,4 +42,3 @@ namesRecord t(namesRecord l) := TRANSFORM
 
 x := project(namesTable, t(LEFT));
 output(x);
-

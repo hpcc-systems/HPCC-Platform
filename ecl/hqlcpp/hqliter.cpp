@@ -391,4 +391,3 @@ void CompoundIteratorBuilder::createRawNextFunc(BuildCtx & ctx, IHqlExpression *
 }
 
 //------------------------------------------------------------------------------------------
-

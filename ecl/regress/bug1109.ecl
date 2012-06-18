@@ -38,6 +38,3 @@ end;
 c := project(anytablename, tra(left));
 
 output(c);
-
-
-

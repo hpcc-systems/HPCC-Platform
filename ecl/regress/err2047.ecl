@@ -22,4 +22,3 @@ MyRec := RECORD
     BITFIELD2 class := 1;
     BITFIELD65 age := 100;
 END;
-

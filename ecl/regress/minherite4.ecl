@@ -37,4 +37,3 @@ export mm2 := module(mm)
 abc := 10;          // warn - clashes with virtual symbol
 export def := 21;
     end;
-

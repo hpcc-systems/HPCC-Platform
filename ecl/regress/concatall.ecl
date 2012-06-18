@@ -118,4 +118,3 @@ ebcdic string32 e32e        := namesTable.forenameE + namesTable.surnameE + (ebc
                 END;
 
 output(namesTable,outrec,'out.d00');
-

@@ -429,4 +429,3 @@ CActivityBase *createCsvReadSlave(CGraphElementBase *container)
 {
     return new CCsvReadSlaveActivity(container);
 }
-

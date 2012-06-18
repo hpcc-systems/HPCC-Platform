@@ -65,4 +65,3 @@ d := dataset([{'ds(id=1) = 1',count(ds(id=1))},
 
 //a; b; output(d);
 sequential(a,b,output(d));
-

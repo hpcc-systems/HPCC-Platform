@@ -26,6 +26,3 @@ InValid_CITY(string s) :=
 
 
 invalid_city('AA');
-
-
-

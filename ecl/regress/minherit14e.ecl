@@ -32,4 +32,3 @@ export boolean useName := true;         // redefinition error - neither base nor
 def := module(baseModule),virtual
 export boolean useName := true;         // base isn't virtual, should this be an error or not?
         end;
-

@@ -58,4 +58,3 @@ xxsummary1 := table(xpersons, { numBooks := sum(group, count(xxbooks)), maxRatin
 xxsummary2 := table(xxbooks, { numBooks := count(group), aveRating := ave(group, rating100), maxRating := max(group, rating100)})[1];
 output(sqHousePersonBookDs, { addr, xxsummary1.numBooks, xxsummary1.maxRating });
 output(sqHousePersonBookDs, { addr, xxsummary2.numBooks, xxsummary2.aveRating, xxsummary2.maxRating });
-

@@ -49,4 +49,3 @@ END;
 dsout := PROJECT(inds,T1(LEFT));
 
 OUTPUT(dsout,,'testout');
-

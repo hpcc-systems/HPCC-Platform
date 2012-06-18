@@ -50,4 +50,3 @@ output(sort(table(sqNamesTable7, { cnt := count(books(id != 0)), sumage := sum(g
 //Bizarre - add a dataset that needs serialization/deserialisation to enusre cloned correctly
 output(sort(table(nofold(sqNamesTable2)(surname != 'Halliday'), { max(group, aage), surname, dataset books }, surname, few),surname))
 );
-

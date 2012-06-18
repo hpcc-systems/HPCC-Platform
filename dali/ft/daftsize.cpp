@@ -62,7 +62,3 @@ bool processSizesCommand(ISocket *, MemoryBuffer & cmd, MemoryBuffer & result)
     LOG(MCdebugProgress, unknownJob, "Stop gather remote file sizes");
     return true;
 }
-
-
-
-

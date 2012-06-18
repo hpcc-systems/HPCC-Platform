@@ -535,4 +535,3 @@ function enableDeleteButton(id, enable)
    var btn = document.all[id];
     btn.disabled = !enable;
 }
-

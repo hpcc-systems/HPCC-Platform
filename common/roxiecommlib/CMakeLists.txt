@@ -62,5 +62,3 @@ install ( TARGETS roxiecommlib DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( roxiecommlib
          jlib 
     )
-
-

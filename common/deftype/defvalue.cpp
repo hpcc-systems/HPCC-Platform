@@ -3318,4 +3318,3 @@ extern DEFTYPE_API IValue * deserializeValue(MemoryBuffer & source)
     const void * buffer = source.readDirect(type->getSize());
     return createValueFromMem(LINK(type), buffer);
 }
-

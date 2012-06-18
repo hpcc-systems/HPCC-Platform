@@ -34,4 +34,3 @@ nameKey2 := sorted(INDEX(dummy, { surname, forename, filepos }, 'name2.idx'));
 x := distribute(nameKey2, nameKey, left.surname = right.surname and left.forename = right.forename);
 y := sort(x, surname, forename, filepos, local) : persist('xxx');
 buildindex(y, , 'inc.name.2', local);
-

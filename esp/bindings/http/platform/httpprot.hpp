@@ -155,4 +155,3 @@ public:
 };
 
 #endif //__HTTPPROT_HPP_
-

@@ -386,4 +386,3 @@ int main(int argc, const char *argv[])
 
     return ok ? ERROR_CODE_SUCCESS : ERROR_CODE_FAILURE;
 }
-

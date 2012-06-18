@@ -605,4 +605,3 @@ extern jlib_decl bool isInterfaceIp(const IpAddress &ip, const char *ifname);
 extern jlib_decl bool getInterfaceIp(IpAddress &ip, const char *ifname);
 
 #endif
-

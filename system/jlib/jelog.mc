@@ -226,7 +226,3 @@ SymbolicName=MSG_JLOG_MSG_31
 Language=English
 %1.
 .
-
-
-
-

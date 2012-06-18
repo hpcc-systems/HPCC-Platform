@@ -307,4 +307,3 @@ void resumeCoalescingServer()
     if (!sashaSDSCoalescingServer) return;
     sashaSDSCoalescingServer->resume();
 }
-

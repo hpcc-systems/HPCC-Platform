@@ -243,4 +243,3 @@ function processSelectedItems(callbackFunction)
     }
     return true;
 }
-

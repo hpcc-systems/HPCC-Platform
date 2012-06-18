@@ -31,5 +31,3 @@ activityslaves_decl CActivityBase *createSortedSlave(CGraphElementBase *containe
 
 
 #endif
-
-

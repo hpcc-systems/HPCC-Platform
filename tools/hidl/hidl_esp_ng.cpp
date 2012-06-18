@@ -300,4 +300,3 @@ void EspServInfo::write_esp_binding_ng_ipp(EspMessageInfo *msgs)
 void EspServInfo::write_esp_binding_ng_cpp(EspMessageInfo *msgs)
 {
 }
-

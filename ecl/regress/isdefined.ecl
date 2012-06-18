@@ -39,4 +39,3 @@ getFlagsValue(x3);
 output(x1);
 output(x2);
 output(x3);
-

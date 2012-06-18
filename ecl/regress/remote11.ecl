@@ -60,4 +60,3 @@ end;
 initial := dataset('i', resultRecord, thor);
 p1 := project(initial, transform(resultRecord, self.children := handle(left.children, left.search); self := left));
 output(p1);
-

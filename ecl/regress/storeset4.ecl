@@ -19,4 +19,3 @@
 set of string5 a := [] : stored('a');
 
 a = [];
-

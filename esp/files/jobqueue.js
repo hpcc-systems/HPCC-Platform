@@ -416,5 +416,3 @@ function displayQEnd(msg)
     svgdoc.rootElement.setAttribute("width",1148);
     svgdoc.rootElement.setAttribute("height",210+max_queue_length*20);
 }
-
-

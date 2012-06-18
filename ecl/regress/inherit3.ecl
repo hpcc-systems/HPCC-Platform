@@ -45,4 +45,3 @@ Sum3Record := record(SumRecord)
 
 output(TABLE(namesTable, Sum3Record, surname));
 output(TABLE(namesTable, Sum2Record, surname));
-

@@ -245,4 +245,3 @@ public:
 
 CActivityBase *createLocalCountProjectSlave(CGraphElementBase *container) { return new LocalCountProjectActivity(container); }
 CActivityBase *createCountProjectSlave(CGraphElementBase *container) { return new CountProjectActivity(container); }
-

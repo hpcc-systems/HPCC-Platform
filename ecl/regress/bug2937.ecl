@@ -50,4 +50,3 @@ new_heady := rollup(head, true, keep_newesty(left, right));
 output(new_head);
 output(new_headx);
 output(new_heady);
-

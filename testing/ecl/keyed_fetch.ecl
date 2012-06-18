@@ -44,4 +44,3 @@ output(maybesort(FETCH(DG_FetchFile, DG_FetchIndex1(Fname='Frank'),RIGHT.__filep
 output(maybesort(FETCH(DG_FetchFile, DG_FetchIndex1(Fname='Sue'),RIGHT.__filepos, copy(LEFT))));
 output(maybesort(FETCH(DG_FetchFile, DG_FetchIndex1(Fname='Jane'),RIGHT.__filepos, copy(LEFT))));
 output(maybesort(FETCH(DG_FetchFile, DG_FetchIndex1(Fname='Larry'),RIGHT.__filepos, copy(LEFT))));
-

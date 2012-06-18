@@ -21,4 +21,3 @@ one := 1 : stored('one');
 gavin := 'Gavin' : stored('Gavin');
 (ebcdic string)'!' + ((ebcdic string)(gavin[1..4])) + (ebcdic string)'!';
 (ebcdic string)'$' + ((ebcdic string)gavin)[1..4] + (ebcdic string)'$';
-

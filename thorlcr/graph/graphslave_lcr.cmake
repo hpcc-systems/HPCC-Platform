@@ -69,5 +69,3 @@ target_link_libraries ( graphslave_lcr
          jhtree 
          graph_lcr 
     )
-
-

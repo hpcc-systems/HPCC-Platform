@@ -52,4 +52,3 @@ output(dataset('ds6', namesRecord - [id, x], thor),,'o6');
 
 //No resulting fields
 output(dataset('ds7', namesRecord and not namesrecord, thor),,'o7');
-

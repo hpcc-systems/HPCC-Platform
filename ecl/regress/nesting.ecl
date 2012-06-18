@@ -48,6 +48,3 @@ r3 t(r3 l) :=
 
 o := PROJECT(d,t(LEFT));
 output(o,,'o.d00');
-
-
-

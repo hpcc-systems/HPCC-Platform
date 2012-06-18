@@ -55,4 +55,3 @@ target_link_libraries ( ws_packageprocess
          dalibase
          ws_fs
     )
-

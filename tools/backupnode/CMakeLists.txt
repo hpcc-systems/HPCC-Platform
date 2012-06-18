@@ -51,5 +51,3 @@ target_link_libraries (  backupnode
          mp
          dalibase
     )
-
-

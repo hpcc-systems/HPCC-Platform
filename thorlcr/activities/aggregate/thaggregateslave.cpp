@@ -316,4 +316,3 @@ CActivityBase *createThroughAggregateSlave(CGraphElementBase *container)
         throwUnexpected();
     return new ThroughAggregateSlaveActivity(container);
 }
-

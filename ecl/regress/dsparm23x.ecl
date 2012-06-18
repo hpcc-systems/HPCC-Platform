@@ -43,4 +43,3 @@ end;
 myjoin := Join(ds, dsx, left.first_name1 = right.first_name2, tranx(left,right));
 
 count(myjoin);
-

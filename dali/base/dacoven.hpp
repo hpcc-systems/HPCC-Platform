@@ -76,4 +76,3 @@ extern da_decl DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreign
 
 
 #endif
-

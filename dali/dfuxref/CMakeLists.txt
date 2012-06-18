@@ -55,5 +55,3 @@ target_link_libraries ( dfuxref
          environment 
          dfuXRefLib 
     )
-
-

@@ -189,4 +189,3 @@ int CPluginDeploymentEngine::createInstallFileMap(IPropertyTree& node,
    }
    return fileMap.size();
 }
-

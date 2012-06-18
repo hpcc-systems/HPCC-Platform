@@ -26,5 +26,3 @@ export KeyType_HDID := record
 export Key_HDid := index(keytype_hdid,'~hid');
 
 output(Key_HDid(xyz=2493643977));
-
-

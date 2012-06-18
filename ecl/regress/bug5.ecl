@@ -18,4 +18,3 @@
 
 integer4 a := 0;
 transfer(a, string4);
-

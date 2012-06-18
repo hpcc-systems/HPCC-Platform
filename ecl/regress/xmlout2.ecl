@@ -41,4 +41,3 @@ output(namesTable2,,'out2.xml',overwrite,xml('qlr'));
 output(namesTable2,,'out3.csv',overwrite,csv(heading('--- Start of csv file ---\n', '--- End of csv file ----')));
 output(namesTable2,,'out4.csv',overwrite,csv);
 output(namesTable2,,'out5.xml',overwrite,xml(heading('<?xml version=1.0 ...?>\n<Dataset>\n')));
-

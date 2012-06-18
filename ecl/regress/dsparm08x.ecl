@@ -19,4 +19,3 @@
 ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
 
 output(ds(first_name='fred'), {last_name});
-

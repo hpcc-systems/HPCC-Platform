@@ -294,4 +294,3 @@ ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions
 SCMexportdef(WSSMC);
 
 SCMapi(WSSMC) IClientWsSMC *createWsSMCClient();
-

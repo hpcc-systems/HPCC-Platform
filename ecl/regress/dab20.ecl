@@ -20,4 +20,3 @@
 decimal4 A := 3;
 decimal4 B := 2;
 A + B;
-

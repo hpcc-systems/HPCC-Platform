@@ -186,5 +186,3 @@ static int ptree_builder(void* ctx, int type, const JSON_value* value)
     
     return 1;
 }
-
-

@@ -51,6 +51,3 @@ r1 t(r1 l, r1 r) := transform
 d := dataset('d', r1, thor);
 
 output(ITERATE(d,t(LEFT,RIGHT)));
-
-
-

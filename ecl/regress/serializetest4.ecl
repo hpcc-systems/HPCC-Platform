@@ -452,6 +452,3 @@ resultRecord t1(in l) := transform
 
 p1 := project(in, t1(left));
 output(p1);
-
-
-

@@ -28,4 +28,3 @@ MAX(males(false),person_id);
 
 x := males(false)[1] : stored('x');
 x.per_sex;
-

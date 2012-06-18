@@ -52,4 +52,3 @@ outRecord gatherFamily(familyRecord l, namesRecord r, unsigned c) :=
 families := DENORMALIZE(nameDataset, surname, normalizeAddresses(LEFT, RIGHT, COUNTER));
 
 output(families,,'out.d00');
-

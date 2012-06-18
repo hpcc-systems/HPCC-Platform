@@ -46,4 +46,3 @@ houseDataset := DATASET('in.d00', houseRecord, FLAT);
 
 
 output(houseDataset,,'out.d00');
-

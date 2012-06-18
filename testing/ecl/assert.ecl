@@ -63,4 +63,3 @@ rec t(ds l) := transform
 
 o3 := output(project(ds, t(LEFT)));
 sequential(o1, o2, o3);
-

@@ -67,4 +67,3 @@ return sqrt(a)+1;
 ENDC++;
 s1fp := s1f(3) : persist('s3f');
 output(s1fp);
-

@@ -62,4 +62,3 @@ output(namesTable,,'REGRESS::TEMP::output2.xml',overwrite,xml(heading('','')));
 
 inf := dataset('REGRESS::TEMP::output2.xml', { string text }, csv);
 output(inf);
-

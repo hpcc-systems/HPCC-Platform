@@ -30,4 +30,3 @@ end;
 nullInput := dataset([], rec);
 
 output GRAPH(nullInput, 2, doAction(rowset(left), counter));
-

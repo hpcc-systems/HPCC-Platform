@@ -294,5 +294,3 @@ public:
 #define MAX_CHILDREN 1
 
 #endif //__ESPP_HPP__
-
-

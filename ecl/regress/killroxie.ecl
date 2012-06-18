@@ -34,4 +34,3 @@ ds := dataset(['a','b','c','d'], rec);
 f(dataset(rec) infile) := infile(x != myStoredString);
 
 output(allnodes(f(ds)));
-

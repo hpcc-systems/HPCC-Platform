@@ -206,5 +206,3 @@ CActivityBase *createMSortSlave(CGraphElementBase *container)
     ActPrintLog(container, "MSortSlaveActivity::createMSortSlave");
     return new MSortSlaveActivity(container);
 }
-
-

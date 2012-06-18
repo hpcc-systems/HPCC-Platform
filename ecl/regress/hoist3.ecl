@@ -41,4 +41,3 @@ end;
 x := table(file1, myReport);
 
 output(x);
-

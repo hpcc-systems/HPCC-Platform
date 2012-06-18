@@ -40,4 +40,3 @@ end;
 namesTable := dataset('x',namesRecord,FLAT);
 
 output(hallidayLibrary(namesTable).both,,named('both'));
-

@@ -998,4 +998,3 @@ ZCRYPT_API void releaseIZ(IZInterface* iz)
 }
 
 }
-

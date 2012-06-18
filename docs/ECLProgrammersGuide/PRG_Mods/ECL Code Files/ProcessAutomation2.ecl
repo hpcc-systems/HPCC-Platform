@@ -262,4 +262,3 @@ FilesToSpray := DATASET([
 
    // output(FilesToSpray);
    fSprayInputFiles(FilesToSpray);
-

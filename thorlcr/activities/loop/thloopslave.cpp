@@ -1220,4 +1220,3 @@ activityslaves_decl CActivityBase *createGraphLoopResultWriteSlave(CGraphElement
 {
     return new CGraphLoopResultWriteSlaveActivity(container);
 }
-

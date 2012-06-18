@@ -33,4 +33,3 @@ end;
 dsbar := project(dsfoo,tfoo(left));
 
 output(dsbar);
-

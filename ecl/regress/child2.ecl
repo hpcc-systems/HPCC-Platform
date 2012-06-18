@@ -37,5 +37,3 @@ ds := nofold(dataset('ds', r1, thor));
 t := table(ds, { name in set(g.children, name), searchString in set(g.children, name) });
 
 output(t);
-
-

@@ -70,4 +70,3 @@ while [ -e ${SENTINEL} ]; do
     echo $! > $PID_NAME
     wait
 done
-

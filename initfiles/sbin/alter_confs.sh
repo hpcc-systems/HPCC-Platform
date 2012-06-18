@@ -33,4 +33,3 @@ function alter_file () {
     chown --reference="${BASE_FILE}.$$.old" "${BASE_FILE}"
     rm -f "${BASE_FILE}.$$.old"
 }
-

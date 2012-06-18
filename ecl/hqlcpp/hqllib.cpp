@@ -699,4 +699,3 @@ void LibraryEvalContext::tempCompatiablityEnsureSerialized(const CHqlBoundTarget
 {
     throwUnexpected();
 }
-

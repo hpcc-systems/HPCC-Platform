@@ -59,4 +59,3 @@ CActivityBase *createXmlWriteActivityMaster(CMasterGraphElement *container)
 {
     return new CXmlWriteActivityMaster(container);
 }
-

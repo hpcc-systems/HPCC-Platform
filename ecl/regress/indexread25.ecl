@@ -44,4 +44,3 @@ parentDataset := DATASET('test',parentRecord,FLAT);
 i := index(parentRecord, payloadRecord, 'superkey');
 
 output(i(id=3));
-

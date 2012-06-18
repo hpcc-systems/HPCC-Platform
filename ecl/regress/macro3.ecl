@@ -19,4 +19,3 @@
 import macro3c;
 
 output(macro3c.foo_attr1);
-

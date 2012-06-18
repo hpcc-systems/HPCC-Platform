@@ -72,4 +72,3 @@ results := rollup(combined, group, doRollup(left, rows(left)));
 output(table(results, { count(group)}));
 
 // Should return a single count of 0
-

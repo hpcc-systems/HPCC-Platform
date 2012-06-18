@@ -186,5 +186,3 @@ void Allocator::_doSort(size32_t _size, StdCompare compare)
     if (used > 1)
         qsort(_head, used, _size, compare);
 }
-
-

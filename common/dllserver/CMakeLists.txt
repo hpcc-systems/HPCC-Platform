@@ -64,4 +64,3 @@ target_link_libraries ( dllserver
 if (NOT WIN32)
   target_link_libraries ( dllserver ${BINUTILS_LIBRARIES})
 endif()
-

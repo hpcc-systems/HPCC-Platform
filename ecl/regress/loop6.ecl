@@ -44,4 +44,3 @@ END;
 x2 := LOOP(in2, count(patterns), checkPattern(rows(left), patterns[counter].phrase));
 
 output(x2);
-

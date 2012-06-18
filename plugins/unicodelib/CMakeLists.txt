@@ -43,5 +43,3 @@ target_link_libraries ( unicodelib
     jlib 
     ${ICU_LIBRARIES} 
     )
-
-

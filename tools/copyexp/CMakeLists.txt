@@ -42,5 +42,3 @@ install ( TARGETS copyexp DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( copyexp
          jlib 
     )
-
-

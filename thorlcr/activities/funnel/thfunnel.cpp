@@ -84,4 +84,3 @@ CActivityBase *createNonEmptyActivityMaster(CMasterGraphElement *container)
     else
         return new CNonEmptyActivityMaster(container);
 }
-

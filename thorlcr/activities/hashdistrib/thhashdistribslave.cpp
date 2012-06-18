@@ -2675,5 +2675,3 @@ CActivityBase *createReDistributeSlave(CGraphElementBase *container)
     ActPrintLog(container, "REDISTRIBUTE: createReDistributeSlave");
     return new ReDistributeSlaveActivity(container);
 }
-
-

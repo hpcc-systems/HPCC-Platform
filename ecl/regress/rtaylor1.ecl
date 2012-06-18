@@ -40,4 +40,3 @@ END;
 output(ROLLUP(group(sortedseed100, sequence),
        left.sequence=right.sequence,
        makeRec(left, right, 'grouped')));
-

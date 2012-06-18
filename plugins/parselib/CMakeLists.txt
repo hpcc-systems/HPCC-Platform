@@ -44,5 +44,3 @@ install ( TARGETS parselib DESTINATION ${OSSDIR}/plugins )
 target_link_libraries ( parselib 
          jlib
     )
-
-

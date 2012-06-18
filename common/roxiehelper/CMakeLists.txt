@@ -56,4 +56,3 @@ target_link_libraries ( roxiehelper
          roxiemem 
          dalibase 
  ) 
-

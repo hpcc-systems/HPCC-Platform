@@ -55,4 +55,3 @@ output(x);
 x2 := join(ds, k2, (qstring10)left.seq = right.seq, add_score(left, right));
 
 output(x2);
-

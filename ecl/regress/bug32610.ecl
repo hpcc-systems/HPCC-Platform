@@ -50,4 +50,3 @@ MAC_ScanFile(IP, infile, scansize) := MACRO
 ENDMACRO;
 
 MAC_ScanFile('10.173.9.4', 'C:\\training\\import\\NamePhones', 100)
-

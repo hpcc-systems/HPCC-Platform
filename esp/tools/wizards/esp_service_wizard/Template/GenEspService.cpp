@@ -10,7 +10,3 @@ bool C$$ESP_SERVICE$$Ex::on$$ESP_METHOD$$(IEspContext &context, IEsp$$ESP_METHOD
 {
     return true;
 }
-
-
-
-

@@ -1478,4 +1478,3 @@ void CSortNode::AdjustNumRecs(rowcount_t num)
 
 
         
-

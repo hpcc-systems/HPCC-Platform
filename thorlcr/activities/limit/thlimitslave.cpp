@@ -326,4 +326,3 @@ activityslaves_decl CActivityBase *createRowLimitSlave(CGraphElementBase *contai
 {
     return new CSkipLimitSlaveActivity(container,true);
 }
-

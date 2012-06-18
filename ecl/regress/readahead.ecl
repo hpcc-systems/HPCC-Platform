@@ -512,4 +512,3 @@ OUTPUT(JOIN(in, TS_WordIndex, keyed(left.word = right.word), jt(left, right), KE
 OUTPUT(PROJECT(in, it(LEFT), prefetch(5, parallel))) : independent;
 
 OUTPUT(TABLE(in, { in.word, TS_WordIndex(KEYED(word = in.word))[1].doc }, prefetch(5, parallel))) : independent;
-

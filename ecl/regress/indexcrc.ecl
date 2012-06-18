@@ -79,4 +79,3 @@ SEQUENTIAL(
     BUILD(idx3, OVERWRITE),
     OUTPUT(idx3(i=1))
 );
-

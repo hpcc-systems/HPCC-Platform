@@ -129,4 +129,3 @@ p := PARSE(n, txt, date1, r, first);
 EXPORT Xyz__Comments_Fields := p;
 
 OUTPUT(CHOOSEN(Xyz__Comments_Fields, 100));
-

@@ -23,4 +23,3 @@ tab := table(person,{per_first_name});
 
 shared tab := 1;
 export tab := 'abc';
-

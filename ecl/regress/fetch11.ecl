@@ -31,4 +31,3 @@ x := dedup(namesTable, surname);
 
 f := fetch(x, namesTable, right.filepos);
 output(f);
-

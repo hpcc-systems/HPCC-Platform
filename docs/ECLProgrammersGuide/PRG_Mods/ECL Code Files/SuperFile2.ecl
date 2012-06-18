@@ -16,5 +16,3 @@ SEQUENTIAL(
   // IMPORT $;
   // COUNT($.DeclareData.SuperFile1(PersonID <> 0));
   // OUTPUT($.DeclareData.SuperFile1);
-
-

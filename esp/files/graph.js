@@ -467,4 +467,3 @@ function resetFindGraphNode(svg)
     if (resetFindBtn)
         resetFindBtn.disabled = true;
 }
-

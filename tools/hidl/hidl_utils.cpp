@@ -443,4 +443,3 @@ void initLeakCheck(bool fullMemoryCheck)
     _CrtSetDbgFlag(LeakTmpFlag);
 #endif
 }
-

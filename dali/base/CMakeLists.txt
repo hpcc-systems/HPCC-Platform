@@ -75,5 +75,3 @@ target_link_libraries ( dalibase
          hrpc 
          remote 
     )
-
-

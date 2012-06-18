@@ -134,5 +134,3 @@ target_link_libraries ( activityslaves_lcr
          graphslave_lcr 
          roxiemem
     )
-
-

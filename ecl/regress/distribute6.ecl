@@ -30,4 +30,3 @@ inf := distribute(namesTable, hash32(forename));
 
 j5 := join(inf,inf,left.forename[1..5]=right.forename[1..5] and (left.age * right.age < 880));
 output(j5);
-

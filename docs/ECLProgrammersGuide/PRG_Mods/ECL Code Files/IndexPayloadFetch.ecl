@@ -52,4 +52,3 @@ f := FETCH(PersonFile,i(PersonID BETWEEN 1 AND 100),RIGHT.RecPos);
 Get := OUTPUT(f,ALL);
 
 SEQUENTIAL(Bld,Get);
-

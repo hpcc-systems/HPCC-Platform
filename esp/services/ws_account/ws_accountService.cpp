@@ -245,4 +245,3 @@ bool Cws_accountEx::onVerifyUser(IEspContext &context, IEspVerifyUserRequest &re
 
     return true;
 }
-

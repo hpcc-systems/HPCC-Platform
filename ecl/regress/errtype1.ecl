@@ -70,4 +70,3 @@ IbmDecimal8 :=
 export integer              load(string4 x) := (integer)TypeHelper.bcdToInteger(x);
 export string4              store(integer x) := TypeHelper.integerToBcdFixed(8, x);
                 END;
-

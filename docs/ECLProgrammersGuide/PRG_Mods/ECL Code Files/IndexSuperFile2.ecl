@@ -10,7 +10,3 @@ F2 := FETCH($.DeclareData.ds2,$.DeclareData.i2(personid=$.DeclareData.ds2[1].per
 
 Get := PARALLEL(OUTPUT(F1),OUTPUT(F2));
 SEQUENTIAL(Bld,Get);
-
-
-
-

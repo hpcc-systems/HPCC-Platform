@@ -25,4 +25,3 @@ end;
 
 p := project(a,transform(rec,self.ucc_key := (string6)transfer(left.ucc_key, ebcdic string6); self := left));
 output(p);
-

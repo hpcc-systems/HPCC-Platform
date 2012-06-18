@@ -24,5 +24,3 @@ recordtable := record
 
 t := table(person,recordtable,person.per_dbrth) ;
 output(t(countofpeople>1000));
-
-

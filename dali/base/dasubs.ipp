@@ -95,6 +95,3 @@ extern da_decl IDaliServer *createDaliPublisherServer(); // called for coven mem
 extern da_decl StringBuffer &getSubscriptionList(StringBuffer &buf);
 
 #endif
-
-
-

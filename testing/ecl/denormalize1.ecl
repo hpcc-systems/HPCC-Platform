@@ -42,4 +42,3 @@ denorm := DENORMALIZE(names, inp, (LEFT.name = RIGHT.name) AND (LEFT.i < 30),
 sumi(LEFT, RIGHT));
 
 OUTPUT(denorm);
-

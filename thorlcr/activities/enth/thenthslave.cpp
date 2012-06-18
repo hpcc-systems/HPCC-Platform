@@ -275,5 +275,3 @@ CActivityBase *createEnthSlave(CGraphElementBase *container)
 { 
     return new CEnthSlaveActivity(container);
 }
-
-

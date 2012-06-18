@@ -89,5 +89,3 @@ mytable := dataset([{1,2},{3,4}], record1);
 normalizedStuff := normalize(mytable, LEFT.i1, tranx4(LEFT, COUNTER));
 
 output(normalizedStuff);
-
-

@@ -36,6 +36,3 @@ unsigned8 u8 := 0 : stored('u8');
 output(i(keyed(f1 = s5)));      // should be ok
 output(i(keyed(f1 = s10)));     // should be ok exact match
 output(i(keyed(f1 = s15)));     // should be ok, with a post filter
-
-
-

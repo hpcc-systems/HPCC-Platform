@@ -83,4 +83,3 @@ output(p3);
 
 p4 := project(p2, transform(combinedRecord, self.id := 0; self := LEFT));
 output(p4);
-

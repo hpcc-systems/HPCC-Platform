@@ -172,4 +172,3 @@ StringBuffer &ListHelper::doFormat(StringBuffer &s, IConstECLWorkunit * w)
 
     return s;
 }
-

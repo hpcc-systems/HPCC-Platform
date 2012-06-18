@@ -966,4 +966,3 @@ void TransferServer::wrapOutInCRC(unsigned startCRC)
         out.set(crcOut);
     }
 }
-

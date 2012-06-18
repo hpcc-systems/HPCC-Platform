@@ -1320,4 +1320,3 @@ void CPooledClientWsLogService::async_UpdateLogService(IClientLOGServiceUpdateRe
         throw MakeStringExceptionDirect(-1, "LogServiceUpdateRequest is null.");
     }
 }
-

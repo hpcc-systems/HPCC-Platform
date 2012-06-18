@@ -61,6 +61,3 @@ ppersonRecordEx projectFunction2(ppersonRecordEx l) :=
 ppersonEx2 := project(ppersonEx, projectFunction2(left));
 
 output(ppersonEx2(id2>0), , 'out.d00');
-
-
-
