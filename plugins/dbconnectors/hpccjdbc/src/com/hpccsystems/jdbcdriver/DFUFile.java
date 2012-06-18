@@ -402,13 +402,11 @@ public class DFUFile
 				{
 					String tmp = eclString.substring(eclString.indexOf("RECORD")+6, eclString.indexOf("END"));
 					comatokens = new StringTokenizer(tmp, ";");
-
 				}
 				else if (eclString.contains("{"))
 				{
 					String tmp = eclString.substring(eclString.indexOf('{')+1, eclString.indexOf('}'));
 					comatokens = new StringTokenizer(tmp, ",");
-
 				}
 
 				if (comatokens != null)
@@ -416,20 +414,29 @@ public class DFUFile
 					int index = 0;
 					while (comatokens.hasMoreTokens())
 					{
-						StringTokenizer spacetokens = new StringTokenizer(comatokens.nextToken()," \n");
-						if(spacetokens.hasMoreTokens())
+						String comatoken = comatokens.nextToken().trim();
+						String spacesplit [] = comatoken.split("\\s+");
+
+						String name = spacesplit[spacesplit.length-1].trim();
+						if (name.length() > 0)
 						{
-							String type = spacetokens.nextToken();
-							String name = spacetokens.nextToken();
-							HPCCColumnMetaData columnmeta = new HPCCColumnMetaData(name, index, HPCCDatabaseMetaData.convertECLtype2SQLtype(type.toUpperCase()));
-							columnmeta.setEclType(type);
-							//columnmeta.setTableName(this.FileName);
+							StringBuffer type = new StringBuffer();
+							for (int i = 0; i< spacesplit.length-1; i++)
+							{
+								type.append(spacesplit[i]);
+								if (i+1 < spacesplit.length-1)
+									type.append(" ");
+							}
+
+							HPCCColumnMetaData columnmeta = new HPCCColumnMetaData(name, index, HPCCDatabaseMetaData.convertECLtype2SQLtype(type.toString().toUpperCase()));
+							columnmeta.setEclType(type.toString());
 							columnmeta.setTableName(this.FullyQualifiedName);
 
 							Ecl += type + " " + name + "; ";
 							Fields.put(name.toUpperCase(), columnmeta);
+
+							index++;
 						}
-						index++;
 					}
 				}
 			}
@@ -438,10 +445,6 @@ public class DFUFile
 				System.out.println("Invalid ECL Record definition found in " + this.getFullyQualifiedName() + " details.");
 				return;
 			}
-			/*finally
-			{
-				Ecl += "END; ";
-			}*/
 		}
 	}
 
