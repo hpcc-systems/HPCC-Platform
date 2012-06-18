@@ -55,14 +55,14 @@
       if (typeof(addEventListener) != 'undefined')
       {
         document.getElementById('top1').addEventListener("click", function() {
-              if (top.document.ContextMenu != null)
-              top.document.ContextMenu.clearContent() } );
+          if (top.document.ContextMenu != null)
+            top.document.ContextMenu.clearContent() } );
       }
       else
       {
-         document.getElementById('top1').attachEvent('onclick',function() {
-              if (top.document.ContextMenu != null)
-              top.document.ContextMenu.clearContent() } );
+        document.getElementById('top1').attachEvent('onclick',function() {
+          if (top.document.ContextMenu != null)
+            top.document.ContextMenu.clearContent() } );
       }
 
       getWaitDlg().show();
