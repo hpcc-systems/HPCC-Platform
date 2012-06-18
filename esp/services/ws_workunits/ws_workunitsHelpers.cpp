@@ -495,15 +495,19 @@ bool WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
             }
             else // legacy wuid
             {
-                SCMStringBuffer name;
-                cw->getDebugValue("EclAgentLog", name);
-                if(name.length())
+                Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent");
+                ForEach (*eclAgentLogs)
                 {
+                    SCMStringBuffer name;
+                    eclAgentLogs->str(name);
+                    if (name.length() < 1)
+                        continue;
+
                     Owned<IEspECLHelpFile> h= createECLHelpFile("","");
                     h->setName(name.str());
                     h->setType(File_EclAgentLog);
                     helpers.append(*h.getLink());
-                    name.clear();
+                    break;
                 }
             }
 
@@ -984,12 +988,11 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         constEnv->getPTree().getProp("EnvSettings/log", logDir);
         if (logDir.length() > 0)
         {
-            Owned<IStringIterator> debugs(&cw->getDebugValues("thorlog*"));
+            Owned<IStringIterator> debugs = cw->getLogs("Thor");
             ForEach(*debugs)
             {
-                SCMStringBuffer name, val;
-                debugs->str(name);
-                cw->getDebugValue(name.str(),val);
+                SCMStringBuffer val;
+                debugs->str(val);
                 if (val.length() < 1)
                     continue;
 
@@ -1594,19 +1597,12 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
 void WsWuInfo::getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer& buf)
 {
     SCMStringBuffer logname;
-    if (cw->getWuidVersion() > 0)
+    Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent", eclAgentInstance);
+    ForEach (*eclAgentLogs)
     {
-        Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent", eclAgentInstance);
-        ForEach (*eclAgentLogs)
-        {
-            eclAgentLogs->str(logname);
-            if (logname.length() > 0)
-                break;
-        }
-    }
-    else
-    {//legacy wuid
-        cw->getDebugValue(File_EclAgentLog, logname);
+        eclAgentLogs->str(logname);
+        if (logname.length() > 0)
+            break;
     }
 
     unsigned pid = cw->getAgentPID();
@@ -1668,19 +1664,12 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer
 void WsWuInfo::getWorkunitThorLog(const char* processName, MemoryBuffer& buf)
 {
     SCMStringBuffer logname;
-    if (cw->getWuidVersion() > 0)
+    Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName);
+    ForEach (*thorLogs)
     {
-        Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName);
-        ForEach (*thorLogs)
-        {
-            thorLogs->str(logname);
-            if (logname.length() > 0)
-                break;
-        }
-    }
-    else
-    {//legacy wuid
-        cw->getDebugValue(File_ThorLog, logname);
+        thorLogs->str(logname);
+        if (logname.length() > 0)
+            break;
     }
 
     Owned<IFile> rFile = createIFile(logname.str());

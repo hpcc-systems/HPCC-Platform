@@ -4045,16 +4045,11 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
 
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    StringBuffer path;
+    Owned<IRemoteConnection> conn = querySDS().connect(path.append("Environment/Software/ThorCluster[@name=\"").append(cluster).append("\"]").str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (conn)
     {
-        StringBuffer xpath;
-        xpath.appendf("Software/ThorCluster[@name=\"%s\"]", cluster);
-        IPropertyTree* cluster= conn->queryRoot()->getPropTree(xpath.str());
-        if (cluster)
-        {
-            getClusterGroupName(*cluster, ret);
-        }
+        getClusterGroupName(*conn->queryRoot(), ret);
     }
 
     return ret;
