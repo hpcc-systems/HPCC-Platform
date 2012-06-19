@@ -78,6 +78,8 @@
 #endif
 
 #include "jmd5.hpp"
+#include "jfile.hpp"
+#include "jlog.hpp"
 #include <string.h>
 
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
@@ -438,3 +440,24 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
+void md5_filesum(const char* filename, StringBuffer& outstring)
+{
+    MemoryBuffer mb;
+    Owned<IFile> file = createIFile(filename);
+    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    if (!io)
+        throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
+
+    offset_t size = io->size();
+    size32_t sizeToRead = (size32_t)size;
+    if (sizeToRead != size)
+        throw MakeStringException(1, "File %s is larger than 4Gb", file->queryFilename());
+
+    mb.ensureCapacity(sizeToRead+1);
+    byte * contents = static_cast<byte *>(mb.reserve(sizeToRead));
+    size32_t sizeRead = io->read(0, sizeToRead, contents);
+    if (sizeRead != sizeToRead)
+        throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
+
+    md5_string(mb.toByteArray(), sizeRead, outstring);
+}
