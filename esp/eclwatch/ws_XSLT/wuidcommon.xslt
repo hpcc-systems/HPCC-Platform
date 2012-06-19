@@ -400,7 +400,7 @@
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=ECL Playground (Results) - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">
@@ -721,21 +721,41 @@
           </div>
         </xsl:if>
 
-        <xsl:if test="number(ClusterFlag)=1">
-        <table class="workunit">
-          <colgroup>
-            <col width="20%"/>
-            <col width="80%"/>
-          </colgroup>
-                 <tr>
-                    <td></td>
-                    <td>
-                      <input id="getthorslavelog" type="button" value="GetThorSlaveLog on >>" onclick="GetThorSlaveLog()" disabled="true"> </input>
-                      <input type="text" id="ThorSlaveIP" name="ThorSlaveIP" value="{$thorSlaveIP}" size="40" onkeyup="CheckIPInput();"/>
+        <xsl:if test="(number(ClusterFlag)=1) and (count(ThorLogList/ThorLogInfo) > 0)">
+            <table class="workunit">
+                <colgroup>
+                    <col width="20%"/>
+                    <col width="80%"/>
+                </colgroup>
+                <tr>
+                    <td colspan="3">
+                        <div style="border:1px solid grey;">
+                            <input id="getthorslavelog" type="button" value="Get slave log" onclick="GetThorSlaveLog()"> </input>
+                            <xsl:choose>
+                                <xsl:when test="number(ThorLogList/ThorLogInfo[1]/NumberSlaves) != 0">
+                                    Thor Process: <select id="ThorProcess" name="ThorProcess" onchange="thorProcessChanged(options[selectedIndex].value)">
+                                    <xsl:for-each select="ThorLogList/ThorLogInfo">
+                                        <xsl:variable name="val">
+                                            <xsl:value-of select="./NumberSlaves"/>@<xsl:value-of select="./LogDate"/>@<xsl:value-of select="./ProcessName"/>@<xsl:value-of select="./ClusterGroup"/>
+                                        </xsl:variable>
+                                        <option value="{$val}">
+                                            <xsl:value-of select="./ProcessName"/>
+                                        </option>
+                                    </xsl:for-each>
+                                    </select>
+                                    Slave Number<span id="NumberSlaves"></span>: <input type="text" id="SlaveNum" name="SlaveNum" value="1" size="4" onkeypress="return CheckSlaveNum(event);"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <input type="hidden" id="ProcessName" value="{ThorLogList/ThorLogInfo[1]/ProcessName}"/>
+                                    <input type="hidden" id="LogDate" value="{ThorLogList/ThorLogInfo[1]/LogDate}"/>
+                                    on: <input type="text" id="SlaveAddress" name="SlaveAddress" title="Type in NetworkAddress or NetworkAddress_Port where the slave run" value="" size="16" onkeypress="return CheckSlaveAddress(event);"/>
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </div>
                     </td>
-                 </tr>
-        </table>
-          <br/>
+                </tr>
+            </table>
+            <br/>
         </xsl:if>
         <table class="workunit">
           <colgroup>
@@ -1046,8 +1066,6 @@
           </xsl:otherwise>
         </xsl:choose>
         <xsl:if test="number(IsSupplied)"> supplied</xsl:if>
-        &nbsp;-&nbsp;
-        <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/esp/files/ECLPlaygroundResults.htm?Wuid={$wuid}&amp;Sequence={Link}');return false;">Show</a>
       </td>
      <xsl:choose>
        <xsl:when test="number(ShowFileContent) and string-length(Link)">
@@ -1229,24 +1247,25 @@
       </xsl:if>
       <xsl:if test="starts-with(Type, 'ThorLog')">
         <td>
-          <a href="/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Type={Type}"
+          <a href="/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Process={Description}&amp;Type={Type}"
                         >
             thormaster.log: <xsl:value-of select="Name"/>
           </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('thormaster.log', '/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Type={Type}', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('thormaster.log', '/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Process={Description}&amp;Type={Type}', false); return false;">
             download
           </a>
         </td>
       </xsl:if>
       <xsl:if test="Type = 'EclAgentLog'">
         <td>
-          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Type=EclAgentLog"
-                        >eclagent.log</a>
+          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Process={Description}&amp;Type=EclAgentLog">
+              eclagent.log: <xsl:value-of select="Name"/>
+          </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Type=EclAgentLog', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Process={Description}&amp;Type=EclAgentLog', false); return false;">
             download
           </a>
         </td>

@@ -88,7 +88,7 @@
       <para>To find out more information about your account, in ECL Watch
       click on the <emphasis role="bold">My Account</emphasis> link.</para>
 
-      <para><graphic fileref="../images/ECLWMyAccount.jpg" /> <orderedlist>
+      <para><graphic fileref="../../images/ECLWMyAccount.jpg" /> <orderedlist>
           <listitem>
             <para>Click on the <emphasis role="bold">My Account</emphasis>
             link.</para>
@@ -202,7 +202,7 @@
       role="bold">Users/Permissions</emphasis> menu item and click <emphasis
       role="bold">Users<emphasis>:</emphasis></emphasis></para>
 
-      <graphic fileref="../images/Permissions001.jpg" />
+      <graphic fileref="../../images/Permissions001.jpg" />
 
       <para>All current users are identified in the list by their UserID and
       full name.</para>
@@ -417,7 +417,7 @@
             <para>The list of permissions currently set for this user are
             displayed and the groups from which the user has inherited
             permissions are also listed. <graphic
-            fileref="../images/Permissions002.jpg" /></para>
+            fileref="../../images/Permissions002.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -528,7 +528,7 @@
         precedence over the group settings, you can safely change the
         individual settings for a user without affecting the rest of the
         group(s) to which they belong. <graphic
-        fileref="../images/Permissions003.jpg" />In ECL Watch, go to the
+        fileref="../../images/Permissions003.jpg" />In ECL Watch, go to the
         <emphasis role="bold">Users/Permissions</emphasis> menu item and click
         <emphasis role="bold">Groups</emphasis>:</para>
       </sect4>
@@ -680,7 +680,7 @@
 
             <para>The list of permissions currently set for this group are
             displayed.<graphic
-            fileref="../images/Permissions004.jpg" /></para>
+            fileref="../../images/Permissions004.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -755,7 +755,7 @@
       <emphasis role="bold">User/Permissions</emphasis> area using the
       <emphasis role="bold">Permissions</emphasis> menu item. All six feature
       areas are listed. <graphic
-      fileref="../images/Permissions005.jpg" /></para>
+      fileref="../../images/Permissions005.jpg" /></para>
 
       <para>Use the <emphasis role="bold">Permissions</emphasis> menu item
       to:</para>
@@ -1513,7 +1513,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="../images/US003.jpg" />
+            <imagedata fileref="../../images/US003.jpg" />
           </imageobject>
         </mediaobject>
       </figure></para>

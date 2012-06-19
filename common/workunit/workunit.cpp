@@ -4043,6 +4043,18 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
     return ret.append(cluster).append(THOR_QUEUE_EXT);
 }
 
+extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
+{
+    StringBuffer path;
+    Owned<IRemoteConnection> conn = querySDS().connect(path.append("Environment/Software/ThorCluster[@name=\"").append(cluster).append("\"]").str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (conn)
+    {
+        getClusterGroupName(*conn->queryRoot(), ret);
+    }
+
+    return ret;
+}
+
 extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster)
 {
     return ret.append(cluster).append(ROXIE_QUEUE_EXT);
@@ -4674,14 +4686,13 @@ IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance)
     CriticalBlock block(crit);
     if (p->getPropInt("@wuidVersion") < 1) // legacy wuid
     {
-        if (!instance)
-            return new CStringPTreeTagIterator(p->getElements("Debug/*log*"));
-        else if(streq("EclAgent", instance))
-            return new CStringPTreeTagIterator(p->getElements("Debug/eclagentlog"));
-        else if (streq("Thor", instance))
-            return new CStringPTreeTagIterator(p->getElements("Debug/thorlog*"));
-        VStringBuffer xpath("Debug/%s", instance);
-        return new CStringPTreeAttrIterator(p->getElements(xpath.str()), xpath.str());
+        // NB: instance unused
+        if (streq("EclAgent", type))
+            return new CStringPTreeIterator(p->getElements("Debug/eclagentlog"));
+        else if (streq("Thor", type))
+            return new CStringPTreeIterator(p->getElements("Debug/thorlog*"));
+        VStringBuffer xpath("Debug/%s", type);
+        return new CStringPTreeIterator(p->getElements(xpath.str()));
     }
     else
         return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
