@@ -132,6 +132,12 @@ ESPStruct [nil_remove] DebugValue
     string Value;
 };
 
+ESPStruct [nil_remove] NamedValue
+{
+    string Name;
+    string Value;
+};
+
 ESPStruct [nil_remove] WUActionResult
 {
     string Wuid;
@@ -492,6 +498,8 @@ ESPrequest WURunRequest
     int Wait(-1);
     [rows(15)] string Input;
     bool NoRootTag(0);
+    ESParray<ESPstruct NamedValue> DebugValues;
+    ESParray<ESPstruct NamedValue> Variables;
 };
 
 ESPresponse [exceptions_inline] WURunResponse

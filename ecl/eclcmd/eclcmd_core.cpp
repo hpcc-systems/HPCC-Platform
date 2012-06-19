@@ -455,6 +455,34 @@ private:
     bool activateSet;
 };
 
+inline StringBuffer &getExtendedArgumentName(const char *arg, StringBuffer &name)
+{
+    const char *tail = strchr(arg, '=');
+    if (tail)
+        return name.append(tail-arg, arg);
+    return name.append(arg);
+}
+
+bool matchVariableParameter(ArgvIterator &iter, const char *prefix, IArrayOf<IEspNamedValue> &values)
+{
+    const char *arg = iter.query();
+    size_t len = strlen(prefix);
+    if (!strncmp(arg, prefix, len))
+    {
+        StringAttr val;
+        StringBuffer fullname;
+        if (iter.matchOption(val, getExtendedArgumentName(arg, fullname).str()))
+        {
+            Owned<IEspNamedValue> nv = createNamedValue();
+            nv->setName(fullname.str()+len);
+            nv->setValue(val.get());
+            values.append(*nv.getClear());
+        }
+        return true;
+    }
+    return false;
+}
+
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
@@ -472,6 +500,10 @@ public:
 
         for (; !iter.done(); iter.next())
         {
+            if (matchVariableParameter(iter, "-dbg.", debugValues))
+                continue;
+            if (matchVariableParameter(iter, "-var.", variables))
+                continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
@@ -569,6 +601,11 @@ public:
         if (optInput.length())
             req->setInput(optInput.get());
 
+        if (debugValues.length())
+            req->setDebugValues(debugValues);
+        if (variables.length())
+            req->setVariables(variables);
+
         Owned<IClientWURunResponse> resp = client->WURun(req);
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
@@ -608,6 +645,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
+            "   -dbg.<name>=<value>    sets the workunit debug value '<name>'\n"
+            "   -var.<name>=<value>    sets the workunit stored variable '<name>'\n"
             "   --wait=<ms>            time to wait for completion\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -616,6 +655,8 @@ private:
     StringAttr optCluster;
     StringAttr optName;
     StringAttr optInput;
+    IArrayOf<IEspNamedValue> variables;
+    IArrayOf<IEspNamedValue> debugValues;
     unsigned optWaitTime;
     bool optNoRoot;
 };
