@@ -15,5 +15,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} HDFS_to_HPCC_ConnectorIncluder.xml "HDFS_to_HPCC_Connector")
+DOCBOOK_TO_PDF( ${FO_XSL} HDFS_to_HPCC_ConnectorIncluder.xml "HDFS_to_HPCC_Connector" "HDFS_Mods")
 

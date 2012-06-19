@@ -103,7 +103,16 @@ define([
 							rows[i].myInjectedRowNum = options.start + i + 1;
 						}
 						rows.total = context.getValue(domXml, "Total");
-						deferredResults.resolve(rows);
+						//  TODO - Need to check why this happens only sometimes  (Suspect non XML from the server) ---
+						if (rows.total == null) {
+							var debug = context.flattenXml(domXml);
+							setTimeout(function () {
+								context.queryWhenComplete(query, options, deferredResults);
+							}, 100);
+						}
+						else {
+							deferredResults.resolve(rows);
+						}
 					}
 				});
 			} else {

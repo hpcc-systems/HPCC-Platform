@@ -891,6 +891,7 @@ interface IConstWorkUnit : extends IInterface
     virtual void subscribe(WUSubscribeOptions options) = 0;
     virtual unsigned queryFileUsage(const char * filename) const = 0;
     virtual unsigned getCodeVersion() const = 0;
+    virtual unsigned getWuidVersion() const  = 0;
     virtual void getBuildVersion(IStringVal & buildVersion, IStringVal & eclVersion) const = 0;
     virtual bool isBilled() const = 0;
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned & day) = 0;
@@ -918,6 +919,8 @@ interface IConstWorkUnit : extends IInterface
     virtual IStringVal & getXmlParams(IStringVal & params) const = 0;
     virtual const IPropertyTree * getXmlParams() const = 0;
     virtual unsigned __int64 getHash() const = 0;
+    virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
+    virtual IStringIterator *getProcesses(const char *type) const = 0;
 };
 
 
@@ -930,6 +933,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual IWUException * createException() = 0;
     virtual void setTimeStamp(const char * name, const char * instance, const char * event) = 0;
     virtual void addTimeStamp(const char * name, const char * instance, const char * event) = 0;
+    virtual void addProcess(const char *type, const char *instance, const char *log=NULL) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;
@@ -1136,6 +1140,7 @@ extern WORKUNIT_API IStringVal &getAgentQueueNames(IStringVal &ret, const char *
 extern WORKUNIT_API IStringVal &getRoxieQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API IStringVal &getThorQueueNames(IStringVal &ret, const char *process);
 extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, const char *cluster);
+extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterRoxieQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterEclCCServerQueueName(StringBuffer &ret, const char *cluster);
 extern WORKUNIT_API StringBuffer &getClusterEclServerQueueName(StringBuffer &ret, const char *cluster);

@@ -41,7 +41,7 @@ import org.xml.sax.SAXException;
 public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 	private HPCCQueries eclqueries;
-	private Properties dfufiles;
+	private HPCCLogicalFiles dfufiles;
 	private static Map<Integer, String> SQLFieldMapping;
 	private List<String> targetclusters;
 	private List<String> querysets;
@@ -84,7 +84,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		targetclusters = new ArrayList<String>();
 		querysets = new ArrayList<String>();
-		dfufiles = new Properties();
+		dfufiles = new HPCCLogicalFiles();
 		eclqueries = new HPCCQueries();
 		SQLFieldMapping = new HashMap<Integer, String>();
 
@@ -156,6 +156,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			return java.sql.Types.NULL;
 		}
 	}
+
 	public int getTableFieldType(String hpccfilename, String fieldName)
 	{
 		if (!isDFUMetaDataCached())
@@ -163,7 +164,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			DFUFile file = (DFUFile)dfufiles.get(hpccfilename);
+			DFUFile file = dfufiles.getFile(hpccfilename);
 			if (file != null && file.containsField(fieldName))
 				return file.getFieldMetaData(fieldName).getSqlType();
 			return java.sql.Types.NULL;
@@ -222,7 +223,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			if (isDFUMetaDataCached())
 			{
 				System.out.println("Tables found: ");
-				Enumeration<Object> em = dfufiles.elements();
+				Enumeration<Object> em = dfufiles.getFiles();
 				while (em.hasMoreElements())
 				{
 					 DFUFile file = (DFUFile)em.nextElement();
@@ -251,7 +252,10 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		return isSuccess;
 	}
 
-	private int registerFileDetails(Element node, DFUFile file) {
+	private int registerFileDetails(Element node, DFUFile file)
+	{
+		if (file.isSuperFile())
+			System.out.println("Found super file: " + file.getFullyQualifiedName());
 
 		NodeList fileDetail = node.getElementsByTagName("FileDetail");
 		if (fileDetail.getLength()>0)
@@ -263,7 +267,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 				if (currentfiledetail.getNodeName().equals("Ecl"))
 				{
-					//file.setFileFields(currentfiledetail.getTextContent());
 					file.setFileRecDef(currentfiledetail.getTextContent());
 				}
 				else if (currentfiledetail.getNodeName().equals("Filename"))
@@ -289,6 +292,14 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 				else if (currentfiledetail.getNodeName().equals("Description"))
 				{
 					file.setDescription(currentfiledetail.getTextContent());
+				}
+				else if (file.isSuperFile() && currentfiledetail.getNodeName().equals("subfiles"))
+				{
+					NodeList subfilelist = currentfiledetail.getChildNodes();
+					for (int y = 0; y < subfilelist.getLength(); y++)
+					{
+						file.addSubfile(subfilelist.item(y).getTextContent());
+					}
 				}
 			}
 		}
@@ -1370,7 +1381,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("SELF_REFERENCING_COL_NAME", 10, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("REF_GENERATION", 11, java.sql.Types.VARCHAR));
 
-		Enumeration<Object> files = dfufiles.elements();
+		Enumeration<Object> files = dfufiles.getFiles();
 		while (files.hasMoreElements())
 		{
 			DFUFile file = (DFUFile) files.nextElement();
@@ -1413,7 +1424,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("TABLE_CATALOG", 2, java.sql.Types.VARCHAR));
 
-		Enumeration<Object> files = dfufiles.elements();
+		Enumeration<Object> files = dfufiles.getFiles();
 		while (files.hasMoreElements())
 		{
 			DFUFile file = (DFUFile)files.nextElement();
@@ -1466,7 +1477,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		if (!isDFUMetaDataCached())
 			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-		DFUFile file = (DFUFile)dfufiles.get(tablename);
+		DFUFile file = (DFUFile)dfufiles.getFile(tablename);
 		if (file != null)
 			return file.getAllTableFieldsStringArray();
 
@@ -1513,7 +1524,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		int coltype = java.sql.Types.NULL;
 
-		Enumeration<Object> files = dfufiles.elements();
+		Enumeration<Object> files = dfufiles.getFiles();
 		while(files.hasMoreElements())
 		{
 			DFUFile file = (DFUFile)files.nextElement();
@@ -1885,6 +1896,129 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		return (int)HPCCBuildMinor;
 	}
 
+	private boolean fetchHPCCFileColumnInfo(DFUFile file, DocumentBuilder db)
+	{
+		boolean isSuccess = true;
+
+		if (wseclwatchaddress == null || wseclwatchport == null)
+			return false;
+
+		try
+		{
+			if (file.getFullyQualifiedName().length() > 0)
+			{
+				String filedetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+						"/WsDfu/DFUInfo?Name=" +
+						URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
+						"&rawxml_";
+
+				//now request the schema for each roxy query
+				URL queryschema = new URL(filedetailUrl);
+				HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
+				queryschemaconnection.setInstanceFollowRedirects(false);
+				queryschemaconnection.setRequestProperty("Authorization", basicAuth);
+				queryschemaconnection.setRequestMethod("GET");
+				queryschemaconnection.setDoOutput(true);
+				queryschemaconnection.setDoInput(true);
+
+				InputStream schema = queryschemaconnection.getInputStream();
+				Document dom2 = db.parse(schema);
+
+				Element docElement = dom2.getDocumentElement();
+
+				// Get all pertinent detail info regarding this file (files are being treated as DB tables)
+				registerFileDetails(docElement, file);
+
+				//we might need more info if this file is actually an index:
+				if(file.isKeyFile())
+				{
+					String openfiledetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
+							"/WsDfu/DFUSearchData?OpenLogicalName=" +
+							URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
+							"&Cluster=" +
+							file.getClusterName() +
+							"&RoxieSelections=0"+
+							"&rawxml_";
+
+					//now request the schema for each roxy query
+					URL queryfiledata = new URL(openfiledetailUrl);
+					HttpURLConnection queryfiledataconnection = (HttpURLConnection)queryfiledata.openConnection();
+					queryfiledataconnection.setInstanceFollowRedirects(false);
+					queryfiledataconnection.setRequestProperty("Authorization", basicAuth);
+					queryfiledataconnection.setRequestMethod("GET");
+					queryfiledataconnection.setDoOutput(true);
+					queryfiledataconnection.setDoInput(true);
+
+					InputStream filesearchinfo = queryfiledataconnection.getInputStream();
+					Document dom3 = db.parse(filesearchinfo);
+
+					Element docElement2 = dom3.getDocumentElement();
+
+					NodeList keyfiledetail = docElement2.getChildNodes();
+					if (keyfiledetail.getLength()>0)
+					{
+						for (int k = 0; k< keyfiledetail.getLength(); k++)
+						{
+							Node currentnode = keyfiledetail.item(k);
+							if(currentnode.getNodeName().startsWith("DFUDataKeyedColumns"))
+							{
+								NodeList keyedColumns = currentnode.getChildNodes();
+								for (int fieldindex = 0 ; fieldindex < keyedColumns.getLength(); fieldindex++)
+								{
+									Node KeyedColumn = keyedColumns.item(fieldindex);
+									NodeList KeyedColumnFields = KeyedColumn.getChildNodes();
+									for (int q = 0; q < KeyedColumnFields.getLength(); q++)
+									{
+										Node keyedcolumnfield = KeyedColumnFields.item(q);
+										if (keyedcolumnfield.getNodeName().equals("ColumnLabel"))
+										{
+											file.addKeyedColumnInOrder(keyedcolumnfield.getTextContent());
+											break;
+										}
+										/*currently not interested in any other field, if we need
+										 * other field values, remove above break;
+										 */
+									}
+
+								}
+							}
+							else if(currentnode.getNodeName().startsWith("DFUDataNonKeyedColumns"))
+							{
+								NodeList nonKeyedColumns = currentnode.getChildNodes();
+
+								for (int fieldindex = 0 ; fieldindex < nonKeyedColumns.getLength(); fieldindex++)
+								{
+									Node nonKeyedColumn = nonKeyedColumns.item(fieldindex);
+									NodeList nonKeyedColumnFields = nonKeyedColumn.getChildNodes();
+									for (int q = 0; q < nonKeyedColumnFields.getLength(); q++)
+									{
+										Node nonkeyedcolumnfield = nonKeyedColumnFields.item(q);
+										if (nonkeyedcolumnfield.getNodeName().equals("ColumnLabel"))
+										{
+											file.addNonKeyedColumnInOrder(nonkeyedcolumnfield.getTextContent());
+											break;
+										}
+										//currently not interested in any other field, if we need
+										 // other field values, remove above break;
+									}
+								}
+							}
+						}
+					}
+				}
+				// Add this file name to files structure
+				dfufiles.putFile(file.getFullyQualifiedName(), file);
+			}
+		}
+		catch (Exception e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+			System.err.println(e.getMessage());
+		}
+		return isSuccess;
+	}
+
 	private boolean fetchHPCCFilesInfo()
 	{
 		boolean isSuccess = true;
@@ -2023,123 +2157,18 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 								{
 									file.setIsKeyFile(querysetquerychildren.item(j).getTextContent().equals("1"));
 								}
-								//else
-									//System.out.println("Unknow QuerySetElement found: " + NodeName);
 							}
-
 						}
 
-						if (file.getFullyQualifiedName().length() > 0 && file.getClusterName()!=null)
+						if (file.getFullyQualifiedName().length() > 0)
 						{
-							String filedetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-									"/WsDfu/DFUInfo?Name=" +
-									URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
-									"&Cluster=" +
-									file.getClusterName() +
-									"&rawxml_";
-
-							//now request the schema for each roxy query
-							URL queryschema = new URL(filedetailUrl);
-							HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-							queryschemaconnection.setInstanceFollowRedirects(false);
-							queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-							queryschemaconnection.setRequestMethod("GET");
-							queryschemaconnection.setDoOutput(true);
-							queryschemaconnection.setDoInput(true);
-
-							InputStream schema = queryschemaconnection.getInputStream();
-							Document dom2 = db.parse(schema);
-
-							Element docElement = dom2.getDocumentElement();
-
-							// Get all pertinent detail info regarding this file (files are being treated as DB tables)
-							registerFileDetails(docElement, file);
-
-							//we might need more info if this file is actually an index:
-							if(file.isKeyFile())
-							{
-								String openfiledetailUrl = "http://" + wseclwatchaddress + ":" + wseclwatchport +
-										"/WsDfu/DFUSearchData?OpenLogicalName=" +
-										URLEncoder.encode(file.getFullyQualifiedName(), "UTF-8") +
-										"&Cluster=" +
-										file.getClusterName() +
-										"&RoxieSelections=0"+
-										"&rawxml_";
-
-								//now request the schema for each roxy query
-								URL queryfiledata = new URL(openfiledetailUrl);
-								HttpURLConnection queryfiledataconnection = (HttpURLConnection)queryfiledata.openConnection();
-								queryfiledataconnection.setInstanceFollowRedirects(false);
-								queryfiledataconnection.setRequestProperty("Authorization", basicAuth);
-								queryfiledataconnection.setRequestMethod("GET");
-								queryfiledataconnection.setDoOutput(true);
-								queryfiledataconnection.setDoInput(true);
-
-								InputStream filesearchinfo = queryfiledataconnection.getInputStream();
-								Document dom3 = db.parse(filesearchinfo);
-
-								Element docElement2 = dom3.getDocumentElement();
-
-								NodeList keyfiledetail = docElement2.getChildNodes();
-								if (keyfiledetail.getLength()>0)
-								{
-									for (int k = 0; k< keyfiledetail.getLength(); k++)
-									{
-										Node currentnode = keyfiledetail.item(k);
-										if(currentnode.getNodeName().startsWith("DFUDataKeyedColumns"))
-										{
-											NodeList keyedColumns = currentnode.getChildNodes();
-											for (int fieldindex = 0 ; fieldindex < keyedColumns.getLength(); fieldindex++)
-											{
-												Node KeyedColumn = keyedColumns.item(fieldindex);
-												NodeList KeyedColumnFields = KeyedColumn.getChildNodes();
-												for (int q = 0; q < KeyedColumnFields.getLength(); q++)
-												{
-													Node keyedcolumnfield = KeyedColumnFields.item(q);
-													if (keyedcolumnfield.getNodeName().equals("ColumnLabel"))
-													{
-														file.addKeyedColumnInOrder(keyedcolumnfield.getTextContent());
-														break;
-													}
-													/*currently not interested in any other field, if we need
-													 * other field values, remove above break;
-													 */
-												}
-
-											}
-										}
-										else if(currentnode.getNodeName().startsWith("DFUDataNonKeyedColumns"))
-										{
-											NodeList nonKeyedColumns = currentnode.getChildNodes();
-
-											for (int fieldindex = 0 ; fieldindex < nonKeyedColumns.getLength(); fieldindex++)
-											{
-												Node nonKeyedColumn = nonKeyedColumns.item(fieldindex);
-												NodeList nonKeyedColumnFields = nonKeyedColumn.getChildNodes();
-												for (int q = 0; q < nonKeyedColumnFields.getLength(); q++)
-												{
-													Node nonkeyedcolumnfield = nonKeyedColumnFields.item(q);
-													if (nonkeyedcolumnfield.getNodeName().equals("ColumnLabel"))
-													{
-														file.addNonKeyedColumnInOrder(nonkeyedcolumnfield.getTextContent());
-														break;
-													}
-													//currently not interested in any other field, if we need
-													 // other field values, remove above break;
-												}
-											}
-										}
-									}
-								}
-							}
-
-							// Add this file name to files structure
-							dfufiles.put(file.getFullyQualifiedName(), file);
+							fetchHPCCFileColumnInfo(file, db);
 						}
 						else
 							System.out.println("Found DFU file but could not determine name and/or cluster");
 					}
 				}
+				dfufiles.updateSuperFiles();
 			}
 			else
 				System.out.println("No DFU files found, check server address and ECL watch port");
@@ -2709,7 +2738,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		if (!isDFUMetaDataCached())
 			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-		return dfufiles.containsKey(eclqueryname);
+		return dfufiles.containsFileName(eclqueryname);
 	}
 
 	public HPCCQuery getHpccQuery(String clustername, String eclqueryname)
@@ -2763,7 +2792,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		if (!isDFUMetaDataCached())
 			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-		DFUFile file = (DFUFile)dfufiles.get(dfufilename);
+		DFUFile file = (DFUFile)dfufiles.getFile(dfufilename);
 
 		if(file != null  && columnNames != null)
 		{
@@ -2812,7 +2841,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			DFUFile file = (DFUFile)dfufiles.get(hpccfilename);
+			DFUFile file = dfufiles.getFile(hpccfilename);
 			if (file != null && file.containsField(fieldName))
 				return file.getFieldMetaData(fieldName);
 			return null;
@@ -2828,6 +2857,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		if (!isDFUMetaDataCached())
 			setDFUMetaDataCached(fetchHPCCFilesInfo());
 
-		return (DFUFile)dfufiles.get(hpccfilename);
+		return dfufiles.getFile(hpccfilename);
 	}
 }

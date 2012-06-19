@@ -4134,7 +4134,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 getctx.addQuoted(s.str());
                 getctx.addQuoted("const unsigned char * left = (const unsigned char *)data;");
 
-                LinkedHqlExpr selfDs = createDataset(no_null, LINK(instance.queryRecord()));
+                OwnedHqlExpr selfDs = createDataset(no_null, LINK(instance.queryRecord()));
                 BoundRow * selfRow = bindTableCursorOrRow(getctx, selfDs, "left");
                 OwnedHqlExpr size = getRecordSize(selfRow->querySelector());
                 buildReturn(getctx, size);
