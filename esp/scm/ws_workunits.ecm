@@ -155,6 +155,14 @@ ESPStruct [nil_remove] ECLWorkflow
     int CountRemaining(-1);
 };
 
+ESPStruct [nil_remove] ThorLogInfo
+{
+    string ProcessName;
+    string ClusterGroup;
+    string LogDate;
+    int    NumberSlaves;
+};
+
 ESPStruct [nil_remove] ECLWorkunit
 {
     string Wuid;
@@ -220,6 +228,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.29")] string ApplicationValuesDesc;
     [min_ver("1.29")] string WorkflowsDesc;
     [min_ver("1.31")] bool HasArchiveQuery(false);
+    [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
 
 };
 
@@ -568,7 +577,6 @@ ESPrequest WUInfoRequest
     [min_ver("1.25")] string ThorSlaveIP;
 };
 
-
 ESPresponse [exceptions_inline] WUInfoResponse
 {
     ESPstruct ECLWorkunit Workunit;
@@ -604,6 +612,10 @@ ESPrequest WULogFileRequest
     [min_ver("1.32")] string Description;
     [min_ver("1.36")] string QuerySet;
     [min_ver("1.36")] string Query;
+    [min_ver("1.38")] string Process;
+    [min_ver("1.38")] string ClusterGroup;
+    [min_ver("1.38")] string LogDate;
+    [min_ver("1.38")] int SlaveNumber(1);
     string PlainText;
 };
 
@@ -1239,7 +1251,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.37"), default_client_version("1.37"),
+    version("1.38"), default_client_version("1.38"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
