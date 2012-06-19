@@ -226,6 +226,7 @@ function invokeWizard() {
   }
   else {
     updateWizCtrls();
+    loadAndCheckFileNames('4');
     top.document.displayModeDialog1.show();
   }
 }
@@ -4555,9 +4556,25 @@ function loadAndCheckFileNames(value)
             for (var i = 0; i < files.length; i++) {
               if (files[i] !== '') {
                 var optn = document.createElement("OPTION");
-                optn.text = files[i];
-                optn.value = files[i];
-                element.options.add(optn);
+                if (files[i] == "<StagedConfiguration>")
+                {
+                  i++;
+                  optn.style.backgroundColor = "#004ADE";
+                  optn.style.color = "white";
+                  optn.title = "Currently Staged";
+
+                  optn.text = files[i];
+                  optn.value = files[i];
+                  element.options.add(optn);
+
+                  i++;
+                }
+                else
+                {
+                  optn.text = files[i];
+                  optn.value = files[i];
+                  element.options.add(optn);
+                }
               }
             }
           }
