@@ -69,18 +69,21 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private boolean lazyLoad;
 	private int pageSize;
 
+	final static String PROCEDURE_NAME = "PROCEDURE_NAME";
+	final static String TABLE_NAME = "TABLE_NAME";
+
 	public HPCCDatabaseMetaData(Properties props)
 	{
 		super();
-		this.serverAddress = props.getProperty("ServerAddress");
-		this.targetcluster = props.getProperty("Cluster");
-		this.queryset = props.getProperty("QuerySet");
-		this.wseclwatchport  = props.getProperty("WsECLWatchPort");
-		this.wseclwatchaddress  = props.getProperty("WsECLWatchAddress");
-		this.UserName = props.getProperty("username");
-		this.basicAuth = props.getProperty("BasicAuth");
-		this.lazyLoad = Boolean.parseBoolean(props.getProperty("LazyLoad"));
-		this.pageSize = HPCCJDBCUtils.stringToInt(props.getProperty("PageSize"));
+		this.serverAddress = props.getProperty("ServerAddress", HPCCConnection.SERVERADDRESSDEFAULT);
+		this.targetcluster = props.getProperty("Cluster", HPCCConnection.CLUSTERDEFAULT);
+		this.queryset = props.getProperty("QuerySet", HPCCConnection.QUERYSETDEFAULT);
+		this.wseclwatchport  = props.getProperty("WsECLWatchPort", HPCCConnection.WSECLWATCHPORTDEFAULT);
+		this.wseclwatchaddress  = props.getProperty("WsECLWatchAddress",this.serverAddress);
+		this.UserName = props.getProperty("username", "");
+		this.basicAuth = props.getProperty("BasicAuth", HPCCConnection.createBasicAuth(this.UserName, props.getProperty("password", "")));
+		this.lazyLoad = Boolean.parseBoolean(props.getProperty("LazyLoad", HPCCConnection.LAZYLOADDEFAULT));
+		this.pageSize = HPCCJDBCUtils.stringToInt(props.getProperty("PageSize", String.valueOf(HPCCConnection.FETCHPAGESIZEDEFAULT)), HPCCConnection.FETCHPAGESIZEDEFAULT);
 
 		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + targetcluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
@@ -1198,7 +1201,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_SCHEM", 2, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("PROCEDURE_NAME", 3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData(PROCEDURE_NAME, 3, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("R1", 4, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("R2", 5, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("R6", 6, java.sql.Types.VARCHAR));
@@ -1256,7 +1259,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_CAT", 1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("PROCEDURE_SCHEM",2, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("PROCEDURE_NAME",3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData(PROCEDURE_NAME,	3, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("COLUMN_NAME", 	4, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("COLUMN_TYPE", 	5, java.sql.Types.SMALLINT));
 		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 	6, java.sql.Types.INTEGER));
@@ -1273,8 +1276,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		while (procs.next())
 		{
-			System.out.println(procs.getString("PROCEDURE_NAME"));
-			HPCCQuery query = getHpccQuery(procs.getString("PROCEDURE_NAME"));
+			HPCCQuery query = getHpccQuery(procs.getString(PROCEDURE_NAME));
 
 			Iterator<HPCCColumnMetaData> queryfields = query.getAllFields().iterator();
 
@@ -1340,7 +1342,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 2, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("TABLE_NAME", 3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData(TABLE_NAME, 3, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("TABLE_TYPE", 4, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("REMARKS", 5, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("TYPE_CAT", 6, java.sql.Types.VARCHAR));
@@ -1475,7 +1477,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		metacols.add(new HPCCColumnMetaData("TABLE_CAT", 		1, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("TABLE_SCHEM", 		2, java.sql.Types.VARCHAR));
-		metacols.add(new HPCCColumnMetaData("TABLE_NAME", 		3, java.sql.Types.VARCHAR));
+		metacols.add(new HPCCColumnMetaData(TABLE_NAME, 		3, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("COLUMN_NAME", 		4, java.sql.Types.VARCHAR));
 		metacols.add(new HPCCColumnMetaData("DATA_TYPE", 		5, java.sql.Types.INTEGER));
 		metacols.add(new HPCCColumnMetaData("TYPE_NAME", 		6, java.sql.Types.VARCHAR));
@@ -1500,8 +1502,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		while (tables.next())
 		{
-			System.out.println(tables.getString("TABLE_NAME"));
-			DFUFile file = getDFUFile(tables.getString("TABLE_NAME"));
+			DFUFile file = getDFUFile(tables.getString(TABLE_NAME));
 
 			Enumeration<Object> e = file.getAllFields();
 			while (e.hasMoreElements())
@@ -2191,6 +2192,11 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			e.printStackTrace();
 		}
 		catch (IOException e)
+		{
+			isSuccess = false;
+			e.printStackTrace();
+		}
+		catch (Exception e)
 		{
 			isSuccess = false;
 			e.printStackTrace();

@@ -3,6 +3,7 @@ package com.hpccsystems.test.jdbcdriver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +52,23 @@ public class HPCCDriverTest
 				System.out.println("   " + tables.getString("TABLE_NAME") + " Remarks: \'" + tables.getString("REMARKS")+"\'");
 			}
 
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			System.out.println(e.getMessage());
+			success = false;
+		}
+		return success;
+	}
+
+	private static boolean  createStandAloneDataMetadata(Properties conninfo)
+	{
+		boolean success = true;
+		try
+		{
+			HPCCDatabaseMetaData dbmetadata = new HPCCDatabaseMetaData(conninfo);
+			success = getDatabaseInfo(dbmetadata);
 		}
 		catch (Exception e)
 		{
@@ -273,24 +291,36 @@ public class HPCCDriverTest
 
 	private static boolean getDatabaseInfo(HPCCConnection conn)
 	{
+		try
+		{
+			return getDatabaseInfo((HPCCDatabaseMetaData)conn.getMetaData());
+		}
+		catch (SQLException e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	private static boolean getDatabaseInfo(HPCCDatabaseMetaData dbmetadata)
+	{
 		boolean success = true;
 		try
 		{
-			HPCCDatabaseMetaData meta =  (HPCCDatabaseMetaData)conn.getMetaData();
-			String hpccname = meta.getDatabaseProductName();
-			String hpccprodver = meta.getDatabaseProductVersion();
-			int major = meta.getDatabaseMajorVersion();
-			int minor = meta.getDatabaseMinorVersion();
-			String sqlkeywords = meta.getSQLKeywords();
+			String hpccname = dbmetadata.getDatabaseProductName();
+			String hpccprodver = dbmetadata.getDatabaseProductVersion();
+			int major = dbmetadata.getDatabaseMajorVersion();
+			int minor = dbmetadata.getDatabaseMinorVersion();
+			String sqlkeywords = dbmetadata.getSQLKeywords();
 
 			System.out.println("HPCC System Info:");
 			System.out.println("\tProduct Name: " + hpccname);
 			System.out.println("\tProduct Version: " + hpccprodver);
 			System.out.println("\tProduct Major: " + major);
 			System.out.println("\tProduct Minor: " + minor);
-			System.out.println("\tDriver Name: " + meta.getDriverName());
-			System.out.println("\tDriver Major: " + meta.getDriverMajorVersion());
-			System.out.println("\tDriver Minor: " + meta.getDriverMinorVersion());
+			System.out.println("\tDriver Name: " + dbmetadata.getDriverName());
+			System.out.println("\tDriver Major: " + dbmetadata.getDriverMajorVersion());
+			System.out.println("\tDriver Minor: " + dbmetadata.getDriverMinorVersion());
 			System.out.println("\tSQL Key Words: " + sqlkeywords);
 		}
 		catch (Exception e)
@@ -307,6 +337,8 @@ public class HPCCDriverTest
 		try
 		{
 			//success &= testLazyLoading(propsinfo);
+
+			success &= createStandAloneDataMetadata(propsinfo);
 
 			HPCCConnection connectionprops = connectViaProps(propsinfo);
 			if (connectionprops == null)

@@ -151,7 +151,7 @@ public class HPCCJDBCUtils
 		return true;
 	}
 
-	public static long stringToLong(String str)
+	public static long stringToLong(String str, long uponError)
 	{
 		try
 		{
@@ -160,11 +160,11 @@ public class HPCCJDBCUtils
 		}
 		catch (ParseException e)
 		{
-			return 0;
+			return uponError;
 		}
 	}
 
-	public static int stringToInt(String str)
+	public static int stringToInt(String str, int uponError)
 	{
 		try
 		{
@@ -173,7 +173,7 @@ public class HPCCJDBCUtils
 		}
 		catch (ParseException e)
 		{
-			return 0;
+			return uponError;
 		}
 	}
 

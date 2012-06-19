@@ -32,7 +32,7 @@ public class HPCCConnection implements Connection
 	public static final String WSECLWATCHPORTDEFAULT = "8010";
 	public static final String WSECLPORTDEFAULT = "8002";
 	public static final String WSECLDIRECTPORTDEFAULT = "8008";
-	public static final String FETCHPAGESIZEDEFAULT = "100";
+	public static final int FETCHPAGESIZEDEFAULT = 100;
 	public static final String LAZYLOADDEFAULT = "true";
 
     private boolean closed;
@@ -85,7 +85,7 @@ public class HPCCConnection implements Connection
 			this.props.setProperty("password", "");
 
 		if (!this.props.containsKey("PageSize") || !HPCCJDBCUtils.isNumeric(this.props.getProperty("PageSize")))
-			this.props.setProperty("PageSize", FETCHPAGESIZEDEFAULT);
+			this.props.setProperty("PageSize", String.valueOf(FETCHPAGESIZEDEFAULT));
 
 		boolean setdefaultreslim = false;
 		if (this.props.containsKey("EclResultLimit"))
@@ -118,22 +118,24 @@ public class HPCCConnection implements Connection
 			System.out.println("Invalid Numeric EclResultLimit value detected, using default value: " + ECLRESULTLIMDEFAULT);
 		}
 
-		// basicAuth
-		String userPassword = this.props.getProperty("username") + ":"
-				+ props.getProperty("password");
+		String basicAuth = createBasicAuth(this.props.getProperty("username"), props.getProperty("password"));
 
-       String basicAuth = "Basic " + HPCCJDBCUtils.Base64Encode(userPassword.getBytes(), false);
-       this.props.put("BasicAuth", basicAuth);
+		this.props.put("BasicAuth", basicAuth);
 
-       if (!this.props.containsKey("LazyLoad"))
-			this.props.setProperty("LazyLoad", LAZYLOADDEFAULT);
+		if (!this.props.containsKey("LazyLoad"))
+		this.props.setProperty("LazyLoad", LAZYLOADDEFAULT);
 
-       metadata = new HPCCDatabaseMetaData(props);
+		metadata = new HPCCDatabaseMetaData(props);
 
-       //TODO not doing anything w/ this yet, just exposing it to comply w/ API definition...
-       clientInfo = new Properties();
+		//TODO not doing anything w/ this yet, just exposing it to comply w/ API definition...
+		clientInfo = new Properties();
 
-       System.out.println("EclConnection initialized - server: " + this.serverAddress);
+		System.out.println("EclConnection initialized - server: " + this.serverAddress);
+    }
+
+    public static String createBasicAuth(String username, String passwd)
+    {
+    	return "Basic " + HPCCJDBCUtils.Base64Encode((username + ":" + passwd).getBytes(), false);
     }
 
     public Properties getProperties()
