@@ -124,7 +124,7 @@ public class HPCCLogicalFiles
 
 	public void setReportedFileCount(String reportedFileCountStr)
 	{
-		this.reportedFileCount = HPCCJDBCUtils.stringToLong(reportedFileCountStr);
+		this.reportedFileCount = HPCCJDBCUtils.stringToLong(reportedFileCountStr, 0);
 	}
 
 	public int getCachedFileCount()
