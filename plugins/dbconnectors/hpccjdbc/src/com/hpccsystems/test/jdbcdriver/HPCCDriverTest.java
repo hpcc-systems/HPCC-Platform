@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -24,6 +23,7 @@ public class HPCCDriverTest
 		driver	= new HPCCDriver();
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean  testLazyLoading(Properties conninfo)
 	{
 		boolean success = true;
@@ -101,6 +101,7 @@ public class HPCCDriverTest
 		return connection;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean printouttable(HPCCConnection connection, String tablename)
 	{
 		boolean success = true;
@@ -118,6 +119,7 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean printoutExportedKeys(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -135,6 +137,7 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean printouttables(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -153,6 +156,7 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean printouttablecols(HPCCConnection connection, String tablename)
 	{
 		boolean success = true;
@@ -174,6 +178,7 @@ public class HPCCDriverTest
 		}
 		return success;
 	}
+
 	private static boolean printoutalltablescols(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -196,6 +201,7 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean printoutprocs(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -215,6 +221,7 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean  printoutproccols(HPCCConnection connection)
 	{
 		boolean success = true;
@@ -289,6 +296,33 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	private static boolean  testSelect1(HPCCConnection connection)
+	{
+		boolean success = true;
+		try
+		{
+			PreparedStatement p = connection.prepareStatement("Select 1 AS ONE");
+
+			HPCCResultSet qrs = (HPCCResultSet)((HPCCPreparedStatement)p).executeQuery();
+
+			System.out.println("---------Testing Select 1---------------");
+
+			while (qrs.next())
+			{
+				if(qrs.getInt(1) != 1)
+					success = false;
+			}
+
+			System.out.println("\tTest Success: " + success);
+		}
+		catch (Exception e)
+		{
+			System.err.println(e.getMessage());
+			success = false;
+		}
+		return success;
+	}
+
 	private static boolean getDatabaseInfo(HPCCConnection conn)
 	{
 		try
@@ -331,8 +365,94 @@ public class HPCCDriverTest
 		return success;
 	}
 
+	public static synchronized boolean printOutResultSet(HPCCResultSet resultset, long threadid )
+	{
+		System.out.println("Servicing thread id: " + threadid);
+
+		int padvalue = 20;
+		boolean isSuccess = true;
+		try
+		{
+			ResultSetMetaData meta = resultset.getMetaData();
+
+			System.out.println();
+
+			for (int i = 1; i <= meta.getColumnCount(); i++)
+			{
+				String colname = meta.getColumnName(i);
+				System.out.print("[");
+
+				for (int y = 0; y < (colname.length()>=padvalue ? 0 : (padvalue - colname.length())/2); y++)
+					System.out.print(" ");
+				System.out.print(colname);
+
+				for (int y = 0; y < (colname.length()>=padvalue ? 0 : (padvalue - colname.length())/2); y++)
+					System.out.print(" ");
+
+				System.out.print("]");
+			}
+			System.out.println("");
+
+			for (int i = 1; i <= meta.getColumnCount(); i++)
+			{
+				String collabel = meta.getColumnLabel(i);
+				System.out.print("[");
+
+				for (int y = 0; y < (collabel.length()>=padvalue ? 0 : (padvalue - collabel.length())/2); y++)
+					System.out.print("^");
+				System.out.print(collabel);
+
+				for (int y = 0; y < (collabel.length()>=padvalue ? 0 : (padvalue - collabel.length())/2); y++)
+					System.out.print("^");
+
+				System.out.print("]");
+			}
+			System.out.println();
+
+			for (int i = 1; i <= meta.getColumnCount(); i++)
+			{
+				String coltype = HPCCDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i));
+				System.out.print("[");
+
+				for (int y = 0; y < (coltype.length()>=padvalue ? 0 : (padvalue - coltype.length())/2); y++)
+					System.out.print(" ");
+				System.out.print(coltype);
+
+				for (int y = 0; y < (coltype.length()>=padvalue ? 0 : (padvalue - coltype.length())/2); y++)
+					System.out.print(" ");
+
+				System.out.print("]");
+			}
+
+			while (resultset.next())
+			{
+				System.out.println();
+				for (int i = 1; i <= meta.getColumnCount(); i++)
+				{
+					String result = (String)resultset.getObject(i);
+					System.out.print("[");
+
+					for (int y = 0; y < (result.length()>=padvalue ? 0 : padvalue - result.length()); y++)
+						System.out.print(" ");
+					System.out.print(result);
+					System.out.print("]");
+				}
+			}
+
+			System.out.println("\nTotal Records found: " + resultset.getRowCount());
+		}
+		catch (Exception e)
+		{
+			System.out.println(e.getMessage());
+			isSuccess = false;
+		}
+		return isSuccess;
+	}
+
 	private static boolean runFullTest(Properties propsinfo, String urlinfo)
 	{
+		List<HPCCDriverTestThread> runnables = new ArrayList<HPCCDriverTestThread>();
+
 		boolean success = true;
 		try
 		{
@@ -352,7 +472,7 @@ public class HPCCDriverTest
 
 			success &= getDatabaseInfo(connectionurl);
 
-			PreparedStatement p = connectionprops.prepareStatement(
+			//PreparedStatement p = connectionprops.prepareStatement(
 					//"select  * from thor::full_test_distributed_index where lname = BRYANT , fname = whoknows group by zips order by birth_month DESC"
 					//"select  * from thor::full_test_distributed_index where lname = BRYANT AND fname = SILVA "
 
@@ -379,7 +499,8 @@ public class HPCCDriverTest
 					//"call myroxie::fetchpeoplebyzipservice(33445)"
 					//"call fetchpeoplebyzipservice(33445)"
 					//"call fetchpeoplebyzipservice(33445)"
-					"select * from .::doughenschen__infinity_rollup_best1"
+					//"select * from .::doughenschen__infinity_rollup_best1"
+					//"select * from regress::hthor::dg_memfile where u2 = ? limit 100"
 					//"select MIN(zip), city from tutorial::rp::tutorialperson where zip  > '33445'"
 
 					//"select tbl.* from progguide::exampledata::peopleaccts tbl"
@@ -399,64 +520,46 @@ public class HPCCDriverTest
 					//"select tbl.* from bestdemo tbl "
 					//"select * fname from fetchpeoplebyzipservice"
 
-					);
+					//);
 
-					p.clearParameters();
-					p.setObject(1, "'33445'");
-					//p.setObject(1, "'A'");
-					//p.setObject(2, "'D'");
+					Properties params = new Properties();
+					params.put("1", "'BAYLISS'");
+					HPCCDriverTestThread workThread1 = new HPCCDriverTestThread(connectionprops, "select * from regress::hthor_payload::dg_flat where dg_lastname = ? limit 100", params);
+					runnables.add(workThread1);
 
-				/*	HPCCResultSet qrs =(HPCCResultSet)((HPCCPreparedStatement)p).executeQuery();
+					Properties params2 = new Properties();
+					params2.put("1", "65535");
+					HPCCDriverTestThread workThread2 = new HPCCDriverTestThread(connectionprops, "select * from regress::hthor::dg_memfile where u2 = ? limit 100", params2);
+					runnables.add(workThread2);
 
-					ResultSetMetaData meta = qrs.getMetaData();
-					System.out.println();
+					Properties params3 = new Properties();
+					params3.put("1", "65535");
+					HPCCDriverTestThread workThread3 = new HPCCDriverTestThread(connectionprops, "select * from regress::hthor::dg_memfile where u2 < ? and u2 != 65536 limit 10000", params3);
+					runnables.add(workThread3);
 
-					for (int i = 1; i <= meta.getColumnCount(); i++)
+					for (HPCCDriverTestThread thrd : runnables)
 					{
-						System.out.print("[*****" + meta.getColumnName(i) + "*****]");
-					}
-					System.out.println("");
-					for (int i = 1; i <= meta.getColumnCount(); i++)
-					{
-						System.out.print("[^^^^^" + meta.getColumnLabel(i) + "^^^^^]");
-					}
-					System.out.println();
-					for (int i = 1; i <= meta.getColumnCount(); i++)
-					{
-						System.out.print("[+++++" + HPCCDatabaseMetaData.convertSQLtype2JavaClassName(meta.getColumnType(i)) + "+++++]");
+						thrd.start();
 					}
 
-					while (qrs.next())
+					boolean threadsrunning;
+					do
 					{
-						System.out.println();
-						for (int i = 1; i <= meta.getColumnCount(); i++)
+						threadsrunning = false;
+						for (HPCCDriverTestThread thrd : runnables)
 						{
-							System.out.print("[ " + qrs.getObject(i) + " ]");
+							threadsrunning = thrd.isRunning() || threadsrunning;
 						}
+						Thread.sleep(250);
+					} while (threadsrunning);
+
+					for (HPCCDriverTestThread thrd : runnables)
+					{
+						success &= thrd.isSuccess();
 					}
 
-					System.out.println("\nTotal Records found: " + qrs.getRowCount());
 
-//					p.clearParameters();
-//					//p.setObject(1, "'33445'");
-//					p.setObject(1, "'ROBERT'");
-//					p.setObject(2, "'LO'");
-//					qrs = (EclResultSet)((EclPreparedStatement)p).executeQuery();
-//					for (int i = 1; i <= meta.getColumnCount(); i++)
-//					{
-//						System.out.print("[*****" + meta.getColumnName(i) + "******]");
-//					}
-//
-//					while (qrs.next())
-//					{
-//						System.out.println();
-//						for (int i = 1; i <= meta.getColumnCount(); i++)
-//						{
-//							System.out.print("[ " + qrs.getObject(i) + " ]");
-//						}
-//					}
-//					System.out.println("\nTotal Records found: " + qrs.getRowCount());
-*/
+					success &= testSelect1(connectionprops);
 					//success &= printoutExportedKeys(connectionprops);
 					//success &= printouttable(connectionprops, ".::doughenschen__infinity_rollup_best1");
 					//success &= printouttables(connectionprops);

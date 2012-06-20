@@ -69,6 +69,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private boolean lazyLoad;
 	private int pageSize;
 
+	private DocumentBuilderFactory dbf;
+
 	final static String PROCEDURE_NAME = "PROCEDURE_NAME";
 	final static String TABLE_NAME = "TABLE_NAME";
 
@@ -93,7 +95,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		eclqueries = new HPCCQueries();
 		SQLFieldMapping = new HashMap<Integer, String>();
 
-		System.out.println("EclDatabaseMetaData initialized");
+		 dbf = DocumentBuilderFactory.newInstance();
 
 		if (!isHPCCMetaDataCached())
 		{
@@ -115,6 +117,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		}
 
 		setSQLTypeNames();
+
+		System.out.println("EclDatabaseMetaData initialized");
 	}
 
 	private static void setSQLTypeNames()
@@ -1997,7 +2001,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
 
@@ -2265,7 +2268,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 		try
 		{
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
 
@@ -2485,7 +2487,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 			InputStream xml = clusterInfoConnection.getInputStream();
 
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
 
@@ -2503,9 +2504,9 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			System.out.println("Could not fetch cluster information.");
 			return false;
 		}
-
 		return true;
 	}
+
 	private boolean fetchClusterInfo()
 	{
 		if (wseclwatchaddress == null || wseclwatchport == null)
@@ -2532,7 +2533,6 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 			InputStream xml = clusterInfoConnection.getInputStream();
 
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
 
@@ -2579,10 +2579,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 			InputStream xml = querysetconnection.getInputStream();
 
-			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document dom = db.parse(xml);
-
 
 			NodeList activityList = dom.getElementsByTagName("ActivityResponse");
 			if (activityList.getLength() > 0)
