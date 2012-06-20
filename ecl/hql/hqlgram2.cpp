@@ -6749,7 +6749,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                 {
                     if (type->isSigned() ||
                         ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1)))
-                        reportWarning(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", name->str());
+                        reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", name->str());
                 }
                 break;
             default:
