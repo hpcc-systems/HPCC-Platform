@@ -33,7 +33,7 @@ _eclplus()
     # Options with parameters
     case "${prev}" in
         -I|-L)
-            local files=$(find . -maxdepth 1)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
             COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
             return 0
             ;;
@@ -48,7 +48,7 @@ _eclplus()
             return 0
             ;;
         query)
-            local files=$(find . -maxdepth 1)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
             COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
             return 0
             ;;

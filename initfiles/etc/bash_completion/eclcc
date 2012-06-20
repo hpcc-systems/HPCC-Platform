@@ -40,12 +40,12 @@ _eclcc()
     # Options with parameters
     case "${prev}" in
         -I|-L)
-            local files=$(find . -maxdepth 1)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
             COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
             return 0
             ;;
         -o|-logfile|-specs)
-            local files=$(find . -maxdepth 1)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
             COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
             return 0
             ;;
@@ -59,7 +59,7 @@ _eclcc()
     esac
 
     # ECL source filename
-    local files=$(find . -maxdepth 1)
+    local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
     COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
     return 0
 }
