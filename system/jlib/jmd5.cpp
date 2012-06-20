@@ -440,24 +440,58 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
-void md5_filesum(const char* filename, StringBuffer& outstring)
+void md5_filesum(const char* filename, StringBuffer& outstring, size32_t chunkSize)
 {
+    md5_state_t context;
+    unsigned char digest[16];
+    unsigned char digeststr[33];
+    unsigned char digitstr[3];
+
+    md5_init (&context);
+
     MemoryBuffer mb;
+    void * contents;
+
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    offset_t size = io->size();
+    size32_t sizeToRead = (size32_t)size, sizeReadTotal = 0;
+
     if (!io)
         throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
 
-    offset_t size = io->size();
-    size32_t sizeToRead = (size32_t)size;
-    if (sizeToRead != size)
-        throw MakeStringException(1, "File %s is larger than 4Gb", file->queryFilename());
+    if ( sizeToRead < chunkSize )
+    {
+        contents = mb.reserve(sizeToRead);
+    }
+    else
+    {
+        contents = mb.reserve(chunkSize);
+    }
 
-    mb.ensureCapacity(sizeToRead+1);
-    byte * contents = static_cast<byte *>(mb.reserve(sizeToRead));
-    size32_t sizeRead = io->read(0, sizeToRead, contents);
-    if (sizeRead != sizeToRead)
-        throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
+    while( sizeReadTotal != sizeToRead)
+    {
+        size32_t readSizeLeft = sizeToRead - sizeReadTotal;
+        size32_t sizeHolder = chunkSize;
+        if ( readSizeLeft < chunkSize )
+        {
+            sizeHolder = readSizeLeft;
+        }
+        size32_t sizeRead = io->read(0, sizeHolder, contents);
+        sizeReadTotal += sizeRead;
+        if (sizeRead != sizeHolder)
+            throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeReadTotal, sizeToRead);
+        md5_append (&context, (const unsigned char *)contents, sizeHolder);
+    }
+    md5_finish (&context,digest);
 
-    md5_string(mb.toByteArray(), sizeRead, outstring);
+    for (int i = 0; i < 16; i++)
+    {
+        sprintf((char *)digitstr,"%02x", digest[i]);
+        digeststr[i*2]=digitstr[0];
+        digeststr[i*2+1]=digitstr[1];
+    }
+    digeststr[32]='\0';
+
+    outstring.append(digeststr);
 }
