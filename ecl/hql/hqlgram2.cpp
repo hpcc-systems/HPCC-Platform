@@ -9620,7 +9620,10 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childName, LSFpublic, lookupCtx);
     if (!resolved)
     {
-        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parent->queryName()->str(), childName->str());
+        const char * parentName = parent->queryName()->str();
+        if (!parentName)
+            parentName = "$";
+        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, childName->str());
         return NULL;
     }
     IHqlScope * ret = resolved->queryScope();
