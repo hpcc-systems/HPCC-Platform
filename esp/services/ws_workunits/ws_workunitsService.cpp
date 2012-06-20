@@ -118,7 +118,24 @@ void setWsWuXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<IConstNamedVa
         ForEachItemIn(i, *variables)
         {
             IConstNamedValue &item = variables->item(i);
-            paramTree->setProp(item.getName(), item.getValue());
+            const char *name = item.getName();
+            const char *value = item.getValue();
+            if (!name || !*name)
+                continue;
+            if (!value)
+            {
+                size_t len = strlen(name);
+                char last = name[len-1];
+                if (last == '-' || last == '+')
+                {
+                    StringAttr s(name, len-1);
+                    paramTree->setPropInt(s.get(), last == '+' ? 1 : 0);
+                }
+                else
+                    paramTree->setPropInt(name, 1);
+                continue;
+            }
+            paramTree->setProp(name, value);
         }
         toXML(paramTree, extParamXml);
         xml=extParamXml.str();
@@ -165,7 +182,24 @@ void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* clus
         ForEachItemIn(i, *debugs)
         {
             IConstNamedValue &item = debugs->item(i);
-            wu->setDebugValue(item.getName(), item.getValue(), true);
+            const char *name = item.getName();
+            const char *value = item.getValue();
+            if (!name || !*name)
+                continue;
+            if (!value)
+            {
+                size_t len = strlen(name);
+                char last = name[len-1];
+                if (last == '-' || last == '+')
+                {
+                    StringAttr s(name, len-1);
+                    wu->setDebugValueInt(s.get(), last == '+' ? 1 : 0, true);
+                }
+                else
+                    wu->setDebugValueInt(name, 1, true);
+                continue;
+            }
+            wu->setDebugValue(name, value, true);
         }
     }
 

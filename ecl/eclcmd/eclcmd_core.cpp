@@ -455,32 +455,23 @@ private:
     bool activateSet;
 };
 
-inline StringBuffer &getExtendedArgumentName(const char *arg, StringBuffer &name)
-{
-    const char *tail = strchr(arg, '=');
-    if (tail)
-        return name.append(tail-arg, arg);
-    return name.append(arg);
-}
-
-bool matchVariableParameter(ArgvIterator &iter, const char *prefix, IArrayOf<IEspNamedValue> &values)
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
 {
     const char *arg = iter.query();
-    size_t len = strlen(prefix);
-    if (!strncmp(arg, prefix, len))
+    if (*arg++!='-' || *arg++!=prefix || !*arg)
+        return false;
+    Owned<IEspNamedValue> nv = createNamedValue();
+    const char *eq = strchr(arg, '=');
+    if (!eq)
+        nv->setName(arg);
+    else
     {
-        StringAttr val;
-        StringBuffer fullname;
-        if (iter.matchOption(val, getExtendedArgumentName(arg, fullname).str()))
-        {
-            Owned<IEspNamedValue> nv = createNamedValue();
-            nv->setName(fullname.str()+len);
-            nv->setValue(val.get());
-            values.append(*nv.getClear());
-        }
-        return true;
+        StringAttr name(arg, eq - arg);
+        nv->setName(name.get());
+        nv->setValue(eq+1);
     }
-    return false;
+    values.append(*nv.getClear());
+    return true;
 }
 
 class EclCmdRun : public EclCmdWithEclTarget
@@ -500,9 +491,9 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (matchVariableParameter(iter, "-dbg.", debugValues))
+            if (matchVariableOption(iter, 'f', debugValues))
                 continue;
-            if (matchVariableParameter(iter, "-var.", variables))
+            if (matchVariableOption(iter, 'X', variables))
                 continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
@@ -645,8 +636,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   -dbg.<name>=<value>    sets the workunit debug value '<name>'\n"
-            "   -var.<name>=<value>    sets the workunit stored variable '<name>'\n"
+            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
+            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
             "   --wait=<ms>            time to wait for completion\n",
             stdout);
         EclCmdWithEclTarget::usage();
