@@ -421,8 +421,6 @@ bool WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     return false;
 }
 
-const unsigned MAXTHORS = 1024;
-
 bool WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 {
     try
@@ -971,23 +969,26 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     }
     else //legacy wuid
     {
-        SCMStringBuffer name;
-        for (int i0 = 1; i0 < MAXTHORS; i0++)
+        Owned<IStringIterator> thorLogs = cw->getLogs("Thor");
+        ForEach (*thorLogs)
         {
+            SCMStringBuffer name;
+            thorLogs->str(name);
+            if (name.length() < 1)
+                continue;
+
+            countThorLog++;
+
             StringBuffer fileType;
-            if (i0 < 2)
+            if (countThorLog < 2)
                 fileType.append(File_ThorLog);
             else
-                fileType.appendf("%s%d", File_ThorLog, i0);
-            cw->getDebugValue(fileType.str(), name);
-            if(name.length() < 1)
-                break;
+                fileType.appendf("%s%d", File_ThorLog, countThorLog);
 
             Owned<IEspECLHelpFile> h= createECLHelpFile("","");
             h->setName(name.str());
             h->setType(fileType.str());
             helpers.append(*h.getLink());
-            name.clear();
         }
 
         StringBuffer logDir;
