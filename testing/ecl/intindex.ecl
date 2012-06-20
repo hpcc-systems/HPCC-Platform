@@ -16,10 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+//skip type==thorlcr TBD
+//skip type==hthor TBD
+//skip type==roxie TBD
 //UseStandardFiles
 
-fail('This test is temporarily disabled because it causes lockups in roxie/hthor and probably thor');
-/*
 output(choosen(DG_IntegerIndex, 3));
 
 output(DG_IntegerIndex(keyed(i6 = 4)));
@@ -30,4 +31,3 @@ output(DG_IntegerIndex(wild(i6),keyed(nested.i4 = 5)));
 output(DG_IntegerIndex(wild(i6),wild(nested.i4),keyed(nested.u3 = 6)));
 output(DG_IntegerIndex(i5 = 7));
 output(DG_IntegerIndex(i3 = 8));
-*/
