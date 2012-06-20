@@ -39,4 +39,3 @@ ${USER_NAME}    hard    nofile  8192
 ${USER_NAME}    soft  core  unlimited
 ${USER_NAME}    hard  core  unlimited
 %EOF
-

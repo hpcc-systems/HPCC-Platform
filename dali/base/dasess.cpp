@@ -1681,5 +1681,3 @@ MODULE_EXIT()
     ::Release(SessionManager);
     SessionManager = NULL;
 }
-
-

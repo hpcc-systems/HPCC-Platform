@@ -57,5 +57,3 @@ outr zTransform (in1 l) :=
 outTable := project(in1Table,zTransform(LEFT));
 
 output(outTable,,'out.d00');
-
-

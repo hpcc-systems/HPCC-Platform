@@ -25,4 +25,3 @@ x;
 y;
 z;
 output(person, {x, y, z, person_id});
-

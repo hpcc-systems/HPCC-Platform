@@ -80,4 +80,3 @@ END;
 Textout := PARSE(in1, line, t(LEFT), XML('/ENTITY[@type="PERSON"]'));
 
 output(Textout)
-

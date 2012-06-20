@@ -194,4 +194,3 @@ void MultipleConnect(unsigned n,HRPCmodule *modules,int timeout,bool fast)
     MultipleConnect(n,moduleptrs,timeout,fast);
     free(moduleptrs);
 }
-

@@ -26,4 +26,3 @@ inlist(string x, set of string y) := if ( x in y, 'yes','no ');
 inlist('one', ['Gavin','Jason','Emma','Vicky']);
 
 count(person(inlist(per_last_name, ['Gavin','Jason','Emma','Vicky'])='yes'));
-

@@ -65,4 +65,3 @@ This report type launches xxdiff on the output and key directories.
 =cut
 
 1;
-

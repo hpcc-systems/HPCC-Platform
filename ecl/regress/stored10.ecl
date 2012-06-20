@@ -23,6 +23,3 @@ x := false : stored('x');
 y := if(x, 10, 20);
 
 output(y);
-
-
-

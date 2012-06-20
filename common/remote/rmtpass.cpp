@@ -114,4 +114,3 @@ bool CachedPasswordProvider::hasPassword(const IpAddress & ip) const
     }
     return false;
 }
-

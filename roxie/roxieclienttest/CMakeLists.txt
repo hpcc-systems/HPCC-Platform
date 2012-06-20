@@ -41,5 +41,3 @@ target_link_libraries ( roxieclienttest
          jlib
          roxieclient 
     )
-
-

@@ -9,4 +9,3 @@ IMPORT Std;
 $.DeclareData.MAC_ListSFsubfiles($.DeclareData.AllPeople);
 // OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople));
 // OUTPUT(Std.File.SuperFileContents($.DeclareData.AllPeople,TRUE));
-

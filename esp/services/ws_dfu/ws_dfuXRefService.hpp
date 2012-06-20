@@ -186,4 +186,3 @@ public:
 
 
 #endif //_ESPWIZ_WsDfu_HPP__
-

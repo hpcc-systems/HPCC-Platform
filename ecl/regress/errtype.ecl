@@ -39,4 +39,3 @@ R := Record
     ReverseString4   F1;
     NeedC(5)     F2;
 END;
-

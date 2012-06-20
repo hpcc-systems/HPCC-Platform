@@ -34,4 +34,3 @@ nt2 := group(namesTable, age2);
 parallel(
 BUILDINDEX(nt2, { surname, forename, filepos }, 'name.idx'),
 BUILDINDEX(nt2, { age, age2, age8, filepos }, 'age.idx', dataset(namesTable2), backup));
-

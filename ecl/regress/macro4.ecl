@@ -64,5 +64,3 @@ endmacro;
 a := MAC_Hash_Slimsort4('jim');
 
 output(a);
-
-

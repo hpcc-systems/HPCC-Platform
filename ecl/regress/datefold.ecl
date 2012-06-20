@@ -19,5 +19,3 @@
 import lib_StringLib;
 
 output(StringLib.getdateYYYYMMDD());
-
-

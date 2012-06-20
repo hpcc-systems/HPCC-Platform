@@ -64,4 +64,3 @@ ds8:= namesTableY(age > 8);
 i7 := if(c7, ds7, ds8);
 i8 := if(c8, ds7, i7);
 output(i8);
-

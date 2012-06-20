@@ -97,5 +97,3 @@ protected:
 
 #endif // DEFAULTSECURITY_INCL
 //end
-
-

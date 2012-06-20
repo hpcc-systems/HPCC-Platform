@@ -143,4 +143,3 @@ if(window.refresh) { clearInterval(refresh); refresh=null; }
 <xsl:template match="text()|comment()"/>
 
 </xsl:stylesheet>
-

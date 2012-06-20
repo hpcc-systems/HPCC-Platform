@@ -285,6 +285,3 @@ extern jlib_decl IBitSet *deserializeIBitSet(MemoryBuffer &mb)
 {
     return new CBitSet(mb);
 }
-
-
-

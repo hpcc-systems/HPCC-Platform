@@ -65,4 +65,3 @@ JoinRecord JoinTransform (namesRecord l, addressIndex r) :=
                 END;
 
 output(join(namesTable, addressIndex, keyed(left.age = 10), JoinTransform (LEFT, RIGHT), ATMOST(keyed(left.age=10), 20)));
-

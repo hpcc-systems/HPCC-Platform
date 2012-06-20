@@ -53,4 +53,3 @@ public:
 };
 
 #endif //_ESPWIZ_WS_CONFIG_HPP__
-

@@ -19,4 +19,3 @@
 one := 1 : GLOBAL;
 two := 2 : GLOBAL;
 OUTPUT(IF(one<two, 'true', 'false'));
-

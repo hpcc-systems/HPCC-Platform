@@ -201,4 +201,3 @@ void CThorStreamDeserializerSource::skipVUni()
 {
     throwUnexpected();
 }
-

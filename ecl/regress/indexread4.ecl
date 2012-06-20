@@ -26,5 +26,3 @@ string x := '' : stored('x');
 a1 := i(keyed(f_name[1..length(trim(x))]=trim(x)));
 
 output(a1);
-
-

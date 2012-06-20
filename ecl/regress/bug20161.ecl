@@ -26,4 +26,3 @@ r := { unsigned integer8 id, PSTRING firstname, PSTRING lastname };
 
 ds := dataset([{1,'Gavin','Hawthorn'},{2,'Jim','Peck'}], r);
 output(ds);
-

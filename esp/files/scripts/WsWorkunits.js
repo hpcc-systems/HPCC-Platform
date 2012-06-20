@@ -142,4 +142,3 @@ define([
 		WUResult: WUResult
 	};
 });
-

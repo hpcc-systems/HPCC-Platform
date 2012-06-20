@@ -36,4 +36,3 @@ namesTable := dataset([
 
 output(namesTable,thor);
 output(namesTable,named('namesTableResult'),thor);
-

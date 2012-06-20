@@ -27,4 +27,3 @@ values[myChoice];   // 2
 myValue IN values;  // true
 myValue IN anyValues;   // always true
 myValue NOT IN anyValues;   // always false
-

@@ -1621,7 +1621,3 @@ IDiskMerger *createDiskMerger(IRowInterfaces *rowInterfaces, IRowLinkCounter *li
 {
     return new CDiskMerger(rowInterfaces, linker, tempnamebase);
 }
-
-
-
-

@@ -23,5 +23,3 @@ if ( PLATFORM )
     include (ftslave.cmake)
 endif()
 include (dalift.cmake)
-
-

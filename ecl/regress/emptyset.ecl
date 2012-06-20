@@ -20,4 +20,3 @@
 string3 f(SET OF STRING a) := IF ( a = [], 'yes','no' );
 
 f([]);
-

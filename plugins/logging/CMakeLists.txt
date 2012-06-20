@@ -41,5 +41,3 @@ install ( TARGETS logging DESTINATION ${OSSDIR}/plugins )
 target_link_libraries ( logging 
          jlib 
     )
-
-

@@ -1142,4 +1142,3 @@ extern graph_decl bool isLoopActivity(CGraphElementBase &container);
 
 
 #endif
-

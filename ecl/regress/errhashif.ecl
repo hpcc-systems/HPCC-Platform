@@ -29,5 +29,3 @@ loadxml('myxml.xml');
 #ELSE
     #APPEND(S, 'x := 2; ')
 #END
-
-

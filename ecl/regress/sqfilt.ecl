@@ -68,4 +68,3 @@ output(sqHouseDs, { addr, count(personsDsDs(exists(booksDsDsDs(price>ave(booksDs
 
 output(sqHouseDs, { addr, filename, count(personsDsDs(exists(booksDsDsDs(price>personsDs.booklimit)))); }, named('NumPeopleFilename'));
 output(sqHouseDs, { addr, count(personsDsDs(exists(booksDsDsDs(price>(integer)sqHouseDs.filename)))); }, named('NumPeopleFilenameChild'));
-

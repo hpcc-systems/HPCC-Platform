@@ -40,4 +40,3 @@ KeyedTable := keyed(keyedFile, SsnKey, DidKey);
 
 FilledRecs := join(inputFile, KeyedTable,left.did=right.did,getNames(left,right), KEYED(DidKey));
 output(FilledRecs);
-

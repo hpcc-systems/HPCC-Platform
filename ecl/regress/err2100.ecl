@@ -18,5 +18,3 @@
 
 import jfgao;
 output(jfgao.SmallPersonSet);
-
-

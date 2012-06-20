@@ -64,4 +64,3 @@ target_link_libraries ( ws_access
          LdapSecurity 
          securesocket 
     )
-

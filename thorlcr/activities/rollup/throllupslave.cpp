@@ -601,5 +601,3 @@ CActivityBase *createRollupGroupSlave(CGraphElementBase *container)
 {
     return new CRollupGroupSlaveActivity(container);
 }
-
-

@@ -24,4 +24,3 @@ string20 myValue := '3' : stored('myValue');
 
 values[myChoice];
 myValue IN values;
-

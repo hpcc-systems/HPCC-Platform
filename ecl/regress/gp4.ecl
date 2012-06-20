@@ -29,4 +29,3 @@ end;
 testdata := dataset ('temp6', LayoutDirectTV, flat);
 
 max(testdata,testdata.dummy);
-

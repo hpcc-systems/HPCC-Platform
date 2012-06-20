@@ -45,5 +45,3 @@ private:
 
 
 #endif //JKEYBOARD_HPP
-
-

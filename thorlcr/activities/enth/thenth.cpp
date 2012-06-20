@@ -42,5 +42,3 @@ CActivityBase *createEnthActivityMaster(CMasterGraphElement *container)
     else
         return new CEnthActivityMaster(container);
 }
-
-

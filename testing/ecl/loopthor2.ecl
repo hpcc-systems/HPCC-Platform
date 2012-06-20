@@ -80,4 +80,3 @@ loopres := loop(namesTable2, 10, matches(rows(left),3).result);
 
 OUTPUT(loopres);
 OUTPUT(loopres(age<10));
-

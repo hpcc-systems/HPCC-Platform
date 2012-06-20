@@ -1078,4 +1078,3 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen,
         tgt = 0;
     }
 }
-

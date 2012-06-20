@@ -634,4 +634,3 @@ CActivityBase *createGlobalMergeSlave(CGraphElementBase *container)
 {
     return new GlobalMergeSlaveActivity(container);
 }
-

@@ -32,4 +32,3 @@ mainTable := dataset('~keyed.d00',mainRecord,THOR);
 nameKey := INDEX(mainTable, { surname, forename, unsigned8 fpos }, 'name.idx');
 
 BUILDINDEX(nameKey);
-

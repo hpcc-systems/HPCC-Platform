@@ -1144,4 +1144,3 @@ void CXmlDiff::printDiff(const char *fmt, ...)
     vfprintf(stdout, fmt, marker);
     va_end(marker);
 }
-

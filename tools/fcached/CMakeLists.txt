@@ -40,5 +40,3 @@ set ( SRCS fcached.cpp )
 
 add_executable ( fcached ${SRCS} )
 install ( TARGETS fcached DESTINATION ${OSSDIR}/bin )
-
-

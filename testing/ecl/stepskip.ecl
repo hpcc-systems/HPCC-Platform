@@ -28,4 +28,3 @@ ds1 := stepped(limit(i1, lim, keyed, count, SKIP), fname);
 ds2 := stepped(limit(i2, lim, keyed, count, SKIP), fname);
 
 output(mergejoin([ds1, ds2], LEFT.fname = right.fname, fname), {fname, lname});
-

@@ -33,5 +33,3 @@ export f(integer sc) := value * sc + 1;
         END;
 
 output(m3.f(10));       //Correct
-
-

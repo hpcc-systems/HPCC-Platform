@@ -528,4 +528,3 @@ bool SuperHashTable::matchesElement(const void *et, const void *searchET) const
     assertex(!"SuperHashTable::matchesElement needs to be overridden");
     return false;
 }
-

@@ -107,4 +107,3 @@ unicodelib.UnicodeContains(u'the quick brown fox jumps over the lazy dog', u'abc
 NOT(unicodelib.UnicodeContains(u'the speedy ochre vixen leapt over the indolent retriever', u'abcdefghijklmnopqrstuvwxyz', false));
 NOT(unicodelib.UnicodeContains(u'the quick brown fox jumps over the lazy dog', u'ABCdefghijklmnopqrstuvwxyz', false));
 unicodelib.UnicodeContains(u'the quick brown fox jumps over the lazy dog', u'ABCdefghijklmnopqrstuvwxyz', true);
-

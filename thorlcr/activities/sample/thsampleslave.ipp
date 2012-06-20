@@ -28,4 +28,3 @@
 activityslaves_decl CActivityBase *createSampleSlave(CGraphElementBase *container);
 
 #endif
-

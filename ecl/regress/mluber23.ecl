@@ -32,5 +32,3 @@ t2 := d2(TRIM(StringLib.StringFilter(s, '-')) != '') : persist('maltemp::delete2
 
 
 output(t2);
-
-

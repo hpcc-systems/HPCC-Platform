@@ -166,4 +166,3 @@ inline const char * splitName(const char * name)
 }
 
 #endif //_ESPWIZ_WsDfu_HPP__
-

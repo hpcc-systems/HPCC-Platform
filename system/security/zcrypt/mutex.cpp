@@ -123,5 +123,3 @@ void zsynchronized::throwLockException(unsigned timeout)
     sprintf(exbuf, "Can not lock - %d",timeout);
     throw string(exbuf);
 }
-
-

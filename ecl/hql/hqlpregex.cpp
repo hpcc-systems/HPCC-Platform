@@ -514,4 +514,3 @@ IHqlExpression * convertPatternToExpression(unsigned len, const UChar * text)
     RegexParser parser;
     return parser.parsePattern(len, text);
 }
-

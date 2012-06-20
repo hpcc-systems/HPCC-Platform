@@ -30,4 +30,3 @@ CActivityBase *createFilterActivityMaster(CMasterGraphElement *container)
 {
     return new CFilterActivityMaster(container);
 }
-

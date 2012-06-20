@@ -118,4 +118,3 @@ void Semaphore::signal(unsigned n)
 }
 
 #endif
-

@@ -69,5 +69,3 @@ self.score :=
     end;
 
 output(project(ds, t(LEFT)));
-
-

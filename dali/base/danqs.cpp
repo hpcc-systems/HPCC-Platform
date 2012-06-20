@@ -998,5 +998,3 @@ IDaliServer *createDaliNamedQueueServer()
     daliNamedQueueServer = new CDaliNamedQueueServer();
     return daliNamedQueueServer;
 }
-
-

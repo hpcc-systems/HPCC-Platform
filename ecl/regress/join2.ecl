@@ -79,4 +79,3 @@ output(JoinedF,,'out.d00');
 JoinedF2 := join (dNamesTable, dAddressTable, LEFT.surname= RIGHT.surname, JoinTransform (LEFT, RIGHT), LEFT OUTER, LOOKUP);
 
 output(JoinedF2,,'out.d00');
-

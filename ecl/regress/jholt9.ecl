@@ -34,4 +34,3 @@ END;
 t1 := PROJECT(test1, xform(LEFT));
 
 output(t1);
-

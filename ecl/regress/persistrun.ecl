@@ -23,4 +23,3 @@ unsigned abc := 12345 : stored('abc');
 unsigned def := abc * 12 : persist('~def');
 
 output(def);
-

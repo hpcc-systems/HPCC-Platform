@@ -32,4 +32,3 @@ boolean         includeDayOfBirth{xpath('include-day-of-birth')};
 
 test := dataset('~file::127.0.0.1::temp::bpssearch.log', rec, XML('query', NOROOT));
 output(choosen(test,100));
-

@@ -33,5 +33,3 @@ namesTable := dataset('x',namesRecord,FLAT);
 
 
 output(predict_sics(namesTable, namesTable));
-
-

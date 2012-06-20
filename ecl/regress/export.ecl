@@ -26,4 +26,3 @@ export person := dataset('person', { unsigned8 person_id, string1 per_sex, strin
 )
 
 output(%'x'%)
-

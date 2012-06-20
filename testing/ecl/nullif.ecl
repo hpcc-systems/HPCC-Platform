@@ -62,4 +62,3 @@ personRecord t2(personRecord l) := transform
 end;
 
 output(project(personDataset, t2(LEFT)));
-

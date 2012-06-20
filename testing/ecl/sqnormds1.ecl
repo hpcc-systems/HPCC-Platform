@@ -99,4 +99,3 @@ output(allnodes(local(sqNamesTable6.books)));
 //Multiple levels, multiple filters...
 output(allnodes(local(sqHousePersonBookDs(id != 0).persons(id != 0).books(id != 0, sqHousePersonBookDs.id != 999))), { name, author, rating100 });
 #end
-

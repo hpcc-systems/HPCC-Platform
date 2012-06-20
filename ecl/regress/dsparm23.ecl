@@ -57,4 +57,3 @@ dsx := dataset('dsx', r2, FLAT);
 myjoin := SimpleJoin(ds{id:=first_name1}, dsx{id:=first_name2});
 
 count(myjoin);
-

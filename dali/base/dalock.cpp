@@ -627,7 +627,3 @@ IDaliServer *createDaliLockServer()
 {
     return new CDaliLockServer();
 }
-
-
-
-

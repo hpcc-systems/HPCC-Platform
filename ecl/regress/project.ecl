@@ -47,6 +47,3 @@ pperson := DATASET('in.d00', ppersonRecord, FLAT);
 ppersonEx := project(pperson, projectFunction(left));
 
 output(ppersonEx, , 'out.d00');
-
-
-

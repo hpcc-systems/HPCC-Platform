@@ -420,4 +420,3 @@ inline _ATOM createIdentifierAtom(const char * name) { return createAtom(name); 
 inline _ATOM createIdentifierAtom(const char * name, unsigned len) { return createAtom(name, len); }
 
 #endif
-

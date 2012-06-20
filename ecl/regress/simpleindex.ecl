@@ -37,4 +37,3 @@ DG_indexFile     := INDEX(
     'INDEX');
 
 output(DG_IndexFile,{DG_firstname, DG_lastname});
-

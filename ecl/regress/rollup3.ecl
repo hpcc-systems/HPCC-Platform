@@ -34,5 +34,3 @@ XtabOut := rollup(SortedTable,
                 left.per_last_name=right.per_last_name and left.personCount=right.personCount+1,
                 xform(left,right)) : deprecated;
 output(XtabOut);
-
-

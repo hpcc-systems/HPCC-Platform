@@ -26,4 +26,3 @@ loadxml('<root><item>1+1</item><item>2+2</item></root>');
 #end
 
 %ths%;
-

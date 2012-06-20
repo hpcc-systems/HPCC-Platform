@@ -74,4 +74,3 @@ CActivityBase *createResultSlave(CGraphElementBase *container)
 {
     return new CResultSlaveActivity(container);
 }
-

@@ -146,4 +146,3 @@ inline void FORWARDEXCEPTION(IEspContext &context, IException *e, unsigned codeN
     return;
 }
 #endif //_ECLWATCH_EXCEPTIONS_HPP__
-

@@ -89,4 +89,3 @@ resultsRecord extractResults(infile l, attrRecord attr) :=
             
 
 output(PARSE(infile,line,expr,extractResults(LEFT, $1),first,whole,parse,skip(ws)));
-

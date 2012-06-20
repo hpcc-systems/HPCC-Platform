@@ -53,4 +53,3 @@ mytt := table(inputlabel,mytf);
 tt := iterate(mytt,trans(left,right));
 
  count (tt);
-

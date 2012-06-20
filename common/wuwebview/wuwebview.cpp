@@ -735,4 +735,3 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *q
     }
     return NULL;
 }
-

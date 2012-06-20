@@ -211,4 +211,3 @@ extern HQL_API void checkNormalized(IHqlExpression * expr, HqlExprArray & active
     ScopeConsistencyChecker checker;
     checker.checkConsistent(expr, activeTables);
 }
-

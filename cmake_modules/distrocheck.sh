@@ -92,4 +92,3 @@ if [ $VALUE -ge 1 ]; then
     rm temp.txt
     exit 4;
 fi
-

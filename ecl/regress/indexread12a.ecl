@@ -35,5 +35,3 @@ unsigned8 u8 := 0 : stored('u8');
 
 // should fail - casting from string10 to unsigned2 can produce the same value for several different source strings
 output(i(keyed((unsigned2)f1 = u2)));
-
-

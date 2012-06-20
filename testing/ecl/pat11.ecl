@@ -46,6 +46,3 @@ results :=
 
 //Another potential leak - not all results from a parse a read...
 output(choosen(PARSE(ds,line,S,results,scan all),2));
-
-
-

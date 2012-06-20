@@ -54,5 +54,3 @@ target_link_libraries ( zcrypt
          ${ZLIB_LIBRARIES} 
          ${OPENSSL_LIBRARIES} 
     )
-
-

@@ -88,4 +88,3 @@ end;
 
 
 output(project(addressTable, t4(LEFT)));
-

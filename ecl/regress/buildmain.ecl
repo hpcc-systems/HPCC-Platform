@@ -41,4 +41,3 @@ mainRecord t(namesRecord l, unsigned4 c) :=
 seqd := project(d, t(left, counter));
 
 output(seqd,,'~keyed.d00',overwrite);
-

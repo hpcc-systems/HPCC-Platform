@@ -54,5 +54,3 @@ processed := process(inputDataset, stackRecord, resultRecord,
                      );
 
 output(processed);
-
-

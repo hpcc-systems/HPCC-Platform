@@ -535,8 +535,3 @@ IReplicateServer *createReplicateServer(const char *qname)
 {
     return new CReplicateServer(qname);
 }
-
-
-
-
-

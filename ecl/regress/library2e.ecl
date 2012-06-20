@@ -59,6 +59,3 @@ NameFilterLibrary_1_1(dataset(namesRecord) ds, string search, boolean onlyOldies
     export dataset(namesRecord) included := notDefined;
     export dataset(namesRecord) excluded := ds(surname = search);
 end;
-
-
-

@@ -29,5 +29,3 @@ output(_state)
 endmacro;
 
 image()
-
-

@@ -90,7 +90,3 @@ CActivityBase *createThroughAggregateActivityMaster(CMasterGraphElement *info)
 {
     return new CThroughAggregateMaster(info);
 }
-
-
-
-

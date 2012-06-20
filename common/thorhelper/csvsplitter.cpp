@@ -467,4 +467,3 @@ void CSVOutputStream::writeHeaderLn(size32_t len, const char * data)
             endLine();
     }
 }   
-

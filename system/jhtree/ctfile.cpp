@@ -997,4 +997,3 @@ IKeyException *MakeKeyException(int code, const char *format, ...)
     va_end(args);
     return e;
 }
-

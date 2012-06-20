@@ -103,5 +103,3 @@ output(JoinedF(filter))
 endmacro;
 
 fdle_keys_test()
-
-

@@ -285,5 +285,3 @@ IDaliServer *createDaliDiagnosticsServer()
     daliDiagnosticsServer = new CDaliDiagnosticsServer();
     return daliDiagnosticsServer;
 }
-
-

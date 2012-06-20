@@ -21,4 +21,3 @@ string long_string := 'the part on first line'
            + 'and the third line';
 
 string s := 'unended string const
-

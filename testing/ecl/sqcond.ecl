@@ -44,4 +44,3 @@ personByAgeDesc := sort(whichPersons, -dob);
 output(sqHousePersonBookDs, { addr, count(whichPersons), ave(whichPersons, age(dob)), max(whichPersons, dob)});
 output(sqHousePersonBookDs, { addr, oldest := personByAgeDesc[1].forename + ' ' + personByAgeDesc[1].surname });
 output(sqHousePersonBookDs, { addr, firstPerson := whichPersons[1].forename + ' ' + whichPersons[1].surname });
-

@@ -54,6 +54,3 @@ smiths := pperson(surname='Smith.....');
 // output(smiths, ppersonRecord, 'out.d00');
 
 output(ppersonEx, , 'out.d00');
-
-
-

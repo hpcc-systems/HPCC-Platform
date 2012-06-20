@@ -43,4 +43,3 @@ namesTable2 := dataset([
         {'X','Z'}], namesRecord);
 
 output(namesTable2,,'out.d00');
-

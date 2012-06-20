@@ -405,4 +405,3 @@ extern THORHELPER_API IPipeWriteXformHelper *createPipeWriteXformHelper(unsigned
     return new CPipeWriteXformHelper(_flags, _xmlWriterExtra, _csvWriterExtra, _rawSerializer);
 }
 //=====================================================================================================
-

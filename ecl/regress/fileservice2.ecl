@@ -28,4 +28,3 @@ wanted := names(name <> 'rubbish');
 nothor(apply(wanted, FileServices.AddSuperFile(toName, name),
                      before(FileServices.StartSuperFileTransaction(),FileServices.CreateSuperFile(toName)),
                      after(FileServices.FinishSuperFileTransaction())));
-

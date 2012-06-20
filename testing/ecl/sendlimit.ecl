@@ -44,4 +44,3 @@ END;
 caught := catch(allnodes(f(ds)), onfail(FailTransform));
 
 output(caught);
-

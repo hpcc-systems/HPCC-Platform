@@ -312,4 +312,3 @@ IBackup *createBackupHandler(const char *dataDir)
 {
     return new CThorBackupHandler(dataDir);
 }
-

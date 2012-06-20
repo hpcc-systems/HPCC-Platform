@@ -282,4 +282,3 @@ IByteInputStream *createInputStream(int handle)
 {
     return new CFileInputStream(handle);
 }
-

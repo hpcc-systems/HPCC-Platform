@@ -39,4 +39,3 @@ CActivityBase *createIterateActivityMaster(CMasterGraphElement *container)
     else
         return new CIterateActivityMaster(container);
 }
-

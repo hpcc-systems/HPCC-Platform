@@ -70,4 +70,3 @@ interface IBarrier;
 interface ICommunicator;
 
 #endif
-

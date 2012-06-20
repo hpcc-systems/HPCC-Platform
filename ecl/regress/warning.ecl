@@ -52,6 +52,3 @@ pperson := DATASET([{'Hawthorn','Gavin',''},{'','James',''}], ppersonRecord);
 ppersonEx := project(pperson, projectFunction(left));
 
 output(ppersonEx);
-
-
-

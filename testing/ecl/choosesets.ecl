@@ -48,4 +48,3 @@ output(x1);
 
 y1 := choosesets(sortedzperson, surname='Halliday'=>2,forename='Liz'=>3,LAST);
 output(y1);
-

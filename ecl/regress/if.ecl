@@ -33,4 +33,3 @@ TestData := DATASET('if.d00',testRecord,FLAT);
 
 
 OUTPUT(CHOOSEN(TestData,100),{surname,forename,age,dob},'out.d00');
-

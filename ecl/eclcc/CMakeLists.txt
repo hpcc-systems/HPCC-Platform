@@ -68,4 +68,3 @@ target_link_libraries ( eclcc
          thorhelper 
          hqlcpp 
     )
-

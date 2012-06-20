@@ -20,5 +20,3 @@
 person := dataset('person', { unsigned8 person_id, string100 per_street }, thor);
 integer pos_A:=stringLib.StringFind(person.per_street,'A',1);
 output(person(pos_A<>0)); //char 'A' exists in street name
-
-

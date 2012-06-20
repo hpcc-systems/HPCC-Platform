@@ -1128,5 +1128,3 @@ IFileIOStream *createFastLZStreamWrite(IFileIO *base)
 
 
 #endif
-
-

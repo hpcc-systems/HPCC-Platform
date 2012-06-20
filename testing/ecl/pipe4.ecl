@@ -25,5 +25,3 @@ d := dataset(['</Zingo>', ' <Zango>Line3</Zango>', '  <Zango>Middle</Zango>', ' 
 p1 := PIPE(d(line!='p1'), 'sort', { string lout{XPATH('')} }, xml('Zingo/Zango'), output(csv));
 
 output(p1, { string l := Str.FindReplace(lout, '\r', ' ') } );
-
-

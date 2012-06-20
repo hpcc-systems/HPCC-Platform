@@ -67,4 +67,3 @@ output(count(dedup(houseTable.occupants(age != 0), surname, all)));
 p := table(houseTable.occupants(age != 0), { surname });
 
 output(count(dedup(p, surname, all)));
-

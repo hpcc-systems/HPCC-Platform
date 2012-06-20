@@ -66,4 +66,3 @@ sequential(
 
     output(table(houseTable, { addr, numFamilies := count(dedup(p, surname, all)); }))
 );
-

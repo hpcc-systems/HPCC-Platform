@@ -50,4 +50,3 @@ target_link_libraries ( updtdalienv
          remote 
          dalibase 
     )
-

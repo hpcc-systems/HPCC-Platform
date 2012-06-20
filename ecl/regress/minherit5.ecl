@@ -35,10 +35,3 @@ export result       := values[firstItem..lastItem];
 
 
 output(derivedClass.result);
-
-
-
-
-
-
-

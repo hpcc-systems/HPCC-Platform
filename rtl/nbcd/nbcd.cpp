@@ -1284,5 +1284,3 @@ bool decValid(bool isSigned, unsigned digits, const void * data)
     }
     return true;
 }
-
-

@@ -1367,7 +1367,3 @@ BOOL CEditEIP::Resize(CRect & rect)
 {
     return IsActive() ? SetWindowPos(&wndTop, rect.left, rect.top, rect.Width(), rect.Height(), SWP_SHOWWINDOW) : FALSE;
 }
-
-
-
-

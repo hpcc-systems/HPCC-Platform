@@ -40,4 +40,3 @@ target_link_libraries ( vkey
          jlib
          )
 install ( TARGETS vkey DESTINATION ${OSSDIR}/bin )
-

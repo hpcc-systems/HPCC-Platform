@@ -245,4 +245,3 @@ return normalize(sequence, left.commands, transform(right));
 end;
 
 output(parseTextQuery('Gavin and Mia'));
-

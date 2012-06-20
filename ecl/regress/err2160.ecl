@@ -22,4 +22,3 @@ OUTPUT(aaa, {f1,SIZEOF(aaa),SIZEOF(f1)});
 INTEGER4 x := 3;
 sizeOfInt := SIZEOF(x);
 sizeOfInt4 := SIZEOF(INTEGER4);
-

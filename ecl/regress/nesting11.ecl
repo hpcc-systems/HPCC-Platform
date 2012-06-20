@@ -43,4 +43,3 @@ inFat := dataset('fat', fat, thor);
 x := table(inFat, { g1 });
 output(x);
 output(table(inFat, { slim := g1 }));
-

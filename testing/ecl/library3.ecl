@@ -40,4 +40,3 @@ namesTable := dataset([
         {'Smith','Baby', 2}], namesRecord);
 
 output(LIBRARY('aaaLibrary3b', HallidayLibrary(namesTable)).included,,named('Included'));
-

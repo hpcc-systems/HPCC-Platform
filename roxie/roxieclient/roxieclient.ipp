@@ -323,4 +323,3 @@ friend class RoxieThread;
 };
 
 #endif
-

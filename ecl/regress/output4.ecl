@@ -30,4 +30,3 @@ namesTable := dataset([
 output(nofold(namesTable), {'!', '','!',X'', '!',(varstring)'','!', (qstring)'', '!', U'', '!'});
 
 output(nofold(namesTable), {'!', (string0)' ','!',(data0)X'00', '!',(varstring0)' ','!', (qstring0)' ', '!', (unicode0)U' ', '!'});
-

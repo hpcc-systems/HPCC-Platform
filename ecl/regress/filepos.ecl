@@ -96,4 +96,3 @@ sort8 := SORT(ProjectCover1, st, lname, fname, minit);
 // build a key
 
 OUTPUT(sort8, { st; lname; fname; minit;  __filepos} ,'keyfile');
-

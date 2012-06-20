@@ -46,4 +46,3 @@ varstring100        f2 := testDataset.f2;
 
 
 output (testDataset,outRecord,'outvar.d00');
-

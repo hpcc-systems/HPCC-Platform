@@ -58,5 +58,3 @@ daliservix: $(OBJECTS)
 
 clean:
     @rm -rf $(OBJDIR) *.log *.trc 
-
-

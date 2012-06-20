@@ -42,4 +42,3 @@ incTable2 := table(incTable, {surname, forename, filepos});
 x := distribute(incTable2, nameKey, left.surname = right.surname and left.forename = right.forename);
 y := sort(x, surname, forename, filepos, local);
 buildindex(y, , 'inc.name.2', local);
-

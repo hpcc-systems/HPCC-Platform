@@ -85,4 +85,3 @@ Join49          := JOIN(Join47,Join48,LEFT.K=RIGHT.K,JoinTransform(LEFT,RIGHT));
 Join50          := JOIN(Join48,Join49,LEFT.K=RIGHT.K,JoinTransform(LEFT,RIGHT));
 
 Count(Join50);
-

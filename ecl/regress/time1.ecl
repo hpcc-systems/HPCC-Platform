@@ -87,5 +87,3 @@ end;
 
 output(getTime());
 output(getTimeDate());
-
-

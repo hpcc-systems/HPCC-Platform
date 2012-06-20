@@ -318,4 +318,3 @@ interface IRowInterfaces;
 extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
 
 #endif
-

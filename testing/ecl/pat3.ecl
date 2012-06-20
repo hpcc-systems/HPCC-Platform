@@ -47,4 +47,3 @@ results :=
     end;
 
 output(PARSE(infile,text,phoneNumber,results,scan));
-

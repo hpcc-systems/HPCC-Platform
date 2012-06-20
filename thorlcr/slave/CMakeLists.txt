@@ -84,5 +84,3 @@ target_link_libraries (  thorslave_lcr
          thorsort_lcr 
          activityslaves_lcr 
     )
-
-

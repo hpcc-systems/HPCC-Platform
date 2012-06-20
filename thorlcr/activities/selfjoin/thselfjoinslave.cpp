@@ -240,4 +240,3 @@ CActivityBase *createSelfJoinSlave(CGraphElementBase *container) { return new Se
 CActivityBase *createLocalSelfJoinSlave(CGraphElementBase *container) { return new SelfJoinSlaveActivity(container, true, false); }
 
 CActivityBase *createLightweightSelfJoinSlave(CGraphElementBase *container) { return new SelfJoinSlaveActivity(container, true, true); }
-

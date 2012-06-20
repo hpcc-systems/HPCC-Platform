@@ -67,4 +67,3 @@ unsigned rtlRankedFromOrder(unsigned index, unsigned num, const void * order)
         return 0;
     return indices[index-1];
 }
-

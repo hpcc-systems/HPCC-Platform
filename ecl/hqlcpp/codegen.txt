@@ -168,5 +168,3 @@ cursors are serialised).
    - What chaos would it cause.
    - How about if we only allowed an explicit syntax?
 *) How do we replicate HOLe's join files?  Effectively disk read (or other) datasets are cloned on each machine.
-
-

@@ -24,4 +24,3 @@ END;
 
 // HOLEX unknow, personRecord was push to selfScopes, and not released!
 extraperson := DATASET('extra::person', personRecord, HOLEX);
-

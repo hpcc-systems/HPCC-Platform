@@ -30,4 +30,3 @@ unsigned8 filepos;
 
 t := dataset('t', rec, thor);
 i := index(t, {t}, 'i');
-

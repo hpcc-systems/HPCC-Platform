@@ -2358,4 +2358,3 @@ CActivityBase *createKeyedJoinSlave(CGraphElementBase *container)
 { 
     return new CKeyedJoinSlave(container); 
 }
-

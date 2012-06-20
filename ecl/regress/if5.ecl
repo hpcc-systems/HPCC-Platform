@@ -53,5 +53,3 @@ if(count(s) > 3, s[2].forename, ''),
 });
 
 output(ds2);
-
-

@@ -87,5 +87,3 @@ target_link_libraries ( roxiemanager
          hql 
          fileview2 
     )
-
-

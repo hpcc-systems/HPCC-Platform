@@ -60,6 +60,3 @@ target_link_libraries ( roxie
          ccd
          jlib 
     )
-
-
-

@@ -43,5 +43,3 @@ y2 := sort(x, forename)(surname <> 'Page');
 output(y1);
 output(y2);
 output(y1);
-
-

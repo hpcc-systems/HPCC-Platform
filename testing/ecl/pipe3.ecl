@@ -26,5 +26,3 @@ p2 := PIPE(d(line!='p2'), 'sort', { string lout }, csv, output(xml));
 
 output(p1, { string l := Str.FindReplace(lout, '\r', ' ') } );
 output(p2, { string l := Str.FindReplace(lout, '\r', ' ') } );
-
-

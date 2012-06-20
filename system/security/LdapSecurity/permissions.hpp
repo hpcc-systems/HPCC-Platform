@@ -108,4 +108,3 @@ interface IPermissionProcessor : implements IInterface
 bool toXpath(const char* from, StringBuffer& to);
 
 #endif
-

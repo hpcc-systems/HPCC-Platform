@@ -39,4 +39,3 @@ ds := DATASET([
 
 varxy := COVARIANCE(ds, x, y);
 output(varxy);
-

@@ -29,4 +29,3 @@ InDS := DATASET([
 {'5','osama obama yomama comeonah','barak hillary'}
 ],InRec);
 output(InDS,,'RTTEST::TEST::CSVHeaderTest',CSV(HEADING(SINGLE)),overwrite);
-

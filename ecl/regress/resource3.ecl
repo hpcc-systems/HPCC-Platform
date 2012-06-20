@@ -36,4 +36,3 @@ filteredTable2 := baseTable(surname <> 'Drimbad');
 
 output(filteredTable1,,'out1.d00');
 output(filteredTable2,,'out2.d00');
-

@@ -59,4 +59,3 @@ bool switchWorkunitQueue(const char *wuid, const char *cluster)
         return false;
     return wu->switchThorQueue(cluster, &switcher);
 }
-

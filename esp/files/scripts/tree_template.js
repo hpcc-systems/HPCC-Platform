@@ -50,4 +50,3 @@ var TREE_TPL = {
     'icon_26' : '/esp/files_/img/minusbottom.gif',// junction for opened node
     'icon_27' : '/esp/files_/img/minus.gif'       // junctioin for last opended node
 };
-

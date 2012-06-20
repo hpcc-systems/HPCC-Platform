@@ -661,4 +661,3 @@ void setFtSlaveLogDir(const char *dir)
     PROGLOG("ftslave log dir set to %s",dir);
     ftslavelogdir.set(dir);
 }
-

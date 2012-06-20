@@ -451,4 +451,3 @@ ECLRTL_API IUInt64DistributionTable *createIUInt64DistributionTable(const char *
 {
     return new CUInt64DistributionTable(name, DISTRIBUTION_THRESHOLD);
 }
-

@@ -43,5 +43,3 @@ IHqlExpression * convertAddressToValue(IHqlExpression * address, ITypeInfo * col
     IHqlExpression * temp = createValue(no_implicitcast, LINK(pointerType), LINK(address));
     return createValue(no_deref, LINK(columnType), temp);
 }
-
-

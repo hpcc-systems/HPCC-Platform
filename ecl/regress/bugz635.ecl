@@ -19,4 +19,3 @@
 aaa := DATASET('aaa', {STRING1 id; }, FLAT);
 outputfile := table(aaa,aaa.id,FLAT);
 output(outputfile,, 'ccc');
-

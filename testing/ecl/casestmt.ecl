@@ -36,4 +36,3 @@ output(case(s, '1'=>d1, '2'=>d2, '3'=>d3, d4));
 
 case(i, 1=>o1, 2=>o2, 3=>o3, o4);
 output(case(i, 1=>d1, 2=>d2, 3=>d3, d4));
-

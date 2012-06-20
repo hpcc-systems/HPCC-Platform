@@ -70,4 +70,3 @@ output(join(namesTable, addressIndex, left.surname = right.surname and left.age!
 
 output(join(namesTable, addressIndex, keyed(left.surname = right.surname) and left.age=right.age, JoinTransform (LEFT, RIGHT), ATMOST(keyed(left.surname=right.surname), 20)));
 output(join(namesTable, addressIndex, keyed(left.surname = right.surname) and left.age!=right.age, JoinTransform (LEFT, RIGHT), ATMOST(left.surname=right.surname, 30)));
-

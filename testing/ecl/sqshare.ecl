@@ -59,4 +59,3 @@ maxAgeTop5DsDs := max(oldest5PeopleDsDs, age(dob));
 minAgeTop5DsDs := min(oldest5PeopleDsDs, age(dob));
 output(sqHouseDs, { addr, aveAgeTop5DsDs, (unsigned)(aveAgeTop5DsDs*1.0000000001) });
 output(sqHouseDs, { addr, aveAgeTop5DsDs, maxAgeTop5DsDs, minAgeTop5DsDs });
-

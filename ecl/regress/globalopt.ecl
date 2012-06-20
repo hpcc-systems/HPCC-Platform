@@ -44,4 +44,3 @@ end;
 output(sortNames(namesTable));
 
 output(project(addrTable, transform(addressRecord, self.names := sortNames(left.names); self := left)));
-

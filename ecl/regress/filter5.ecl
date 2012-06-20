@@ -43,4 +43,3 @@ afilter3 := afiltered1(per_last_name = 'Drimbad');
 
 output(afilter2,,'aout2.d00');
 output(afilter3,,'aout3.d00');
-

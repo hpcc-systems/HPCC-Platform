@@ -348,5 +348,3 @@ struct __cleanup_daft
 {
     ~__cleanup_daft()   { cleanupDistributedFileSystem(); }
 } __cleanup_daft_instance;
-
-

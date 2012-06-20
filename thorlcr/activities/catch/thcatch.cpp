@@ -50,4 +50,3 @@ CActivityBase *createSkipCatchActivityMaster(CMasterGraphElement *container)
     else
         return new CSkipCatchActivity(container);
 }
-

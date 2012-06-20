@@ -24,4 +24,3 @@ ga := GROUP(a, g);
 groupem := false : stored('groupem');
 
 output(sort(IF(groupem, ga, GROUP(ga)), -f));
-

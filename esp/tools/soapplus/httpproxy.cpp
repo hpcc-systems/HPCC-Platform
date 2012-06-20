@@ -778,5 +778,3 @@ int SocksProxy::start()
     }
     return 0;
 }
-
-

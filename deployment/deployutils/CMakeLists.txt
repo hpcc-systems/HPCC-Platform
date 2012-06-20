@@ -57,5 +57,3 @@ target_link_libraries ( deployutils
          xmllib
          deploy
     )
-
-

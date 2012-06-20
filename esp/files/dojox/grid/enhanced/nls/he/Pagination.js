@@ -21,4 +21,3 @@ define(
 })
 //end v1.x content
 );
-

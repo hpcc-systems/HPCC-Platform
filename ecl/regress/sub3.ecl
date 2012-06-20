@@ -47,5 +47,3 @@ apply(namesTable2,display.echo(
    surname[0-1..4] + ':' +
    surname[..0-1] + ':' +
    forename + ':' + (string)age));
-
-

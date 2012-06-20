@@ -40,4 +40,3 @@ CActivityBase *createActionActivityMaster(CMasterGraphElement *container)
 {
     return new CActionMaster(container);
 }
-

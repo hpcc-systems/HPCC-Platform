@@ -31,5 +31,3 @@ result := record
 p := parse(d,line,tline,result,whole);
 
 output(p);
-
-

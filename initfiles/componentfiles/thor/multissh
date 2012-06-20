@@ -47,4 +47,3 @@ for computer in `cat $fileName`; do
     ./pssh -o password=$THORPASSWD  $THORUSER@$computer $1
     let COUNTER=COUNTER+1
 done
-

@@ -32,4 +32,3 @@ ds := FileServices.LogicalFileList('*', true, false);
 summary := table(nothor(ds), { owner, numFiles := count(group), totalSize := sum(group, size) }, owner);
 
 output(summary);
-

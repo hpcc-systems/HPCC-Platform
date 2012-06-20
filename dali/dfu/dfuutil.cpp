@@ -1025,7 +1025,3 @@ IDFUhelper *createIDFUhelper()
 {
     return new CDFUhelper;
 }
-
-
-
-

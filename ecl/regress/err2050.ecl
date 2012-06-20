@@ -30,4 +30,3 @@ ENDMACRO;
 
 abc := g(3);
 xyz := h(4);
-

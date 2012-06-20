@@ -85,4 +85,3 @@ FOREACH ( iFILES
 )
     Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/smc_xslt/ws_machine COMPONENT Runtime )
 ENDFOREACH ( iFILES )
-

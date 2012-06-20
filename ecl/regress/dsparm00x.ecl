@@ -21,4 +21,3 @@ ds := dataset('ds', {String10 name; string20 last_name; }, FLAT);
 total := count(ds(name='fred'));
 
 total;
-

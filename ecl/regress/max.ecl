@@ -29,4 +29,3 @@ output(calculateMax('a','z'));
 output(calculateMax4(88,1,10,5));
 output(calculateMax4(-0.4,0.0,0.5,0.9));
 output(calculateMax4('a','zz','','z'));
-

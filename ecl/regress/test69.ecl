@@ -35,5 +35,3 @@ DS1 := dataset ('test01', tRec1, flat);
 IT := iterate(DS1, createSeqNum(left, right));
 
 output (IT ,tRec1,'testit.out');
-
-

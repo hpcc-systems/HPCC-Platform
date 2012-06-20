@@ -49,4 +49,3 @@ TRANSFORM
 END;
 
 output(PROJECT(parentDataset,selectBestChild(LEFT)),,'out1.d00');
-

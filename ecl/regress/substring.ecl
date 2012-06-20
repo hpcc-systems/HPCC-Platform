@@ -33,4 +33,3 @@ output(person,{(integer)(daterng[5..6])});
 #ELSE
 'Incorrect';
 #END
-

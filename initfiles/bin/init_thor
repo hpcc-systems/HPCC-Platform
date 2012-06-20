@@ -36,4 +36,3 @@ $deploydir/start_thor $deploydir &
 trap "killed" SIGINT SIGTERM
 wait
 rm $PID_NAME
-

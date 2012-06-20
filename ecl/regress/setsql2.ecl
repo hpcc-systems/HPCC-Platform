@@ -30,4 +30,3 @@ a := ['Gavin','Jason','Emma','Vicky'];
 
 //count(person(inlist('one', ['Gavin','Jason','Emma','Vicky'])='yes'));
 count(person(inlist2('one', a)='yes'));
-

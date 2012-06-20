@@ -39,4 +39,3 @@ baltab1 := group(namesTable,namesTable.surname);
 baltab := table(baltab1,balrec);
 
 output(baltab)
-

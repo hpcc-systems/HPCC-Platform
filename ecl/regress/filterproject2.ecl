@@ -51,4 +51,3 @@ f2b := f1b(storedFalse);
 f3b := f2b(letter not in ['G','H','I']);
 f4b := table(f3b, { letter, sm := seg*number });
 output(f4b);            // Should generate a single filter project activity
-

@@ -332,5 +332,3 @@ CActivityBase *createProjectSlave(CGraphElementBase *container)
 {
     return new CProjectSlaveActivity(container);
 }
-
-

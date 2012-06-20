@@ -27,4 +27,3 @@ datetab := table(mytrans, daterec, tr_date);
 
 count(datetab);
 //--------------------------------------------------
-

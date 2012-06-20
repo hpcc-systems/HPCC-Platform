@@ -26,5 +26,3 @@ count(dg_flatfile(storedvar != 'DAVID', storedvar = DG_firstname));
 
 output(dg_indexfile(storedvar != 'DAVID', storedvar = DG_firstname));
 count(dg_indexfile(storedvar != 'DAVID', storedvar = DG_firstname));
-
-

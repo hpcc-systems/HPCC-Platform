@@ -57,5 +57,3 @@ mainRecord doJoin(peopleRecord l, sequenceKey r) := TRANSFORM
 //output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] in [left.idx.id, left.id2])));
 //can't be done because requires condition to be duplicated.
 output(join(peopleDataset1, sequenceKey, keyed(right.surname[1..length(trim(left.idx.id))] in [left.idx.id, left.id2]), atmost(100)));
-
-

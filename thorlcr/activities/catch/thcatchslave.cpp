@@ -310,4 +310,3 @@ CActivityBase *createCatchSlave(CGraphElementBase *container)
             return NULL;
     }
 }
-

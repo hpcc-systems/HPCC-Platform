@@ -83,5 +83,3 @@ SEQUENTIAL(
   OUTPUT(PIPE('cat ' + tempname3, houseRecord, xml('Dataset/Row')))
  )
 );
-
-

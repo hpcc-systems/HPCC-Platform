@@ -79,5 +79,3 @@ target_link_libraries ( WsDeploy
      deploy 
      deployutils     
     )
-
-

@@ -25,5 +25,3 @@ count(dg_csvfile(storedvar != 'DAVID', storedvar = DG_firstname));
 
 output(dg_xmlfile(storedvar != 'DAVID', storedvar = DG_firstname));
 count(dg_xmlfile(storedvar != 'DAVID', storedvar = DG_firstname));
-
-

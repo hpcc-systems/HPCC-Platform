@@ -51,5 +51,3 @@ target_link_libraries ( envgen
         environment 
         securesocket      
         )
-
-

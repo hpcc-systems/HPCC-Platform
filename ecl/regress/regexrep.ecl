@@ -49,4 +49,3 @@ END;
 outset := PROJECT(inset, trans(LEFT));
 
 output(outset);
-

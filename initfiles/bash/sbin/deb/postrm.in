@@ -21,4 +21,3 @@
 if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
         ${INSTALL_DIR}/etc/init.d/install-init
 fi
-

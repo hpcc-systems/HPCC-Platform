@@ -31,5 +31,3 @@ export g(integer sc) := sc+2;
 
 
 output(m1.f(3));
-
-

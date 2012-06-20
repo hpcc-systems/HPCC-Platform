@@ -39,4 +39,3 @@ target_link_libraries ( wuget
          dllserver
          )
 install ( TARGETS wuget DESTINATION ${OSSDIR}/bin )
-

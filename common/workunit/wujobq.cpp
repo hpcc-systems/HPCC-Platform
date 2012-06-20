@@ -1951,4 +1951,3 @@ extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
 
     return wu->switchThorQueue(cluster, &switcher);
 }
-

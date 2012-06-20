@@ -70,4 +70,3 @@ jlib_decl ISmartSocketFactory *createSmartSocketFactory(const char *_socklist, b
 
 
 #endif
-

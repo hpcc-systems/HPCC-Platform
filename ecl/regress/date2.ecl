@@ -19,5 +19,3 @@
 import lib_date;
 
 output(lib_date.getAge('19700117'));
-
-

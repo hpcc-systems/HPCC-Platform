@@ -38,6 +38,3 @@ r1 := record
 p := parse(d,the_line,line,r1);
 
 output(p)
-
-
-

@@ -32,4 +32,3 @@ if ( PLATFORM )
 endif()
 
 include ( dfuwu.cmake)
-

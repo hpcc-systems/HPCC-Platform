@@ -47,4 +47,3 @@ wordKey t(wordKey l) := transform
 
 q := project(wordKey, t(left));
 output(allnodes(q));
-

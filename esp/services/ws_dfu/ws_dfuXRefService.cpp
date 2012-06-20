@@ -508,4 +508,3 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
     }
     return true;
 }
-

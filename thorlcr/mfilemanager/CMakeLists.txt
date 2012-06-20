@@ -72,5 +72,3 @@ target_link_libraries ( mfilemanager_lcr
          commonext 
          graph_lcr 
     )
-
-

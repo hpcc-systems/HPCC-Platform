@@ -477,4 +477,3 @@ void IndexDataSource::applyFilter()
     }
     resetCursor();
 }
-

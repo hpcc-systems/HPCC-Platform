@@ -69,5 +69,3 @@ string10                o := outTable.o;
 
 //output(outTable,,'out.d00');
 output(outTable,projectrec,'out.d00');
-
-

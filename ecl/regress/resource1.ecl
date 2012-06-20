@@ -33,4 +33,3 @@ filteredTable := baseTable(surname <> 'Hawthorn');
 //-------------------------------------------
 
 output(filteredTable,,'out1.d00');
-

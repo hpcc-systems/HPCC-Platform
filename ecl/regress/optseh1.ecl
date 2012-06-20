@@ -431,6 +431,3 @@ output(LIMIT(DG_FetchIndex1(Lname='Anderson'),10,SKIP,KEYED), {fname});
 
 output(LIMIT(nofold(LIMIT(DG_FetchIndex1(Lname='Anderson'),1,SKIP,keyed)),1,skip), {fname});
 output(LIMIT(nofold(LIMIT(DG_FetchIndex1(Lname='Anderson'),10,SKIP,keyed)),10,skip), {fname});
-
-
-

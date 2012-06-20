@@ -32,5 +32,3 @@ test('b', ['spam'] );
 // no problem:
 setArg := ['spam','eggs'];
 test('c', setArg );
-
-

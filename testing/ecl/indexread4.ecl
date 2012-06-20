@@ -50,4 +50,3 @@ output(LIMIT(DG_FetchIndex1(Lname='Anderson',fname<>'nomatch11'),10,ONFAIL(creat
 
 output(LIMIT(LIMIT(DG_FetchIndex1(Lname='Anderson',fname<>'nomatch12'),1,ONFAIL(createError(true)),keyed),1,ONFAIL(createError(false))), {fname});
 output(LIMIT(LIMIT(DG_FetchIndex1(Lname='Anderson',fname<>'nomatch13'),10,ONFAIL(createError(true)),keyed),10,ONFAIL(createError(false))), {fname});
-

@@ -370,5 +370,3 @@ bool CWsFileIOEx::onWriteFileData(IEspContext &context, IEspWriteFileDataRequest
 
     return true;
 }
-
-

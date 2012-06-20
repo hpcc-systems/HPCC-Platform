@@ -46,4 +46,3 @@ results :=
 //Return first matching sentance that we can find
 outfile1 := PARSE(infile,line,sentance,results,first,scan,skip(ws*));
 output(outfile1);
-

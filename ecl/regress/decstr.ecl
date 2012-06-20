@@ -19,4 +19,3 @@
 decimal11_3 a := transfer(x'10000000696d',decimal11_3);
 
 (string)a;
-

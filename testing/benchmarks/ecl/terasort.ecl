@@ -28,4 +28,3 @@ rec := record
 
 in := DATASET('benchmark::terasort1',rec,FLAT);
 OUTPUT(SORT(in,key,UNSTABLE),,'benchmark::terasort1out',overwrite);
-

@@ -36,4 +36,3 @@ z := (ebcdic string)'abcdef ';
 #ELSE
 'Incorrect';
 #END
-

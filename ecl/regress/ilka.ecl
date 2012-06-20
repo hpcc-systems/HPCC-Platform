@@ -28,4 +28,3 @@ string2     nl;
 names := DATASET('names.d00', namesRecord, FLAT);
 
 output(names, { stringlib.getbuildinfo() }, 'out.d00')
-

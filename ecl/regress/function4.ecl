@@ -34,4 +34,3 @@ return project(t2, t(LEFT));
 END;
 
 output(BestByDate(000561683165));
-

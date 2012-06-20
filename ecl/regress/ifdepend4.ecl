@@ -45,4 +45,3 @@ output(x1);
 
 output(s);
 output(sort(makeSplit1, age));
-

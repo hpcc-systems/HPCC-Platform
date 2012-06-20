@@ -91,4 +91,3 @@ target_link_libraries ( ws_roxiequery
          roxiecommlib 
          roxiemanager
     )
-

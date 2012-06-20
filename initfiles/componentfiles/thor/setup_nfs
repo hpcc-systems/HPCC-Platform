@@ -41,4 +41,3 @@ if [ $yesno = 'y' ]; then
         setup_one_nfs $slave $ROOTPASSWD $NFSSERVER 
     done
 fi
-

@@ -38,4 +38,3 @@ IDFUengine *createDFUengine();
 void stopDFUserver(const char *qname);
 
 #endif
-

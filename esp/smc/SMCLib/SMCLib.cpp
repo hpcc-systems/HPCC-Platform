@@ -54,4 +54,3 @@ CSMCLib::CSMCLib()
 { 
     return; 
 }
-

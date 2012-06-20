@@ -117,4 +117,3 @@ protected:
 void jlib_decl addActionList(StringMatcher & matcher, const char * text, unsigned action, unsigned * maxElementLength = NULL);
 
 #endif 
-

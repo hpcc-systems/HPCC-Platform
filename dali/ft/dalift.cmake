@@ -59,4 +59,3 @@ target_link_libraries ( dalift
          dalibase 
          environment 
     )
-

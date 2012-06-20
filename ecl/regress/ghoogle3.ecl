@@ -271,5 +271,3 @@ initialResults := dataset([], candidateRecord);
 results := LOOP(initialResults, count(executionPlan), processStage(executionPlan[COUNTER], rows(left)));
 
 output(results);
-
-

@@ -28,4 +28,3 @@ dataset copy_ds(virtual dataset d) := d;
 
 // the mapping is optional
 count(person);
-

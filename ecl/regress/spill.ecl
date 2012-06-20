@@ -42,4 +42,3 @@ g := sort(f, age);
 h := z + g;
 
 output(h);
-

@@ -551,4 +551,3 @@ CActivityBase *createPipeThroughSlave(CGraphElementBase *container)
 {
     return new CPipeThroughSlaveActivity(container);
 }
-

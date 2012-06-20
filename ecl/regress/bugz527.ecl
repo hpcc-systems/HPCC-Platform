@@ -25,4 +25,3 @@ END;
 tab := TABLE (person, rec); // This works against ***SOME*** clusters
 //tab := TABLE (person, rec, 1);    // This works against ***ALL*** clusters
 OUTPUT(tab);
-

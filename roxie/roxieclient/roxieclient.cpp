@@ -626,4 +626,3 @@ extern "C" ROXIECLIENT_API IRoxieClient* createRoxieClient(ISmartSocketFactory* 
 {
     return new CRoxieClient(socketfactory, numThreads, maxretries);
 }
-

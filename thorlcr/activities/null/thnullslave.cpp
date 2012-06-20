@@ -134,4 +134,3 @@ public:
 CActivityBase *createNullSinkSlave(CGraphElementBase *container) { return new CNullSinkSlaveActivity(container); }
 CActivityBase *createNullSlave(CGraphElementBase *container) { return new CNullSlaveActivity(container); }
 CActivityBase *createThroughSlave(CGraphElementBase *container) { return new CThroughSlaveActivity(container); }
-

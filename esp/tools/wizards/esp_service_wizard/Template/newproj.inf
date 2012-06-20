@@ -21,5 +21,3 @@ $$ELSE
 GENESPSERVICE.SCM   $$root$$.scm
 $$ENDIF
 $$ENDIF
-
-

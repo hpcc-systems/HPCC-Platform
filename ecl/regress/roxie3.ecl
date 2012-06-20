@@ -19,4 +19,3 @@
 #option('targetClusterType', 'roxie');
 
 output('wuid = ' + WORKUNIT);
-

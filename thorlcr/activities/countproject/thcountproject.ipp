@@ -25,5 +25,3 @@
 CActivityBase *createCountProjectActivityMaster(CMasterGraphElement *container);
 
 #endif
-
-

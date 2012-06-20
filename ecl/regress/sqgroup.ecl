@@ -92,4 +92,3 @@ itPersonSummary := iterate(sort(personSummary, surname), tr4(LEFT, RIGHT));
 dpPersonSummary := dedup(itPersonSummary, surname, right);
 
 output(house, { addr, dataset(personSummaryRec) summary := dpPersonSummary; });
-

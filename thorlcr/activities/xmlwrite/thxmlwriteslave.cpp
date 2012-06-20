@@ -98,5 +98,3 @@ CActivityBase *createXmlWriteSlave(CGraphElementBase *container)
 {
     return new CXmlWriteSlaveActivity(container);
 }
-
-

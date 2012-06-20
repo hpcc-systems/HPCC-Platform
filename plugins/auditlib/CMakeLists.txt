@@ -41,4 +41,3 @@ install ( TARGETS auditlib DESTINATION ${OSSDIR}/plugins )
 target_link_libraries ( auditlib  
          jlib 
     )
-

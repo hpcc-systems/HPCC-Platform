@@ -25,4 +25,3 @@ string2             nl := '\r\n';
 
 d := dataset('names.d00', namesRecord, THOR);
 output(d,,PIPE('pipeWrite \\thordata\\names.all'));
-

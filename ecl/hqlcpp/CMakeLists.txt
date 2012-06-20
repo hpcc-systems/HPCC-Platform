@@ -135,5 +135,3 @@ target_link_libraries ( hqlcpp
 if (NOT WIN32)
   target_link_libraries ( hqlcpp ${BINUTILS_LIBRARIES})
 endif()
-
-

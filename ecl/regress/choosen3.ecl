@@ -53,4 +53,3 @@ integer4 num2 := 100 : stored('num2');
 
 i9 := dataset('i9', {unsigned1 d}, thor);
 output(choosen(i9, num2, firstReturned2));
-

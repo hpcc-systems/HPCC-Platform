@@ -47,4 +47,3 @@ i := index(d, { x.dl, _fpos }, 'imgindex');
 buildindex(i, overwrite);
 
 //output(fetch(d, i(dl='id2'), RIGHT._fpos),,'x.out');
-

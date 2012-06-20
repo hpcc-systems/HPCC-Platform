@@ -80,4 +80,3 @@ private:
 
 
 #endif // !defined(AFX_WS_FSBINDING_H__0FC58C10_AD76_4886_AB50_B76A5B4D17AA__INCLUDED_)
-

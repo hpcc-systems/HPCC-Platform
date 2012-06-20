@@ -52,4 +52,3 @@ target_link_libraries ( environment
          remote 
          dalibase 
     )
-

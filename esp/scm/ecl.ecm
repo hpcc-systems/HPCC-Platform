@@ -41,4 +41,3 @@ SCMInterface IEspInstantEcl(IEspService)
 {
    virtual bool onInstantEcl(IEspContext &context, IEspInstantEclRequest &req, IEspInstantEclResp &resp) = 0;
 };
-

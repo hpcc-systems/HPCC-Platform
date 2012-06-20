@@ -94,4 +94,3 @@ else
     $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${comp_base} $PATH_PRE'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
-

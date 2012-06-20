@@ -28,4 +28,3 @@ d := dataset([{0,'','CONFUSED'}], layout);
 output(d,, 'myfile', OVERWRITE);
 m := dataset('myfile', layout, FLAT);
 output(m);
-

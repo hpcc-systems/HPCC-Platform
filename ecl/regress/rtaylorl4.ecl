@@ -70,4 +70,3 @@ result := LIBRARY('FilterDatasetLibrary', FilterLibraryInterface(SearchArgs));
 
 OUTPUT(result.matches);
 OUTPUT(COUNT(result.others));
-

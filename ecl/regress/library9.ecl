@@ -1603,4 +1603,3 @@ output(myQuery.queryText);
 output(myQuery.annotated);
 output(myQuery.optimized);
 output(myQuery.results);
-

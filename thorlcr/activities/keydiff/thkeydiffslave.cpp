@@ -199,4 +199,3 @@ activityslaves_decl CActivityBase *createKeyDiffSlave(CGraphElementBase *contain
 {
     return new CKeyDiffSlave(container);
 }
-

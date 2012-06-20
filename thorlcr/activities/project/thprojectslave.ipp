@@ -32,9 +32,3 @@ activityslaves_decl CActivityBase *createPrefetchProjectSlave(CGraphElementBase 
 
 
 #endif
-
-
-
-
-
-

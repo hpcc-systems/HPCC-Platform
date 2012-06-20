@@ -1649,5 +1649,3 @@ IHqlExpression * optimizeActivityAliasReferences(IHqlExpression * expr)
     }
     return cloneOrLink(expr, args);
 }
-
-

@@ -43,5 +43,3 @@ target_link_libraries ( genht
         jlib 
     )
 install ( TARGETS genht DESTINATION ${OSSDIR}/bin )
-
-

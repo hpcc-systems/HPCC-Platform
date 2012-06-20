@@ -67,4 +67,3 @@ output(group5, {count(group)});
 sorted6 := sort(namesTable, forename, surname, age);
 group6 := group(sorted6, forename, surname, all);
 output(group6, {count(group)});
-

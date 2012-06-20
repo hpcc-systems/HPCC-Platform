@@ -75,4 +75,3 @@ EXISTS(emptyTable);
 // fold to true
 NOT EXISTS(emptyTable);
 //NOT WITHIN(emptyTable);
-

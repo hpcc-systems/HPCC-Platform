@@ -44,5 +44,3 @@ install ( TARGETS roxieclient DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( roxieclient
          jlib
     )
-
-

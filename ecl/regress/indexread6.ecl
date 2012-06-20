@@ -25,5 +25,3 @@ i := index(f, { f_name := (string11) name, filepos } ,'\\home\\person.name_first
 a1 := i(f_name='RICHARD');
 
 output(a1);
-
-

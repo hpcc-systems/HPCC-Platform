@@ -923,4 +923,3 @@ bool Cws_machineEx::onStartStopDone( IEspContext &context, IEspStartStopDoneRequ
     }
     return true;
 }
-

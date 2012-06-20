@@ -356,5 +356,3 @@ void CRecieveLogSerializer::LoadDataMap(GuidMap& GUIDmap)
     }
     Close();
 }
-
-

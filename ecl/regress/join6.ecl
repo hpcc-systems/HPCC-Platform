@@ -57,4 +57,3 @@ JoinedF := join (namesTable, addressTable,
 
 
 output(JoinedF,,'out.d00');
-

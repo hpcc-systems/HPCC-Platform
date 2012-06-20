@@ -74,4 +74,3 @@ FullServiceOutRecord :=
 //Use a count so the results are consistent, and nofold to prevent the code generator removing the child dataset...
 output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord)),1))));
 output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), merge(3)),2))));
-

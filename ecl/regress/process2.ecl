@@ -107,4 +107,3 @@ processed := process(inputDataset, stackRecord, resultRecord, readNextState,
 output(processed);
 
 //How covert to reverse polish?
-

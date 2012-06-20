@@ -29,4 +29,3 @@ integer2        age := 25;
 namesTable := dataset('x',namesRecord,FLAT);
 output(namesTable(age=1));
 output(namesTable(age=2),all);
-

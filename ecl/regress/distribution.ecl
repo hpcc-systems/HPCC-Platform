@@ -27,4 +27,3 @@ SomeFile := DATASET([{'C','G'},
                      {'B','G'},
                      {'A','B'}],MyRec);
 distribution(SomeFile);
-

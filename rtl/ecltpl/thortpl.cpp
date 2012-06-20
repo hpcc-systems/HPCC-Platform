@@ -85,4 +85,3 @@ extern "C" ECL_API IEclProcess* createProcess()
     @init@
     return new MyEclProcess;
 }
-

@@ -77,5 +77,3 @@ forward4 := namesTable(surname = f4);
 forward := forward1+forward2+forward3+forward4;
 
 output(forward);
-
-

@@ -52,5 +52,3 @@ target_link_libraries ( LdapSecurity
          jlib
          ${OPENLDAP_LIBRARIES}
     )
-
-

@@ -29,4 +29,3 @@ x := males(false)[1] : stored('x');
 //xx := males(false) : stored('xx');
 //x := xx[1] : stored('x');
 x.per_sex;
-

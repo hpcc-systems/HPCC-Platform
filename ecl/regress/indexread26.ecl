@@ -45,4 +45,3 @@ i := index(parentRecord, payloadRecord, 'superkey');
 i2 := index(i, 'renamedSuperKey');
 
 output(i2(id=3));
-

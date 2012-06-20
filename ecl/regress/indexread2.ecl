@@ -34,5 +34,3 @@ f_name := d.name;
 a1 := d(f_name='RICHARD' and f_name = Clean_Address[1..10]);
 
 output(a1);
-
-

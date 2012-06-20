@@ -50,4 +50,3 @@ innerJ := having(j, exists(rows(left)(side=0)) and exists(rows(left)(side=1)));
 
 result := rollup(innerJ, group, transform({ string20 surname, unsigned4 cnt}, self.surname := LEFT.surname, self.cnt := count(rows(left))));
 output(result);
-

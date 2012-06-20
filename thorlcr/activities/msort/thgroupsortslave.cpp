@@ -216,5 +216,3 @@ CActivityBase *createSortedSlave(CGraphElementBase *container)
 {
     return new CSortedSlaveActivity(container);
 }
-
-

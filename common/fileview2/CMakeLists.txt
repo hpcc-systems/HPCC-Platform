@@ -130,5 +130,3 @@ if( PLATFORM )
          fileview2 
     )
 endif()
-
-

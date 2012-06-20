@@ -32,4 +32,3 @@ Rrec2 := CHOOSEN(namesTable, 1, (RANDOM()%rcnt)+1);
 
 output(Rrec1);
 output(Rrec2);
-

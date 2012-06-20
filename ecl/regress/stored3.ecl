@@ -19,4 +19,3 @@
 suffix := 'xxx' : stored('suffix');
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_st, string40 per_first_name, string40 per_last_name}, thor);
 output(choosen(person, 42), {per_first_name}, 'vet::test'+suffix);
-

@@ -77,5 +77,3 @@ NewChilds := NORMALIZE(DeNormedRecs,LEFT.NumRows,NewChildren(LEFT,COUNTER));
 // NewChilds := NORMALIZE(DeNormedRecs,LEFT.Children,NewChildren(RIGHT,LEFT.NameID));
 
 OUTPUT(NewChilds,NAMED('ChildrenExtracted'));
-
-

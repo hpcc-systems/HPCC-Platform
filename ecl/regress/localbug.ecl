@@ -1689,5 +1689,3 @@ q1 := dataset([
 
 p := project(q1, doBatchExecute(LEFT));
 output(p);
-
-

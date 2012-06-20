@@ -48,4 +48,3 @@ set ( SRCS esdlgram.cpp esdllex.cpp main.cpp esdlcomp.cpp esdl_utils.cpp )
 add_executable ( esdl ${SRCS} )
 install ( TARGETS esdl DESTINATION ${OSSDIR}/bin )
 #add_dependencies ( esdl esdlgram.cpp esdlgram.h esdllex.cpp )
-

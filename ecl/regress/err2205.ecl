@@ -21,4 +21,3 @@ LOADXML('<xml>dummy</xml>');
 #ELSE
   #DECLARE(s)
 #END
-

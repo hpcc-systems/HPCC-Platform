@@ -26,4 +26,3 @@ string2             nl := '\r\n';
 d := PIPE('pipeRead 5000', namesRecord);
 //output(CHOOSEN(d,0), {(string)thorlib.node(), TRIM(forename), TRIM(surname)});
 output(CHOOSEN(d,ALL));
-

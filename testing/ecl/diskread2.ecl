@@ -35,4 +35,3 @@ o3 := count(LIMIT(DG_FlatFile(DG_firstname=c3), 2, skip)) : independent;
 o4 := count(LIMIT(DG_FlatFile(DG_firstname=c4), 2, ONFAIL(createError))) : independent;
 
 o1; o2; o3; o4;
-

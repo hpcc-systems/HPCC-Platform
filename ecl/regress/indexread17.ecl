@@ -38,4 +38,3 @@ a2 := i((name in [(varstring)(Clean_Address[1..10])]));
 output(a2);
 a3 := i((name = ((varstring)Clean_Address)[1..10]));
 output(a3);
-

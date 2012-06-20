@@ -55,4 +55,3 @@ if (WIN32)
              dalibase 
         )
 endif (WIN32)
-

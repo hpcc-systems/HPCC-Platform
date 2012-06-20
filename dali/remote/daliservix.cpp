@@ -1717,5 +1717,3 @@ void processCommand(int socket)
     CRemoteFileServer server;
     server.processCommand(socket);
 }
-
-

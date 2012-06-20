@@ -52,4 +52,3 @@ mainRecord doJoin(peopleRecord l, sequenceKey r) := TRANSFORM
 
 output(join(peopleDataset1, sequenceKey, left.id=right.sequence and left.id != sv3,doJoin(left,right), limit(sv1, fail('Help')),  keep(sv3)));
 output(join(peopleDataset1, sequenceKey, left.id=right.sequence and left.id != sv3,doJoin(left,right), atmost(sv2), keep(sv3)));
-

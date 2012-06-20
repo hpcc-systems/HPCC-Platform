@@ -34,6 +34,3 @@ var profile = (function(){
 		]
 	};
 })();
-
-
-

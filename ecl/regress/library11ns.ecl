@@ -54,5 +54,3 @@ output(filtered.included,,named('Included'));
 
 filtered2 := filterDataset(pr, 'Hawthorn', false);
 output(filtered2.excluded,,named('Excluded'));
-
-

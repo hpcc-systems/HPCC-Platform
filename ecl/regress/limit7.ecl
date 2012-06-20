@@ -101,5 +101,3 @@ res6a := project(i1(surname='Granger'), t(LEFT));
 res6b := limit(res6a, 99, ONFAIL(createError(99, 'Too many matching names 5')), keyed);
 res6c := project(res6b, transform(errorRecord, self := LEFT.err; ));
 output(res6c);
-
-

@@ -52,4 +52,3 @@ processedNew := LIBRARY('ProcessNameLibrary', processNameLibrary(newNamesTable))
 allSlim := processedOld.slim + processedNew.slim;           // record is based on input parameters, so still not full bound before normalization....
 
 output(allSlim);
-

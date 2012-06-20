@@ -107,5 +107,3 @@ extern activityslaves_decl ICodeContext *queryCodeContext(IThorDataLink *link);
 extern activityslaves_decl void dummyProc();
 
 #endif
-
-

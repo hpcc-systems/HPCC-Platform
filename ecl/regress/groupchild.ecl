@@ -51,6 +51,3 @@ end;
 
 
 output(project(nofold(ds), t(left)));
-
-
-

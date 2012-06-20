@@ -215,4 +215,3 @@ int CEspProtocolThread::run()
     Release();
     return 0;
 }
-

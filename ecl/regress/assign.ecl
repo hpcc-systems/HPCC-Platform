@@ -20,4 +20,3 @@
 x := record
 string12 did := 0;
     end;
-

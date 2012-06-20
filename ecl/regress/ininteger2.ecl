@@ -60,4 +60,3 @@ integer mapValue(integer search) := case(search,
 ds8 := dataset('ds', {unsigned8 ukey, integer8 skey}, thor);
 
 output(ds8(mapValue(skey) = 5));
-

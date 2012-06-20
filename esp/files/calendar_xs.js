@@ -160,4 +160,3 @@ function show_calendar(control_name)
      var calx = new calendarXS(document.all.namedItem(control_name));
      calx.popup()
 }
-

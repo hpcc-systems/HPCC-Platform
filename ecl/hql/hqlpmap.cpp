@@ -1176,5 +1176,3 @@ IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * ex
     FullExpandMonitor monitor(project);
     return mapper.expandFields(expr, memorySelector, serializedSelector, serializedSelector, &monitor);
 }
-
-

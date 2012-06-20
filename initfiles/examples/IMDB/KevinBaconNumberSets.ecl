@@ -187,4 +187,3 @@ EXPORT KevinBaconNumberSets := MODULE
   );
 
 END;
-

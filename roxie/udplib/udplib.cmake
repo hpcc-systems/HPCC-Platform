@@ -53,5 +53,3 @@ target_link_libraries ( udplib
          jlib
          roxiemem 
     )
-
-

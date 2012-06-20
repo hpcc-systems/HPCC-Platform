@@ -84,4 +84,3 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 }
 
 #endif
-

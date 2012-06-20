@@ -113,5 +113,3 @@ CActivityBase *createWuidReadSlave(CGraphElementBase *container)
 {
     return new CWuidReadSlaveActivity(container);
 }
-
-

@@ -67,4 +67,3 @@ END;
 
 r := PARSE(doc, line, html, layout_html, SCAN);
 OUTPUT(r);
-

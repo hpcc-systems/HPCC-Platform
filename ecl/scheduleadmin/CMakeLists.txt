@@ -55,5 +55,3 @@ target_link_libraries ( scheduleadmin
          workunit 
          schedulectrl 
     )
-
-

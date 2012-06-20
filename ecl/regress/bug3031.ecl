@@ -24,4 +24,3 @@
  tbl := dataset([{'C','G',1}, {'C','C',20}, {'A','X',5}, {'B', 'G',10},
      {'A','B',15}], master_r);
   output(tbl);
-

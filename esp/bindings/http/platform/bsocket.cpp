@@ -17,4 +17,3 @@
 ############################################################################## */
 
 #error "This file has moved to jlib. Include jsocket.hpp to use BufferedSocket"
-

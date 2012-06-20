@@ -40,4 +40,3 @@
   Rev_Sub_BU_Prod := PROJECT(Rev_Sub_BU_Prod_tbl,ProjectMoney(LEFT));
 
   output(Rev_Sub_BU_Prod)
-

@@ -75,5 +75,3 @@ target_link_libraries ( graph_lcr
          thorhelper
          roxiemem
     )
-
-

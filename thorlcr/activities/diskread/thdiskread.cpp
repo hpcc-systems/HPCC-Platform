@@ -234,7 +234,3 @@ CActivityBase *createDiskGroupAggregateActivityMaster(CMasterGraphElement *info)
 {
     return new CDiskGroupAggregateActivityMaster(info);
 }
-
-
-
-

@@ -510,4 +510,3 @@ bool loadEspLog(const char* logFileName, HttpClient& httpClient, HttpStat& httpS
 
     return rc;
 }
-

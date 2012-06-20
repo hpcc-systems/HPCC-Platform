@@ -247,4 +247,3 @@ void CEsp_simple_clientAppWiz::CustomizeProject(IBuildProject* pProject)
 //  m_Dictionary and any other public members of this class through the
 //  global Esp_simple_clientaw.
 CEsp_simple_clientAppWiz espaw;
-

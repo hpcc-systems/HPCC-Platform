@@ -116,4 +116,3 @@ auditlib        0x01540000 0x00020000
 ; More could add /FIXED attributes to the linker options to reduce file size
 ; especially the .exe should have no effect
 ;
-

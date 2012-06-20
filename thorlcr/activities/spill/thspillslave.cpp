@@ -224,4 +224,3 @@ activityslaves_decl CActivityBase *createSpillSlave(CGraphElementBase *container
 {
     return new SpillSlaveActivity(container);
 }
-

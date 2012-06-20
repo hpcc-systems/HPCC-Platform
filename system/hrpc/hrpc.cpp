@@ -777,5 +777,3 @@ HRPCcallframe::~HRPCcallframe()
     if (sync)
         sync->unlock();
 }
-
-

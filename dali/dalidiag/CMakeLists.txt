@@ -49,4 +49,3 @@ target_link_libraries ( dalidiag
          remote 
          dalibase 
     )
-

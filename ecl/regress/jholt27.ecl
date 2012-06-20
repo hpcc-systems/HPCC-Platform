@@ -44,4 +44,3 @@ s2 := PROJECT(d2, cvt(LEFT, rtypes.w2));
 s := PROJECT(s1+s2, nbr(LEFT, COUNTER));
 
 OUTPUT(s);
-

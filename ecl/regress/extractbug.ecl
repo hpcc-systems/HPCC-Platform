@@ -66,5 +66,3 @@ ds t1(ds l) := transform
 p1 := project(ds, t1(left));
 
 output(p1);
-
-

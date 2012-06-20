@@ -173,4 +173,3 @@ output(PARSE(infile,line,expr,extractResults(LEFT, $1.actions),first,whole,skip(
 //-----------------------------------------------------------------------------------------------
 
 //processing
-

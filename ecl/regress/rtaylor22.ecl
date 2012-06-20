@@ -39,4 +39,3 @@ ds := dataset('~RTTEST::OUT::ds', r, thor);
 
 sizeof(ds.nm);
 //output(ds.nm);
-

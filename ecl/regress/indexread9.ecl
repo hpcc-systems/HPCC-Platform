@@ -26,5 +26,3 @@ i := index(d, { dob, name, filepos } ,'\\home\\person.name_first.key');
 a1 := i(dob=searchDob or dob=searchDob2);
 
 output(a1);
-
-

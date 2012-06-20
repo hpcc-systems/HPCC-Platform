@@ -2461,4 +2461,3 @@ void RFS_SimpleString::trim()
     while ((end!=base)&&(isspace((unsigned char)*(end-1))))
         end--;
 }
-

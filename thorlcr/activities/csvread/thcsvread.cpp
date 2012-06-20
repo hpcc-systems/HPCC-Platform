@@ -63,4 +63,3 @@ CActivityBase *createCCsvReadActivityMaster(CMasterGraphElement *container)
 {
     return new CCsvReadActivityMaster(container);
 }
-

@@ -94,11 +94,3 @@ StringBuffer &getLdsPath(const char *relpath, StringBuffer & res)
     recursiveCreateDirectory(addPathSepChar(res).str());        
     return res;
 }
-
-
-
-
-
-
-
-

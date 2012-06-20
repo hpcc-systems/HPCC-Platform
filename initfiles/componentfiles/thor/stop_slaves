@@ -25,4 +25,3 @@ for file in $PID/${hpcc_compname}_slave_*.pid
 do
   kill -9 `cat ${file}` # > /dev/null
 done
-

@@ -24,4 +24,3 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 add_executable( start-stop-daemon ${SRC} ${HEADER})
 install ( TARGETS start-stop-daemon DESTINATION ${OSSDIR}/bin )
-

@@ -39,4 +39,3 @@ mp                         2
 dalibase                   3
 esp platform         100-200     Each service would have its own LOGMSGCOMPONENT
 Odin core            900-929     Each source module has its own LOGMSGCOMPONENT
-

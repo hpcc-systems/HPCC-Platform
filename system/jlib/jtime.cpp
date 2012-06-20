@@ -1585,4 +1585,3 @@ time_t timetFromIDateTime(const CDateTime * source)
         time = 0;
     return time;
 }
-

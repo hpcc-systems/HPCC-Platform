@@ -50,4 +50,3 @@ extern graph_decl size32_t ThorExpand(const void * src, size32_t srcSz, CLargeMe
 
 
 #endif
-

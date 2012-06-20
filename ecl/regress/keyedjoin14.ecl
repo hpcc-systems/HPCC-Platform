@@ -46,5 +46,3 @@ mainRecord doJoin(peopleRecord l, sequenceKey r) := TRANSFORM
 
 FilledRecs := join(peopleDataset1, sequenceKey, left.id=right.sequence AND right.alias <> '',doJoin(left,right), limit(100, fail('Help')));
 output(FilledRecs);
-
-

@@ -46,5 +46,3 @@ target_link_libraries ( nbcd
       jlib
       ${CPPUNIT_LIBRARIES}
     )
-
-

@@ -9,5 +9,3 @@ resultSet := FETCH(Tutorial.File_TutorialPerson,
                    RIGHT.fpos);
                    
 OUTPUT(resultSet);
-
-

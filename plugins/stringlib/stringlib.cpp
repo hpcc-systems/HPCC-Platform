@@ -1784,4 +1784,3 @@ STRINGLIB_API void STRINGLIB_CALL slStringCleanSpaces80(char *__ret_str,unsigned
         memset(out, ' ', 80 - len);
     memcpy(__ret_str, origout, 80);
 }
-

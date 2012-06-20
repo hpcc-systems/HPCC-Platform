@@ -19,4 +19,3 @@
 aaa := DATASET('aaa', {STRING1 f1; STRING1 f2; }, HOLE);
 bbb := aaa(f1);
 ccc := aaa(f1*2);
-

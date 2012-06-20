@@ -161,5 +161,3 @@ Norm8Recs := normalize( distribute(Norm7Recs,hash(firstname,lastname)), MaxEleme
 #IF(MaxField=6) output(Norm6Recs,,FileOut+'XML',XML,overwrite); #end
 #IF(MaxField=7) output(Norm7Recs,,FileOut+'XML',XML,overwrite); #end
 #IF(MaxField=8) output(Norm8Recs,,FileOut+'XML',XML,overwrite); #end
-
-

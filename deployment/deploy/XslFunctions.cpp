@@ -90,4 +90,3 @@ FunctionSample::getError() const
     return StaticStringToDOMString(XALAN_STATIC_UCODE_STRING("The boolean() function takes one argument!"));
 }
 #endif //0
-

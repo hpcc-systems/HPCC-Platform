@@ -26,4 +26,3 @@ string2             nl := '\r\n';
 d := PIPE('pipeRead 200', namesRecord);
 output(d,,'names.d00');
 //output(d,{TRIM(forename),TRIM(surname)},'varnames.d00');
-

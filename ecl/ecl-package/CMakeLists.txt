@@ -51,4 +51,3 @@ target_link_libraries ( ecl-package
     )
 
 install ( PROGRAMS ecl-package.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
-

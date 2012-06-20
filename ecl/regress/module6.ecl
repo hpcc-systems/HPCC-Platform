@@ -32,4 +32,3 @@ end;
 f(IXyz in) := in.getId(5,3) + in.getId(10,3);
 
 output(f(Mxyz));
-

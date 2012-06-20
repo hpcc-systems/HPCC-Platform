@@ -860,4 +860,3 @@ void createERdiagram(StringBuffer & xgmml, IViewFileWeb & _web)
     web.walk(visitor);
     builder.endDiagram();
 }
-

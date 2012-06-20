@@ -167,6 +167,3 @@ extern "C" ROXIEMANAGER_API IRoxieQueryManager *createRoxieQueryManager(SocketEn
 
 extern "C" ROXIEMANAGER_API IRoxieQueryCompileInfo *createRoxieQueryCompileInfo(const char *_ecl, const char *_jobName, const char *_clusterName, const char *_appName);
 extern "C" ROXIEMANAGER_API IRoxieQueryProcessingInfo *createRoxieQueryProcessingInfo();
-
-
-

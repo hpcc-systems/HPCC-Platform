@@ -378,4 +378,3 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
         }
     }
 }
-

@@ -271,4 +271,3 @@ void CEsp_service_wizardAppWiz::CustomizeProject(IBuildProject* pProject)
 //  m_Dictionary and any other public members of this class through the
 //  global Esp_service_wizardaw.
 CEsp_service_wizardAppWiz espaw;
-

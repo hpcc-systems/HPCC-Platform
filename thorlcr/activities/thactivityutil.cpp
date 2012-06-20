@@ -852,4 +852,3 @@ void CThorRowAggregator::mergeElement(const void * otherElement)
 {
     RowAggregator::mergeElement(otherElement);
 }
-

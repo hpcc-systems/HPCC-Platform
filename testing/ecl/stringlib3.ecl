@@ -173,4 +173,3 @@ output('Str.ExtractMultiple(commastring, bitmap)');
 #ELSE
 output('FAILED Str.ExtractMultiple(commastring, bitmap)');
 #END
-

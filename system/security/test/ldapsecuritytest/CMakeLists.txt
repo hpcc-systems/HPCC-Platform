@@ -44,5 +44,3 @@ target_link_libraries ( ldapsecuritytest
          jlib
          LdapSecurity 
     )
-
-

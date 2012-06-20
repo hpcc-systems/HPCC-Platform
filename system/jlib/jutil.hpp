@@ -272,4 +272,3 @@ extern jlib_decl bool safe_fcvt(size_t len, char * buffer, double value, int num
 extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 
 #endif
-

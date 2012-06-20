@@ -63,6 +63,3 @@ CActivityBase *createNullActionSlave(CGraphElementBase *container)
 {
     return new CNullActionSlaveActivity(container);
 }
-
-
-

@@ -273,4 +273,3 @@ MAKECopyArrayOf(simple *, simple &, array)
 */
 
 #endif
-

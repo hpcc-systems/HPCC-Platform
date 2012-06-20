@@ -55,4 +55,3 @@ output(join(namesTable, namesTable2, left.surname between right.surname[1..10]+'
 
 //This should not generate a self join
 output(join(namesTable, namesTable, left.age between right.age - 10 and right.age +10));
-

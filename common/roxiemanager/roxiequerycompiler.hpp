@@ -40,4 +40,3 @@ interface IRoxieQueryCompiler : extends IInterface
 extern IRoxieQueryCompiler *createRoxieQueryCompiler();
 
 #endif
-

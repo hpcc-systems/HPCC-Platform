@@ -50,4 +50,3 @@ results :=
 outfile1 := PARSE(d,line,S,results,first,whole,skip(' '),parse,matched(all));
 
 output(outfile1);
-

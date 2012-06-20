@@ -1962,5 +1962,3 @@ IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, jhelper, helper, allocator);
     return new CMultiCoreJoinHelper(activity, numthreads, jhelper, helper, allocator);
 }
-
-

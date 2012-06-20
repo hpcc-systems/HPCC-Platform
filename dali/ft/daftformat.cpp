@@ -1758,4 +1758,3 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
 
     return new CRemotePartitioner(ep, srcFormat, tgtFormat, slave, wuid);
 }
-

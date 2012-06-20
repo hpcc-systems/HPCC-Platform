@@ -82,5 +82,3 @@ MODULE_EXIT()
     activeFailureMarkerExpr->Release();
     activeActivityMarkerExpr->Release();
 }
-
-

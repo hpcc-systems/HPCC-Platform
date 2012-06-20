@@ -35,4 +35,3 @@ x := if (c > 100, namesTable(age < 100), namesTable);
 
 
 if (c > 0, output(namesTable));
-

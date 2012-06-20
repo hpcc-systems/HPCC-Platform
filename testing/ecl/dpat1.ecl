@@ -52,4 +52,3 @@ outfile1 := PARSE(d,line,progeny,results,scan all);// : persist('kjv::relationsh
 
 count(outfile1);
 output(choosen(outfile1,1000));
-

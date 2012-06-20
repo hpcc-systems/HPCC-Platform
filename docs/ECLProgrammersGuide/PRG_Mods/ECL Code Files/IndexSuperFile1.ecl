@@ -5,5 +5,3 @@ IMPORT $;
 
 OUTPUT($.DeclareData.ds1);
 OUTPUT($.DeclareData.ds2);
-
-

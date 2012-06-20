@@ -133,5 +133,3 @@ END;
 
 NFLLeagueCategoryTable := TABLE(NFLFile,NFLLeagueCategoryRecord,Nickname_category);
 OUTPUT(NFLLeagueCategoryTable);
-
-

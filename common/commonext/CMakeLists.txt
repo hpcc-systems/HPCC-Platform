@@ -47,5 +47,3 @@ install ( TARGETS commonext DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( commonext 
          jlib 
     )
-
-

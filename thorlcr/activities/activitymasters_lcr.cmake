@@ -120,5 +120,3 @@ target_link_libraries ( activitymasters_lcr
          mfilemanager_lcr 
          graphmaster_lcr 
     )
-
-

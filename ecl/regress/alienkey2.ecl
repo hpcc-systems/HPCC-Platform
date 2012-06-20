@@ -58,4 +58,3 @@ filtered := rawfile(
 );
 
 output(filtered,,'fout', XML, OVERWRITE)
-

@@ -61,4 +61,3 @@ LOGGING_API void LOGGING_CALL logDbgLog(unsigned srcLen, const char * src)
 {
     DBGLOG("%.*s", srcLen, src);
 }
-

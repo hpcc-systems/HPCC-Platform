@@ -44,4 +44,3 @@ personDataset2 := DATASET([
         {'Anne','Winston','','Sant','Aclause','','Elfin','And',''}], personRecord);
 
 output(personDataset2);
-

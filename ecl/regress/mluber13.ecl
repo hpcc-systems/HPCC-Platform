@@ -55,5 +55,3 @@ Matches2 :=
 
 found2 := PARSE(ds, line, Word2, Matches2);
 output(found2,, 'b.out',csv,overwrite);
-
-

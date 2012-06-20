@@ -169,6 +169,3 @@ OutRec Xform(InRec L) := TRANSFORM
 END;
 
 output(PROJECT(InData,Xform(LEFT)));
-
-
-

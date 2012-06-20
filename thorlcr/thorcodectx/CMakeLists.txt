@@ -64,5 +64,3 @@ target_link_libraries ( thorcodectx_lcr
         dllserver 
         workunit 
         )
-
-

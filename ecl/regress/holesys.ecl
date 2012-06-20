@@ -20,4 +20,3 @@ export HoleService := SERVICE
 //        searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
         searchTableStringN(integer4 num, string entries, string search) : library='eclrtl',entrypoint='searchTableStringN';
         END;
-

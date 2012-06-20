@@ -635,4 +635,3 @@ IRoxieQueryManager* createRoxieQueryManager(SocketEndpoint &roxieEP, const char 
 {
     return new CRoxieQueryManager(roxieEP, roxieName, workunitDali, roxieTimeout, _user, _password, logLevel);
 }
-

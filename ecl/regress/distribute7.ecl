@@ -29,4 +29,3 @@ namesTable := dataset('x',namesRecord,FLAT);
 inf := distribute(namesTable, skew(1.0));
 
 output(inf);
-

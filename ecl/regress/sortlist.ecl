@@ -79,5 +79,3 @@ output(names,{
         (string2)('abc'[..2+0]),
         'abc'[2+0],
         },'out.d00');
-
-

@@ -134,4 +134,3 @@ CActivityBase *createXmlFetchActivityMaster(CMasterGraphElement *container)
 {
     return new CXmlFetchActivityMaster(container);
 }
-

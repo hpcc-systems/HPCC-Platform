@@ -61,4 +61,3 @@ c  := OUTPUT(s5,,'~$.DeclareData::EXAMPLEDATA::TestGroupSort3',OVERWRITE);
 
 SEQUENTIAL(a,b,c);
 /**/
-

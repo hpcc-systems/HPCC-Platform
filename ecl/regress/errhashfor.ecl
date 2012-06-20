@@ -27,4 +27,3 @@ loadxml('myxml.xml');
 #END
 
 %'s'%
-

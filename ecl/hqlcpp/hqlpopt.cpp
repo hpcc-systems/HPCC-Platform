@@ -93,4 +93,3 @@ IHqlExpression * peepholeOptimize(BuildCtx & ctx, IHqlExpression * expr)
     }
     return LINK(expr);
 }
-

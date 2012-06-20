@@ -28,4 +28,3 @@ boolean y := true : stored('y');
 output((string)y);
 output((data)y);
 output((varstring)y);
-

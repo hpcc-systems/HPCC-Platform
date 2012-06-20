@@ -58,4 +58,3 @@ combined := regroup(j1, j2, j3);
 // choose the best 5 results for each input row
 best := topn(combined(score != 0), 2, -score);
 output(best);
-

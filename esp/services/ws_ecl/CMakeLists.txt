@@ -83,4 +83,3 @@ target_link_libraries ( ws_ecl
          securesocket 
          xmllib 
     )
-

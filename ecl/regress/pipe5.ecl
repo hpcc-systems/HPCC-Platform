@@ -30,5 +30,3 @@ output(p1, { string l := Str.FindReplace(lout, '\r', ' '), '\n' } );
 output(p2, { string l := Str.FindReplace(lout, '\r', ' '), '\n' } );
 output(p3, { string l := Str.FindReplace(lout, '\r', ' '), '\n' } );
 output(p4, { string l := Str.FindReplace(lout, '\r', ' '), '\n' } );
-
-

@@ -224,6 +224,3 @@ CActivityBase *createGroupProcessSlave(CGraphElementBase *container)
 {
     return new GroupProcessSlaveActivity(container);
 }
-
-
-

@@ -357,5 +357,3 @@
 </xsl:template>
 
 </xsl:stylesheet>
-
-

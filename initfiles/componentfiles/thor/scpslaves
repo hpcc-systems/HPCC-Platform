@@ -36,4 +36,3 @@ for slave in $(cat slaves); do
     pscp -o password=$THORPASSWD  "$1" $THORUSER@$slave:"$2"
     let COUNTER=COUNTER+1
 done
-

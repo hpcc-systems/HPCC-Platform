@@ -27,4 +27,3 @@ decimal8_2 total;
 
 ds := PIPE('cmd /C type c:\\temp\\esp_main.06_24_10.log', r, csv);
 output(choosen(ds,2), { date, ',', line, ',', value, ',', total, '\n'} );
-

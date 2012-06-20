@@ -23,4 +23,3 @@ ds := dataset('ds', {String10 first_name; string20 last_name; }, FLAT);
 f(virtual dataset({string10 name;string20 id}) d) := output(d(name='fred'), {id});
 
 f(ds{name:=first_name; id:=last_name});
-

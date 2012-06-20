@@ -31,5 +31,3 @@ activityslaves_decl CActivityBase *createGroupProcessSlave(CGraphElementBase *co
 
 
 #endif
-
-

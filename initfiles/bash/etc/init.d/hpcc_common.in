@@ -840,5 +840,3 @@ is_user(){
         exit
     fi
 }
-
-

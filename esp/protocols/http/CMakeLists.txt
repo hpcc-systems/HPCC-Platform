@@ -75,5 +75,3 @@ target_link_libraries ( esphttp
 IF (USE_OPENLDAP)
 target_link_libraries ( esphttp LdapSecurity )
 ENDIF(USE_OPENLDAP)
-
-

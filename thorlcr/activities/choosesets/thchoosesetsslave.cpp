@@ -569,5 +569,3 @@ CActivityBase *createLocalChooseSetsSlave(CGraphElementBase *container) { return
 CActivityBase *createChooseSetsSlave(CGraphElementBase *container) { return new ChooseSetsActivity(container); }
 CActivityBase *createChooseSetsLastSlave(CGraphElementBase *container) { return new ChooseSetsLastActivity(container); }
 CActivityBase *createChooseSetsEnthSlave(CGraphElementBase *container) { return new ChooseSetsEnthActivity(container); }
-
-

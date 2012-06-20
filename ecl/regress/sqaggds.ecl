@@ -67,4 +67,3 @@ output(sqPersonDs, { sqHouseDs.addr, surname, numBooks := count(books), ave(book
 output(sqPersonDs, { sqHouseDs.addr, surname, bestBook := booksByRatingDesc[1].name + ': ' + booksByRatingDesc[1].author});
 output(sqPersonDs, { sqHouseDs.addr, surname, firstBook := books[1].name + ': ' + books[1].author });       //NB: Different from above.
 #end
-

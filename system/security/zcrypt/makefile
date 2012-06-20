@@ -88,4 +88,3 @@ setup:
     mkdir -p $(destdir)/include; cp zcrypt.hpp $(destdir)/include
 clean:
     rm -rf ./release; rm -rf ./debug
-

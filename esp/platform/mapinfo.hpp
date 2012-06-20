@@ -42,4 +42,3 @@ IMapInfo* createMapInfo();
 IMapInfo* createNullMapInfo();
 
 #endif
-

@@ -28,9 +28,3 @@ activityslaves_decl CActivityBase *createNormalizeChildSlave(CGraphElementBase *
 activityslaves_decl CActivityBase *createNormalizeLinkedChildSlave(CGraphElementBase *container);
 
 #endif
-
-
-
-
-
-

@@ -38,4 +38,3 @@ sequential(
         output('Line5');
         output(EVENTEXTRA('name') + ':' + EVENTEXTRA('result'))
 ) : when('TestScheduleResult', count(1));
-

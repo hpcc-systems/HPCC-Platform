@@ -26,4 +26,3 @@ result := choosen(ds(holepos >= fpos), pagesize);
 
 //evaluate(result[pagesize], xx.holepos) : stored('lpos');
 output(result);
-

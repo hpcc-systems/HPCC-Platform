@@ -28,4 +28,3 @@
 project (AllProjects)
 
 include ( frunssh.cmake)
-

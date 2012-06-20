@@ -120,4 +120,3 @@ output(PARSE(Docs_by_DocNum,line, FullNameAssoc, Matches, scan all,parse),named(
 output(PARSE(Docs_by_DocNum,line, FullNameAssoc, Matches, max,scan,parse),named('LongestMatch'));                   // longest match
 output(PARSE(Docs_by_DocNum,line, FullNameAssoc, Matches, many max,scan,parse),named('LongestManyNoOverlap'));          // longest non-overlapping matches
 output(PARSE(Docs_by_DocNum,line, FullNameAssoc, Matches, many max,scan all,parse),named('LongestManyOverlap'));        // longest matches, overlapping
-

@@ -66,4 +66,3 @@ ouf := ou(i != 0);
 CleanFields(ouf,ou2)
 
 output(ou2)
-

@@ -53,4 +53,3 @@ target_link_libraries ( deftype
          nbcd
          eclrtl 
     )
-

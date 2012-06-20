@@ -95,4 +95,3 @@ private:
 };
 
 #endif //_ESPWIZ_WsRoxieQuery_HPP__
-

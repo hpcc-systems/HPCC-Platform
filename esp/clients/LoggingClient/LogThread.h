@@ -277,4 +277,3 @@ public:
 };
 
 #endif // _LOGTHREAD_HPP__
-

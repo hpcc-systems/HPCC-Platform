@@ -36,5 +36,3 @@ r1 := record
       end;
 
 output(nofold(d),r1);
-
-

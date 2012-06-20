@@ -32,4 +32,3 @@ dataset(namesRecord) names;
 
 inDs := dataset('x',addressRecord,FLAT);
 count(inDs);
-

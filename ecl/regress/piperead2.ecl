@@ -24,4 +24,3 @@ string line;
 
 ds := PIPE('cmd /C type c:\\temp\\acc.csv', r, csv(separator([]),quote([])));
 output(ds, { line, '\n'} );
-

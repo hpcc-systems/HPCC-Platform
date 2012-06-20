@@ -18,4 +18,3 @@
 
 SHARED EXPORT aa := 3;
 EXPORT SHARED bb := 3;
-

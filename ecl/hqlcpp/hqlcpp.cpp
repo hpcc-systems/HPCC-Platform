@@ -11844,4 +11844,3 @@ StringBuffer & HqlQueryInstance::queryDllName(StringBuffer & out)
 {
     return out.append("query").append(instance);
 }
-

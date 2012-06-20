@@ -41,5 +41,3 @@ unsigned            g4;
 
 inFat := dataset('fat', fat, thor);
 output(dedup(inFat));
-
-

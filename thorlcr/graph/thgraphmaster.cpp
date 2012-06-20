@@ -2789,4 +2789,3 @@ IJobManager &queryJobManager()
     assertex(jobManager);
     return *jobManager;
 }
-

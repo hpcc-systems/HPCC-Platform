@@ -484,4 +484,3 @@ function displayLegend()
     svg.style.width=400;
     svg.style.height=10+count*10+10;
 }
-

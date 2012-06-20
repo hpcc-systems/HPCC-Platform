@@ -60,7 +60,3 @@ j2 := join (j1, AddressTable, LEFT.surname = RIGHT.addr, JoinTransform2 (LEFT, R
 
 
 output(j2);
-
-
-
-

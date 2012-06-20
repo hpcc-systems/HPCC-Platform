@@ -113,4 +113,3 @@ CActivityBase *createIfActionActivityMaster(CMasterGraphElement *container)
     else
         return new CIfActionMaster(container);
 }
-

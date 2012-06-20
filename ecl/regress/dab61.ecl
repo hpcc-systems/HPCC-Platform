@@ -24,4 +24,3 @@ r := record,maxlength(2000)
 File_Crim := dataset('~thor::in:docking_data_cr20041111',r,flat);
 
 output(File_Crim)
-

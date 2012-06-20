@@ -103,4 +103,3 @@ void qsortarray(C *a, size32_t n)
 #undef SWAP
 #undef VECTOR
 #endif
-

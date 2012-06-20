@@ -293,6 +293,3 @@ CActivityBase *createNormalizeSlave(CGraphElementBase *container)
 {
     return new NormalizeSlaveActivity(container);
 }
-
-
-

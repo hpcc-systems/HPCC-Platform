@@ -78,4 +78,3 @@ if [ "$slavepid" -eq "0" ]; then
 else
   echo "slave pid $slavepid started `date`"
 fi
-

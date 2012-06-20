@@ -67,4 +67,3 @@ j1 := join(g1, p1,
         JoinTransform (LEFT, RIGHT));
 
 output(j1);
-

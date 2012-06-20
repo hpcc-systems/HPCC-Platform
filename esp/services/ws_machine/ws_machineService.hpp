@@ -392,4 +392,3 @@ public:
 };
 
 #endif //_ESPWIZ_ws_machine_HPP__
-

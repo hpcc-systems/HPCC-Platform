@@ -1292,4 +1292,3 @@ void SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserName,Str
         path.append(pathptr);
 
 }
-

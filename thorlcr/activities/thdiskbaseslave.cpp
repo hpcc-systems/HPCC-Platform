@@ -605,4 +605,3 @@ void CPartialResultAggregator::cancelGetResult()
 {
     activity.cancelReceiveMsg(0, activity.queryMpTag());
 }
-

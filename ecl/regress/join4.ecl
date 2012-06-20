@@ -81,5 +81,3 @@ Join3 := join (dNamesTable, addressTable, LEFT.surname = RIGHT.surname, j3(LEFT,
 output(join1);
 output(join2);
 output(join3);
-
-

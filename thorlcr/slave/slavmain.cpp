@@ -651,4 +651,3 @@ void abortSlave()
     if (clusterInitialized())
         queryClusterComm().cancel(0, masterSlaveMpTag);
 }
-

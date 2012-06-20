@@ -99,4 +99,3 @@ bool SingleObserver::broadcast(INotification & notify)
         return observer->onNotify(notify);
     return true;
 }
-

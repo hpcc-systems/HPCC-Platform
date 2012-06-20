@@ -310,6 +310,3 @@ ISocketRowWriter *ConnectMergeWrite(IRowInterfaces *rowif,ISocket *socket,size32
 #endif
     return new CSocketRowWriter(hdr.id,rowif,socket,bufsize);
 }
-
-
-

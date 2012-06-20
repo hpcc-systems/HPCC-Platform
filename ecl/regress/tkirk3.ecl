@@ -47,4 +47,3 @@ output(x.lname);
 
 output(LocalAddrCleanLib.dt('Jason Hawthorn').fname);
 output(LocalAddrCleanLib.dt('Jason Hawthorn').name_score);
-

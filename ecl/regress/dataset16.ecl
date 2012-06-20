@@ -39,4 +39,3 @@ rec t(namesTable l) := transform
     end;
 
 output(project(namesTable, t(LEFT)));
-

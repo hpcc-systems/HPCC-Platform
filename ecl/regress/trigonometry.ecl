@@ -30,4 +30,3 @@ asin(x);
 acos(x);
 atan(x);
 atan2(x,y);
-

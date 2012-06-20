@@ -37,5 +37,3 @@ DS2 := dataset('testddrj', rec, flat);
 J := join (DS1, DS2, LEFT.K1 = RIGHT.K1, TR (LEFT, RIGHT));
 
 output(J,,'testddrj.out');
-
-

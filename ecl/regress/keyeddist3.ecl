@@ -43,4 +43,3 @@ incTable := dataset('~inc.d00',mainRecord,THOR);
 buildindex(incTable, { surname, forename, filepos }, 'inc.name.2', distribute(nameKey));
 buildindex(incTable, { surname, forename, filepos }, 'inc.name.3', distribute(nameKey),sorted);
 buildindex(incTable, { surname, forename, filepos }, 'inc.name.4', distribute(nameKey),local);
-

@@ -70,4 +70,3 @@ BUILD(FilterDatasetLibrary);
 
 // OUTPUT(result.matches);
 // OUTPUT(COUNT(result.others));
-

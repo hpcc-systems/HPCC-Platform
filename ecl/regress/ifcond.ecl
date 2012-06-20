@@ -42,5 +42,3 @@ TestRecord t(TestRecord r) := TRANSFORM
    END;
 
 OUTPUT(project(TestDAta,t(LEFT)));
-
-

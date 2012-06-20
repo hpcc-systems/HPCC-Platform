@@ -87,5 +87,3 @@ IF (USE_ZLIB)
       zcrypt
       )
 ENDIF()
-
-

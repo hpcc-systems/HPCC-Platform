@@ -20,6 +20,3 @@
 export One_Blank(string l, string r) := l='' and r<>'' or l<>'' and r='';
 
 one_blank('hi','ho')
-
-
-

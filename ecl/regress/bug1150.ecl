@@ -45,4 +45,3 @@ END;
 perout := PROJECT(person, SetFlag(LEFT));
 
 output(perout); //Gives incorrect result of TRUE;
-

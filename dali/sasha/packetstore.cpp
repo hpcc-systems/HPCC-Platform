@@ -868,4 +868,3 @@ extern sa_decl IPacketStore * connectPacketStore(IGroup *psgroup)
 {
     return new CPacketStoreClient(psgroup);
 }
-

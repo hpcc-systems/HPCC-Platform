@@ -30,4 +30,3 @@ project (AllProjects)
 include ( ${CMAKE_CURRENT_SOURCE_DIR}/graphmaster_lcr.cmake)
 include ( ${CMAKE_CURRENT_SOURCE_DIR}/graphslave_lcr.cmake)
 include ( ${CMAKE_CURRENT_SOURCE_DIR}/graph_lcr.cmake)
-

@@ -146,5 +146,3 @@ bool GraphHelper::doit(FILE * fp)
         return false;
     }
 }
-
-

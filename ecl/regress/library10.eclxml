@@ -55,6 +55,3 @@ filtered2 := example.filterDataset(namesTable, 'Hawthorn', false);
 output(filtered2.excluded,,named('Excluded'));
  </Query>
 </Archive>
-
-
-

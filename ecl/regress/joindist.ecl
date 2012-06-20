@@ -57,4 +57,3 @@ JoinRecord JoinTransform (ya2 l, yb2 r) :=
 Joined1 := join (ya2, yb2, LEFT.surname = RIGHT.surname AND LEFT.forename = RIGHT.forename, JoinTransform(LEFT, RIGHT), local) : persist('joined1');
 Joined2 := sort(Joined1, forename, local);
 output(Joined2,,'out.d00');
-

@@ -1122,5 +1122,3 @@ IRowStream *createRowStreamMerger(unsigned numstreams,IRowProvider &provider,ICo
 {
     return new CMergeRowStreams(numstreams,provider,icmp,partdedup);
 }
-
-

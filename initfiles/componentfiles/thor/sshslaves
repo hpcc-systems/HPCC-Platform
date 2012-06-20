@@ -26,4 +26,3 @@ for slave in $(cat slaves); do
     ssh $THORUSER@$slave $1
     let COUNTER=COUNTER+1
 done
-

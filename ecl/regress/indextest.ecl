@@ -40,4 +40,3 @@ goodidx := INDEX(fpbaseset, {name, filepos}, '~bug15197.idx');
 badidx := INDEX(fpbaseset, {blah, filepos}, '~bug15197.idx');
 
 SEQUENTIAL(genbase, genidx, OUTPUT(goodidx), OUTPUT(badidx));
-

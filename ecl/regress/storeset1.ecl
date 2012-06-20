@@ -26,4 +26,3 @@ integer myValue := 3 : stored('myValue');
 values[myChoice];   // 2
 myValue IN values;  // true
 myValue IN anyValues;   // always true
-

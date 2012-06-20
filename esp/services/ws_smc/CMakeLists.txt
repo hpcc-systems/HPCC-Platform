@@ -99,4 +99,3 @@ target_link_libraries ( ws_smc
 IF (USE_OPENLDAP)
 target_link_libraries ( ws_smc LdapSecurity )
 ENDIF(USE_OPENLDAP)
-

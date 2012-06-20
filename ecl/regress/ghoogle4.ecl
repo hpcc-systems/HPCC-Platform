@@ -260,4 +260,3 @@ BUILD(processedWords, { doc, wpos }, { dpos }, NameDocPosIndex, overwrite);
 //tokenizedDocIndex := index({ documentId doc, wordPosType wpos}, { wordIdType wordid }, NameTokenisedDocIndex);
 
 //tokenIndex        := index({ wordIdType wordid }, { wordType word, wordIdType normalized }, NameTokenIndex);
-

@@ -2773,4 +2773,3 @@ extern void stopPingTimer()
         pingTimer = NULL;
     }
 }
-

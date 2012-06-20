@@ -44,5 +44,3 @@ install ( TARGETS frunssh DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( frunssh 
          jlib 
     )
-
-

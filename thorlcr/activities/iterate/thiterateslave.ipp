@@ -37,5 +37,3 @@ activityslaves_decl CActivityBase *createLocalProcessSlave(CGraphElementBase *co
 activityslaves_decl CActivityBase *createStreamedIteratorSlave(CGraphElementBase *container);
 
 #endif
-
-

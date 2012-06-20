@@ -290,4 +290,3 @@ void BinFormatType::printHeader(FILE* fp, const char* name)
 void BinFormatType::printFooter(FILE* fp)
 {
 }
-

@@ -48,6 +48,3 @@ parallel(
 output(nullTable),
 output(namesTable1)
 ));
-
-
-

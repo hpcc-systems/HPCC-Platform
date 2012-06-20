@@ -47,6 +47,3 @@ END;
 ppersonEx2 := project(pperson, projectFunction(left));
 
 output(ppersonEx2, , 'out.d00');
-
-
-

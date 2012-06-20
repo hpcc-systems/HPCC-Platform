@@ -485,4 +485,3 @@ CActivityBase *createNSplitterSlave(CGraphElementBase *container)
 {
     return new NSplitterSlaveActivity(container);
 }
-

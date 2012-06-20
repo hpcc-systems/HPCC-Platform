@@ -253,4 +253,3 @@ CActivityBase *createXmlReadSlave(CGraphElementBase *container)
 {
     return new CXmlReadSlaveActivity(container);
 }
-

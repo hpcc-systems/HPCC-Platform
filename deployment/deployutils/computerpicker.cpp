@@ -454,4 +454,3 @@ void CComputerPicker::ApplyFilter(const char* szSubTreeName,
     }
   }
 }
-

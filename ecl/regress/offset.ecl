@@ -119,6 +119,3 @@ output(o4b,,'o4.d00');
 //output(o4b,,'o4.d00');
 o5 := PROJECT(d5,t55(LEFT));
 //output(o4,,'o4.d00');
-
-
-

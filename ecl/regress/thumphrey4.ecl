@@ -22,4 +22,3 @@ ENDMACRO;
 
 MyMac(name, ,'Humphrey');
 output(name);
-

@@ -27,4 +27,3 @@
 activityslaves_decl CActivityBase *createWorkUnitWriteSlave(CGraphElementBase *container);
 
 #endif 
-

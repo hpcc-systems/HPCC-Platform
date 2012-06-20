@@ -19,5 +19,3 @@
 //Jlib
 #include "jlog.hpp"
 #include "jliball.hpp"
-
-

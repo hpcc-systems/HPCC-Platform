@@ -106,4 +106,3 @@ SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributes', GetAttributeInRe
 //Dataset
 output(SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributesDs', GetAttributeInRecord, createInRecord2(LEFT.moduleName, LEFT.attr), dataset(GetAttributeOutRecord)));
 output(SOAPCALL(ds, 'http://webservices.megacorp.com', 'WsAttributesDs', GetAttributeInRecord, createInRecord2(LEFT.moduleName, LEFT.attr), dataset(GetAttributeOutRecord), RETRY(100), TIMEOUT(99),RESPONSE(NOTRIM)));
-

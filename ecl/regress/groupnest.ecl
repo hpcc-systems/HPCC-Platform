@@ -48,4 +48,3 @@ dataset(summaryRecord) families;
 addressTable := dataset([{'Here', [], []}], addressRecord);
 
 output(project(addressTable, transform(addressRecord, self.people := group(gr); self.families := summary; self := left)));
-
