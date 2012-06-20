@@ -436,13 +436,11 @@ bool CppCompiler::compileFile(IThreadPool * pool, const char * filename, Semapho
     if (!filename || *filename == 0)
         return false;
 
-    StringBuffer fullFileName;
-    fullFileName.clear().append("\"").append(filename).append(".cpp").append("\"").append(" ");
-
     StringBuffer cmdline;
-    cmdline.append(CC_NAME[targetCompiler]);
-    cmdline.append(" ").append(sourceDir);
-    cmdline.append(fullFileName);
+    cmdline.append(CC_NAME[targetCompiler]).append(" \"");
+    if (sourceDir.length())
+        cmdline.append(sourceDir).append(PATHSEPCHAR);
+    cmdline.append(filename).append(".cpp\" ");
     expandCompileOptions(cmdline);
 
     if (useDebugLibrary)
