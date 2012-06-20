@@ -901,7 +901,15 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     IArrayOf<IConstThorLogInfo> thorLogList;
     if (cw->getWuidVersion() > 0)
     {
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo("thor");
+        SCMStringBuffer clusterName;
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cw->getClusterName(clusterName).str());
+        if (!clusterInfo)
+        {
+            SCMStringBuffer wuid;
+            WARNLOG("Cannot find TargetClusterInfo for workunit %s", cw->getWuid(wuid).str());
+            return countThorLog;
+        }
+
         unsigned numberOfSlaves = clusterInfo->getSize();
 
         Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
