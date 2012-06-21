@@ -28,7 +28,10 @@
 #endif
 
 //#define USE_SELSEQ_UID
-//#define ENSURE_SELSEQ_UID
+//It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
+//x := PROJECT(ds, t(LEFT));
+//y := x(field not in SET(x, field2));
+//Once filters are moved in child queries then it can occur even when the common project cannot be hoisted.
 
 //Currently nearly all functional attributes are expanded when the call is parsed.
 //This is potentially inefficient, and makes it hard to dynamically control whether functions are expanded in line or generated out of line.

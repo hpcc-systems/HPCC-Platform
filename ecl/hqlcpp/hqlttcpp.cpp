@@ -11788,10 +11788,9 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 #ifdef USE_SELSEQ_UID
             if (name == _selectorSequence_Atom)
             {
-#ifndef ENSURE_SELSEQ_UID
+                //Purely for testing what effect adding the unique sequences has on the parse time
                 if (options.simplifySelectorSequence)
                     return createDummySelectorSequence();
-#endif
 
                 //Ensure parameterised sequences generate a unique sequence number...
                 //Not sure the following is really necessary, but will reduce in memory tree size....
@@ -12031,7 +12030,6 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
     }
 
 #ifdef USE_SELSEQ_UID
-#ifndef ENSURE_SELSEQ_UID
     if (translator.queryOptions().detectAmbiguousSelector || translator.queryOptions().allowAmbiguousSelector)
     {
         LeftRightSelectorNormalizer transformer(translator.queryOptions().allowAmbiguousSelector);
@@ -12045,7 +12043,6 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
             replaceArray(exprs, transformed);
         }
     }
-#endif
 #endif
 
     if (false)
@@ -12313,6 +12310,7 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
     checkNormalized(workflow);
     DEBUG_TIMER("EclServer: tree transform: stored results", msTick()-time4);
 
+#ifdef NORMALIZE_SELSEQ
 #ifdef USE_SELSEQ_UID
     {
         unsigned time = msTick();
@@ -12324,6 +12322,7 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
         DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: left right", msTick()-time);
         //traceExpressions("after implicit alias", workflow);
     }
+#endif
 #endif
 
     if (queryOptions().createImplicitAliases)

@@ -258,9 +258,6 @@ extern HQL_API bool isTransformTracing() { return tracing; }
 //if it does return the number of arguments that aren't hidden
 unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpression * selector)
 {
-#ifdef ENSURE_SELSEQ_UID
-    return 0;
-#endif
     if (!selector)
         return 0;
     node_operator op = selector->getOperator();
@@ -1995,9 +1992,7 @@ HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset
         newDataset.setown(ensureActiveRow(newDataset));
 
     node_operator op = oldDataset->getOperator();
-#ifndef ENSURE_SELSEQ_UID
     assertex(op != no_left && op != no_right);
-#endif
     if (oldDataset->isDatarow() || (op == no_activetable) || (op == no_selfref))
     {
         setMappingOnly(oldDataset, newDataset);
@@ -2483,10 +2478,6 @@ bool onlyTransformOnce(IHqlExpression * expr)
     case no_sequence:
     case no_self:
     case no_selfref:
-#ifdef ENSURE_SELSEQ_UID
-    case no_left:
-    case no_right:
-#endif
     case no_flat:
     case no_any:
     case no_existsgroup:

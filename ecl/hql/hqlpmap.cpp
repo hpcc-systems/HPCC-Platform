@@ -127,11 +127,9 @@ IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldData
     if (ret)
         return ret;
 
-#ifndef ENSURE_SELSEQ_UID
     node_operator op = oldDataset->getOperator();
     if (op == no_left || op == no_right)
         return newReplaceSelector(expr, oldDataset, newDataset);
-#endif
 
     HqlMapSelectorTransformer transformer(oldDataset, newDataset);
     return transformer.transformRoot(expr);
