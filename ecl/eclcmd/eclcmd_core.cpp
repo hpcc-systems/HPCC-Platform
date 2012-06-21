@@ -180,6 +180,11 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     req->setFileName(cmd.optObj.value.sget());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
+    if (cmd.debugValues.length())
+    {
+        req->setDebugValues(cmd.debugValues);
+        cmd.debugValues.kill();
+    }
 
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
@@ -455,25 +460,6 @@ private:
     bool activateSet;
 };
 
-bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
-{
-    const char *arg = iter.query();
-    if (*arg++!='-' || *arg++!=prefix || !*arg)
-        return false;
-    Owned<IEspNamedValue> nv = createNamedValue();
-    const char *eq = strchr(arg, '=');
-    if (!eq)
-        nv->setName(arg);
-    else
-    {
-        StringAttr name(arg, eq - arg);
-        nv->setName(name.get());
-        nv->setValue(eq+1);
-    }
-    values.append(*nv.getClear());
-    return true;
-}
-
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
@@ -491,8 +477,6 @@ public:
 
         for (; !iter.done(); iter.next())
         {
-            if (matchVariableOption(iter, 'f', debugValues))
-                continue;
             if (matchVariableOption(iter, 'X', variables))
                 continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
@@ -636,7 +620,6 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
             "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
             "   --wait=<ms>            time to wait for completion\n",
             stdout);
@@ -647,7 +630,6 @@ private:
     StringAttr optName;
     StringAttr optInput;
     IArrayOf<IEspNamedValue> variables;
-    IArrayOf<IEspNamedValue> debugValues;
     unsigned optWaitTime;
     bool optNoRoot;
 };
