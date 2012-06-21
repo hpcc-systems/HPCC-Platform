@@ -29,7 +29,6 @@ rm -f ${SENTINEL}
 
 ulimit -c unlimited
 ulimit -n 8192
-export LANG=en_US
 SNMPID=$$
 
 killed() {
