@@ -450,7 +450,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
     md5_init(&context);
 
     MemoryBuffer mb;
-    void * contents;
+    void * contents = mb.reserveTruncate(0x10000);
 
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
@@ -468,7 +468,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
         if (0 == sizeRead)
             throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
 
-	readPos += sizeRead;
+        readPos += sizeRead;
         md5_append(&context, (const unsigned char *)contents, sizeRead);
     }
     md5_finish(&context,digest);
