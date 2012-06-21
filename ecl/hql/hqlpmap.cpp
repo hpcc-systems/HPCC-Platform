@@ -160,7 +160,6 @@ void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first,
 
 //---------------------------------------------------------------------------------------------------------------------
 
-#if 0000
 void replaceSelectors(HqlExprArray & exprs, unsigned first, IHqlExpression * oldDataset, IHqlExpression * newDataset)
 {
     unsigned max = exprs.ordinality();
@@ -181,8 +180,6 @@ void replaceSelectors(HqlExprArray & exprs, unsigned first, IHqlExpression * old
         exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
 }
 
-
-#endif
 
 //NB: This can not be derived from NewHqlTransformer since it is called before the tree is normalised, and it creates
 //inconsistent expression trees.
