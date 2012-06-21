@@ -440,6 +440,9 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
+/* define chunk size to use with IFileIO read. */
+#define CHUNKSIZE 0x100000
+
 void md5_filesum(const char* filename, StringBuffer& outstring)
 {
     md5_state_t context;
@@ -450,7 +453,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
     md5_init(&context);
 
     MemoryBuffer mb;
-    void * contents = mb.reserveTruncate(0x10000);
+    void * contents = mb.reserveTruncate(CHUNKSIZE);
 
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
@@ -463,7 +466,7 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
 
     while (readPos < size)
     {
-        offset_t sizeRead = io->read(readPos, 0x100000, contents);
+        offset_t sizeRead = io->read(readPos, CHUNKSIZE, contents);
 
         if (0 == sizeRead)
             throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
