@@ -55,14 +55,18 @@
       if (typeof(addEventListener) != 'undefined')
       {
         document.getElementById('top1').addEventListener("click", function() {
-          if (top.document.ContextMenu != null)
-            top.document.ContextMenu.clearContent() } );
+          if (top.document.ContextMenuCenter != null)
+            top.document.ContextMenuCenter.clearContent();
+          if (top.document.ContextMenuLeft != null)
+            top.document.ContextMenuLeft.clearContent() } );
       }
       else
       {
         document.getElementById('top1').attachEvent('onclick',function() {
-          if (top.document.ContextMenu != null)
-            top.document.ContextMenu.clearContent() } );
+          if (top.document.ContextMenuCenter != null)
+            top.document.ContextMenuCenter.clearContent();
+          if (top.document.ContextMenuLeft != null)
+            top.document.ContextMenuLeft.clearContent() } );
       }
 
       getWaitDlg().show();
@@ -655,7 +659,9 @@ function createNavigationTree(navTreeData) {
     for (var idx = 0; idx < selRows.length; idx++) {
       Dom.addClass(this.getTrEl(selRows[idx]), 'outoffocus');
     }
-  });  
+    if (top.document.ContextMenuCenter != null)
+      top.document.ContextMenuCenter.clearContent();
+  });
 
 
   Dom.removeClass(navDT.getTrEl(0), 'hidden');
@@ -1186,6 +1192,7 @@ function createNavigationTree(navTreeData) {
         return false;
 
       this.addItems(aMenuItems);
+      top.document.ContextMenuLeft = oContextMenu;
 
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
         this.getItem(2).cfg.setProperty("disabled", true);
@@ -1220,6 +1227,8 @@ function createNavigationTree(navTreeData) {
       subMenuItems[2].checked = (!navDT.getColumn("BuildSet").hidden);*/
       // Render the ContextMenu instance with the new content
       this.render();
+      if (top.document.ContextMenuCenter != null)
+        top.document.ContextMenuCenter.clearContent();
     }
   }
 
