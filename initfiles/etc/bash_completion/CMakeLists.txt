@@ -16,6 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 FOREACH( oFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecl
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc
     ${CMAKE_CURRENT_SOURCE_DIR}/eclplus
     ${CMAKE_CURRENT_SOURCE_DIR}/eclagent
