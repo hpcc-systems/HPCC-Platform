@@ -19,6 +19,7 @@
 //UseStandardFiles
 //UseIndexes
 //NoThor
+//nothorlcr
 //needsRLT
 //nolocal
 //skip type==thorlcr TBD
