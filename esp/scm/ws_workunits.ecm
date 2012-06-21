@@ -19,6 +19,8 @@
 #include "xslprocessor.hpp" 
 //  ===========================================================================
 
+EspInclude(common);
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -127,12 +129,6 @@ ESPStruct [nil_remove] ECLQuery
 //  ===========================================================================
 
 ESPStruct [nil_remove] DebugValue
-{
-    string Name;
-    string Value;
-};
-
-ESPStruct [nil_remove] NamedValue
 {
     string Name;
     string Value;
