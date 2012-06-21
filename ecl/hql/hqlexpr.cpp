@@ -1947,6 +1947,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_graphloop:
     case no_filtergroup:
     case no_normalizegroup:
+    case no_rollupgroup:
         return childdataset_left;
     case no_denormalize:
     case no_denormalizegroup:
@@ -1966,7 +1967,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         return childdataset_same_left_right;
     case no_dedup:
     case no_rollup:
-    case no_rollupgroup:
         return childdataset_top_left_right;
     case no_iterate:
         return childdataset_same_left_right;
