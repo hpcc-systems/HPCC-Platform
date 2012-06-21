@@ -415,9 +415,9 @@ void md5_string(const char* inpstring, int inplen, StringBuffer& outstring)
     unsigned char digeststr[33];
     unsigned char digitstr[3];
 
-    md5_init (&context);
-    md5_append (&context, (const unsigned char *)inpstring, inplen);
-    md5_finish (&context,digest);
+    md5_init(&context);
+    md5_append(&context, (const unsigned char *)inpstring, inplen);
+    md5_finish(&context,digest);
     
     for (int i = 0; i < 16; i++)
     {
@@ -447,11 +447,10 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
     unsigned char digeststr[33];
     unsigned char digitstr[3];
 
-    md5_init (&context);
+    md5_init(&context);
 
     MemoryBuffer mb;
     void * contents;
-    offset_t chunkSize = 0x100000;
 
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
@@ -460,30 +459,19 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
         throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
 
     offset_t size = io->size();
-    offset_t sizeToRead = (size32_t)size, sizeReadTotal = 0;
+    offset_t readPos = 0;
 
-    if ( sizeToRead < chunkSize )
-        contents = mb.reserve(sizeToRead);
-    else
-        contents = mb.reserve(chunkSize);
-
-    while( sizeReadTotal != sizeToRead)
+    while (readPos < size)
     {
-        offset_t readSizeLeft = sizeToRead - sizeReadTotal;
-        offset_t sizeHolder = chunkSize;
+        offset_t sizeRead = io->read(readPos, 0x100000, contents);
 
-        if ( readSizeLeft < chunkSize )
-            sizeHolder = readSizeLeft;
+        if (0 == sizeRead)
+            throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
 
-        offset_t sizeRead = io->read(0, sizeHolder, contents);
-        sizeReadTotal += sizeRead;
-
-        if (sizeRead != sizeHolder)
-            throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), sizeReadTotal, sizeToRead);
-
-        md5_append (&context, (const unsigned char *)contents, sizeHolder);
+	readPos += sizeRead;
+        md5_append(&context, (const unsigned char *)contents, sizeRead);
     }
-    md5_finish (&context,digest);
+    md5_finish(&context,digest);
 
     for (int i = 0; i < 16; i++)
     {
