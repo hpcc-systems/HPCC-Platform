@@ -191,6 +191,13 @@ if [ -d ${INSTALL_DIR}/etc/init.d/install ]; then
     done
 fi
 
+# bash completion
+if [ -d ${INSTALL_DIR}/etc/bash_completion.d ] && [ -d /etc/bash_completion.d ]; then
+    for subInstall in $(ls ${INSTALL_DIR}/etc/bash_completion.d | grep -v dpkg-tmp); do
+        installFile ${INSTALL_DIR}/etc/bash_completion.d/$subInstall /etc/bash_completion.d/$subInstall 1 || exit 1
+    done
+fi
+
 if [ ! -d ${homePath}/.ssh ]; then
     mkdir -p ${homePath}/.ssh
 fi
