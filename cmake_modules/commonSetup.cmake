@@ -482,6 +482,57 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
   SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+  MACRO (FIXUP_MACPORTS apps dylibs)
+	foreach(dylib ${dylibs})
+		get_filename_component(dylib_path ${dylib} REALPATH)
+	install(PROGRAMS "${dylib_path}" DESTINATION "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib2")
+	endforeach(dylib)
+	foreach(dylib ${dylibs})
+		get_filename_component(dylib_path ${dylib} REALPATH)
+		get_filename_component(dylib_name_ext ${dylib_path} NAME)
+		install(CODE "
+				execute_process(COMMAND install_name_tool -id \"@loader_path/../lib2/${dylib_name_ext}\" ${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib2/${dylib_name_ext})
+		" ) 
+		foreach(app ${apps})
+			#HACK HACK - Could be done generically with some REGEX?
+			string(REPLACE ".48.1.dylib" ".48.dylib" dylib_hack_path "${dylib_path}")
+			string(REPLACE ".28.0.dylib" ".28.dylib" dylib_hack_path "${dylib_path}")
+			install(CODE "
+				execute_process(COMMAND install_name_tool -change \"${dylib_hack_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" ${EXECUTABLE_OUTPUT_PATH}/${app})
+			" ) 
+		endforeach(app)
+	endforeach(dylib)
+  ENDMACRO()
+
+  if (APPLE)
+    SET(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+    set(CMAKE_INSTALL_NAME_DIR "@loader_path/../lib") 
+    set(APPS
+      "dafilesrv"
+      "dfuplus"
+      "ecl"
+      "ecl-package"
+      "ecl-queries"
+      "eclcc"
+      "eclplus"
+      "wuget"
+    )
+    set(DYLIBS)
+    if (USE_ICU)
+      set(DYLIBS ${DYLIBS} ${ICU_LIBRARIES})
+    endif ()
+    if (USE_BOOST_REGEX)
+      set(DYLIBS ${DYLIBS} ${BOOST_REGEX_LIBRARIES})
+    endif ()
+    if (USE_XALAN)
+      set(DYLIBS ${DYLIBS} ${XALAN_LIBRARIES})
+    endif ()
+    if (USE_XERCES)
+      set(DYLIBS ${DYLIBS} ${XERCES_LIBRARIES})
+    endif ()
+    FIXUP_MACPORTS("${APPS}" "${DYLIBS}")
+  endif()
+  
   MACRO (FETCH_GIT_TAG workdir edition result)
       execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*
         WORKING_DIRECTORY "${workdir}"
