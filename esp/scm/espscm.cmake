@@ -27,6 +27,7 @@ GET_TARGET_PROPERTY(HIDL_EXE hidl LOCATION)
 GET_TARGET_PROPERTY(ESDL_EXE esdl LOCATION)
 
 set ( ESPSCM_SRCS
+      common.ecm
       ecl.ecm
       ecldirect.ecm
       ecllib.ecm

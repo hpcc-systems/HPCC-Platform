@@ -180,6 +180,11 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     req->setFileName(cmd.optObj.value.sget());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
+    if (cmd.debugValues.length())
+    {
+        req->setDebugValues(cmd.debugValues);
+        cmd.debugValues.kill();
+    }
 
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
@@ -472,6 +477,8 @@ public:
 
         for (; !iter.done(); iter.next())
         {
+            if (matchVariableOption(iter, 'X', variables))
+                continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
@@ -569,6 +576,11 @@ public:
         if (optInput.length())
             req->setInput(optInput.get());
 
+        if (debugValues.length())
+            req->setDebugValues(debugValues);
+        if (variables.length())
+            req->setVariables(variables);
+
         Owned<IClientWURunResponse> resp = client->WURun(req);
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
@@ -608,6 +620,7 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
+            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
             "   --wait=<ms>            time to wait for completion\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -616,6 +629,7 @@ private:
     StringAttr optCluster;
     StringAttr optName;
     StringAttr optInput;
+    IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;
 };
