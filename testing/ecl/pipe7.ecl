@@ -23,10 +23,16 @@ d1 := dataset(['</Dataset>', ' <Row>Line3</Row>', '  <Row>Middle</Row>', '   <Ro
 d2 := dataset([' <Row>Line3</Row>', '  <Row>Middle</Row>', '   <Row>Line1</Row>'], { string line }) : stored('nofold2');
 d3 := dataset([' <Dataset><Row>Line3</Row></Dataset>', '  <Dataset><Row>Middle</Row></Dataset>', '   <Dataset><Row>Line1</Row></Dataset>'], { string line }) : stored('nofold3');
 
-p1 := PIPE(d1, 'sort', { string lout{XPATH('')} }, xml('Dataset/Row'), output(csv));
-p2 := PIPE(d2, 'sort', { string lout{XPATH('')} }, xml(noroot), output(csv));
-p3 := PIPE(d3, 'sort', { string lout{XPATH('')} }, xml('Dataset/Row'), output(csv), repeat);
-p4 := PIPE(d2, 'sort', { string lout{XPATH('')} }, xml('Row', noroot), output(csv), repeat);
+#IF (__OS__ = 'windows')
+pipeCmd := 'sort';
+#ELSE
+pipeCmd := 'sh -c \'export LC_ALL=C; sort\'';
+#END
+
+p1 := PIPE(d1, pipeCmd, { string lout{XPATH('')} }, xml('Dataset/Row'), output(csv));
+p2 := PIPE(d2, pipeCmd, { string lout{XPATH('')} }, xml(noroot), output(csv));
+p3 := PIPE(d3, pipeCmd, { string lout{XPATH('')} }, xml('Dataset/Row'), output(csv), repeat);
+p4 := PIPE(d2, pipeCmd, { string lout{XPATH('')} }, xml('Row', noroot), output(csv), repeat);
 
 output(p1, { string l := Str.FindReplace(lout, '\r', ' ') } );
 output(p2, { string l := Str.FindReplace(lout, '\r', ' ') } );

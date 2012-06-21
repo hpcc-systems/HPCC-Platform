@@ -22,7 +22,12 @@ import std.str;
 //Number of leading spaces will force the lines to come out in the correct order
 d := dataset(['</Zingo>', ' <Zango>Line3</Zango>', '  <Zango>Middle</Zango>', '   <Zango>Line1</Zango>', '    <Zingo>' ], { string line}) : stored('nofold');
 
-p1 := PIPE(d(line!='p1'), 'sort', { string lout{XPATH('')} }, xml('Zingo/Zango'), output(csv));
+#IF (__OS__ = 'windows')
+pipeCmd := 'sort';
+#ELSE
+pipeCmd := 'sh -c \'export LC_ALL=C; sort\'';
+#END
+p1 := PIPE(d(line!='p1'), pipeCmd, { string lout{XPATH('')} }, xml('Zingo/Zango'), output(csv));
 
 output(p1, { string l := Str.FindReplace(lout, '\r', ' ') } );
 
