@@ -259,9 +259,9 @@ Takes two file paths. Copies to the latter, normalizing converting CRLF into LF 
 sub normal_copy($$$$)
 {
     my ($self, $infile, $outfile, $postfilter) = @_;
-    open(OUT, '>', $outfile) or $self->error("Could not read $outfile: $!");
     if(-e $infile)
     {
+        open(OUT, '>', $outfile) or $self->error("Could not read $outfile: $!");
         open(IN, '<', $infile) or $self->error("Could not read $infile: $!");
         while(<IN>)
         {
@@ -270,10 +270,6 @@ sub normal_copy($$$$)
             print(OUT);
         }
         close(IN);
-    }
-    else
-    {
-        print(OUT "<ERROR><RUNREGRESS MISSING_FILE=\"$infile\"/></ERROR>\n");
     }
     close(OUT);
 }

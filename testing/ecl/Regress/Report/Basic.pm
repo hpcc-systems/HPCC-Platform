@@ -509,7 +509,14 @@ sub _analyse_query($$$$$)
     {
         if($wuid)
         {
-            push(@{$self->{missing}}, $params);
+            if(-f $keypath)
+            {
+                push(@{$self->{missing}}, $params);
+            }
+            else
+            {
+                push(@{$self->{matches}}, $params);
+            }
         }
         else
         {
