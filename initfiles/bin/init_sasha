@@ -56,7 +56,6 @@ killed() {
 }
 
 trap "killed" SIGINT SIGTERM SIGKILL
-export LANG=en_US
 saserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
