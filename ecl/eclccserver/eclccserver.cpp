@@ -273,33 +273,36 @@ public:
         if (ok)
         {
             workunit->setState(WUStateCompiled);
-            if (isLibrary(workunit))
+            if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
             {
-                workunit->setState(WUStateCompleted);
-            }
-            else if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
-            {
-                workunit->schedule();
-                SCMStringBuffer dllBuff;
-                Owned<IConstWUQuery> wuQuery = workunit->getQuery();
-                wuQuery->getQueryDllName(dllBuff);
-                wuQuery.clear();
-                if (dllBuff.length() > 0)
+                if (isLibrary(workunit))
                 {
-                    workunit.clear();
-                    if (!runWorkUnit(wuid, clusterName.str()))
-                    {
-                        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-                        workunit.setown(factory->updateWorkUnit(wuid));
-                        reportError("Failed to execute workunit", 2);
-                        if (workunit->getState() != WUStateAborted)
-                            workunit->setState(WUStateFailed);
-                    }
+                    workunit->setState(WUStateCompleted);
                 }
                 else
                 {
-                    reportError("Failed to execute workunit (unknown DLL name)", 2);
-                    workunit->setState(WUStateFailed);
+                    workunit->schedule();
+                    SCMStringBuffer dllBuff;
+                    Owned<IConstWUQuery> wuQuery = workunit->getQuery();
+                    wuQuery->getQueryDllName(dllBuff);
+                    wuQuery.clear();
+                    if (dllBuff.length() > 0)
+                    {
+                        workunit.clear();
+                        if (!runWorkUnit(wuid, clusterName.str()))
+                        {
+                            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+                            workunit.setown(factory->updateWorkUnit(wuid));
+                            reportError("Failed to execute workunit", 2);
+                            if (workunit->getState() != WUStateAborted)
+                                workunit->setState(WUStateFailed);
+                        }
+                    }
+                    else
+                    {
+                        reportError("Failed to execute workunit (unknown DLL name)", 2);
+                        workunit->setState(WUStateFailed);
+                    }
                 }
             }
         }
