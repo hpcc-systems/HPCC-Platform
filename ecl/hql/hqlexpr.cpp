@@ -4712,6 +4712,7 @@ void CHqlExpression::cacheTablesProcessChildScope()
             OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
             cacheChildrenTablesUsed(2, max);
             inScopeTables.zap(*right);
+            queryRemoveRows(inScopeTables, this, left, right);
             if (op == no_normalize)
             {
                 //two datasets form of normalize is weird because right dataset is based on left
