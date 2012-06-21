@@ -68,6 +68,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 	private String UserName;
 	private boolean lazyLoad;
 	private int pageSize;
+	private	int	connectTimoutMillis;
 
 	private DocumentBuilderFactory dbf;
 
@@ -86,6 +87,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		this.basicAuth = props.getProperty("BasicAuth", HPCCConnection.createBasicAuth(this.UserName, props.getProperty("password", "")));
 		this.lazyLoad = Boolean.parseBoolean(props.getProperty("LazyLoad", HPCCConnection.LAZYLOADDEFAULT));
 		this.pageSize = HPCCJDBCUtils.stringToInt(props.getProperty("PageSize", String.valueOf(HPCCConnection.FETCHPAGESIZEDEFAULT)), HPCCConnection.FETCHPAGESIZEDEFAULT);
+		this.connectTimoutMillis = HPCCJDBCUtils.stringToInt(props.getProperty("ConnectTimeoutMilli",""), HPCCConnection.CONNECTTIMEOUTMILDEFAULT);
 
 		System.out.println("EclDatabaseMetaData ServerAddress: " + serverAddress + " Cluster: " + targetcluster + " eclwatch: " + wseclwatchaddress +":"+  wseclwatchport);
 
@@ -1890,12 +1892,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 				//now request the schema for each roxy query
 				URL queryschema = new URL(filedetailUrl);
-				HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-				queryschemaconnection.setInstanceFollowRedirects(false);
-				queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-				queryschemaconnection.setRequestMethod("GET");
-				queryschemaconnection.setDoOutput(true);
-				queryschemaconnection.setDoInput(true);
+				HttpURLConnection queryschemaconnection = createHPCCESPConnection(queryschema);
 
 				InputStream schema = queryschemaconnection.getInputStream();
 				Document dom2 = db.parse(schema);
@@ -1918,12 +1915,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 					//now request the schema for each roxy query
 					URL queryfiledata = new URL(openfiledetailUrl);
-					HttpURLConnection queryfiledataconnection = (HttpURLConnection)queryfiledata.openConnection();
-					queryfiledataconnection.setInstanceFollowRedirects(false);
-					queryfiledataconnection.setRequestProperty("Authorization", basicAuth);
-					queryfiledataconnection.setRequestMethod("GET");
-					queryfiledataconnection.setDoOutput(true);
-					queryfiledataconnection.setDoInput(true);
+					HttpURLConnection queryfiledataconnection = createHPCCESPConnection(queryfiledata);
 
 					InputStream filesearchinfo = queryfiledataconnection.getInputStream();
 					Document dom3 = db.parse(filesearchinfo);
@@ -2178,14 +2170,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 					filename +
 					"&rawxml_";
 
-			URL dfuLogicalFilesURL;
-			dfuLogicalFilesURL = new URL(urlString);
-
-			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
-			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
-			dfulogfilesConn.setRequestMethod("GET");
-			dfulogfilesConn.setDoOutput(true);
-			dfulogfilesConn.setDoInput(true);
+			URL dfuLogicalFilesURL = new URL(urlString);
+			HttpURLConnection dfulogfilesConn = createHPCCESPConnection(dfuLogicalFilesURL);
 
 			isSuccess = parseDFULogicalFiles(dfulogfilesConn.getInputStream(), false) > 0 ? true : false;
 		}
@@ -2233,16 +2219,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 					"&FirstN=" +
 					pageSize;
 
-			URL dfuLogicalFilesURL;
-			dfuLogicalFilesURL = new URL(urlString);
-
-			HttpURLConnection dfulogfilesConn = (HttpURLConnection)dfuLogicalFilesURL.openConnection();
-			dfulogfilesConn.setInstanceFollowRedirects(false);
-			System.out.println("Setting auth: " + basicAuth);
-			dfulogfilesConn.setRequestProperty("Authorization", basicAuth);
-			dfulogfilesConn.setRequestMethod("GET");
-			dfulogfilesConn.setDoOutput(true);
-			dfulogfilesConn.setDoInput(true);
+			URL dfuLogicalFilesURL = new URL(urlString);
+			HttpURLConnection dfulogfilesConn = createHPCCESPConnection(dfuLogicalFilesURL);
 
 			isSuccess = parseDFULogicalFiles(dfulogfilesConn.getInputStream(), true) > 0 ? true : false;
 		}
@@ -2326,12 +2304,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 
 				//now request the schema for each hpcc query
 				URL queryschema = new URL(queryinfourl);
-				HttpURLConnection queryschemaconnection = (HttpURLConnection)queryschema.openConnection();
-				queryschemaconnection.setInstanceFollowRedirects(false);
-				queryschemaconnection.setRequestProperty("Authorization", basicAuth);
-				queryschemaconnection.setRequestMethod("GET");
-				queryschemaconnection.setDoOutput(true);
-				queryschemaconnection.setDoInput(true);
+				HttpURLConnection queryschemaconnection = createHPCCESPConnection(queryschema);
 
 				InputStream schema = queryschemaconnection.getInputStream();
 
@@ -2389,15 +2362,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 								"&FilterType=Name" +
 								"&rawxml_";
 
-			URL querysetURL;
-			querysetURL = new URL(urlString);
-
-			HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
-			querysetconnection.setInstanceFollowRedirects(false);
-			querysetconnection.setRequestProperty("Authorization", basicAuth);
-			querysetconnection.setRequestMethod("GET");
-			querysetconnection.setDoOutput(true);
-			querysetconnection.setDoInput(true);
+			URL querysetURL = new URL(urlString);
+			HttpURLConnection querysetconnection = createHPCCESPConnection(querysetURL);
 
 			InputStream xml = querysetconnection.getInputStream();
 
@@ -2438,15 +2404,8 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 									"/WsWorkunits/WUQuerysetDetails?QuerySetName=" +
 									querysets.get(z) + "&rawxml_";
 
-				URL querysetURL;
-				querysetURL = new URL(urlString);
-
-				HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
-				querysetconnection.setInstanceFollowRedirects(false);
-				querysetconnection.setRequestProperty("Authorization", basicAuth);
-				querysetconnection.setRequestMethod("GET");
-				querysetconnection.setDoOutput(true);
-				querysetconnection.setDoInput(true);
+				URL querysetURL = new URL(urlString);
+				HttpURLConnection querysetconnection = createHPCCESPConnection(querysetURL);
 
 				InputStream xml = querysetconnection.getInputStream();
 
@@ -2477,13 +2436,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsWorkunits/WUQuerysets?rawxml_";
 
 			URL cluserInfoURL = new URL(urlString);
-
-			HttpURLConnection clusterInfoConnection = (HttpURLConnection)cluserInfoURL.openConnection();
-			clusterInfoConnection.setInstanceFollowRedirects(false);
-			clusterInfoConnection.setRequestProperty("Authorization", basicAuth);
-			clusterInfoConnection.setRequestMethod("GET");
-			clusterInfoConnection.setDoOutput(true);
-			clusterInfoConnection.setDoInput(true);
+			HttpURLConnection clusterInfoConnection = createHPCCESPConnection(cluserInfoURL);
 
 			InputStream xml = clusterInfoConnection.getInputStream();
 
@@ -2523,13 +2476,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsTopology/TpTargetClusterQuery?Type=ROOT&rawxml_&ShowDetails=0";
 
 			URL cluserInfoURL = new URL(urlString);
-
-			HttpURLConnection clusterInfoConnection = (HttpURLConnection)cluserInfoURL.openConnection();
-			clusterInfoConnection.setInstanceFollowRedirects(false);
-			clusterInfoConnection.setRequestProperty("Authorization", basicAuth);
-			clusterInfoConnection.setRequestMethod("GET");
-			clusterInfoConnection.setDoOutput(true);
-			clusterInfoConnection.setDoInput(true);
+			HttpURLConnection clusterInfoConnection = createHPCCESPConnection(cluserInfoURL);
 
 			InputStream xml = clusterInfoConnection.getInputStream();
 
@@ -2569,13 +2516,7 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 			String urlString = "http://" + wseclwatchaddress + ":" + wseclwatchport + "/WsSMC/Activity?rawxml_";
 
 			URL querysetURL = new URL(urlString);
-
-			HttpURLConnection querysetconnection = (HttpURLConnection)querysetURL.openConnection();
-			querysetconnection.setInstanceFollowRedirects(false);
-			querysetconnection.setRequestProperty("Authorization", basicAuth);
-			querysetconnection.setRequestMethod("GET");
-			querysetconnection.setDoOutput(true);
-			querysetconnection.setDoInput(true);
+			HttpURLConnection querysetconnection = createHPCCESPConnection(querysetURL);
 
 			InputStream xml = querysetconnection.getInputStream();
 
@@ -2910,5 +2851,18 @@ public class HPCCDatabaseMetaData implements DatabaseMetaData {
 		}
 
 		return file;
+	}
+
+	protected HttpURLConnection createHPCCESPConnection(URL theurl) throws IOException
+	{
+		HttpURLConnection conn = (HttpURLConnection)theurl.openConnection();
+		conn.setInstanceFollowRedirects(false);
+		conn.setRequestProperty("Authorization", basicAuth);
+		conn.setRequestMethod("GET");
+		conn.setDoOutput(true);
+		conn.setDoInput(true);
+		conn.setConnectTimeout(connectTimoutMillis);
+
+		return conn;
 	}
 }
