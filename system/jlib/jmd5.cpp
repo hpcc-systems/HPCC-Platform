@@ -440,7 +440,7 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
-void md5_filesum(const char* filename, StringBuffer& outstring, size32_t chunkSize)
+void md5_filesum(const char* filename, StringBuffer& outstring)
 {
     md5_state_t context;
     unsigned char digest[16];
@@ -451,36 +451,36 @@ void md5_filesum(const char* filename, StringBuffer& outstring, size32_t chunkSi
 
     MemoryBuffer mb;
     void * contents;
+    offset_t chunkSize = 0x100000;
 
     Owned<IFile> file = createIFile(filename);
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
-    offset_t size = io->size();
-    size32_t sizeToRead = (size32_t)size, sizeReadTotal = 0;
 
     if (!io)
         throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
 
+    offset_t size = io->size();
+    offset_t sizeToRead = (size32_t)size, sizeReadTotal = 0;
+
     if ( sizeToRead < chunkSize )
-    {
         contents = mb.reserve(sizeToRead);
-    }
     else
-    {
         contents = mb.reserve(chunkSize);
-    }
 
     while( sizeReadTotal != sizeToRead)
     {
-        size32_t readSizeLeft = sizeToRead - sizeReadTotal;
-        size32_t sizeHolder = chunkSize;
+        offset_t readSizeLeft = sizeToRead - sizeReadTotal;
+        offset_t sizeHolder = chunkSize;
+
         if ( readSizeLeft < chunkSize )
-        {
             sizeHolder = readSizeLeft;
-        }
-        size32_t sizeRead = io->read(0, sizeHolder, contents);
+
+        offset_t sizeRead = io->read(0, sizeHolder, contents);
         sizeReadTotal += sizeRead;
+
         if (sizeRead != sizeHolder)
-            throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeReadTotal, sizeToRead);
+            throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), sizeReadTotal, sizeToRead);
+
         md5_append (&context, (const unsigned char *)contents, sizeHolder);
     }
     md5_finish (&context,digest);

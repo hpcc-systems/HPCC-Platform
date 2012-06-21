@@ -110,7 +110,7 @@ jlib_decl void md5_string (StringBuffer& inpstring, StringBuffer& outstring);
 jlib_decl void md5_string2(const char* inpstring, StringBuffer& outstring);
 
 /* Takes in a filename and returns the md5 sum of the file */
-jlib_decl void md5_filesum(const char* filename, StringBuffer& outstring, size32_t chunkSize=0x100000);
+jlib_decl void md5_filesum(const char* filename, StringBuffer& outstring);
 
 #ifdef __cplusplus
 }  /* end extern "C" */
