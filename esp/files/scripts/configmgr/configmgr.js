@@ -418,6 +418,8 @@ function createTable(rows, tabDivName, index, compName) {
 
       oContextMenu.dt = myDataTable;
       oContextMenu.subscribe("beforeShow", onContextMenuBeforeShowRegular);
+      top.document.ContextMenuCenter = oContextMenu;
+
       myDataTable.tt = new YAHOO.widget.Tooltip(tabDivName + "tooltip");
 
       myDataTable.subscribe("cellMouseoverEvent", function(oArgs) {
@@ -1609,7 +1611,7 @@ function createMultiColTreeCtrlForComp(rows, compName, subRecordIndex) {
         lazyload: true
       });
 
-      top.document.ContextMenu = oContextMenu;
+      top.document.ContextMenuCenter = oContextMenu;
 
       oContextMenu.dt = dt;
       oContextMenu.subscribe("beforeShow", onContextMenuBeforeShow);
@@ -2003,6 +2005,8 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         lazyload: true
       });
 
+      top.document.ContextMenuCenter = oContextMenu;
+
       oContextMenu.dt = dt;
       oContextMenu.subscribe("beforeShow", onContextMenuBeforeShow);
       dt.expandRecord = function(id) {
@@ -2387,6 +2391,9 @@ function onMenuItemClickThorTopology(p_sType, p_aArgs, p_oValue) {
   top.document.navDT.promptThorTopology(top.document.navDT, type, slavesPresent, slavesPerNode);
 }
 function onContextMenuBeforeShow(p_sType, p_aArgs) {
+  if (top.document.ContextMenuLeft != null)
+    top.document.ContextMenuLeft.clearContent();
+
   if (!this.configContextMenuItems) {
     this.configContextMenuItems = {
       "Roxie Cluster": [
@@ -3138,7 +3145,10 @@ function onContextMenuBeforeShowRegular(p_sType, p_aArgs) {
     }
 
     if( record && record.getData('_not_in_env') === 1 && record.getData(column.key + '_ctrlType') !== 0)
+    {
+      top.document.ContextMenuCenter = this;
       this.addItems(oContextMenuItems["WriteToEnvironment"]);
+    }
 
     if( record && record.getData(column.key + '_ctrlType') !== 0 ) {
         var defaultValue=dt.getDefault(oTarget, record);
@@ -3366,6 +3376,8 @@ function handlekeydown(event) {
 
 function handlemousedown(event) {
 top.document.navDT.fireEvent("tableBlurEvent");
+if (top.document.ContextMenuLeft != null)
+  top.document.ContextMenuLeft.clearContent();
 }
 
 function getAttrName(datatable, column, record, isComplex) {

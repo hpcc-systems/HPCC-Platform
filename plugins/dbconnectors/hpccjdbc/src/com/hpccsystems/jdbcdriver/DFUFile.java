@@ -395,41 +395,48 @@ public class DFUFile
 		{
 			try
 			{
-				StringTokenizer comatokens = null;
+				StringTokenizer commatokens = null;
 				//ECL RECORD can be defined as { type name,...,type name}; or RECORD type name;...;type name;END;
 				//TODO we should handle nested file types
 				if (eclString.toUpperCase().contains("RECORD"))
 				{
 					String tmp = eclString.substring(eclString.indexOf("RECORD")+6, eclString.indexOf("END"));
-					comatokens = new StringTokenizer(tmp, ";");
-
+					commatokens = new StringTokenizer(tmp, ";");
 				}
 				else if (eclString.contains("{"))
 				{
 					String tmp = eclString.substring(eclString.indexOf('{')+1, eclString.indexOf('}'));
-					comatokens = new StringTokenizer(tmp, ",");
-
+					commatokens = new StringTokenizer(tmp, ",");
 				}
 
-				if (comatokens != null)
+				if (commatokens != null)
 				{
 					int index = 0;
-					while (comatokens.hasMoreTokens())
+					while (commatokens.hasMoreTokens())
 					{
-						StringTokenizer spacetokens = new StringTokenizer(comatokens.nextToken()," \n");
-						if(spacetokens.hasMoreTokens())
+						String commatoken = commatokens.nextToken().trim();
+						String spacesplit [] = commatoken.split("\\s+");
+
+						String name = spacesplit[spacesplit.length-1];
+						if (name.length() > 0)
 						{
-							String type = spacetokens.nextToken();
-							String name = spacetokens.nextToken();
-							HPCCColumnMetaData columnmeta = new HPCCColumnMetaData(name, index, HPCCDatabaseMetaData.convertECLtype2SQLtype(type.toUpperCase()));
-							columnmeta.setEclType(type);
-							//columnmeta.setTableName(this.FileName);
+							StringBuffer type = new StringBuffer();
+							for (int i = 0; i< spacesplit.length-1; i++)
+							{
+								type.append(spacesplit[i]);
+								if (i+1 < spacesplit.length-1)
+									type.append(" ");
+							}
+
+							HPCCColumnMetaData columnmeta = new HPCCColumnMetaData(name, index, HPCCDatabaseMetaData.convertECLtype2SQLtype(type.toString().toUpperCase()));
+							columnmeta.setEclType(type.toString());
 							columnmeta.setTableName(this.FullyQualifiedName);
 
 							Ecl += type + " " + name + "; ";
 							Fields.put(name.toUpperCase(), columnmeta);
+
+							index++;
 						}
-						index++;
 					}
 				}
 			}
@@ -438,10 +445,6 @@ public class DFUFile
 				System.out.println("Invalid ECL Record definition found in " + this.getFullyQualifiedName() + " details.");
 				return;
 			}
-			/*finally
-			{
-				Ecl += "END; ";
-			}*/
 		}
 	}
 

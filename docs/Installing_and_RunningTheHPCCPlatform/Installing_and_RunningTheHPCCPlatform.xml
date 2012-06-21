@@ -737,8 +737,9 @@
           <para><orderedlist>
               <listitem>
                 <para>In your browser, go to the <emphasis role="bold">ECL
-                Watch</emphasis> URL. For example, http://nnn.nnn.nnn.nnn:8010,
-                where nnn.nnn.nnn.nnn is your node's IP address.</para>
+                Watch</emphasis> URL. For example,
+                http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your
+                node's IP address.</para>
 
                 <para><informaltable colsep="1" frame="all" rowsep="1">
                     <?dbfo keep-together="always"?>
@@ -785,12 +786,12 @@
 
               <listitem>
                 <para>Click on the <emphasis role="bold">ECL IDE and Client
-                Tools </emphasis>link. </para>
+                Tools </emphasis>link.</para>
               </listitem>
 
               <listitem>
                 <para>Follow the instructions on the web page to install the
-                ECL IDE. </para>
+                ECL IDE.</para>
               </listitem>
 
               <listitem>
@@ -1088,7 +1089,12 @@
       advantage of the true power of an HPCC—the ability to perform operations
       using Massively Parallel Processing (MPP). This section provides the
       steps to expand your single-node system into a multi-node system using
-      the Configuration Manager Wizard.</para>
+      the Configuration Manager Wizard. </para>
+
+      <para>To run a multi-node system, ensure that you have exactly the same
+      packages installed on every node. Follow the steps below to configure
+      your multi-node system to leverage the full power of Massively Parallel
+      Processing. </para>
 
       <sect2 id="configuring-a-multi-node-system">
         <title>Using the Configuration Manager Wizard</title>
@@ -1097,7 +1103,8 @@
         nodes. Before you start this section, you must have already downloaded
         the correct packages for your distro from the HPCC Systems website:
         <ulink
-        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink></para>
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.
+        </para>
 
         <orderedlist>
           <listitem>
@@ -1208,7 +1215,7 @@
             button.</para>
 
             <para>Alternatively, you could find the IP addresses using Auto
-            Discovery by selecting the Auto Discovery button. </para>
+            Discovery by selecting the Auto Discovery button.</para>
 
             <para>Now you will define how many nodes to use for the Roxie and
             Thor clusters.</para>

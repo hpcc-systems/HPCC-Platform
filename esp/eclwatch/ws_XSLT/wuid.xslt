@@ -73,25 +73,43 @@
             var thorLogDate;
             var numberOfSlaves;
          
+            function CheckSlaveLogInput(e, allows)
+            {
+                var key, keychar;
+                if (window.event)
+                {
+                    key = window.event.keyCode;
+                    keychar = String.fromCharCode(key);
+                }
+                else if (e)
+                {
+                    key = e.keyCode;
+                    keychar = String.fromCharCode(e.which);
+                }
+                else
+                   return true;
+
+                if (key == 13) //for 'enter' key
+                {
+                    GetThorSlaveLog();
+                    return true;
+                }
+
+                if (key ==  8 || key == 37 || key == 39) //8/37/39: backspace/left/right
+                   return true;
+
+                if (((allows).indexOf(keychar) > -1))
+                   return true;
+                else
+                   return false;
+            }
+
             function CheckSlaveNum(e)
             {
                 if (document.getElementById('NumberSlaves').disabled == 'true')
                     return false;
 
-                var key;
-                if (window.event)
-                   key = window.event.keyCode;
-                else if (e)
-                   key = e.which;
-                else
-                   return true;
-
-                var keychar = String.fromCharCode(key);
-
-                if ((("0123456789").indexOf(keychar) > -1))
-                   return true;
-                else
-                   return false;
+                return CheckSlaveLogInput(e, '0123456789');
             }
 
             function CheckSlaveAddress(e)
@@ -99,20 +117,7 @@
                 if (document.getElementById('SlaveAddress').disabled == 'true')
                     return false;
 
-                var key;
-                if (window.event)
-                   key = window.event.keyCode;
-                else if (e)
-                   key = e.which;
-                else
-                   return true;
-
-                var keychar = String.fromCharCode(key);
-
-                if ((("0123456789_.").indexOf(keychar) > -1))
-                   return true;
-                else
-                   return false;
+                return CheckSlaveLogInput(e, '0123456789_.');
             }
 
             function thorProcessChanged(value)
