@@ -1138,17 +1138,18 @@ void EclAgent::doSetResultString(type_t type, const char *name, unsigned sequenc
     }
 }
 
+//used to output a row
 void EclAgent::setResultRaw(const char * name, unsigned sequence, int len, const void *val)
 {
     LOG(MCsetresult, unknownJob, "setResultRaw(%s,%d,(%d bytes))", nullText(name), sequence, len);
     Owned<IWUResult> r = updateResult(name, sequence);
     if (r)
     {
-        r->setResultRaw(len, val, ResultFormatRaw); 
+        r->setResultRow(len, val);
         r->setResultStatus(ResultStatusCalculated);
     }
     else
-        fail(0, "Unexpected parameters to setResultString");
+        fail(0, "Unexpected parameters to setResultRaw");
     if (writeResultsToStdout && (int) sequence >= 0)
     {
         if (outputFmt == ofSTD || outputFmt==ofRAW)

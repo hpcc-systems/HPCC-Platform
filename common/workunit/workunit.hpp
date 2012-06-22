@@ -314,6 +314,7 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultIsAll(bool value) = 0;
     virtual void setResultFormat(WUResultFormat format) = 0;
     virtual void setResultXML(const char * xml) = 0;
+    virtual void setResultRow(unsigned len, const void * data) = 0;
 };
 
 
