@@ -18356,6 +18356,7 @@ public:
 protected:
     void onException(IException *E)
     {
+        input->stop(true);
         ReleaseRoxieRowSet(buff);
         if (createRow)
         {

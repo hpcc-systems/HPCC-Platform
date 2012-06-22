@@ -16,28 +16,27 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
-r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
-
-r t(unsigned a, unsigned b, unsigned c, unsigned d) := TRANSFORM
-    SELF.f1 := a;
-    SELF.f2 := b;
-    SELF.f3 := c;
-    SELF.f4 := d;
+MyRec := RECORD
+    STRING50 Value1;
+    unsigned Value2;
 END;
 
-ds := dataset([
-        t(1,2,3,4),
-        t(1,4,2,5),
-        t(9,3,4,5),
-        t(3,4,2,9)]);
+MyRec t1(unsigned c) := transform
+  SELF.value1 := 'X';
+  SELF.value2 := c;
+END;
 
-simple := dedup(nofold(ds), f1);
+ds := DATASET(100000, t1(COUNTER));
 
-osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+MyRec FailTransform := transform
+  self.value1 := FAILMESSAGE[1..17];
+  self.value2 := FAILCODE
+END;
 
-x1 := when(LIMIT(simple,1), osum, failure);
+splitds := nofold(ds(Value1 != 'f'));
+limited := LIMIT(splitds, 2);
 
-o1 := TABLE(x1, { f1 });
-o2 := output(TABLE(simple, { c := count(group) }, f3));
+recovered := CATCH(limited, SKIP);
 
-output(catch(when(o1, o2, failure), SKIP));
+count(splitds);
+count(recovered);
