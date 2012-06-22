@@ -48,7 +48,7 @@ filtered := filterDataset(namesTable, 'Smith', false);
 output(if (falseval, filtered.matches),,named('MatchSmith'));
 
 filtered2 := filterDataset(namesTable, 'Halliday', false);
-//output(filtered2.others,,named('NotHalliday'));
+output(filtered2.others,,named('NotHalliday'));
 
 filtered3 := filterDataset(namesTable, 'Halliday', true);
-//output(filtered3.others,,named('OldNotHalliday'));
+output(filtered3.others,,named('OldNotHalliday'));
