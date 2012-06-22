@@ -17,13 +17,10 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 http://hpccsystems.com
  
- 
-Description:
-------------
-This file is the top level handling for 
-cmake based compilation and build process.
- 
+
 To build for Linux:
+-------------------
+
 1. Check out sources (for example, to directory ~/hpcc)
 2. Create a build directory - either as a child of hpcc or elsewhere
 3. cd to the build directory
@@ -36,8 +33,13 @@ cmake -DCMAKE_C_FLAGS:STRING="-m32 -march=i386" -DCMAKE_CXX_FLAGS:STRING="-m32 -
 5. To build the makefiles just created above, run
 make
 6. Executables will be created in ./<releasemode>/bin and ./<releasemode>/libs
+7. To create a .deb / ,rpm to install, run
+make package
+
  
 To build for Windows:
+---------------------
+
 1. Check out sources (for example, to directory c:\hpcc)
 2. Create a build directory - either as a child of hpcc or elsewhere
 3. cd to the build directory
@@ -46,5 +48,20 @@ cmake c:\hpcc -G "Visual Studio 9 2008"
 The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
 5. To build the project, load the solution into the visual studio IDE and build in the usual way.
 6. Executables will be created in (for example) c:\hpcc\bin\<release_mode>
+
+To build client tools for Macintosh OSX:
+----------------------------------------
+
+1. Check out sources (for example, to directory ~/hpcc)
+2. You many need to install some 3rd-party dev packages using macports
+3. Create a build directory - either as a child of hpcc or elsewhere
+4. cd to the build directory
+5. Use clang to build the clienttools (gcc4.2 cores when compiling some of the sources):
+CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake ~/hpcc -DCLIENTTOOLS_ONLY
+5. To build the makefiles just created above, run
+make
+6. Executables will be created in ./<releasemode>/bin and ./<releasemode>/libs
+7. To create a .dmg to install, run
+make package
  
  
