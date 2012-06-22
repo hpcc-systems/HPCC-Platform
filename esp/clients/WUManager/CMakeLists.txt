@@ -28,6 +28,7 @@ project( wumanager )
 include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          WUManager.cpp 
     )

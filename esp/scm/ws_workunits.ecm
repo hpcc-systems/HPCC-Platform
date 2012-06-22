@@ -19,6 +19,8 @@
 #include "xslprocessor.hpp" 
 //  ===========================================================================
 
+EspInclude(common);
+
 ESPStruct [nil_remove] ECLException
 {
     string Source;
@@ -303,6 +305,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     string FileName;
     binary Object;
     int ResultLimit;
+    ESParray<ESPstruct NamedValue> DebugValues;
 };
 
 ESPresponse [exceptions_inline] WUDeployWorkunitResponse
@@ -501,6 +504,8 @@ ESPrequest WURunRequest
     int Wait(-1);
     [rows(15)] string Input;
     bool NoRootTag(0);
+    ESParray<ESPstruct NamedValue> DebugValues;
+    ESParray<ESPstruct NamedValue> Variables;
 };
 
 ESPresponse [exceptions_inline] WURunResponse

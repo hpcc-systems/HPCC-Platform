@@ -24,7 +24,6 @@
 #include "build-config.h"
 #include "workunit.hpp"
 
-#include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 
 void outputMultiExceptions(const IMultiException &me)
@@ -334,6 +333,18 @@ public:
             if (cmd.optObj.value.get())
                 cmdLine.append(" ").append(streq(cmd.optObj.value.get(), "stdin") ? "- " : cmd.optObj.value.get());
         }
+        if (cmd.debugValues.length())
+        {
+            ForEachItemIn(i, cmd.debugValues)
+            {
+                IEspNamedValue &item = cmd.debugValues.item(i);
+                const char *name = item.getName();
+                const char *value = item.getValue();
+                cmdLine.append(" -f").append(name);
+                if (value)
+                    cmdLine.append('=').append(value);
+            }
+        }
         if ((int)cmd.optResultLimit > 0)
         {
             cmdLine.append(" -fapplyInstantEclTransformations=1");
@@ -424,6 +435,24 @@ private:
     };
 };
 
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
+{
+    const char *arg = iter.query();
+    if (*arg++!='-' || *arg++!=prefix || !*arg)
+        return false;
+    Owned<IEspNamedValue> nv = createNamedValue();
+    const char *eq = strchr(arg, '=');
+    if (!eq)
+        nv->setName(arg);
+    else
+    {
+        StringAttr name(arg, eq - arg);
+        nv->setName(name.get());
+        nv->setValue(eq+1);
+    }
+    values.append(*nv.getClear());
+    return true;
+}
 eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
 {
     const char *arg = iter.query();
@@ -449,6 +478,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         optObj.set(arg);
         return EclCmdOptionMatch;
     }
+    if (matchVariableOption(iter, 'f', debugValues))
+        return EclCmdOptionMatch;
     if (iter.matchPathFlag(optLibPath, ECLOPT_LIB_PATH_S))
         return EclCmdOptionMatch;
     if (iter.matchPathFlag(optImpPath, ECLOPT_IMP_PATH_S))

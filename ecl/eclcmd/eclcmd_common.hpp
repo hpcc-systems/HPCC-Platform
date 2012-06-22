@@ -19,6 +19,8 @@
 #ifndef ECLCMD_COMMON_HPP
 #define ECLCMD_COMMON_HPP
 
+#include "ws_workunits.hpp"
+
 //=========================================================================================
 
 interface IEclCommand : extends IInterface
@@ -97,6 +99,8 @@ bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const cha
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
+
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType
 {
@@ -186,6 +190,7 @@ public:
             "   --main=<definition>    definition to use from legacy ECL repository\n"
             "   --ecl-only             send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
+            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
@@ -198,6 +203,7 @@ public:
     StringBuffer optImpPath;
     StringAttr optManifest;
     StringAttr optAttributePath;
+    IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;
 };

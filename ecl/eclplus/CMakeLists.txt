@@ -29,6 +29,7 @@ include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS 
          ../../esp/bindings/bindutil.cpp 
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp 
          DeleteHelper.cpp 
          DumpHelper.cpp 

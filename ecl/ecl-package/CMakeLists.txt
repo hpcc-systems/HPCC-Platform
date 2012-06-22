@@ -16,6 +16,7 @@ project( ecl-package )
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_packageprocess_esp.cpp
          ecl-package.cpp
          ${HPCC_SOURCE_DIR}/ecl/eclcmd/eclcmd_shell.cpp
