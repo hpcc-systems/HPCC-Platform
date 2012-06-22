@@ -168,6 +168,9 @@ void submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluste
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    if(!cw)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
+
     return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, paramXml);
 }
 
@@ -356,6 +359,8 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
             {
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
                 Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+                if(!cw)
+                    throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
 
                 StringBuffer strAction;
                 Owned<IEspWUActionResult> res = createWUActionResult("", "");
@@ -942,6 +947,9 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 }
 
                 Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str(), false));
+                if(!cw)
+                    throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+
                 submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow());
             }
             catch (IException *E)
@@ -1077,6 +1085,9 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",req.getWuid());
+
         if (cw->getAction()==WUActionExecuteExisting)
         {
             ExecuteExistingQueryInfo info(cw);
@@ -1175,6 +1186,8 @@ bool CWsWorkunitsEx::onWUWaitCompiled(IEspContext &context, IEspWUWaitRequest &r
         secWaitForWorkUnitToCompile(req.getWuid(), *context.querySecManager(), *context.queryUser(), req.getWait());
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",req.getWuid());
         resp.setStateID(cw->getState());
     }
     catch(IException* e)
@@ -2246,6 +2259,8 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+    if(!cw)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
     Owned<IConstWUResult> result;
 
     if (notEmpty(name))
@@ -2583,6 +2598,8 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",req.getWuid());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
 
         resp.setWuid(req.getWuid());
@@ -3122,6 +3139,8 @@ bool CWsWorkunitsEx::onWUProcessGraph(IEspContext &context,IEspWUProcessGraphReq
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",req.getWuid());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
 
         Owned <IConstWUGraph> graph = cw->getGraph(req.getName());
@@ -3158,6 +3177,8 @@ bool CWsWorkunitsEx::onWUGetGraph(IEspContext& context, IEspWUGetGraphRequest& r
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",req.getWuid());
         ensureWsWorkunitAccess(context, *cw, SecAccess_Read);
 
         WUGraphIDType id;

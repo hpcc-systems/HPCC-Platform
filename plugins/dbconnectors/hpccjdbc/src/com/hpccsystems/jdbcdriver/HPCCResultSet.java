@@ -39,7 +39,6 @@ public class HPCCResultSet implements ResultSet
 	private HPCCResultSetMetadata	resultMetadata;
 	private HPCCDatabaseMetaData	dbMetadata;
 	private Statement				statement;
-	private String					test_query	= "SELECT 1";
 	private String 					defaultEclQueryReturnDatasetName;
 	private Object					lastResult;
 	private ArrayList<SQLWarning> 	warnings;
@@ -78,9 +77,9 @@ public class HPCCResultSet implements ResultSet
 			if(sqlreqtype == SQLParser.SQL_TYPE_SELECT)
 			{
 				String hpccfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
-				if(!dbMetadata.tableExists("", hpccfilename))
-					throw new Exception("Invalid table found: " + hpccfilename);
 				DFUFile dfufile = dbMetadata.getDFUFile(hpccfilename);
+				if (dfufile == null)
+					throw new Exception("Invalid table name found: " + hpccfilename);
 				if (!dfufile.hasFileRecDef())
 					throw new Exception("Cannot query: " + hpccfilename + " because it does not contain a record definition.");
 				parser.verifySelectColumns(dfufile);
@@ -128,7 +127,7 @@ public class HPCCResultSet implements ResultSet
 				ArrayList<HPCCColumnMetaData> storeProcInParams = new ArrayList();
 				HPCCQuery hpccQuery = dbMetadata.getHpccQuery(HPCCJDBCUtils.handleQuotedString(parser.getStoredProcName()));
 				if (hpccQuery == null)
-					throw new Exception("Invalid store procedure found");
+					throw new Exception("Invalid store procedure found. Check QuerySet configuration.");
 				defaultEclQueryReturnDatasetName = hpccQuery.getDefaultTableName();
 				expectedretcolumns = hpccQuery.getAllNonInFields();
 				storeProcInParams = hpccQuery.getAllInFields();
@@ -283,7 +282,6 @@ public class HPCCResultSet implements ResultSet
 	}
 	public String getString(int columnIndex) throws SQLException
 	{
-		//System.out.println("getString( " + columnIndex +")");
 		if (index >= 0 && index <= rows.size())
 			if (columnIndex >= 1 && columnIndex <= rows.get(index).size())
 			{
@@ -535,7 +533,6 @@ public class HPCCResultSet implements ResultSet
 	}
 	public String getString(String columnLabel) throws SQLException
 	{
-		//System.out.println("getString( " + columnLabel +")");
 		if (index >= 0  && index <= rows.size())
 		{
 			int column = resultMetadata.getColumnIndex(columnLabel);
@@ -919,15 +916,7 @@ public class HPCCResultSet implements ResultSet
 	{
 		if (index >= 0  && index <= rows.size())
 		{
-			//System.out.println("EclResultSet being queried for tablename: " + resultMetadata.getTableName(0) + " column: " + columnIndex + " total number of columns: " + rows.get(index).size() + " Current row: " + index) ;
-			//System.out.println("Columlabel: " + resultMetadata.getColumnLabel(columnIndex));
-			//System.out.println("Columlabel: " + resultMetadata.getColumnClassName(columnIndex));
 			lastResult = rows.get(index).get(columnIndex - 1);
-			if (lastResult == null)
-				return null;
-			//obj = Class.forName(resultMetadata.getColumnClassName(columnIndex));
-			//System.out.println("results object id: " + (Object)this.hashCode());
-			//System.out.println("returning object" + (lastResult==null ? ": null" : " of type " + resultMetadata.getColumnClassName(columnIndex) +  " : " + lastResult.toString()));
 			return lastResult;
 		}
 		else
