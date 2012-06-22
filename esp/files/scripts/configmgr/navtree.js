@@ -660,8 +660,6 @@ function createNavigationTree(navTreeData) {
     for (var idx = 0; idx < selRows.length; idx++) {
       Dom.addClass(this.getTrEl(selRows[idx]), 'outoffocus');
     }
-    if (top.document.ContextMenuCenter != null)
-      top.document.ContextMenuCenter.clearContent();
   });
 
 
@@ -1326,6 +1324,8 @@ function createNavigationTree(navTreeData) {
 
 
   var handleWindowMouseDown = function(e) {
+    if (top.document.ContextMenuCenter != null)
+      top.document.ContextMenuCenter.clearContent();
     var tabView = top.document.RightTabView;
     if (tabView) {
       var actTab = tabView.get("activeTab");
