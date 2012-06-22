@@ -30117,7 +30117,19 @@ public:
     { 
         return strdup("roxie"); 
     }
-    virtual char *getWuid() { throwUnexpected(); }
+    virtual char *getWuid()
+    {
+        if (workUnit)
+        {
+            SCMStringBuffer wuid;
+            workUnit->getWuid(wuid);
+            return strdup(wuid.str());
+        }
+        else
+        {
+            throw MakeStringException(ROXIE_INVALID_ACTION, "No workunit associated with this context");
+        }
+    }
 
     // persist-related code - usage of persist should have been caught and rejected at codegen time
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
