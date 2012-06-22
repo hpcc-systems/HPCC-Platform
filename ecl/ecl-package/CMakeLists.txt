@@ -41,7 +41,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( ecl-package ${SRCS} )
+HPCC_ADD_EXECUTABLE ( ecl-package ${SRCS} )
 add_dependencies ( ecl-package espscm ws_packageprocess )
 install ( TARGETS ecl-package DESTINATION ${DIR_NAME}/bin )
 target_link_libraries ( ecl-package

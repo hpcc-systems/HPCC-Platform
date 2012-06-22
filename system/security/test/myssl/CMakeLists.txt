@@ -38,7 +38,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( myssl ${SRCS} )
+HPCC_ADD_EXECUTABLE ( myssl ${SRCS} )
 install ( TARGETS myssl DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( myssl 
          jlib

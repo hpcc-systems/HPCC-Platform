@@ -107,7 +107,7 @@ set (    SRCS
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 if( PLATFORM )
-    add_executable ( fvserver ${SRCS} )
+    HPCC_ADD_EXECUTABLE ( fvserver ${SRCS} )
     set_target_properties(fvserver PROPERTIES 
         COMPILE_FLAGS -D_CONSOLE
     )

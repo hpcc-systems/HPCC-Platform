@@ -40,7 +40,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( dalistop ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dalistop ${SRCS} )
 install ( TARGETS dalistop DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dalistop 
          jlib

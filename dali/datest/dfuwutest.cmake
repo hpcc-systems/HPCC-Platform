@@ -41,7 +41,7 @@ include_directories (
          ../../common/environment 
     )
 
-add_executable ( dfuwutest ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dfuwutest ${SRCS} )
 set_target_properties (dfuwutest PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 target_link_libraries ( dfuwutest
          workunit

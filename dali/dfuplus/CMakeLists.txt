@@ -57,7 +57,7 @@ set_source_files_properties (dfuplus.cpp PROPERTIES COMPILE_FLAGS -DDAFILESRV_LO
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( dfuplus ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dfuplus ${SRCS} )
 add_dependencies ( dfuplus espscm )
 install ( TARGETS dfuplus DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dfuplus

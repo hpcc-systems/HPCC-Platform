@@ -38,7 +38,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( combine ${SRCS} )
+HPCC_ADD_EXECUTABLE ( combine ${SRCS} )
 install ( TARGETS combine DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( combine
          jlib

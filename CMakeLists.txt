@@ -121,6 +121,7 @@ if ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
 endif()
 HPCC_ADD_SUBDIRECTORY (docs "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (lib2)
 
 ###
 ## CPack install and packaging setup.
@@ -277,6 +278,18 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
     endif()
 else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
+endif()
+
+if (APPLE)
+    set ( CPACK_MONOLITHIC_INSTALL TRUE )
+    set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
+    file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt" 
+        "HPCC Systems - Client Tools\r"
+        "===========================\r\r"
+        "This installer will install the HPCC Systems Client Tools.")
+    set ( CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt" )
+    set ( CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}" )
+    set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems Client Tools." )
 endif()
 
 ###

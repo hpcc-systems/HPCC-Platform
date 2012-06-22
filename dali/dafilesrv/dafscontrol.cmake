@@ -40,7 +40,7 @@ include_directories (
          ./../../common/environment 
     )
 
-add_executable ( dafscontrol ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dafscontrol ${SRCS} )
 set_target_properties (dafscontrol PROPERTIES COMPILE_FLAGS -D_CONSOLE)
 install ( TARGETS dafscontrol DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dafscontrol  

@@ -37,7 +37,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( copyexp ${SRCS} )
+HPCC_ADD_EXECUTABLE ( copyexp ${SRCS} )
 install ( TARGETS copyexp DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( copyexp
          jlib 

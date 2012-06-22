@@ -40,7 +40,7 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-add_executable ( configgen ${SRCS} )
+HPCC_ADD_EXECUTABLE ( configgen ${SRCS} )
 install ( TARGETS configgen DESTINATION ${OSSDIR}/sbin )
 target_link_libraries ( configgen 
         deploy 
