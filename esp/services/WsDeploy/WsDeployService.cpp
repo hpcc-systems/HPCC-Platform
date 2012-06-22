@@ -34,6 +34,7 @@
 #define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 #define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
+#define STANDARD_CONFIG_STAGED_PATH "/etc/HPCCSystems/environment.xml"
 
 #define DEFAULT_DIRECTORIES "<Directories name=\""DIR_NAME"\">\
       <Category dir=\""EXEC_PREFIX"/log/[NAME]/[INST]\" name=\"log\"/>\
@@ -6330,6 +6331,10 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
   {
     sbMultiple.clear();
     Owned<IFile> pDir = createIFile(getSourceDir());
+
+    StringBuffer activeConfig_md5sum, config_md5sum;
+    md5_filesum(STANDARD_CONFIG_STAGED_PATH, activeConfig_md5sum);
+
     if (pDir->exists())
     {
       if (pDir->isDirectory())
@@ -6348,9 +6353,24 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
             try
             {
               Owned<IPropertyTree> pTree = createPTreeFromXMLFile(sb.str());
+              StringBuffer testFile;
+
+              testFile.clear().appendf("%s/%s",getSourceDir(),it->getName(name.clear()).str());
+              md5_filesum(testFile.str(),config_md5sum.clear());
 
               if (pTree && pTree->queryName() && !strcmp(XML_TAG_ENVIRONMENT, pTree->queryName()))
-                sbMultiple.append(it->getName(name.clear())).append(";");
+              {
+                if(strcmp(config_md5sum.str(),activeConfig_md5sum.str())==0)
+                {
+                  sbMultiple.append("<StagedConfiguration>").append(";");
+                  sbMultiple.append(it->getName(name.clear())).append(";");
+                  sbMultiple.append("</StagedConfiguration>").append(";");
+                }
+                else
+                {
+                  sbMultiple.append(it->getName(name.clear())).append(";");
+                }
+              }
             }
             catch(IException* e)
             {
