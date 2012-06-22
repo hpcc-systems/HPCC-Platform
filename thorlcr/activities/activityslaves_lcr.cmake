@@ -114,7 +114,7 @@ HPCC_ADD_LIBRARY( activityslaves_lcr SHARED ${SRCS} )
 set_target_properties(activityslaves_lcr PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL ACTIVITYSLAVES_EXPORTS )
-install ( TARGETS activityslaves_lcr DESTINATION ${OSSDIR}/lib )
+install ( TARGETS activityslaves_lcr DESTINATION ${LIB_DIR} )
 target_link_libraries ( activityslaves_lcr 
          jlib
          thorsort_lcr 

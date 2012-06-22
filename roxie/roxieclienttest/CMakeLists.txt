@@ -36,7 +36,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( roxieclienttest ${SRCS} )
+HPCC_ADD_EXECUTABLE ( roxieclienttest ${SRCS} )
 target_link_libraries ( roxieclienttest 
          jlib
          roxieclient 

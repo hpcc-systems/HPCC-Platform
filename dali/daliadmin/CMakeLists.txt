@@ -42,8 +42,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( daliadmin ${SRCS} )
-install ( TARGETS daliadmin DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( daliadmin ${SRCS} )
+install ( TARGETS daliadmin DESTINATION ${EXEC_DIR} )
 target_link_libraries ( daliadmin  
          jlib
          mp 

@@ -32,12 +32,12 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 set ( SRCS testsocket.cpp )
-add_executable ( testsocket ${SRCS} )
+HPCC_ADD_EXECUTABLE ( testsocket ${SRCS} )
 target_link_libraries ( testsocket
          jlib
          )
-install ( TARGETS testsocket DESTINATION ${OSSDIR}/bin )
+install ( TARGETS testsocket DESTINATION ${EXEC_DIR} )
 
 if ( PLATFORM )
-    install ( PROGRAMS testsocket.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS testsocket.install DESTINATION etc/init.d/install COMPONENT Runtime )
 endif()

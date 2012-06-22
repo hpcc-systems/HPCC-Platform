@@ -42,8 +42,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( updtdalienv ${SRCS} )
-install ( TARGETS updtdalienv DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( updtdalienv ${SRCS} )
+install ( TARGETS updtdalienv DESTINATION ${EXEC_DIR} )
 target_link_libraries ( updtdalienv  
          jlib
          mp 

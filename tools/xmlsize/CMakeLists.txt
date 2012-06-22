@@ -41,8 +41,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( xmlsize ${SRCS} )
-install ( TARGETS xmlsize DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( xmlsize ${SRCS} )
+install ( TARGETS xmlsize DESTINATION ${EXEC_DIR} )
 target_link_libraries ( xmlsize
          jlib
     )

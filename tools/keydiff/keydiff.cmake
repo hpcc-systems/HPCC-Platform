@@ -39,8 +39,8 @@ include_directories (
 
 ADD_DEFINITIONS ( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( keydiff ${SRCS} )
-install ( TARGETS keydiff DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( keydiff ${SRCS} )
+install ( TARGETS keydiff DESTINATION ${EXEC_DIR} )
 target_link_libraries ( keydiff 
          jlib
          jhtree 

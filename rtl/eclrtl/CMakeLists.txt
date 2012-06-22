@@ -59,7 +59,7 @@ else ()
 endif ()
 
 HPCC_ADD_LIBRARY( eclrtl SHARED ${SRCS} )
-install ( TARGETS eclrtl DESTINATION ${OSSDIR}/lib )
+install ( TARGETS eclrtl DESTINATION ${LIB_DIR} )
 target_link_libraries ( eclrtl 
       ${BOOST_REGEX_LIBRARIES}
       ${ICU_LIBRARIES}
@@ -75,6 +75,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlfield_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlkey.hpp
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/cl/include COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/cl/include COMPONENT Runtime )
 ENDFOREACH ( iFILES )
 

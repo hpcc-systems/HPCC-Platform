@@ -41,7 +41,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( wutest ${SRCS} )
+HPCC_ADD_EXECUTABLE ( wutest ${SRCS} )
 target_link_libraries ( wutest 
          jlib
          remote 

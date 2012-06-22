@@ -63,8 +63,8 @@ if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable ( thorslave_lcr ${SRCS} )
-install ( TARGETS thorslave_lcr DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( thorslave_lcr ${SRCS} )
+install ( TARGETS thorslave_lcr DESTINATION ${EXEC_DIR} )
 target_link_libraries (  thorslave_lcr 
          jlib
          remote 

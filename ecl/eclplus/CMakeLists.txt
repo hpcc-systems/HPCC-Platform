@@ -60,9 +60,9 @@ include_directories (
 
 ADD_DEFINITIONS( -DECLPLUS_EXPORTS -D_CONSOLE )
 
-add_executable ( eclplus ${SRCS} )
+HPCC_ADD_EXECUTABLE ( eclplus ${SRCS} )
 add_dependencies ( eclplus espscm )
-install ( TARGETS eclplus DESTINATION ${OSSDIR}/bin )
+install ( TARGETS eclplus DESTINATION ${EXEC_DIR} )
 target_link_libraries (  eclplus 
          jlib
          esphttp 

@@ -171,7 +171,7 @@ include_directories (
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=1 -D_USRDLL -DJLIB_EXPORTS )
 HPCC_ADD_LIBRARY( jlib SHARED ${SRCS} ${INCLUDES} )
 
-install ( TARGETS jlib DESTINATION ${OSSDIR}/lib )
+install ( TARGETS jlib DESTINATION ${LIB_DIR} )
 target_link_libraries ( jlib
         lzma
        )
@@ -207,4 +207,4 @@ if (WIN32)
     add_dependencies( jlib jelog )
 endif ()
 
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp DESTINATION ${OSSDIR}/componentfiles/cl/include COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/jscm.hpp DESTINATION componentfiles/cl/include COMPONENT Runtime )

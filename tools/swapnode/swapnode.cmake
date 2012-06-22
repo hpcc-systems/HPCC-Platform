@@ -40,8 +40,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE -DENABLE_AUTOSWAP )
 
-add_executable ( swapnode ${SRCS} )
-install ( TARGETS swapnode DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( swapnode ${SRCS} )
+install ( TARGETS swapnode DESTINATION ${EXEC_DIR} )
 target_link_libraries ( swapnode
          jlib
          swapnodelib

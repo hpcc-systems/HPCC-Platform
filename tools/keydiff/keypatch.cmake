@@ -41,8 +41,8 @@ include_directories (
 
 ADD_DEFINITIONS ( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( keypatch ${SRCS} )
-install ( TARGETS keypatch DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( keypatch ${SRCS} )
+install ( TARGETS keypatch DESTINATION ${EXEC_DIR} )
 target_link_libraries ( keypatch 
          jlib
          jhtree 

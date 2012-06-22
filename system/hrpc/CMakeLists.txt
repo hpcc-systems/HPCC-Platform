@@ -51,6 +51,6 @@ else ()
              mp 
         )
 endif ()
-install ( TARGETS hrpc DESTINATION ${OSSDIR}/lib )
+install ( TARGETS hrpc DESTINATION ${LIB_DIR} )
 
 

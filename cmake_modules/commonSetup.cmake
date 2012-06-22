@@ -171,6 +171,11 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     endif ()
   endif ()
 
+  macro(HPCC_ADD_EXECUTABLE target)
+    add_executable(${target} ${ARGN})
+    set (executables ${executables} ${target} CACHE INTERNAL "")
+  endmacro(HPCC_ADD_EXECUTABLE target)
+
   macro(HPCC_ADD_LIBRARY target)
     add_library(${target} ${ARGN})
   endmacro(HPCC_ADD_LIBRARY target)
@@ -473,68 +478,19 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ###
   ## The following sets the install directories and names.
   ###
-  set ( OSSDIR "${DIR_NAME}" )
-  set ( CPACK_INSTALL_PREFIX "${PREFIX}" )
-  set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}" )
-  set ( CMAKE_INSTALL_PREFIX "${PREFIX}" )
-  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
-  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-  MACRO (FIXUP_MACPORTS apps dylibs)
-	foreach(dylib ${dylibs})
-		get_filename_component(dylib_path ${dylib} REALPATH)
-		install(PROGRAMS "${dylib_path}" DESTINATION "${OSSDIR}/lib2")
-	endforeach(dylib)
-	foreach(dylib ${dylibs})
-		get_filename_component(dylib_path ${dylib} REALPATH)
-		get_filename_component(dylib_name_ext ${dylib_path} NAME)
-		install(CODE "
-				execute_process(COMMAND install_name_tool -id \"@loader_path/../lib2/${dylib_name_ext}\" ${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib2/${dylib_name_ext})
-		" ) 
-		foreach(app ${apps})
-			#HACK HACK - Could be done generically with some REGEX?
-			string(REPLACE ".28.0.dylib" ".28.dylib" dylib_28_path "${dylib_path}")
-			string(REPLACE ".48.1.dylib" ".48.dylib" dylib_48_path "${dylib_path}")
-			install(CODE "
-				execute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" ${EXECUTABLE_OUTPUT_PATH}/${app})
-				execute_process(COMMAND install_name_tool -change \"${dylib_28_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" ${EXECUTABLE_OUTPUT_PATH}/${app})
-				execute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" ${EXECUTABLE_OUTPUT_PATH}/${app})
-			" ) 
-		endforeach(app)
-	endforeach(dylib)
-  ENDMACRO()
-
+  if ( PLATFORM )
+    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}" )
+  else ( PLATFORM )
+    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}/${version}/clienttools" )
+  endif ( PLATFORM )
+  set (CMAKE_SKIP_BUILD_RPATH  FALSE)
+  set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
+  set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   if (APPLE)
-    SET(CMAKE_INSTALL_RPATH "@loader_path/../lib")
-    set(CMAKE_INSTALL_NAME_DIR "@loader_path/../lib") 
-    set(APPS
-      "dafilesrv"
-      "dfuplus"
-      "ecl"
-      "ecl-package"
-      "ecl-queries"
-      "eclcc"
-      "eclplus"
-      "wuget"
-    )
-    set(DYLIBS)
-    if (USE_ICU)
-      set(DYLIBS ${DYLIBS} ${ICU_LIBRARIES})
-    endif ()
-    if (USE_BOOST_REGEX)
-      set(DYLIBS ${DYLIBS} ${BOOST_REGEX_LIBRARIES})
-    endif ()
-    if (USE_XALAN)
-      set(DYLIBS ${DYLIBS} ${XALAN_LIBRARIES})
-    endif ()
-    if (USE_XERCES)
-      set(DYLIBS ${DYLIBS} ${XERCES_LIBRARIES})
-    endif ()
-    FIXUP_MACPORTS("${APPS}" "${DYLIBS}")
+    set(CMAKE_INSTALL_RPATH "@loader_path/../${LIB_DIR}")
+    set(CMAKE_INSTALL_NAME_DIR "@loader_path/../${LIB_DIR}") 
   endif()
-  
   MACRO (FETCH_GIT_TAG workdir edition result)
       execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*
         WORKING_DIRECTORY "${workdir}"

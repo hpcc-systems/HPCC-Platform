@@ -52,7 +52,7 @@ HPCC_ADD_LIBRARY( graphslave_lcr SHARED ${SRCS} )
 set_target_properties(graphslave_lcr PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL GRAPHSLAVE_EXPORTS )
-install ( TARGETS graphslave_lcr DESTINATION ${OSSDIR}/lib )
+install ( TARGETS graphslave_lcr DESTINATION ${LIB_DIR} )
 target_link_libraries ( graphslave_lcr 
          jlib
          commonext 

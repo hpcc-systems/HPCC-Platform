@@ -50,7 +50,7 @@ include_directories (
 ADD_DEFINITIONS( -DTHORCODECTX_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( thorcodectx_lcr SHARED ${SRCS} )
-install ( TARGETS thorcodectx_lcr DESTINATION ${OSSDIR}/lib )
+install ( TARGETS thorcodectx_lcr DESTINATION ${LIB_DIR} )
 target_link_libraries ( thorcodectx_lcr
         graph_lcr
         jlib

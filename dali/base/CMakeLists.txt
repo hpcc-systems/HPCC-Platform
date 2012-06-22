@@ -68,7 +68,7 @@ include_directories (
 ADD_DEFINITIONS( -DLOGMSGCOMPONENT=3 -D_USRDLL -DDALI_EXPORTS )
 
 HPCC_ADD_LIBRARY( dalibase SHARED ${SRCS} ${INCLUDES} )
-install ( TARGETS dalibase DESTINATION ${OSSDIR}/lib )
+install ( TARGETS dalibase DESTINATION ${LIB_DIR} )
 target_link_libraries ( dalibase 
          jlib
          mp 

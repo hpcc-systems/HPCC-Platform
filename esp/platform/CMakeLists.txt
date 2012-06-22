@@ -49,8 +49,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( esp ${SRCS} )
-install ( TARGETS esp DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
+install ( TARGETS esp DESTINATION ${EXEC_DIR} )
 target_link_libraries ( esp 
          jlib
          mp 

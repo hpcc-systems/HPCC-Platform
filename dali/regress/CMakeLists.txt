@@ -42,8 +42,8 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( daregress ${SRCS} )
-install ( TARGETS daregress DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( daregress ${SRCS} )
+install ( TARGETS daregress DESTINATION ${EXEC_DIR} )
 target_link_libraries ( daregress  
          jlib
          mp 

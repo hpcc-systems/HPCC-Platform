@@ -42,7 +42,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( daunittest ${SRCS} )
+HPCC_ADD_EXECUTABLE ( daunittest ${SRCS} )
 target_link_libraries ( daunittest
          jlib
          mp 

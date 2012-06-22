@@ -54,7 +54,7 @@ HPCC_ADD_LIBRARY( workunit SHARED ${SRCS} )
 set_target_properties(workunit PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL WORKUNIT_EXPORTS )
-install ( TARGETS workunit DESTINATION ${OSSDIR}/lib )
+install ( TARGETS workunit DESTINATION ${LIB_DIR} )
 target_link_libraries ( workunit 
          jlib 
          dalibase 

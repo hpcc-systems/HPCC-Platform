@@ -51,8 +51,8 @@ if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:10000000 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable ( eclcc ${SRCS} )
-install ( TARGETS eclcc DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( eclcc ${SRCS} )
+install ( TARGETS eclcc DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclcc 
          jlib
          nbcd 

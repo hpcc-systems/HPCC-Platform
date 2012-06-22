@@ -39,9 +39,9 @@ if (WIN32)
     set (CMAKE_EXE_LINKER_FLAGS "/STACK:65536 ${CMAKE_EXE_LINKER_FLAGS}")
 endif()
 
-add_executable ( dafilesrv ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dafilesrv ${SRCS} )
 set_target_properties (dafilesrv PROPERTIES COMPILE_FLAGS -D_CONSOLE)
-install ( TARGETS dafilesrv DESTINATION ${OSSDIR}/bin )
+install ( TARGETS dafilesrv DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dafilesrv
          jlib
          remote

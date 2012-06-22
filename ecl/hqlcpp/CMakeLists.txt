@@ -122,7 +122,7 @@ ENDIF()
 ADD_DEFINITIONS( -DHQLCPP_EXPORTS -D_USRDLL )
 
 HPCC_ADD_LIBRARY( hqlcpp SHARED ${SRCS} )
-install ( TARGETS hqlcpp DESTINATION ${OSSDIR}/lib )
+install ( TARGETS hqlcpp DESTINATION ${LIB_DIR} )
 target_link_libraries ( hqlcpp
          jlib
          nbcd 

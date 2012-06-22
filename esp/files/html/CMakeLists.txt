@@ -17,4 +17,4 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/searchfile.html DESTINATION ${OSSDIR}/componentfiles/files COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/searchfile.html DESTINATION componentfiles/files COMPONENT Runtime )
