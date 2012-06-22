@@ -31,12 +31,13 @@ ds := dataset([
         t(9,3,4,5),
         t(3,4,2,9)]);
 
-simple := limit(dedup(nofold(ds), f1),1);
+simple := dedup(nofold(ds), f1);
 
 osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
 
-x1 := when(simple, osum, failure);
+x1 := when(LIMIT(simple,1), osum, failure);
 
-o1 := output(TABLE(x1, { f1 }));
+o1 := TABLE(x1, { f1 });
 o2 := output(TABLE(simple, { c := count(group) }, f3));
-when(o1, o2, failure);
+
+output(catch(when(o1, o2, failure), SKIP));
