@@ -17,7 +17,7 @@
 ############################################################################## */
 
 //UseStandardFiles
-//skip type==thor TBD
+//nothor
 
 unsigned lim := 1 : stored('lim');
 
