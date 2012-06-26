@@ -30,7 +30,7 @@
 #include "unicode/rbbi.h"
 #include "../stringlib/wildmatch.tpp"
 
-#define UNICODELIB_VERSION "UNICODELIB 1.1.05"
+#define UNICODELIB_VERSION "UNICODELIB 1.1.06"
 
 UChar32 const u32comma = ',';
 UChar32 const u32space = ' ';
@@ -91,6 +91,7 @@ static const char * compatibleVersions[] = {
     "UNICODELIB 1.1.02", 
     "UNICODELIB 1.1.03", 
     "UNICODELIB 1.1.04", 
+    "UNICODELIB 1.1.05", 
     NULL };
 
 UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -270,6 +271,77 @@ inline UChar u16toupper(UChar c)
 
 static icu::Transliterator* deAccenter = NULL;
 static CriticalSection accenterCrit;
+
+#define MAXAVAILABLELOCALES 256
+
+struct LocaleRec
+{
+    RuleBasedCollator * rbc;
+    CSingletonLock slock;
+    int hash;
+};
+
+interface IRbcCache : public IInterface
+{
+public:
+    virtual RuleBasedCollator* getRbc(char const * localename) = 0;
+};
+
+class CRbcCache : public CInterface, implements IRbcCache
+{
+private:
+    LocaleRec m_locale[MAXAVAILABLELOCALES];
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CRbcCache()
+    {
+        for(int i = 0; i < MAXAVAILABLELOCALES; i++)
+        {
+            m_locale[i].rbc = NULL;
+            m_locale[i].hash = 0;
+        }
+    };
+
+    RuleBasedCollator *getRbc(char const * localename)
+    {
+        UErrorCode status = U_ZERO_ERROR;
+        Locale locale(localename);
+        int hc = locale.hashCode();
+        int lIndex = 0; // default to the rbc associated with the first locale requested by an app
+        for(int i = 0; i < MAXAVAILABLELOCALES; i++)
+        {
+            if ((hc != m_locale[i].hash) && (m_locale[i].hash != 0) )continue;
+            if (m_locale[i].hash == 0) m_locale[i].hash = hc;
+            lIndex = i;
+            break;
+        }
+
+        if (m_locale[lIndex].slock.lock()) {
+            if (!m_locale[lIndex].rbc)
+                m_locale[lIndex].rbc = (RuleBasedCollator*)RuleBasedCollator::createInstance(locale, status);
+            m_locale[lIndex].slock.unlock();
+        }
+        return m_locale[lIndex].rbc;
+    }
+
+    ~CRbcCache()
+    {
+        for(int i = 0; i < MAXAVAILABLELOCALES; i++)
+        {
+            if (m_locale[i].hash != 0) delete m_locale[i].rbc;
+        }
+    }
+};
+
+IRbcCache* getRbcCache()
+{
+    static Owned<IRbcCache> rbccache;
+    if(!rbccache)
+        rbccache.setown(new CRbcCache());
+    return rbccache.get();
+}
 
 inline unsigned char min3(unsigned char a, unsigned char b, unsigned char c)
 {
@@ -1015,9 +1087,9 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
 {
     UErrorCode status = U_ZERO_ERROR;
-    Locale locale(localename);
-
-    RuleBasedCollator* rbc = (RuleBasedCollator*)RuleBasedCollator::createInstance(locale, status);
+    IRbcCache *rbcCache = getRbcCache();
+    RuleBasedCollator *rbc = rbcCache->getRbc(localename);
+    
     rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
 
     UnicodeString uLeft(left, leftLen);
@@ -1032,9 +1104,9 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius, char const * localename)
 {
     UErrorCode status = U_ZERO_ERROR;
-    Locale locale(localename);
+    IRbcCache *rbcCache = getRbcCache();
+    RuleBasedCollator *rbc = rbcCache->getRbc(localename);
 
-    RuleBasedCollator* rbc = (RuleBasedCollator*)RuleBasedCollator::createInstance(locale, status);
     rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
 
     UnicodeString uLeft(left, leftLen);
