@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>Visualizing ECL Results</title>
+
+  <bookinfo>
+    <title>Visualizing ECL Results: Technical Preview</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para />
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>The ECL compiler now supports adding external resources to a
+    Workunit using a manifest file. The manifest, in XML format, adds external
+    resources such as XSLT transformations, or other objects to the archive
+    before it is compiled and deployed to the server. In future versions, you
+    should be able to add different types of resources, for example, a
+    Cascading Style Sheet (css file).</para>
+
+    <para>In the examples we provide, we will demonstrate how to use this
+    feature to visualize ECL job results using Google Chart Tools. This
+    library provides an easy way to visualize data from ECL results.</para>
+
+    <para>See <ulink
+    url="http://code.google.com/apis/chart/interactive/docs/index.html">http://code.google.com/apis/chart/interactive/docs/index.html</ulink>
+    for more information.</para>
+
+    <para />
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <?dbfo keep-together="always"?>
+
+      <tgroup cols="2">
+        <colspec colwidth="49.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>
+              <inlinegraphic fileref="images/caution.png" />
+            </entry>
+
+            <entry>In this version of the HPCC Platform, these features are
+            being released as a technical preview. Some planned functionality
+            has not yet been implemented, but the portions that are available
+            have been tested and are ready for use.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <sect1>
+      <title>Overview of the process</title>
+
+      <para>This section is a summary of the details in this guide. After you
+      have completed the detailed steps that follow, you can use this summary
+      to refresh your memory later.</para>
+
+      <para />
+
+      <para>
+        <informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>
+                  <inlinegraphic fileref="images/tip.jpg" />
+                </entry>
+
+                <entry>We suggest <emphasis role="bold">reading</emphasis>
+                this document in its entirety before beginning.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>
+      </para>
+
+      <para>To use Google Charts, you should:</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Write ECL Code that produces an output containing data that
+          fits the visualization you select. (In this exercise, we will use
+          the ones provided in the examples.)</para>
+        </listitem>
+
+        <listitem>
+          <para>In the code, make sure your ECL OUTPUT action has the NAMED
+          option with the desired visualization nominated, as shown
+          below.</para>
+
+          <para>
+            <programlisting>OUTPUT(dPie, NAMED('PieChart_Pie_Chart_Test'));</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Create an XSLT template to handle the output. (In this
+          exercise, we will use the ones provided in the examples.)</para>
+        </listitem>
+
+        <listitem>
+          <para>Create a Manifest file including the XSLT template(s). (In
+          this exercise, we will use the ones provided in the examples. The
+          example XSLT files contain code that will select a visualization
+          based on the output name used in the ECL code)</para>
+        </listitem>
+
+        <listitem>
+          <para>Using either the ECL IDE or the ECLCC command line, create an
+          archive with<emphasis role="bold">-manifest=argument</emphasis>
+          naming the manifest file.</para>
+
+          <para>For example (in the IDE’s compiler arguments):</para>
+
+          <para>
+            <programlisting>-manifest="C:\Documents and Settings\All Users\Documents\HPCC Systems\ECL\
+              My Files\visualizations\google_charts\files\manifest.xml"</programlisting>
+          </para>
+
+          <para>For example (on command line):</para>
+
+          <para>
+            <programlisting>eclcc pie.ecl -E -manifest="C:\Documents and Settings\All Users\Documents\HPCC Systems\ECL\
+                               My Files\visualizations\google_charts\files\manifest.xml" &gt;myarchive.xml</programlisting>
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy the Archive to an ESP server. This is automatic when
+          you submit using the IDE, If you used the ECLCC command line to
+          create the archive, then you must use the ECL command line tool to
+          deploy the Archive.</para>
+
+          <para>For example:</para>
+
+          <programlisting>ecl deploy myarchive.xml --server=192.168.219.8 --cluster=thor</programlisting>
+
+          <programlisting>ecl publish &lt;WUID&gt; --server=192.168.219.8 --cluster=thor --activate--name=pie</programlisting>
+
+          <para />
+        </listitem>
+
+        <listitem>
+          <para>Run the Workunit and view the Results in ECL Watch</para>
+        </listitem>
+      </orderedlist>
+    </sect1>
+
+    <sect1>
+      <title>Get the Samples</title>
+
+      <para>The collection of visualization sample files contains a set of ECL
+      files, a set of XSLT transformation templates, and a sample manifest
+      file to use to include these XSLT files into a workunit.</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Get the sample code from GitHub:</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>
+        <ulink
+        url="https://github.com/hpcc-systems/ecl-samples/tree/master/visualizations/google_charts">https://github.com/hpcc-systems/ecl-samples/tree/master/visualizations/google_charts</ulink>
+      </para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Click on the Zip button to download.</para>
+        </listitem>
+      </itemizedlist>
+
+      <figure>
+        <title>ZIP button</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/viz01.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>Copy to the folder you use for ECL code.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para />
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Detailed Steps Using the IDE</title>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Open the ECL IDE and Open Preferences</para>
+      </listitem>
+
+      <listitem>
+        <para>Create a new configuration pointing to the server you wish to
+        use.</para>
+      </listitem>
+
+      <listitem>
+        <para>Add the following compiler argument:</para>
+      </listitem>
+    </itemizedlist>
+
+    <programlisting>-manifest=&lt;fullpathtomanifestfile&gt;</programlisting>
+
+    <para>For example:</para>
+
+    <programlisting>-manifest="C:\Documents and Settings\All Users\Documents\HPCC Systems\ECL\
+              My Files\visualizations\google_charts\files\manifest.xml"</programlisting>
+
+    <para>If the path contains spaces, you must enclose in double
+    quotes.</para>
+
+    <figure>
+      <title>manifest path</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/viz02a.jpg" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para>NOTE: This configuration includes the manifest in every submission,
+    so only use it for ECL that needs the manifest resources (Google
+    Charts).</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Make sure you can see the new samples. (You may need to
+        refresh)</para>
+      </listitem>
+    </itemizedlist>
+
+    <figure>
+      <title>ECL samples</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/viz03.jpg" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Open one of the example files, for this example use pie.</para>
+      </listitem>
+
+      <listitem>
+        <para>Syntax Check the code (This is always a good idea)</para>
+      </listitem>
+
+      <listitem>
+        <para>Select <emphasis role="bold">thor</emphasis> as your target
+        cluster</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Submit</emphasis> button.</para>
+      </listitem>
+
+      <listitem>
+        <para>After the job completes, select the Workunit’s ECL Watch
+        view:</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>
+      <figure>
+        <title>ECL Watch view</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/viz04.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Scroll down, and expand the Result section.</para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">Google Chart by
+        Name</emphasis> link</para>
+
+        <para>The visualization displays</para>
+      </listitem>
+    </itemizedlist>
+
+    <para />
+
+    <figure>
+      <title>visualization chart</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/viz05.jpg" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+  </chapter>
+
+  <chapter>
+    <title>Detailed Steps using the command line tools</title>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Open a command window in the location of your ECL files.</para>
+      </listitem>
+
+      <listitem>
+        <para>Type the following command:</para>
+      </listitem>
+    </itemizedlist>
+
+    <programlisting>eclcc pie.ecl -E -manifest=&lt;mainfestfilepath&gt; &gt;myarchive.xml</programlisting>
+
+    <para>
+      <emphasis>where &lt;manifestfilepath&gt; is the location of your
+      manifest file</emphasis>
+    </para>
+
+    <para>For example:</para>
+
+    <programlisting>eclcc pie.ecl -E -manifest="C:\Documents and Settings\All Users\Documents\HPCC Systems\ECL\
+                    My Files\visualizations\google_charts\files\manifest.xml" &gt;myarchive.xml</programlisting>
+
+    <para />
+
+    <para>This invokes the ECLCC compiler to create an archive named
+    myarchive.xml.</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Type the following command:</para>
+      </listitem>
+    </itemizedlist>
+
+    <programlisting>ecl deploy myarchive.xml --server=10.239.219.8 --cluster=thor</programlisting>
+
+    <para>
+      <emphasis>where --server= is the IP address of your ESP server
+      and</emphasis>
+
+      <emphasis>--cluster= is the target cluster name.</emphasis>
+    </para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Take note of the WUID returned by the pervious command.</para>
+      </listitem>
+
+      <listitem>
+        <para>Type the following command:</para>
+      </listitem>
+    </itemizedlist>
+
+    <programlisting>ecl publish &lt;WUID&gt; --server=10.239.219.8 --cluster=thor --activate --name=pie</programlisting>
+
+    <para>
+      <emphasis>where &lt;WUID&gt; is the workuint id number, --server= is the
+      IP address of your ESP server, and --cluster= is the target cluster
+      name.</emphasis>
+    </para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>In a browser, open the URL for the WsECL service (typically
+        found on port 8002 of your ESP Server).</para>
+      </listitem>
+
+      <listitem>
+        <para>Expand the <emphasis role="bold">thor</emphasis> branch on the
+        left, then click on the <emphasis role="bold">pie</emphasis> service
+        link.</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the Submit button.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>The visualization displays.</para>
+
+    <figure>
+      <title>visualization</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/viz06.jpg" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+  </chapter>
+
+  <chapter>
+    <title>Next Steps</title>
+
+    <para>Try the remaining examples:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>geomap</para>
+      </listitem>
+
+      <listitem>
+        <para>motion</para>
+      </listitem>
+
+      <listitem>
+        <para>pie</para>
+      </listitem>
+
+      <listitem>
+        <para>scatter</para>
+      </listitem>
+
+      <listitem>
+        <para>sparkline</para>
+      </listitem>
+
+      <listitem>
+        <para>timeline</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Try creating your own XSLT files and Manifest to use other Google
+    Charts.</para>
+
+    <para>Try creating your own XSLT files and Manifest to use other
+    third-party visualizations.</para>
+  </chapter>
+</book>
