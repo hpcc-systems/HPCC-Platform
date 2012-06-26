@@ -122,7 +122,9 @@ private:
         virtual int run()
         {
             owner->connect(MP_WAIT_FOREVER);
+            DBGLOG("roxie: CRoxieDaliConnectWatcher reconnected");
             owner->connectSem.signal();
+            return 0;
         }
     };
 
