@@ -518,7 +518,6 @@ DG_IntegerRecord := RECORD
 END;
 
 DG_IntegerDataset := DATASET(DG_IntegerDatasetName, DG_IntegerRecord, thor);
-DG_IntegerIndex := INDEX(DG_IntegerDataset, { i6, nested }, { DG_IntegerDataset }, DG_IntegerIndexName);
 
 
 #line(0)
