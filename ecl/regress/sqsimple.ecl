@@ -17,7 +17,6 @@
 ############################################################################## */
 
 #option ('childQueries', true);
-#option ('maxInlineDepth', 0);
 #option ('pickBestEngine', false);
 
 unsigned8 skipId := 4 : stored('skipId');
