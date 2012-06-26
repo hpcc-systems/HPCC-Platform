@@ -47,8 +47,9 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageMap(const char *id) = 0;
     virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier) = 0;
-    virtual bool connect() = 0;
+    virtual bool connect(unsigned timeout) = 0;
     virtual void disconnect() = 0;
+    virtual void waitConnected() = 0;
 };
 
 

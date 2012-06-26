@@ -1968,6 +1968,10 @@ private:
             if (stricmp(queryName, "control:reload")==0)
             {
                 reload();
+                if (daliHelper && daliHelper->connected())
+                    reply.appendf("<Dali connected='1'/>");
+                else
+                    reply.appendf("<Dali connected='0'/>");
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2217,7 +2221,7 @@ private:
             else if (stricmp(queryName, "control:unlockDali")==0)
             {
                 if (daliHelper)
-                    daliHelper->connect();
+                    daliHelper->connect(ROXIE_DALI_CONNECT_TIMEOUT);  // MORE - should possibly be an async connect? Should indicate whether we connected in that timeout
                 topology->setPropBool("@lockDali", false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)

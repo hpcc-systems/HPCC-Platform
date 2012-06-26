@@ -27,6 +27,7 @@
 #include "ccd.hpp"
 
 #include "jencrypt.hpp"
+#include "jisem.hpp"
 #include "dllserver.hpp"
 #include "thorplugin.hpp"
 #include "workflow.hpp"
@@ -107,6 +108,23 @@ private:
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
     static CriticalSection daliConnectionCrit; 
     Owned<IUserDescriptor> userdesc;
+    InterruptableSemaphore connectSem;
+
+    class CRoxieDaliConnectWatcher : public Thread
+    {
+    private:
+        CRoxieDaliHelper *owner;
+    public:
+        CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
+        {
+        }
+
+        virtual int run()
+        {
+            owner->connect(MP_WAIT_FOREVER);
+            owner->connectSem.signal();
+        }
+    };
 
     virtual void beforeDispose()
     {
@@ -178,7 +196,10 @@ private:
             writeCache(xpath, path, localTree);
         }
         else
+        {
+            DBGLOG("LoadDaliTree(%s) - not connected - read from cache", xpath.str());
             localTree.setown(readCache(xpath));
+        }
         return localTree.getClear();
     }
 
@@ -347,7 +368,7 @@ public:
         return wuFactory->openWorkUnit(wuid, false);
     }
 
-    static IRoxieDaliHelper *connectToDali()
+    static IRoxieDaliHelper *connectToDali(unsigned timeout)
     {
         CriticalBlock b(daliConnectionCrit);
         LINK(daliHelper);
@@ -359,7 +380,7 @@ public:
             // In this case the beforeDispose will have taken care NOT to disconnect, isConnected will remain set, and the connect() will be a no-op.
             daliHelper = new CRoxieDaliHelper();
             if (topology && !topology->getPropBool("@lockDali", false))
-                daliHelper->connect();
+                daliHelper->connect(timeout);
             return daliHelper;
         }
     }
@@ -408,8 +429,15 @@ public:
         return isConnected;
     }
 
+    virtual void waitConnected()
+    {
+        Owned<CRoxieDaliConnectWatcher> connectWatcher = new CRoxieDaliConnectWatcher(this);
+        connectWatcher-> start();
+        connectSem.wait();
+    }
+
     // connect handles the operations generally performed by Dali clients at startup.
-    virtual bool connect()
+    virtual bool connect(unsigned timeout)
     {
         if (fileNameServiceDali.length())
         {
@@ -427,7 +455,7 @@ public:
                             throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
 
                         // Initialize client process
-                        if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, 5000))  // wait 5 seconds
+                        if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
                             throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
 
                         setPasswordsFromSDS();
@@ -521,7 +549,7 @@ CriticalSection CRoxieDllServer::crit;
 
 IRoxieDaliHelper *connectToDali()
 {
-    return CRoxieDaliHelper::connectToDali();
+    return CRoxieDaliHelper::connectToDali(ROXIE_DALI_CONNECT_TIMEOUT); // MORE - should perhaps be async connect?
 }
 
 extern void releaseRoxieStateCache()
