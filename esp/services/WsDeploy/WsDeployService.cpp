@@ -4170,6 +4170,39 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
       }
     }
   }
+  else if (!strcmp(operation, "Duplicate"))
+  {
+    StringBuffer sbNewName;
+    StringBuffer xpath;
+    Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
+
+    ForEach(*iterComp)
+    {
+      IPropertyTree& pComp = iterComp->query();
+      const char* compName = pComp.queryProp(XML_ATTR_NAME);
+      const char* compType = pComp.queryProp(XML_ATTR_COMPTYPE);
+
+      sbNewName = compName;
+      xpath.clear().appendf("%s", compType);
+      getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_SOFTWARE);
+      xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, compName);
+      IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpath.str());
+      xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, sbNewName.str());
+
+      StringBuffer xml;
+      toXML(pCompTree, xml);
+
+      IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
+      dupTree->setProp(XML_ATTR_NAME, sbNewName.str());
+
+      if (pEnvRoot->addPropTree(xpath, dupTree))
+        resp.setStatus("true");
+      else
+        resp.setStatus("false");
+
+      resp.setCompName(XML_TAG_SOFTWARE);
+    }
+  }
 
   return true;
 }

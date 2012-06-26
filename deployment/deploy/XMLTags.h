@@ -103,6 +103,7 @@
 #define XML_ATTR_COMPRESSD             "@compressD"
 #define XML_ATTR_COMPUTER              "@computer"
 #define XML_ATTR_COMPUTERTYPE          "@computerType"
+#define XML_ATTR_COMPTYPE              "@compType"
 #define XML_ATTR_COPYDIR               "@copyDir"
 #define XML_ATTR_COPYDLL               "@copyDLL"
 #define XML_ATTR_CREATEMODELFILE       "@createModelFile"
