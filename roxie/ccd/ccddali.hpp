@@ -32,6 +32,7 @@ interface IDaliPackageWatcher : extends IInterface
 {
     virtual void unsubscribe() = 0;
     virtual const char *queryName() const = 0;
+    virtual void onReconnect() = 0;
 };
 
 interface IRoxieDaliHelper : extends IInterface

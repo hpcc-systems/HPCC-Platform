@@ -40,11 +40,12 @@ class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, impl
     SubscriptionId change;
     ISDSSubscription *notifier;
     StringAttr id;
+    StringAttr xpath;
     mutable CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE;
-    CDaliPackageWatcher(const char *_id, const char *xpath, ISDSSubscription *_notifier)
-      : id(_id)
+    CDaliPackageWatcher(const char *_id, const char *_xpath, ISDSSubscription *_notifier)
+      : id(_id), xpath(_xpath)
     {
         notifier = _notifier;
         change = querySDS().subscribe(xpath, *this, true);
@@ -56,17 +57,31 @@ public:
     {
         CriticalBlock b(crit);
         notifier = NULL;
-        querySDS().unsubscribe(change);
+        try
+        {
+            querySDS().unsubscribe(change);
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
     }
     virtual const char *queryName() const
     {
         return id.get();
     }
-    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    virtual void onReconnect()
+    {
+        CriticalBlock b(crit);
+        change = querySDS().subscribe(xpath, *this, true);
+        if (notifier)
+            notifier->notify(0, NULL, SDSNotify_None);
+    }
+    virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         CriticalBlock b(crit);
         if (notifier)
-            notifier->notify(id, xpath, flags, valueLen, valueData);
+            notifier->notify(subid, xpath, flags, valueLen, valueData);
     }
 };
 
@@ -86,18 +101,6 @@ public:
 * If dali is down. Data is delivered from the cache. If dali is up, the cache is populated from
 * the information retrieved from dali. We snapshot the cache at the end of each successful reload.
 *
-* For simplicity and safety, Roxie will not attempt to reconnect to a dali once it is
-* disconnected (roxie should be manually restarted once you are confident that dali has been
-* properly restored).
-*
-* TODO - Anything that gets an error talking to dali has to not crash...
-* TODO - Any info that needs to be available when dali is down has to be retrieved via this
-*      - class and cached
-* TODO - dynamic files can still resolve via daliHelper (will continue to give the same answer
-*      - they gave last time)? Or would it be better to fail?
-*
-* If we ever wanted to handle reconnects, it could possible be done by treating Dali
-* coming up as the same as generating a notification on all subscriptions?
 *
 =================================================================================*/
 
@@ -106,35 +109,54 @@ class CRoxieDaliHelper : public CInterface, implements IRoxieDaliHelper
 private:
     static bool isConnected;
     static CRoxieDaliHelper *daliHelper;  // Note - this does not own the helper
-    static CriticalSection daliConnectionCrit; 
+    static CriticalSection daliHelperCrit;
+    CriticalSection daliConnectionCrit;
     Owned<IUserDescriptor> userdesc;
-    InterruptableSemaphore connectSem;
+    InterruptableSemaphore disconnectSem;
+    IArrayOf<IDaliPackageWatcher> watchers;
 
     class CRoxieDaliConnectWatcher : public Thread
     {
     private:
         CRoxieDaliHelper *owner;
+        bool aborted;
     public:
         CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
         {
+            aborted = false;
         }
 
         virtual int run()
         {
-            owner->connect(MP_WAIT_FOREVER);
-            DBGLOG("roxie: CRoxieDaliConnectWatcher reconnected");
-            owner->connectSem.signal();
+            while (!aborted)
+            {
+                if (topology && topology->getPropBool("@lockDali", false))
+                {
+                    Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
+                }
+                else if (owner->connect(ROXIE_DALI_CONNECT_TIMEOUT))
+                {
+                    DBGLOG("roxie: CRoxieDaliConnectWatcher reconnected");
+                    owner->disconnectSem.wait();
+                }
+            }
             return 0;
         }
-    };
+        void stop()
+        {
+            aborted = true;
+        }
+    } connectWatcher;
 
     virtual void beforeDispose()
     {
-        CriticalBlock b(daliConnectionCrit);
+        CriticalBlock b(daliHelperCrit);
         if (daliHelper==this)  // there is a tiny window where new dalihelper created immediately after final release
         {
+            connectWatcher.stop();
             disconnect();
             daliHelper = NULL;
+            connectWatcher.join();
         }
     }
 
@@ -189,26 +211,34 @@ private:
         Owned <IPropertyTree> localTree;
         if (isConnected)
         {
-            Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), 0, 30*1000);
-            if (conn)
+            try
             {
-                Owned <IPropertyTree> daliTree = conn->getRoot();
-                localTree.setown(createPTreeFromIPT(daliTree));
+                Owned<IRemoteConnection> conn = querySDS().connect(xpath, myProcessSession(), 0, 30*1000);
+                if (conn)
+                {
+                    Owned <IPropertyTree> daliTree = conn->getRoot();
+                    localTree.setown(createPTreeFromIPT(daliTree));
+                }
+                writeCache(xpath, path, localTree);
+                return localTree.getClear();
             }
-            writeCache(xpath, path, localTree);
+            catch (IDaliClient_Exception *E)
+            {
+                if (traceLevel)
+                    EXCLOG(E, "roxie: Dali connection lost");
+                E->Release();
+                daliHelper->disconnect();
+            }
         }
-        else
-        {
-            DBGLOG("LoadDaliTree(%s) - not connected - read from cache", xpath.str());
-            localTree.setown(readCache(xpath));
-        }
+        DBGLOG("LoadDaliTree(%s) - not connected - read from cache", xpath.str());
+        localTree.setown(readCache(xpath));
         return localTree.getClear();
     }
 
 public:
 
     IMPLEMENT_IINTERFACE;
-    CRoxieDaliHelper()
+    CRoxieDaliHelper() : connectWatcher(this)
     {
         if (topology)
         {
@@ -222,6 +252,10 @@ public:
                 userdesc->set(roxieUser, password.str());
             }
         }
+        if (fileNameServiceDali.length())
+            connectWatcher.start();
+        else
+            initMyNode(1); // Hack
     }
 
     static const char *getQuerySetPath(StringBuffer &buf, const char *id)
@@ -372,7 +406,7 @@ public:
 
     static IRoxieDaliHelper *connectToDali(unsigned timeout)
     {
-        CriticalBlock b(daliConnectionCrit);
+        CriticalBlock b(daliHelperCrit);
         LINK(daliHelper);
         if (daliHelper && daliHelper->isAlive())
             return daliHelper;
@@ -381,8 +415,6 @@ public:
             // NOTE - if daliHelper is not NULL but isAlive returned false, then we have an overlapping connect with a final disconnect
             // In this case the beforeDispose will have taken care NOT to disconnect, isConnected will remain set, and the connect() will be a no-op.
             daliHelper = new CRoxieDaliHelper();
-            if (topology && !topology->getPropBool("@lockDali", false))
-                daliHelper->connect(timeout);
             return daliHelper;
         }
     }
@@ -398,7 +430,9 @@ public:
         if (isConnected)
         {
             StringBuffer xpath;
-            return new CDaliPackageWatcher(id, getQuerySetPath(xpath, id), notifier);
+            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getQuerySetPath(xpath, id), notifier);
+            watchers.append(*LINK(watcher));
+            return watcher;
         }
         else
             return NULL;
@@ -409,7 +443,9 @@ public:
         if (isConnected)
         {
             StringBuffer xpath;
-            return new CDaliPackageWatcher(id, getPackageSetPath(xpath, id), notifier);
+            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getPackageSetPath(xpath, id), notifier);
+            watchers.append(*LINK(watcher));
+            return watcher;
         }
         else
             return NULL;
@@ -420,7 +456,9 @@ public:
         if (isConnected)
         {
             StringBuffer xpath;
-            return new CDaliPackageWatcher(id, getPackageMapPath(xpath, id), notifier);
+            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getPackageMapPath(xpath, id), notifier);
+            watchers.append(*LINK(watcher));
+            return watcher;
         }
         else
             return NULL;
@@ -433,50 +471,48 @@ public:
 
     virtual void waitConnected()
     {
-        Owned<CRoxieDaliConnectWatcher> connectWatcher = new CRoxieDaliConnectWatcher(this);
-        connectWatcher-> start();
-        connectSem.wait();
+        while (!isConnected)
+            Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
     }
 
     // connect handles the operations generally performed by Dali clients at startup.
     virtual bool connect(unsigned timeout)
     {
-        if (fileNameServiceDali.length())
+        if (!isConnected)
         {
+            CriticalBlock b(daliConnectionCrit);
             if (!isConnected)
             {
-                CriticalBlock b(daliConnectionCrit);
-                if (!isConnected)
+                try
                 {
-                    try
+                    // Create server group
+                    Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
+
+                    if (!serverGroup)
+                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
+
+                    // Initialize client process
+                    if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
+                        throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
+
+                    setPasswordsFromSDS();
+                    CSDSServerStatus serverstatus("Roxieserver");
+                    initCache();
+                    ForEachItemIn(idx, watchers)
                     {
-                        // Create server group
-                        Owned<IGroup> serverGroup = createIGroup(fileNameServiceDali, DALI_SERVER_PORT);
-
-                        if (!serverGroup)
-                            throw MakeStringException(ROXIE_DALI_ERROR, "Could not instantiate dali IGroup");
-
-                        // Initialize client process
-                        if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
-                            throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
-
-                        setPasswordsFromSDS();
-                        CSDSServerStatus serverstatus("Roxieserver");
-                        initCache();
-                        isConnected = true;
+                        watchers.item(idx).onReconnect();
                     }
-                    catch(IException *e)
-                    {
-                        StringBuffer text;
-                        e->errorMessage(text);
-                        DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
-                        e->Release();
-                    }
+                    isConnected = true;
+                }
+                catch(IException *e)
+                {
+                    StringBuffer text;
+                    e->errorMessage(text);
+                    DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
+                    e->Release();
                 }
             }
         }
-        else
-            initMyNode(1); // Hack
         return isConnected;
     }
 
@@ -492,6 +528,7 @@ public:
                 clientShutdownWorkUnit();
                 ::closedownClientProcess(); // dali client closedown
                 isConnected = false;
+                disconnectSem.signal();
             }
         }
     }
@@ -543,7 +580,7 @@ public:
 
 bool CRoxieDaliHelper::isConnected = false;
 CRoxieDaliHelper * CRoxieDaliHelper::daliHelper;
-CriticalSection CRoxieDaliHelper::daliConnectionCrit; 
+CriticalSection CRoxieDaliHelper::daliHelperCrit;
 CriticalSection CRoxieDaliHelper::cacheCrit;
 Owned<IPropertyTree> CRoxieDaliHelper::cache;
 

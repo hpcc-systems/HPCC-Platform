@@ -1749,9 +1749,9 @@ private:
             }
             else if (stricmp(queryName, "control:lockDali")==0)
             {
+                topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();
-                topology->setPropBool("@lockDali", true);
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -2220,8 +2220,6 @@ private:
             }
             else if (stricmp(queryName, "control:unlockDali")==0)
             {
-                if (daliHelper)
-                    daliHelper->connect(ROXIE_DALI_CONNECT_TIMEOUT);  // MORE - should possibly be an async connect? Should indicate whether we connected in that timeout
                 topology->setPropBool("@lockDali", false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
