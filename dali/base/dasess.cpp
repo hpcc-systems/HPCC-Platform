@@ -1515,6 +1515,7 @@ void setClientAuth(IDaliClientAuthConnection *authconn)
 
 
 
+#define REG_SLEEP 5000
 bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned timeout,DaliClientRole role)
 {
     // NB doesn't use coven as not yet set up
@@ -1522,7 +1523,8 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
         return false;
     CTimeMon tm(timeout);
     retcoven = NULL;
-    unsigned t=5000;
+    unsigned nextLog = 0, lastNextLog = 0;
+    unsigned t=REG_SLEEP;
     unsigned remaining;
     rank_t r;
     while (!tm.timedout(&remaining)) {
@@ -1592,13 +1594,25 @@ bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned time
                 return true;
             }
         }
-        bool timedout = tm.timedout();
         StringBuffer str;
-        PROGLOG("Failed to connect to Dali Server %s%s",comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str(),timedout?"":". Retrying...");
-        if (timedout)
+        PROGLOG("Failed to connect to Dali Server %s.", comm->queryGroup().queryNode(r).endpoint().getUrlStr(str).str());
+        if (tm.timedout())
+        {
+            PROGLOG("%s", str.append(" Timed out.").str());
             break;
-        Sleep(t);
-        t *= 2;
+        }
+        else if (0 == nextLog)
+        {
+            PROGLOG("%s", str.append(" Retrying...").str());
+            if ((lastNextLog * REG_SLEEP) >= 60000) // limit to a minute between logging
+                nextLog = 60000 / REG_SLEEP;
+            else
+                nextLog = lastNextLog + 2; // wait +2 REG_SLEEP pauses before next logging
+            lastNextLog = nextLog;
+        }
+        else
+            --nextLog;
+        Sleep(REG_SLEEP);
     }
     return false;
 }
