@@ -550,7 +550,8 @@ public class HPCCDriverTest
 							threadsrunning = thrd.isRunning() || threadsrunning;
 						}
 						Thread.sleep(250);
-					} while (threadsrunning);
+					}
+					while (threadsrunning);
 
 					for (HPCCDriverTestThread thrd : runnables)
 					{
