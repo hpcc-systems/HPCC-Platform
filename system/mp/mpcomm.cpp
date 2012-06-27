@@ -327,7 +327,7 @@ public:
 
     unsigned flush(CBufferQueueNotify &nfy)
     {
-        bool count = 0;
+        unsigned count = 0;
         CriticalBlock block(sect);
         ForEachQueueItemInRev(i,received) {
             if (nfy.notify(received.item(i))) {
