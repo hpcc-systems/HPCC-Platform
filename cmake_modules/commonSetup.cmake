@@ -173,7 +173,6 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   macro(HPCC_ADD_EXECUTABLE target)
     add_executable(${target} ${ARGN})
-    set (executables ${executables} ${target} CACHE INTERNAL "")
   endmacro(HPCC_ADD_EXECUTABLE target)
 
   macro(HPCC_ADD_LIBRARY target)
