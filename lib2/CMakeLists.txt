@@ -18,37 +18,35 @@
 cmake_minimum_required(VERSION 2.8)
 PROJECT(lib2)
 
-  MACRO (FIXUP_MACPORTS apps dylibs)
-	foreach(dylib ${dylibs})
-		get_filename_component(dylib_path ${dylib} REALPATH)
-	endforeach(dylib)
-	foreach(dylib ${dylibs})
-		get_filename_component(dylib_path ${dylib} REALPATH)
-		get_filename_component(dylib_name_ext ${dylib_path} NAME)
-		install(PROGRAMS "${dylib_path}" DESTINATION "${OSSDIR}/lib2")
-		set(fixupCommand "") 
-		foreach(app ${apps})                                                                                                                                     
-			set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/${app}\")")
-			#HACK HACK - Should be able resolve alias's to alias's correctly?
-			string(REPLACE ".28.0.dylib" ".28.dylib" dylib_28_path "${dylib_path}")
-			if (NOT "${dylib_28_path}" STREQUAL "${dylib_path}")
-				set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_28_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/${app}\")")
-			endif ()
-			string(REPLACE ".48.1.dylib" ".48.dylib" dylib_48_path "${dylib_path}")
-			if (NOT "${dylib_48_path}" STREQUAL "${dylib_path}")
-				set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/${app}\")")
-			endif ()
-		endforeach(app)
-		install(CODE "${fixupCommand}")
-	endforeach(dylib)
-  ENDMACRO(FIXUP_MACPORTS)
-
 if (APPLE)
     set(DYLIBS ${ICU_LIBRARIES})
     set(DYLIBS ${DYLIBS} ${BOOST_REGEX_LIBRARIES})
     set(DYLIBS ${DYLIBS} ${XALAN_LIBRARIES})
     set(DYLIBS ${DYLIBS} ${XERCES_LIBRARIES})
-    list(REMOVE_DUPLICATES executables)
-    list(REMOVE_ITEM executables "esdl" "hidl" "configgen")
-    FIXUP_MACPORTS("${executables}" "${DYLIBS}")
+    
+    foreach(dylib ${DYLIBS})
+        get_filename_component(dylib_path ${dylib} REALPATH)
+        get_filename_component(dylib_name_ext ${dylib_path} NAME)
+
+        set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+
+        #HACK HACK - Should be able resolve alias's to alias's correctly?
+        string(REPLACE ".28.0.dylib" ".28.dylib" dylib_28_path "${dylib_path}")
+        if (NOT "${dylib_28_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_28_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
+        string(REPLACE ".48.1.dylib" ".48.dylib" dylib_48_path "${dylib_path}")
+        if (NOT "${dylib_48_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
+        install(PROGRAMS "${dylib_path}" DESTINATION "${OSSDIR}/lib2")
+        install(CODE "
+            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib/*.dylib\")
+            foreach(file \${files})
+              ${fixupCommand}
+            endforeach ()
+        ")
+    endforeach(dylib)
 endif()
