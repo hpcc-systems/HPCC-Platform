@@ -29468,9 +29468,11 @@ public:
             loop
             {
                 char c0 = *val++;
-                char c1 = *val++;
-                if (!c0 || !c1)
+                if (!c0)
                     break;
+                char c1 = *val++;
+                if (!c1)
+                    break; // Shouldn't really happen - we expect even length
                 unsigned c2 = (hex2digit(c0) << 4) | hex2digit(c1);
                 result.append((unsigned char) c2);
             }

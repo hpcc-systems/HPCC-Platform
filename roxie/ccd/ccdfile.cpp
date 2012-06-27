@@ -2141,7 +2141,7 @@ public:
                     assertex(numParts > 0);
                     IPartDescriptor *pdesc = fdesc->queryPart(numParts - 1);
                     Owned<ILazyFileIO> keyFile = createDynamicFile(subNames.item(idx), pdesc, ROXIE_KEY, numParts);
-                    unsigned crc;
+                    unsigned crc = 0;
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
