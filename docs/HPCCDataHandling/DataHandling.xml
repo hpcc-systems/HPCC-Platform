@@ -1313,15 +1313,15 @@
   </chapter>
 
   <chapter>
-    <title>HPCC Data Backups</title>
+    <title><emphasis>HPCC Data Backups</emphasis></title>
 
     <sect1 id="Introduction2" role="nobrk">
       <title>Introduction</title>
 
       <para>This section covers critical system data that requires regular
-      backup procedures to prevent data loss. </para>
+      backup procedures to prevent data loss.</para>
 
-      <para>There are </para>
+      <para>There are</para>
 
       <itemizedlist>
         <listitem>
@@ -1355,21 +1355,21 @@
 
       <para>The Dali Server data is typically mirrored to its backup node.
       This location is specified in the environment configuration file using
-      the Configuration Manager. </para>
+      the Configuration Manager.</para>
 
       <para>Since the data is written simultaneously to both nodes, there is
-      no need for a manual backup procedure. </para>
+      no need for a manual backup procedure.</para>
     </sect1>
 
     <sect1>
       <title>Environment Configuration files</title>
 
       <para>There is only one active environment file, but you may have many
-      alternative configurations. </para>
+      alternative configurations.</para>
 
       <para>Configuration manager only works on files in the
       /etc/HPCCSystems/source/ folder. To make a configuration active, it is
-      copied to /etc/HPCCSystems/environment.xml on all nodes. </para>
+      copied to /etc/HPCCSystems/environment.xml on all nodes.</para>
 
       <para>Configuration Manager automatically creates backup copies in the
       /etc/HPCCSystems/source/backup/ folder.</para>
@@ -1380,7 +1380,7 @@
 
       <para>Thor clusters are normally configured to automatically replicate
       data to a secondary location known as the mirror location. Usually, this
-      is on the second drive of the subsequent node. </para>
+      is on the second drive of the subsequent node.</para>
 
       <para>If the data is not found at the primary location (for example, due
       to drive failure or because a node has been swapped out), it looks in
@@ -1427,11 +1427,11 @@
         </orderedlist>
       </sect2>
 
-      <sect2>
+      <sect2 role="brk">
         <title>Scheduled backup</title>
 
         <para>The easiest way to schedule the backup process is to create a
-        cron job. Cron is a daemon that serves as a task scheduler. </para>
+        cron job. Cron is a daemon that serves as a task scheduler.</para>
 
         <para>Cron tab (short for CRON TABle) is a text file that contains a
         the task list. To edit with the default editor, use the
@@ -1442,9 +1442,9 @@
         <para>Here is a sample cron tab entry:</para>
 
         <para><programlisting>30 23 * * * /opt/HPCCSystems/bin/start_backupnode mythor 
-</programlisting>30 represents the minute of the hour. </para>
+</programlisting>30 represents the minute of the hour.</para>
 
-        <para>23 represents the hour of the day </para>
+        <para>23 represents the hour of the day</para>
 
         <para>The asterisks (*) represent every day, month, and
         weekday.</para>
@@ -1497,7 +1497,7 @@
       <para>Attribute repositories are stored on ECL developer's local hard
       drives. They can contain a significant number of hours of work and
       therefore should be regularly backed up. In addition, we suggest using
-      some form of source version control, too. </para>
+      some form of source version control, too.</para>
     </sect1>
 
     <sect1>

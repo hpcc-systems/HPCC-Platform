@@ -1258,7 +1258,7 @@ sudo configmgr</programlisting>
           </sect4>
         </sect3>
 
-        <sect3 id="ECL-Agent">
+        <sect3 id="ECL-Agent" role="brk">
           <title><emphasis>ECL Agent</emphasis></title>
 
           <sect4>
@@ -1399,7 +1399,7 @@ sudo configmgr</programlisting>
           </sect4>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>ECL CC Server Process</title>
 
           <sect4>
@@ -1727,7 +1727,7 @@ sudo configmgr</programlisting>
               </informaltable></para>
           </sect4>
 
-          <sect4>
+          <sect4 role="brk">
             <title>Esp - myesp Service BindingsTab</title>
 
             <para>This section describes the Esp - myesp Service Bindings
