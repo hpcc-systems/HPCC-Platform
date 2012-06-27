@@ -109,7 +109,7 @@ IMDB.LayoutActors tActors(ThreeColumns L) := TRANSFORM
   self.rolename     := FindWithin(L.filmname,'[',']');
   self.credit_pos   := (integer2)FindWithin(L.filmname,'<','>');
   self.episode_name := FindWithin(L.filmname,'{','}');
-  self.episode_num  := FindWithin(L.filmname,'(#',')');
+  self.episode_num  := FindWithin(L.filmname,'(#',')}');
   SELF              := L; // Copy across everything but movie name
 END;
 
