@@ -23,6 +23,7 @@
 #include "jthread.hpp"
 #include "jprop.hpp"
 #include "jiter.ipp"
+#include "jlzw.hpp"
 
 #include "jhtree.hpp"
 #include "mpcomm.hpp"
@@ -153,6 +154,9 @@ public:
                 {
                     case QueryInit:
                     {
+                        MemoryBuffer mb;
+                        decompressToBuffer(mb, msg);
+                        msg.swapWith(mb);
                         mptag_t mptag, slaveMsgTag;
                         deserializeMPtag(msg, mptag);
                         queryClusterComm().flush(mptag);
