@@ -406,6 +406,8 @@ public:
     virtual bool updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response);
 
 private:
+    void noteDisconnected(CRemoteConnection &connection);
+
     CriticalSection crit;
     CCopyConnectionHashTable connections;
     Semaphore concurrentRequests;
