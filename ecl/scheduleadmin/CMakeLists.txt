@@ -41,7 +41,7 @@ include_directories (
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( scheduleadmin ${SRCS} )
+HPCC_ADD_EXECUTABLE ( scheduleadmin ${SRCS} )
 install ( TARGETS scheduleadmin DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( scheduleadmin 
          jlib

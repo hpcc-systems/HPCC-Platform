@@ -32,7 +32,7 @@ add_subdirectory (ecl)
 					${JAVA_INCLUDE_PATH2}
 					${LIBHDFS_INCLUDE_DIR}	)
 
-	add_executable( hdfsconnector ${SRC} )
+	HPCC_ADD_EXECUTABLE( hdfsconnector ${SRC} )
 
 	set ( INSTALLDIR "${OSSDIR}/bin")
 	Install ( TARGETS hdfsconnector DESTINATION ${INSTALLDIR} COMPONENT Runtime)

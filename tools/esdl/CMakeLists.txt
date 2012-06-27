@@ -52,6 +52,6 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE -O0 )
 
-add_executable ( esdl ${SRCS} )
+HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
 #install ( TARGETS esdl DESTINATION ${OSSDIR}/bin )
 

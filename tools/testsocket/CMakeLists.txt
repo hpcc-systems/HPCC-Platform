@@ -32,7 +32,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 set ( SRCS testsocket.cpp )
-add_executable ( testsocket ${SRCS} )
+HPCC_ADD_EXECUTABLE ( testsocket ${SRCS} )
 target_link_libraries ( testsocket
          jlib
          )

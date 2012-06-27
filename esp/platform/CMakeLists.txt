@@ -49,7 +49,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( esp ${SRCS} )
+HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
 install ( TARGETS esp DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( esp 
          jlib

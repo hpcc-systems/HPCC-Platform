@@ -41,7 +41,7 @@ include_directories (
 
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
-add_executable ( eclagent ${SRCS} )
+HPCC_ADD_EXECUTABLE ( eclagent ${SRCS} )
 install ( TARGETS eclagent DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( eclagent
       hthor           
