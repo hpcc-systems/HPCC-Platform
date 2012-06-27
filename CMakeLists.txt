@@ -121,7 +121,9 @@ if ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
 endif()
 HPCC_ADD_SUBDIRECTORY (docs "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (lib2)
+if (APPLE)
+  HPCC_ADD_SUBDIRECTORY (lib2)
+endif (APPLE)
 
 ###
 ## CPack install and packaging setup.
@@ -281,6 +283,7 @@ else()
 endif()
 
 if (APPLE)
+    set ( CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}-${CPACK_SYSTEM_NAME}")
     set ( CPACK_MONOLITHIC_INSTALL TRUE )
     set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
     file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt" 
