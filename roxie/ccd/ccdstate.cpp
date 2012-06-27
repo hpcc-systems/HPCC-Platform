@@ -1312,7 +1312,7 @@ public:
         standAloneDll(_standAloneDll)
     {
         debugSessionManager.setown(new CRoxieDebugSessionManager);
-        daliHelper.setown(connectToDali());
+        daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
     }
 
     ~CRoxiePackageSetManager()

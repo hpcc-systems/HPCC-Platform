@@ -432,19 +432,21 @@ public:
         return wuFactory->openWorkUnit(wuid, false);
     }
 
-    static IRoxieDaliHelper *connectToDali()
+    static IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
     {
         CriticalBlock b(daliHelperCrit);
         LINK(daliHelper);
-        if (daliHelper && daliHelper->isAlive())
-            return daliHelper;
-        else
-        {
-            // NOTE - if daliHelper is not NULL but isAlive returned false, then we have an overlapping connect with a final disconnect
-            // In this case the beforeDispose will have taken care NOT to disconnect, isConnected will remain set, and the connect() will be a no-op.
+        if (!daliHelper || !daliHelper->isAlive())
             daliHelper = new CRoxieDaliHelper();
-            return daliHelper;
+        while (waitToConnect && !daliHelper->connected())
+        {
+            unsigned delay = 1000;
+            if (delay > waitToConnect)
+                delay = waitToConnect;
+            Sleep(delay);
+            waitToConnect -= delay;
         }
+        return daliHelper;
     }
 
     static void releaseCache()
@@ -608,9 +610,9 @@ Owned<IPropertyTree> CRoxieDaliHelper::cache;
 
 CriticalSection CRoxieDllServer::crit;
 
-IRoxieDaliHelper *connectToDali()
+IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
 {
-    return CRoxieDaliHelper::connectToDali();
+    return CRoxieDaliHelper::connectToDali(waitToConnect);
 }
 
 extern void releaseRoxieStateCache()

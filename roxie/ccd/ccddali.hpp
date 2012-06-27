@@ -56,7 +56,7 @@ interface IRoxieDaliHelper : extends IInterface
 };
 
 
-extern IRoxieDaliHelper *connectToDali();
+extern IRoxieDaliHelper *connectToDali(unsigned waitToConnect=0);
 extern void releaseRoxieStateCache();
 extern IDllServer &queryRoxieDllServer();
 
