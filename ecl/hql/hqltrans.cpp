@@ -289,6 +289,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         return 0;
     case childdataset_datasetleft:
     case childdataset_left:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if ((op == no_left) && recordTypesMatch(selector, expr->queryChild(0)))
         {
             switch (expr->getOperator())
@@ -300,6 +302,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         }
         return 0;
     case childdataset_leftright:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (op == no_left)
         {
             if (recordTypesMatch(selector, expr->queryChild(0)))
@@ -318,6 +322,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
     case childdataset_same_left_right:
     case childdataset_top_left_right:
     case childdataset_nway_left_right:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (recordTypesMatch(selector, expr->queryChild(0)))
             return 1;
         return 0;
