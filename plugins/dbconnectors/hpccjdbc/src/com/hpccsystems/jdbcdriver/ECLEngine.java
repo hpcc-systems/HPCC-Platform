@@ -84,16 +84,10 @@ public class ECLEngine
 
 			System.out.println("WSECL:executeSelect: " + urlString);
 
-			// Send data
 			long startTime = System.currentTimeMillis();
 
 			URL url = new URL(urlString);
-			HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-			conn.setInstanceFollowRedirects(false);
-			conn.setRequestProperty("Authorization", basicAuth);
-			conn.setRequestMethod("GET");
-			conn.setDoOutput(true);
-			conn.setDoInput(true);
+			HttpURLConnection conn = dbMetadata.createHPCCESPConnection(url);
 
 			return parse(conn.getInputStream(),startTime);
 		}
@@ -714,12 +708,7 @@ public class ECLEngine
 			long startTime = System.currentTimeMillis();
 
 			URL url = new URL(urlString);
-			HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-			conn.setInstanceFollowRedirects(false);
-			conn.setRequestProperty("Authorization", basicAuth);
-			conn.setRequestMethod("GET");
-			conn.setDoOutput(true);
-			conn.setDoInput(true);
+			HttpURLConnection conn = dbMetadata.createHPCCESPConnection(url);
 
 			OutputStreamWriter wr = new OutputStreamWriter(	conn.getOutputStream());
 			wr.write(sb.toString());
@@ -782,12 +771,7 @@ public class ECLEngine
 			long startTime = System.currentTimeMillis();
 			// Send data
 			URL url = new URL(urlString);
-			HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-			conn.setInstanceFollowRedirects(false);
-			conn.setRequestProperty("Authorization", basicAuth);
-			conn.setRequestMethod("GET");
-			conn.setDoOutput(true);
-			conn.setDoInput(true);
+			HttpURLConnection conn = dbMetadata.createHPCCESPConnection(url);
 
 			OutputStreamWriter wr = new OutputStreamWriter(	conn.getOutputStream());
 			wr.write(sb.toString());
