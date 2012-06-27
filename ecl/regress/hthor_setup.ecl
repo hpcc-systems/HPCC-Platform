@@ -533,8 +533,8 @@ DG_MemFile := DATASET(DG_MemFileName,DG_MemFileRec,FLAT);
 
 //record structures
 DG_NestedIntegerRecord := RECORD
-  INTEGER4 i4;
-  UNSIGNED3 u3;
+  big_endian unsigned INTEGER4 i4;
+  big_endian UNSIGNED3 u3;
 END;
 
 DG_IntegerRecord := RECORD
