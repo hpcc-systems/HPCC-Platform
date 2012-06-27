@@ -465,8 +465,7 @@ public:
         }
         catch (IDaliClient_Exception *e) {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::add");
-            e->Release();
-            abort();
+            throw;
         }
     }
 
@@ -486,10 +485,7 @@ public:
         }
         catch (IDaliClient_Exception *e) {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::remove");
-            if (e->errorCode()!=DCERR_server_closed)
-                abort();
             e->Release();
-            return;
         }
         subscriptions.remove(idx);
         ids.remove(idx);
