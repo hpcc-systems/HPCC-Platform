@@ -52,6 +52,7 @@ set (   SRCS
         hqltrans.cpp 
         hqlusage.cpp
         hqlutil.cpp 
+        hqlir.cpp
         hqlvalid.cpp 
         hqlwuerr.cpp 
         hqlxmldb.cpp 
@@ -83,6 +84,7 @@ set (   SRCS
         hqlthql.hpp
         hqlusage.hpp
         hqlutil.hpp
+        hqlir.hpp
         hqlvalid.hpp
         hqlwuerr.hpp
         hqlxmldb.hpp
