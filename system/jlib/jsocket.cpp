@@ -2841,9 +2841,9 @@ static bool lookupHostAddress(const char *name,unsigned *netaddr)
     }
     if (best) {
         if (best->ai_family==AF_INET6)
-            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(netaddr));
+            memcpy(netaddr,&(((sockaddr_in6 *)best->ai_addr)->sin6_addr),sizeof(in6_addr));
         else {
-            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(netaddr[3]));
+            memcpy(netaddr+3,&(((sockaddr_in *)best->ai_addr)->sin_addr),sizeof(in_addr));
             netaddr[2] = 0xffff0000;
             netaddr[1] = 0;
             netaddr[0] = 0;
