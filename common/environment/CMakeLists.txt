@@ -45,7 +45,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_USRDLL -DENVIRONMENT_EXPORTS )
 HPCC_ADD_LIBRARY( environment SHARED ${SRCS} ${INCLUDES} )
-install ( TARGETS environment DESTINATION ${OSSDIR}/lib )
+install ( TARGETS environment DESTINATION ${LIB_DIR} )
 target_link_libraries ( environment 
          jlib 
          mp 

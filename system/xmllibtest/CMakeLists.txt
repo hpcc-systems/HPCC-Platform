@@ -42,9 +42,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( xmllibtest ${SRCS} )
+HPCC_ADD_EXECUTABLE ( xmllibtest ${SRCS} )
 add_dependencies ( xmllibtest xmllib )
-install ( TARGETS xmllibtest DESTINATION ${OSSDIR}/bin )
+install ( TARGETS xmllibtest DESTINATION ${EXEC_DIR} )
 target_link_libraries ( xmllibtest
         jlib
         xmllib

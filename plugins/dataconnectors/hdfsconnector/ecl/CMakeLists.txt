@@ -1,1 +1,1 @@
-Install ( FILES HDFSConnector.ecl DESTINATION "${OSSDIR}/share/DataConnectors" COMPONENT Runtime )
+Install ( FILES HDFSConnector.ecl DESTINATION "share/DataConnectors" COMPONENT Runtime )

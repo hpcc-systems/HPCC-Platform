@@ -45,8 +45,8 @@ include_directories (
          ./../../system/jlib 
     )
 
-add_executable ( eclccserver ${SRCS} ${INCLUDES} )
-install ( TARGETS eclccserver DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( eclccserver ${SRCS} ${INCLUDES} )
+install ( TARGETS eclccserver DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( eclccserver 
          jlib

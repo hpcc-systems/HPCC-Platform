@@ -45,9 +45,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( wumanager ${SRCS} )
+HPCC_ADD_EXECUTABLE ( wumanager ${SRCS} )
 add_dependencies ( wumanager espscm )
-#install ( TARGETS wumanager DESTINATION ${OSSDIR}/bin ) # do not install - this is an example program
+#install ( TARGETS wumanager DESTINATION ${EXEC_DIR} ) # do not install - this is an example program
 
 target_link_libraries ( wumanager 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}

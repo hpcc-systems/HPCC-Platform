@@ -48,11 +48,11 @@ include_directories (
          ./../../common/workunit 
     )
 
-add_executable ( dfuserver ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dfuserver ${SRCS} )
 set_target_properties ( dfuserver PROPERTIES 
         COMPILE_FLAGS "-D_CONSOLE -D_DFUSERVER"
         )
-install ( TARGETS dfuserver DESTINATION ${OSSDIR}/bin )
+install ( TARGETS dfuserver DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dfuserver 
          jlib
          mp 

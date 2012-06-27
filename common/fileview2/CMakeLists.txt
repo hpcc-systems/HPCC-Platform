@@ -82,7 +82,7 @@ HPCC_ADD_LIBRARY( fileview2 SHARED ${SRCS} )
 set_target_properties(fileview2 PROPERTIES 
     COMPILE_FLAGS -D_USRDLL
     DEFINE_SYMBOL FILEVIEW2_EXPORTS )
-install ( TARGETS fileview2 DESTINATION ${OSSDIR}/lib )
+install ( TARGETS fileview2 DESTINATION ${LIB_DIR} )
 target_link_libraries ( fileview2 
          jlib 
          mp 
@@ -107,11 +107,11 @@ set (    SRCS
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 if( PLATFORM )
-    add_executable ( fvserver ${SRCS} )
+    HPCC_ADD_EXECUTABLE ( fvserver ${SRCS} )
     set_target_properties(fvserver PROPERTIES 
         COMPILE_FLAGS -D_CONSOLE
     )
-    #install ( TARGETS fvserver DESTINATION ${OSSDIR}/bin ) #not used at present
+    #install ( TARGETS fvserver DESTINATION ${EXEC_DIR} ) #not used at present
 
     target_link_libraries ( fvserver
          jlib 

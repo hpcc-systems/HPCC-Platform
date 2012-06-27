@@ -29,5 +29,5 @@ set (    SRCS
          main.cpp 
     )
 
-add_executable ( prosysinfo ${SRCS} )
-install ( TARGETS prosysinfo DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( prosysinfo ${SRCS} )
+install ( TARGETS prosysinfo DESTINATION ${EXEC_DIR} )

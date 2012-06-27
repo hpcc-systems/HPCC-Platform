@@ -53,8 +53,8 @@ if (WIN32)
     endif ()
 endif()
 
-add_executable ( daserver ${SRCS} )
-install ( TARGETS daserver DESTINATION ${OSSDIR}/bin)
+HPCC_ADD_EXECUTABLE ( daserver ${SRCS} )
+install ( TARGETS daserver DESTINATION ${EXEC_DIR})
 target_link_libraries ( daserver 
          jlib
          mp 

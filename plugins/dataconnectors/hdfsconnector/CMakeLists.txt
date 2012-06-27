@@ -12,8 +12,8 @@ add_subdirectory (ecl)
 	#generate config for script.
 	#add script processor for vars.
 
-	set(HPCC_ETC_DIR "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/etc")
-	set(HPCC_CONF_DIR "${CMAKE_INSTALL_PREFIX}/${OSSDIR}${CONFIG_DIR}")
+	set(HPCC_ETC_DIR "${CMAKE_INSTALL_PREFIX}/etc")
+	set(HPCC_CONF_DIR "${CMAKE_INSTALL_PREFIX}/${CONFIG_DIR}")
 	set(HDFSCONN_CONF_FILE "hdfsconnector.conf")
 
 	configure_file("hdfsconnector.conf.in" "hdfsconnector.conf")
@@ -32,9 +32,9 @@ add_subdirectory (ecl)
 					${JAVA_INCLUDE_PATH2}
 					${LIBHDFS_INCLUDE_DIR}	)
 
-	add_executable( hdfsconnector ${SRC} )
+	HPCC_ADD_EXECUTABLE( hdfsconnector ${SRC} )
 
-	set ( INSTALLDIR "${OSSDIR}/bin")
+	set ( INSTALLDIR "${EXEC_DIR}")
 	Install ( TARGETS hdfsconnector DESTINATION ${INSTALLDIR} COMPONENT Runtime)
 	Install ( PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/hdfspipe DESTINATION ${INSTALLDIR} COMPONENT Runtime )
 	Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/hdfsconnector.conf DESTINATION ${HPCC_CONF_DIR} COMPONENT Runtime )

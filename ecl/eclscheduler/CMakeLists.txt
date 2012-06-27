@@ -44,8 +44,8 @@ include_directories (
          ./../../ecl/schedulectrl
     )
 
-add_executable ( eclscheduler ${SRCS} ${INCLUDES} )
-install ( TARGETS eclscheduler DESTINATION ${OSSDIR}/bin )
+HPCC_ADD_EXECUTABLE ( eclscheduler ${SRCS} ${INCLUDES} )
+install ( TARGETS eclscheduler DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( eclscheduler 
          jlib

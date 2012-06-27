@@ -81,7 +81,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DCCD_EXPORTS -DSTARTQUERY_EXPORTS )
 
 HPCC_ADD_LIBRARY( ccd SHARED ${SRCS} )
-install ( TARGETS ccd DESTINATION ${OSSDIR}/lib )
+install ( TARGETS ccd DESTINATION ${LIB_DIR} )
 
 target_link_libraries ( ccd 
          jlib

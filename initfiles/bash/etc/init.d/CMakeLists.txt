@@ -31,9 +31,9 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/init-functions
     ${CMAKE_CURRENT_SOURCE_DIR}/export-path
 )
-    install ( PROGRAMS ${oFILES} DESTINATION ${OSSDIR}/etc/init.d COMPONENT Runtime )
+    install ( PROGRAMS ${oFILES} DESTINATION etc/init.d COMPONENT Runtime )
 ENDFOREACH ( oFILES )
 
 if ( PLATFORM )
-    install ( PROGRAMS hpcc-init.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
 endif()

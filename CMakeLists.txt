@@ -102,7 +102,7 @@ include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
 if ( NOT MAKE_DOCS_ONLY )
-    if ( CMAKE_SYSTEM MATCHES Linux )
+    if ( UNIX )
         HPCC_ADD_SUBDIRECTORY (initfiles)
     endif ()
     HPCC_ADD_SUBDIRECTORY (tools)
@@ -121,11 +121,13 @@ if ( NOT MAKE_DOCS_ONLY )
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
 endif()
 HPCC_ADD_SUBDIRECTORY (docs "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (lib2)
 
 ###
 ## CPack install and packaging setup.
 ###
 INCLUDE(InstallRequiredSystemLibraries)
+
 if ( PLATFORM )
     set(CPACK_PACKAGE_NAME "hpccsystems-platform")
 else()
@@ -143,11 +145,13 @@ if ( ${ARCH64BIT} EQUAL 1 )
 else( ${ARCH64BIT} EQUAL 1 )
     set ( CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
 endif ( ${ARCH64BIT} EQUAL 1 )
+if ( UNIX )
 set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
+endif ( UNIX )
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CPACK_STRIP_FILES TRUE)
 endif()
-if ( CMAKE_SYSTEM MATCHES Linux )
+if ( UNIX )
     EXECUTE_PROCESS (
                 COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
                     OUTPUT_VARIABLE packageManagement
@@ -163,18 +167,18 @@ if ( CMAKE_SYSTEM MATCHES Linux )
                     OUTPUT_VARIABLE packageRevision
                         ERROR_VARIABLE  packageRevision
                 )
-		
+        
     message ( "-- Auto Detecting Packaging type")
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
 
     if ( ${packageManagement} STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME	"${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME    "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
     elseif ( ${packageManagement} STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME	"${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME    "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
         else()
         set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
     endif ()
-endif ( CMAKE_SYSTEM MATCHES Linux )
+endif ( UNIX )
 MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
 set ( CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
@@ -239,7 +243,7 @@ configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h" )
 ###
 
 if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
-    if ( CMAKE_SYSTEM MATCHES Linux )
+    if ( UNIX )
         if ( ${packageManagement} STREQUAL "DEB" )
             if ("${CMAKE_VERSION}" VERSION_EQUAL "2.8.2")
                 message("WARNING: CMAKE 2.8.2  would not build DEB package")
@@ -268,7 +272,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()
 
-    endif ( CMAKE_SYSTEM MATCHES Linux )
+    endif ( UNIX )
     if ( EXISTS ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
         include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
     else()
@@ -279,10 +283,33 @@ else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
 endif()
 
+if ( PLATFORM )
+  set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}" )
+else ( PLATFORM )
+    set ( CPACK_MONOLITHIC_INSTALL TRUE )
+    set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
+    file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt" 
+        "HPCC Systems - Client Tools\r"
+        "===========================\r\r"
+        "This installer will install the HPCC Systems Client Tools.")
+    set ( CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt" )
+    set ( CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}" )
+    set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems Client Tools." )
+    if (WIN32)
+      set ( CPACK_NSIS_DISPLAY_NAME "Client Tools" )
+      set ( CPACK_PACKAGE_INSTALL_DIRECTORY "${DIR_NAME}\\\\${version}\\\\clienttools")
+      set ( CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${DIR_NAME}\\\\${version}\\\\clienttools")
+      set ( CPACK_NSIS_DEFINES "
+        !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+        !define MUI_FINISHPAGE_NOAUTOCLOSE
+      ")
+    endif()
+endif( PLATFORM )
+
 ###
 ## Below are the non-compile based install scripts required for
 ## the hpcc platform.
 ###
 
-Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION ${OSSDIR} COMPONENT Runtime )
+Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime )
 include (CPack)

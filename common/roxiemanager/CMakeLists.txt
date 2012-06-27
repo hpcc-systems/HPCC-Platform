@@ -69,7 +69,7 @@ ADD_DEFINITIONS( -D_USRDLL -DROXIEMANAGER_EXPORTS )
 
 HPCC_ADD_LIBRARY( roxiemanager SHARED ${SRCS} )
 add_dependencies( roxiemanager espscm )
-install ( TARGETS roxiemanager DESTINATION ${OSSDIR}/lib )
+install ( TARGETS roxiemanager DESTINATION ${LIB_DIR} )
 target_link_libraries ( roxiemanager
          jlib 
          roxiecommlib 

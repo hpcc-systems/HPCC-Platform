@@ -1,6 +1,11 @@
 
 if ( NOT PREFIX )
+if ( WIN32 )
+    set( PREFIX "$ENV{ProgramFiles(x86)}" )
+	string(REGEX REPLACE "\\\\" "/" PREFIX ${PREFIX})    
+else (WIN32)
     set( PREFIX "/opt" )
+endif (WIN32)    
 endif()
 
 if ( NOT EXEC_PREFIX )
@@ -16,7 +21,11 @@ if ( NOT DIR_NAME )
 endif()
 
 if ( NOT LIB_DIR )
+if ( WIN32 )
+    set( LIB_DIR "bin" )
+else (WIN32)
     set( LIB_DIR "lib" )
+endif (WIN32)    
 endif()
 
 if ( NOT EXEC_DIR )

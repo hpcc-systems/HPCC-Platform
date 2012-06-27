@@ -56,7 +56,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DMFILEMANAGER_EXPORTS )
 
 HPCC_ADD_LIBRARY( mfilemanager_lcr SHARED ${SRCS} )
-install ( TARGETS mfilemanager_lcr DESTINATION ${OSSDIR}/lib )
+install ( TARGETS mfilemanager_lcr DESTINATION ${LIB_DIR} )
 target_link_libraries ( mfilemanager_lcr
          jlib
          remote 
