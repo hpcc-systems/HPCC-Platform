@@ -1418,74 +1418,87 @@ IPropertyTreeIterator *CClientSDSManager::getElements(CRemoteConnection &connect
     return NULL;
 }
 
+void CClientSDSManager::noteDisconnected(CRemoteConnection &connection)
+{
+    connection.setConnected(false);
+    connections.removeExact(&connection);
+}
+
 void CClientSDSManager::commit(CRemoteConnection &connection, bool *disconnectDeleteRoot)
 {
     CriticalBlock b(crit); // if >1 commit per client concurrently would cause problems with serverId.
 
     CClientRemoteTree *tree = (CClientRemoteTree *) connection.queryRoot();
 
-    CMessageBuffer mb;
-    mb.append((int)DAMP_SDSCMD_DATA);
-    mb.append(connection.queryConnectionId());
-    if (disconnectDeleteRoot)
-    {
-        mb.append((byte)(0x80 + 1)); // kludge, high bit to indicate new client format. (for backward compat.)
-        mb.append(*disconnectDeleteRoot);
-    }
-    else
-        mb.append((byte)0x80); // kludge, high bit to indicate new client format. (for backward compat.)
-    bool lazyFetch = connection.setLazyFetch(false);
-    Owned<IPropertyTree> changes = tree->collateData();
-    connection.setLazyFetch(lazyFetch);
-
-    if (NULL == disconnectDeleteRoot && !changes) return;
-    if (changes) changes->serialize(mb);
     try
     {
-        if (!sendRequest(mb))
-            throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "committing");
-    }
-    catch (IDaliClient_Exception *e)
-    {
-        if (DCERR_server_closed == e->errorCode())
+        CMessageBuffer mb;
+        mb.append((int)DAMP_SDSCMD_DATA);
+        mb.append(connection.queryConnectionId());
+        if (disconnectDeleteRoot)
         {
-            if (changes)
-                WARNLOG("Dali server disconnect, failed to commit data");
-            e->Release();
-            return;
+            mb.append((byte)(0x80 + 1)); // kludge, high bit to indicate new client format. (for backward compat.)
+            mb.append(*disconnectDeleteRoot);
         }
         else
-            throw;
-    }
+            mb.append((byte)0x80); // kludge, high bit to indicate new client format. (for backward compat.)
+        bool lazyFetch = connection.setLazyFetch(false);
+        Owned<IPropertyTree> changes = tree->collateData();
+        connection.setLazyFetch(lazyFetch);
 
-    SdsReply replyMsg;
-    mb.read((int &)replyMsg);
-    
-    switch (replyMsg)
-    {
-        case DAMP_SDSREPLY_OK:
+        if (NULL == disconnectDeleteRoot && !changes) return;
+        if (changes) changes->serialize(mb);
+        try
         {
-            bool lazyFetch = connection.setLazyFetch(false);
-            // NOTE: this means that send collated data order and the following order have to match!
-            // JCSMORE - true but.. hmm.. (could possibly have alternative lookup scheme)
-            tree->clearCommitChanges(&mb);
-            assertex(mb.getPos() == mb.length()); // must have read it all
-            connection.setLazyFetch(lazyFetch);
-
-            if (disconnectDeleteRoot)
-            {
-                connection.setConnected(false);
-                connections.removeExact(&connection);
-            }
-            break;
+            if (!sendRequest(mb))
+                throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "committing");
         }
-        case DAMP_SDSREPLY_EMPTY:
-            break;
-        case DAMP_SDSREPLY_ERROR:
-            throwMbException("SDS Reply Error ", mb);
-        default:
-            assertex(false);
+        catch (IDaliClient_Exception *e)
+        {
+            if (DCERR_server_closed == e->errorCode())
+            {
+                if (changes)
+                    WARNLOG("Dali server disconnect, failed to commit data");
+                e->Release();
+                if (disconnectDeleteRoot)
+                    noteDisconnected(connection);
+                return; // JCSMORE does this really help, shouldn't it just throw?
+            }
+            else
+                throw;
+        }
+
+        SdsReply replyMsg;
+        mb.read((int &)replyMsg);
+
+        switch (replyMsg)
+        {
+            case DAMP_SDSREPLY_OK:
+            {
+                bool lazyFetch = connection.setLazyFetch(false);
+                // NOTE: this means that send collated data order and the following order have to match!
+                // JCSMORE - true but.. hmm.. (could possibly have alternative lookup scheme)
+                tree->clearCommitChanges(&mb);
+                assertex(mb.getPos() == mb.length()); // must have read it all
+                connection.setLazyFetch(lazyFetch);
+                break;
+            }
+            case DAMP_SDSREPLY_EMPTY:
+                break;
+            case DAMP_SDSREPLY_ERROR:
+                throwMbException("SDS Reply Error ", mb);
+            default:
+                assertex(false);
+        }
     }
+    catch (IException *)
+    {
+        if (disconnectDeleteRoot)
+            noteDisconnected(connection);
+        throw;
+    }
+    if (disconnectDeleteRoot)
+        noteDisconnected(connection);
 }
 
 void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode, unsigned timeout, bool suppressReloads)
