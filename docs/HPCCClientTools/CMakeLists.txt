@@ -17,3 +17,5 @@
 
 DOCBOOK_TO_PDF( ${FO_XSL} ClientTools.xml "HPCCClientTools" "CT_Mods")
 
+DOCBOOK_TO_PDF( ${FO_XSL} TheECLIDEandHPCCClientTools.xml "TheECLIDEandHPCCClientTools" "CT_Mods")
+
