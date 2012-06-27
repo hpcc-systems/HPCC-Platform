@@ -278,6 +278,7 @@ inline unsigned char min3(unsigned char a, unsigned char b, unsigned char c)
     return (min<c)? min:c;
 }
 
+#define DISTANCE_ON_ERROR 999
 class CEList
 {
 private:
@@ -285,6 +286,7 @@ private:
     uint32_t* ces_;
     uint32_t  length_;
     uint32_t  capacity_;
+    bool invalid;
 
     void doCreateCEList(RuleBasedCollator& rbc) {
         UErrorCode status = U_ZERO_ERROR;
@@ -301,12 +303,12 @@ private:
             ces_[length_++] = ce;
         } while (ce != CollationElementIterator::NULLORDER); 
         delete ceIterator;
-        if (U_FAILURE(status)) { length_ = 0; capacity_ = 0; }
+        if (U_FAILURE(status)) invalid = true;
     }
 
 public:
     CEList(RuleBasedCollator& rbc, const UnicodeString & source, uint32_t capacity=0)
-        : length_(0), capacity_(capacity), ustring_(source)
+        : length_(0), capacity_(capacity), ustring_(source), invalid(false)
     {
         doCreateCEList(rbc);
     }
@@ -323,6 +325,7 @@ public:
 
     uint32_t length() { return length_;}
     uint32_t capacity() {return capacity_;}
+    inline bool isInvalid() const { return invalid; }
 };
 
 inline unsigned mask(unsigned x) { return x & 1; }
@@ -351,6 +354,9 @@ unsigned unicodeEditDistanceV2(UnicodeString & left, UnicodeString & right, Rule
 
     CEList   leftCEs(rbc, left, leftLen);
     CEList   rightCEs(rbc, right, rightLen);
+    if (leftCEs.isInvalid() || rightCEs.isInvalid())
+        return DISTANCE_ON_ERROR;
+
     leftLen = leftCEs.length();
     rightLen = rightCEs.length();
 
@@ -1080,7 +1086,7 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
 {
     RuleBasedCollator* rbc = queryRBCollator(localename);
     if (!rbc)
-        return 999;
+        return DISTANCE_ON_ERROR;
 
     UnicodeString uLeft(left, leftLen);
     UnicodeString uRight(right, rightLen);
