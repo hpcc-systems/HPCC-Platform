@@ -45,13 +45,25 @@ class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, impl
 public:
     IMPLEMENT_IINTERFACE;
     CDaliPackageWatcher(const char *_id, const char *_xpath, ISDSSubscription *_notifier)
-      : id(_id), xpath(_xpath)
+      : id(_id), xpath(_xpath), change(0)
     {
         notifier = _notifier;
-        change = querySDS().subscribe(xpath, *this, true);
     }
     ~CDaliPackageWatcher()
     {
+    }
+    virtual void subscribe()
+    {
+        CriticalBlock b(crit);
+        try
+        {
+            change = querySDS().subscribe(xpath, *this, true);
+        }
+        catch (IException *E)
+        {
+            // failure to subscribe implies dali is down... that's ok, we will resubscribe when we notice it come back up.
+            E->Release();
+        }
     }
     virtual void unsubscribe()
     {
@@ -59,7 +71,8 @@ public:
         notifier = NULL;
         try
         {
-            querySDS().unsubscribe(change);
+            if (change)
+                querySDS().unsubscribe(change);
         }
         catch (IException *E)
         {
@@ -72,6 +85,7 @@ public:
     }
     virtual void onReconnect()
     {
+        Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
         CriticalBlock b(crit);
         change = querySDS().subscribe(xpath, *this, true);
         if (notifier)
@@ -79,6 +93,7 @@ public:
     }
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
+        Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
         CriticalBlock b(crit);
         if (notifier)
             notifier->notify(subid, xpath, flags, valueLen, valueData);
@@ -120,10 +135,12 @@ private:
     private:
         CRoxieDaliHelper *owner;
         bool aborted;
+        bool started;
     public:
         CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
         {
             aborted = false;
+            started = false;
         }
 
         virtual int run()
@@ -146,18 +163,29 @@ private:
         {
             aborted = true;
         }
+        virtual void start()
+        {
+            started = true;
+            Thread::start();
+        }
+        virtual void join()
+        {
+            if (started)
+                Thread::join();
+        }
     } connectWatcher;
 
     virtual void beforeDispose()
     {
         CriticalBlock b(daliHelperCrit);
+        disconnectSem.interrupt();
+        connectWatcher.stop();
         if (daliHelper==this)  // there is a tiny window where new dalihelper created immediately after final release
         {
-            connectWatcher.stop();
             disconnect();
             daliHelper = NULL;
-            connectWatcher.join();
         }
+        connectWatcher.join();
     }
 
     // The cache is static since it outlives the dali connections
@@ -404,7 +432,7 @@ public:
         return wuFactory->openWorkUnit(wuid, false);
     }
 
-    static IRoxieDaliHelper *connectToDali(unsigned timeout)
+    static IRoxieDaliHelper *connectToDali()
     {
         CriticalBlock b(daliHelperCrit);
         LINK(daliHelper);
@@ -425,43 +453,37 @@ public:
         cache.clear();
     }
 
+    virtual void releaseSubscription(IDaliPackageWatcher *subscription)
+    {
+        watchers.zap(*subscription);
+        subscription->unsubscribe();
+    }
+
+    IDaliPackageWatcher *getSubscription(const char *id, const char *xpath, ISDSSubscription *notifier)
+    {
+        IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, xpath, notifier);
+        watchers.append(*LINK(watcher));
+        if (isConnected)
+            watcher->subscribe();
+        return watcher;
+    }
+
     virtual IDaliPackageWatcher *getQuerySetSubscription(const char *id, ISDSSubscription *notifier)
     {
-        if (isConnected)
-        {
-            StringBuffer xpath;
-            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getQuerySetPath(xpath, id), notifier);
-            watchers.append(*LINK(watcher));
-            return watcher;
-        }
-        else
-            return NULL;
+        StringBuffer xpath;
+        return getSubscription(id, getQuerySetPath(xpath, id), notifier);
     }
 
     virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier)
     {
-        if (isConnected)
-        {
-            StringBuffer xpath;
-            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getPackageSetPath(xpath, id), notifier);
-            watchers.append(*LINK(watcher));
-            return watcher;
-        }
-        else
-            return NULL;
+        StringBuffer xpath;
+        return getSubscription(id, getPackageSetPath(xpath, id), notifier);
     }
 
     virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier)
     {
-        if (isConnected)
-        {
-            StringBuffer xpath;
-            IDaliPackageWatcher *watcher = new CDaliPackageWatcher(id, getPackageMapPath(xpath, id), notifier);
-            watchers.append(*LINK(watcher));
-            return watcher;
-        }
-        else
-            return NULL;
+        StringBuffer xpath;
+        return getSubscription(id, getPackageMapPath(xpath, id), notifier);
     }
 
     virtual bool connected() const
@@ -588,7 +610,7 @@ CriticalSection CRoxieDllServer::crit;
 
 IRoxieDaliHelper *connectToDali()
 {
-    return CRoxieDaliHelper::connectToDali(ROXIE_DALI_CONNECT_TIMEOUT); // MORE - should perhaps be async connect?
+    return CRoxieDaliHelper::connectToDali();
 }
 
 extern void releaseRoxieStateCache()

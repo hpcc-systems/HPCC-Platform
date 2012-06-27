@@ -1244,7 +1244,7 @@ public:
     ~CRoxieDaliQueryPackageManager()
     {
         if (notifier)
-            notifier->unsubscribe();
+            daliHelper->releaseSubscription(notifier);
     }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -2347,7 +2347,7 @@ private:
     {
         ForEachItemIn(idx, notifiers)
         {
-            notifiers.item(idx).unsubscribe();
+            daliHelper->releaseSubscription(&notifiers.item(idx));
         }
         notifiers.kill();
     }
