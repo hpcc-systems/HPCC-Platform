@@ -26,5 +26,5 @@ project( pstart )
 
 if (WIN32)
     include_directories (../../system/win32)
-    add_executable ( pstart main.cpp )
+    HPCC_ADD_EXECUTABLE ( pstart main.cpp )
 endif ()

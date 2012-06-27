@@ -40,7 +40,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( dalidiag ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dalidiag ${SRCS} )
 install ( TARGETS dalidiag DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( dalidiag 
          jlib
