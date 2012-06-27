@@ -41,14 +41,24 @@
  *
  * For the same reasons, annotations are only printed on the operation.
  *
+ * The IR will be printed in logical order, with the operation being
+ * dumped at the end, and all its dependencies (and their dependencies)
+ * printed in dependency order, upwards.
+ *
  * Note that operations do accept multiple types for each argument
  * (think integerN, stringN, any numerical value, etc), so it's important
  * to make sure the argument is compatible, but there's no way to
  * enforce type safety with the current set of operators.
  *
- * The IR will be printed in logical order, with the operation being
- * dumped at the end, and all its dependencies (and their dependencies)
- * printed in dependency order, upwards.
+ * Note that this code is intentionally not throwing exceptions or asserting,
+ * since it will be largely used during debug sessions (step through or
+ * core analysis) and debuggers are not that comfortable with calls throwing
+ * exceptions or asserting.
+ *
+ * In case where an invalid tree might be produced (missing information),
+ * the dumper should print "unknown_*", so that you can continue debugging
+ * your program, and open an issue to fix the dumper or the expression tree
+ * in separate.
  */
 
 // For now, this is exclusive to the dumper, but could be extended to
@@ -86,7 +96,8 @@ public:
 
 protected:
     void expandGraphText(IHqlExpression * expr);
-    void expandExprText(IHqlExpression * expr);
+    void expandExprDefinition(IHqlExpression * expr);
+    void expandExprUse(IHqlExpression * expr);
 
     // For now only id, but should have more
     struct IRExtra : public IInterface, CInterface {
@@ -134,49 +145,48 @@ void IRExpressionDumper::expandGraphText(IHqlExpression * expr)
     // Body with annotations
     IHqlExpression * body = expr->queryBody(true);
     if (body != expr)
-        expandGraphText(body);
-
-    // Depth first, to get deeper dependencies with lower names
-    if (body == expr)
     {
+        expandGraphText(body);
+    }
+    else
+    {
+        // Depth first, to get deeper dependencies with lower names
         unsigned max = expr->numChildren();
         for (unsigned i=0; i < max; i++)
             expandGraphText(expr->queryChild(i));
     }
 
     // Now, dump the current expression
-    if (!visited(expr))
-        expandExprText(expr);
+    expandExprDefinition(expr);
 }
 
-void IRExpressionDumper::expandExprText(IHqlExpression * expr)
+void IRExpressionDumper::expandExprDefinition(IHqlExpression * expr)
 {
-    // USING A NODE: Already has name, just dump it
-    if (visited(expr))
-    {
-        string.append("%").append(queryExtra(expr)->id);
-        return;
-    }
-
-    // DECLARING A NODE: This is the main operation
     string.append('%').append(queryExtra(expr)->id).append(" = ");
 
     if (expr->getAnnotationKind() != annotate_none)
     {
         // Like an alias, %n+1 = %n @annotation MORE - this will change soon
         IHqlExpression * body = expr->queryBody(true);
-        assertex(visited(body) != 0); // at least during development
-        expandExprText(body); // should have been named already
+        expandExprUse(body); // should have been named already
         string.append(' ');
         appendAnnotation(expr);
     }
     else
-    {
         appendOperation(expr);
-    }
 
     // Finalise
     string.append(';').newline();
+}
+
+void IRExpressionDumper::expandExprUse(IHqlExpression * expr)
+{
+    string.append("%");
+    if (visited(expr))
+        string.append(queryExtra(expr)->id);
+    else
+        string.append("unknown_node");
+    return;
 }
 
 void IRExpressionDumper::appendAnnotation(IHqlExpression * expr)
@@ -249,7 +259,7 @@ void IRExpressionDumper::appendOperation(IHqlExpression * expr)
             IHqlExpression * child = expr->queryChild(i);
             if (comma)
                 string.append(", ");
-            expandExprText(child); // should have been named already
+            expandExprUse(child); // should have been named already
             comma = true;
         }
         string.append(')');
