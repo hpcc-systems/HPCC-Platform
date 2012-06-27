@@ -30,7 +30,7 @@
 #include "unicode/rbbi.h"
 #include "../stringlib/wildmatch.tpp"
 
-#define UNICODELIB_VERSION "UNICODELIB 1.1.05"
+#define UNICODELIB_VERSION "UNICODELIB 1.1.06"
 
 UChar32 const u32comma = ',';
 UChar32 const u32space = ' ';
@@ -91,6 +91,7 @@ static const char * compatibleVersions[] = {
     "UNICODELIB 1.1.02", 
     "UNICODELIB 1.1.03", 
     "UNICODELIB 1.1.04", 
+    "UNICODELIB 1.1.05",
     NULL };
 
 UNICODELIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -303,10 +304,12 @@ private:
     }
 
 public:
-    CEList(RuleBasedCollator& rbc, const UnicodeString & source, UErrorCode& status, uint32_t capacity=0) 
+    CEList(RuleBasedCollator& rbc, const UnicodeString & source, uint32_t capacity=0)
         : length_(0), capacity_(capacity), ustring_(source)
     {
         //doTrimRight(ustring_);
+        UErrorCode status = U_ZERO_ERROR;
+
         doCreateCEList(rbc, status);
     }
 
@@ -326,7 +329,7 @@ public:
 
 inline unsigned mask(unsigned x) { return x & 1; }
 
-unsigned unicodeEditDistanceV2(UnicodeString & left, UnicodeString & right, RuleBasedCollator& rbc, UErrorCode &status)
+unsigned unicodeEditDistanceV2(UnicodeString & left, UnicodeString & right, RuleBasedCollator& rbc)
 {
     unsigned char i, j;
 
@@ -348,8 +351,8 @@ unsigned unicodeEditDistanceV2(UnicodeString & left, UnicodeString & right, Rule
     if (rightLen == 0)
         return leftLen;
 
-    CEList   leftCEs(rbc, left, status, leftLen);
-    CEList   rightCEs(rbc, right, status, rightLen);
+    CEList   leftCEs(rbc, left, leftLen);
+    CEList   rightCEs(rbc, right, rightLen);
     leftLen = leftCEs.length();
     rightLen = rightCEs.length();
 
@@ -394,7 +397,7 @@ unsigned unicodeEditDistanceV2(UnicodeString & left, UnicodeString & right, Rule
 // * special case edit1 - you could use variables for the 6 interesting array elements, and get
 //   rid of the array completely.  You could also unwind the first (and last iterations).
 // * I suspect the early exit condition could be improved depending the lengths of the strings.
-unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsigned radius, RuleBasedCollator& rbc, UErrorCode &status)
+unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsigned radius, RuleBasedCollator& rbc)
 {
     if (radius >= 255)
         return 255;
@@ -422,8 +425,8 @@ unsigned unicodeEditDistanceV3(UnicodeString & left, UnicodeString & right, unsi
     if (rightLen == 0)
         return leftLen;
 
-    CEList   leftCEs(rbc, left, status, leftLen);
-    CEList   rightCEs(rbc, right, status, rightLen);
+    CEList   leftCEs(rbc, left, leftLen);
+    CEList   rightCEs(rbc, right, rightLen);
     leftLen = leftCEs.length();
     rightLen = rightCEs.length();
 
@@ -1012,36 +1015,93 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
     source.extract(0, tgtLen, tgt);
 }
 
-UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
+
+
+static RuleBasedCollator * createRBCollator(const char * localename)
 {
     UErrorCode status = U_ZERO_ERROR;
     Locale locale(localename);
-
-    RuleBasedCollator* rbc = (RuleBasedCollator*)RuleBasedCollator::createInstance(locale, status);
+    RuleBasedCollator * rbc = (RuleBasedCollator *)RuleBasedCollator::createInstance(locale, status);
     rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
+    if (U_FAILURE(status))
+    {
+        delete rbc;
+        return NULL;
+    }
+    return rbc;
+}
+
+class RBCLocale
+{
+public:
+    RBCLocale(char const * _locale) : locale(_locale)
+    {
+        rbc = createRBCollator(locale);
+    }
+    ~RBCLocale()
+    {
+        delete rbc;
+    }
+    RuleBasedCollator * queryCollator() const { return rbc; }
+private:
+    StringAttr locale;
+    RuleBasedCollator * rbc;
+};
+
+typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
+static MapStrToRBC * localeMap;
+static CriticalSection localeCrit;
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    delete localeMap;
+    localeMap = NULL;
+}
+
+static RuleBasedCollator * queryRBCollator(const char * localename)
+{
+    if (!localename) localename = "";
+    CriticalBlock b(localeCrit);
+    if (!localeMap)
+        localeMap = new MapStrToRBC;
+    RBCLocale * loc = localeMap->getValue(localename);
+    if(!loc)
+    {
+        //MORE: ECLRTL calls rtlGetNormalizedUnicodeLocaleName().  Should this be happening here?
+        const char * normalizedlocale = localename;
+        localeMap->setValue(localename, normalizedlocale);
+        loc = localeMap->getValue(localename);
+    }
+    return loc->queryCollator();
+}
+
+UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
+{
+    RuleBasedCollator* rbc = queryRBCollator(localename);
+    if (!rbc)
+        return 0;
 
     UnicodeString uLeft(left, leftLen);
     UnicodeString uRight(right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV2(uLeft, uRight, *rbc, status);
-    delete rbc;
+    unsigned distance = nsUnicodelib::unicodeEditDistanceV2(uLeft, uRight, *rbc);
     return distance;
 }
 
 
 UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, unsigned radius, char const * localename)
 {
-    UErrorCode status = U_ZERO_ERROR;
-    Locale locale(localename);
-
-    RuleBasedCollator* rbc = (RuleBasedCollator*)RuleBasedCollator::createInstance(locale, status);
-    rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
+    RuleBasedCollator* rbc = queryRBCollator(localename);
+    if (!rbc)
+        return 0;
 
     UnicodeString uLeft(left, leftLen);
     UnicodeString uRight(right, rightLen);
 
-    unsigned distance = nsUnicodelib::unicodeEditDistanceV3(uLeft, uRight, radius, *rbc, status);
-    delete rbc;
+    unsigned distance = nsUnicodelib::unicodeEditDistanceV3(uLeft, uRight, radius, *rbc);
     return distance <= radius;
 }
 
