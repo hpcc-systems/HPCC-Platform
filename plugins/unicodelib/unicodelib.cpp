@@ -285,8 +285,9 @@ private:
     uint32_t* ces_;
     uint32_t  length_;
     uint32_t  capacity_;
-    inline void doCreateCEList(RuleBasedCollator& rbc, UErrorCode& status) {
-        if (U_FAILURE(status)) { return; }
+
+    void doCreateCEList(RuleBasedCollator& rbc) {
+        UErrorCode status = U_ZERO_ERROR;
         CollationElementIterator*  ceIterator = rbc.createCollationElementIterator( ustring_ );
         if (!capacity_) {
             capacity_ = ustring_.length();
@@ -307,10 +308,7 @@ public:
     CEList(RuleBasedCollator& rbc, const UnicodeString & source, uint32_t capacity=0)
         : length_(0), capacity_(capacity), ustring_(source)
     {
-        //doTrimRight(ustring_);
-        UErrorCode status = U_ZERO_ERROR;
-
-        doCreateCEList(rbc, status);
+        doCreateCEList(rbc);
     }
 
     ~CEList()
@@ -1082,7 +1080,7 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned lef
 {
     RuleBasedCollator* rbc = queryRBCollator(localename);
     if (!rbc)
-        return 0;
+        return 999;
 
     UnicodeString uLeft(left, leftLen);
     UnicodeString uRight(right, rightLen);
@@ -1096,7 +1094,7 @@ UNICODELIB_API bool UNICODELIB_CALL ulUnicodeLocaleEditDistanceWithinRadius(unsi
 {
     RuleBasedCollator* rbc = queryRBCollator(localename);
     if (!rbc)
-        return 0;
+        return false;
 
     UnicodeString uLeft(left, leftLen);
     UnicodeString uRight(right, rightLen);
