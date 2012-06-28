@@ -17,7 +17,8 @@
 
 project(start-stop-daemon)
 
-add_definitions( -DHAVE_C_ATTRIBUTE )
+add_definitions( -Wno-noreturn )
+
 set( SRC start-stop-daemon.c )
 set( HEADER macros.h )
 
