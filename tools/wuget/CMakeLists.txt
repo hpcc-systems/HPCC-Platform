@@ -33,7 +33,7 @@ include_directories (
 ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )
 
 set ( SRCS wuget.cpp )
-add_executable ( wuget ${SRCS} )
+HPCC_ADD_EXECUTABLE ( wuget ${SRCS} )
 target_link_libraries ( wuget
          jlib
          dllserver

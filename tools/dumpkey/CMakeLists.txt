@@ -39,7 +39,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( dumpkey ${SRCS} )
+HPCC_ADD_EXECUTABLE ( dumpkey ${SRCS} )
 install ( TARGETS dumpkey DESTINATION ${OSSDIR}/bin )
 
 target_link_libraries ( dumpkey 

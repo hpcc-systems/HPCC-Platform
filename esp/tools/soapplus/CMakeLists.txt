@@ -45,7 +45,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( soapplus ${SRCS} )
+HPCC_ADD_EXECUTABLE ( soapplus ${SRCS} )
 install ( TARGETS soapplus DESTINATION ${OSSDIR}/bin COMPONENT Runtime)
 
 target_link_libraries ( soapplus 

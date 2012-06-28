@@ -52,5 +52,5 @@ include_directories (
 set_source_files_properties (${CMAKE_CURRENT_BINARY_DIR}/hidlgram.cpp PROPERTIES COMPILE_FLAGS -fno-strict-aliasing)
 
 ADD_DEFINITIONS( -D_CONSOLE)
-add_executable ( hidl ${SRCS} )
+HPCC_ADD_EXECUTABLE ( hidl ${SRCS} )
 #install ( TARGETS hidl DESTINATION ${OSSDIR}/bin )

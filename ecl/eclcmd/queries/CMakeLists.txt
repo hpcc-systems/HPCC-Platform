@@ -41,9 +41,9 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( ecl-queries ${SRCS} )
+HPCC_ADD_EXECUTABLE ( ecl-queries ${SRCS} )
 add_dependencies ( ecl-queries espscm ws_workunits )
-install ( TARGETS ecl-queries DESTINATION ${DIR_NAME}/bin )
+install ( TARGETS ecl-queries DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( ecl-queries
         jlib
         esphttp

@@ -40,12 +40,15 @@ public class HPCCDriverTestThread extends Thread
 
 			HPCCResultSet qrs = (HPCCResultSet)((HPCCPreparedStatement)prepstatement).executeQuery();
 			HPCCDriverTest.printOutResultSet(qrs, Thread.currentThread().getId());
-			running = false;
 		}
-		catch (SQLException e)
+		catch (Exception e)
 		{
-			success = false;
 			e.printStackTrace();
+			success = false;
+		}
+		finally
+		{
+			running = false;
 		}
 	}
 

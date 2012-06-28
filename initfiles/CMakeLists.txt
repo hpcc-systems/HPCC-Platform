@@ -18,7 +18,7 @@
 cmake_minimum_required(VERSION 2.8)
 PROJECT(initfiles)
 
-ADD_EXECUTABLE(processor processor.cpp)
+HPCC_ADD_EXECUTABLE(processor processor.cpp)
 
 MACRO(GENERATE_BASH processor bash-vars in out)
     GET_TARGET_PROPERTY(processorLocation processor LOCATION)

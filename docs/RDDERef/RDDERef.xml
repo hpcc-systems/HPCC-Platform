@@ -32,7 +32,7 @@
       <para></para>
     </legalnotice>
 
-   <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="common/Version.xml" xpointer="DateVer"
@@ -40,7 +40,7 @@
 
     <corpname>HPCC Systems</corpname>
 
-   <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -287,14 +287,12 @@
         </listitem>
       </itemizedlist>
 
-      <para>This configuration provides multiple redundant copies of data
-      files. In this example, there are six copies of each file at any given
-      time; eliminating the need to use traditional backup procedures for
-      Roxie data files.</para>
+      <para><?dbfo-need height="8.75in"?>This configuration provides multiple
+      redundant copies of data files. In this example, there are six copies of
+      each file at any given time; eliminating the need to use traditional
+      backup procedures for Roxie data files.</para>
 
-      <para></para>
-
-      <para><graphic fileref="images/RM-03.PNG" /></para>
+      <para><graphic fileref="images/RM-03.jpg" /></para>
 
       <para></para>
     </sect1>
@@ -510,7 +508,6 @@
   <chapter id="Packages">
     <title>Packages</title>
 
-   
     <para>Packages are used as a means to separate data from queries. Newer
     Package files can be copied to and loaded on a Roxie cluster without
     recompiling queries. This allows you to refresh data and ensure you are
@@ -1116,8 +1113,8 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Submit</emphasis> button.
-            </para>
+            <para>Press the <emphasis role="bold">Submit</emphasis>
+            button.</para>
 
             <para>The resulting page displays all the requested information,
             as shown below:</para>
@@ -1490,7 +1487,7 @@
 
         <para></para>
 
-        <?hard-pagebreak?>
+        <?hard-pagebreak ?>
 
         <itemizedlist mark="bullet">
           <listitem>

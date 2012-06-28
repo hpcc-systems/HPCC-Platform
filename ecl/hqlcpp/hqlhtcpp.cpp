@@ -11442,7 +11442,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         HqlExprArray args;
         args.append(*lhsDsRef.mapCompound(&leftSorts.tos(), leftSelect));
         args.append(*rhsDsRef.mapCompound(&rightSorts.tos(), rightSelect));
+
         _ATOM func = prefixDiffStrAtom;
+        ITypeInfo * lhsType = args.item(0).queryType();
+        if (isUnicodeType(lhsType))
+        {
+            func = prefixDiffUnicodeAtom;
+            args.append(*createConstant(lhsType->queryLocale()->str()));
+        }
         OwnedHqlExpr compare = bindFunctionCall(func, args);
         
         buildCompareMemberLR(instance->nestedctx, "PrefixCompare", compare, dataset1, dataset2, selSeq);
