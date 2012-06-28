@@ -44,7 +44,7 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-add_executable ( agentexec ${SRCS} )
+HPCC_ADD_EXECUTABLE ( agentexec ${SRCS} )
 install ( TARGETS agentexec DESTINATION ${OSSDIR}/bin )
 
 target_link_libraries ( agentexec

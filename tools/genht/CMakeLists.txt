@@ -38,7 +38,7 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-add_executable ( genht ${SRCS} )
+HPCC_ADD_EXECUTABLE ( genht ${SRCS} )
 target_link_libraries ( genht
         jlib 
     )

@@ -68,7 +68,7 @@ if (WIN32)
     endif ()
 endif()
 
-add_executable ( saserver ${SRCS} )
+HPCC_ADD_EXECUTABLE ( saserver ${SRCS} )
 install ( TARGETS saserver DESTINATION ${OSSDIR}/bin)
 
 
@@ -103,7 +103,7 @@ include_directories (
 
 ADD_DEFINITIONS ( -D_CONSOLE )
 
-add_executable ( sasha ${SRCS} )
+HPCC_ADD_EXECUTABLE ( sasha ${SRCS} )
 install ( TARGETS sasha DESTINATION ${OSSDIR}/bin)
 
 target_link_libraries ( sasha 

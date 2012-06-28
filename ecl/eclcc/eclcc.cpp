@@ -42,6 +42,10 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
+#if defined (__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 #define INIFILE "eclcc.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "eclcc.ini"
@@ -405,14 +409,31 @@ void EclCC::loadOptions()
     extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, ".");
     extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, ".\\ecllibrary");
 #else
-    StringBuffer fn(SYSTEMCONFDIR);
-    fn.append(PATHSEPSTR).append(SYSTEMCONFFILE);
-    Owned<IProperties> sysconf = createProperties(fn, true);
-    
     StringBuffer syspath;
-    sysconf->getProp("path", syspath);
-    syspath.append(PATHSEPCHAR);
+    #if defined (__APPLE__)
+        char path[PATH_MAX]; 
+        uint32_t size = sizeof(path); 
+        _NSGetExecutablePath(path, &size);
 
+        splitFilename(path, &syspath, &syspath, NULL, NULL);
+        //  Remove trailing folder (typically "/bin/")
+        removeTrailingPathSepChar(syspath);
+        for (int i = syspath.length() - 1; i >= 0; --i)
+        {
+            if (isPathSepChar(syspath.charAt(i)))
+            {
+                syspath.setLength(i + 1);
+                break;
+            }
+        }
+    #else
+        StringBuffer fn(SYSTEMCONFDIR);
+        fn.append(PATHSEPSTR).append(SYSTEMCONFFILE);
+        Owned<IProperties> sysconf = createProperties(fn, true);
+
+        sysconf->getProp("path", syspath);
+        syspath.append(PATHSEPCHAR);
+    #endif
     extractOption(compilerPath, globals, "CL_PATH", "compilerPath", "/usr", NULL);
     extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
     extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
@@ -420,7 +441,6 @@ void EclCC::loadOptions()
     extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
     extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
     extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
-
 #endif
 
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);

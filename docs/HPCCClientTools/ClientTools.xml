@@ -50,10 +50,7 @@
     </mediaobject>
   </bookinfo>
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_Overview.xml" xpointer="CT_Overview"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-  <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_IDE.xml" xpointer="The_ECL_Ide"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Overview_withoutIDE.xml" xpointer="CT_Overview"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml" xpointer="Command_Line_ECL"
