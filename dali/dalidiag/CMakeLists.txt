@@ -41,7 +41,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( dalidiag ${SRCS} )
-install ( TARGETS dalidiag DESTINATION ${OSSDIR}/bin )
+install ( TARGETS dalidiag RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( dalidiag 
          jlib
          mp 

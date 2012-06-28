@@ -42,10 +42,6 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
-#if defined (__APPLE__)
-#include <mach-o/dyld.h>
-#endif
-
 #define INIFILE "eclcc.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "eclcc.ini"
@@ -138,6 +134,24 @@ static bool extractOption(StringAttr & option, IProperties * globals, const char
     bool ret = extractOption(temp, globals, envName, propertyName, defaultPrefix, defaultSuffix);
     option.set(temp.str());
     return ret;
+}
+
+static bool getPackageFolder(StringBuffer & path)
+{
+    StringBuffer folder;
+    splitDirTail(queryCurrentProcessPath(), folder);
+    removeTrailingPathSepChar(folder);
+    if (folder.length())
+    {
+        StringBuffer foldersFolder;
+        splitDirTail(folder.str(), foldersFolder);
+        if (foldersFolder.length())
+        {
+            path = foldersFolder;
+            return true;
+        }
+    }
+    return false;
 }
 
 struct EclCompileInstance
@@ -390,59 +404,25 @@ void EclCC::loadOptions()
     globals.setown(createProperties(optIniFilename, true));
 
     StringBuffer compilerPath, includePath, libraryPath;
-    
+
     if (globals->hasProp("targetGcc"))
         optTargetCompiler = globals->getPropBool("targetGcc") ? GccCppCompiler : Vs6CppCompiler;
 
+    StringBuffer syspath;
+    if (getPackageFolder(syspath))
+    {
 #if _WIN32
-    StringBuffer syspath;
-    HMODULE hModule = GetModuleHandle(NULL);
-    char path[MAX_PATH];
-    GetModuleFileName(hModule, path, MAX_PATH);
-    splitFilename(path, &syspath, &syspath, NULL, NULL);
-    syspath.append(PATHSEPCHAR);
-    extractOption(compilerPath, globals, "CL_PATH", "compilerPath", syspath, ".\\cl");
-    extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, ".\\cl\\lib");
-    extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, ".\\cl\\include");
-    extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, ".\\plugins");
-    extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, ".\\filehooks");
-    extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, ".");
-    extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, ".\\ecllibrary");
+        extractOption(compilerPath, globals, "CL_PATH", "compilerPath", syspath, "componentfiles\\cl");
 #else
-    StringBuffer syspath;
-    #if defined (__APPLE__)
-        char path[PATH_MAX]; 
-        uint32_t size = sizeof(path); 
-        _NSGetExecutablePath(path, &size);
-
-        splitFilename(path, &syspath, &syspath, NULL, NULL);
-        //  Remove trailing folder (typically "/bin/")
-        removeTrailingPathSepChar(syspath);
-        for (int i = syspath.length() - 1; i >= 0; --i)
-        {
-            if (isPathSepChar(syspath.charAt(i)))
-            {
-                syspath.setLength(i + 1);
-                break;
-            }
-        }
-    #else
-        StringBuffer fn(SYSTEMCONFDIR);
-        fn.append(PATHSEPSTR).append(SYSTEMCONFFILE);
-        Owned<IProperties> sysconf = createProperties(fn, true);
-
-        sysconf->getProp("path", syspath);
-        syspath.append(PATHSEPCHAR);
-    #endif
-    extractOption(compilerPath, globals, "CL_PATH", "compilerPath", "/usr", NULL);
-    extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
-    extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
-    extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
-    extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
-    extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
-    extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
+        extractOption(compilerPath, globals, "CL_PATH", "compilerPath", "/usr", NULL);
 #endif
-
+        extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
+        extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
+        extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
+        extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
+        extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
+        extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
+    }
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);
 
     if (!optLogfile.length() && !optBatchMode)

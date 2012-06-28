@@ -41,16 +41,6 @@ include_directories (
 
 ADD_DEFINITIONS( -D_LIB )
 
-if (WIN32)
-    HPCC_ADD_LIBRARY( hrpc STATIC ${SRCS} )
-    add_dependencies (hrpc jlib)    # to make sure headers generated
-else ()
-    HPCC_ADD_LIBRARY( hrpc SHARED ${SRCS} )
-    target_link_libraries ( hrpc 
-             jlib
-             mp 
-        )
-endif ()
-install ( TARGETS hrpc DESTINATION ${OSSDIR}/lib )
-
+HPCC_ADD_LIBRARY( hrpc STATIC ${SRCS} )
+add_dependencies (hrpc jlib)    # to make sure headers generated
 

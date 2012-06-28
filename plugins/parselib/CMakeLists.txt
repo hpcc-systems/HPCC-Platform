@@ -40,7 +40,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DPARSELIB_EXPORTS )
 
 HPCC_ADD_LIBRARY( parselib SHARED ${SRCS} )
-install ( TARGETS parselib DESTINATION ${OSSDIR}/plugins )
+install ( TARGETS parselib DESTINATION plugins )
 target_link_libraries ( parselib 
          jlib
     )

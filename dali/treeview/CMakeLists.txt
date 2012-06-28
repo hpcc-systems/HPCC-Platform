@@ -46,7 +46,7 @@ if (WIN32)
 
     add_definitions("-D_AFXDLL")
     HPCC_ADD_EXECUTABLE ( treeview WIN32 ${SRCS} )
-    install ( TARGETS treeview DESTINATION ${OSSDIR}/bin )
+    install ( TARGETS treeview RUNTIME DESTINATION ${EXEC_DIR} )
     target_link_libraries ( treeview
              jlib
              mp 

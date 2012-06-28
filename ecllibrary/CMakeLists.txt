@@ -17,6 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/StyleGuide.html DESTINATION ${OSSDIR}/share/ecllibrary COMPONENT Runtime )
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/std DESTINATION ${OSSDIR}/share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
-Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/teststd DESTINATION ${OSSDIR}/share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/StyleGuide.html DESTINATION share/ecllibrary COMPONENT Runtime )
+Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/std DESTINATION share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )
+Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/teststd DESTINATION share/ecllibrary COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )

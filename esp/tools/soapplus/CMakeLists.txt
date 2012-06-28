@@ -46,7 +46,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( soapplus ${SRCS} )
-install ( TARGETS soapplus DESTINATION ${OSSDIR}/bin COMPONENT Runtime)
+install ( TARGETS soapplus RUNTIME DESTINATION ${EXEC_DIR} COMPONENT Runtime)
 
 target_link_libraries ( soapplus 
          jlib
@@ -58,9 +58,9 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/EspMethods.txt
     ${CMAKE_CURRENT_SOURCE_DIR}/README.txt
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles COMPONENT Runtime )
 ENDFOREACH ( iFILES )
 
 if ( PLATFORM )
-    install ( PROGRAMS soapplus.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS soapplus.install DESTINATION etc/init.d/install COMPONENT Runtime )
 endif()

@@ -43,7 +43,7 @@ ADD_DEFINITIONS( -D_USRDLL -DCOMMONEXT_EXPORTS )
 
 HPCC_ADD_LIBRARY( commonext SHARED ${SRCS} )
 add_dependencies (commonext espscm )
-install ( TARGETS commonext DESTINATION ${OSSDIR}/lib )
+install ( TARGETS commonext RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( commonext 
          jlib 
     )

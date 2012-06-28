@@ -44,11 +44,13 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( ecl-queries ${SRCS} )
 add_dependencies ( ecl-queries espscm ws_workunits )
-install ( TARGETS ecl-queries DESTINATION ${OSSDIR}/bin )
+install ( TARGETS ecl-queries RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( ecl-queries
         jlib
         esphttp
         workunit
     )
 
-install ( PROGRAMS ecl-queries.install DESTINATION ${OSSDIR}/etc/init.d/install COMPONENT Runtime )
+if (UNIX)
+install ( PROGRAMS ecl-queries.install DESTINATION etc/init.d/install COMPONENT Runtime )
+endif (UNIX)

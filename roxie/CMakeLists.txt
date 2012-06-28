@@ -16,10 +16,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-add_subdirectory (ccd)
-add_subdirectory (roxie)
-add_subdirectory (roxieclient)
-add_subdirectory (roxieclienttest)
-add_subdirectory (roxiemem)
-add_subdirectory (roxiepipe)
-add_subdirectory (udplib)
+HPCC_ADD_SUBDIRECTORY (ccd)
+HPCC_ADD_SUBDIRECTORY (roxie "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (roxieclient "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (roxieclienttest "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (roxiemem)
+HPCC_ADD_SUBDIRECTORY (roxiepipe "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (udplib)
