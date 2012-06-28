@@ -30,8 +30,10 @@ extern void addWuException(IConstWorkUnit *workUnit, IException *E);
 
 interface IDaliPackageWatcher : extends IInterface
 {
+    virtual void subscribe() = 0;
     virtual void unsubscribe() = 0;
     virtual const char *queryName() const = 0;
+    virtual void onReconnect() = 0;
 };
 
 interface IRoxieDaliHelper : extends IInterface
@@ -47,12 +49,14 @@ interface IRoxieDaliHelper : extends IInterface
     virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier) = 0;
     virtual IPropertyTree *getPackageMap(const char *id) = 0;
     virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier) = 0;
-    virtual bool connect() = 0;
+    virtual void releaseSubscription(IDaliPackageWatcher *subscription) = 0;
+    virtual bool connect(unsigned timeout) = 0;
     virtual void disconnect() = 0;
+    virtual void waitConnected() = 0;
 };
 
 
-extern IRoxieDaliHelper *connectToDali();
+extern IRoxieDaliHelper *connectToDali(unsigned waitToConnect=0);
 extern void releaseRoxieStateCache();
 extern IDllServer &queryRoxieDllServer();
 
