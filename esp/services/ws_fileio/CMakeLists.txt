@@ -63,7 +63,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL )
 
 HPCC_ADD_LIBRARY( ws_fileio SHARED ${SRCS} )
-install ( TARGETS ws_fileio DESTINATION ${OSSDIR}/lib )
+install ( TARGETS ws_fileio RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 add_dependencies (ws_fileio espscm)
 target_link_libraries ( ws_fileio 
          jlib

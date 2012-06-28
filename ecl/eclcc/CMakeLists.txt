@@ -52,7 +52,7 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( eclcc ${SRCS} )
-install ( TARGETS eclcc DESTINATION ${OSSDIR}/bin )
+install ( TARGETS eclcc RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclcc 
          jlib
          nbcd 

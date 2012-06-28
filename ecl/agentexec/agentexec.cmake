@@ -45,7 +45,7 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( agentexec ${SRCS} )
-install ( TARGETS agentexec DESTINATION ${OSSDIR}/bin )
+install ( TARGETS agentexec RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( agentexec
          jlib 

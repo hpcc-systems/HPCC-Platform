@@ -54,6 +54,10 @@ static IRandomNumberGenerator * protectedGenerator;
 static CriticalSection * protectedGeneratorCs;
 #endif
 
+#if defined (__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 MODULE_INIT(INIT_PRIORITY_SYSTEM)
 {
     cvtLock = new SpinLock;
@@ -2426,41 +2430,50 @@ bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,co
     return true;
 }
 
-const char * queryCurrentProcessName()
+const char * queryCurrentProcessPath()
 {
     static CriticalSection sect;
-    static StringAttr processName;
+    static StringAttr processPath;
     CriticalBlock block(sect);
-    if (processName.isEmpty()) 
+    if (processPath.isEmpty()) 
     {
-#if defined(WIN32)
-        const char *cmdline = GetCommandLine();
-        if (!cmdline) return false;
-        StringArray argv;
-        DelimToStringArray(cmdline, argv, " ");
-        if (0 == argv.ordinality())
-            return "";
-        const char *processPath = argv.item(0);
-#elif defined(__linux__)
-        char link[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", link, PATH_MAX);
-        if (len == -1)
-            return "";
-        link[len] = '\0';
-        const char *processPath = link;
+#if _WIN32
+        HMODULE hModule = GetModuleHandle(NULL);
+        char path[MAX_PATH];
+        if (GetModuleFileName(hModule, path, MAX_PATH) != 0)
+            processPath.set(path);
+#elif defined (__APPLE__)
+        char path[PATH_MAX]; 
+        uint32_t size = sizeof(path); 
+        ssize_t len = _NSGetExecutablePath(path, &size);
+        switch(len)
+        {
+        case -1:
+            {
+                char biggerPath[size]; 
+                if (_NSGetExecutablePath(biggerPath, &size) == 0)
+                    processPath.set(biggerPath);
+            }
+            break;
+        case 0:
+            processPath.set(path);
+            break;
+        default:
+            break;
+        }
 #else
-        const char *processPath = NULL;
-        return "";
+        char path[PATH_MAX + 1];   
+        ssize_t len = readlink("/proc/self/exe", path, PATH_MAX);
+        if (len != -1)
+        {
+            path[len + 1] = 0;
+            processPath.set(path);
+        }
 #endif
-        if (!processPath)
-            return NULL;
-        StringBuffer path;
-        const char *tail = splitDirTail(processPath, path);
-        if (!tail)
-            return NULL;
-        processName.set(tail);
     }
-    return processName.sget();
+    if (processPath.isEmpty())
+        return NULL;
+    return processPath.sget();
 }
 
 inline bool isOctChar(char c) 

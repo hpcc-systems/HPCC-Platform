@@ -66,7 +66,7 @@ if (WIN32)
 endif()
 
 HPCC_ADD_EXECUTABLE ( thormaster_lcr ${SRCS} )
-install ( TARGETS thormaster_lcr DESTINATION ${OSSDIR}/bin )
+install ( TARGETS thormaster_lcr RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries (  thormaster_lcr 
          jlib
          jhtree 

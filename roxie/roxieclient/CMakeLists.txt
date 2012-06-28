@@ -40,7 +40,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DROXIECLIENT_EXPORTS )
 
 HPCC_ADD_LIBRARY( roxieclient SHARED ${SRCS} )
-install ( TARGETS roxieclient DESTINATION ${OSSDIR}/lib )
+install ( TARGETS roxieclient RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( roxieclient
          jlib
     )

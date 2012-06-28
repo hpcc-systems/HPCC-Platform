@@ -50,7 +50,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( esp ${SRCS} )
-install ( TARGETS esp DESTINATION ${OSSDIR}/bin )
+install ( TARGETS esp RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( esp 
          jlib
          mp 
