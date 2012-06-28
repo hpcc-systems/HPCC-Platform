@@ -31045,29 +31045,46 @@ public:
         running = true;
         started.signal();
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        if (daliHelper->connected())
+        while (running)
         {
-            SCMStringBuffer queueNames;
-            getRoxieQueueNames(queueNames, topology->queryProp("@name"));
-            if (traceLevel)
-                DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.str());
-            Owned<IJobQueue> queue = createJobQueue(queueNames.str());
-            queue->connect();
-            while (running)
+            if (daliHelper->connected())
             {
-                Owned<IJobQueueItem> item = queue->dequeue(5000);
-                if (item.get())
+                SCMStringBuffer queueNames;
+                getRoxieQueueNames(queueNames, topology->queryProp("@name"));
+                if (queueNames.length())
                 {
                     if (traceLevel)
-                        PROGLOG("roxie: Dequeued workunit request '%s'", item->queryWUID());
-                    pool->start((void *) item->queryWUID());
+                        DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.str());
+                    try
+                    {
+                        Owned<IJobQueue> queue = createJobQueue(queueNames.str());
+                        queue->connect();
+                        while (running)
+                        {
+                            Owned<IJobQueueItem> item = queue->dequeue(5000);
+                            if (item.get())
+                            {
+                                if (traceLevel)
+                                    PROGLOG("roxie: Dequeued workunit request '%s'", item->queryWUID());
+                                pool->start((void *) item->queryWUID());
+                            }
+                        }
+                    }
+                    catch (IDaliClient_Exception *E)
+                    {
+                        if (traceLevel)
+                            EXCLOG(E, "roxie: Dali connection lost");
+                        E->Release();
+                        daliHelper->disconnect();
+                    }
                 }
             }
-        }
-        else
-        {
-            if (traceLevel)
-                DBGLOG("roxie: No dali connection - not waiting on queue");
+            else
+            {
+                if (traceLevel)
+                    DBGLOG("roxie: Waiting for dali connection before waiting for queue");
+                daliHelper->waitConnected();
+            }
         }
         return 0;
     }

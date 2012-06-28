@@ -915,9 +915,9 @@ static ICoven *coven=NULL;
 
 ICoven &queryCoven()
 {
-    if (coven==NULL) {
+    if (coven==NULL)
+    {
         ERRLOG("No active dali server connection available");
-        PrintStackReport();
         throw MakeStringException(-1,"No active dali server connection available");
     }
     return *coven;
