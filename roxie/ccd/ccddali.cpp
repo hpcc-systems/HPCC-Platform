@@ -78,6 +78,7 @@ public:
         {
             E->Release();
         }
+        change = 0;
     }
     virtual const char *queryName() const
     {
@@ -135,12 +136,10 @@ private:
     private:
         CRoxieDaliHelper *owner;
         bool aborted;
-        bool started;
     public:
         CRoxieDaliConnectWatcher(CRoxieDaliHelper *_owner) : owner(_owner)
         {
             aborted = false;
-            started = false;
         }
 
         virtual int run()
@@ -154,7 +153,16 @@ private:
                 else if (owner->connect(ROXIE_DALI_CONNECT_TIMEOUT))
                 {
                     DBGLOG("roxie: CRoxieDaliConnectWatcher reconnected");
-                    owner->disconnectSem.wait();
+                    try
+                    {
+                        owner->disconnectSem.wait();
+                    }
+                    catch (IException *E)
+                    {
+                        if (!aborted)
+                            EXCLOG(E, "roxie: Unexpected exception in CRoxieDaliConnectWatcher");
+                        E->Release();
+                    }
                 }
             }
             return 0;
@@ -165,12 +173,11 @@ private:
         }
         virtual void start()
         {
-            started = true;
             Thread::start();
         }
         virtual void join()
         {
-            if (started)
+            if (isAlive())
                 Thread::join();
         }
     } connectWatcher;
@@ -518,7 +525,6 @@ public:
                     // Initialize client process
                     if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
                         throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
-
                     setPasswordsFromSDS();
                     CSDSServerStatus serverstatus("Roxieserver");
                     initCache();
@@ -530,6 +536,7 @@ public:
                 }
                 catch(IException *e)
                 {
+                    ::closedownClientProcess(); // undo any partial initialization
                     StringBuffer text;
                     e->errorMessage(text);
                     DBGLOG(ROXIE_DALI_ERROR, "Error trying to connect to dali %s: %s", fileNameServiceDali.str(), text.str());
