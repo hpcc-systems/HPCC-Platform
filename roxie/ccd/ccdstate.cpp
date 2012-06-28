@@ -1244,7 +1244,7 @@ public:
     ~CRoxieDaliQueryPackageManager()
     {
         if (notifier)
-            notifier->unsubscribe();
+            daliHelper->releaseSubscription(notifier);
     }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -1312,7 +1312,7 @@ public:
         standAloneDll(_standAloneDll)
     {
         debugSessionManager.setown(new CRoxieDebugSessionManager);
-        daliHelper.setown(connectToDali());
+        daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
     }
 
     ~CRoxiePackageSetManager()
@@ -1749,9 +1749,9 @@ private:
             }
             else if (stricmp(queryName, "control:lockDali")==0)
             {
+                topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();
-                topology->setPropBool("@lockDali", true);
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -1968,6 +1968,10 @@ private:
             if (stricmp(queryName, "control:reload")==0)
             {
                 reload();
+                if (daliHelper && daliHelper->connected())
+                    reply.appendf("<Dali connected='1'/>");
+                else
+                    reply.appendf("<Dali connected='0'/>");
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2216,8 +2220,6 @@ private:
             }
             else if (stricmp(queryName, "control:unlockDali")==0)
             {
-                if (daliHelper)
-                    daliHelper->connect();
                 topology->setPropBool("@lockDali", false);
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
@@ -2345,7 +2347,7 @@ private:
     {
         ForEachItemIn(idx, notifiers)
         {
-            notifiers.item(idx).unsubscribe();
+            daliHelper->releaseSubscription(&notifiers.item(idx));
         }
         notifiers.kill();
     }
