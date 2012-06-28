@@ -709,10 +709,16 @@ public:
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction);
+        // We need this here, since caching only happens with active transactions
+        // MORE - abstract this with DFSAccess, or at least enable caching with a flag
+        transaction->setActive(true);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
+        transaction->setActive(false);
+
         bool newfile = false;
         if (!superfile) {
             superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
+            transaction->addFile(superfile);
             newfile = true;
         }
         if (numtoadd) {
@@ -735,7 +741,12 @@ public:
     void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, IUserDescriptor *user)
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
-        Owned<IDistributedSuperFile> superfile = queryDistributedFileDirectory().lookupSuperFile(superfname,user,transaction,true);
+        // We need this here, since caching only happens with active transactions
+        // MORE - abstract this with DFSAccess, or at least enable caching with a flag
+        transaction->setActive(true);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
+        transaction->setActive(false);
+
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
         StringAttrArray toremove;
