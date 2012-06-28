@@ -1192,6 +1192,9 @@ IHqlExpression * ChildGraphExprBuilder::addDataset(IHqlExpression * expr)
         args.append(*createAttribute(rowAtom));
     args.append(*createAttribute(externalAtom, LINK(resultsExpr)));
     args.append(*createAttribute(_original_Atom, LINK(expr)));
+    IHqlExpression * recordCountAttr = queryRecordCountInfo(expr);
+    if (recordCountAttr)
+        args.append(*LINK(recordCountAttr));
     OwnedHqlExpr ret = createDataset(no_getgraphresult, args);
     if (expr->isDatarow())
         ret.setown(createRow(no_selectnth, LINK(ret), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom))));
