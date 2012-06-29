@@ -873,10 +873,11 @@ ExpressionFormat queryNaturalFormat(ITypeInfo * type)
 
 //===========================================================================
 
-SubGraphInfo::SubGraphInfo(IPropertyTree * _tree, unsigned _id, IHqlExpression * _graphTag, SubGraphType _type) 
-    : HqlExprAssociation(subGraphMarker), tree(_tree) 
+SubGraphInfo::SubGraphInfo(IPropertyTree * _tree, unsigned _id, unsigned _graphId, IHqlExpression * _graphTag, SubGraphType _type)
+    : HqlExprAssociation(subGraphMarker), tree(_tree)
 { 
-    id = _id; 
+    id = _id;
+    graphId = _graphId;
     type = _type; 
     graphTag.set(_graphTag);
 }
@@ -1486,7 +1487,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.checkRowOverflow,"checkRowOverflow", true),
         DebugOption(options.freezePersists,"freezePersists", false),
         DebugOption(options.maxRecordSize, "defaultMaxLengthRecord", MAX_RECORD_SIZE),
-        DebugOption(options.maxInlineDepth, "maxInlineDepth", 999),         // a debugging setting...
 
         DebugOption(options.checkRoxieRestrictions,"checkRoxieRestrictions", true),     // a debug aid for running regression suite
         DebugOption(options.checkThorRestrictions,"checkThorRestrictions", true),       // a debug aid for running regression suite
@@ -2721,6 +2721,13 @@ void HqlCppTranslator::buildFilter(BuildCtx & ctx, IHqlExpression * expr)
             buildFilter(ctx, expr->queryChild(0));
             return;
         }
+    case no_compound:
+        {
+            buildStmt(ctx, expr->queryChild(0));
+            buildFilter(ctx, expr->queryChild(1));
+            break;
+        }
+
     }
     buildFilterViaExpr(ctx, expr);
 }
@@ -3295,6 +3302,8 @@ bool HqlCppTranslator::specialCaseBoolReturn(BuildCtx & ctx, IHqlExpression * ex
         return false;
     if (expr->getOperator() == no_alias_scope)
         expr = expr->queryChild(0);
+    if (expr->getOperator() == no_compound)
+        expr = expr->queryChild(1);
     if ((expr->getOperator() == no_and) || (expr->getOperator() == no_or))
         return true;
     return false;
@@ -3575,11 +3584,14 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_persist_check:
         buildWorkflowPersistCheck(ctx, expr);
         return;
+    case no_childquery:
+        buildChildGraph(ctx, expr);
+        return;
     case no_evaluate_stmt:
         expr = expr->queryChild(0);
         if (expr->queryValue())
             return;
-        // fall through to default behaviour.
+        break; // evaluate default behaviour.
     }
     CHqlBoundExpr tgt;
     buildAnyExpr(ctx, expr, tgt);
@@ -4371,7 +4383,8 @@ void HqlCppTranslator::doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, C
 {
     //MORE These will be declared in a different context later.
     IHqlExpression * value = expr->queryChild(0);
-    assertex(value->getOperator() != no_alias);
+    while (value->getOperator() == no_alias)
+        value = value->queryChild(0);
 
     //The second half of this test could cause aliases to be duplicated, but has the significant effect of reducing the amount of data that is serialised.
     //so far on my examples it does the latter, but doesn't seem to cause the former
@@ -7069,13 +7082,13 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     buildCachedExpr(subctx, expr->queryChild(0), cond);
 
     IHqlStmt * test = subctx.addFilter(cond.expr);
-    buildStmt(subctx, expr->queryChild(1));
+    optimizeBuildActionList(subctx, expr->queryChild(1));
 
     IHqlExpression * elseExpr = queryRealChild(expr, 2);
     if (elseExpr && elseExpr->getOperator() != no_null)
     {
         subctx.selectElse(test);
-        buildStmt(subctx, elseExpr);
+        optimizeBuildActionList(subctx, elseExpr);
     }
 }
 

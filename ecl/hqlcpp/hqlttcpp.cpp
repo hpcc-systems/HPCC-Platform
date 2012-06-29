@@ -1025,7 +1025,7 @@ void ThorScalarTransformer::setTransformedSelector(IHqlExpression * expr, IHqlEx
 
 
 static HqlTransformerInfo ThorScalarTransformerInfo("ThorScalarTransformer");
-ThorScalarTransformer::ThorScalarTransformer(const HqlCppOptions & _options) : HoistingHqlTransformer(ThorScalarTransformerInfo, HTFnoteconditionalactions), options(_options)
+ThorScalarTransformer::ThorScalarTransformer(const HqlCppOptions & _options) : HoistingHqlTransformer(ThorScalarTransformerInfo, CTFnoteifactions), options(_options)
 {
     isConditionalDepth = 0;
     seenCandidate = false;
@@ -6794,7 +6794,7 @@ inline bool isTypeToHoist(ITypeInfo * type)
 
 static HqlTransformerInfo scalarGlobalTransformerInfo("ScalarGlobalTransformer");
 ScalarGlobalTransformer::ScalarGlobalTransformer(HqlCppTranslator & _translator)
-: HoistingHqlTransformer(scalarGlobalTransformerInfo, HTFtraverseallnodes), translator(_translator)
+: HoistingHqlTransformer(scalarGlobalTransformerInfo, CTFtraverseallnodes), translator(_translator)
 {
     okToHoist = true;
     neverHoist = false;
@@ -7000,7 +7000,7 @@ IHqlExpression * ScalarGlobalTransformer::createTransformed(IHqlExpression * exp
 
 static HqlTransformerInfo explicitGlobalTransformerInfo("ExplicitGlobalTransformer");
 ExplicitGlobalTransformer::ExplicitGlobalTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
-: HoistingHqlTransformer(explicitGlobalTransformerInfo, HTFnoteconditionalactions|HTFtraverseallnodes), translator(_translator)
+: HoistingHqlTransformer(explicitGlobalTransformerInfo, CTFnoteifactions|CTFtraverseallnodes), translator(_translator)
 {
     wu = _wu;
     isRoxie = (translator.getTargetClusterType() == RoxieCluster);
@@ -7140,7 +7140,7 @@ NewScopeMigrateTransformer::NewScopeMigrateTransformer(IWorkUnit * _wu, HqlCppTr
     wu = _wu;
     isRoxie = translator.targetRoxie();
     if (!isRoxie && !_translator.queryOptions().resourceConditionalActions)
-        setFlags(HTFnoteconditionalactions);
+        setFlags(CTFnoteifactions);
     minimizeWorkunitTemporaries = translator.queryOptions().minimizeWorkunitTemporaries;
 #ifdef REMOVE_GLOBAL_ANNOTATION
     activityDepth = 0;      // should be 0 to actually have any effect - but causes problems...
@@ -9547,7 +9547,7 @@ bool containsCompound(IHqlExpression * expr)
 
 static HqlTransformerInfo nestedCompoundTransformerInfo("NestedCompoundTransformer");
 NestedCompoundTransformer::NestedCompoundTransformer(HqlCppTranslator & _translator)
-: HoistingHqlTransformer(nestedCompoundTransformerInfo, HTFnoteconditionalactions), translator(_translator), translatorOptions(_translator.queryOptions())
+: HoistingHqlTransformer(nestedCompoundTransformerInfo, CTFnoteifactions), translator(_translator), translatorOptions(_translator.queryOptions())
 {
 }
 

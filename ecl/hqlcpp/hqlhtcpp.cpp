@@ -55,6 +55,8 @@
 #include "deffield.hpp"
 #include "hqlinline.hpp"
 #include "hqlusage.hpp"
+#include "hqlhoist.hpp"
+#include "hqlcppds.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -133,6 +135,25 @@ static void markSubGraphAsRoot(IPropertyTree * tree)
     if (!tree->hasProp("att[@name=\"rootGraph\"]"))
         addGraphAttributeBool(tree, "rootGraph", true);
 }
+
+SubGraphInfo * matchActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag)
+{
+    FilteredAssociationIterator iter(ctx, AssocSubGraph);
+    ForEach(iter)
+    {
+        SubGraphInfo & cur = static_cast<SubGraphInfo &>(iter.get());
+        if (graphTag == cur.graphTag)
+            return &cur;
+    }
+    return NULL;
+}
+
+
+bool isActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag)
+{
+    return matchActiveGraph(ctx, graphTag) != NULL;
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -338,80 +359,35 @@ MemberFunction::~MemberFunction()
 
 //---------------------------------------------------------------------------
 
-class ChildSpotterInfo : public HoistingTransformInfo
-{
-public:
-    ChildSpotterInfo(IHqlExpression * _original) : HoistingTransformInfo(_original) { spareByte2 = false; }
-    
-    inline bool getHoist() { return spareByte2 != 0; }
-    inline void setHoist() { spareByte2 = true; }
-
-private:
-    using HoistingTransformInfo::spareByte2;                //prevent derived classes from also using this spare byte
-};
-
-
 static HqlTransformerInfo childDatasetSpotterInfo("ChildDatasetSpotter");
-class ChildDatasetSpotter : public HoistingHqlTransformer
+class NewChildDatasetSpotter : public ConditionalContextTransformer
 {
 public:
-    ChildDatasetSpotter(HqlCppTranslator & _translator, BuildCtx & _ctx) 
-        : HoistingHqlTransformer(childDatasetSpotterInfo, HTFnoteallconditionals), translator(_translator), ctx(_ctx) 
-    { 
-        candidate = false; 
-    }
-
-    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr)
+    NewChildDatasetSpotter(HqlCppTranslator & _translator, BuildCtx & _ctx, bool _forceRoot)
+        : ConditionalContextTransformer(childDatasetSpotterInfo, true), translator(_translator), ctx(_ctx), forceRoot(_forceRoot)
     {
-        return CREATE_NEWTRANSFORMINFO(ChildSpotterInfo, expr);
+        //The following line forces the conditionalContextTransformer code to generate a single root subgraph.
+        //An alternative would be to generate one (or more) graphs at the first unconditional place they are
+        //used.  e.g., adding a no_compound(no_childquery, f(no_getgraphresult)) into the tree.
+        //This was the initial approach, but it causes problems for subsequent optimizations -
+        //if an optimzation causes an expression containing the no_getgraphresult to be hoisted so it is
+        //evaluated before the no_childquery it creates an out-of-order dependency.
+        createRootGraph = true;
     }
-    inline ChildSpotterInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ChildSpotterInfo *>(queryTransformExtra(expr->queryBody())); }
 
     virtual void analyseExpr(IHqlExpression * expr)
     {
-        if (pass == 0)
+        switch (pass)
         {
-            if (!analyseThis(expr))
-                return;
-            switch (expr->getOperator())
-            {
-            case no_if:
-            case no_and:
-            case no_which:
-            case no_rejected:
-            case no_or:
-            case no_map:
-                {
-                    analyseExpr(expr->queryChild(0));
-                    conditionDepth++;
-                    ForEachChildFrom(i, expr, 1)
-                        analyseExpr(expr->queryChild(i));
-                    conditionDepth--;
-                    break;
-                }
-            case no_choose:
-            case no_case:
-                {
-                    analyseExpr(expr->queryChild(0));
-                    analyseExpr(expr->queryChild(1));
-                    conditionDepth++;
-                    ForEachChildFrom(i, expr, 2)
-                        analyseExpr(expr->queryChild(i));
-                    conditionDepth--;
-                    break;
-                }
-            default:
-                doAnalyseExpr(expr);
-                break;
-            }
-        }
-        else
-        {
+        case PassFindCandidates:
             if (!alreadyVisited(expr->queryBody()))
                 markHoistPoints(expr);
+            break;
+        default:
+            ConditionalContextTransformer::analyseExpr(expr);
+            break;
         }
     }
-
 
     //MORE: This is a bit of a hack, and should be improved (share code with resource child hoist?)
     inline bool walkFurtherDownTree(IHqlExpression * expr)
@@ -437,32 +413,114 @@ public:
     void markHoistPoints(IHqlExpression * expr)
     {
         node_operator op = expr->getOperator();
-        switch (op)
-        {
-        case no_transform:
-        case no_assign:
-        case no_assignall:
-            break;
-        default:
-            if (!containsNonActiveDataset(expr))
-                return;
-            break;
-        }
-
         if (expr->isDataset() || (expr->isDatarow() && (op != no_select)))
         {
-            if (isUsedUnconditionallyEnough(expr) && !translator.canAssignInline(&ctx, expr))
+            if (!translator.canAssignInline(&ctx, expr))
             {
-                candidate = true;
-                queryBodyExtra(expr)->setHoist();
+                noteCandidate(expr);
                 return;
             }
-
             if (!walkFurtherDownTree(expr))
                 return;
         }
 
         doAnalyseExpr(expr);
+    }
+
+    IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        IHqlExpression * body = expr->queryBody(true);
+        if (expr != body)
+            return createTransformedAnnotation(expr);
+
+        ConditionalContextInfo * extra = queryBodyExtra(expr);
+
+        //The following must preceed transforming the children
+        OwnedHqlExpr subgraph = createDefinitions(extra);
+
+        OwnedHqlExpr transformed = ConditionalContextTransformer::createTransformed(expr);
+        updateOrphanedSelectors(transformed, expr);
+
+        assertex(!extra->moveTo);
+
+        if (subgraph)
+            return createCompound(subgraph.getClear(), transformed.getClear());
+        return transformed.getClear();
+    }
+
+    virtual void transformCandidate(ConditionalContextInfo * candidate)
+    {
+        while (builders.ordinality() < insertLocations.ordinality())
+            builders.append(* new ChildGraphExprBuilder(0));
+
+        IHqlExpression * expr = candidate->original;
+        ConditionalContextInfo * moveTo = candidate->moveTo;
+        OwnedHqlExpr guard;
+        if (moveTo)
+        {
+            guard.setown(getGuardCondition(moveTo, expr));
+
+            //Expressions which are very simple functions of unconditional expressions are treated as if they
+            //are unconditional
+            if (moveTo->isUnconditional() && isUsedUnconditionallyEnough(expr))
+                guard.set(queryBoolExpr(true));
+
+            bool invalid = !guard->isPure();
+            //version 1: don't guard any child queries.
+            if (!matchesBoolean(guard, true))
+            {
+                assertex(moveTo->guards);
+                //MORE: For the moment disable any expressions that are only used conditionally.
+                //Often including conditions improves the code, but sometimes the duplicate evaluation of the
+                //guard conditions in the parent and the child causes excessive code generation.
+                //And forcing it into an alias doesn't help becuase that isn't currently executed in the parent.
+                //Uncomment: if (moveTo->guards->guardContainsCandidate(expr))
+                {
+                    invalid = true;
+                }
+            }
+
+            if (invalid)
+            {
+                removeDefinition(moveTo, candidate);
+                moveTo = NULL;
+            }
+        }
+
+        //A candidate inside a condition that prevents it being moved just creates a definition where it is.
+        if (!moveTo)
+            return;
+
+        ChildGraphExprBuilder & builder = queryBuilder(moveTo);
+        IHqlExpression * annotated = candidate->firstAnnotatedExpr ? candidate->firstAnnotatedExpr : expr;
+        OwnedHqlExpr guarded = createGuardedDefinition(moveTo, annotated, guard);
+        OwnedHqlExpr transformed = builder.addDataset(guarded);
+
+        if (moveTo == candidate)
+        {
+            OwnedHqlExpr subgraph = createDefinitions(moveTo);
+            transformed.setown(createCompound(subgraph.getClear(), transformed.getClear()));
+        }
+
+        setTransformed(expr, transformed);
+    }
+
+    virtual IHqlExpression * createDefinitions(ConditionalContextInfo * extra)
+    {
+        if (!extra->hasDefinitions())
+            return NULL;
+
+        ChildGraphExprBuilder & builder = queryBuilder(extra);
+        OwnedHqlExpr graph = builder.getGraph();
+        OwnedHqlExpr cleanedGraph = mapExternalToInternalResults(graph, builder.queryRepresents());
+        return cleanedGraph.getClear();
+    }
+
+    ChildGraphExprBuilder & queryBuilder(ConditionalContextInfo * extra)
+    {
+        unsigned match = insertLocations.find(*extra);
+        assertex(match != NotFound);
+        return builders.item(match);
     }
 
     inline bool isUsedUnconditionallyEnough(IHqlExpression * expr)
@@ -489,47 +547,11 @@ public:
         }
     }
 
-
-    IHqlExpression * createTransformed(IHqlExpression * expr)
-    {
-        OwnedHqlExpr transformed = HoistingHqlTransformer::createTransformed(expr);
-        updateOrphanedSelectors(transformed, expr);
-
-        if ((expr->isDataset() || expr->isDatarow()) && (expr->getOperator() != no_select))
-        {
-            if (queryBodyExtra(expr)->getHoist() && !translator.canAssignInline(&ctx, transformed))
-            {
-                if (!builder)
-                    builder.setown(new ChildGraphBuilder(translator));
-                return builder->addDataset(expr);
-            }
-        }
-
-        //Very occasionally an index read being hoisted means that an index aggregate is now an aggregate
-        //on a hoisted result.
-        switch (transformed->getOperator())
-        {
-            case no_compound_indexcount:
-            case no_compound_indexaggregate:
-                if (!queryPhysicalRootTable(transformed))
-                    transformed.set(transformed->queryChild(0));
-                break;
-        }
-
-        return transformed.getClear();
-    }
-
-    virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) { return LINK(expr); }
-
-    bool hasCandidate() const { return candidate; }
-    ChildGraphBuilder * getBuilder() { return builder.getClear(); };
-
-
 protected:
+    CIArrayOf<ChildGraphExprBuilder> builders;
     HqlCppTranslator & translator;
-    Owned<ChildGraphBuilder> builder;
     BuildCtx & ctx;
-    bool candidate;
+    bool forceRoot;
 };
 
 
@@ -667,27 +689,35 @@ public:
         pending.append(*LINK(stmt));
     }
 
+    void processStmts(IHqlExpression * expr)
+    {
+        expr->unwindList(pending, no_actionlist);
+    }
+
     void clear()
     {
-        builder.clear();
         pending.kill();
         processed = false;
     }
 
-    bool hasGraphPending()
+    IHqlExpression * getPrefetchGraph()
     {
-        spotChildDatasets();
-        return builder != NULL;
+        spotChildDatasets(true);
+        if (pending.ordinality() == 0)
+            return NULL;
+        IHqlExpression & subquery = pending.item(0);
+        if (subquery.getOperator() == no_childquery)
+        {
+            pending.remove(0, true);
+            return &subquery;
+        }
+
+        return NULL;
     }
 
     void flush(BuildCtx & ctx)
     {
-        spotChildDatasets();
-        if (builder)
-        {
-            builder->generateGraph(ctx);
-            builder.clear();
-        }
+        spotChildDatasets(false);
         combineConditions();
         optimizeAssigns();
         ForEachItemIn(i, pending)
@@ -695,10 +725,18 @@ public:
         pending.kill();
     }
 
-    void generatePrefetch(BuildCtx & ctx, OwnedHqlExpr * retGraphExpr, OwnedHqlExpr * retResultsExpr)
+    void optimize()
     {
-        builder->generatePrefetchGraph(ctx, retGraphExpr, retResultsExpr);
-        builder.clear();
+        spotChildDatasets(false);
+        combineConditions();
+        optimizeAssigns();
+    }
+
+    IHqlExpression * getActionList()
+    {
+        OwnedHqlExpr ret = createActionList(pending);
+        pending.kill();
+        return ret.getClear();
     }
 
 protected:
@@ -708,39 +746,49 @@ protected:
         pending.combineConditions();
     }
 
-    void spotChildDatasets()
+    void spotChildDatasets(bool forceRoot)
     {
         if (!processed && translator.queryCommonUpChildGraphs())
         {
-            ChildDatasetSpotter spotter(translator, buildctx);
-            for (unsigned pass=0; pass < 2; pass++)
+            HqlExprArray analyseExprs;
+            ForEachItemIn(i, pending)
             {
-                ForEachItemIn(i, pending)
+                IHqlExpression & cur = pending.item(i);
+                IHqlExpression * value = &cur;
+                switch (value->getOperator())
                 {
-                    IHqlExpression & cur = pending.item(i);
-                    IHqlExpression * value = &cur;
-                    switch (value->getOperator())
-                    {
-                    case no_assign:
-                        value = value->queryChild(1);
-                        break;
-                    case no_alias:
-                    case no_skip:
-                        value = value->queryChild(0);
-                        break;
-                    }
-                    if (value)
-                        spotter.analyse(value, pass);
+                case no_assign:
+                    value = value->queryChild(1);
+                    break;
+                case no_alias:
+                case no_skip:
+                    value = value->queryChild(0);
+                    break;
                 }
+                if (value)
+                    analyseExprs.append(*LINK(value));
             }
 
-            if (spotter.hasCandidate())
+            NewChildDatasetSpotter spotter(translator, buildctx, forceRoot);
+            if (spotter.analyseNeedsTransform(analyseExprs))
             {
-                HqlExprArray replacement;
-                ForEachItemIn(i, pending)
-                    replacement.append(*spotter.transformRoot(&pending.item(i)));
-                replaceArray(pending, replacement);
-                builder.setown(spotter.getBuilder());
+                //This could be conditional on whether or not there is an unconditional candidate, but that would stop
+                //the same expression being commoned up between two conditional branches.
+                //So, only avoid if 1 conditional candidate used in a single location.
+                bool worthHoisting = true;
+                if (!forceRoot)
+                {
+                    if (spotter.hasSingleConditionalCandidate())
+                        worthHoisting = false;
+                }
+
+                if (worthHoisting)
+                {
+                    //MORE: Remove || true to evaluate the subquery at the latest time.
+                    bool createSubQueryBeforeAll = forceRoot || true;
+                    spotter.transformAll(pending, createSubQueryBeforeAll);
+                    translator.traceExpressions("spotted child", pending);
+                }
             }
             processed = true;
         }
@@ -753,9 +801,23 @@ protected:
     HqlCppTranslator & translator;
     BuildCtx buildctx;
     StatementCollection pending;
-    Owned<ChildGraphBuilder> builder;
     bool processed;
 };
+
+void HqlCppTranslator::optimizeBuildActionList(BuildCtx & ctx, IHqlExpression * exprs)
+{
+    if ((exprs->getOperator() != no_actionlist) || !graph)
+    {
+        buildStmt(ctx, exprs);
+        return;
+    }
+
+    DelayedStatementExecutor delayed(*this, ctx);
+
+    delayed.processStmts(exprs);
+    delayed.flush(ctx);
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -2592,6 +2654,12 @@ AColumnInfo * DatasetSelector::resolveField(IHqlExpression * search) const
 
 void DatasetSelector::set(BuildCtx & ctx, IHqlExpression * expr)
 {
+    while (expr->getOperator() == no_compound)
+    {
+        translator.buildStmt(ctx, expr->queryChild(0));
+        expr = expr->queryChild(1);
+    }
+
     assertex(row->isModifyable());
     ITypeInfo * type = column->queryType();
     if (!hasReferenceModifier(type))
@@ -7890,14 +7958,88 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySpill(BuildCtx & ctx, IHqlExpr
 }
 
 
-//---------------------------------------------------------------------------
-
 bool HqlCppTranslator::isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag)
 {
     SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
     assertex(activeSubgraph);
     return (graphTag == activeSubgraph->graphTag);
 }
+
+
+IHqlExpression * HqlCppTranslator::createLoopSubquery(IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, bool multiInstance, unsigned & loopAgainResult)
+{
+    //Now need to generate the body of the loop.
+    //output dataset is result 0
+    //input dataset is fed in using result 1
+    //counter (if required) is fed in using <result-2>[0].counter;
+    ChildGraphExprBuilder graphBuilder(2);
+    IHqlExpression * graphid = graphBuilder.queryRepresents();
+
+    LinkedHqlExpr transformedBody = body;
+    LinkedHqlExpr transformedAgain = again;
+
+    //Result 1 is the input dataset.
+    HqlExprArray args;
+    args.append(*LINK(dataset->queryRecord()));
+    args.append(*LINK(graphid));
+    args.append(*getSizetConstant(1));
+    if (isGrouped(dataset))
+        args.append(*createAttribute(groupedAtom));
+    args.append(*createAttribute(_loop_Atom));
+    if (multiInstance)
+        args.append(*createAttribute(_streaming_Atom));
+    if (targetThor())    // MORE: && !isChildQuery(ctx)..
+        args.append(*createAttribute(_distributed_Atom));
+    OwnedHqlExpr inputResult= createDataset(no_getgraphresult, args);
+
+    //Result 2 is the counter - if present
+    OwnedHqlExpr counterResult;
+    if (counter)
+    {
+        OwnedHqlExpr select = createCounterAsGraphResult(counter, graphid, 2);
+        transformedBody.setown(replaceExpression(transformedBody, counter, select));
+        if (transformedAgain)
+        {
+            //The COUNTER for the global termination condition is whether to execute iteration COUNTER, 1=1st iter
+            //Since we're evaluating the condition in the previous iteration it needs to be increased by 1.
+            OwnedHqlExpr nextCounter = adjustValue(select, 1);
+            transformedAgain.setown(replaceExpression(transformedAgain, counter, nextCounter));
+        }
+
+        graphBuilder.addInput();
+    }
+
+    //first create the result...
+    //Need to replace ROWS(LEFT) with the result1
+    OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
+    OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
+    transformedBody.setown(replaceExpression(transformedBody, rowsExpr, inputResult));
+
+    OwnedHqlExpr result = createValue(no_setgraphresult, makeVoidType(), LINK(transformedBody), LINK(graphid), getSizetConstant(0), createAttribute(_loop_Atom));
+    graphBuilder.addAction(result);
+
+    if (transformedAgain)
+    {
+        LinkedHqlExpr nextLoopDataset = transformedBody;
+        if (filter)
+        {
+            //If there is a loop filter then the global condition is applied to dataset filtered by that.
+            OwnedHqlExpr mappedFilter = replaceSelector(filter, left, nextLoopDataset);
+            nextLoopDataset.setown(createDataset(no_filter, nextLoopDataset.getClear(), LINK(mappedFilter)));
+        }
+        transformedAgain.setown(replaceExpression(transformedAgain, rowsExpr, nextLoopDataset));
+
+        loopAgainResult = graphBuilder.addInput();
+
+        //MORE: Add loopAgainResult as an attribute on the no_childquery rather than using a reference parameter
+        OwnedHqlExpr againResult = convertScalarToGraphResult(transformedAgain, queryBoolType(), graphid, loopAgainResult);
+        graphBuilder.addAction(againResult);
+
+    }
+
+    return graphBuilder.getGraph();
+}
+
 
 
 ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpression * expr)
@@ -8009,14 +8151,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     subctx.addQuotedCompound("virtual void createParentExtract(rtlRowBuilder & builder)");
 
     //Now need to generate the body of the loop.
-    //output dataset is result 0
-    //input dataset is fed in using result 1
-    //counter (if required) is fed in using result 2[0].counter;
-    ChildGraphBuilder builder(*this);
-    unique_id_t loopId = builder.buildLoopBody(subctx, dataset, selSeq, rowsid, body->queryChild(0), filter, loopCond, counter, instance->activityId, (parallel != NULL));
+    unsigned loopAgainResult = 0;
+    OwnedHqlExpr childquery = createLoopSubquery(dataset, selSeq, rowsid, body->queryChild(0), filter, loopCond, counter, (parallel != NULL), loopAgainResult);
+
+    ChildGraphBuilder builder(*this, childquery);
+    unique_id_t loopId = builder.buildLoopBody(subctx, (parallel != NULL));
     instance->addAttributeInt("_loopid", loopId);
 
-    unsigned loopAgainResult = builder.queryLoopConditionResult();
     if (loopAgainResult)
         doBuildUnsignedFunction(instance->startctx, "loopAgainResult", loopAgainResult);
 
@@ -8066,7 +8207,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGraphLoop(BuildCtx & ctx, IHql
     //output dataset is result 0
     //input dataset is fed in using result 1
     //counter (if required) is fed in using result 2[0].counter;
-    unique_id_t loopId = buildGraphLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, instance->activityId, (parallel != NULL));
+    unique_id_t loopId = buildGraphLoopSubgraph(subctx, dataset, selSeq, rowsid, body->queryChild(0), counter, (parallel != NULL));
     instance->addAttributeInt("_loopid", loopId);
 
     buildInstanceSuffix(instance);
@@ -8113,7 +8254,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRemote(BuildCtx & ctx, IHqlExp
     subctx.addQuotedCompound("virtual void createParentExtract(rtlRowBuilder & builder)");
 
     //output dataset is result 0
-    unique_id_t remoteId = buildRemoteSubgraph(subctx, dataset, instance->activityId);
+    unique_id_t remoteId = buildRemoteSubgraph(subctx, dataset);
     
     instance->addAttributeInt("_graphid", remoteId);
 
@@ -8306,9 +8447,11 @@ public:
     void flush(BuildCtx & ctx)
     {
         if (builder)
-            builder->generateGraph(ctx);
-
-        builder.clear();
+        {
+            OwnedHqlExpr childquery = builder->getGraph();
+            translator.buildStmt(ctx, childquery);
+            builder.clear();
+        }
     }
 
     bool requiresGraph(BuildCtx & ctx, IHqlExpression * expr)
@@ -8339,8 +8482,8 @@ public:
     void addGraphStmt(BuildCtx & ctx, IHqlExpression * expr)
     {
         if (!builder)
-            builder.setown(new ChildGraphBuilder(translator));
-        builder->buildStmt(ctx, expr);
+            builder.setown(new ChildGraphExprBuilder(0));
+        builder->addAction(expr);
     }
 
     void buildStmt(BuildCtx & ctx, IHqlExpression * expr)
@@ -8382,7 +8525,7 @@ public:
 
 protected:
     HqlCppTranslator & translator;
-    Owned<ChildGraphBuilder> builder;
+    Owned<ChildGraphExprBuilder> builder;
 };
 
 ABoundActivity * HqlCppTranslator::doBuildActivityApply(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
@@ -8509,20 +8652,25 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
 {
 //NB: Need to create the graph in the correct order so the references to property trees we retain
 // remain live..
+    unsigned thisId = reservedId ? reservedId : nextActivityId();
+    unsigned graphId = thisId;
     SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
     IPropertyTree * node = createPTree("node");
     if (activeSubgraph)
+    {
         node = activeSubgraph->tree->addPropTree("node", node);
+        if (activeSubgraph->graphTag == graphTag)
+            graphId = activeSubgraph->graphId;
+    }
     else
         node = graph->addPropTree("node", node);
 
-    unsigned thisId = reservedId ? reservedId : nextActivityId();
     node->setPropInt("@id", thisId);
 
     IPropertyTree * graphAttr = node->addPropTree("att", createPTree("att"));
     IPropertyTree * subGraph = graphAttr->addPropTree("graph", createPTree("graph"));
 
-    Owned<SubGraphInfo> graphInfo = new SubGraphInfo(subGraph, thisId, graphTag, kind);
+    Owned<SubGraphInfo> graphInfo = new SubGraphInfo(subGraph, thisId, graphId, graphTag, kind);
     ctx.associate(*graphInfo);
 
     IHqlExpression * numResultsAttr = expr->queryProperty(numResultsAtom);
@@ -8580,7 +8728,7 @@ unsigned HqlCppTranslator::doBuildThorSubGraph(BuildCtx & ctx, IHqlExpression * 
     if (!graphTag && outputLibraryId)
         graphTag = outputLibraryId;
     if (needToCreateGraph)
-        beginGraph(graphctx);
+        beginGraph();
 
     unsigned thisId = doBuildThorChildSubGraph(graphctx, expr, kind, reservedId, graphTag);
 
@@ -8591,14 +8739,10 @@ unsigned HqlCppTranslator::doBuildThorSubGraph(BuildCtx & ctx, IHqlExpression * 
 }
 
 
-void HqlCppTranslator::beginGraph(BuildCtx & ctx, const char * _graphName)
+void HqlCppTranslator::beginGraph(const char * _graphName)
 {
     if (activeGraphName)
-    {
-        //buildStmt(ctx, expr->queryChild(0));
-        //return;
         throwError(HQLERR_NestedThorNodes);
-    }
 
     graphSeqNumber++;
     StringBuffer graphName;
@@ -8785,7 +8929,7 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
         buildLibraryGraph(ctx, expr, NULL);
     else
     {
-        beginGraph(ctx);
+        beginGraph();
 
         unsigned id = 0;
         OwnedHqlExpr graphTag = NULL;//WIP:createAttribute(graphAtom, createConstant((__int64)id));
@@ -8799,7 +8943,7 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
             Owned<SubGraphInfo> graphInfo;
             if (graphTag)
             {
-                graphInfo.setown(new SubGraphInfo(graph, 0, graphTag, SubGraphRoot));
+                graphInfo.setown(new SubGraphInfo(graph, 0, 0, graphTag, SubGraphRoot));
                 graphctx.associate(*graphInfo);
             }
 
@@ -11593,12 +11737,22 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIterate(BuildCtx & ctx, IHqlEx
 
 IHqlExpression * HqlCppTranslator::queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr)
 {
-    while (expr->getOperator() == no_alias_scope)
+    loop
     {
-        expandAliasScope(ctx, expr);
-        expr = expr->queryChild(0);
+        switch (expr->getOperator())
+        {
+        case no_alias_scope:
+            expandAliasScope(ctx, expr);
+            expr = expr->queryChild(0);
+            break;
+        case no_compound:
+            buildStmt(ctx, expr->queryChild(0));
+            expr = expr->queryChild(1);
+            break;
+        default:
+            return expr;
+        }
     }
-    return expr;
 }
 
 
@@ -13917,7 +14071,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
         TransformBuilder builder(*this, postctx, record, selfCursor, assigns);
         filterExpandAssignments(postctx, &builder, assigns, transform);
         builder.buildTransformChildren(postctx, record, selfCursor->querySelector());
-        if (builder.hasGraphPending())
+        OwnedHqlExpr subgraph = builder.getPrefetchGraph();
+        if (subgraph)
         {
             //Generate the extract preparation function
             BuildCtx prectx(instance->startctx);
@@ -13931,23 +14086,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
             if (counter)
                 associateCounter(prectx, counter, "counter");
         
-            OwnedHqlExpr graph, results;
-            builder.generatePrefetch(prectx, &graph, &results);
+            OwnedHqlExpr graphInstance;
+            ChildGraphBuilder graphBuilder(*this, subgraph);
+            graphBuilder.generatePrefetchGraph(prectx, &graphInstance);
             prectx.addReturn(queryBoolExpr(true));
 
             BuildCtx childctx(instance->startctx);
             childctx.addQuotedCompound("virtual IThorChildGraph *queryChild()");
-            childctx.addReturn(graph);
+            childctx.addReturn(graphInstance);
 
-            //hack!  I need to change the way results are bound so they aren't nesc. the same as the query name
-            StringBuffer s;
-            s.append("IEclGraphResults * ");
-            generateExprCpp(s, results);
-            s.append(" = results;");
-            postctx.addQuoted(s);
-            
             //Add an association for the results into the transform function.
-            postctx.associateExpr(results, results);
+            IHqlExpression * graph = subgraph->queryChild(0);
+            OwnedHqlExpr results = createAttribute(resultsAtom, LINK(graph));
+            OwnedHqlExpr resultsInstanceExpr = createQuoted("results", makeBoolType());
+            postctx.associateExpr(results, resultsInstanceExpr);
         }
         builder.flush(postctx);
     }
