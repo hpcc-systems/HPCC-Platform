@@ -501,6 +501,7 @@ _ATOM reportFieldOverflowAtom;
 _ATOM reportRowOverflowAtom;
 _ATOM responseinfoAtom;
 _ATOM restoreClusterAtom;
+_ATOM resultsAtom;
 _ATOM returnAtom;
 _ATOM returnPersistVersionAtom;
 _ATOM reverseIntAtom[9][2];
@@ -1218,6 +1219,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(reportRowOverflow);
     MAKEATOM(responseinfo);
     MAKEATOM(restoreCluster);
+    MAKEATOM(results);
     MAKEATOM(return);
     MAKEATOM(returnPersistVersion);
 

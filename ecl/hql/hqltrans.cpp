@@ -1102,9 +1102,8 @@ NewHqlTransformer::NewHqlTransformer(HqlTransformerInfo & _info) : ANewHqlTransf
 }
 
 
-bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
+bool NewHqlTransformer::alreadyVisited(ANewTransformInfo * extra)
 {
-    ANewTransformInfo * extra = queryTransformExtra(expr);
     if (extra->lastPass == pass)
         return true;
 
@@ -1114,6 +1113,12 @@ bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
 
     extra->lastPass = pass;
     return false;
+}
+
+
+bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
+{
+    return alreadyVisited(queryTransformExtra(expr));
 }
 
 
@@ -2093,12 +2098,146 @@ NestedHqlMapTransformer::NestedHqlMapTransformer() : NestedHqlTransformer(nested
 
 //---------------------------------------------------------------------------
 
-HoistingHqlTransformer::HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : NewHqlTransformer(_info)
+ConditionalHqlTransformer::ConditionalHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : NewHqlTransformer(_info)
 { 
     flags = _flags; 
-    target = NULL; 
     conditionDepth = 0; 
     containsUnknownIndependentContents = false;
+}
+
+
+ANewTransformInfo * ConditionalHqlTransformer::createTransformInfo(IHqlExpression * expr)
+{
+    return CREATE_NEWTRANSFORMINFO(ConditionalTransformInfo, expr);
+}
+
+bool ConditionalHqlTransformer::analyseThis(IHqlExpression * expr)
+{
+    if (pass == 0)
+    {
+        ConditionalTransformInfo * extra = queryBodyExtra(expr);
+        if (alreadyVisited(extra))
+        {
+            if (extra->isUnconditional() || (conditionDepth > 0))
+                return false;
+            extra->setUnconditional();
+        }
+        else
+        {
+            if (conditionDepth == 0)
+                extra->setFirstUnconditional();
+        }
+        return true;
+    }
+    return !alreadyVisited(expr);
+}
+
+
+void ConditionalHqlTransformer::analyseExpr(IHqlExpression * expr)
+{
+    if (!analyseThis(expr))
+        return;
+
+    doAnalyseExpr(expr);
+}
+
+
+void ConditionalHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
+{
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_colon:
+        //Hoisting transforms need to happen after the workflow separation - otherwise
+        //you can end up with an exponential expansion of persist points.
+        throwUnexpected();              
+    case no_cluster:
+    case no_sequential:
+        containsUnknownIndependentContents = true;
+        return;
+    case no_allnodes:
+    case no_thisnode:
+        if (!(flags & CTFtraverseallnodes))
+            return;
+        break;
+    case no_globalscope:
+        if (!expr->hasProperty(localAtom))
+        {
+            unsigned savedDepth = conditionDepth;
+            conditionDepth = 0;
+            analyseExpr(expr->queryChild(0));
+            conditionDepth = savedDepth;
+            return;
+        }
+        break;
+    case no_if:
+    case no_and:
+    case no_or:
+    case no_mapto:
+    case no_map:
+    case no_which:
+    case no_rejected:
+    case no_choose:
+        if (treatAsConditional(expr))
+        {
+            analyseExpr(expr->queryChild(0));
+            conditionDepth++;
+            ForEachChildFrom(idx, expr, 1)
+                analyseExpr(expr->queryChild(idx));
+            conditionDepth--;
+            return;
+        }
+        break;
+    case no_case:
+        if (treatAsConditional(expr))
+        {
+            analyseExpr(expr->queryChild(0));
+            analyseExpr(expr->queryChild(1));
+            conditionDepth++;
+            ForEachChildFrom(idx, expr, 2)
+                analyseExpr(expr->queryChild(idx));
+            conditionDepth--;
+            return;
+        }
+        break;
+    case no_attr_expr:
+        analyseChildren(expr);
+        return;
+    }
+    NewHqlTransformer::analyseExpr(expr);
+}
+
+bool ConditionalHqlTransformer::treatAsConditional(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_if:
+        return ((flags & CTFnoteifall) ||
+            ((flags & CTFnoteifactions) && expr->isAction()) ||
+            ((flags & CTFnoteifdatasets) && expr->isDataset()) ||
+            ((flags & CTFnoteifdatarows) && expr->isDatarow()));
+    case no_or:
+        return (flags & CTFnoteor) != 0;
+    case no_and:
+        return (flags & CTFnoteor) != 0;
+    case no_case:
+    case no_map:
+    case no_mapto:
+        return (flags & CTFnotemap) != 0;
+    case no_which:
+    case no_rejected:
+    case no_choose:
+        return (flags & CTFnotewhich) != 0;
+    }
+    return false;
+}
+
+
+//---------------------------------------------------------------------------
+
+HoistingHqlTransformer::HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : ConditionalHqlTransformer(_info, _flags)
+{
+    target = NULL;
 }
 
 void HoistingHqlTransformer::setParent(const HoistingHqlTransformer * parent)
@@ -2106,8 +2245,6 @@ void HoistingHqlTransformer::setParent(const HoistingHqlTransformer * parent)
     assertex(parent->independentCache);
     independentCache.set(parent->independentCache);
 }
-
-
 
 void HoistingHqlTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & out)
 {
@@ -2129,11 +2266,6 @@ void HoistingHqlTransformer::appendToTarget(IHqlExpression & cur)
     target->append(cur);
 }
 
-ANewTransformInfo * HoistingHqlTransformer::createTransformInfo(IHqlExpression * expr)
-{
-    return CREATE_NEWTRANSFORMINFO(HoistingTransformInfo, expr);
-}
-
 void HoistingHqlTransformer::transformArray(const HqlExprArray & in, HqlExprArray & out)
 {
     HqlExprArray * savedTarget = target;
@@ -2152,76 +2284,6 @@ IHqlExpression * HoistingHqlTransformer::transformRoot(IHqlExpression * expr)
 }
 
 
-bool HoistingHqlTransformer::analyseThis(IHqlExpression * expr)
-{
-    HoistingTransformInfo * extra = queryBodyExtra(expr);
-    if (alreadyVisited(expr->queryBody()))
-    {
-        if ((pass != 0) || extra->isUnconditional() || (conditionDepth > 0))
-            return false;
-    }
-    if (conditionDepth == 0)
-        extra->setUnconditional();
-    return true;
-}
-
-
-void HoistingHqlTransformer::analyseExpr(IHqlExpression * expr)
-{
-    if (!analyseThis(expr))
-        return;
-
-    doAnalyseExpr(expr);
-}
-
-
-void HoistingHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
-{
-    node_operator op = expr->getOperator();
-    switch (op)
-    {
-    case no_colon:
-        //Hoisting transforms need to happen after the workflow separation - otherwise
-        //you can end up with an exponential expansion of persist points.
-        throwUnexpected();              
-    case no_cluster:
-    case no_sequential:
-        containsUnknownIndependentContents = true;
-        return;
-    case no_allnodes:
-    case no_thisnode:
-        if (!(flags & HTFtraverseallnodes))
-            return;
-        break;
-    case no_globalscope:
-        if (!expr->hasProperty(localAtom))
-        {
-            unsigned savedDepth = conditionDepth;
-            conditionDepth = 0;
-            analyseExpr(expr->queryChild(0));
-            conditionDepth = savedDepth;
-            return;
-        }
-        break;
-    case no_if:
-        if (checkConditional(expr))
-        {
-            analyseExpr(expr->queryChild(0));
-            conditionDepth++;
-            analyseExpr(expr->queryChild(1));
-            if (expr->queryChild(2))
-                analyseExpr(expr->queryChild(2));
-            conditionDepth--;
-            return;
-        }
-        break;
-    case no_attr_expr:
-        analyseChildren(expr);
-        return;
-    }
-    NewHqlTransformer::analyseExpr(expr);
-}
-
 //A good idea, but I need to get my head around roxie/thor differences and see if we can execute graphs more dynamically.
 IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr)
 {
@@ -2235,7 +2297,7 @@ IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr
     case no_allnodes:               // MORE: This needs really needs to recurse, and substitute within no_thisnode - not quite sure how that would happen
     case no_thisnode:
         //I'm not sure this is a good solution - really contents of no_thisnode should be hoisted in common, would require dependence on insideAllNodes
-        if (!(flags & HTFtraverseallnodes))
+        if (!(flags & CTFtraverseallnodes))
             return LINK(expr);
         break;
     case no_cluster:
@@ -2276,7 +2338,7 @@ IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr
             return completeTransform(expr, transformedArgs);
         }
     case no_if:
-        if (checkConditional(expr))
+        if (treatAsConditional(expr))
         {
             HqlExprArray args;
             args.append(*transform(expr->queryChild(0)));

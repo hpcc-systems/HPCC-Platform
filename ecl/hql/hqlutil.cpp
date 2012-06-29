@@ -515,6 +515,18 @@ IHqlExpression * queryVirtualFileposField(IHqlExpression * record)
 }
 
 
+IHqlExpression * queryLastNonAttribute(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    while (max--)
+    {
+        IHqlExpression * cur = expr->queryChild(max);
+        if (!cur->isAttribute())
+            return cur;
+    }
+    return NULL;
+}
+
 //---------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
@@ -1158,6 +1170,7 @@ IHqlExpression * replaceChild(IHqlExpression * expr, unsigned childIndex, IHqlEx
 
 IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpression * right)
 {
+    assertex(right);
     if (left->isDataset() || right->isDataset())
         return createDataset(no_if, cond, createComma(left, right));
 
@@ -3234,6 +3247,35 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
     return createValue(no_getresult, valueType.getLink(), LINK(seqAttr), LINK(aliasAttr));
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr row = convertScalarToRow(value, fieldType);
+    OwnedHqlExpr ds = createDatasetFromRow(LINK(row));
+    HqlExprArray args;
+    args.append(*LINK(ds));
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(seq));
+    args.append(*createAttribute(rowAtom));
+    return createValue(no_setgraphresult, makeVoidType(), args);
+}
+
+IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr counterRecord = createRecord(counterField);
+    HqlExprArray args;
+    args.append(*LINK(counterRecord));
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(seq));
+    args.append(*createAttribute(rowAtom));
+    OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
+    OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
+    return ensureExprType(select, scalarType);
+}
+
 _ATOM queryCsvEncoding(IHqlExpression * mode)
 {
     if (mode)
@@ -4163,6 +4205,17 @@ IHqlExpression * appendLocalAttribute(IHqlExpression * expr)
 IHqlExpression * removeLocalAttribute(IHqlExpression * expr)
 {
     return removeProperty(expr, localAtom);
+}
+
+bool hasOperand(IHqlExpression * expr, IHqlExpression * child)
+{
+    expr = expr->queryBody();
+    ForEachChild(i, expr)
+    {
+        if (expr->queryChild(i) == child)
+            return true;
+    }
+    return false;
 }
 
 //-------------------------------------------------------------------------------------------------------

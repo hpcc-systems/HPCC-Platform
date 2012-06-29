@@ -342,6 +342,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return 0;
             return RETassign|((childLFlags|childRFlags) & HEFspillinline);
         }
+    case no_compound:
+        return getInlineFlags(ctx, expr->queryChild(1));
     default:
         return 0;
     }
@@ -1095,6 +1097,9 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             default:
                 if (cur.isResultAlias())
                     ok = false;
+
+                //MORE: This should only be done if the child query etc. actually references the datarow.
+                //ideally from a colocal activity.
 #if 0
             //Theoretically the following is true.  However it can mean that for the cost of serializing an extra 4 bytes here and
             //there you end up serializing several hundred in some other situations.

@@ -52,7 +52,8 @@ extern HQL_API IHqlExpression * swapDatasets(IHqlExpression * parent);
 extern HQL_API IHqlExpression * createCompare(node_operator op, IHqlExpression * l, IHqlExpression * r);    // handles cast insertion...
 extern HQL_API IHqlExpression * createRecord(IHqlExpression * field);
 extern HQL_API IHqlExpression * queryLastField(IHqlExpression * record);
-extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * record, unsigned & idx);
+extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API int compareSymbolsByName(IInterface * * pleft, IInterface * * pright);
 extern HQL_API int compareAtoms(IInterface * * pleft, IInterface * * pright);
 extern HQL_API IHqlExpression * getSizetConstant(unsigned size);
@@ -129,6 +130,10 @@ extern HQL_API void unwindFields(HqlExprCopyArray & fields, IHqlExpression * rec
 extern HQL_API unsigned numAttributes(const HqlExprArray & args);
 extern HQL_API unsigned numAttributes(const IHqlExpression * expr);
 extern HQL_API IHqlExpression * createGetResultFromSetResult(IHqlExpression * setExpr, ITypeInfo * type=NULL);
+
+extern HQL_API IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
+extern HQL_API IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
+
 extern HQL_API IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags);
 extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
@@ -151,6 +156,8 @@ extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlEx
 extern HQL_API IHqlExpression * replaceOwnedProperty(IHqlExpression * expr, IHqlExpression * ownedProeprty);
 extern HQL_API IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...);
 extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name);
+extern HQL_API bool hasOperand(IHqlExpression * expr, IHqlExpression * child);
+
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp);

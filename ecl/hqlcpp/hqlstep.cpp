@@ -46,6 +46,7 @@
 #include "hqlgraph.ipp"
 #include "hqlscope.hpp"
 #include "hqlccommon.hpp"
+#include "hqlcppds.hpp"
 
 #include "eclhelper.hpp"
 
@@ -762,7 +763,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRowsetRange(BuildCtx & ctx, IH
     if ((kind == TAKnwaygraphloopresultread) && isGrouped(rowset))
         doBuildBoolFunction(instance->classctx, "grouped", true);
     if (graphId && targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+        addGraphIdAttribute(instance, ctx, graphId);
 
     buildInstanceSuffix(instance);
 

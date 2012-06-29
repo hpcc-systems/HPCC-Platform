@@ -435,6 +435,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_reference:
     case no_assign_addfiles:
     case no_nullptr:
+    case no_childquery:
 
 //Workflow
     case no_stored:
@@ -606,7 +607,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_persist_check:
     case no_dataset_from_transform:
 
-    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:

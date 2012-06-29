@@ -288,6 +288,7 @@ _ATOM rightAtom;
 _ATOM rightonlyAtom;
 _ATOM rightouterAtom;
 _ATOM rollbackAtom;
+_ATOM _root_Atom;
 _ATOM rowAtom;
 _ATOM _rowsid_Atom;
 _ATOM rowLimitAtom;
@@ -668,6 +669,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     rightonlyAtom = createLowerCaseAtom("right only");
     rightouterAtom = createLowerCaseAtom("right outer");
     MAKEATOM(rollback);
+    MAKESYSATOM(root);
     MAKEATOM(row);
     MAKESYSATOM(rowsid);
     MAKEATOM(rowLimit);

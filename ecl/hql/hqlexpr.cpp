@@ -1431,8 +1431,9 @@ const char *getOpString(node_operator op)
     case no_assign_addfiles: return "+=";
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
+    case no_childquery: return "no_childquery";
 
-    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
@@ -3769,27 +3770,6 @@ CHqlExpression::~CHqlExpression()
 {
 //  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
     ::Release(type);
-//  RELEASE_TRANSFORM_EXTRA(transformDepth, transformExtra);
-#ifdef _DEBUG       // Not strictly correct, but good enough for me in debug mode...
-    if (!hashcode)
-    {
-
-        switch(op)
-        {
-        case no_mergedscope:
-        case no_remotescope:
-        case no_privatescope:
-        case no_service:
-        case no_none:
-            break;
-        default:
-
-            PrintLog("%s did not hash", getOpString(op));
-            // assertex(false);
-            break;
-        }
-    }
-#endif
 }
 
 IHqlScope * CHqlExpression::queryScope() 

@@ -444,6 +444,7 @@ public:
     IHqlExpression * transformRoot(IHqlExpression * expr) { return doTransformRootExpr(expr); }
 
 protected:
+            bool alreadyVisited(ANewTransformInfo * extra);
             bool alreadyVisited(IHqlExpression * pass);
     virtual void analyseExpr(IHqlExpression * expr);
     virtual void analyseSelector(IHqlExpression * expr);
@@ -585,13 +586,19 @@ This provides a mechanism for handling the code correctly, but also allowing the
 Flags provided to the constructor indicate which options for transforming are used.
 */
 
-class HoistingTransformInfo : public NewTransformInfo
+//---------------------------------------------------------------------------------------------------------------------
+
+class ConditionalTransformInfo : public NewTransformInfo
 {
+    enum { CTFunconditional = 1, CTFfirstunconditional = 2 };
 public:
-    HoistingTransformInfo(IHqlExpression * _original) : NewTransformInfo(_original) { spareByte1 = false; }
+    ConditionalTransformInfo(IHqlExpression * _original) : NewTransformInfo(_original) { spareByte1 = 0; }
     
-    inline bool isUnconditional() { return spareByte1 != 0; }
-    inline void setUnconditional() { spareByte1 = true; }
+    inline bool isUnconditional() const { return (spareByte1 & CTFunconditional) != 0; }
+    inline bool isFirstUseUnconditional() const { return (spareByte1 & CTFfirstunconditional) != 0; }
+
+    inline void setUnconditional() { spareByte1 |= CTFunconditional; }
+    inline void setFirstUnconditional() { spareByte1 |= (CTFfirstunconditional|CTFunconditional); }
 
 private:
     using NewTransformInfo::spareByte1;             //prevent derived classes from also using this spare byte
@@ -600,7 +607,51 @@ private:
 //This allows expressions to be evaluated in a nested context, so that once that nested context is finished
 //all the mapped expressions relating to that nested context are removed, and not commoned up.
 //Useful for processing 
-class HQL_API HoistingHqlTransformer : public NewHqlTransformer
+class HQL_API ConditionalHqlTransformer : public NewHqlTransformer
+{
+public:
+    enum { CTFnoteifactions     = 0x0001,
+           CTFnoteifdatasets    = 0x0002,
+           CTFnoteifdatarows    = 0x0004,
+           CTFnoteifall         = 0x0008,
+           CTFnoteor            = 0x0010,
+           CTFnoteand           = 0x0020,
+           CTFnotemap           = 0x0040,
+           CTFnotewhich         = 0x0080,
+           CTFnoteall           = 0xFFFF,
+           CTFtraverseallnodes  = 0x10000,
+    };
+    ConditionalHqlTransformer(HqlTransformerInfo & _info, unsigned _flags);
+
+    void setFlags(unsigned _flags) { flags = _flags; }
+
+protected:
+    bool analyseThis(IHqlExpression * expr);
+
+    virtual void doAnalyseExpr(IHqlExpression * expr);
+
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+    inline ConditionalTransformInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ConditionalTransformInfo *>(queryTransformExtra(expr->queryBody())); }
+    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryBodyExtra(expr)->isUnconditional(); }
+
+    virtual void analyseExpr(IHqlExpression * expr);
+
+    inline bool treatAsConditional(IHqlExpression * expr);
+
+protected:
+    unsigned conditionDepth;
+    unsigned flags;
+    bool containsUnknownIndependentContents;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+typedef ConditionalTransformInfo HoistingTransformInfo;
+
+//This allows expressions to be evaluated in a nested context, so that once that nested context is finished
+//all the mapped expressions relating to that nested context are removed, and not commoned up.
+class HQL_API HoistingHqlTransformer : public ConditionalHqlTransformer
 {
     class IndependentTransformMap : public CInterface
     {
@@ -611,30 +662,13 @@ class HQL_API HoistingHqlTransformer : public NewHqlTransformer
         HqlExprArray cache;
     };
 public:
-    enum { HTFnoteconditionalactions = 0x01, 
-           HTFnoteconditionaldatasets= 0x02,
-           HTFnoteconditionaldatarows= 0x04,
-           HTFtraverseallnodes = 0x08,
-           HTFnoteallconditionals = 0x10,
-    };
     HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags);
 
     void appendToTarget(IHqlExpression & curOwned);
-    void setFlags(unsigned _flags) { flags = _flags; }
-    void setParent(const HoistingHqlTransformer * parent);
     void transformRoot(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformRoot(IHqlExpression * expr);
 
 protected:
-    bool analyseThis(IHqlExpression * expr);
-
-    virtual void doAnalyseExpr(IHqlExpression * expr);
-
-    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
-    inline HoistingTransformInfo * queryBodyExtra(IHqlExpression * expr)        { return static_cast<HoistingTransformInfo *>(queryTransformExtra(expr->queryBody())); }
-    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryBodyExtra(expr)->isUnconditional(); }
-
-    virtual void analyseExpr(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     IHqlExpression * transformIndependent(IHqlExpression * expr);
     virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) = 0;
@@ -642,22 +676,11 @@ protected:
     void transformArray(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformEnsureResult(IHqlExpression * expr);
 
-    inline bool checkConditional(IHqlExpression * expr)
-    {
-        return ((flags & HTFnoteallconditionals) ||
-            ((flags & HTFnoteconditionalactions) && expr->isAction()) ||
-            ((flags & HTFnoteconditionaldatasets) && expr->isDataset()) ||
-            ((flags & HTFnoteconditionaldatarows) && expr->isDatarow()));
-    }
+    void setParent(const HoistingHqlTransformer * parent);
 
 private:
     HqlExprArray *      target;
-    unsigned flags;
     Owned<IndependentTransformMap> independentCache;
-
-protected:
-    unsigned conditionDepth;
-    bool containsUnknownIndependentContents;
 };
 
 

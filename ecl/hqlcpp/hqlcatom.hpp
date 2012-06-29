@@ -501,6 +501,7 @@ extern _ATOM reportFieldOverflowAtom;
 extern _ATOM reportRowOverflowAtom;
 extern _ATOM responseinfoAtom;
 extern _ATOM restoreClusterAtom;
+extern _ATOM resultsAtom;
 extern _ATOM returnAtom;
 extern _ATOM returnPersistVersionAtom;
 extern _ATOM reverseIntAtom[9][2];

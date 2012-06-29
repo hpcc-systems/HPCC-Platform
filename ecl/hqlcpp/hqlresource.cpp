@@ -2691,6 +2691,8 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
                 locator.analyseChild(expr->queryChild(0), true);
                 break;
             }
+        case no_childquery:
+            throwUnexpected();
         default:
             {
                 for (unsigned idx=first; idx < last; idx++)
