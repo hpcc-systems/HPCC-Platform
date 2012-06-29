@@ -2182,6 +2182,7 @@ void ConditionalHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_which:
     case no_rejected:
     case no_choose:
+    case no_chooseds:
         if (treatAsConditional(expr))
         {
             analyseExpr(expr->queryChild(0));

@@ -819,9 +819,10 @@ static const char * getOperatorText(node_operator op)
     DUMP_CASE(no,countdict);
     DUMP_CASE(no,userdictionary);
     DUMP_CASE(no,newuserdictionary);
+    DUMP_CASE(no,chooseds);
 
     case no_unused6:
-    case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
+    case no_unused13: case no_unused14: case no_unused15: case no_unused19:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:

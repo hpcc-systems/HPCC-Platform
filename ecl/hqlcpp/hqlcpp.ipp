@@ -715,6 +715,7 @@ struct HqlCppOptions
     bool                projectNestedTables;
     bool                showSeqInGraph;
     bool                normalizeSelectorSequence;
+    bool                transformCaseToChoose;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1173,6 +1174,7 @@ public:
     void buildSerializedDataset(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
 
     void buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
+    void buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
@@ -1345,6 +1347,8 @@ public:
     ABoundActivity * doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityChildGroupAggregate(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityChildNormalize(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityChoose(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * cond, CIArrayOf<ABoundActivity> & inputs, bool isRoot);
+    ABoundActivity * doBuildActivityChoose(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityChooseSets(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityChooseSetsEx(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityCloned(BuildCtx & ctx, IHqlExpression * expr);
