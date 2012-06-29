@@ -134,7 +134,7 @@ public:
 
     bool analyseNeedsTransform(const HqlExprArray & exprs);
     bool hasSingleConditionalCandidate() const;
-    void transformAll(HqlExprArray & exprs);
+    void transformAll(HqlExprArray & exprs, bool forceRootFirst);
 
 protected:
     virtual void transformCandidate(ConditionalContextInfo * candidate) = 0;

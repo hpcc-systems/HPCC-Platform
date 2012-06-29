@@ -7082,13 +7082,13 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     buildCachedExpr(subctx, expr->queryChild(0), cond);
 
     IHqlStmt * test = subctx.addFilter(cond.expr);
-    buildStmt(subctx, expr->queryChild(1));
+    optimizeBuildActionList(subctx, expr->queryChild(1));
 
     IHqlExpression * elseExpr = queryRealChild(expr, 2);
     if (elseExpr && elseExpr->getOperator() != no_null)
     {
         subctx.selectElse(test);
-        buildStmt(subctx, elseExpr);
+        optimizeBuildActionList(subctx, elseExpr);
     }
 }
 

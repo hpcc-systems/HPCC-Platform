@@ -777,7 +777,9 @@ protected:
 
                 if (worthHoisting)
                 {
-                    spotter.transformAll(pending);
+                    //MORE: Remove || true to evaluate the subquery at the latest time.
+                    bool createSubQueryBeforeAll = forceRoot || true;
+                    spotter.transformAll(pending, createSubQueryBeforeAll);
                     translator.traceExpressions("spotted child", pending);
                 }
             }
@@ -797,6 +799,12 @@ protected:
 
 void HqlCppTranslator::optimizeBuildActionList(BuildCtx & ctx, IHqlExpression * exprs)
 {
+    if ((exprs->getOperator() != no_actionlist) || !graph)
+    {
+        buildStmt(ctx, exprs);
+        return;
+    }
+
     DelayedStatementExecutor delayed(*this, ctx);
 
     delayed.processStmts(exprs);

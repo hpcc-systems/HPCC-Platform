@@ -779,18 +779,25 @@ void ConditionalContextTransformer::transformAllCandidates()
         transformCandidate(&candidates.item(i));
 }
 
-void ConditionalContextTransformer::transformAll(HqlExprArray & exprs)
+void ConditionalContextTransformer::transformAll(HqlExprArray & exprs, bool forceRootFirst)
 {
     transformAllCandidates();
     OwnedHqlExpr rootDefinitions = createDefinitions(queryBodyExtra(rootExpr));
     HqlExprArray transformed;
-    if (rootDefinitions)
-        transformed.append(*LINK(rootDefinitions));
+    if (rootDefinitions && forceRootFirst)
+        transformed.append(*rootDefinitions.getClear());
+
     ForEachItemIn(i, exprs)
     {
         IHqlExpression * cur = &exprs.item(i);
         OwnedHqlExpr mapped = transformRoot(cur);
+
+        //Add the child query etc. before the first expression that changes.
+        if (rootDefinitions && (mapped != cur))
+            transformed.append(*rootDefinitions.getClear());
+
         transformed.append(*mapped.getClear());
     }
+    assertex(!rootDefinitions);
     exprs.swapWith(transformed);
 }
