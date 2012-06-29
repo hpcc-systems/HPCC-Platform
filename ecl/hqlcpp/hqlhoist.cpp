@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    Copyright (C) 2012 HPCC Systems.
 
     All rights reserved. This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
+
 #include "platform.h"
 #include "jlib.hpp"
 
@@ -553,8 +554,8 @@ CHqlExprMultiGuard * ConditionalContextTransformer::createIfGuard(ConditionalCon
     if (!trueGuard && !falseGuard && !cur->isCandidateThatMoves())
         return LINK(condGuard);
 
-    //If you want to common up the conditions between the child query and the parent code you might acheive
-    //if with forcing the condition into an alias.  E.g.,
+    //If you want to common up the conditions between the child query and the parent code you might achieve
+    //it by forcing the condition into an alias.  E.g.,
     //queryBodyExtra(ifCond)->createAlias = true;
 
     Owned<CHqlExprMultiGuard> newGuards = new CHqlExprMultiGuard;

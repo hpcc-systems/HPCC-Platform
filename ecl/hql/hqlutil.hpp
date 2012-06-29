@@ -129,6 +129,10 @@ extern HQL_API void unwindFields(HqlExprCopyArray & fields, IHqlExpression * rec
 extern HQL_API unsigned numAttributes(const HqlExprArray & args);
 extern HQL_API unsigned numAttributes(const IHqlExpression * expr);
 extern HQL_API IHqlExpression * createGetResultFromSetResult(IHqlExpression * setExpr, ITypeInfo * type=NULL);
+
+extern HQL_API IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
+extern HQL_API IHqlExpression * createCounterAsGraphResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq);
+
 extern HQL_API IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags);
 extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 

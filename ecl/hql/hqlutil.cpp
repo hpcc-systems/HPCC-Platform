@@ -3235,6 +3235,41 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
     return createValue(no_getresult, valueType.getLink(), LINK(seqAttr), LINK(aliasAttr));
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
+IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr row = convertScalarToRow(value, fieldType);
+    OwnedHqlExpr ds = createDatasetFromRow(LINK(row));
+    HqlExprArray args;
+    args.append(*LINK(ds));
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(seq));
+    args.append(*createAttribute(rowAtom));
+    return createValue(no_setgraphresult, makeVoidType(), args);
+}
+
+static IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr counterRecord = createRecord(counterField);
+    HqlExprArray args;
+    args.append(*LINK(counterRecord));
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(seq));
+    args.append(*createAttribute(rowAtom));
+    OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
+    OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
+    OwnedHqlExpr cast = ensureExprType(select, scalarType);
+    return createAlias(cast, internalAttrExpr);
+}
+
+IHqlExpression * createCounterAsGraphResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
+{
+    return createScalarFromGraphResult(counter->queryType(), unsignedType, represents, seq);
+}
+
 _ATOM queryCsvEncoding(IHqlExpression * mode)
 {
     if (mode)

@@ -1963,8 +1963,6 @@ protected:
     unsigned numResults;
 };
 
-//move to a better header file
-IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq);
 
 //===========================================================================
 

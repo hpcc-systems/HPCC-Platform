@@ -365,12 +365,13 @@ public:
     NewChildDatasetSpotter(HqlCppTranslator & _translator, BuildCtx & _ctx, bool _forceRoot)
         : ConditionalContextTransformer(childDatasetSpotterInfo, true), translator(_translator), ctx(_ctx), forceRoot(_forceRoot)
     {
-        //The child dataset code could create a single no_childquery at any place in the graph, or multiple subgraphs
-        //however adding a no_compound(no_childquery, ...) into the tree can cause problems for subsequent optimizations
-        //if any of them caused the no_getgraphresult to be hoisted before the no_childquery it would create an
-        //invalid expression.
-        //Instead, add the no_childquery before the first item that changes, and repeat for children of if actions.
-        createRootGraph = true;//_forceRoot;
+        //The following line forces the conditionalContextTransformer code to generate a single root subgraph.
+        //An alternative would be to generate one (or more) graphs at the first unconditional place they are
+        //used.  e.g., adding a no_compound(no_childquery, f(no_getgraphresult)) into the tree.
+        //This was the initial approach, but it causes problems for subsequent optimizations -
+        //if an optimzation causes an expression containing the no_getgraphresult to be hoisted so it is
+        //evaluated before the no_childquery it creates an out-of-order dependency.
+        createRootGraph = true;
     }
 
     virtual void analyseExpr(IHqlExpression * expr)
@@ -7951,41 +7952,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySpill(BuildCtx & ctx, IHqlExpr
 }
 
 
-//---------------------------------------------------------------------------------------------------------------------
-
-static IHqlExpression * convertScalarToResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
-{
-    OwnedHqlExpr row = convertScalarToRow(value, fieldType);
-    OwnedHqlExpr ds = createDatasetFromRow(LINK(row));
-    HqlExprArray args;
-    args.append(*LINK(ds));
-    args.append(*LINK(represents));
-    args.append(*getSizetConstant(seq));
-    args.append(*createAttribute(rowAtom));
-    return createValue(no_setgraphresult, makeVoidType(), args);
-}
-
-static IHqlExpression * createScalarFromResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
-{
-    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
-    OwnedHqlExpr counterRecord = createRecord(counterField);
-    HqlExprArray args;
-    args.append(*LINK(counterRecord));
-    args.append(*LINK(represents));
-    args.append(*getSizetConstant(seq));
-    args.append(*createAttribute(rowAtom));
-    OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
-    OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
-    OwnedHqlExpr cast = ensureExprType(select, scalarType);
-    return createAlias(cast, internalAttrExpr);
-}
-
-IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
-{
-    return createScalarFromResult(counter->queryType(), unsignedType, represents, seq);
-}
-
-
 bool HqlCppTranslator::isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag)
 {
     SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
@@ -8024,7 +7990,7 @@ IHqlExpression * HqlCppTranslator::createLoopSubquery(IHqlExpression * dataset, 
     OwnedHqlExpr counterResult;
     if (counter)
     {
-        OwnedHqlExpr select = createCounterAsResult(counter, graphid, 2);
+        OwnedHqlExpr select = createCounterAsGraphResult(counter, graphid, 2);
         transformedBody.setown(replaceExpression(transformedBody, counter, select));
         if (transformedAgain)
         {
@@ -8061,9 +8027,9 @@ IHqlExpression * HqlCppTranslator::createLoopSubquery(IHqlExpression * dataset, 
         //MORE: Don't let this get past review - purely to ensure the same code is generated.
         if (loopAgainResult == 2)
             loopAgainResult = graphBuilder.addInput();
-        //more: Add loopAgainResult as an attribute on the no_childquery rather than using a reference parameter
+        //MORE: Add loopAgainResult as an attribute on the no_childquery rather than using a reference parameter
 
-        OwnedHqlExpr againResult = convertScalarToResult(transformedAgain, queryBoolType(), graphid, loopAgainResult);
+        OwnedHqlExpr againResult = convertScalarToGraphResult(transformedAgain, queryBoolType(), graphid, loopAgainResult);
         graphBuilder.addAction(againResult);
 
     }
