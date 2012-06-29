@@ -1939,23 +1939,32 @@ function populateOpenEnvTable() {
 
           var files = result.split(/;/g);
           var objs = new Array();
-          var staged_configuration = "";
-          for (var i = 0,j = 0; i < files.length; i++, j++) {
+          var staged_configuration = new Array();
+          for (var i = 0,j = 0, k = 0; i < files.length; i++, j++) {
             if (files[i] == "<StagedConfiguration>")
             {
               i++;
-              staged_configuration = files[i];
+              staged_configuration[k] = files[i];
+              k++;
             }
             else if (files[i] == "</StagedConfiguration>")
             {
-              i++;
+              if (i+1 >= files.length)
+              {
+                break;
+              }
+              else
+              {
+                j--;
+                continue;
+              }
             }
             objs[j] = {};
             objs[j].name = files[i];
           }
 
           YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
-          if (staged_configuration == oData)
+          if (staged_configuration.indexOf(oData) != -1)
            elLiner.innerHTML = "<font style=\"background-color:#004ADE;color:white\" title=\"Staged Configuration\">" + oData + "</font>";
           else
            elLiner.innerHTML = oData; };
