@@ -665,9 +665,9 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
                     throw makeWrappedException(e);
                 }
                 whichBranch = ((IHThorCaseArg *)helper.get())->getBranch();
-                if (branches.isItem(whichBranch))
-                    return branches.item(whichBranch).prepare(agent, parentExtract, checkDependencies);
-                return true;
+                if (whichBranch >= branches.ordinality())
+                    whichBranch = branches.ordinality()-1;
+                return branches.item(whichBranch).prepare(agent, parentExtract, checkDependencies);
             }
         }
 

@@ -619,6 +619,24 @@ IHqlExpression * adjustValue(IHqlExpression * value, __int64 delta)
             }
             break;
         }
+    case no_case:
+        {
+            HqlExprArray args;
+            args.append(*LINK(value->queryChild(0)));
+            ForEachChildFrom(i, value, 1)
+            {
+                IHqlExpression * cur = value->queryChild(i);
+                args.append(*adjustValue(cur, delta));
+            }
+            return value->clone(args);
+        }
+    case no_mapto:
+        {
+            HqlExprArray args;
+            args.append(*LINK(value->queryChild(0)));
+            args.append(*adjustValue(value->queryChild(1), delta));
+            return value->clone(args);
+        }
     }
 
     IHqlExpression * deltaExpr;
@@ -1683,6 +1701,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
+        DebugOption(options.transformCaseToChoose,"transformCaseToChoose",true),
     };
 
     //get options values from workunit
@@ -6680,8 +6699,12 @@ void HqlCppTranslator::doBuildChoose(BuildCtx & ctx, const CHqlBoundTarget * tar
         buildExprOrAssign(subctx, target, expr->queryChild(idx), NULL);
     }
 
-    subctx.addDefault(stmt);
-    buildExprOrAssign(subctx, target, expr->queryChild(max), NULL);
+    IHqlExpression * defaultExpr = expr->queryChild(max);
+    if (target || !isNullAction(expr))
+    {
+        subctx.addDefault(stmt);
+        buildExprOrAssign(subctx, target, defaultExpr, NULL);
+    }
 }
 
 void HqlCppTranslator::doBuildAssignChoose(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)

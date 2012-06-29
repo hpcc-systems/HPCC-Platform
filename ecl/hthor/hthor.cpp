@@ -2984,11 +2984,10 @@ void CHThorCaseActivity::ready()
     initialProcessed = processed;
     selectedInput = NULL;
     unsigned whichBranch = helper.getBranch();
-    if (inputs.isItem(whichBranch))
-    {
-        selectedInput = inputs.item(whichBranch);
-        selectedInput->ready();
-    }
+    if (whichBranch >= inputs.ordinality())
+        whichBranch = inputs.ordinality()-1;
+    selectedInput = inputs.item(whichBranch);
+    selectedInput->ready();
 }
 
 void CHThorCaseActivity::done()

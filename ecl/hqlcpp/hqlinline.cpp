@@ -236,11 +236,16 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             return ret;
         }
     case no_if:
+    case no_choose:
+    case no_chooseds:
         {
             unsigned ret = expr->isDatarow() ? RETevaluate : RETassign;
-            for (unsigned i=1; i < 3; i++)
+            ForEachChildFrom(i, expr, 1)
             {
-                unsigned childFlags = getInlineFlags(ctx, expr->queryChild(i));
+                IHqlExpression * cur = expr->queryChild(i);
+                if (cur->isAttribute())
+                    continue;
+                unsigned childFlags = getInlineFlags(ctx, cur);
                 if (childFlags == 0)
                     return 0;
                 if (childFlags & HEFspillinline)
@@ -664,6 +669,7 @@ static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_if:
+    case no_chooseds:
         firstChild = 1;
         numChildren = expr->numChildren();
         break;

@@ -391,6 +391,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_normalizegroup:
     case no_owned_ds:
     case no_dataset_alias:
+    case no_chooseds:
 
 //Multiple different kinds of values
     case no_select:
@@ -613,7 +614,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
-    case no_unused80: case no_unused82: case no_unused83:
+    case no_unused80: case no_unused83:
     case no_is_null:
     case no_position:
     case no_current_time:
@@ -1555,6 +1556,7 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_distribute:
     case no_keyeddistribute:
     case no_if:
+    case no_chooseds:
         return false;
     case no_forcelocal:
     case no_combinegroup:
@@ -1684,6 +1686,7 @@ bool isGroupedActivity(IHqlExpression * expr)
     case no_combine:
     case no_combinegroup:
     case no_if:
+    case no_chooseds:
     case no_case:
     case no_map:
     case no_loop:
@@ -2341,6 +2344,22 @@ void retrieveRowInformation(HqlRowCountInfo & info, IHqlExpression * expr)
     info.extract(attr);
 }
 
+static void calcIntersectingRowInformation(HqlRowCountInfo & info, IHqlExpression * expr, unsigned firstDs)
+{
+   retrieveRowInformation(info, expr->queryChild(firstDs));
+
+    ForEachChildFrom(i, expr, firstDs+1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (!cur->isAttribute())
+        {
+            HqlRowCountInfo nextInfo;
+            retrieveRowInformation(nextInfo, cur);
+            info.combineBoth(nextInfo);
+        }
+    }
+}
+
 //MORE: This would benefit from knowing if the target is hthor/roxie (or a thoir child query) so it could tell if local means
 //anything.  The best solution is to annotate the graph with _global_ for thor, or _single_ for the others.  One day....
 IHqlExpression * calcRowInformation(IHqlExpression * expr)
@@ -2661,23 +2680,17 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             }
             break;
         }
+    case no_chooseds:
+        {
+            calcIntersectingRowInformation(info, expr, 1);
+            break;
+        }
     case no_regroup:
     case no_combinegroup:
     case no_addfiles:
     case no_merge:
         {
-            retrieveRowInformation(info, ds);
-
-            ForEachChildFrom(i, expr, 1)
-            {
-                IHqlExpression * cur = expr->queryChild(i);
-                if (!cur->isAttribute())
-                {
-                    HqlRowCountInfo nextInfo;
-                    retrieveRowInformation(nextInfo, cur);
-                    info.combineBoth(nextInfo);
-                }
-            }
+            calcIntersectingRowInformation(info, expr, 0);
             break;
         }
     case no_choosen:

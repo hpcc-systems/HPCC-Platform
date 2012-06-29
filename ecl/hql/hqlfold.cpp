@@ -2111,6 +2111,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_choose:
+    case no_chooseds:
         {
             IHqlExpression * child = expr->queryChild(0);
             IValue * constValue = child->queryValue();
@@ -5607,6 +5608,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_map:
     case no_merge:
     case no_cogroup:
+    case no_chooseds:
         {
             unsigned from = getFirstActivityArgument(expr);
             unsigned max = from + getNumActivityArguments(expr);

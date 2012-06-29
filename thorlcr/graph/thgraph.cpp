@@ -647,6 +647,8 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 onStart(parentExtractSz, parentExtract);
                 IHThorCaseArg *helper = (IHThorCaseArg *)baseHelper.get();
                 whichBranch = helper->getBranch();
+                if (whichBranch >= inputs.ordinality())
+                    whichBranch = inputs.ordinality()-1;
                 if (inputs.queryItem(whichBranch))
                     return inputs.item(whichBranch)->activity->prepareContext(parentExtractSz, parentExtract, checkDependencies, false, async);
                 return true;

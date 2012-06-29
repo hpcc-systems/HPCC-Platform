@@ -8351,6 +8351,28 @@ simpleDataSet
                             $3.release();
                             $$.setExpr($6.getExpr(), $1);
                         }
+    | CHOOSE '(' expression ',' mergeDataSetList ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            OwnedHqlExpr values = $5.getExpr();
+                            HqlExprArray args;
+                            values->unwindList(args, no_comma);
+
+                            bool groupingDiffers = false;
+                            IHqlExpression & elseDs = args.tos();
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = &args.item(idx);
+                                if (isGrouped(cur) != isGrouped(&elseDs))
+                                    groupingDiffers = true;
+                                parser->checkRecordTypes(cur, &elseDs, $5);
+                            }
+                            if (groupingDiffers)
+                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
+
+                            args.add(*$3.getExpr(), 0);
+                            $$.setExpr(createDataset(no_chooseds, args), $1);
+                        }
     | PARSE '(' startTopLeftSeqFilter ',' expression ',' startRootPattern ',' recordDef endRootPattern endTopLeftFilter doParseFlags ')' endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_stringorunicode, false);
