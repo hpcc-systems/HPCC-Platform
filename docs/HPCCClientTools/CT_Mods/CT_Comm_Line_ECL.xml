@@ -166,7 +166,7 @@
         using a script or batch file, through an INI file, or any
         combination.</para>
 
-        <sect3>
+        <sect3 role="brk">
           <title>ECLPLUS.INI</title>
 
           <para>All the options can be put directly on the command line, or
