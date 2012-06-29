@@ -2111,6 +2111,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_choose:
+    case no_chooseds:
         {
             IHqlExpression * child = expr->queryChild(0);
             IValue * constValue = child->queryValue();
@@ -2603,9 +2604,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 
             if (numCases == 1)
             {
-                IHqlExpression * child = expr->queryChild(1);
-                IHqlExpression * newEqual = createBoolExpr(no_eq, LINK(leftExpr), LINK(child->queryChild(0)));
-                return createIf(newEqual, LINK(child->queryChild(1)), LINK(expr->queryChild(2)));
+                IHqlExpression * mapto = expr->queryChild(1);
+                IHqlExpression * key = mapto->queryChild(0);
+                OwnedITypeInfo type = getPromotedCompareType(leftExpr->queryType(), key->queryType());
+                IHqlExpression * newEqual = createBoolExpr(no_eq, ensureExprType(leftExpr, type), ensureExprType(key, type));
+                return createIf(newEqual, LINK(mapto->queryChild(1)), LINK(expr->queryChild(2)));
             }
             break;
         }
@@ -5607,6 +5610,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_map:
     case no_merge:
     case no_cogroup:
+    case no_chooseds:
         {
             unsigned from = getFirstActivityArgument(expr);
             unsigned max = from + getNumActivityArguments(expr);

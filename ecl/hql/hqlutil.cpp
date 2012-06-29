@@ -1486,6 +1486,8 @@ unsigned getFirstActivityArgument(IHqlExpression * expr)
     case no_case:
     case no_fetch:
     case no_libraryselect:
+    case no_chooseds:
+    case no_choose:
         return 1;
     }
     return 0;
@@ -1742,6 +1744,7 @@ bool isSinkActivity(IHqlExpression * expr)
     case no_newsoapcall:
     case no_if:
     case no_null:
+    case no_choose:
         return expr->isAction();
     }
     return false;
@@ -1821,6 +1824,8 @@ IHqlExpression * queryChildActivity(IHqlExpression * expr, unsigned index)
     case no_if:
     case no_case:
     case no_fetch:
+    case no_choose:
+    case no_chooseds:
         firstActivityIndex = 1;
         break;
     }

@@ -673,7 +673,7 @@ public:
         return inputs.get(idx, sourceidx);
     }
 
-    inline unsigned numInputs() const { return inputs.ordinality(); }
+    virtual unsigned numInputs() const { return inputs.ordinality(); }
 };
 
 class CWrappedException : public CInterface, implements IException
@@ -728,6 +728,8 @@ public:
         }
         return (unsigned) -1;
     }
+
+    virtual unsigned numInputs() const { return (input == (unsigned)-1) ? 0 : 1; }
 };
 
 class CRoxieServerMultiOutputFactory : public CRoxieServerActivityFactory
@@ -12103,6 +12105,7 @@ public:
         }
     }
 
+    virtual unsigned numInputs() const { return 2; }
 };
 
 IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -13148,6 +13151,7 @@ public:
         }
     }
 
+    virtual unsigned numInputs() const { return 2; }
 };
 
 IRoxieServerActivityFactory *createRoxieServerCombineGroupActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
@@ -15138,7 +15142,7 @@ public:
         return inputs.get(idx, sourceidx);
     }
 
-    inline unsigned numInputs() const { return inputs.ordinality(); }
+    virtual unsigned numInputs() const { return inputs.ordinality(); }
 };
 
 IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, LibraryCallFactoryExtra & _extra)
@@ -18466,7 +18470,9 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         cond = helper.getBranch();
-        assertex(cond < numInputs);
+        //CHOOSE defaults to the last argument if out of range.
+        if (cond >= numInputs)
+            cond = numInputs - 1;
         inputs[cond]->start(parentExtractSize, parentExtract, paused);
         for (unsigned idx = 0; idx < numInputs; idx++)
         {
@@ -18704,6 +18710,8 @@ public:
             return (unsigned) -1; 
         }
     }
+
+    virtual unsigned numInputs() const { return (input2 == (unsigned)-1) ? 1 : 2; }
 
     virtual bool isGraphInvariant() const
     {
@@ -27105,6 +27113,8 @@ public:
                         break;
                     case TAKcase: case TAKchildcase:
                         branch = static_cast<IHThorCaseArg *>(helper.get())->getBranch();
+                        if (branch >= donor.numInputs())
+                            branch = donor.numInputs() - 1;
                         break;
                     default:
                         throwUnexpected();

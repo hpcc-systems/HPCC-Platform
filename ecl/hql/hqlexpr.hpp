@@ -224,7 +224,7 @@ enum _node_operator {
         no_comma,
         no_count,
         no_countgroup,
-    no_unused82,
+        no_chooseds,
         no_exists,
         no_within,
         no_notwithin,
@@ -1328,6 +1328,7 @@ extern HQL_API IHqlExpression * createConstantOne();
 extern HQL_API IHqlExpression * createLocalAttribute();
 extern HQL_API bool isNullExpr(IHqlExpression * expr, ITypeInfo * type);
 inline bool isNull(IHqlExpression * expr)       { return expr->getOperator() == no_null; }
+inline bool isNullAction(IHqlExpression * expr) { return isNull(expr) && expr->isAction(); }
 inline bool isFail(IHqlExpression * expr)       { return expr->getOperator() == no_fail; }
 
 extern HQL_API IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, bool ignoreBase);
