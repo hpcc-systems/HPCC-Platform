@@ -4702,6 +4702,18 @@ query
 
                             $$.setExpr(output, $1);
                         }
+    | dataRow optfailure
+                        {
+                            IHqlExpression * expr = $1.getExpr();
+                            OwnedHqlExpr failure = $2.getExpr();
+
+                            HqlExprArray meta;
+                            expr = attachWorkflowOwn(meta, expr, failure, NULL);
+                            expr = parser->attachPendingWarnings(expr);
+                            expr = parser->attachMetaAttributes(expr, meta);
+
+                            $$.setExpr(createValue(no_outputscalar, makeVoidType(), expr), $1);
+                        }
     | action optfailure {
                             IHqlExpression * expr = $1.getExpr();
                             OwnedHqlExpr failure = $2.getExpr();
