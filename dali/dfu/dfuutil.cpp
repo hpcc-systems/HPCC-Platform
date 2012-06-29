@@ -788,9 +788,7 @@ public:
             transaction->commit();
         }
         // Delete superfile if empty
-        if (superfile->numSubFiles() != 0) {
-            if (numtodelete == 0)
-                throwError1(DFUERR_DSuperFileNotEmpty, superfname);
+        if (superfile->numSubFiles() == 0) {
             superfile.clear();
             // MORE - add file deletion to transaction
             queryDistributedFileDirectory().removeEntry(superfname);
