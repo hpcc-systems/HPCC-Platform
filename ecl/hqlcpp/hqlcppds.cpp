@@ -49,6 +49,7 @@
 #include "hqliter.ipp"
 #include "hqlinline.hpp"
 #include "hqlusage.hpp"
+#include "hqlcppds.hpp"
 
 #define MAX_FIXED_SIZE_RAW 1024
 #define INLINE_TABLE_EXPAND_LIMIT 4
@@ -1154,6 +1155,13 @@ bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph)
 
 ///--------------------------------------------------------------------------------------------------------------------
 
+IHqlExpression * createCounterAsGraphResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr value = createScalarFromGraphResult(counter->queryType(), unsignedType, represents, seq);
+    OwnedHqlExpr internalAttr = createAttribute(internalAtom);
+    return createAlias(value, internalAttr);
+}
+
 ChildGraphExprBuilder::ChildGraphExprBuilder(unsigned _numInputs)
 : numInputs(_numInputs)
 {
@@ -1384,7 +1392,7 @@ public:
                 }
                 else
                 {
-                    counterResult.setown(createCounterAsResult(counter, represents, 0));
+                    counterResult.setown(createCounterAsGraphResult(counter, represents, 0));
                     return LINK(counterResult);
                 }
             }

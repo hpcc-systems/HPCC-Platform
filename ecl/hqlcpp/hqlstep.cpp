@@ -46,6 +46,7 @@
 #include "hqlgraph.ipp"
 #include "hqlscope.hpp"
 #include "hqlccommon.hpp"
+#include "hqlcppds.hpp"
 
 #include "eclhelper.hpp"
 

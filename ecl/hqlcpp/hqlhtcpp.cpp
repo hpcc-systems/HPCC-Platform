@@ -56,6 +56,7 @@
 #include "hqlinline.hpp"
 #include "hqlusage.hpp"
 #include "hqlhoist.hpp"
+#include "hqlcppds.hpp"
 
 //The following are include to ensure they call compile...
 #include "eclhelper.hpp"
@@ -464,6 +465,7 @@ public:
             if (moveTo->isUnconditional() && isUsedUnconditionallyEnough(expr))
                 guard.set(queryBoolExpr(true));
 
+            bool invalid = !guard->isPure();
             //version 1: don't guard any child queries.
             if (!matchesBoolean(guard, true))
             {
@@ -474,9 +476,14 @@ public:
                 //And forcing it into an alias doesn't help becuase that isn't currently executed in the parent.
                 //Uncomment: if (moveTo->guards->guardContainsCandidate(expr))
                 {
-                    removeDefinition(moveTo, candidate);
-                    moveTo = NULL;
+                    invalid = true;
                 }
+            }
+
+            if (invalid)
+            {
+                removeDefinition(moveTo, candidate);
+                moveTo = NULL;
             }
         }
 
@@ -508,7 +515,6 @@ public:
         OwnedHqlExpr cleanedGraph = mapExternalToInternalResults(graph, builder.queryRepresents());
         return cleanedGraph.getClear();
     }
-
 
     ChildGraphExprBuilder & queryBuilder(ConditionalContextInfo * extra)
     {
@@ -8024,11 +8030,8 @@ IHqlExpression * HqlCppTranslator::createLoopSubquery(IHqlExpression * dataset, 
         transformedAgain.setown(replaceExpression(transformedAgain, rowsExpr, nextLoopDataset));
 
         loopAgainResult = graphBuilder.addInput();
-        //MORE: Don't let this get past review - purely to ensure the same code is generated.
-        if (loopAgainResult == 2)
-            loopAgainResult = graphBuilder.addInput();
-        //MORE: Add loopAgainResult as an attribute on the no_childquery rather than using a reference parameter
 
+        //MORE: Add loopAgainResult as an attribute on the no_childquery rather than using a reference parameter
         OwnedHqlExpr againResult = convertScalarToGraphResult(transformedAgain, queryBoolType(), graphid, loopAgainResult);
         graphBuilder.addAction(againResult);
 

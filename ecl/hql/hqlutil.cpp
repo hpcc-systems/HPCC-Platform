@@ -515,6 +515,18 @@ IHqlExpression * queryVirtualFileposField(IHqlExpression * record)
 }
 
 
+IHqlExpression * queryLastNonAttribute(IHqlExpression * expr)
+{
+    unsigned max = expr->numChildren();
+    while (max--)
+    {
+        IHqlExpression * cur = expr->queryChild(max);
+        if (!cur->isAttribute())
+            return cur;
+    }
+    return NULL;
+}
+
 //---------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
@@ -3250,7 +3262,7 @@ IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * 
     return createValue(no_setgraphresult, makeVoidType(), args);
 }
 
-static IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
+IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
 {
     OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr counterRecord = createRecord(counterField);
@@ -3261,13 +3273,7 @@ static IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITyp
     args.append(*createAttribute(rowAtom));
     OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
     OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
-    OwnedHqlExpr cast = ensureExprType(select, scalarType);
-    return createAlias(cast, internalAttrExpr);
-}
-
-IHqlExpression * createCounterAsGraphResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
-{
-    return createScalarFromGraphResult(counter->queryType(), unsignedType, represents, seq);
+    return ensureExprType(select, scalarType);
 }
 
 _ATOM queryCsvEncoding(IHqlExpression * mode)

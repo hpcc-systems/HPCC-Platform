@@ -40,6 +40,15 @@ public:
 class CHqlExprMultiGuard : public CInterface
 {
 public:
+    CHqlExprMultiGuard() {}
+    CHqlExprMultiGuard(const CHqlExprMultiGuard * other)
+    {
+        if (other)
+        {
+            CloneArray(guarded, other->guarded);
+        }
+    }
+
     void addGuarded(IHqlExpression * original);
     void addGuarded(IHqlExpression * cond, IHqlExpression * original, bool guardContainsCandidate);
 
@@ -152,8 +161,10 @@ protected:
     ConditionalContextInfo * selectParent(ConditionalContextInfo * info);
 
     CHqlExprMultiGuard * calcGuard(ConditionalContextInfo * cur, unsigned firstGuard);
-    CHqlExprMultiGuard * createIfGuard(ConditionalContextInfo * cur);
     CHqlExprMultiGuard * createAndOrGuard(ConditionalContextInfo * cur);
+    CHqlExprMultiGuard * createCaseMapGuard(ConditionalContextInfo * cur, node_operator op);
+    CHqlExprMultiGuard * createIfGuard(ConditionalContextInfo * cur);
+    CHqlExprMultiGuard * createIfGuard(IHqlExpression * ifCond, CHqlExprMultiGuard * condGuard, CHqlExprMultiGuard * trueGuard, CHqlExprMultiGuard * falseGuard);
     CHqlExprMultiGuard * queryGuards(IHqlExpression * expr);
 
     void addDefinition(ConditionalContextInfo * location, ConditionalContextInfo * candidate);

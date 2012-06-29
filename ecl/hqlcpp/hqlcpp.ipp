@@ -1913,59 +1913,6 @@ protected:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-class ChildGraphExprBuilder : public CInterface
-{
-public:
-    ChildGraphExprBuilder(unsigned _numInputs);
-
-    IHqlExpression * addDataset(IHqlExpression * expr);
-    void addAction(IHqlExpression * expr);
-    unsigned addInput();
-    IHqlExpression * getGraph();
-
-    inline IHqlExpression * queryRepresents() const { return represents; }
-    inline unsigned numResults() const { return numInputs + numOutputs; }
-
-public:
-    HqlExprArray results;
-    OwnedHqlExpr represents;
-    OwnedHqlExpr resultsExpr;
-    unsigned numInputs;
-    unsigned numOutputs;
-};
-
-
-//===========================================================================
-
-class ChildGraphBuilder : public CInterface
-{
-public:
-    ChildGraphBuilder(HqlCppTranslator & _translator, IHqlExpression * subgraph);
-
-    unique_id_t buildGraphLoopBody(BuildCtx & ctx, bool multiInstance);
-    unique_id_t buildLoopBody(BuildCtx & ctx, bool multiInstance);
-    unique_id_t buildRemoteGraph(BuildCtx & ctx);
-    void generateGraph(BuildCtx & ctx);
-    void generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr);
-
-protected:
-    void createBuilderAlias(BuildCtx & ctx, ParentExtract * extractBuilder);
-
-protected:
-    HqlCppTranslator & translator;
-    unsigned id;
-    StringBuffer instanceName;
-    OwnedHqlExpr instanceExpr;
-    OwnedHqlExpr resultInstanceExpr;
-    OwnedHqlExpr represents;
-    OwnedHqlExpr resultsExpr;
-    HqlExprArray results;
-    unsigned numResults;
-};
-
-
-//===========================================================================
-
 class CompoundBuilder
 {
 public:
@@ -2049,6 +1996,5 @@ inline SubGraphInfo * queryActiveSubGraph(BuildCtx & ctx)
 { 
     return static_cast<SubGraphInfo *>(ctx.queryFirstAssociation(AssocSubGraph));
 }
-void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpression * graphId);
 
 #endif

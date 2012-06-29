@@ -67,6 +67,7 @@ set (    SRCS
          hqlcerrors.hpp
          hqlcpp.hpp
          hqlcppc.hpp
+         hqlcppds.hpp
          hqlcpputil.hpp
          hqlecl.hpp
          hqlfunc.hpp

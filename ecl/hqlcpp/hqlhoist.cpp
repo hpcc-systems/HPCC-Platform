@@ -516,15 +516,17 @@ CHqlExprMultiGuard * ConditionalContextTransformer::calcGuard(ConditionalContext
         return NULL;
 
     IHqlExpression * original = cur->original;
-    switch (original->getOperator())
+    node_operator op = original->getOperator();
+    switch (op)
     {
     case no_if:
         return createIfGuard(cur);
+    case no_case:
+    case no_map:
+        return createCaseMapGuard(cur, op);
     case no_or:
     case no_and:
         return createAndOrGuard(cur);
-    case no_map:
-    case no_case:
     case no_which:
     case no_rejected:
     case no_choose:
@@ -544,16 +546,8 @@ CHqlExprMultiGuard * ConditionalContextTransformer::calcGuard(ConditionalContext
     return newGuard.getClear();
 }
 
-CHqlExprMultiGuard * ConditionalContextTransformer::createIfGuard(ConditionalContextInfo * cur)
+CHqlExprMultiGuard * ConditionalContextTransformer::createIfGuard(IHqlExpression * ifCond, CHqlExprMultiGuard * condGuard, CHqlExprMultiGuard * trueGuard, CHqlExprMultiGuard * falseGuard)
 {
-    IHqlExpression * original = cur->original;
-    IHqlExpression * ifCond = original->queryChild(0);
-    CHqlExprMultiGuard * condGuard = queryGuards(ifCond);
-    CHqlExprMultiGuard * trueGuard = queryGuards(original->queryChild(1));
-    CHqlExprMultiGuard * falseGuard = queryGuards(original->queryChild(2));
-    if (!trueGuard && !falseGuard && !cur->isCandidateThatMoves())
-        return LINK(condGuard);
-
     //If you want to common up the conditions between the child query and the parent code you might achieve
     //it by forcing the condition into an alias.  E.g.,
     //queryBodyExtra(ifCond)->createAlias = true;
@@ -570,16 +564,82 @@ CHqlExprMultiGuard * ConditionalContextTransformer::createIfGuard(ConditionalCon
         OwnedHqlExpr newCond;
         if (trueCond != falseCond)
             newCond.setown(createValue(no_if, makeBoolType(), LINK(ifCond), LINK(trueCond), LINK(falseCond)));
-        else //MORE - check if is inverse, and map to true if so.
+        else
             newCond.set(trueCond);
         newGuards->addGuarded(newCond, candidate, condGuard != NULL);
     }
 
     if (condGuard)
         newGuards->combine(*condGuard);
-    if (cur->isCandidateThatMoves())
-        newGuards->addGuarded(cur->original);
     return newGuards.getClear();
+}
+
+CHqlExprMultiGuard * ConditionalContextTransformer::createIfGuard(ConditionalContextInfo * cur)
+{
+    IHqlExpression * original = cur->original;
+    IHqlExpression * ifCond = original->queryChild(0);
+    CHqlExprMultiGuard * condGuard = queryGuards(ifCond);
+    CHqlExprMultiGuard * trueGuard = queryGuards(original->queryChild(1));
+    CHqlExprMultiGuard * falseGuard = queryGuards(original->queryChild(2));
+    if (!trueGuard && !falseGuard && !cur->isCandidateThatMoves())
+        return LINK(condGuard);
+
+    Owned<CHqlExprMultiGuard> newGuards = createIfGuard(ifCond, condGuard, trueGuard, falseGuard);
+    if (cur->isCandidateThatMoves())
+        newGuards->addGuarded(original);
+    return newGuards.getClear();
+}
+
+CHqlExprMultiGuard * ConditionalContextTransformer::createCaseMapGuard(ConditionalContextInfo * cur, node_operator op)
+{
+    IHqlExpression * original = cur->original;
+    IHqlExpression * testExpr = (op == no_case) ? original->queryChild(0) : NULL;
+
+    //MAP(k1=>v1,k2=>v2...,vn) is the same as IF(k1,v1,IF(k2,v2,...vn))
+    //So walk the MAP operator in reverse applying the guard conditions.
+    //Use queryLastNonAttribute() instead of max-1 to eventually cope with attributes
+    IHqlExpression * defaultExpr = queryLastNonAttribute(original);
+    Linked<CHqlExprMultiGuard> prevGuard = queryGuards(defaultExpr);
+    bool createdNewGuard = false;
+    unsigned first = (op == no_case) ? 1 : 0;
+    unsigned max = original->numChildren();
+    for (unsigned i= max-1; i-- != first; )
+    {
+        IHqlExpression * mapto = original->queryChild(i);
+        //In the unlikely event there are attributes this ensures only maps are processed
+        if (mapto->getOperator() != no_mapto)
+            continue;
+
+        IHqlExpression * testValue = mapto->queryChild(0);
+        CHqlExprMultiGuard * condGuard = queryGuards(testValue);
+        CHqlExprMultiGuard * trueGuard = queryGuards(mapto->queryChild(1));
+        if (trueGuard || prevGuard)
+        {
+            OwnedHqlExpr ifCond = testExpr ? createBoolExpr(no_eq, LINK(testExpr), LINK(testValue)) : LINK(testValue);
+            Owned<CHqlExprMultiGuard> newGuards = createIfGuard(ifCond, condGuard, trueGuard, prevGuard);
+            prevGuard.setown(newGuards.getClear());
+            createdNewGuard = true;
+        }
+        else
+        {
+            prevGuard.set(condGuard);
+            assertex(!createdNewGuard);
+        }
+    }
+
+    CHqlExprMultiGuard * testGuards = testExpr ? queryGuards(testExpr) : NULL;
+    if (testGuards || cur->isCandidateThatMoves())
+    {
+        if (!createdNewGuard)
+            prevGuard.setown(new CHqlExprMultiGuard(prevGuard));
+
+        if (testGuards)
+            prevGuard->combine(*testGuards);
+
+        if (cur->isCandidateThatMoves())
+            prevGuard->addGuarded(original);
+    }
+    return prevGuard.getClear();
 }
 
 CHqlExprMultiGuard * ConditionalContextTransformer::createAndOrGuard(ConditionalContextInfo * cur)
