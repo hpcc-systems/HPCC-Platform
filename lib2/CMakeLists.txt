@@ -23,6 +23,7 @@ if (APPLE)
     set(DYLIBS ${DYLIBS} ${BOOST_REGEX_LIBRARIES})
     set(DYLIBS ${DYLIBS} ${XALAN_LIBRARIES})
     set(DYLIBS ${DYLIBS} ${XERCES_LIBRARIES})
+    set(DYLIBS ${DYLIBS} ${BINUTILS_LIBRARIES})
     
     foreach(dylib ${DYLIBS})
         get_filename_component(dylib_path ${dylib} REALPATH)
@@ -43,7 +44,7 @@ if (APPLE)
 
         install(PROGRAMS "${dylib_path}" DESTINATION "${OSSDIR}/lib2")
         install(CODE "
-            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib/*.dylib\")
+            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib2/*.dylib\")
             foreach(file \${files})
               ${fixupCommand}
             endforeach ()
