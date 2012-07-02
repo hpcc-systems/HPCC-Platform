@@ -481,7 +481,7 @@ void DllServer::copyFileLocally(RemoteFilename & targetName, RemoteFilename & so
 
     targetLocalPath.append(rootDir);
     recursiveCreateDirectory(targetLocalPath.str());
-    targetLocalPath.append(PATHSEPCHAR);
+    addPathSepChar(targetLocalPath);
     splitFilename(sourceLocalPath.str(),NULL,NULL,&targetLocalPath,&targetLocalPath);
 
     SocketEndpoint hostEndpoint;

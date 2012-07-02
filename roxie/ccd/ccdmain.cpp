@@ -996,6 +996,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 StringBuffer query;
                 query.appendf("<roxie format='%s'/>", format);
                 roxieServer->runOnce(query.str()); // MORE - should use the wu listener instead I suspect
+                fflush(stdout);  // in windows if output is redirected results don't appear without flushing
             }
             catch (IException *E)
             {

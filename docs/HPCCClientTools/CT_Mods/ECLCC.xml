@@ -148,48 +148,67 @@
 
             <tbody>
               <row>
-                <entry>-g</entry>
-
-                <entry>Enable debug symbols in generated code</entry>
-              </row>
-
-              <row>
-                <entry>-I<emphasis>path</emphasis></entry>
+                <entry>-I<emphasis> &lt;path&gt;</emphasis></entry>
 
                 <entry>Add path to locations to search for ecl imports</entry>
               </row>
 
               <row>
-                <entry>-L<emphasis>path</emphasis></entry>
+                <entry>-L &lt;<emphasis>path&gt;</emphasis></entry>
 
                 <entry>Add path to locations to search for system
                 libraries</entry>
               </row>
 
               <row>
-                <entry>-o<emphasis>file</emphasis></entry>
+                <entry>-o<emphasis> &lt;file&gt;</emphasis></entry>
 
                 <entry>Specify name of output file (default a.out if linking
                 to executable, or stdout)</entry>
               </row>
 
               <row>
-                <entry>-P<emphasis>path</emphasis></entry>
+                <entry>-manifest</entry>
 
-                <entry>Specify the path of the output files</entry>
+                <entry>Specify path to manifest file listing resources to
+                add</entry>
               </row>
 
               <row>
-                <entry>-Wc,xx</entry>
+                <entry>-foption[=value]</entry>
 
-                <entry>Supply option for the c++ compiler</entry>
+                <entry>Set an ecl option (#option)</entry>
               </row>
 
               <row>
-                <entry>-save-temps</entry>
+                <entry>-main <emphasis>&lt;ref&gt;</emphasis></entry>
 
-                <entry>Do not delete intermediate files (implied if
-                -g)</entry>
+                <entry>Compile definition &lt;ref&gt; from the source
+                collection</entry>
+              </row>
+
+              <row>
+                <entry>-syntax</entry>
+
+                <entry>Perform a syntax check of the ECL</entry>
+              </row>
+
+              <row>
+                <entry>-target=hthor</entry>
+
+                <entry>Generate code for hthor executable (default)</entry>
+              </row>
+
+              <row>
+                <entry>-target=roxie</entry>
+
+                <entry>Generate code for roxie cluster</entry>
+              </row>
+
+              <row>
+                <entry>-target=thor</entry>
+
+                <entry>Generate code for thor cluster</entry>
               </row>
             </tbody>
           </tgroup>
@@ -216,7 +235,7 @@
           </tgroup>
         </informaltable></para>
 
-      <para>ECL options:</para>
+      <para>Output control options:</para>
 
       <para><informaltable colsep="0" frame="none" rowsep="0">
           <?dbfo keep-together="always"?>
@@ -234,59 +253,60 @@
               </row>
 
               <row>
-                <entry>-S</entry>
+                <entry>-q</entry>
 
-                <entry>Generate c++ output, but don't compile</entry>
-              </row>
-
-              <row>
-                <entry>-foption[=value]</entry>
-
-                <entry>Set an ecl option (#option)</entry>
-              </row>
-
-              <row>
-                <entry>-shared</entry>
-
-                <entry>Generate workunit shared object instead of a stand
-                alone exe</entry>
-              </row>
-
-              <row>
-                <entry>-target=hthor</entry>
-
-                <entry>Generate code for hthor executable (default)</entry>
-              </row>
-
-              <row>
-                <entry>-target=roxie</entry>
-
-                <entry>Generate code for roxie cluster</entry>
-              </row>
-
-              <row>
-                <entry>-target=thor</entry>
-
-                <entry>Generate code for thor cluster</entry>
+                <entry>Save ECL query text as part of workunit</entry>
               </row>
 
               <row>
                 <entry>-wu</entry>
 
-                <entry>Only generate workunit informaton as xml file</entry>
-              </row>
-
-              <row>
-                <entry>-manifest=&lt;manifest file path&gt;</entry>
-
-                <entry>Specifies the manifest file containing the resources to
-                include</entry>
+                <entry>Only generate workunit information as xml file</entry>
               </row>
             </tbody>
           </tgroup>
         </informaltable></para>
 
       <para></para>
+
+      <para>C++ options:</para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec align="left" colwidth="125.55pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry>-S</entry>
+
+                <entry>Generate c++ output, but don't compile</entry>
+              </row>
+
+              <row>
+                <entry>-g</entry>
+
+                <entry>Set an ecl option (#option)</entry>
+              </row>
+
+              <row>
+                <entry>-Wc,xx</entry>
+
+                <entry>Pass option xx to the c++ compiler</entry>
+              </row>
+
+              <row>
+                <entry>-shared</entry>
+
+                <entry>Generate workunit shared object instead of a
+                stand-alone exe</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
 
       <?dbfo-need height="3in"?>
 
@@ -315,31 +335,25 @@
               </row>
 
               <row>
-                <entry>-help</entry>
+                <entry>-help, --help</entry>
 
-                <entry>Display this message</entry>
+                <entry>Display help message</entry>
               </row>
 
               <row>
-                <entry>--help</entry>
+                <entry>--help -v</entry>
 
-                <entry>Display this message</entry>
+                <entry>Display verbose help message</entry>
               </row>
 
               <row>
-                <entry>--logdetail=n</entry>
-
-                <entry>Set the level of detail in the log file</entry>
-              </row>
-
-              <row>
-                <entry>--logfile file</entry>
+                <entry>--logfile <emphasis>&lt;file&gt;</emphasis></entry>
 
                 <entry>Write log to specified file</entry>
               </row>
 
               <row>
-                <entry>-specs file</entry>
+                <entry>-specs <emphasis>&lt;file&gt;</emphasis></entry>
 
                 <entry>Read eclcc configuration from specified file</entry>
               </row>
@@ -480,7 +494,7 @@
       </sect2>
 
       <sect2 id="Compile_with_options">
-        <title>Compile with Options</title>
+        <title role="brk">Compile with Options</title>
 
         <para>Once verified that the ECL Compiler is working correctly, you
         can try using some of the options. One such variation might be to
