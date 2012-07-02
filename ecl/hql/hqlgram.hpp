@@ -1057,6 +1057,7 @@ class HqlLex
             ++yyLineNo;
         }
 
+        StringBuffer& doGetDataType(StringBuffer & type, const char * text, int lineno, int column);
         void pushText(const char *);
 
     protected:
@@ -1096,7 +1097,7 @@ class HqlLex
         void pushText(const char *s, int startLineNo, int startColumn);
         bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
         IValue *parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
-        IHqlExpression * parseECL(StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol);
+        IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
         static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);
