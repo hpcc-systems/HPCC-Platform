@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book xml:base="../">
+<book>
   <bookinfo>
     <title>ECL Playground</title>
 
@@ -133,9 +133,8 @@
       <sect2>
         <title>Running ECL Code</title>
 
-        <para>To run the code that you selected, press the <emphasis
-        role="bold">Submit</emphasis> button below the
-        <emphasis>Editor</emphasis> area.</para>
+        <para>Choose a target cluster from the drop list then press the
+        <emphasis role="bold">Submit</emphasis> button.</para>
 
         <para>A successful run displays the word <emphasis
         role="bold">completed</emphasis> as the status and the results display
