@@ -1953,10 +1953,13 @@ class CThorHashDedupArg : public CThorArg, implements IHThorHashDedupArg
         {
         case TAIarg:
         case TAIhashdeduparg_1:
+        case TAIhashdeduparg_2:
             return static_cast<IHThorHashDedupArg *>(this);
         }
         return NULL;
     }
+
+    virtual unsigned getFlags() { return 0; }
 };
 
 class CThorHashMinusArg : public CThorArg, implements IHThorHashMinusArg

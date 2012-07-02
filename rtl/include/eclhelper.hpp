@@ -31,7 +31,7 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      139
+#define ACTIVITY_INTERFACE_VERSION      140
 #define MIN_ACTIVITY_INTERFACE_VERSION  138             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
@@ -958,6 +958,7 @@ enum ActivityInterfaceEnum
     TAIpipewritearg_2,
     TAIinlinetablearg_1,
     TAIshuffleextra_1,
+    TAIhashdeduparg_2,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -1793,6 +1794,11 @@ struct IHThorHashDistributeArg : public IHThorArg
     virtual ICompare * queryMergeCompare()=0;       // iff TAKhasdistributemerge
 };
 
+enum
+{
+    HFDwholerecord  = 0x0001,
+};
+
 struct IHThorHashDedupArg : public IHThorArg
 {
     virtual ICompare * queryCompare()=0;
@@ -1800,6 +1806,10 @@ struct IHThorHashDedupArg : public IHThorArg
     virtual IOutputMetaData * queryKeySize() = 0;
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record) = 0;
     virtual ICompare * queryKeyCompare()=0;
+    //the following are only valid if selectInterface(TAIhashdeduparg_2) returns non-null
+    virtual unsigned getFlags() = 0;
+    virtual IHash    * queryKeyHash()=0;
+    virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
 };
 
 struct IHThorHashMinusArg : public IHThorArg
@@ -1906,7 +1916,7 @@ struct ICsvParameters
     virtual bool         queryEBCDIC() = 0;
     virtual const char * queryHeader()              { return NULL; }
     virtual unsigned     queryHeaderLen() = 0;
-    virtual size32_t         queryMaxSize() = 0;
+    virtual size32_t     queryMaxSize() = 0;
     virtual const char * queryQuote(unsigned idx) = 0;
     virtual const char * querySeparator(unsigned idx) = 0;
     virtual const char * queryTerminator(unsigned idx) = 0;
