@@ -17,6 +17,7 @@
 define([
 	"dojo/_base/fx",
 	"dojo/_base/window",
+	"dojo/_base/xhr",
 	"dojo/dom",
 	"dojo/dom-style",
 	"dojo/dom-geometry",
@@ -27,18 +28,23 @@ define([
 	"hpcc/GraphControl",
 	"hpcc/ResultsControl",
 	"hpcc/SampleSelectControl",
-	"hpcc/ESPWorkunit"
-], function (fx, baseWindow, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, Workunit) {
+	"hpcc/ESPBase",
+	"hpcc/ESPWorkunit",
+	"dijit/form/Select"
+], function (fx, baseWindow, xhr, dom, domStyle, domGeometry, on, ready, registry, EclEditor, GraphControl, ResultsControl, Select, ESPBase, Workunit, dijitSelect) {
 	var wu = null,
+			target = "",
 			editorControl = null,
 			graphControl = null,
 			resultsControl = null,
 			sampleSelectControl = null,
 
 			initUi = function () {
+				var _target = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Target"];
+				if (_target) {
+					target = _target;
+				}
 				var wuid = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
-				on(dom.byId("submitBtn"), "click", doSubmit);
-
 				if (wuid) {
 					dojo.destroy("topPane");
 					registry.byId("appLayout").resize();
@@ -47,6 +53,7 @@ define([
 				}
 				initEditor();
 				initResultsControl();
+				initTargets();
 
 				//  ActiveX will flicker if created before initial layout
 				setTimeout(function () {
@@ -61,6 +68,7 @@ define([
 						wu.monitor(monitorEclPlayground);
 					}
 				}, 1);
+				on(dom.byId("submitBtn"), "click", doSubmit);
 			},
 
 			initUiResults = function () {
@@ -146,6 +154,56 @@ define([
 				});
 			},
 
+			initTargets = function () {
+				var base = new ESPBase();
+				var request = {
+					rawxml_: true
+				};
+
+				xhr.post({
+					url: base.getBaseURL("WsTopology") + "/TpTargetClusterQuery",
+					handleAs: "xml",
+					content: request,
+					load: function (xmlDom) {
+						var targetData = base.getValues(xmlDom, "TpTargetCluster");
+						var options = [];
+						var has_hthor = false;
+						for (var i = 0; i < targetData.length; ++i) {
+							options.push({
+								label: targetData[i].Name, 
+								value: targetData[i].Name							
+							});
+							if (targetData[i].Name == "hthor") {
+								has_hthor = true;
+							}
+						}
+
+						var select = new dijitSelect({
+								name: "targetSelect",
+								options: options,
+								maxHeight: -1,
+								onChange: function () {
+									target = dijit.byId(this.id).get("value");
+								}
+						}, "targetSelect");
+
+						if (target == "") {
+							if (has_hthor) {
+								target = "hthor";
+								select.set("value", target);
+							} else {
+								target = options[0].value;
+							}
+						} else {
+							select.set("value", target);
+						}
+						select.startup();
+					},
+					error: function () {
+					}
+				});
+			},
+
 			resetPage = function () {
 				editorControl.clearErrors();
 				editorControl.clearHighlightLines();
@@ -193,7 +251,7 @@ define([
 						wu.update(editorControl.getText());
 					},
 					onUpdate: function () {
-						wu.submit("hthor");
+						wu.submit(target);
 					},
 					onSubmit: function () {
 						wu.monitor(monitorEclPlayground);
