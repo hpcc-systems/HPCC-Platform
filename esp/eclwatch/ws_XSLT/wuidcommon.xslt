@@ -47,7 +47,7 @@
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
                   &nbsp;
-                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/ECLPlayground.htm%3fWuid%3d{$wuid}" >ECL Playground</a>
+                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/ECLPlayground.htm%3fWuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>
               </xsl:choose>
             </td>
