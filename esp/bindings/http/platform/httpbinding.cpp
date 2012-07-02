@@ -1747,94 +1747,6 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
     else
     {
         StringBuffer page;
-
-
-//#define CLIENT_SIDE_XSLT
-        
-#ifdef CLIENT_SIDE_XSLT
-
-#if 0
-        //TODO: how to pass parameters to the XSL?
-        //1. We can manually insert the parameters into the XSL, but that defeats the
-        //  the client cache on the XSL. We also need to modify esp to handle request
-        //  for xsl file with parameter.
-        page.append("<?xml version='1.0' encoding='UTF-8' ?>");
-        page.append("<?xml-stylesheet type='text/xsl' href='/esp/xslt/gen_form.xsl' ?>\n");
-        getSchema(page, context, request, serv, method, true);
-        response->setContentType("text/xml");
-
-        
-#else
-        // Try: use xslt processing on Client side
-
-        page.append(
-        "<html> <head> <script type='text/javascript'>\n"
-            "var xslt = new ActiveXObject('Msxml2.XSLTemplate');\n"
-            "var xslDoc = new ActiveXObject('Msxml2.FreeThreadedDOMDocument');\n"
-            "var xslProc;\n"
-            "xslDoc.async = false;\n"
-            "xslDoc.resolveExternals = false;\n"
-            "xslDoc.load('/esp/xslt/gen_form.xsl');\n"
-            "xslt.stylesheet = xslDoc;\n"
-            "var xmlDoc = new ActiveXObject('Msxml2.DOMDocument');\n"
-            "xmlDoc.async = false;\n"
-            "xmlDoc.resolveExternals = false;\n");
-
-        page.appendf("xmlDoc.load('%s/%s?xsd');\n", serviceQName.str(), methodQName.str());
-        page.append(
-            "xslProc = xslt.createProcessor();\n"
-            
-            "xslProc.input = xmlDoc;\n"
-            //"xslProc.addParameter("subj", "mathematics");\n"
-            "xslProc.transform();\n"
-            "document.write(xslProc.output);\n"
-            
-            "</script>  </head>  \n"
-            "<body>\n"
-            "</body>\n"
-            "</html>");
-        /*
-
-        page.append("<html><head>"
-            "<script language='JavaScript'>\n"
-            " function GenForm() {\n"
-            "  var xsltProcessor = new XSLTProcessor();\n"
-            "  // Load the xsl file using synchronous XMLHttpRequest\n"
-            "  var myXMLHTTPRequest = new XMLHttpRequest();\n"
-            "  myXMLHTTPRequest.open('GET', '/esp/xslt/gen_form.xsl', false);\n"
-            "  myXMLHTTPRequest.send(null);\n"
-            "  var xslRef = myXMLHTTPRequest.responseXML;\n"
-            "  alert(xslRef);\n"
-            "  // Finally import the .xsl\n"
-            "  xsltProcessor.importStylesheet(xslRef);\n"
-            "  // Load the schema file using synchronous XMLHttpRequest\n"
-            "  myXMLHTTPRequest = new XMLHttpRequest();\n");
-        
-        page.appendf("  myXMLHTTPRequest.open('GET', '%s/%s?xsd', false);\n", serviceQName.str(), methodQName.str());
-        page.append("  myXMLHTTPRequest.send(null);\n"
-            "  var xsdDoc = myXMLHTTPRequest.responseXML;\n"
-            "  var fragment = xsltProcessor.transformToFragment(xsdDoc, document);\n"
-            //"  var fragment = xsltProcessor.transformToDocument(xsdDoc);\n"
-            "  return fragment; \n"
-            "}\n"
-            "</script>\n"
-            "\n"
-            "<body>\n"
-            "<div id='main'></div>\n"
-            "<script language='JavaScript'>\n"
-            //"  document.write(GenForm())\n"
-            "  document.getElementById('main').appendChild(GenForm())"
-            //"  document.getElementById('main').appendChild('<h1>This is inserted</h1>')"
-            "</script>\n"
-            "</body>\n"
-            "</html>\n");
-        */
-
-        response->setContentType("text/html");
-#endif
-
-#else
-        
         IXslProcessor* xslp = getXmlLibXslProcessor();
 
         // get schema
@@ -1852,7 +1764,11 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         StringBuffer version;
         version.appendf("%g",context.getClientVersion());
         xform->setStringParameter("serviceVersion", version);
-        xform->setStringParameter("methodName", methodQName);
+
+        StringBuffer methodExt(methodQName);
+        if (context.queryRequestParameters()->hasProp("json"))
+            methodExt.append(".json");
+        xform->setStringParameter("methodName", methodExt);
 
         // pass params to form (excluding form and __querystring)
         StringBuffer params;
@@ -1900,12 +1816,9 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
         }
         xform->transform(page);     
         response->setContentType("text/html");
-#endif
-
-        //DBGLOG(page);
         response->setContent(page.str());
     }
-    
+
     response->send();
 
     return 0;

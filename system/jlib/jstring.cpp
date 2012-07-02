@@ -1793,6 +1793,74 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
     return x;
 }
 
+StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix, bool complete, bool close, const char *uri)
+{
+    if (!tag || !*tag)
+        return xml;
+
+    xml.append('<');
+    appendXMLTagName(xml, tag, prefix);
+
+    if (uri && *uri)
+    {
+        xml.append(" xmlns");
+        if (prefix && *prefix)
+            xml.append(':').append(prefix);
+        xml.append("=\"").append(uri).append('\"');
+    }
+
+    if (complete)
+    {
+        if (close)
+            xml.append('/');
+        xml.append('>');
+    }
+    return xml;
+}
+
+jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name)
+{
+    if (!name || !*name)
+        return s;
+    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
+        s.append(", ");
+    return encodeJSON(s.append('"'), name).append("\": ");
+}
+
+StringBuffer &encodeJSON(StringBuffer &s, const char *value)
+{
+    if (!value)
+        return s;
+    for (; *value; value++)
+    {
+        switch (*value)
+        {
+            case '\b':
+                s.append("\\b");
+                break;
+            case '\f':
+                s.append("\\f");
+                break;
+            case '\n':
+                s.append("\\n");
+                break;
+            case '\r':
+                s.append("\\r");
+                break;
+            case '\t':
+                s.append("\\t");
+                break;
+            case '\"':
+            case '\\':
+            case '/':
+                s.append('\\'); //fall through
+            default:
+                s.append(*value);
+        }
+    }
+    return s;
+}
+
 void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid)
 {
     out.ensureCapacity((size32_t)strlen(in));
