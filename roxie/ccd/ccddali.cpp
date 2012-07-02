@@ -445,13 +445,16 @@ public:
         LINK(daliHelper);
         if (!daliHelper || !daliHelper->isAlive())
             daliHelper = new CRoxieDaliHelper();
-        while (waitToConnect && !daliHelper->connected())
+        if (waitToConnect && fileNameServiceDali.length() && (!topology || !topology->getPropBool("@lockDali", false)))
         {
-            unsigned delay = 1000;
-            if (delay > waitToConnect)
-                delay = waitToConnect;
-            Sleep(delay);
-            waitToConnect -= delay;
+            while (waitToConnect && !daliHelper->connected())
+            {
+                unsigned delay = 1000;
+                if (delay > waitToConnect)
+                    delay = waitToConnect;
+                Sleep(delay);
+                waitToConnect -= delay;
+            }
         }
         return daliHelper;
     }
