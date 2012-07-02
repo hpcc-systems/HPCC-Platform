@@ -88,10 +88,13 @@ ThreeColumns := into_three(raw_male)+into_three(raw_female);
 // to be able to see the data format without having to wade through all the low level code.
 
 // Here we encapsulate the code to pull data out from between boundary markers such as (){} etc
-FindWithin(string Src,String ToFind,String ToEnd) := 
-   IF ( Std.Str.Find(Src,ToFind,1) > 0,
-        Src[Std.Str.Find(Src,ToFind,1)+length(ToFind)..Std.Str.Find(Src,ToEnd,1)-1],
+FindWithin(string Src, String ToFind, String ToEnd) := FUNCTION
+   startpos := Std.Str.Find(Src,ToFind,1);
+   l := length(ToFind);
+   RETURN IF ( startpos > 0,
+        Src[startpos+l..Std.Str.Find(Src[startpos+l..],ToEnd,1)+startpos+l-2],
         '' );
+END;
 
 // This transform plucks the data field by field out of the 'filmname' which has 'magic symbols' in the 3 column format
 IMDB.LayoutActors tActors(ThreeColumns L) := TRANSFORM
