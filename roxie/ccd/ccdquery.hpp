@@ -120,10 +120,15 @@ class ActivityArray : public CInterface
     bool multiInstance;
     bool delayed;
     bool library;
+    bool sequential;
     unsigned libraryGraphId;
 
 public:
-    ActivityArray(bool _multiInstance, bool _delayed, bool _library) { multiInstance = _multiInstance; delayed = _delayed; library = _library; libraryGraphId = 0; }
+    ActivityArray(bool _multiInstance, bool _delayed, bool _library, bool _sequential)
+     : multiInstance(_multiInstance), delayed(_delayed), library(_library), sequential(_sequential)
+    {
+        libraryGraphId = 0;
+    }
 
     unsigned findActivityIndex(unsigned id);
     unsigned recursiveFindActivityIndex(unsigned id);
@@ -136,6 +141,7 @@ public:
     inline bool isMultiInstance() const { return multiInstance; }
     inline bool isDelayed() const { return delayed; }
     inline bool isLibrary() const { return library; }
+    inline bool isSequential() const { return sequential; }
     inline unsigned getLibraryGraphId() const { return libraryGraphId; }
 };
 MAKEPointerArray(ActivityArray, ActivityArrayArray);
