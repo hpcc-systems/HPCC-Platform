@@ -1204,12 +1204,6 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
             generateChildExpr(expr, 1);
             out.append(']');
             break;
-        case no_selectmap:
-            generateChildExpr(expr, 0);
-            out.append("[<");
-            generateChildExpr(expr, 1);
-            out.append(">]");
-            break;
         case no_postinc:
         case no_postdec:
             generateChildExpr(expr, 0);

@@ -4255,18 +4255,8 @@ IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHq
         return createReferenceSelector(static_cast<BoundRow *>(match));
 
     OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
-    // Create a row to pass to the lookup function
-
-
     BoundRow * row = NULL;
-    if (!canProcessInline(&ctx, expr))
-    {
-        CHqlBoundExpr bound;
-        OwnedHqlExpr dsExpr = expr->isDatarow() ? createDatasetFromRow(LINK(expr)) : LINK(expr);
-        buildDataset(ctx, dsExpr, bound, FormatNatural);
-        convertBoundDatasetToFirstRow(expr, bound);
-        row = bindRow(ctx, expr, bound.expr);
-    }
+    assertex(canProcessInline(&ctx, expr));
 
     if (!row)
     {

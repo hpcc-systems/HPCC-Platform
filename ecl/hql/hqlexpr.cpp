@@ -4128,23 +4128,7 @@ bool CHqlExpression::isDataset()
 
 bool CHqlExpression::isDictionary()
 {
-    ITypeInfo * cur = queryType();
-    loop
-    {
-        if (!cur)
-            return false;
-
-        switch(cur->getTypeCode())
-        {
-        case type_dictionary:
-            return true;
-        case type_function:
-            cur = cur->queryChildType();
-            break;
-        default:
-            return false;
-        }
-    }
+    return matchesTypeCode(queryType(), type_dictionary);
 }
 
 bool CHqlExpression::isDatarow() 
@@ -9937,7 +9921,7 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
             type.setown(makeDictionaryType(rowType));
         }
         else
-            type.setown(getTypeFromMeta(record, metadata, 0));
+            UNIMPLEMENTED_XY("Type calculation for dictionary operator", getOpString(op));
 
         if (linkCounted)
             type.setown(setLinkCountedAttr(type, true));
@@ -15817,10 +15801,8 @@ IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
     case type_table:
     case type_groupedtable:
         return createDataset(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
-        break;
     case type_dictionary:
         return createDictionary(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
-        break;
     default:
         return createValue(no_typetransfer, newType.getClear(), expr);
     }

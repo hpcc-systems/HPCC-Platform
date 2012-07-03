@@ -572,8 +572,7 @@ IHqlExpression* HqlGram::endRecordDef()
     IHqlExpression * record = popRecord();
     record->Link();     // logically link should be in startrecord, but can only link after finished updating
     popSelfScope();
-    OwnedHqlExpr newRecord = record->closeExpr();
-    return newRecord.getClear();
+    return record->closeExpr();
 }
 
 void HqlGram::beginFunctionCall(attribute & function)
@@ -8424,9 +8423,11 @@ void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftA
 {
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
-//    if (left->isDatarow())
-//        left.setown(createDatasetFromRow(LINK(left)));
+    assertex(!left->isDictionary());
+    if (!right->isDictionary())
+        reportError(WRN_UNSUPPORTED_FEATURE, rightAttr, "Only dictionary may be appended to dictionary");
     right.setown(checkEnsureRecordsMatch(left, right, rightAttr, right->isDatarow()));
+    // TODO: support for dict + row, dict + dataset
 //    if (right->isDatarow())
 //        right.setown(createDatasetFromRow(LINK(right)));
     IHqlExpression * attr = kind ? createAttribute(kind) : NULL;

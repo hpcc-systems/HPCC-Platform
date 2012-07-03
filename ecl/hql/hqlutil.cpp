@@ -5327,15 +5327,14 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
     // MORE - should probably use an attr to cache this?
-    IHqlExpression * payload = record ? record->queryProperty(_payload_Atom) : NULL;
+    IHqlExpression * payload = record->queryProperty(_payload_Atom);
     unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
-    HqlExprArray fields;
     for (unsigned idx = 0; idx < max; idx++)
     {
         IHqlExpression *child = record->queryChild(idx);
-        if (!child->isAttribute())  // Strip off the payload attribute
+        if (!child->isAttribute() || child->queryName()!=_payload_Atom)  // Strip off the payload attribute
             newrec->addOperand(LINK(child));
     }
     return newrec->closeExpr();
@@ -5357,6 +5356,13 @@ IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location
     return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), dict);
 }
 
+IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    if (!record->queryType()->assignableFrom(row->queryType()))
+        errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
+    return createBoolExpr(no_indict, row, dict);
+}
 
 IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
