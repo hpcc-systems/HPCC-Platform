@@ -24,13 +24,13 @@ count(d1n) = 1;
 
 d2[5,2].name = 'Richard';
 d2[5,1].name = '';
-ROW({5,2}, { integer i1, integer i2} ) in d2;
-ROW({5,1}, { integer i1, integer i2} ) not in d2;
+ROW({5,2}, { integer id1, integer id2} ) in d2;
+ROW({5,1}, { integer id1, integer id2} ) not in d2;
 count(d2) = 1;
 d2n[5,2].name = 'Richard';
 d2n[5,1].name = '';
-ROW({5,2}, { integer i1, integer i2} ) in d2n;
-ROW({5,1}, { integer i1, integer i2} ) not in d2n;
+ROW({5,2}, { integer id1, integer id2} ) in d2n;
+ROW({5,1}, { integer id1, integer id2} ) not in d2n;
 count(d2n) = 1;
 
 5 not in d3;

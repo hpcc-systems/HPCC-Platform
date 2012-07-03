@@ -5301,7 +5301,7 @@ void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *r
         BuildCtx classctx(declarectx);
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         HqlExprArray keyedFields;
-        IHqlExpression * payload = record ? record->queryProperty(_payload_Atom) : NULL;
+        IHqlExpression * payload = record->queryProperty(_payload_Atom);
         unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
         unsigned max = record->numChildren() - payloadSize;
         for (unsigned idx = 0; idx < max; idx++)

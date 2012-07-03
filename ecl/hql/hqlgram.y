@@ -3776,8 +3776,7 @@ recordDef
                         {
                             OwnedHqlExpr record = $4.getExpr();
                             parser->checkRecordIsValid($1, record);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord fieldDefs payloadPart endrecord
@@ -3785,16 +3784,14 @@ recordDef
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr payload = $4.getExpr();
                             parser->mergeDictionaryPayload(record, payload, $1);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordOptions fieldDefs optSemiComma endrecord
                         {
                             OwnedHqlExpr record = $5.getExpr();
                             parser->checkRecordIsValid($1, record);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordOptions fieldDefs payloadPart endrecord
@@ -3802,16 +3799,14 @@ recordDef
                             OwnedHqlExpr record = $4.getExpr();
                             OwnedHqlExpr payload = $5.getExpr();
                             parser->mergeDictionaryPayload(record, payload, $1);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordBase optFieldDefs endrecord
                         {
                             OwnedHqlExpr record = $4.getExpr();
                             parser->checkRecordIsValid($1, record);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordBase optFieldDefs payloadPart endrecord
@@ -3819,16 +3814,14 @@ recordDef
                             OwnedHqlExpr record = $4.getExpr();
                             OwnedHqlExpr payload = $5.getExpr();
                             parser->mergeDictionaryPayload(record, payload, $1);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordBase recordOptions optFieldDefs endrecord
                         {
                             OwnedHqlExpr record = $5.getExpr();
                             parser->checkRecordIsValid($1, record);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
 
     | startrecord recordBase recordOptions optFieldDefs payloadPart endrecord
@@ -3836,8 +3829,7 @@ recordDef
                             OwnedHqlExpr record = $5.getExpr();
                             OwnedHqlExpr payload = $6.getExpr();
                             parser->mergeDictionaryPayload(record, payload, $1);
-                            $$.setExpr(record.getClear());
-                            $$.setPosition($1);
+                            $$.setExpr(record.getClear(), $1);
                         }
     | simpleRecord
     | recordDef AND recordDef
@@ -4254,15 +4246,15 @@ fieldDef
                         }
 
 
-    | DICTIONARY '(' recordDef childDictionaryOptions ')' knownOrUnknownId optFieldAttrs
+    | DICTIONARY '(' recordDef ')' knownOrUnknownId optFieldAttrs
                         {
                             $$.clear($1);
-                            parser->addDictionaryField($6, $6.getName(), $3.getExpr(), NULL, createComma($4.getExpr(), $7.getExpr()));
+                            parser->addDictionaryField($5, $5.getName(), $3.getExpr(), NULL, $6.getExpr());
                         }
-    | DICTIONARY '(' recordDef childDictionaryOptions ')' knownOrUnknownId optFieldAttrs ASSIGN dictionary
+    | DICTIONARY '(' recordDef ')' knownOrUnknownId optFieldAttrs ASSIGN dictionary
                         {
                             $$.clear($1);
-                            parser->addDictionaryField($6, $6.getName(), $3.getExpr(), $9.getExpr(), createComma($4.getExpr(), $7.getExpr()));
+                            parser->addDictionaryField($5, $5.getName(), $3.getExpr(), $8.getExpr(), $6.getExpr());
                         }
     | DICTIONARY knownOrUnknownId optFieldAttrs ASSIGN dictionary
                         {
@@ -4703,24 +4695,6 @@ userTypedefPattern
     ;
 
 
-childDictionaryOptions
-    :
-                        { $$.setNullExpr(); }
-    | childDictionaryOptions ',' childDictionaryOption
-                        {
-                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
-                        }
-    ;
-
-childDictionaryOption
-    : COUNT '(' expression ')'
-                        {
-                            parser->normalizeExpression($3);
-                            $$.setExpr(createLinkAttribute(countAtom, $3.getExpr()));
-                            $$.setPosition($1);
-                        }
-    ;
-
 childDatasetOptions
     :
                         { $$.setNullExpr(); }
@@ -5084,8 +5058,7 @@ compareExpr
                             parser->normalizeExpression($4, type_dictionary, false);
                             IHqlExpression *dict = $4.getExpr();
                             IHqlExpression *row = $1.getExpr();
-                            OwnedHqlExpr indict = createBoolExpr(no_indict, row, dict); // more - some type checking might be nice
-//                          OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr indict = createINDictRow(parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5106,8 +5079,7 @@ compareExpr
                             parser->normalizeExpression($3, type_dictionary, false);
                             IHqlExpression *dict = $3.getExpr();
                             IHqlExpression *row = $1.getExpr();
-                            $$.setExpr(createBoolExpr(no_indict, row, dict)); // more - some type checking might be nice
-//                            $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
+                            $$.setExpr(createINDictRow(parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataSet EQ dataSet    
