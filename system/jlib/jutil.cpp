@@ -2283,11 +2283,13 @@ static IPropertyTree *getOSSdirTree()
     return NULL;
 }
 
-bool getConfigurationDirectory(const IPropertyTree *dirtree,const char *category, const char *component,const char *instance, StringBuffer &dirout)
+bool getConfigurationDirectory(const IPropertyTree *useTree, const char *category, const char *component, const char *instance, StringBuffer &dirout)
 {
+    Linked<const IPropertyTree> dirtree = useTree;
     if (!dirtree) 
-        dirtree = getOSSdirTree();
-    if (dirtree&&category&&*category) {
+        dirtree.setown(getOSSdirTree());
+    if (dirtree && category && *category)
+    {
         const char *name = dirtree->queryProp("@name");
         if (name&&*name) {
             StringBuffer q("Category[@name=\"");
