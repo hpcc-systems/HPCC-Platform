@@ -13936,8 +13936,11 @@ bool isKeyedJoin(IHqlExpression * expr)
     {
         if (expr->hasProperty(allAtom) || expr->hasProperty(lookupAtom))
             return false;
-        if (expr->hasProperty(keyedAtom))
+        if (expr->hasProperty(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
             return true;
+        //Keyed joins only support INNER/LEFT.  Default to a normal join for other join types.
+        if (!isInnerJoin(expr) && !isLeftJoin(expr))
+            return false;
         if (isKey(expr->queryChild(1)))
             return true;
     }
