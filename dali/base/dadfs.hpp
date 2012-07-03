@@ -184,7 +184,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual bool active()=0;
     virtual bool setActive(bool on)=0; // returns old value (used internally)
     virtual IDistributedFile *lookupFile(const char *lfn,unsigned timeout=INFINITE)=0;
-    virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,bool fixmissing=false,unsigned timeout=INFINITE)=0;
+    virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;
     virtual bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)=0; // used internally to delay deletes untill commit 
     virtual void addAction(CDFAction *action)=0; // internal
@@ -473,7 +473,6 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist=false,IUserDescriptor *user=NULL,IDistributedFileTransaction *transaction=NULL) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user=NULL,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
-                                                    bool fixmissing=false,  // used when removing
                                                     unsigned timeout=INFINITE
 
                                                 ) = 0;  // NB lookup will also return superfiles 
