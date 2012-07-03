@@ -861,6 +861,7 @@ static const char * getTypeText(type_t type)
     DUMP_CASE(type,ifblock);
     DUMP_CASE(type,function);
     DUMP_CASE(type,sortlist);
+    DUMP_CASE(type,dictionary);
 
     case type_unused1:
     case type_unused2:
