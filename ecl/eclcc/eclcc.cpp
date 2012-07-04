@@ -1655,7 +1655,10 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
         fprintf(logFile, "Unexpected exception: %s", s.str());
     }
     if (handler)
+    {
         queryLogMsgManager()->removeMonitor(handler);
+        handler.clear();
+    }
 
     fflush(logFile);
     fclose(logFile);
