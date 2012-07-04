@@ -40,3 +40,10 @@ count(d3n) = 0;
 
 ds6 := dataset([{5, 'Richard'}], { integer id, string name });
 d6 := DICTIONARY(ds6, { id => name });
+
+d7 := IF(nofold(true), d5);
+d7n := IF(nofold(true), d5, d4);
+ROW({5,'Richard'}, { integer id, string name} ) in d7;
+ROW({5,'Richard'}, { integer id, string name} ) in d7n;
+ROW({52,'Richard'}, { integer id, string name} ) not in d7;
+ROW({51,'Richard'}, { integer id, string name} ) not in d7n;
