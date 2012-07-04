@@ -18,6 +18,8 @@
 
 #include "platform.h"
 #include "limits.h"
+#include <math.h>
+
 #include "slave.ipp"
 
 #include "thhashdistribslave.ipp"
@@ -48,9 +50,6 @@
 //--------------------------------------------------------------------------------------------
 // HashDistributeSlaveActivity
 //
-
-
-
 
 
 #define NUMSLAVEPORTS       2
@@ -1967,116 +1966,479 @@ friend class CKeyLookup;
 
 //===========================================================================
 
+#define HTSIZE_LIMIT_PC 75 // %
+#define HASHDEDUP_HT_INIT_MAX_SIZE 0x600000
+#define HASHDEDUP_MINSPILL_THRESHOLD 1000
+#define HASHDEDUP_HT_BUCKET_SIZE 0x10000 // 64k (rows)
+#define HASHDEDUP_HT_INC_SIZE 0x10000 // 64k (rows)
+#define HASHDEDUP_BUCKETS_MIN 11 // (NB: prime #)
+#define HASHDEDUP_BUCKETS_MAX 9973 // (NB: prime #)
+#define HASHDEDUP_BUCKET_POSTSPILL_PRIORITY 5 // very high, by this stage it's cheap to dispose of
+
+class HashDedupSlaveActivityBase;
+class CBucket;
+class CHashTableRowTable : private CThorExpandingRowArray
+{
+    CBucket *owner;
+    HashDedupSlaveActivityBase &activity;
+    IHash *iRowHash, *iKeyHash;
+    ICompare *iCompare;
+    rowidx_t htElements, htMax;
+
+    inline rowidx_t getNewSize(rowidx_t current) const
+    {
+        return current+HASHDEDUP_HT_INC_SIZE;
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare);
+    inline const void *query(rowidx_t i) const { return CThorExpandingRowArray::query(i); }
+    inline void setOwner(CBucket *_owner) { owner = _owner; }
+    bool kill()
+    {
+        if (!rows)
+            return false;
+        CThorExpandingRowArray::kill();
+        htMax = htElements = 0;
+        return true;
+    }
+    bool clear()
+    {
+        if (0 == htElements)
+            return false;
+        CThorExpandingRowArray::clearRows();
+        memset(rows, 0, maxRows * sizeof(void *));
+        htElements = 0;
+        htMax = maxRows * HTSIZE_LIMIT_PC / 100;
+        return true;
+    }
+    void init(rowidx_t sz);
+    bool rehash();
+    bool lookupRow(const void *row, unsigned htPos) const // return true == match
+    {
+        loop
+        {
+            const void *htKey = rows[htPos];
+            if (!htKey)
+                break;
+            if (0 == iCompare->docompare(row, htKey))
+                return true;
+            if (++htPos==maxRows)
+                htPos = 0;
+        }
+        return false;
+    }
+    inline void addRow(unsigned htPos, const void *row)
+    {
+        while (NULL != rows[htPos])
+        {
+            if (++htPos==maxRows)
+                htPos = 0;
+        }
+        // similar to underlying CThorExpandingRowArray::setRow, but cheaper, as know no old row to dispose of
+        rows[htPos] = row;
+        ++htElements;
+        if (htPos+1>numRows) // keeping high water mark
+            numRows = htPos+1;
+    }
+    inline const void *getRowClear(unsigned htPos)
+    {
+        dbgassertex(htPos < maxRows);
+        const void *ret = CThorExpandingRowArray::getClear(htPos);
+        if (ret)
+            --htElements;
+        return ret;
+    }
+    inline rowidx_t queryHtElements() const { return htElements; }
+    inline bool checkNeedRehash() const { return htElements >= htMax; }
+    inline rowidx_t queryMaxRows() const { return CThorExpandingRowArray::queryMaxRows(); }
+    inline const void **getRowArray() { return CThorExpandingRowArray::getRowArray(); }
+};
+
+class CSpill : public CSimpleInterface, implements IRowWriter
+{
+    IRowInterfaces *rowIf;
+    rowcount_t count;
+    Owned<CFileOwner> spillFile;
+    IRowWriter *writer;
+    StringAttr desc;
+    unsigned bucketN;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CSpill(IRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN) : rowIf(_rowIf), desc(_desc), bucketN(_bucketN)
+    {
+        count = 0;
+        writer = NULL;
+    }
+    ~CSpill()
+    {
+        ::Release(writer);
+    }
+    void init()
+    {
+        dbgassertex(NULL == writer);
+        count = 0;
+        StringBuffer tempname, prefix("hashdedup_bucket");
+        prefix.append(bucketN).append('_').append(desc);
+        GetTempName(tempname, prefix.str(), true);
+        OwnedIFile iFile = createIFile(tempname.str());
+        spillFile.setown(new CFileOwner(iFile.getLink()));
+        writer = createRowWriter(iFile, rowIf->queryRowSerializer(), rowIf->queryRowAllocator());
+    }
+    IRowStream *getReader(rowcount_t *_count=NULL) // NB: also detatches ownership of 'fileOwner'
+    {
+        assertex(NULL == writer); // should have been closed
+        Owned<CFileOwner> fileOwner = spillFile.getClear();
+        if (!fileOwner)
+            return NULL;
+        Owned<IExtRowStream> strm = createSimpleRowStream(&fileOwner->queryIFile(), rowIf);
+        Owned<CStreamFileOwner> fileStream = new CStreamFileOwner(fileOwner, strm);
+        if (_count)
+            *_count = count;
+        return fileStream.getClear();
+    }
+    rowcount_t getCount() const { return count; }
+    void close()
+    {
+        if (NULL == writer)
+            return;
+        flush();
+        ::Release(writer);
+        writer =NULL;
+    }
+// IRowWriter
+    virtual void putRow(const void *row)
+    {
+        writer->putRow(row);
+        ++count; // NULL's too (but there won't be any in usage of this impl.)
+    }
+    virtual void flush()
+    {
+        writer->flush();
+    }
+};
+
+class CBucket : public CSimpleInterface, implements IInterface
+{
+    HashDedupSlaveActivityBase &owner;
+    IRowInterfaces *rowIf, *keyIf;
+    IHash *iRowHash, *iKeyHash;
+    ICompare *iCompare;
+    Owned<IEngineRowAllocator> _keyAllocator;
+    IEngineRowAllocator *keyAllocator;
+    CHashTableRowTable &htRows;
+    bool extractKey, spilt;
+    SpinLock spin;
+    unsigned bucketN;
+    CSpill rowSpill, keySpill;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable &_htRows);
+    void setSpilt()
+    {
+        if (spilt)
+            return;
+        rowSpill.init();
+        keySpill.init();
+        spilt = true;
+    }
+    bool addKey(const void *key, unsigned hashValue);
+    bool addRow(const void *row, unsigned hashValue);
+    void clear();
+    bool clearHashTable(bool ptrTable) // returns true if freed mem
+    {
+        if (ptrTable)
+            return htRows.kill();
+        else
+            return htRows.clear();
+    }
+    bool spillHashTable(); // returns true if freed mem
+    void close()
+    {
+        rowSpill.close();
+        keySpill.close();
+    }
+    inline IRowStream *getRowStream(rowcount_t *count) { return rowSpill.getReader(count); }
+    inline IRowStream *getKeyStream(rowcount_t *count) { return keySpill.getReader(count); }
+    inline rowidx_t getKeyCount() const { return htRows.queryHtElements(); }
+    inline rowcount_t getSpiltRowCount() const { return rowSpill.getCount(); }
+    inline rowcount_t getSpiltKeyCount() const { return keySpill.getCount(); }
+    inline bool isSpilt() const { return spilt; }
+    inline unsigned queryBucketNumber() const { return bucketN; }
+};
+
+class CBucketHandler : public CSimpleInterface, implements IInterface, implements roxiemem::IBufferedRowCallback
+{
+    HashDedupSlaveActivityBase &owner;
+    IRowInterfaces *rowIf, *keyIf;
+    IHash *iRowHash, *iKeyHash;
+    ICompare *iCompare;
+    bool extractKey;
+    unsigned numBuckets, currentBucket, nextSpilledBucketFlush;
+    unsigned depth, div;
+    unsigned nextToSpill;
+    PointerArrayOf<CBucket> _buckets;
+    CBucket **buckets;
+    mutable rowidx_t peakKeyCount;
+
+    rowidx_t getTotalBucketCount() const
+    {
+        rowidx_t totalCount = 0;
+        for (unsigned i=0; i<numBuckets; i++)
+            totalCount += buckets[i]->getKeyCount();
+        return totalCount;
+    }
+    void recalcPeakKeyCount() const
+    {
+        rowidx_t newPeakKeyCount = getTotalBucketCount();
+        if ((RCIDXMAX == peakKeyCount) || (newPeakKeyCount > peakKeyCount))
+            peakKeyCount = newPeakKeyCount;
+    }
+
+    class CPostSpillFlush : implements roxiemem::IBufferedRowCallback
+    {
+        CBucketHandler &owner;
+    public:
+        CPostSpillFlush(CBucketHandler &_owner) : owner(_owner)
+        {
+        }
+    // IBufferedRowCallback
+        virtual unsigned getPriority() const
+        {
+            return HASHDEDUP_BUCKET_POSTSPILL_PRIORITY;
+        }
+        virtual bool freeBufferedRows(bool critical)
+        {
+            if (NotFound == owner.nextSpilledBucketFlush)
+                return false;
+            unsigned startNum = owner.nextSpilledBucketFlush;
+            loop
+            {
+                CBucket *bucket = owner.buckets[owner.nextSpilledBucketFlush];
+                ++owner.nextSpilledBucketFlush;
+                if (owner.nextSpilledBucketFlush == owner.numBuckets)
+                    owner.nextSpilledBucketFlush = 0;
+                if (bucket->isSpilt())
+                {
+                    rowidx_t count = bucket->getKeyCount();
+                    // want to avoid flushing tiny buckets (unless critical), to make room for a few rows repeatedly
+                    if (critical || (count >= HASHDEDUP_MINSPILL_THRESHOLD))
+                    {
+                        if (bucket->clearHashTable(critical))
+                        {
+                            PROGLOG("Flushed bucket %d - %d elements", bucket->queryBucketNumber(), count);
+                            return true;
+                        }
+                    }
+                }
+                if (startNum == owner.nextSpilledBucketFlush)
+                    break;
+            }
+            return false;
+        }
+    } postSpillFlush;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div);
+    ~CBucketHandler();
+    unsigned getBucketEstimate(rowcount_t totalRows) const;
+    unsigned getBucketEstimateWithPrev(rowcount_t totalRows, rowidx_t prevPeakKeys, rowidx_t keyCount) const;
+    void init(unsigned numBuckets, IRowStream *seeKeys=NULL);
+    inline rowcount_t getPeakCount() const
+    {
+        if (NotFound == nextToSpill)
+            recalcPeakKeyCount();
+        return peakKeyCount;
+    }
+    void flushBuckets();
+    bool spillBucket(bool critical) // spills a bucket
+    {
+        if (NotFound == nextToSpill)
+        {
+            nextToSpill = 0;
+            recalcPeakKeyCount();
+            // post spill, turn on, on higher priority, flushes spilt buckets that have accrued keys
+            nextSpilledBucketFlush = 0;
+        }
+        unsigned start=nextToSpill;
+        do
+        {
+            // NB: spin ensures exclusivity to write to bucket inside spillHashTable
+            // Another thread could create a bucket at this time, but
+            // access to 'buckets' (which can be assigned to by other thread) should be atomic, on Intel at least.
+            CBucket *bucket = buckets[nextToSpill++];
+            if (nextToSpill == numBuckets)
+                nextToSpill = 0;
+            if (!bucket->isSpilt() && (critical || (bucket->getKeyCount() >= HASHDEDUP_MINSPILL_THRESHOLD)))
+            {
+                // spill whole bucket unless last
+                // The one left, will be last bucket standing and grown to fill mem
+                // it is still useful to use as much as poss. of remaining bucket HT as filter
+                if (bucket->spillHashTable())
+                    return true;
+                else if (critical && bucket->clearHashTable(true))
+                    return true;
+            }
+        }
+        while (nextToSpill != start);
+        return false;
+    }
+    CBucketHandler *getNextBucketHandler(Owned<IRowStream> &nextInput);
+public:
+    bool addRow(const void *row);
+    inline unsigned calcBucket(unsigned hashValue) const
+    {
+        // JCSMORE - if huge # of rows 32bit has may not be enough?
+        return (hashValue / div) % numBuckets;
+    }
+// IBufferedRowCallback
+    virtual unsigned getPriority() const
+    {
+        return SPILL_PRIORITY_HASHDEDUP;
+    }
+    virtual bool freeBufferedRows(bool critical)
+    {
+        return spillBucket(critical);
+    }
+};
 
 class HashDedupSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
 protected:
     IRowStream *input;      // can be changed
-    bool inputstopped;
+    Owned<IRowStream> currentInput;
+    bool inputstopped, eos, extractKey, local, isVariable;
     const char *actTxt;
-    CThorExpandingRowArray htabrows;
-    const void **htab;
-    IHThorHashDedupArg *dedupargs;
-    unsigned htsize;
-    unsigned htremaining;   // remaining slots left
-    ICompare *icompare;
-    IHash *ihash;
-    ICompare *ikeycompare;
-    Owned<IEngineRowAllocator> keyallocator;
-    Owned<IOutputRowSerializer> keyserializer;
-public:
+    IHThorHashDedupArg *helper;
+    IHash *iHash, *iKeyHash;
+    ICompare *iCompare, *rowKeyCompare;
+    Owned<IRowInterfaces> _keyRowInterfaces;
+    IRowInterfaces *keyRowInterfaces;
+    Owned<CBucketHandler> bucketHandler;
+    IArrayOf<CBucketHandler> bucketHandlerStack;
+    SpinLock stopSpin;
+    PointerArrayOf<CHashTableRowTable> _hashTables;
+    CHashTableRowTable **hashTables;
+    unsigned numHashTables;
+    roxiemem::RoxieHeapFlags allocFlags;
 
+    inline CHashTableRowTable &queryHashTable(unsigned n) const { return *hashTables[n]; }
+    void ensureNumHashTables(unsigned _numHashTables)
+    {
+        rowidx_t initSize = HASHDEDUP_HT_INIT_MAX_SIZE / _numHashTables;
+        if (initSize > HASHDEDUP_HT_INC_SIZE)
+            initSize = HASHDEDUP_HT_INC_SIZE;
+        if (_numHashTables <= numHashTables)
+        {
+            unsigned i=0;
+            for (; i<_numHashTables; i++)
+                hashTables[i]->init(initSize);
+            for (; i<numHashTables; i++)
+            {
+                ::Release(hashTables[i]);
+                hashTables[i] = NULL;
+            }
+        }
+        else if (_numHashTables > numHashTables)
+        {
+            _hashTables.ensure(_numHashTables);
+            hashTables = (CHashTableRowTable **)_hashTables.getArray();
+            for (unsigned i=numHashTables; i<_numHashTables; i++)
+            {
+                hashTables[i] = new CHashTableRowTable(*this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare);
+                hashTables[i]->init(initSize);
+            }
+        }
+        numHashTables = _numHashTables;
+    }
+
+public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    HashDedupSlaveActivityBase(CGraphElementBase *_container)
-        : CSlaveActivity(_container), CThorDataLink(this), htabrows(*this, this, true)
+    HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
+        : CSlaveActivity(_container), CThorDataLink(this), local(_local)
     {
-        htsize = 0;
         inputstopped = false;
+    }
+    ~HashDedupSlaveActivityBase()
+    {
+        for (unsigned i=0; i<numHashTables; i++)
+            ::Release(hashTables[i]);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        dedupargs = (IHThorHashDedupArg *)queryHelper();
-        ihash = dedupargs->queryHash();
-        icompare = dedupargs->queryCompare();
+        helper = (IHThorHashDedupArg *)queryHelper();
+        iHash = helper->queryHash();
         appendOutputLinked(this);
-        IOutputMetaData* km = dedupargs->queryKeySize();
-        if (km&&(km!=dedupargs->queryOutputMeta())) {
-            ikeycompare = dedupargs->queryKeyCompare();
-            keyallocator.setown(queryJob().getRowAllocator(km,queryActivityId()));
-            keyserializer.setown(km->createRowSerializer(queryCodeContext(),queryActivityId()));
+        iCompare = helper->queryCompare();
+        numHashTables = 0;
+        hashTables = NULL;
+
+        // JCSMORE - it may not be worth extracing the key,
+        // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
+        IOutputMetaData *km = helper->queryKeySize();
+        if (helper->selectInterface(TAIhashdeduparg_2))
+            extractKey = (0 == (HFDwholerecord & helper->getFlags()));
+        else
+            extractKey = km != NULL;
+        if (extractKey)
+        {
+            // if key and row are fixed length, check that estimated memory sizes make it worth extracting key per row
+            isVariable = km->isVariableSize();
+            if (!isVariable && helper->queryOutputMeta()->isFixedSize())
+            {
+                roxiemem::IRowManager *rM = queryJob().queryRowManager();
+                size32_t keySize = rM->getExpectedCapacity(km->getMinRecordSize(), allocFlags);
+                size32_t rowSize = rM->getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
+                if (keySize >= rowSize)
+                    extractKey = false;
+            }
+        }
+        if (extractKey)
+        {
+            _keyRowInterfaces.setown(createRowInterfaces(km, queryActivityId(), queryCodeContext()));
+            keyRowInterfaces = _keyRowInterfaces;
+            rowKeyCompare = helper->queryRowKeyCompare();
+            iKeyHash = helper->queryKeyHash();
         }
         else
-            ikeycompare = NULL;
+        {
+            isVariable = helper->queryOutputMeta()->isVariableSize();
+            keyRowInterfaces = this;
+            rowKeyCompare = iCompare;
+            iKeyHash = iHash;
+        }
+        allocFlags = queryJob().queryThorAllocator()->queryFlags();
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         inputstopped = false;
-        input = inputs.item(0);
-        htabrows.kill();
-        htsize = 0;
+        eos = false;
         startInput(inputs.item(0));
+        input = inputs.item(0);
+        ThorDataLinkMetaInfo info;
+        inputs.item(0)->getMetaInfo(info);
+        unsigned div = local ? 1 : queryJob().querySlaves(); // if global, hash values already modulated by # slaves
+        bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, div));
+        unsigned initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
+        if (0 == initialNumBuckets)
+            initialNumBuckets = bucketHandler->getBucketEstimate(info.totalRowsMax); // will use default if no meta total
+        ensureNumHashTables(initialNumBuckets);
+        bucketHandler->init(initialNumBuckets);
         dataLinkStart(actTxt, container.queryId());
-    }
-    bool eqKey(const void *k1, const void *k2)
-    {
-        if (ikeycompare)
-            return (ikeycompare->docompare(k1,k2)==0);
-        return (icompare->docompare(k1,k2)==0);
-    }
-    bool addHash(const void *row)
-    {
-        // NB assume key size constant
-        OwnedConstThorRow key;
-        if (keyallocator) {
-            RtlDynamicRowBuilder krow(keyallocator);
-            size32_t sz = dedupargs->recordToKey(krow,row);
-            assertex(sz);
-            key.setown(krow.finalizeRowClear(sz));
-        }
-        else
-            key.set(row);
-        // JCSMORE - needs revisting, to better cope with memory/spilling
-        if (htsize==0) {
-            CSizingSerializer ssz;
-            if (keyserializer)
-                keyserializer->serialize(ssz,(const byte *)key.get());
-            else
-                queryRowSerializer()->serialize(ssz,(const byte *)row);
-            // following is very rough guess of how many will fit in memory (will work best for fixed)
-            size32_t ks = ssz.size();
-            size32_t divsz = (ks<16)?16:ks;
-            // JCSMORE if child query assume low memory usage??
-            unsigned total = (container.queryOwnerId() ? (queryLargeMemSize()/10) : queryLargeMemSize()) /(divsz+sizeof(void *)*3);
-            htsize = total+10;
-            ActPrintLog("%s: reserving hash table of size %d",actTxt,htsize);
-            if (!htabrows.ensure(htsize))
-                throw MakeActivityException(this, TE_TooMuchData, "%s: hash table could not be allocated (out of memory)", actTxt);
-            htabrows.clearUnused();
-            htab = htabrows.getRowArray();
-            htremaining = htsize*9/10;
-        }
-        unsigned h = ihash->hash(row)%htsize;
-        loop {
-            const void *htk=htab[h];
-            if (!htk)
-                break;
-            if (eqKey(htk,key))
-                return false;
-            if (++h==htsize)
-                h = 0;
-        }
-        if (htremaining==0)
-            throw MakeActivityException(this, TE_TooMuchData, "%s: hash table overflow (out of memory)",actTxt);
-        htremaining--;
-
-        htabrows.setRow(h,key.getClear());
-        return true;
     }
     void stopInput()
     {
-        if (!inputstopped) {
+        if (!inputstopped)
+        {
+            SpinBlock b(stopSpin);
             CSlaveActivity::stopInput(inputs.item(0));
             inputstopped = true;
         }
@@ -2084,53 +2446,434 @@ public:
     void kill()
     {
         ActPrintLog("%s: kill", actTxt);
-        htabrows.kill();
+        currentInput.clear();
+        bucketHandler.clear();
+        bucketHandlerStack.kill();
         CSlaveActivity::kill();
     }
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        while (!abortSoon) {
-            OwnedConstThorRow row = input->ungroupedNextRow();
-            if (!row)
-                break;
-            if (addHash(row)) {
-                dataLinkIncrement();
-                return row.getClear();
+        if (eos)
+            return NULL;
+        // bucket handlers, stream out non-duplicates (1st entry in HT)
+        loop
+        {
+            OwnedConstThorRow row;
+            {
+                SpinBlock b(stopSpin);
+                row.setown(input->ungroupedNextRow());
+            }
+            if (row)
+            {
+                if (bucketHandler->addRow(row)) // true if new, i.e. non-duplicate (does not take ownership)
+                {
+                    dataLinkIncrement();
+                    return row.getClear();
+                }
+            }
+            else
+            {
+                Owned<CBucketHandler> nextBucketHandler;
+                loop
+                {
+                    // If spill event occured, disk buckets + key buckets will have been created by this stage.
+                    bucketHandler->flushBuckets();
+
+                    // pop off parents until one has a bucket left to read
+                    Owned<IRowStream> nextInput;
+                    nextBucketHandler.setown(bucketHandler->getNextBucketHandler(nextInput));
+                    if (!nextBucketHandler)
+                    {
+                        if (!bucketHandlerStack.ordinality())
+                        {
+                            currentInput.clear();
+                            bucketHandler.clear();
+                            eos = true;
+                            return NULL;
+                        }
+                        bucketHandler.setown(&bucketHandlerStack.popGet());
+                    }
+                    else
+                    {
+                        // NB: if wanted threading, then each sibling bucket could be handled on own thread,
+                        // but they'd be competing for disk and memory and involve more locking
+                        bucketHandlerStack.append(*bucketHandler.getClear()); // push current handler on to stack
+                        bucketHandler.setown(nextBucketHandler.getClear());
+                        currentInput.setown(nextInput.getClear());
+                        break;
+                    }
+                }
+                assertex(currentInput);
+                input = currentInput;
             }
         }
-        return NULL;
     }
 
     virtual bool isGrouped() { return false; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+friend class CBucketHandler;
+friend class CHashTableRowTable;
+friend class CBucket;
 };
 
+CHashTableRowTable::CHashTableRowTable(HashDedupSlaveActivityBase &_activity, IRowInterfaces *rowIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare)
+    : CThorExpandingRowArray(_activity, rowIf, true),
+      activity(_activity), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare)
+{
+    htMax = htElements = 0;
+    owner = NULL;
+}
+
+void CHashTableRowTable::init(rowidx_t sz)
+{
+    // reinitialize if need bigger or if requested size is much smaller than existing
+    rowidx_t newMaxRows = activity.queryJob().queryRowManager()->getExpectedCapacity(sz * sizeof(rowidx_t *), activity.allocFlags) / sizeof(rowidx_t *);
+    if (newMaxRows <= maxRows && ((maxRows-newMaxRows) <= HASHDEDUP_HT_INC_SIZE))
+        return;
+    ReleaseThorRow(rows);
+    OwnedConstThorRow newRows = allocateRowTable(sz);
+    assertex(newRows);
+    rows = (const void **)newRows.getClear();
+    maxRows = RoxieRowCapacity(rows) / sizeof(void *);
+    memset(rows, 0, maxRows * sizeof(void *));
+    numRows = 0;
+    htMax = maxRows * HTSIZE_LIMIT_PC / 100;
+}
+
+bool CHashTableRowTable::rehash()
+{
+    dbgassertex(iKeyHash);
+    rowidx_t newMaxRows = getNewSize(maxRows);
+    OwnedConstThorRow _newRows = allocateRowTable(newMaxRows);
+    if (!_newRows || owner->isSpilt())
+        return false;
+    const void **newRows = (const void **)_newRows.get();
+    newMaxRows = RoxieRowCapacity(newRows) / sizeof(void *);
+    memset(newRows, 0, newMaxRows * sizeof(void *));
+    rowidx_t newNumRows=0;
+    for (rowidx_t i=0; i<maxRows; i++)
+    {
+        const void *row = rows[i];
+        if (row)
+        {
+            unsigned h = iKeyHash->hash(row) % newMaxRows;
+            while (NULL != newRows[h])
+            {
+                if (++h == newMaxRows)
+                    h = 0;
+            }
+            newRows[h] = row;
+            if (h>=newNumRows)
+                newNumRows = h+1;
+        }
+    }
+    if (maxRows)
+        ActPrintLog(&activity, "Rehashed bucket %d - %d elements, old size = %d, new size = %d", owner->queryBucketNumber(), htElements, maxRows, newMaxRows);
+    const void **oldRows = rows;
+    rows = (const void **)_newRows.getClear();
+    ReleaseThorRow(oldRows);
+    maxRows = newMaxRows;
+    numRows = newNumRows;
+    htMax = maxRows * HTSIZE_LIMIT_PC / 100;
+    return true;
+}
+
+//
+
+CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable &_htRows)
+    : owner(_owner), rowIf(_rowIf), keyIf(_keyIf), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare), extractKey(_extractKey), bucketN(_bucketN), htRows(_htRows),
+      rowSpill(_rowIf, "rows", _bucketN), keySpill(_keyIf, "keys", _bucketN)
+
+{
+    spilt = false;
+    // ideally want rows in bucket to be contiguous, so when it spills, pages will be released
+    if (extractKey)
+    {   // use own allocator
+        unsigned flags = owner.allocFlags | roxiemem::RHFunique;
+        _keyAllocator.setown(owner.queryJob().getRowAllocator(keyIf->queryRowMetaData(), owner.queryActivityId(), (roxiemem::RoxieHeapFlags)flags));
+        keyAllocator = _keyAllocator;
+    }
+    else
+        keyAllocator = keyIf->queryRowAllocator();
+}
+
+void CBucket::clear()
+{
+    // bucket read-only after this (getKeyStream/getRowStream etc.)
+    clearHashTable(false);
+}
+
+bool CBucket::spillHashTable()
+{
+    SpinBlock b(spin);
+    rowidx_t removeN = htRows.queryHtElements();
+    if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+        return false;
+    setSpilt();
+    rowidx_t maxRows = htRows.queryMaxRows();
+    for (rowidx_t i=0; i<maxRows; i++)
+    {
+        OwnedConstThorRow key = htRows.getRowClear(i);
+        if (key)
+            keySpill.putRow(key.getClear());
+    }
+    ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
+    return true;
+}
+
+bool CBucket::addKey(const void *key, unsigned hashValue)
+{
+    {
+        SpinBlock b(spin);
+        if (!spilt && htRows.checkNeedRehash())
+        {
+            if (!htRows.rehash())
+                setSpilt(); // about to
+        }
+        if (htRows.queryMaxRows()) // might be 0 - if HT cleared if just spilt, or no room for initial ptr alloc
+        {
+            if (!spilt)
+            {
+                unsigned htPos = hashValue % htRows.queryMaxRows();
+                LinkThorRow(key);
+                htRows.addRow(htPos, key);
+                return true;
+            }
+        }
+    }
+    LinkThorRow(key);
+    keySpill.putRow(key);
+    return false;
+}
+
+bool CBucket::addRow(const void *row, unsigned hashValue)
+{
+    {
+        SpinBlock b(spin);
+        bool doAdd = true;
+        if (htRows.checkNeedRehash())
+        {
+            if (spilt)
+                doAdd = false; // don't rehash if full and already spilt
+            else
+            {
+                if (!htRows.rehash())
+                {
+                    setSpilt(); // about to
+                    doAdd = false;
+                }
+            }
+        }
+        if (doAdd)
+        {
+            unsigned htPos = hashValue % htRows.queryMaxRows();
+            if (htRows.lookupRow(row, htPos))
+                return false; // dedupped
+
+            OwnedConstThorRow key;
+            if (extractKey)
+            {
+                SpinUnblock b(spin); // will allocate, might cause spill
+                RtlDynamicRowBuilder krow(keyAllocator);
+                size32_t sz = owner.helper->recordToKey(krow, row);
+                assertex(sz);
+                key.setown(krow.finalizeRowClear(sz));
+            }
+            else
+                key.set(row);
+            htRows.addRow(htPos, key.getClear());
+            if (!spilt)
+                return true;
+            // if spilt, then still added/used to dedup, but have to commit row to disk
+            // as no longer know it's 1st/unique
+        }
+    }
+    LinkThorRow(row);
+    rowSpill.putRow(row);
+    return false;
+}
+
+//
+
+CBucketHandler::CBucketHandler(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _depth, unsigned _div)
+    : owner(_owner), rowIf(_rowIf), keyIf(_keyIf), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare), extractKey(_extractKey), depth(_depth), div(_div), postSpillFlush(*this)
+{
+    currentBucket = 0;
+    nextToSpill = NotFound;
+    peakKeyCount = RCIDXMAX;
+    nextSpilledBucketFlush = NotFound;
+}
+
+CBucketHandler::~CBucketHandler()
+{
+    owner.queryJob().queryRowManager()->removeRowBuffer(this);
+    owner.queryJob().queryRowManager()->removeRowBuffer(&postSpillFlush);
+    for (unsigned i=0; i<numBuckets; i++)
+        ::Release(buckets[i]);
+}
+
+void CBucketHandler::flushBuckets()
+{
+    owner.queryJob().queryRowManager()->removeRowBuffer(this);
+    owner.queryJob().queryRowManager()->removeRowBuffer(&postSpillFlush);
+    for (unsigned i=0; i<numBuckets; i++)
+        buckets[i]->clear();
+}
+
+unsigned CBucketHandler::getBucketEstimateWithPrev(rowcount_t totalRows, rowidx_t prevPeakKeys, rowidx_t keyCount) const
+{
+    // how many buckets would the # records we managed to squeeze in last round fit it:
+    unsigned retBuckets = 0;
+    if (prevPeakKeys)
+    {
+        retBuckets = (unsigned)(((keyCount+totalRows)+prevPeakKeys-1) / prevPeakKeys);
+        retBuckets = retBuckets * 125 / 100;
+    }
+    if (retBuckets < HASHDEDUP_BUCKETS_MIN)
+        retBuckets = HASHDEDUP_BUCKETS_MIN;
+    else if (retBuckets > HASHDEDUP_BUCKETS_MAX)
+        retBuckets = HASHDEDUP_BUCKETS_MAX;
+    return retBuckets;
+}
+
+unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
+{
+    // Try and estimate the number of buckets that the hash dedup should use.
+    // If the number of buckets is too high the hash dedup may write to too many individual disk files - potentially causing many excessive seeks.
+    // It will also not use all the memory in the next phase.
+    // I'm not sure either are significant problems (output is buffered, and second point may be a bonus).
+    // If the number of buckets is too low then we might need to do another round of spilling - which is painful.
+    //
+    // The estimation below, assumes there are no duplicates, i.e. the worse case, as such, it is very likely to be an over-estimate.
+    // Over-estimating is likely to be preferrable to underestimating, which would cause more phases.
+    //
+    // Lower and upper bounds are defined for # buckets (HASHDEDUP_BUCKETS_MIN/HASHDEDUP_BUCKETS_MAX)
+    // NB: initiali estimate is bypassed completely if "num_buckets" hint specifics starting # buckets.
+
+    unsigned retBuckets = HASHDEDUP_BUCKETS_MIN;
+    if (-1 != totalRows && !owner.isVariable) // give up guessing if variable
+    {
+        // Rough estimate for # buckets to start with
+        // likely to be way off for variable
+
+        // JCSMORE - will need to change based on whether upstream keeps packed or not.
+        roxiemem::IRowManager *rM = owner.queryJob().queryRowManager();
+
+        memsize_t availMem = roxiemem::getTotalMemoryLimit()-0x500000;
+        size32_t initKeySize = rM->getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
+        memsize_t minBucketSpace = retBuckets * rM->getExpectedCapacity(HASHDEDUP_HT_BUCKET_SIZE * sizeof(void *), owner.allocFlags);
+
+        rowcount_t _maxRowGuess = (availMem-minBucketSpace) / initKeySize; // without taking into account ht space / other overheads
+        rowidx_t maxRowGuess;
+        if (_maxRowGuess >= RCIDXMAX/sizeof(void *)) // because can't allocate a block bigger than 32bit
+            maxRowGuess = (rowidx_t)RCIDXMAX/sizeof(void *);
+        else
+            maxRowGuess = (rowidx_t)_maxRowGuess;
+        memsize_t bucketSpace = retBuckets * rM->getExpectedCapacity(((maxRowGuess+retBuckets-1)/retBuckets) * sizeof(void *), owner.allocFlags);
+        // now rebase maxRowguess
+        _maxRowGuess = (availMem-bucketSpace) / initKeySize;
+        if (_maxRowGuess >= RCIDXMAX/sizeof(void *))
+            maxRowGuess = (rowidx_t)RCIDXMAX/sizeof(void *);
+        else
+            maxRowGuess = (rowidx_t)_maxRowGuess;
+        maxRowGuess = maxRowGuess / 100 * HTSIZE_LIMIT_PC; // scale down to ht limit %
+        memsize_t rowMem = maxRowGuess * initKeySize;
+        if (rowMem > (availMem-bucketSpace))
+        {
+            rowMem = availMem - minBucketSpace; // crude
+            maxRowGuess = rowMem / initKeySize;
+        }
+        retBuckets = (unsigned)((totalRows+maxRowGuess-1) / maxRowGuess);
+    }
+    if (retBuckets < HASHDEDUP_BUCKETS_MIN)
+        retBuckets = HASHDEDUP_BUCKETS_MIN;
+    else if (retBuckets > HASHDEDUP_BUCKETS_MAX)
+        retBuckets = HASHDEDUP_BUCKETS_MAX;
+    return retBuckets;
+}
+
+void CBucketHandler::init(unsigned _numBuckets, IRowStream *keyStream)
+{
+    numBuckets = _numBuckets;
+    _buckets.ensure(numBuckets);
+    buckets = (CBucket **)_buckets.getArray();
+    for (unsigned i=0; i<numBuckets; i++)
+    {
+        CHashTableRowTable &htRows = owner.queryHashTable(i);
+        buckets[i] = new CBucket(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, i, htRows);
+        htRows.setOwner(buckets[i]);
+    }
+    ActPrintLog(&owner, "Max %d buckets, current depth = %d", numBuckets, depth+1);
+    owner.queryJob().queryRowManager()->addRowBuffer(this);
+    // postSpillFlush not needed until after 1 spill event, but not safe to add within callback
+    owner.queryJob().queryRowManager()->addRowBuffer(&postSpillFlush);
+    if (keyStream)
+    {
+        loop
+        {
+            OwnedConstThorRow key = keyStream->nextRow();
+            if (!key)
+                break;
+            unsigned hashValue = iKeyHash->hash(key);
+            unsigned bucketN = calcBucket(hashValue);
+            buckets[bucketN]->addKey(key, hashValue);
+        }
+    }
+}
+
+CBucketHandler *CBucketHandler::getNextBucketHandler(Owned<IRowStream> &nextInput)
+{
+    if (NotFound == nextToSpill) // no spilling
+        return NULL;
+    while (currentBucket<numBuckets)
+    {
+        CBucket *bucket = buckets[currentBucket];
+        if (bucket->isSpilt())
+        {
+            bucket->close();
+            rowcount_t keyCount, count;
+            // JCSMORE ideally, each key and row stream, would use a unique allocator per destination bucket
+            // thereby keeping rows/keys together in pages, making it easier to free pages on spill requests
+            Owned<IRowStream> keyStream = bucket->getKeyStream(&keyCount);
+            Owned<CBucketHandler> newBucketHandler = new CBucketHandler(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, depth+1, div*numBuckets);
+            ActPrintLog(&owner, "Created bucket handler %d, depth %d", currentBucket, depth+1);
+            nextInput.setown(bucket->getRowStream(&count));
+            // Use peak in mem keys as estimate for next round of buckets.
+            unsigned nextNumBuckets = getBucketEstimateWithPrev(count, (rowidx_t)getPeakCount(), (rowidx_t)keyCount);
+            owner.ensureNumHashTables(nextNumBuckets);
+            newBucketHandler->init(nextNumBuckets, keyStream);
+            ++currentBucket;
+            return newBucketHandler.getClear();
+        }
+        ++currentBucket;
+    }
+    return NULL;
+}
+
+bool CBucketHandler::addRow(const void *row)
+{
+    unsigned hashValue = iRowHash->hash(row);
+    unsigned bucketN = calcBucket(hashValue);
+    return buckets[bucketN]->addRow(row, hashValue);
+}
 
 class LocalHashDedupSlaveActivity : public HashDedupSlaveActivityBase
 {
-
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     LocalHashDedupSlaveActivity(CGraphElementBase *container)
-        : HashDedupSlaveActivityBase(container)
+        : HashDedupSlaveActivityBase(container, true)
     {
         actTxt = "LOCALHASHDEDUP";
     }
-
-    ~LocalHashDedupSlaveActivity()
-    {
-    }
-
-
     void stop()
     {
         ActPrintLog("%s: stopping", actTxt);
         stopInput();
         dataLinkStop();
     }
-
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
@@ -2149,7 +2892,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     GlobalHashDedupSlaveActivity(CGraphElementBase *container)
-        : HashDedupSlaveActivityBase(container)
+        : HashDedupSlaveActivityBase(container, false)
     {
         actTxt = "HASHDEDUP";
         distributor = NULL;
@@ -2185,7 +2928,7 @@ public:
     {
         HashDedupSlaveActivityBase::start();
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        instrm.setown(distributor->connect(input,ihash,icompare));
+        instrm.setown(distributor->connect(input, iHash, iCompare));
         input = instrm.get();
     }
 
