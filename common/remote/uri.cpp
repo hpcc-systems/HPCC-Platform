@@ -37,7 +37,7 @@ URI::URI(const char* path)
 }
 
 // Helper, to validate URI before creating object
-bool isURI(const char *path)
+bool URI::isURI(const char *path)
 {
     UriParserStateA state;
     UriUriA uri;

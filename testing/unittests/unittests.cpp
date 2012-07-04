@@ -27,21 +27,58 @@
 
 #define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 
-void loadDll(const char *name)
-{
-    SharedObject *so = new SharedObject;
-    so->load(name, true);
-}
+/*
+ * This is the main unittest driver for HPCC. From here,
+ * all unit tests, be them internal or external (API).
+ *
+ * All internal unit tests, written on the same source
+ * files as the implementation they're testing, can be
+ * dynamically linked via the helper class below.
+ *
+ * All external unit tests (API tests, test-driven
+ * development, interface documentation and general
+ * usability tests) should be implemented as source
+ * files within the same directory as this file, and
+ * statically linked together.
+ *
+ * CPPUnit will automaticall recognise and run them all.
+ */
 
-void loadDlls()
-{
-    loadDll("jhtree");
-}
+/*
+ * Helper class to unload libraries at the end
+ * and make sure the SharedObject gets deleted
+ * correctly.
+ *
+ * This is important to run valgrind tests and not
+ * having to care about which memory leaks are "good"
+ * and which are not.
+ */
+class LoadedObject : public IInterface, CInterface {
+    SharedObject *so;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    LoadedObject(const char * name)
+    {
+        so = new SharedObject;
+        so->load(name, true);
+    }
+    ~LoadedObject()
+    {
+        so->unload();
+        delete so;
+    }
+};
 
 int main(int argc, char* argv[])
 {
-    loadDlls();
     InitModuleObjects();
+    // These are the internal unit tests covered by other modules and libraries
+    Array objects;
+    objects.append(*(new LoadedObject ("jhtree")));
+    objects.append(*(new LoadedObject ("roxiemem")));
+    objects.append(*(new LoadedObject ("thorhelper")));
+
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time);
     CppUnit::TextUi::TestRunner runner;
     if (argc==1)
