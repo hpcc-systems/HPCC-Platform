@@ -883,6 +883,7 @@ public:
 
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
     roxiemem::IRowManager *queryRowManager() const;
+    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
     const bool &queryPausing() const { return pausing; }
     const bool &queryResumed() const { return resumed; }

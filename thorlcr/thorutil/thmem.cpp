@@ -1066,20 +1066,6 @@ IRowStream *CThorSpillableRowArray::createRowStream()
 
 class CThorRowCollectorBase : public CSimpleInterface, implements roxiemem::IBufferedRowCallback
 {
-    class CFileOwner : public CSimpleInterface, implements IInterface
-    {
-        IFile *iFile;
-    public:
-        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        CFileOwner(IFile *_iFile) : iFile(_iFile)
-        {
-        }
-        ~CFileOwner()
-        {
-            iFile->remove();
-        }
-        IFile &queryIFile() const { return *iFile; }
-    };
 protected:
     CActivityBase &activity;
     CThorSpillableRowArray spillableRows;
@@ -1178,33 +1164,6 @@ protected:
             }
         }
         ++outStreams;
-
-        class CStreamFileOwner : public CSimpleInterface, implements IExtRowStream
-        {
-            Linked<CFileOwner> fileOwner;
-            IExtRowStream *stream;
-        public:
-            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-            CStreamFileOwner(CFileOwner *_fileOwner, IExtRowStream *_stream) : fileOwner(_fileOwner)
-            {
-                stream = LINK(_stream);
-            }
-            ~CStreamFileOwner()
-            {
-                stream->Release();
-            }
-        // IExtRowStream
-            virtual const void *nextRow() { return stream->nextRow(); }
-            virtual void stop() { stream->stop(); }
-            virtual offset_t getOffset() { return stream->getOffset(); }
-            virtual void stop(CRC32 *crcout=NULL) { stream->stop(); }
-            virtual const void *prefetchRow(size32_t *sz=NULL) { return stream->prefetchRow(sz); }
-            virtual void prefetchDone() { stream->prefetchDone(); }
-            virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows)
-            {
-                stream->reinit(offset, len, maxRows);
-            }
-        };
 
         // NB: CStreamFileOwner, shares reference so CFileOwner, last usage, will auto delete file
         // which may be one of these streams of CThorRowCollectorBase itself
@@ -1693,6 +1652,8 @@ public:
     {
         return rowManager;
     }
+    virtual bool queryPacked() const { return usePacked; }
+    virtual bool queryCrc() const { return false; }
 
 // IRowAllocatorCache
     virtual unsigned getActivityId(unsigned cacheId) const
@@ -1795,6 +1756,7 @@ public:
         allAllocators.append(*ret);
         return ret;
     }
+    virtual bool queryCrc() const { return true; }
 };
 
 
