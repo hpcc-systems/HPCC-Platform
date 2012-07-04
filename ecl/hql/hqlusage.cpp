@@ -344,7 +344,8 @@ static IPropertyTree * addSelect(IPropertyTree * xml, IHqlExpression * expr, boo
     expandSelectText(text, expr);
     Owned<IPropertyTree> field = createPTree(isUsed ? "field" : "unused");
     field->setProp("@name", text.str());
-    return xml->addPropTree(field->queryName(), field.getClear());
+    const char * tag = field->queryName();
+    return xml->addPropTree(tag, field.getClear());
 }
 
 SourceFieldUsage::SourceFieldUsage(IHqlExpression * _source)
