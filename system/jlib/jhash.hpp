@@ -54,9 +54,6 @@ interface jlib_decl IAtom : extends IMapping
     virtual const char * getNamePtr() const;
     inline const char * str() const { return getAtomNamePtr(); }
     inline operator const char *() const { return getAtomNamePtr(); }
-#ifdef _DEBUG
-    const char* DBG_readable;
-#endif
 };
 typedef IAtom *_ATOM;
 

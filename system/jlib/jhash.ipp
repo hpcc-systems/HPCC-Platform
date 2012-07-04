@@ -80,9 +80,6 @@ public:
     AtomBase(const void * k)  
     { 
         key = strdup((const char *)k); 
-#ifdef _DEBUG
-        DBG_readable = key;
-#endif
     }
     ~AtomBase()               { free(key); }
 
