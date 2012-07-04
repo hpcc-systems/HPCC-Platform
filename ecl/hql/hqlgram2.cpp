@@ -8423,7 +8423,7 @@ void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftA
 {
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
-    assertex(!left->isDictionary());
+    assertex(left->isDictionary());
     if (!right->isDictionary())
         reportError(WRN_UNSUPPORTED_FEATURE, rightAttr, "Only dictionary may be appended to dictionary");
     right.setown(checkEnsureRecordsMatch(left, right, rightAttr, right->isDatarow()));

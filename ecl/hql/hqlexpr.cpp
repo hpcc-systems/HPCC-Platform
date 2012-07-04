@@ -9885,19 +9885,8 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
         type.set(parms.item(0).queryType());  // It's an error if they don't all match, caught elsewhere (?)
         break;
     case no_if:
-        {
-            IHqlExpression & left = parms.item(1);
-            IHqlExpression & right = parms.item(2);
-            ITypeInfo * leftType = left.queryType();
-            ITypeInfo * rightType = right.queryType();
-            if (left.getOperator() == no_null)
-                type.set(rightType);
-            else if (right.getOperator() == no_null)
-                type.set(leftType);
-            else
-                type.setown(getTypeIntersection(leftType, rightType));
-            break;
-        }
+        type.set(parms.item(1).queryType());  // It's an error if they don't match, caught elsewhere
+        break;
     case no_case:
         //following is wrong, but they get removed pretty quickly so I don't really care
         type.set(parms.item(1).queryType());
