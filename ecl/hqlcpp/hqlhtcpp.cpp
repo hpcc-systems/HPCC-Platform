@@ -13329,6 +13329,29 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             buildCompareMember(instance->nestedctx, "KeyCompare", keyOrder, DatasetReference(keyDataset, no_activetable, NULL));
         else
             instance->nestedctx.addQuoted("virtual ICompare * queryKeyCompare() { return &Compare; }");
+
+        //virtual unsigned getFlags() = 0;
+        {
+            StringBuffer flags;
+            if (recordTypesMatch(dataset, keyDataset)) flags.append("|HFDwholerecord");
+            if (flags.length())
+                doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+        }
+
+        //virtual IHash    * queryKeyHash()=0;
+        if (reuseCompare)
+            instance->nestedctx.addQuoted("virtual IHash * queryKeyHash() { return &Hash; }");
+        else
+            buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true);
+
+        //virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
+        if (!reuseCompare)
+        {
+            doCompareLeftRight(instance->nestedctx, "RowKeyCompare", DatasetReference(dataset), DatasetReference(keyDataset, no_activetable, NULL), info.equalities, selects);
+        }
+        else
+            instance->nestedctx.addQuoted("virtual ICompare * queryRowKeyCompare() { return &Compare; }");
+
     }
 
     buildInstanceSuffix(instance);
