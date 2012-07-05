@@ -405,7 +405,7 @@
                         <entry><emphasis
                         role="bold">Destination-Machine</emphasis></entry>
 
-                        <entry>Use the drop-list to select the machine to
+                        <entry>Use the drop list to select the machine to
                         despray to. The items in the list are landing zones
                         defined in the system’s confguration.</entry>
                       </row>
@@ -514,7 +514,7 @@
                         <entry><emphasis
                         role="bold">Machine</emphasis></entry>
 
-                        <entry>Use the drop-list to select the machine where
+                        <entry>Use the drop list to select the machine where
                         the source file is located.</entry>
                       </row>
 
@@ -668,7 +668,7 @@
                         <entry><emphasis
                         role="bold">Machine</emphasis></entry>
 
-                        <entry>Use the drop-list to select the machine where
+                        <entry>Use the drop list to select the machine where
                         the source file is located.</entry>
                       </row>
 
@@ -847,7 +847,7 @@
                         <entry><emphasis
                         role="bold">Machine</emphasis></entry>
 
-                        <entry>Use the drop-list to select the machine where
+                        <entry>Use the drop list to select the machine where
                         the source file is located.</entry>
                       </row>
 
@@ -870,8 +870,8 @@
                       <row>
                         <entry><emphasis role="bold">Format</emphasis></entry>
 
-                        <entry>Select the file format from the
-                        drop-list.</entry>
+                        <entry>Select the file format from the drop
+                        list.</entry>
                       </row>
 
                       <row>
