@@ -6178,7 +6178,6 @@ IHqlExpression * WorkflowTransformer::transformRootAction(IHqlExpression * expr)
     switch (op)
     {
     case no_compound:
-        throwUnexpected();
         if (expr->isAction())
             return createCompoundWorkflow(expr);
         break;
