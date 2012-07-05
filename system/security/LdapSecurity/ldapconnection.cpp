@@ -142,7 +142,7 @@ public:
     }
 };
 
-bool LdapServerDown(int rc)
+inline bool LdapServerDown(int rc)
 {
     return rc==LDAP_SERVER_DOWN||rc==LDAP_UNAVAILABLE||rc==LDAP_TIMEOUT;
 }
@@ -5080,14 +5080,19 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
             StringBuffer onedn;
             while((curdn = domains[i]) != NULL)
             {
-                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0))
+                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0) && strstr(curdn,"DC=ForestDnsZones")==0 && strstr(curdn,"DC=DomainDnsZones")==0 )
                 {
                     if(domainDN.length() == 0)
                     {
                         StringBuffer curdomain;
                         LdapUtils::getName(curdn, curdomain);
                         if(onedn.length() == 0)
+                        {
+                            DBGLOG("Queried '%s', selected basedn '%s'",curdn, curdomain.str());
                             onedn.append(curdomain.str());
+                        }
+                        else
+                            DBGLOG("Ignoring %s", curdn);
                         if(!domainname || !*domainname || stricmp(curdomain.str(), domainname) == 0)
                             domainDN.append(curdn);
                     }
