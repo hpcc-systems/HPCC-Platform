@@ -1165,6 +1165,19 @@ void EclCC::generateOutput(EclCompileInstance & instance)
         }
         else
         {
+            // Output option settings
+            instance.wu->getDebugValues();
+            Owned<IStringIterator> debugValues = &instance.wu->getDebugValues();
+            ForEach (*debugValues)
+            {
+                SCMStringBuffer debugStr, valueStr;
+                debugValues->str(debugStr);
+                instance.wu->getDebugValue(debugStr.str(), valueStr);
+                Owned<IPropertyTree> option = createPTree("Option");
+                option->setProp("@name", debugStr.str());
+                option->setProp("@value", valueStr.str());
+                instance.archive->addPropTree("Option", option.getClear());
+            }
             if (optManifestFilename)
                 addManifestResourcesToArchive(instance.archive, optManifestFilename);
 
