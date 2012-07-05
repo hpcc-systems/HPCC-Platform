@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book>
+<book xml:base="../">
   <bookinfo>
     <title>ECL Plug-in for the Eclipse IDE</title>
 
@@ -12,7 +12,7 @@
     </mediaobject>
 
     <author>
-      <surname><emphasis role="redbold">DRAFT 001</emphasis> Boca Raton
+      <surname><emphasis role="redbold">DRAFT 004</emphasis> Boca Raton
       Documentation Team</surname>
     </author>
 
@@ -30,15 +30,15 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para><emphasis role="redbold">DRAFT 001</emphasis></para>
+      <para><emphasis role="redbold">DRAFT 004</emphasis></para>
     </legalnotice>
 
- <xi:include href="Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
- <!--Release Info makes a running page footer:now an include from version.xml-->
+    <!--Release Info makes a running page footer:now an include from version.xml-->
 
-   <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--The include statement pulls in the date_ver from version.xml-->
@@ -47,9 +47,8 @@
 
     <!--corpname never prints-->
 
-    <xi:include href="Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 
     <!--Copyright tag now gets copyright from version.xml-->
 
@@ -82,8 +81,8 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>The ECL IDE (this is a temporary requirement to install
-              the ECL compiler, eclcc, and related components).</para>
+              <para>The HPCC Client Tools (this installs the ECL compiler,
+              eclcc, command line tools, and related components).</para>
             </listitem>
 
             <listitem>
@@ -118,9 +117,13 @@
                         <emphasis>administrator privileges</emphasis> for
                         plug-ins to install properly. This is necessary even
                         if your account has administrator privileges.
-                        <para>Right click on the Eclipse shortcut, then select
+                        <para>Right-click on the Eclipse shortcut, then select
                         <emphasis role="bold">Run as Administrator</emphasis>
-                        from the pop-up menu. </para></entry>
+                        from the pop-up menu. </para><para>After installing
+                        the plug-in, you do not need to run as administrator
+                        in the normal course of your work. However, to install
+                        any future updates will require running as
+                        administrator. </para></entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -134,13 +137,12 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>HPCC-Platform package (this is a temporary requirement to
-              install the ECL compiler, eclcc, and related components, but is
-              also useful as a local server).</para>
+              <para>HPCC-Client Tools package (this installs the ECL compiler,
+              eclcc, command line tools, and related components).</para>
             </listitem>
 
             <listitem>
-              <para>64-bit desktop edition of Linux</para>
+              <para>64-bit desktop edition of Linux*</para>
             </listitem>
 
             <listitem>
@@ -154,15 +156,32 @@
       </sect2>
 
       <sect2>
-        <title>Mac (Intel based) Prerequisites:</title>
+        <title>Mac (Intel-based) Prerequisites:</title>
 
-        <para>Some required components have not yet been built for the Mac
-        platform (for example, the ECLCC compiler). For the time being you can
-        use a Windows emulator or a VM on a Mac.</para>
+        <itemizedlist>
+          <listitem>
+            <para>HPCC-Client Tools (this installs the ECL compiler, eclcc,
+            command line tools, and related components).</para>
+          </listitem>
 
-        <para>Eclipse can run natively on a Mac and can be used to edit ECL
-        files. To submit jobs there are other components needed which have not
-        yet been built for the Mac platform.</para>
+          <listitem>
+            <para>Mac OS X (10.6.x or later)</para>
+          </listitem>
+
+          <listitem>
+            <para>Eclipse Indigo for Mac</para>
+          </listitem>
+
+          <listitem>
+            <para>The ECL plug-in for Eclipse</para>
+          </listitem>
+
+          <listitem>
+            <para>Xcode for your OS <emphasis role="bold">(this is only needed
+            if you want to create local executables from ECL. It is not needed
+            if you are planning on targeting a server)</emphasis></para>
+          </listitem>
+        </itemizedlist>
       </sect2>
     </sect1>
   </chapter>
@@ -231,12 +250,11 @@
           </listitem>
 
           <listitem>
-            <para>Enter <ulink
-            url="hpccsystems.com">https://gordon.homeserver.com/eclipse/</ulink>
-            in the <emphasis role="bold">Location</emphasis> field </para>
+            <para>Enter one of the locations below in the <emphasis
+            role="bold">Location</emphasis> field</para>
 
-            <para><emphasis role="bold">NOTE: This is a temporary URL, when we
-            go live the following URLs will be valid. </emphasis></para>
+            <para><emphasis role="bold">NOTE: We recommend the latest stable
+            build for production work. </emphasis></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <tgroup cols="2">
@@ -246,13 +264,13 @@
 
                   <tbody>
                     <row>
-                      <entry>tbd</entry>
+                      <entry>http://eclipse.hpccsystems.com/stable</entry>
 
                       <entry>The latest stable build.</entry>
                     </row>
 
                     <row>
-                      <entry>tbd</entry>
+                      <entry>http://eclipse.hpccsystems.com/develop</entry>
 
                       <entry>The cutting edge untested development
                       build.</entry>
@@ -275,24 +293,9 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Disable <emphasis role="bold">Group items by
-            category</emphasis> by clearing the checkbox.<figure>
-                <title>Disable Group items</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/EPI005.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
             <para>Select the <emphasis role="bold">ECL Language</emphasis> box
-            then press the <emphasis role="bold">Next &gt;</emphasis> button.
-            </para>
+            then press the <emphasis role="bold">Next &gt;</emphasis>
+            button.</para>
 
             <para>Note: This can take a while before it appears.<figure>
                 <title>Select ECL Language</title>
@@ -314,12 +317,6 @@
             <para>Accept the licensing agreement, then press the <emphasis
             role="bold">Finish</emphasis> button to complete the installation
             wizard.</para>
-          </listitem>
-
-          <listitem>
-            <para>A security warning message may appear telling you that you
-            are installing unsigned content. Acknowledge acceptance by
-            pressing the <emphasis role="bold">OK</emphasis> button.</para>
           </listitem>
 
           <listitem>
@@ -381,33 +378,43 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>When prompted to <emphasis role="bold">Open Associated
+            <para>If your ECL Development perspective is not already open, you
+            are prompted to <emphasis role="bold">Open Associated
             Perspective?</emphasis> Press the <emphasis
             role="bold">Yes</emphasis> button.</para>
 
-            <para><graphic fileref="images/EPI008.jpg" /></para>
+            <para><graphic fileref="images/EPI008.jpg" /><variablelist>
+                <varlistentry>
+                  <term>Tip:</term>
+
+                  <listitem>
+                    <para>If you check the <emphasis role="bold">Remember my
+                    decision checkbox</emphasis>, you won't have to do this
+                    each time</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
             <para>Select <emphasis role="bold">File <emphasis
             role="bold">&gt;&gt;</emphasis> New <emphasis
-            role="bold">&gt;&gt;</emphasis> Ecl Editor file.</emphasis></para>
+            role="bold">&gt;&gt;</emphasis> ECL Editor file.</emphasis></para>
 
             <graphic fileref="images/EPI009.jpg" />
 
-            <para>The <emphasis role="bold">Multi-page Editor File</emphasis>
-            window displays.</para>
+            <para>The <emphasis role="bold">ECL File</emphasis> window
+            displays.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select a container (folder) using the <emphasis
-            role="bold">Browse</emphasis> button, then provide a name for the
-            file, for example, <emphasis
+            <para>Select the parent folder, then provide a name for the file,
+            for example, <emphasis
             role="bluebold">hello.ecl</emphasis>.</para>
 
-            <para><graphic fileref="images/EPI009.1.jpg" /></para>
+            <para><graphic fileref="images/EPI009.1a.jpg" /></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -435,9 +442,9 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Replace the default code in the project workspace with the
-            following text (including the quotes): <programlisting>OUTPUT('Hello world'); </programlisting><graphic
-            fileref="images/EPI010.jpg" /></para>
+            <para>Add the following code (including the quotes):
+            <programlisting>OUTPUT('Hello world'); </programlisting><graphic
+            fileref="images/EPI010a.jpg" /></para>
           </listitem>
 
           <listitem>
@@ -493,21 +500,21 @@
 
             <para>Double click <emphasis role="bold">ECL Targets </emphasis>to
             create a new <emphasis role="bold">Run As</emphasis>
-            configuration. <graphic fileref="images/EPI012.jpg"
+            configuration. <graphic fileref="images/EPI012a.jpg"
             scale="80" /></para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>On the <emphasis role="bold">New_configuration</emphasis>
-            tab enter the following:<variablelist>
+            <para>On the <emphasis role="bold">HPCC Platfom</emphasis> tab
+            enter the following:<variablelist>
                 <varlistentry>
                   <term>Configuration Name</term>
 
                   <listitem>
                     <para>Give it an appropriate name, for example: <emphasis
-                    role="bold">Thor1</emphasis></para>
+                    role="bold">MyThorCluster</emphasis></para>
                   </listitem>
                 </varlistentry>
 
@@ -528,34 +535,44 @@
                 </varlistentry>
 
                 <varlistentry>
-                  <term>Cluster name</term>
+                  <term>Target name</term>
 
                   <listitem>
                     <para>hthor, thor, or roxie</para>
                   </listitem>
                 </varlistentry>
+
+                <varlistentry>
+                  <term>Credentials</term>
+
+                  <listitem>
+                    <para>Optional Username and Password to use (required if
+                    security is enabled on the cluster)</para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>ECL Watch / Address</term>
+
+                  <listitem>
+                    <para>This is autofilled from the Server IP Address above;
+                    however, if your ECL Watch service is running on a
+                    different IP or port, you can modify it here.</para>
+
+                    <variablelist>
+                      <varlistentry>
+                        <term>Tip:</term>
+
+                        <listitem>
+                          <para>Press the test button and you will see its
+                          current ECL Watch page. This lets you know you have
+                          the correct configuration.</para>
+                        </listitem>
+                      </varlistentry>
+                    </variablelist>
+                  </listitem>
+                </varlistentry>
               </variablelist></para>
-
-            <informaltable colsep="1" frame="all" rowsep="1">
-              <?dbfo keep-together="always"?>
-
-              <tgroup cols="2">
-                <colspec colwidth="49.50pt" />
-
-                <colspec />
-
-                <tbody>
-                  <row>
-                    <entry><inlinegraphic
-                    fileref="images/OSSgr3.png" /></entry>
-
-                    <entry>Tip: Press the test button and you will see its
-                    current ECL Watch page. This lets you know you have the
-                    correct configuration.</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable>
 
             <figure>
               <title>Correct Configuration</title>
@@ -653,6 +670,12 @@
     /*Save the file. Fix the error and save again. */
     --></para>
 
-    <para>***To Do</para>
+    <para></para>
+
+    <itemizedlist>
+      <listitem>
+        <para>More to come...</para>
+      </listitem>
+    </itemizedlist>
   </chapter>
 </book>

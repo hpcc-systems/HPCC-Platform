@@ -117,9 +117,13 @@
                         <emphasis>administrator privileges</emphasis> for
                         plug-ins to install properly. This is necessary even
                         if your account has administrator privileges.
-                        <para>Right click on the Eclipse shortcut, then select
+                        <para>Right-click on the Eclipse shortcut, then select
                         <emphasis role="bold">Run as Administrator</emphasis>
-                        from the pop-up menu. </para></entry>
+                        from the pop-up menu. </para><para>After installing
+                        the plug-in, you do not need to run as administrator
+                        in the normal course of your work. However, to install
+                        any future updates will require running as
+                        administrator. </para></entry>
                       </row>
                     </tbody>
                   </tgroup>
@@ -158,9 +162,6 @@
           <listitem>
             <para>HPCC-Client Tools (this installs the ECL compiler, eclcc,
             command line tools, and related components).</para>
-
-            <para>*** Some manual steps required *** see the readme file
-            included with the DMG package ***</para>
           </listitem>
 
           <listitem>
@@ -674,7 +675,7 @@
 
     <itemizedlist>
       <listitem>
-        <para>More to come... </para>
+        <para>More to come...</para>
       </listitem>
     </itemizedlist>
   </chapter>
