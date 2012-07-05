@@ -6866,6 +6866,7 @@ class CRoxieServerRollupActivity : public CRoxieServerActivity
 {
     IHThorRollupArg &helper;
     OwnedConstRoxieRow left;
+    OwnedConstRoxieRow prev;
     OwnedConstRoxieRow right;
     bool readFirstRow;
 
@@ -6889,6 +6890,7 @@ public:
     virtual void reset()    
     {
         left.clear();
+        prev.clear();
         right.clear();
         CRoxieServerActivity::reset();
     }
@@ -6901,18 +6903,20 @@ public:
         if (!readFirstRow)
         {
             left.setown(input->nextInGroup());
+            prev.set(left);
             readFirstRow = true;
         }
 
         loop
         {
             right.setown(input->nextInGroup());
-            if(!left || !right || !helper.matches(left,right))
+            if(!prev || !right || !helper.matches(prev,right))
             {
                 const void * ret = left.getClear();
                 if(ret)
                     processed++;
                 left.setown(right.getClear());
+                prev.set(left);
                 return ret;
             }
             try
@@ -6921,6 +6925,7 @@ public:
                 unsigned outSize = helper.transform(rowBuilder, left, right);
                 if (outSize)
                     left.setown(rowBuilder.finalizeRowClear(outSize));
+                prev.set(right);
             }
             catch(IException * E)
             {
