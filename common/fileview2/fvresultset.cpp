@@ -3217,8 +3217,8 @@ IResultSetMetaData * CRemoteResultSetFactory::createResultSetMeta(const char * w
 
 //---------------------------------------------------------------------------
 
-extern "C" FILEVIEW_API IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
-extern "C" FILEVIEW_API IResultSet* createFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
+extern FILEVIEW_API IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
+extern FILEVIEW_API IResultSet* createFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
 
 IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid)
 {
@@ -3319,7 +3319,7 @@ IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const c
     return new CRemoteResultSetFactory(remoteServer, username, password);
 }
 
-extern "C" FILEVIEW_API void getNumRows(IResultSet * rs, IStringVal &ret)
+extern FILEVIEW_API void getNumRows(IResultSet * rs, IStringVal &ret)
 {
     if (rs)
     {
@@ -3347,7 +3347,7 @@ int findResultSetColumn(const INewResultSet * results, const char * columnName)
 }
 
 
-extern "C" FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName)
 {
     StringBuffer text;
     if (schemaName)
@@ -3383,13 +3383,13 @@ extern "C" FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSet
     return c;
 }
 
-extern "C" FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
     return getResultCursorXml(ret, cursor, name, start, count, schemaName);
 }
 
-extern "C" FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start, unsigned count)
+extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start, unsigned count)
 {
     const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
     unsigned numCols = meta.getColumnCount();
@@ -3407,7 +3407,7 @@ extern "C" FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultS
     return c;
 }
 
-extern "C" FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * result, unsigned start, unsigned count)
+extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * result, unsigned start, unsigned count)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
     return getResultCursorBin(ret, cursor, start, count);
@@ -3431,7 +3431,7 @@ inline const char *getSeverityTagname(WUExceptionSeverity severity, unsigned fla
     return "Exception";
 }
 
-extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, WUExceptionSeverity minSeverity)
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, const char *password, const IConstWorkUnit *cw, IStringVal &str, unsigned flags, WUExceptionSeverity minSeverity)
 {
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
