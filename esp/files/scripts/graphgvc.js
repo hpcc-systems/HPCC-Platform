@@ -242,7 +242,7 @@ function checkVersion() {
           var curVersion = pluginLHS().version;
           if (curVersion == null) {
               alert("Graph Control Needs to be installed to visualize activity graphs.");
-              document.location = '/WsRoxieQuery/BrowseResources';
+              document.location = '/WsSMC/BrowseResources';
               return false;
           }
           document.getElementById('current_version').innerHTML = curVersion;
