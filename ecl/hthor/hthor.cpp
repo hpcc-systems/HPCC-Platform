@@ -2223,11 +2223,13 @@ void CHThorRollupActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
     left.setown(input->nextInGroup());
+    prev.set(left);
 }
 
 void CHThorRollupActivity::done()
 {
     left.clear();
+    prev.clear();
     right.clear();
     CHThorSimpleActivityBase::done();
 }
@@ -2237,7 +2239,7 @@ const void *CHThorRollupActivity::nextInGroup()
     loop
     {
         right.setown(input->nextInGroup());
-        if(!left || !right || !helper.matches(left,right))
+        if(!prev || !right || !helper.matches(prev,right))
         {
             const void * ret = left.getClear();
             if(ret)
@@ -2245,6 +2247,7 @@ const void *CHThorRollupActivity::nextInGroup()
                 processed++;
             }
             left.setown(right.getClear());
+            prev.set(left);
             return ret;
         }
         try
@@ -2255,6 +2258,7 @@ const void *CHThorRollupActivity::nextInGroup()
             {
                 left.setown(rowBuilder.finalizeRowClear(outSize));
             }
+            prev.set(right);
         }
         catch(IException * e)
         {
