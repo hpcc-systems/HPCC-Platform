@@ -28,7 +28,6 @@
 class Cws_accessSoapBindingEx : public Cws_accessSoapBinding
 {
     StringBuffer m_authType;
-    Owned<IXslProcessor> xslp;
 
 public:
     Cws_accessSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel=hsl_none) : Cws_accessSoapBinding(cfg, name, process, llevel)
@@ -59,12 +58,6 @@ public:
     }
 
     virtual int onGetForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
-
-    int getQualifiedNames(IEspContext& ctx, MethodInfoArray & methods)
-    {
-        return methods.ordinality();
-    }
-    void setXslProcessor(IInterface *xslp_){xslp.set(dynamic_cast<IXslProcessor *>(xslp_));}
 };
 
 class Cws_accessEx : public Cws_access
