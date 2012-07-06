@@ -436,6 +436,7 @@ class CHThorRollupActivity : public CHThorSimpleActivityBase
 {
     IHThorRollupArg &helper;
     OwnedConstHThorRow left;
+    OwnedConstHThorRow prev;
     OwnedConstHThorRow right;
 public:
     CHThorRollupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind);
