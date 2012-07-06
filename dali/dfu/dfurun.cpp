@@ -276,7 +276,8 @@ class CDFUengine: public CInterface, implements IDFUengine
                                 onCycle();
                             break;
                         default:
-                            ERRLOG("DFURUN Unknown mode");  
+                            ERRLOG("DFURUN Unknown mode");
+                            break;
                         }
                     }
                     catch (IException *e) {
@@ -442,6 +443,7 @@ public:
     
     CDFUengine()
     {
+        defaultTransferBufferSize = 0;
         atomic_set(&runningflag,1);
         eventpusher.setown(getScheduleEventPusher());
     }
@@ -1018,6 +1020,7 @@ public:
         case DFUstate_aborting:                     
         case DFUstate_started:                      // not sure what this for
             progress->setState(DFUstate_aborted);
+            /* no break */
         case DFUstate_aborted:
             WARNLOG("DFURUN: Workunit %s aborted",dfuwuid);
             return DFUstate_aborted;
@@ -1082,6 +1085,7 @@ public:
                             throw MakeStringException(-1,"Cannot add to multi-cluster file using keypatch");
                         multiclusterinsert = true;
                     }
+                    break;
                 }
             }
             // now fill srcfile for commands that need
