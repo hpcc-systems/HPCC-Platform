@@ -82,7 +82,7 @@
                   <div id="no_control_msg" style="display:none; visibility:hidden">Graph Control needs to be installed to view activity graphs.</div>
                   Your Version:<span id="current_version">Not installed.</span><br />
                   Server Version:<span id="server_version">20110523</span><br />
-                  <a href="/WsRoxieQuery/BrowseResources">HPCC Tools Download Page</a>
+                  <a href="/WsSMC/BrowseResources">HPCC Tools Download Page</a>
                 </div>
               </td>
             </tr>
