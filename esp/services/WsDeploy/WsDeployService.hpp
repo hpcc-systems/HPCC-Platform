@@ -295,7 +295,7 @@ private:
     private:
       CConfigFileMonitorThread() : m_configChangeNotification(NULL) {};
       CConfigFileMonitorThread(const CConfigFileMonitorThread& configFileThread) : m_configChangeNotification(NULL) {};
-      CConfigFileMonitorThread& operator=(CConfigFileMonitorThread const&) {};
+      CConfigFileMonitorThread& operator=(CConfigFileMonitorThread const&);
     };
 
     class CClientAliveThread : public CInterface, implements IThreaded, implements IInterface
