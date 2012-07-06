@@ -194,21 +194,21 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="groupsBasedn" type="xs:string" use="required">
+            <xs:attribute name="groupsBasedn" type="xs:string" use="required"  default="ou=groups,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up groups in the ldap (ActiveDirectory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="usersBasedn" type="xs:string" use="required">
+            <xs:attribute name="usersBasedn" type="xs:string" use="required"  default="ou=users,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up users in the ldap (ActiveDirectory) server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="modulesBasedn" type="xs:string" use="required">
+            <xs:attribute name="modulesBasedn" type="xs:string" use="required" default="ou=modules,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
                         <tooltip>The ldap "base distinguished name"  that ecl server should use when looking up modules in the ldap (ActiveDirectory) server.</tooltip>
