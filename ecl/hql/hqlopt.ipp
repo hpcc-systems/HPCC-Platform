@@ -112,7 +112,6 @@ protected:
     IHqlExpression * optimizeAggregateUnsharedDataset(IHqlExpression * expr, bool isSimpleCount);
     IHqlExpression * optimizeJoinCondition(IHqlExpression * expr);
     IHqlExpression * optimizeDistributeDedup(IHqlExpression * expr);
-    IHqlExpression * optimizeInlineJoin(IHqlExpression * expr);
     IHqlExpression * optimizeIf(IHqlExpression * expr);
     IHqlExpression * optimizeProjectInlineTable(IHqlExpression * transformed, bool childrenAreShared);
         
