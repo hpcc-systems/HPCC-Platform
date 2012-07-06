@@ -62,6 +62,7 @@ add_subdirectory(RunningHPCCinaVirtualMachine)
 add_subdirectory(UsingConfigManager)
 add_subdirectory(HDFSConnector)
 add_subdirectory(ECLPlayground)
+add_subdirectory(ECLPluginForEclipse)
 
 
 
