@@ -2122,37 +2122,11 @@ int main(int argc, char* argv[])
         bool rawlog = props->getPropBool("rawlog");
         Owned<ILogMsgHandler> fileMsgHandler;
         if (props->getProp("logfile",logname)) {
-            if (logname.length()) 
+            if (logname.length()) {
                 fileMsgHandler.setown(getFileLogMsgHandler(logname.str(), NULL, rawlog?MSGFIELD_prefix:MSGFIELD_STANDARD, false, false, true));
-        }
-        else {
-            logname.append("daliadmin");
-            StringBuffer aliasLogName;
-            StringBuffer logdir;
-            if (getConfigurationDirectory(NULL,"log","daliadmin",logname.str(),logdir)) {
-                recursiveCreateDirectory(logdir.str());
-                StringBuffer tmp(logname);
-                addPathSepChar(logname.clear().append(logdir)).append(tmp);
+                queryLogMsgManager()->addMonitorOwn(fileMsgHandler.getClear(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
             }
-            for (unsigned n = 1;n<1000;n++) {           // bit of a kludge to preven alias clashes
-                aliasLogName.clear().append(logname);
-                if (n>1)
-                    aliasLogName.append(n);
-                aliasLogName.append(".log");
-                Owned<IFile> tmp = createIFile(aliasLogName.str());
-                try {
-                    tmp->remove();
-                    if (!tmp->exists())
-                        break;
-                }
-                catch(IException *e) {
-                    e->Release();
-                }
-            }
-            fileMsgHandler.setown(getRollingFileLogMsgHandler(logname.str(), ".log", rawlog?MSGFIELD_prefix:MSGFIELD_STANDARD, false, true, NULL, aliasLogName.str()));
         }
-        if (fileMsgHandler.get())
-            queryLogMsgManager()->addMonitorOwn(fileMsgHandler.getClear(), getCategoryLogMsgFilter(MSGAUD_all, MSGCLS_all, TopDetail));
         // set stdout 
         attachStandardHandleLogMsgMonitor(stdout,0,MSGAUD_all,MSGCLS_all&~(MSGCLS_disaster|MSGCLS_error|MSGCLS_warning));
         Owned<ILogMsgFilter> filter = getCategoryLogMsgFilter(MSGAUD_user, MSGCLS_error|MSGCLS_warning);
