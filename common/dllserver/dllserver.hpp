@@ -86,9 +86,9 @@ interface IDllServer : extends IInterface
     virtual void registerDll(const char * name, const char * kind, const char * dllPath) = 0;
 };
 
-extern "C" DLLSERVER_API IDllServer & queryDllServer();
-extern "C" DLLSERVER_API void closeDllServer();
-extern "C" DLLSERVER_API void initDllServer(const char * localRoot);
+extern DLLSERVER_API IDllServer & queryDllServer();
+extern DLLSERVER_API void closeDllServer();
+extern DLLSERVER_API void initDllServer(const char * localRoot);
 extern DLLSERVER_API void testDllServer();
 
 #endif

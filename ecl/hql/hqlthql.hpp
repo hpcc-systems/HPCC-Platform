@@ -22,14 +22,14 @@
 #include "hql.hpp"
 #include "hqlexpr.hpp"
 
-extern "C" HQL_API StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse=false, bool xgmmlGraphText = false);
-extern "C" HQL_API StringBuffer &toECLSimple(IHqlExpression * expr, StringBuffer &s);
-extern "C" HQL_API void splitECL(IHqlExpression * expr, StringBuffer &s, StringBuffer &d);
-extern "C" HQL_API StringBuffer &toUserECL(StringBuffer &s, IHqlExpression * expr, bool recurse);
-extern "C" HQL_API StringBuffer &getExprECL(IHqlExpression * expr, StringBuffer & out, bool minimalSelectors=false, bool xgmmlGraphText=false);
-extern "C" HQL_API StringBuffer &getRecordECL(IHqlExpression * expr, StringBuffer & out);
-extern "C" HQL_API StringBuffer & processedTreeToECL(IHqlExpression * expr, StringBuffer &s);
-extern "C" HQL_API StringBuffer &getExprIdentifier(StringBuffer & out, IHqlExpression * expr);
-extern "C" HQL_API void dbglogExpr(IHqlExpression * expr);
+extern HQL_API StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse=false, bool xgmmlGraphText = false);
+extern HQL_API StringBuffer &toECLSimple(IHqlExpression * expr, StringBuffer &s);
+extern HQL_API void splitECL(IHqlExpression * expr, StringBuffer &s, StringBuffer &d);
+extern HQL_API StringBuffer &toUserECL(StringBuffer &s, IHqlExpression * expr, bool recurse);
+extern HQL_API StringBuffer &getExprECL(IHqlExpression * expr, StringBuffer & out, bool minimalSelectors=false, bool xgmmlGraphText=false);
+extern HQL_API StringBuffer &getRecordECL(IHqlExpression * expr, StringBuffer & out);
+extern HQL_API StringBuffer & processedTreeToECL(IHqlExpression * expr, StringBuffer &s);
+extern HQL_API StringBuffer &getExprIdentifier(StringBuffer & out, IHqlExpression * expr);
+extern HQL_API void dbglogExpr(IHqlExpression * expr);
 
 #endif
