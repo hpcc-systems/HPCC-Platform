@@ -209,34 +209,34 @@ interface IResultSetFactory : extends IInterface
 
 
 //provided to wrap the exceptions for clarion....
-extern "C" FILEVIEW_API IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
-extern "C" FILEVIEW_API IResultSet* createFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue = NULL, const char * cluster = NULL);
-extern "C" FILEVIEW_API INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
-extern "C" FILEVIEW_API INewResultSet* createNewFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
-extern "C" FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory & factory, IStringVal & error, const char * wuid, unsigned sequence, const char * name);
+extern FILEVIEW_API IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
+extern FILEVIEW_API IResultSet* createFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue = NULL, const char * cluster = NULL);
+extern FILEVIEW_API INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
+extern FILEVIEW_API INewResultSet* createNewFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
+extern FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory & factory, IStringVal & error, const char * wuid, unsigned sequence, const char * name);
 
 
-extern "C" FILEVIEW_API IResultSetFactory * getResultSetFactory(const char * username, const char * password);
-extern "C" FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager &secmgr, ISecUser &secuser);
+extern FILEVIEW_API IResultSetFactory * getResultSetFactory(const char * username, const char * password);
+extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager &secmgr, ISecUser &secuser);
 
-extern "C" FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
-extern "C" FILEVIEW_API IResultSetFactory * getSecRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
+extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
+extern FILEVIEW_API IResultSetFactory * getSecRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
 
 //Formatting applied remotely, so it can be accessed between different operating systems...
-extern "C" FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
-extern "C" FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
+extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
+extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const char * columnName);
 
-extern "C" FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
-extern "C" FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
+extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
+extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
 
-extern "C" FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
-extern "C" FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0);
+extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
+extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0);
 
 #define WorkUnitXML_InclSchema      0x0001
 #define WorkUnitXML_NoRoot          0x0002
 #define WorkUnitXML_SeverityTags    0x0004
 
-extern "C" FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
 
 extern FILEVIEW_API void startRemoteDataSourceServer(const char * queue, const char * cluster);
 extern FILEVIEW_API void stopRemoteDataSourceServer();
