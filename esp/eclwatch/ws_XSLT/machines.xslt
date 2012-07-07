@@ -113,6 +113,8 @@
                 function onLoad()
                 {                           
                     initSelection('resultsTable');
+                    document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
+
                     <xsl:if test="$ShowPreflightInfo and not($SwapNode)">initPreflightControls();</xsl:if>
                     onRowCheck(false);
                     var table = document.getElementById('resultsTable');
@@ -194,6 +196,7 @@
                 </xsl:if>
                 <input type="hidden" name="Path" value="{/TpMachineQueryResponse/Path}"/>
                 <input type="hidden" name="Cluster" value="{$clusterName}"/>
+                <input type="hidden" name="Addresses.itemcount" value=""/>
                 <h3>
                     <xsl:choose>
                         <xsl:when test="$SwapNode">Select a spare node to swap</xsl:when>
@@ -310,12 +313,12 @@
                 <xsl:if test="$ShowPreflightInfo">
                     <xsl:choose>
                         <xsl:when test="not($SwapNode)">
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)">
+                            <input type="checkbox" name="Addresses.{position()-1}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)">
                                 <xsl:attribute name="checked">true</xsl:attribute>
                             </input>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)"/>
+                            <input type="checkbox" name="Addresses.{position()-1}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
