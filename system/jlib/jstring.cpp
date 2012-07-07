@@ -1225,7 +1225,7 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
     unsigned char c = (unsigned char) *src;
     if (c == ' ')
       dest->append('+');
-    else if (c & 0x80 || !isalnum(*src))
+    else if ((c & 0x80) || !isalnum(*src))
     {
       dest->append('%');
       dest->appendhex(c, lower);
