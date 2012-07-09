@@ -19,7 +19,6 @@
 #ifdef _USE_CPPUNIT
 #include "jlib.hpp"
 #include "jlog.hpp"
-#include "uri.hpp"
 
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
@@ -27,7 +26,9 @@
 // CPPUNIT_ASSERT is too slow, even when not matching failure
 #define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 
-// =============================================================== jURI - URI parser
+#ifdef _USE_URIPARSER
+// =============================================================== URI parser
+#include "uri.hpp"
 class URITests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( URITests );
@@ -107,5 +108,7 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION( URITests );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( URITests, "URITests" );
+
+#endif // _USE_URIPARSER
 
 #endif // _USE_CPPUNIT
