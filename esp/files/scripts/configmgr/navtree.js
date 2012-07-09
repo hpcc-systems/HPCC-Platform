@@ -1940,7 +1940,7 @@ function populateOpenEnvTable() {
           var files = result.split(/;/g);
           var objs = new Array();
           var staged_configuration = new Array();
-          for (var i = 0,j = 0, k = 0; i < files.length; i++, j++) {
+          for (var i = 0, j = 0, k = 0; i < files.length; i++) {
             if (files[i] == "<StagedConfiguration>")
             {
               i++;
@@ -1955,12 +1955,12 @@ function populateOpenEnvTable() {
               }
               else
               {
-                j--;
                 continue;
               }
             }
             objs[j] = {};
             objs[j].name = files[i];
+            j++;
           }
 
           YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
