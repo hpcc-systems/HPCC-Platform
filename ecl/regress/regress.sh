@@ -27,7 +27,7 @@
 # in your build directory. (option: -e $BUILDDIR/Debug/bin/eclcc)
 ##############################################################################
 
-syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-i include_dir] [-e eclcc] [-d diff_program]"
+syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program]"
 
 ## Create Makefile (git doesn't like tabs)
 echo "FILES=\$(shell echo *.ecl*)" > Makefile
@@ -58,14 +58,14 @@ if [[ $1 = '' ]]; then
     echo $syntax
     echo " * target_dir automatically created with run_pid"
     echo " * compare_dir necessary for comparisons"
-    echo " * include dir for special ECL headers"
+    echo " * include dir for special ECL headers (allows multiple paths)"
     echo " * eclcc necessary for compilation, otherwise, only comparison will be made"
     echo " * diff_program must be able to handle directories"
     echo
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:i:e:d:" opt; do
+    while getopts "t:c:I:e:d:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -73,8 +73,8 @@ if [[ $* != '' ]]; then
             c)
                 compare_dir=$OPTARG
                 ;;
-            i)
-                include_dir=$OPTARG
+            I)
+                include_dir="$include_dir -I$OPTARG"
                 ;;
             e)
                 eclcc=$OPTARG
