@@ -38,7 +38,7 @@
         The difference between internal and API tests is that the former tests
         have access to the internal classes, and can change states that other
         classes don't, while the latter is seeing the classes as the rest of
-        HPCC does. So, the API tests also server as documentation on how to
+        HPCC does. So, the API tests also serves as documentation on how to
         use the API and to expose API problems.
     </para>
     <para>

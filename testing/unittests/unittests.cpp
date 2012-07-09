@@ -29,7 +29,8 @@
 
 /*
  * This is the main unittest driver for HPCC. From here,
- * all unit tests, be them internal or external (API).
+ * all unit tests, be they internal or external (API),
+ * will run.
  *
  * All internal unit tests, written on the same source
  * files as the implementation they're testing, can be
@@ -41,7 +42,7 @@
  * files within the same directory as this file, and
  * statically linked together.
  *
- * CPPUnit will automaticall recognise and run them all.
+ * CPPUnit will automatically recognise and run them all.
  */
 
 /*
