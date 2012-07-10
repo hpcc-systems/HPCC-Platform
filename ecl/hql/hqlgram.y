@@ -3129,13 +3129,13 @@ soapFlag
                         }
     | TIMEOUT '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
+                            parser->normalizeExpression($3, type_real, false);
                             $$.setExpr(createExprAttribute(timeoutAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | TIMELIMIT '(' expression ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
+                            parser->normalizeExpression($3, type_real, false);
                             $$.setExpr(createExprAttribute(timeLimitAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
