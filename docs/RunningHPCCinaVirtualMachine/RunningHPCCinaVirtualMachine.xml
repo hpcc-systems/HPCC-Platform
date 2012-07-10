@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book lang="en_US" xml:base="../" >
+<book lang="en_US" xml:base="../">
   <title>Running HPCC in a Virtual Machine</title>
 
   <bookinfo>
@@ -34,16 +34,15 @@
       <para></para>
     </legalnotice>
 
-   <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
 
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-   <xi:include href="common/Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -972,7 +971,7 @@ OUTPUT(L);</programlisting></para>
 
             <listitem>
               <para>Select mydropzone in the Source <emphasis
-              role="bold">Machine/dropzone</emphasis> drop-list.</para>
+              role="bold">Machine/dropzone</emphasis> drop list.</para>
 
               <para>The IP Address is automatically filled and the Local Path
               is partially filled with the default folder on your landing
@@ -1419,7 +1418,7 @@ OUTPUT(ValidWords)
             </listitem>
 
             <listitem>
-              <para>Select Output Tables in the drop-list.</para>
+              <para>Select Output Tables in the drop list.</para>
             </listitem>
 
             <listitem>

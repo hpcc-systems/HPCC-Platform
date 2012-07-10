@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book>
+<book xml:base="../">
   <title>Using ECL Watch</title>
 
   <bookinfo>
-    <title> Using ECL Watch</title>
+    <title>Using ECL Watch</title>
 
     <mediaobject>
       <imageobject>
@@ -34,16 +34,16 @@
       <para></para>
     </legalnotice>
 
-    <releaseinfo>© 2011 HPCC Systems. All rights reserved</releaseinfo>
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-    <copyright>
-      <year>2011 HPCC Systems. All rights reserved</year>
-    </copyright>
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
       <imageobject>
@@ -817,7 +817,7 @@
                     <row>
                       <entry><emphasis role="bold">Machine</emphasis></entry>
 
-                      <entry>Use the drop-list to select the machine where the
+                      <entry>Use the drop list to select the machine where the
                       source file is located.</entry>
                     </row>
 
@@ -968,7 +968,7 @@
                   <row>
                     <entry><emphasis role="bold">Machine</emphasis></entry>
 
-                    <entry>Use the drop-list to select the machine where the
+                    <entry>Use the drop list to select the machine where the
                     source file is located.</entry>
                   </row>
 
@@ -1136,7 +1136,7 @@
                   <row>
                     <entry><emphasis role="bold">Machine</emphasis></entry>
 
-                    <entry>Use the drop-list to select the machine where the
+                    <entry>Use the drop list to select the machine where the
                     source file is located.</entry>
                   </row>
 
@@ -1157,7 +1157,7 @@
                   <row>
                     <entry><emphasis role="bold">Format</emphasis></entry>
 
-                    <entry>Select the file format from the drop-list.</entry>
+                    <entry>Select the file format from the drop list.</entry>
                   </row>
 
                   <row>
