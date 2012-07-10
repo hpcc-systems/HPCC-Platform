@@ -590,7 +590,7 @@
                     <row>
                       <entry>Group</entry>
 
-                      <entry>Use the drop-list to select the Roxie cluster to
+                      <entry>Use the drop list to select the Roxie cluster to
                       copy to.</entry>
                     </row>
 
@@ -742,7 +742,7 @@
                     <row>
                       <entry>Group</entry>
 
-                      <entry>Use the drop-list to select the cluster to copy
+                      <entry>Use the drop list to select the cluster to copy
                       to.</entry>
                     </row>
 
@@ -1244,7 +1244,7 @@
         <itemizedlist mark="bullet">
           <listitem>
             <para>Select the <emphasis role="bold">Cluster </emphasis>from the
-            droplist.</para>
+            drop list.</para>
           </listitem>
         </itemizedlist>
 
@@ -1254,8 +1254,8 @@
         <itemizedlist mark="bullet">
           <listitem>
             <para>Select the query type (Suspended, Non-Suspended, or both)
-            from the <emphasis role="bold">Suspended
-            </emphasis>droplist.</para>
+            from the <emphasis role="bold">Suspended </emphasis>drop
+            list.</para>
           </listitem>
 
           <listitem>
@@ -1361,7 +1361,7 @@
           <itemizedlist mark="bullet">
             <listitem>
               <para>Select the <emphasis role="bold">Cluster </emphasis>from
-              the droplist.</para>
+              the drop list.</para>
             </listitem>
           </itemizedlist>
 
@@ -1371,7 +1371,7 @@
           <itemizedlist mark="bullet">
             <listitem>
               <para>Select the file type (Non-Super Files or Super FIles) from
-              the <emphasis role="bold">File Type </emphasis>droplist.</para>
+              the <emphasis role="bold">File Type </emphasis>drop list.</para>
             </listitem>
 
             <listitem>
@@ -1452,7 +1452,7 @@
         <itemizedlist mark="bullet">
           <listitem>
             <para>Select the <emphasis role="bold">Cluster </emphasis>from the
-            droplist.</para>
+            drop list.</para>
           </listitem>
         </itemizedlist>
 
@@ -1462,7 +1462,7 @@
         <itemizedlist mark="bullet">
           <listitem>
             <para>Select the file type (Non-Super Files or Super FIles) from
-            the <emphasis role="bold">File Type </emphasis>droplist.</para>
+            the <emphasis role="bold">File Type </emphasis>drop list.</para>
           </listitem>
 
           <listitem>
