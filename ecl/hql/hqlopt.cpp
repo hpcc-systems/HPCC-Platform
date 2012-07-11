@@ -1259,77 +1259,6 @@ IHqlExpression * mapJoinConditionToFilter(IHqlExpression * expr, IHqlExpression 
         return NULL;
     return LINK(expr);
 }
-
-
-/*
-Convert join(inline-dataset, x, condition, transform, ...) to
-project(x(condition'), t')
-*/
-
-IHqlExpression * CTreeOptimizer::optimizeInlineJoin(IHqlExpression * expr)
-{
-    //This doesn't really work because the input dataset could contain duplicates, which would generate duplicate
-    //values for the keyed join, but not for the index read.
-    //I could spot a dedup(ds, all) and then allow it, but it's a bit messy.
-    return NULL;
-
-    if (!isSimpleInnerJoin(expr) || expr->hasProperty(keyedAtom))
-        return NULL;
-
-    //Probably probably keep the following...
-    if (expr->hasProperty(allAtom) || expr->hasProperty(_lightweight_Atom) || expr->hasProperty(lookupAtom) || 
-        expr->hasProperty(hashAtom))
-        return NULL;
-
-    if (expr->hasProperty(localAtom) || expr->hasProperty(atmostAtom) || expr->hasProperty(onFailAtom))
-        return NULL;
-
-    IHqlExpression * key = expr->queryChild(1);
-    switch (key->getOperator())
-    {
-    case no_newkeyindex:
-        //more - e.g., inline child query stuff
-        break;
-    default:
-        //probably always more efficient.
-        break;
-        return false;
-    }
-
-    IHqlExpression * tempTable = expr->queryChild(0);
-    if (tempTable->getOperator() != no_temptable)
-        return NULL;
-
-    OwnedHqlExpr field, values;
-    if (!extractSingleFieldTempTable(tempTable, field, values))
-        return NULL;
-
-    IHqlExpression * joinSeq = querySelSeq(expr);
-    OwnedHqlExpr newSeq = createSelectorSequence();
-    OwnedHqlExpr left = createSelector(no_left, tempTable, joinSeq);
-    OwnedHqlExpr right = createSelector(no_right, key, joinSeq);
-    OwnedHqlExpr rightAsLeft = createSelector(no_left, key, newSeq);
-    OwnedHqlExpr selectLeft = createSelectExpr(LINK(left), LINK(field));
-    OwnedHqlExpr activeDs = ensureActiveRow(key);
-
-    //Transform can't refer to left hand side.
-    IHqlExpression * transform = expr->queryChild(3);
-    OwnedHqlExpr mapped = replaceExpression(transform, left, right);
-    if (mapped != transform)
-        return NULL;
-
-    OwnedHqlExpr cond = replaceSelector(expr->queryChild(2), right, activeDs);
-    OwnedHqlExpr mappedCond = mapJoinConditionToFilter(cond, selectLeft, values);
-    if (!mappedCond)
-        return NULL;
-
-    OwnedHqlExpr replacement = createDataset(no_filter, LINK(key), mappedCond.getClear());
-
-    OwnedHqlExpr newTransform = replaceExpression(transform, right, rightAsLeft);
-    replacement.setown(createDataset(no_hqlproject, replacement.getClear(), createComma(newTransform.getClear(), LINK(newSeq))));
-    return replacement.getClear();
-}
-
     
 IHqlExpression * splitJoinFilter(IHqlExpression * expr, HqlExprArray * leftOnly, HqlExprArray * rightOnly)
 {
@@ -2230,9 +2159,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             if (ret)
                 return ret.getClear();
 #endif
-            IHqlExpression * ret2 = optimizeInlineJoin(transformed);
-            if (ret2)
-                return ret2;
+            //Unfortunately you cannot convert a keyed join to an index read because the input dataset could contain duplicates
+            //That would generate duplicates in the output which would be missing from a index read.
 
             //MORE:
             //If left outer join, and transform doesn't reference RIGHT, and only one rhs record  could match each lhs record (e.g., it was rolled
