@@ -10627,7 +10627,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_rows:
         break;
     case no_chooseds:
-        datasetType = parms.item(1).queryType()->queryChildType();
+        datasetType = parms.item(1).queryType();
         break;
     case no_mergejoin:
     case no_nwayjoin:
