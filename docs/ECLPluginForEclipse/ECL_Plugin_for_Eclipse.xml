@@ -31,9 +31,13 @@
       coincidental.</para>
 
       <para><emphasis role="redbold">DRAFT 004</emphasis></para>
+      <para>
+        <emphasis role="redbold">DRAFT 001</emphasis>
+      </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
+    <xi:include href="Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <!--Release Info makes a running page footer:now an include from version.xml-->
