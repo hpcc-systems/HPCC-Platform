@@ -176,14 +176,12 @@ void CThorKeyArray::serialize(MemoryBuffer &mb)
     mb.append(totalserialsize);
     bool haskeyserializer = keyserializer!=NULL;
     mb.append(haskeyserializer);
-    size32_t pos = mb.length();
-    mb.append((size32_t)0);
+    DelayedSizeMarker sizeMark(mb);
     IOutputRowSerializer *serializer = haskeyserializer?keyif->queryRowSerializer():rowif->queryRowSerializer();
     CMemoryRowSerializer msz(mb);
     for (i=0;i<n;i++) 
         serializer->serialize(msz,(const byte *)keys.query(i));
-    size32_t l = mb.length()-pos-sizeof(size32_t);
-    mb.writeDirect(pos,sizeof(l),&l);
+    sizeMark.write();
 }
 
 void CThorKeyArray::deserialize(MemoryBuffer &mb,bool append)

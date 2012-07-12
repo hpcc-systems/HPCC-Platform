@@ -1904,7 +1904,7 @@ public:
             {
                 unsigned numDataParts;
                 data.read(numDataParts);
-                unsigned offsetMapSz = 0;
+                size32_t offsetMapSz = 0;
                 if (numDataParts)
                 {
                     deserializePartFileDescriptors(data, dataParts);
