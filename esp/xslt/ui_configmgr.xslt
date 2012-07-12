@@ -438,7 +438,15 @@
                       i.compType = '<xsl:value-of select="$Component"/>';
                       i.depth = <xsl:value-of select="count(ancestor::*) - 1"/>;
                       i.name = "<xsl:value-of select="name()"/>";
-                      i.value = "<xsl:value-of select="."/>";
+                      <xsl:variable name="value" select="."/>
+                        <xsl:choose>
+                          <xsl:when test="contains($value, '\') and string-length($value) &gt; 0 and string-length(substring-after($value,'\')) = string-length($value)-1">
+                            i.value =  "\\" + "<xsl:value-of select="."/>";
+                          </xsl:when>
+                          <xsl:otherwise>
+                            i.value = "<xsl:value-of select="$value" />";
+                        </xsl:otherwise>
+                      </xsl:choose>
                       i.parent = parentIds[parentIds.length-1];
                       i.params = "parentParams" + i.depth + "=" + rows[i.parent].params;
                       i.id = id++;
