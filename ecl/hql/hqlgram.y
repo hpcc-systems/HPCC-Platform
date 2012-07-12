@@ -10700,6 +10700,11 @@ dedupFlag
                         }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); }
     | HASH              {   $$.setExpr(createAttribute(hashAtom)); }
+    | UNORDERED
+                        {
+                            $$.setExpr(createAttribute(unorderedAtom));
+                            $$.setPosition($1);
+                        }
     ;
 
 rollupExtra

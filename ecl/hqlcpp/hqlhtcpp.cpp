@@ -13334,6 +13334,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         {
             StringBuffer flags;
             if (recordTypesMatch(dataset, keyDataset)) flags.append("|HFDwholerecord");
+            if (expr->hasProperty(unorderedAtom)) flags.append("|HFDunordered");
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
         }
