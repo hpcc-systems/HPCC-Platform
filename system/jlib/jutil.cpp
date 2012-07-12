@@ -332,10 +332,21 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     HINSTANCE h = dlopen((char *)name, isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
     if(h == NULL)
     {
-        StringBuffer dlErrorMsg(dlerror());
-        DBGLOG("Error loading %s: %s", name, dlErrorMsg.str());
-        if (raiseOnError)
-            throw MakeStringException(0, "Error loading %s: %s", name, dlErrorMsg.str());
+        // Try again, with .so extension if necessary
+        if (strncmp(".so", name+(strlen(name)-3), 3) != 0)
+        {
+            // Assume if there's no .so, there's also no lib at the beginning
+            StringBuffer nameBuf;
+            nameBuf.append("lib").append(name).append(".so");
+            h = dlopen((char *)nameBuf.str(), isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
+        }
+        if (h == NULL)
+        {
+            StringBuffer dlErrorMsg(dlerror());
+            DBGLOG("Error loading %s: %s", name, dlErrorMsg.str());
+            if (raiseOnError)
+                throw MakeStringException(0, "Error loading %s: %s", name, dlErrorMsg.str());
+        }
     }
 
 #endif
