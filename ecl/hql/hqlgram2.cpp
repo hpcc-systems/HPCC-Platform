@@ -634,7 +634,7 @@ IHqlExpression * HqlGram::createActiveSelectorSequence(IHqlExpression * left, IH
         HqlExprArray args;
         if (left) args.append(*LINK(left->queryNormalizedSelector()));
         if (right) args.append(*LINK(right->queryNormalizedSelector()));
-        return createAttribute(_selectorSequence_Atom, args);
+        return createExprAttribute(_selectorSequence_Atom, args);
     }
 
     return ::createUniqueSelectorSequence();
