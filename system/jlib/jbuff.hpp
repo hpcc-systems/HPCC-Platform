@@ -224,8 +224,12 @@ public:
     }
     inline void write()
     {
-        size32_t sz = mb.length() - (pos + sizeof(size32_t));
+        size32_t sz = size();
         mb.writeDirect(pos, sizeof(sz), &sz);
+    }
+    inline size32_t size() const
+    {
+        return mb.length() - (pos + sizeof(size32_t));
     }
     // resets position marker and writes another size to be filled subsequently by write()
     inline void restart()
