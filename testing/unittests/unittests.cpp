@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#ifdef _USE_CPPUNIT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
@@ -101,3 +102,4 @@ int main(int argc, char* argv[])
     return wasSucessful;
 }
 
+#endif // _USE_CPPUNIT
