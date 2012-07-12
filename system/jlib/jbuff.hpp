@@ -212,6 +212,33 @@ private:
     
 };
 
+// Utility class, to back patch a size into current position
+class jlib_decl DelayedSizeMarker
+{
+    MemoryBuffer &mb;
+    unsigned pos;
+public:
+    DelayedSizeMarker(MemoryBuffer &_mb) : mb(_mb)
+    {
+        restart();
+    }
+    inline void write()
+    {
+        size32_t sz = size();
+        mb.writeDirect(pos, sizeof(sz), &sz);
+    }
+    inline size32_t size() const
+    {
+        return mb.length() - (pos + sizeof(size32_t));
+    }
+    // resets position marker and writes another size to be filled subsequently by write()
+    inline void restart()
+    {
+        pos = mb.length();
+        mb.append((size32_t)0);
+    }
+};
+
 interface jlib_decl serializable : extends IInterface
 {
 public:
