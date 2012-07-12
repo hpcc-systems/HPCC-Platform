@@ -156,6 +156,7 @@ protected:
     bool global;
     bool groupOp;
     OwnedConstThorRow kept;
+    OwnedConstThorRow keptTransformed; // only used by rollup
     Owned<IThorDataLink> input;
     bool needFirstRow;
 
@@ -221,19 +222,26 @@ public:
                 if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag)) // from previous node
                     return;
                 msg.read(numKept);
-                bool isKept;
-                msg.read(isKept);
-                if (isKept)
+                size32_t rowLen;
+                msg.read(rowLen);
+                if (rowLen)
+                    kept.deserialize(rowif, rowLen, msg.readDirect(rowLen));
+                if (rollup)
                 {
-                    size32_t r = msg.remaining();
-                    kept.deserialize(rowif, r, msg.readDirect(r));
-                    if (kept)
-                        return;
+                    msg.read(rowLen);
+                    if (rowLen)
+                        keptTransformed.deserialize(rowif, rowLen, msg.readDirect(rowLen));
+                    else
+                        keptTransformed.set(kept);
                 }
+                if (kept)
+                    return;
             }
             kept.setown(input->nextRow());
             if (!kept && global)
                 putNextKept(); // pass on now
+            if (rollup)
+                keptTransformed.set(kept);
         }
     }
     bool putNextKept()
@@ -244,12 +252,29 @@ public:
             return false;
         CMessageBuffer msg;
         msg.append(numKept);
-        msg.append(NULL != kept.get());
+        unsigned msgPos = msg.length();
+        msg.append((size32_t)0);
         if (kept.get())
         {
             CMemoryRowSerializer msz(msg);
             rowif->queryRowSerializer()->serialize(msz,(const byte *)kept.get());
+            size32_t sz = msg.length()-(msgPos+sizeof(sz));
+            msg.writeDirect(msgPos, sizeof(sz), &sz);
+            if (rollup)
+            {
+                msgPos = msg.length();
+                msg.append((size32_t)0);
+                if (kept.get()!=keptTransformed.get())
+                {
+                    sz = msg.length();
+                    rowif->queryRowSerializer()->serialize(msz,(const byte *)keptTransformed.get());
+                    sz = msg.length()-(msgPos+sizeof(sz));
+                    msg.writeDirect(msgPos, sizeof(sz), &sz);
+                }
+            }
         }
+        else if (rollup)
+            msg.append((size32_t)0);
         container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag); // to next node
         return true;
     }
@@ -415,18 +440,12 @@ public:
         : CDedupRollupBaseActivity(_container, true, global, groupOp), CThorDataLink(this)
     {
     }
-
-    ~CRollupSlaveActivity()
-    {
-    }
-
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         CDedupRollupBaseActivity::init(data, slaveData);
         appendOutputLinked(this);   // adding 'me' to outputs array
         ruhelper = static_cast <IHThorRollupArg *>  (queryHelper());
     }
-
     inline bool eog()
     {
         if (abortSoon)
@@ -443,20 +462,17 @@ public:
             return true;
         return false;
     }
-
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDedupRollupBaseActivity::start();
         dataLinkStart(id, container.queryId());
     }
-
     virtual void stop()
     {
         CDedupRollupBaseActivity::stop();
         dataLinkStop();
     }
-
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
@@ -465,12 +481,15 @@ public:
         if (eog())
             return NULL;
         OwnedConstThorRow next;
-        loop  {
+        loop
+        {
             next.setown(input->nextRow());
-            if (!next) {
+            if (!next)
+            {
                 if (!groupOp)
                     next.setown(input->nextRow());
-                if (!next) {
+                if (!next)
+                {
                     if (global&&putNextKept()) // send kept to next node
                         return NULL;
                     break;
@@ -481,13 +500,16 @@ public:
             if (!ruhelper->matches(kept, next))
                 break;
             RtlDynamicRowBuilder ret(queryRowAllocator());
-            unsigned thisSize = ruhelper->transform(ret, kept, next);
+            unsigned thisSize = ruhelper->transform(ret, keptTransformed, next);
+            kept.setown(next.getClear());
             if (thisSize)
-                kept.setown(ret.finalizeRowClear(thisSize));
+                keptTransformed.setown(ret.finalizeRowClear(thisSize));
         }
-        OwnedConstThorRow row = kept.getClear();
+        OwnedConstThorRow row = keptTransformed.getClear();
         kept.setown(next.getClear());
-        if (row) {
+        keptTransformed.set(kept);
+        if (row)
+        {
             dataLinkIncrement();
             return row.getClear();
         }
