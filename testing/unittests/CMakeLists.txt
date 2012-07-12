@@ -23,6 +23,8 @@
 #    Cmake Input File for unittests
 #####################################################
 
+if (USE_CPPUNIT)
+
 project( unitests )
 
 set (    SRCS
@@ -47,3 +49,5 @@ target_link_libraries ( unittests
          remote
          cppunit
     )
+
+endif ()
