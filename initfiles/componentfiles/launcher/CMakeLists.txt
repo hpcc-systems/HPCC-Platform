@@ -1,7 +1,8 @@
 ################################################################################
 #    Copyright (C) 2011 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    All rights reserved. This program is free software: you can redistribute it
+#    and/or modify
 #    it under the terms of the GNU Affero General Public License as
 #    published by the Free Software Foundation, either version 3 of the
 #    License, or (at your option) any later version.
@@ -15,7 +16,5 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-ADD_SUBDIRECTORY(ftslave)
-ADD_SUBDIRECTORY(configxml)
-ADD_SUBDIRECTORY(thor)
-ADD_SUBDIRECTORY(launcher)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/hpcc-systems.desktop DESTINATION ${INSTALL_DIR}/share COMPONENT Runtime )
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/LN.png DESTINATION ${INSTALL_DIR}/share COMPONENT Runtime )
