@@ -32,6 +32,7 @@
         function fnce() {
           var oPushButton3 = new YAHOO.widget.Button("validatebutton", { onclick: { fn: validateEnvironment} });
           var oPushButton2 = new YAHOO.widget.Button("savebutton", { onclick: { fn: saveEnvironment} });
+          var oPushButton6 = new YAHOO.widget.Button("saveasbutton", { onclick: { fn: saveEnvironmentAs} });
           var oPushButton4 = new YAHOO.widget.Button("openbutton", { onclick: { fn: displayOpenEnvDialog} });
           var oPushButton5 = new YAHOO.widget.Button("wizardbutton", { onclick: { fn: invokeWizard} });
 
@@ -150,6 +151,7 @@ function invokeWizard() {
       {
         document.getElementById('ReadWrite').disabled = true;
         document.getElementById('savebutton').disabled = true;
+        document.getElementById('saveasbutton').disabled = false;
         document.getElementById('validatebutton').disabled = true;
       }
       document.getElementById('top1').style.display = 'block';
@@ -1787,7 +1789,7 @@ function saveEnvironment(saveas) {
           if (xmlargs.length > 0) {
             var xmlargs1 = xmlargs[1].split(/<\/XmlArgs>/g);
             if (xmlargs1.length > 0 && xmlargs1[0].length > 0 && xmlargs1[0].charAt(0) != '<') {
-              promptValidationErrs(xmlargs1[0]);
+              alert(xmlargs1[0]);
             }
           }
 
@@ -1815,7 +1817,9 @@ function saveEnvironment(saveas) {
 }
 
 function saveEnvironmentAs() {
-  var handleCancel = function() {
+ if (document.getElementById('ReadWrite').checked == true)
+   return;
+ var handleCancel = function() {
     getWaitDlg().hide();
     top.document.envSaveAsDialog.hide();
   }
@@ -3351,6 +3355,7 @@ function saveAndUnlockEnv() {
 function updateEnvCtrls(flag) {
  var Dom = YAHOO.util.Dom;
   var sbtn = Dom.get("savebutton");
+  var sabtn = Dom.get("saveasbutton");
   var vbtn = Dom.get("validatebutton");
   var fileopened = window.location.href.split(/\?/g);
   if (document.forms['treeForm'].wizops.value != '3' || fileopened.length <= 1)
@@ -3358,19 +3363,19 @@ function updateEnvCtrls(flag) {
   
   if (flag) {
     Dom.removeClass(sbtn, "yui-button-disabled");
+    Dom.addClass(sabtn, "yui-button-disabled");
     Dom.removeClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = false;
-    document.getElementById('validatebutton-button').disabled = false;
     document.getElementById('savebutton').disabled = false;
+    document.getElementById('saveasbutton').disabled = true;
     document.getElementById('validatebutton').disabled = false;
     document.getElementById('ReadWrite').checked = true;
   }
   else {
     Dom.addClass(sbtn, "yui-button-disabled");
+    Dom.removeClass(sabtn, "yui-button-disabled");
     Dom.addClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = true;
-    document.getElementById('validatebutton-button').disabled = true;
     document.getElementById('savebutton').disabled = true;
+    document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
     document.getElementById('ReadWrite').checked = false;
   }
@@ -4765,6 +4770,7 @@ function callHtmlSummaryPage()
   {
     document.getElementById('ReadWrite').disabled = true;
     document.getElementById('savebutton').disabled = true;
+    document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
   }
   
