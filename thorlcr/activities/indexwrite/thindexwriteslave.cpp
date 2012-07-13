@@ -167,7 +167,9 @@ public:
             }
         }
         assertex(!(helper->queryDiskRecordSize()->getMetaFlags() & MDFneedserialize));
-        maxDiskRecordSize = helper->queryDiskRecordSize()->isVariableSize() ? 4096 : helper->queryDiskRecordSize()->getFixedSize();
+        // NB: the max [ecl] length is not used, other than setting a max field in the header.
+        // However, legacy systems (<=702) check that query rec length == key rec len.
+        maxDiskRecordSize = helper->queryDiskRecordSize()->getRecordSize(NULL);
         reportOverflow = false;
     }
 

@@ -39,7 +39,7 @@
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
 #define KEYBUILD_VERSION 1 // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
-
+#define KEYBUILD_MAXLENGTH 0x7FFF
 
 // structure to be read into - NO VIRTUALS.
 // This header layout corresponds to FairCom cTree layout for compatibility with old systems ...
