@@ -60,7 +60,7 @@ public class HPCCResultSet implements ResultSet
 		availableCols = new HashMap<String, HPCCColumnMetaData>();
 	}
 
-	private void addToAvailableCols(DFUFile dfufile)
+	private void addFileColsToAvailableCols(DFUFile dfufile)
 	{
 		Enumeration fields = dfufile.getAllFields();
 		while (fields.hasMoreElements())
@@ -111,7 +111,7 @@ public class HPCCResultSet implements ResultSet
 				if (!dfufile.hasFileRecDef())
 					throw new Exception("Cannot query: " + queryfilename + " because it does not contain an ECL record definition.");
 
-				addToAvailableCols(dfufile);
+				addFileColsToAvailableCols(dfufile);
 
 				if (parser.hasJoinClause())
 				{
@@ -123,7 +123,7 @@ public class HPCCResultSet implements ResultSet
 					if (!dfufile.hasFileRecDef())
 						throw new Exception("Cannot query: " + joinTableName + " because it does not contain an ECL record definition.");
 
-					addToAvailableCols(joinTableFile);
+					addFileColsToAvailableCols(joinTableFile);
 
 					avoidindex = true; //will not be using index
 					System.out.println("Will not use INDEX files for \"Join\" query.");
@@ -141,7 +141,6 @@ public class HPCCResultSet implements ResultSet
 					String tmpindexname = null;
 
 					String indexhint = parser.getIndexHint();
-					//boolean avoidindex = false;
 					if ( indexhint != null)
 					{
 						if (indexhint.trim().equals("0"))

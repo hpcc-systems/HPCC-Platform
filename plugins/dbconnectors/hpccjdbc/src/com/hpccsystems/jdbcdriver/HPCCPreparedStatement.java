@@ -24,11 +24,14 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+
 /**
  *
  * @author rpastrana
  */
-public class HPCCPreparedStatement implements PreparedStatement {
+
+public class HPCCPreparedStatement implements PreparedStatement
+{
     private boolean closed = false;
     private int maxRows = 100;
     private String query;
@@ -45,13 +48,11 @@ public class HPCCPreparedStatement implements PreparedStatement {
         this.query = query;
         this.connection = connection;
         warnings = new ArrayList<SQLWarning>();
-        //indexToUse = null;
     }
 
     public boolean isIndexSet(String sourcefilename)
     {
-        String indexname = indexToUseMap.get(sourcefilename);
-        return indexname == null ? false : true;
+        return indexToUseMap.get(sourcefilename) != null;
     }
 
     public void setIndexToUse(String sourcefilename, String indexfilename)

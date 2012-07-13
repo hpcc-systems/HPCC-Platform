@@ -131,13 +131,13 @@ public class SQLParser
 			int limitPos = insqlupcase.lastIndexOf(" LIMIT ");
 
 			if ( useindexstrpos != -1 && useindexstrpos < fromstrpos)
-				throw new SQLException("Malformed SQL. USING clause placement.");
+				throw new SQLException("Malformed SQL: USE clause placement.");
 
 			if (joinPos != -1 && joinPos < fromstrpos)
-					throw new SQLException("Malformed SQL. Join clause placement.");
+					throw new SQLException("Malformed SQL: Join clause placement.");
 
 			if (wherePos != -1 && wherePos < fromstrpos)
-				throw new SQLException("Malformed SQL. WHERE clause placement.");
+				throw new SQLException("Malformed SQL: WHERE clause placement.");
 
 			try
 			{
@@ -844,7 +844,7 @@ public class SQLParser
 
 	public boolean hasJoinClause()
 	{
-		return joinClause == null ? false : true;
+		return joinClause != null;
 	}
 
 	public SQLJoinClause getJoinClause()

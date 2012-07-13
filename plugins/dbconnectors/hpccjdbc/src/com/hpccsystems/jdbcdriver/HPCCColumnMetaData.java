@@ -79,7 +79,7 @@ public class HPCCColumnMetaData
 
 	public boolean isConstant()
 	{
-		return constantValue == null ? false : true;
+		return constantValue != null;
 	}
 
 	public String getConstantValue()

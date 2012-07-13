@@ -580,6 +580,7 @@ public class HPCCDriverTest
 	public static void main(String[] args)
 	{
 		boolean success = true;
+		boolean expectedFailure = false;
 
 		try
 		{
@@ -611,16 +612,29 @@ public class HPCCDriverTest
 				success &= executeFreeHandSQL(info, "select min(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.firstname < 'a' limit 10", params);
 				success &= executeFreeHandSQL(info, "select max(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.zip < '33445' limit 10", params);
 
+				//Join where first table is index, and join table is not
+				success &= executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::peoplebyzipindex3 as persons outer join 	tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where firstname > 'A' limit 10", params);
+
+				//Join where first table is logical file, and join table is index file
+				//Seems to fail with this message:
+				//' Keyed joins only support LEFT OUTER/ONLY'
+				expectedFailure |= !(executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::tutorialperson2 as persons outer join tutorial::rp::peoplebyzipindex2 as people2 on people2.firstname = persons.firstname limit 10", params));
+
+				//Join where both tables are index files
+				//Seems to fail with this message:
+				//' Keyed joins only support LEFT OUTER/ONLY'
+				expectedFailure |= !(executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::peoplebyzipindex3 as persons outer join 	tutorial::rp::peoplebyzipindex2 as people2 on people2.firstname = persons.firstname limit 10", params));
+
 				success &= executeFreeHandSQL(info, "select min(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.firstname < 'a' limit 10", params);
 				success &= executeFreeHandSQL(info, "select max(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.zip < '33445' limit 10", params);
 
-				success &= !(executeFreeHandSQL(info, "select max(persons.lastname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons outer join 	tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where persons.firstname > 'a' order by persons.lastname ASC, persons.firstname DESC limit 10", params));
+				expectedFailure |= !(executeFreeHandSQL(info, "select max(persons.lastname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons outer join 	tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where persons.firstname > 'a' order by persons.lastname ASC, persons.firstname DESC limit 10", params));
 
 				success &= executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip from super::super::tutorial::rp::tutorialperson as persons where persons.zip > ? AND persons.zip < ? group by zip limit 100", params);
-				success &= !(executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip, p2.ball from super::super::tutorial::rp::tutorialperson as persons join thor::motionchart_motion_chart_test_fixed as p2 on p2.zip = persons.zip where persons.zip > ? group by zip limit 10", params));
+				expectedFailure |= !(executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip, p2.ball from super::super::tutorial::rp::tutorialperson as persons join thor::motionchart_motion_chart_test_fixed as p2 on p2.zip = persons.zip where persons.zip > ? group by zip limit 10", params));
 				success &= executeFreeHandSQL(info, "select acct.account, acct.personid, persons.firstname, persons.lastname from progguide::exampledata::people as persons outer join 	progguide::exampledata::accounts as acct on acct.personid = persons.personid  where persons.personid > 5 limit 10", params);
 				success &= executeFreeHandSQL(info, "select count(persons.personid), persons.firstname, persons.lastname from progguide::exampledata::people as persons  limit 10", params);
-				success &= !(executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip, p2.ball from super::super::tutorial::rp::tutorialperson as persons join tutorial::rp::tutorialperson2 as p2 on p2.zip = persons.zip where persons.zip > ? group by zip limit 10", params));
+				expectedFailure |=  !(executeFreeHandSQL(info, "select count(persons.zip) as zipcount, persons.city as mycity , zip, p2.ball from super::super::tutorial::rp::tutorialperson as persons join tutorial::rp::tutorialperson2 as p2 on p2.zip = persons.zip where persons.zip > ? group by zip limit 10", params));
 
 			}
 			else
@@ -680,6 +694,6 @@ public class HPCCDriverTest
 			success = false;
 		}
 
-		System.out.println("\nHPCC Driver test " + (success ? "passed" : "failed") + " - Verify results.");
+		System.out.println("\nHPCC Driver test " + (success ? "passed" : "failed") + (expectedFailure ? "; Expected failure(s) detected " : "" ) + " - Verify results.");
 	}
 }

@@ -4,22 +4,53 @@ import java.sql.SQLException;
 
 public class SQLJoinClause
 {
-	public static final short DEFAULT = 1;
-	public static final short INNER = 2;
-	public static final short OUTER = 3;
 
-	private short type = DEFAULT;
+	public enum JoinType
+	{
+		INNER_JOIN,
+		OUTER_JOIN;
+
+		public String toSQLString()
+		{
+			switch (this)
+			{
+				case INNER_JOIN:
+					return 	"INNER JOIN";
+				case OUTER_JOIN:
+					return "OUTER JOIN";
+				default:
+					return "";
+			}
+		}
+
+		public String toECLString()
+		{
+			switch (this)
+			{
+				case OUTER_JOIN:
+					return "FULL OUTER";
+				case INNER_JOIN:
+					return "INNER";
+				default:
+					return "";
+			}
+		}
+	}
+
+	private static final JoinType defaultType = JoinType.INNER_JOIN;
+
+	private JoinType type;
 	private SQLWhereClause OnClause;
 	private SQLTable joinTable = null;
 	private SQLTable sourceTable = null;
 
 	public SQLJoinClause()
 	{
-		this.type = DEFAULT;
+		this.type = defaultType;
 		this.OnClause = new SQLWhereClause();
 	}
 
-	public SQLJoinClause(short type)
+	public SQLJoinClause(JoinType type)
 	{
 		this.type = type;
 		this.OnClause = new SQLWhereClause();
@@ -36,21 +67,21 @@ public class SQLJoinClause
 			{
 				if (joinSplit[0].trim().length() == 0)
 				{
-					type = DEFAULT;
+					type = defaultType;
 				}
 				else if(joinSplit[0].trim().equalsIgnoreCase("INNER"))
 				{
-					type = INNER;
+					type = JoinType.INNER_JOIN;
 				}
 				else if(joinSplit[0].trim().equalsIgnoreCase("OUTER"))
 				{
-					type = OUTER;
+					type = JoinType.OUTER_JOIN;
 				}
 				else
-					throw new SQLException("Error: No join clause found");
+					throw new SQLException("Error: Invalid join clause found: " + joinOnClause);
 			}
 			else
-				throw new SQLException("Erro: No join clause found");
+				throw new SQLException("Error: No valid join clause found: " + joinOnClause);
 
 			String clausesplit [] = joinSplit[1].split("\\s+(?i)on\\s+", 2);
 
@@ -72,7 +103,7 @@ public class SQLJoinClause
 					joinTable.setAlias(splittablefromalias[1].trim());
 				}
 				else
-					throw new SQLException("Invalid SQL: " + clausesplit[0]);
+					throw new SQLException("Error: Invalid SQL: " + clausesplit[0]);
 
 				String splitedands [] = clausesplit[1].split(" and | AND |,");
 
@@ -115,7 +146,7 @@ public class SQLJoinClause
 
 						exp.setOperator(operator);
 						if (!exp.isOperatorValid())
-							throw new SQLException("Error: Invalid operator found: ");
+							throw new SQLException("Error: Invalid operator found: " + trimmedExpression);
 
 						if (splitedsqlexp.length>1)
 						{
@@ -133,7 +164,7 @@ public class SQLJoinClause
 				}
 			}
 			else
-				throw new SQLException("Error: 'Join' clause does not contain 'On' cluase.");
+				throw new SQLException("Error: 'Join' clause does not contain 'On' clause.");
 		}
 
 		return success;
@@ -169,7 +200,7 @@ public class SQLJoinClause
 		else if (sourceTable != null && (searchname.equals(sourceTable.getName()) || searchname.equals(sourceTable.getAlias())))
 			return sourceTable.getName();
 		else
-			return searchname;
+			return "";
 	}
 
 	public SQLWhereClause getOnClause()
@@ -177,34 +208,19 @@ public class SQLJoinClause
 		return this.OnClause;
 	}
 
-	public short getType()
+	public JoinType getType()
 	{
 		return this.type;
 	}
 
-	private String getTypeStr()
+	public String getSQLTypeStr()
 	{
-		switch (type)
-		{
-			case INNER:
-				return " INNER JOIN ";
-			case OUTER:
-				return " OUTER JOIN ";
-			default:
-				return " JOIN ";
-		}
+		return type.toSQLString();
 	}
 
 	public String getECLTypeStr()
 	{
-		switch (type)
-		{
-			case OUTER:
-				return " FULL OUTER ";
-			case INNER:
-			default:
-				return " INNER ";
-		}
+		return type.toECLString();
 	}
 
 	public String getJoinTableName()
@@ -230,6 +246,6 @@ public class SQLJoinClause
 	@Override
 	public String toString()
 	{
-		return getTypeStr() + getJoinTableName() + " ON " + OnClause.fullToString();
+		return getSQLTypeStr() + " " + getJoinTableName() + " ON " + OnClause.fullToString();
 	}
 }
