@@ -5426,6 +5426,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
       }
       else if (saveAs)
       {
+        setSkipNotification(true);
         pEnvRoot.setown(&m_constEnvRdOnly->getPTree());
         validateEnv(m_constEnvRdOnly, false);
       }
