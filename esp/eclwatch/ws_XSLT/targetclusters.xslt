@@ -105,13 +105,14 @@
 
           function onLoad()
           {
+            document.getElementsByName('TargetClusters.itemcount')[0].value = countTCs;
             initSelection('resultsTable');
 
             if (countTCs > 0)
             {
               for (i=0; i<countTCs; i++)
               { 
-                var ch = document.getElementById('TargetClusters_i'+i);
+                var ch = document.getElementById('TargetClusters.'+i);
                 if (ch && ch.checked)
                 {
                   clusterChecked++;
@@ -229,11 +230,12 @@
             <body class="yui-skin-sam" onload="nof5();onLoad();">
                 <h3>Target Clusters:</h3>
                 <form id="listitems" action="/ws_machine/GetTargetClusterInfo" method="post">
-          <xsl:for-each select="TpTargetClusters/TpTargetCluster">
-                         <xsl:call-template name="show-cluster">
-                              <xsl:with-param name="type" select="Type"/>
-                <xsl:with-param name="name" select="Name"/>
-             </xsl:call-template>
+                    <input type="hidden" name="TargetClusters.itemcount" value=""/>
+                    <xsl:for-each select="TpTargetClusters/TpTargetCluster">
+                        <xsl:call-template name="show-cluster">
+                            <xsl:with-param name="type" select="Type"/>
+                            <xsl:with-param name="name" select="Name"/>
+                        </xsl:call-template>
                     </xsl:for-each>
           <xsl:call-template name="ShowPreflightControls">
             <xsl:with-param name="method" select="'GetMachineInfo'"/>
@@ -264,7 +266,7 @@
         <table id="resultsTable" class="sort-table" width="100%">
             <tr class="grey">
                 <td valign="top" width="20">
-          <input type="checkbox" id="TargetClusters_i{count(preceding::TpTargetCluster)}" name="TargetClusters_i{count(preceding::TpTargetCluster)}"
+          <input type="checkbox" id="TargetClusters.{count(preceding::TpTargetCluster)}" name="TargetClusters.{count(preceding::TpTargetCluster)}"
                                 value="{$type}:{$name}" title="Select this target cluster" onclick="return clickTCCheckbox('{$type}', '{$name}', this);"></input>
         </td>
         <td align="left" width="20">

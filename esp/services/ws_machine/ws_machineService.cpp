@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+#include <vector>
 #include <math.h>
 #include "ws_machineService.hpp"
 #include "jarray.hpp"
@@ -508,8 +509,9 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
       }
    }
 
-   typedef multimap<unsigned, string> AddressMap;
-   AddressMap addressMap; //maps <numeric address> to <process>:<comp name>:<os>:<path>
+    std::vector<unsigned> numAddrVector;
+    std::vector<std::string> propsVector;
+    BoolHash uniqueRequestValues;
     UnsignedArray threadHandles;
     set<string>   columnSet;
     IpAddress     ipAddr;
@@ -535,43 +537,55 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
             configAddress = address;
         }
 
+        StringBuffer sProcessType;
+        StringBuffer sCompName;
+        OpSysType    os = OS_Windows;
+        StringBuffer sPath;
+        unsigned processNumber = 0;
+        if (reqInfo.getGetSoftwareInfo())
+            parseProperties( props, sProcessType, sCompName, os, sPath, processNumber);
+
         IpAddress ipAddr;
         unsigned numIps = ipAddr.ipsetrange(address);
         //address is like 192.168.1.4-6:ThorSlaveProcess:thor1:2:path1
         //so process each address in the range
-        for (unsigned j=0;j<numIps;j++)
+
+        if (!ipAddr.isIp4())
+            IPV6_NOT_IMPLEMENTED();
+
+        while (numIps--)
         {
-            if (!ipAddr.isIp4())
-                IPV6_NOT_IMPLEMENTED();
             unsigned numAddr;
             if (ipAddr.getNetAddress(sizeof(numAddr),&numAddr)!=sizeof(numAddr))
-                IPV6_NOT_IMPLEMENTED(); // Not quite right exception, but will use when IPv4 hack sanity check fails
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid network address.");
 
-            //if no mapping exists for numAddr yet or if we are using filters and props are different then
-            //insert in the map
-            AddressMap::const_iterator i = addressMap.find(numAddr);
-            bool bInsert = (i == addressMap.end()) ||
-                (reqInfo.getGetSoftwareInfo() && 0 != strcmp((*i).second.c_str(), props));
-            if (bInsert)
-            {
-                StringBuffer sBuf;
-                if (configAddress && *configAddress)
-                    sBuf.appendf("%s:%s", configAddress, props);
-                addressMap.insert(pair<unsigned, string>(numAddr, sBuf.str()));
-            }
             ipAddr.ipincrement(1);
+
+            StringBuffer valuesToBeChecked;
+            valuesToBeChecked.append(numAddr);
+            if (reqInfo.getGetSoftwareInfo())
+                valuesToBeChecked.appendf(":%s:%s:%d", sProcessType.str(), sCompName.str(), processNumber);
+            if (uniqueRequestValues.getValue(valuesToBeChecked.str()))
+                continue;
+
+            StringBuffer propsToBeUsed;
+            propsToBeUsed.appendf("%s:%s", configAddress, props);
+
+            numAddrVector.push_back(numAddr);
+            propsVector.push_back(propsToBeUsed.str());
+            uniqueRequestValues.setValue(valuesToBeChecked.str(), true);
         }
         free(address);
     }
 
-
-   AddressMap::const_iterator iBeginAddr = addressMap.begin();
-   AddressMap::const_iterator iEndAddr   = addressMap.end();
-    for (AddressMap::const_iterator iAddr = iBeginAddr; iAddr != iEndAddr; iAddr++)
+    std::vector<unsigned>::iterator iAddr = numAddrVector.begin();
+    std::vector<unsigned>::iterator iEndAddr = numAddrVector.end();
+    std::vector<std::string>::iterator iProps = propsVector.begin();
+    for (; iAddr != iEndAddr; iAddr++, iProps++)
     {
         IpAddress ipAddr;
 
-        unsigned numAddr =  (*iAddr).first;          // TBD IPv6
+        unsigned numAddr =  *iAddr;          // TBD IPv6
         ipAddr.setNetAddress(sizeof(numAddr),&numAddr);
         StringBuffer address;
         ipAddr.getIpText(address);
@@ -582,7 +596,7 @@ void Cws_machineEx::RunMachineQuery(IEspContext &context, StringArray &addresses
         StringBuffer sPath;
         unsigned processNumber = 0;
 
-        const char *configAddress = (*iAddr).second.c_str();
+        const char *configAddress = (*iProps).c_str();
         char* props = (char*) strchr(configAddress, ':');
         if (props)
             *props++ = '\0';
