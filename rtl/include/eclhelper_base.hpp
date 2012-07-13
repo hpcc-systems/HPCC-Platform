@@ -2344,7 +2344,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
 
 //-- SOAP --
 
-class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
+class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg, public IHThorWebServiceCallExtra2
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2359,6 +2359,8 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
         case TAIsoapactionarg_1:
         case TAIsoapactionarg_2:
             return static_cast<IHThorSoapActionArg *>(this);
+        case TAIsoapcallextra_2:
+            return static_cast<IHThorWebServiceCallExtra2 *>(this);
         }
         return NULL;
     }
@@ -2401,7 +2403,10 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
             return static_cast<IHThorSoapActionArg *>(this);
         case TAIsoapcallextra_1:
             return static_cast<IHThorSoapCallExtra *>(this);
+        case TAIsoapcallextra_2:
+            return static_cast<IHThorWebServiceCallExtra2 *>(this);
         }
+
         return NULL;
     }
     
