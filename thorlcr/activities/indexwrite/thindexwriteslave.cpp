@@ -167,7 +167,7 @@ public:
             }
         }
         assertex(!(helper->queryDiskRecordSize()->getMetaFlags() & MDFneedserialize));
-        maxDiskRecordSize = helper->queryDiskRecordSize()->isVariableSize() ? 4096 : helper->queryDiskRecordSize()->getFixedSize();
+        maxDiskRecordSize = helper->queryDiskRecordSize()->isVariableSize() ? KEYBUILD_MAXLENGTH : helper->queryDiskRecordSize()->getFixedSize();
         reportOverflow = false;
     }
 
