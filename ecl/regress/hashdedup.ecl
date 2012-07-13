@@ -33,3 +33,7 @@ count(d);
 //Whole record
 d2 := dedup(namesTable, hash);
 count(d2);
+
+//Whole record, unordered
+d3 := dedup(namesTable, all, hash, unordered);
+count(d3);

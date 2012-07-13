@@ -1797,6 +1797,7 @@ struct IHThorHashDistributeArg : public IHThorArg
 enum
 {
     HFDwholerecord  = 0x0001,
+    HFDunordered    = 0x0002
 };
 
 struct IHThorHashDedupArg : public IHThorArg
