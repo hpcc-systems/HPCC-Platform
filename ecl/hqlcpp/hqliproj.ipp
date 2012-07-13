@@ -26,6 +26,7 @@
 #include "hqlutil.hpp"
 
 //#define USE_IPROJECT_HASH
+//#define USE_MERGE
 
 enum ProjectExprKind
 {
@@ -228,7 +229,11 @@ struct ImplicitProjectOptions
 class ImplicitProjectInfo;
 
 class ComplexImplicitProjectInfo;
+#ifdef USE_MERGE
 class ImplicitProjectInfo : public MergingTransformInfo
+#else
+class ImplicitProjectInfo : public NewTransformInfo
+#endif
 {
 public:
     ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind);
@@ -338,11 +343,15 @@ public:
 public:
 };
 
-//MORE: Could remove dependency on insideCompound if it was ok to have compound operators scattered through the
-//      contents of a compound item.  Probably would cause few problems, and would make life simpler
+#ifdef USE_MERGE
 class ImplicitProjectTransformer : public MergingHqlTransformer
 {
     typedef MergingHqlTransformer Parent;
+#else
+class ImplicitProjectTransformer : public NewHqlTransformer
+{
+    typedef NewHqlTransformer Parent;
+#endif
 
 public:
     ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills);
@@ -364,6 +373,7 @@ protected:
 
     void calculateFieldsUsed(IHqlExpression * expr);
     void connect(IHqlExpression * source, IHqlExpression * sink);
+    IHqlExpression * createParentTransformed(IHqlExpression * expr);
     void finalizeFields();
     void finalizeFields(IHqlExpression * expr);
     void gatherFieldsUsed(IHqlExpression * expr, ImplicitProjectInfo * extra);

@@ -3258,9 +3258,9 @@ IHqlExpression * updateChildSelectors(IHqlExpression * expr, IHqlExpression * ol
 }
 
 
-IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newSelector, unsigned firstChild)
+IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector, unsigned firstChild)
 {
-    if (oldRecord == newSelector->queryRecord())
+    if (oldSelector->queryRecord() == newSelector->queryRecord())
         return LINK(expr);
 
     unsigned max = expr->numChildren();
@@ -3271,7 +3271,9 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldR
         args.append(*LINK(expr->queryChild(i)));
 
     NewSelectorReplacingTransformer transformer;
-    transformer.setRootMapping(newSelector, newSelector, oldRecord);
+    if (oldSelector != newSelector)
+        transformer.initSelectorMapping(oldSelector, newSelector);
+    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord());
     bool same = true;
     for (; i < max; i++)
     {
