@@ -34,7 +34,7 @@ template <byte length, byte precision> class decimal;
 class nbcd_decl TempDecimal
 {
 public:
-    TempDecimal() {} // does no initialization...
+    TempDecimal() { setZero(); }
     TempDecimal(const TempDecimal & other);
 
     TempDecimal & abs();
@@ -117,16 +117,16 @@ private:
 
 protected:
     enum { 
-        maxDigits=MAX_DECIMAL_DIGITS,
-        maxPrecision=MAX_DECIMAL_PRECISION,
-        maxIntegerDigits=MAX_DECIMAL_LEADING,
-        lastDigit = maxDigits-1, 
-        zeroDigit = (maxDigits-maxIntegerDigits), 
+        maxDigits=MAX_DECIMAL_DIGITS,             // Total buffer size (integer+decimal)
+        maxPrecision=MAX_DECIMAL_PRECISION,       // Size of decimal part
+        maxIntegerDigits=MAX_DECIMAL_LEADING,     // Size of integer part
+        lastDigit = maxDigits-1,                  // Last decimal digit
+        zeroDigit = (maxDigits-maxIntegerDigits), // Unity digit (decimal point)
     };
-    byte digits[maxDigits];                 // stored little endian.
-    byte msb;
-    byte lsb;
-    byte negative;                          // byte to allow ^ operation
+    byte digits[maxDigits];                       // stored little endian.
+    byte msb;                                     // Most significant integer digit
+    byte lsb;                                     // Least significant decimal digit
+    byte negative;                                // byte to allow ^ operation
 };
 
 
