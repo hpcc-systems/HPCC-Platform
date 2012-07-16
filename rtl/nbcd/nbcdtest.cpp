@@ -33,7 +33,17 @@ const char * hex = "0123456789ABCDEF";
 class NBcdTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(NBcdTest);
-        CPPUNIT_TEST(testBcd);
+        CPPUNIT_TEST(testBcdRandom);
+        CPPUNIT_TEST(testBcdUninitialized);
+        CPPUNIT_TEST(testBcdCString);
+        CPPUNIT_TEST(testBcdRoundTruncate);
+        CPPUNIT_TEST(testBcdDecimal);
+        CPPUNIT_TEST(testBcdInt);
+        CPPUNIT_TEST(testBcdMultiply);
+        CPPUNIT_TEST(testBcdDivideModulus);
+        CPPUNIT_TEST(testBcdCompare);
+        CPPUNIT_TEST(testBcdPower);
+        CPPUNIT_TEST(testBcdPrecision);
     CPPUNIT_TEST_SUITE_END();
 protected:
 
@@ -131,34 +141,50 @@ protected:
         ASSERT(strcmp(expected, temp) == 0);
     }
 
-
-    void testRandom()
+    // ========================================================= UNIT TESTS BELOW
+    void testBcdRandom()
     {
-        unsigned __int64 val1 = (rand() << 16) | rand();
-        unsigned __int64 val2 = (rand() << 16) | rand();
-        unsigned __int64 val3 = (rand() << 16) | rand();
-        unsigned __int64 val4 = (rand() << 16) | rand();
-
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 1000; i++)
         {
-            TempDecimal d1 = val1;
-            TempDecimal d2 = val2;
-            TempDecimal d3 = val3;
-            TempDecimal d4 = val4;
+            unsigned __int64 val1 = (rand() << 16) | rand();
+            unsigned __int64 val2 = (rand() << 16) | rand();
+            unsigned __int64 val3 = (rand() << 16) | rand();
+            unsigned __int64 val4 = (rand() << 16) | rand();
 
-            d1.multiply(d2);
-            d3.multiply(d4);
-            checkDecimal(d1, val1*val2);
-            checkDecimal(d3, val3*val4);
-            d2.set(d1);
-            d1.subtract(d3);
-            d2.add(d3);
-            checkDecimal(d1, (__int64)(val1*val2-val3*val4));
-            checkDecimal(d2, (val1*val2+val3*val4));
+            for (int i = 0; i < 2; i++)
+            {
+                TempDecimal d1 = val1;
+                TempDecimal d2 = val2;
+                TempDecimal d3 = val3;
+                TempDecimal d4 = val4;
+
+                d1.multiply(d2);
+                d3.multiply(d4);
+                checkDecimal(d1, val1*val2);
+                checkDecimal(d3, val3*val4);
+                d2.set(d1);
+                d1.subtract(d3);
+                d2.add(d3);
+                checkDecimal(d1, (__int64)(val1*val2-val3*val4));
+                checkDecimal(d2, (val1*val2+val3*val4));
+            }
         }
     }
     
-    void testBcd()
+    void testBcdUninitialized()
+    {
+        // Test uninitialised
+        TempDecimal zero, one=1, two(2);
+        checkDecimal(zero, 0ULL);
+        checkDecimal(one, 1ULL);
+        checkDecimal(two, 2ULL);
+        zero.add(one);
+        checkDecimal(zero, 1ULL);
+        zero.multiply(two);
+        checkDecimal(zero, 2ULL);
+    }
+
+    void testBcdCString()
     {
         TempDecimal a,b,c;
         a.setString(10,"1234.56789");   // 1234.56789
@@ -179,8 +205,12 @@ protected:
         b.subtract(a);
         b.getCString(sizeof(temp), temp);
         DBGLOG("-a = %s", temp);
+    }
 
-        c = "9.53456";
+    void testBcdRoundTruncate()
+    {
+        char temp[80];
+        TempDecimal c = "9.53456";
         checkDecimal(c, "9.53456");
         c.round(4);
         checkDecimal(c,"9.5346");
@@ -211,7 +241,44 @@ protected:
         c.truncate();
         checkDecimal(c, "9");
 
-        a = "123.2345";
+        TempDecimal x1 = 1;
+        x1.round(-3);
+        checkDecimal(x1, (__int64)0);
+        TempDecimal x2 = 100;
+        x2.round(-3);
+        checkDecimal(x2, (__int64)0);
+        TempDecimal x3 = 499;
+        x3.round(-3);
+        checkDecimal(x3, (__int64)0);
+        TempDecimal x4 = 500;
+        x4.round(-3);
+        checkDecimal(x4, (__int64)1000);
+        TempDecimal x5 = 1000;
+        x5.round(-3);
+        checkDecimal(x5, (__int64)1000);
+        TempDecimal x6 = 1499;
+        x6.round(-3);
+        checkDecimal(x6, (__int64)1000);
+        TempDecimal x7 = 1500;
+        x7.round(-3);
+        checkDecimal(x7, (__int64)2000);
+        TempDecimal x8 = 10000;
+        x8.round(-3);
+        checkDecimal(x8, (__int64)10000);
+        TempDecimal x9 = 10499;
+        x9.round(-3);
+        checkDecimal(x9, (__int64)10000);
+        TempDecimal x10 = 10500;
+        x10.round(-3);
+        checkDecimal(x10, (__int64)11000);
+        TempDecimal x11 = -10500;
+        x11.round(-3);
+        checkDecimal(x11, (__int64)-11000);
+    }
+
+    void testBcdDecimal()
+    {
+        TempDecimal a = "123.2345";
         unsigned decBufferSize=5;
         char decBuffer[7];
         char * decBufferPtr = decBuffer+1;
@@ -294,7 +361,11 @@ protected:
         checkDecimal(a, "1234567");
         a.setDecimal(5, 8, decBufferPtr);
         checkDecimal(a, "0.01234567");
+    }
 
+    void testBcdInt()
+    {
+        TempDecimal a, b;
         for (unsigned i1 = 0; i1 <= 1000; i1++)
         {
             a = i1;
@@ -317,7 +388,10 @@ protected:
             x.multiply(x);
             ASSERT(i2*i2 == (unsigned)x.getInt());
         }
+    }
 
+    void testBcdMultiply()
+    {
         testMultiply("-1","0","0");
         testMultiply("-1","2","-2");
         testMultiply("-1","-2","2");
@@ -336,13 +410,18 @@ protected:
         testMultiply("101","99009901","10000000001");
         testMultiply("0.000000000000000101","0.0000000000000000099009901","0");
         testMultiply("0.000000000000000101","0.000000000000000099009901","0.00000000000000000000000000000001");
+        testMultiply("109", "9174311926605504587155963302.75229357798165137614678899082568", "999999999999999999999999999999.99999999999999999999999999999912");
 
-        a = "9999999999999999";
-        b = "10000000000000002";
+        TempDecimal a = "9999999999999999";
+        TempDecimal b = "10000000000000002";
+        char temp[80];
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
         DBGLOG("9999999999999999*10000000000000002=%s (overflow)",temp);
+    }
 
+    void testBcdDivideModulus()
+    {
         //Divide
         testDivide("1","1","1");
         testDivide("125","5","25");
@@ -351,8 +430,6 @@ protected:
         testDivide("0.1234","20000000000000000000000000000000","0");
         testDivide("1","0.00000000000000000000000000000002", "50000000000000000000000000000000");
         testDivide("1","3", "0.33333333333333333333333333333333");
-
-        testMultiply("109", "9174311926605504587155963302.75229357798165137614678899082568", "999999999999999999999999999999.99999999999999999999999999999912");
         testDivide("1000000000000000000000000000000","109", "9174311926605504587155963302.75229357798165137614678899082568");
         testModulus("1000000000000000000000000000000","109", "82");
         testModulus("10","5","0");
@@ -360,7 +437,10 @@ protected:
         testModulus("10","-6","4");
         testModulus("-10","6","-4");
         testModulus("-10","-6","-4");
+    }
 
+    void testBcdCompare()
+    {
         testCompare("1","1.0000",0);
         testCompare("-1","1.0000",-1);
         testCompare("1","-1.0000",+1);
@@ -386,6 +466,10 @@ protected:
         testCompare("-1234.999","-1234.99",-1);
         testCompare("-1234.989","-1234.99",+1);
 
+    }
+
+    void testBcdPower()
+    {
         //MORE: Test power functions...
         const char * values[] = { "0.00001", "10000", "-1", "-10", "1.0001", "9.99" };
         TempDecimal one(1);
@@ -395,6 +479,7 @@ protected:
             TempDecimal sofar1 = 1;
             TempDecimal sofar2 = 1;
 
+            bool failed=false;
             for (int power = 0; power < 10; power++)
             {
                 TempDecimal powerValue1 = values[idx];
@@ -411,7 +496,7 @@ protected:
                     powerValue1.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
                     DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], power, temp2, temp1, temp3);
-                    ASSERT(!"nbcd power operation failed");
+                    failed=true;
                 }
                 if (sofar2.compare(powerValue2) != 0)
                 {
@@ -421,8 +506,7 @@ protected:
                     powerValue2.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
                     DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], -power, temp2, temp1, temp3);
-                    //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                    //ASSERT(!"nbcd power operation failed");
+                    failed=true;
                 }
 
                 //internal consistency test, but liable to rounding errors....
@@ -437,50 +521,19 @@ protected:
                         powerValue1.getCString(sizeof(temp2), temp2);
                         diff.getCString(sizeof(temp3), temp3);
                         DBGLOG("ERROR: %s^%d^-%d=%s (expected %s) diff %s", values[idx], power, power, temp2, temp1, temp3);
-                        //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                        //ASSERT(!"nbcd power operation failed");
+                        failed=true;
                     }
                 }
 
                 sofar1.multiply(value);
                 sofar2.divide(value);
             }
+            ASSERT(!failed);
         }
+    }
 
-        TempDecimal x1 = 1;
-        x1.round(-3);
-        checkDecimal(x1, (__int64)0);
-        TempDecimal x2 = 100;
-        x2.round(-3);
-        checkDecimal(x2, (__int64)0);
-        TempDecimal x3 = 499;
-        x3.round(-3);
-        checkDecimal(x3, (__int64)0);
-        TempDecimal x4 = 500;
-        x4.round(-3);
-        checkDecimal(x4, (__int64)1000);
-        TempDecimal x5 = 1000;
-        x5.round(-3);
-        checkDecimal(x5, (__int64)1000);
-        TempDecimal x6 = 1499;
-        x6.round(-3);
-        checkDecimal(x6, (__int64)1000);
-        TempDecimal x7 = 1500;
-        x7.round(-3);
-        checkDecimal(x7, (__int64)2000);
-        TempDecimal x8 = 10000;
-        x8.round(-3);
-        checkDecimal(x8, (__int64)10000);
-        TempDecimal x9 = 10499;
-        x9.round(-3);
-        checkDecimal(x9, (__int64)10000);
-        TempDecimal x10 = 10500;
-        x10.round(-3);
-        checkDecimal(x10, (__int64)11000);
-        TempDecimal x11 = -10500;
-        x11.round(-3);
-        checkDecimal(x11, (__int64)-11000);
-
+    void testBcdPrecision()
+    {
         //check rounding is done correctly to number of significant digits
         checkDecimal(9999999.12, "9999999.12");
         checkDecimal(-9999999.12, "-9999999.12");
@@ -494,15 +547,11 @@ protected:
         checkDecimal(99999991234567890.00, "99999991234567900");
         checkDecimal(-99999991234567890.00, "-99999991234567900");
 
-
-// in vc++ these real constants seem to only have 14 significant digits
+        // in vc++ these real constants seem to only have 14 significant digits
 //      checkDecimal(0.99999991234567800, "0.999999912345678");
 //      checkDecimal(0.99999991234567890, "0.999999912345679");
 //      checkDecimal(0.099999991234567800, "0.0999999912345678");
 //      checkDecimal(0.099999991234567890, "0.0999999912345679");
-
-        for (int i = 0; i < 1000; i++)
-            testRandom();
     }
 };
 
