@@ -30,10 +30,24 @@ const char * hex = "0123456789ABCDEF";
 #include <cppunit/extensions/HelperMacros.h>
 #define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 
+// Usage: ASSERT(check(statement, "error: foo bar %d", variable));
+//    or: success &= check(statement, "error: foo bar %d", variable);
+bool check(bool condition, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+bool check(bool condition, const char *fmt, ...)
+{
+    if (!condition)
+    {
+        va_list args;
+        va_start(args, fmt);
+        VALOG(MCuserError, unknownJob, fmt, args);
+        va_end(args);
+    }
+    return condition;
+}
+
 class NBcdTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(NBcdTest);
-        CPPUNIT_TEST(testBcdRandom);
         CPPUNIT_TEST(testBcdUninitialized);
         CPPUNIT_TEST(testBcdCString);
         CPPUNIT_TEST(testBcdRoundTruncate);
@@ -42,6 +56,8 @@ class NBcdTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testBcdMultiply);
         CPPUNIT_TEST(testBcdDivideModulus);
         CPPUNIT_TEST(testBcdCompare);
+        // Failing tests (due to precision)
+        CPPUNIT_TEST(testBcdRandom);
         CPPUNIT_TEST(testBcdPower);
         CPPUNIT_TEST(testBcdPrecision);
     CPPUNIT_TEST_SUITE_END();
@@ -67,12 +83,12 @@ protected:
         TempDecimal b = right;
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testMultiply/getCString: expected '%s', got '%s'", expected, temp));
         DecPushCString(left);
         DecPushCString(right);
         DecMul();
         DecPopCString(sizeof(temp),temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testMultiply/DecMul: expected '%s', got '%s'", expected, temp));
     }
 
     void testDivide(const char * left, const char * right, const char * expected)
@@ -82,12 +98,12 @@ protected:
         TempDecimal b = right;
         a.divide(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp));
         DecPushCString(left);
         DecPushCString(right);
         DecDivide();
         DecPopCString(sizeof(temp),temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testDivide/DecDivide: expected '%s', got '%s'", expected, temp));
     }
 
     void testCompare(const char * left, const char * right, int expected)
@@ -95,14 +111,14 @@ protected:
         TempDecimal a = left;
         TempDecimal b = right;
         int temp = a.compare(b);
-        ASSERT(temp == expected);
+        ASSERT(check(temp == expected, "ERROR: testCompare/positive: expected '%d', got '%d'", expected, temp));
         temp = b.compare(a);
-        ASSERT(temp == -expected);
+        ASSERT(check(temp == -expected, "ERROR: testCompare/negative: expected '%d', got '%d'", expected, temp));
 
         DecPushCString(left);
         DecPushCString(right);
         temp = DecDistinct();
-        ASSERT(expected == temp);
+        ASSERT(check(expected == temp, "ERROR: testCompare/DecDistinct: expected '%d', got '%d'", expected, temp));
     }
 
     void testModulus(const char * left, const char * right, const char * expected)
@@ -112,33 +128,33 @@ protected:
         TempDecimal b = right;
         a.modulus(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp));
     }
 
     void checkDecimal(const TempDecimal & value, const char * expected)
     {
         char temp[80];
         value.getCString(sizeof(temp), temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: checkDecimal: expected '%s', got '%s'", expected, temp));
     }
 
     void checkDecimal(const TempDecimal & value, unsigned __int64 expected)
     {
         unsigned __int64 temp = value.getUInt64();
-        ASSERT(expected == temp)
+        ASSERT(check(expected == temp, "ERROR: checkDecimal/uint64: expected '%" I64F "d', got '%" I64F "d'", expected, temp));
     }
 
     void checkDecimal(const TempDecimal & value, __int64 expected)
     {
         __int64 temp = value.getInt64();
-        ASSERT(expected == temp);
+        ASSERT(check(expected == temp, "ERROR: checkDecimal/int64: expected '%" I64F "d', got '%" I64F "d'", expected, temp));
     }
 
     void checkBuffer(const void * buffer, const char * expected)
     {
         char temp[40];
         expandHex(buffer, strlen(expected)/2, temp);
-        ASSERT(strcmp(expected, temp) == 0);
+        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: checkBuffer: expected '%s', got '%s'", expected, temp));
     }
 
     // ========================================================= UNIT TESTS BELOW
@@ -193,18 +209,18 @@ protected:
 
         char temp[80];
         a.getCString(sizeof(temp), temp);
-        DBGLOG("a = %s", temp);
+        check(strcmp("1234.56789", temp) == 0, "ERROR: testBcdCString/a: expected '1234.56789', got '%s'", temp);
         b.getCString(sizeof(temp), temp);
-        DBGLOG("b = %s", temp);
+        check(strcmp("123456", temp) == 0, "ERROR: testBcdCString/b: expected '123456', got '%s'", temp);
         c.getCString(sizeof(temp), temp);
-        DBGLOG("c = %s", temp);
+        check(strcmp("0.123", temp) == 0, "ERROR: testBcdCString/c: expected '0.123', got '%s'", temp);
 
         a.add(b);
         a.getCString(sizeof(temp), temp);
-        DBGLOG("a+b = %s", temp);
+        check(strcmp("124690.56789", temp) == 0, "ERROR: testBcdCString/a+b: expected '124690.56789', got '%s'", temp);
         b.subtract(a);
         b.getCString(sizeof(temp), temp);
-        DBGLOG("-a = %s", temp);
+        check(strcmp("-1234.56789", temp) == 0, "ERROR: testBcdCString/-a: expected '-1234.56789', got '%s'", temp);
     }
 
     void testBcdRoundTruncate()
@@ -228,8 +244,8 @@ protected:
 
         c = 1234567.8901234567;
         c.getCString(sizeof(temp), temp);
-        DBGLOG("1234567.89012346 = %s (cstr)", temp);
-        DBGLOG("1234567.89012346 = %.8f (real)", c.getReal());
+        ASSERT(check(c.getReal() == 1234567.890123457, "ERROR: testBcdRoundTruncate/real: expected '1234567.890123457', got '%.8f'", c.getReal()));
+        ASSERT(check(strcmp("1234567.890123457", temp) == 0, "ERROR: testBcdRoundTruncate/cstr: expected '1234567.890123457', got '%s'", temp));
 
         c = "9.53456";
         c.truncate(4);
@@ -369,14 +385,14 @@ protected:
         for (unsigned i1 = 0; i1 <= 1000; i1++)
         {
             a = i1;
-            ASSERT(a.getUInt() == i1);
+            ASSERT(check(a.getUInt() == i1, "ERROR: testBcdInt/getUInt: expected '%d', got '%d'", i1, a.getUInt()));
         }
         for (unsigned i3 = 0; i3 <= 100; i3++)
         {
             a = i3;
             b = 10;
             a.multiply(b);
-            ASSERT(a.getUInt() == i3*10);
+            ASSERT(check(a.getUInt() == i3*10, "ERROR: testBcdInt/getUInt*3: expected '%d', got '%d'", i3*10, a.getUInt()));
         }
 
         for (unsigned i2 = 0; i2 <= 100; i2++)
@@ -384,9 +400,9 @@ protected:
             TempDecimal x = i2;
             TempDecimal y = 100;
             y.multiply(x);
-            ASSERT(100*i2 == (unsigned)y.getInt());
+            ASSERT(check(100*i2 == (unsigned)y.getInt(), "ERROR: testBcdInt/getInt*100: expected '%d', got '%d'", 100*i2, y.getInt()));
             x.multiply(x);
-            ASSERT(i2*i2 == (unsigned)x.getInt());
+            ASSERT(check(i2*i2 == (unsigned)x.getInt(), "ERROR: testBcdInt/getInt*getInt: expected '%d', got '%d'", i2*i2, x.getInt()));
         }
     }
 
@@ -417,7 +433,7 @@ protected:
         char temp[80];
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
-        DBGLOG("9999999999999999*10000000000000002=%s (overflow)",temp);
+        ASSERT(check(strcmp("9999999999999998", temp) == 0, "ERROR: testBcdMultiply/overflow: expected '9999999999999998', got '%s'", temp));
     }
 
     void testBcdDivideModulus()
@@ -479,6 +495,7 @@ protected:
             TempDecimal sofar1 = 1;
             TempDecimal sofar2 = 1;
 
+            bool success=true;
             for (int power = 0; power < 10; power++)
             {
                 TempDecimal powerValue1 = values[idx];
@@ -494,8 +511,7 @@ protected:
                     sofar1.getCString(sizeof(temp1), temp1);
                     powerValue1.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
-                    DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], power, temp2, temp1, temp3);
-                    ASSERT(!"nbcd power operation failed");
+                    success &= check(false, "ERROR: %s^%d=%s (expected %s) diff %s", values[idx], power, temp2, temp1, temp3);
                 }
                 if (sofar2.compare(powerValue2) != 0)
                 {
@@ -504,9 +520,7 @@ protected:
                     sofar2.getCString(sizeof(temp1), temp1);
                     powerValue2.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
-                    DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], -power, temp2, temp1, temp3);
-                    //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                    //ASSERT(!"nbcd power operation failed");
+                    success &= check(false, "ERROR: %s^%d=%s (expected %s) diff %s", values[idx], -power, temp2, temp1, temp3);
                 }
 
                 //internal consistency test, but liable to rounding errors....
@@ -520,15 +534,14 @@ protected:
                         one.getCString(sizeof(temp1), temp1);
                         powerValue1.getCString(sizeof(temp2), temp2);
                         diff.getCString(sizeof(temp3), temp3);
-                        DBGLOG("ERROR: %s^%d^-%d=%s (expected %s) diff %s", values[idx], power, power, temp2, temp1, temp3);
-                        //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                        //ASSERT(!"nbcd power operation failed");
+                        success &= check(false, "ERROR: %s^%d^-%d=%s (expected %s) diff %s", values[idx], power, power, temp2, temp1, temp3);
                     }
                 }
 
                 sofar1.multiply(value);
                 sofar2.divide(value);
             }
+            ASSERT(check(success, "ERROR: testBcdPower: one or more errors detected above."));
         }
     }
 
