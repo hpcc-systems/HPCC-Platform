@@ -479,6 +479,7 @@ protected:
             TempDecimal sofar1 = 1;
             TempDecimal sofar2 = 1;
 
+            bool failed=false;
             for (int power = 0; power < 10; power++)
             {
                 TempDecimal powerValue1 = values[idx];
@@ -495,7 +496,7 @@ protected:
                     powerValue1.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
                     DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], power, temp2, temp1, temp3);
-                    ASSERT(!"nbcd power operation failed");
+                    failed=true;
                 }
                 if (sofar2.compare(powerValue2) != 0)
                 {
@@ -505,8 +506,7 @@ protected:
                     powerValue2.getCString(sizeof(temp2), temp2);
                     diff.getCString(sizeof(temp3), temp3);
                     DBGLOG("ERROR: %s^%d=%s (expected %s) diff %s", values[idx], -power, temp2, temp1, temp3);
-                    //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                    //ASSERT(!"nbcd power operation failed");
+                    failed=true;
                 }
 
                 //internal consistency test, but liable to rounding errors....
@@ -521,14 +521,14 @@ protected:
                         powerValue1.getCString(sizeof(temp2), temp2);
                         diff.getCString(sizeof(temp3), temp3);
                         DBGLOG("ERROR: %s^%d^-%d=%s (expected %s) diff %s", values[idx], power, power, temp2, temp1, temp3);
-                        //Report a message, but not an error, because rounding errors are fairly unavoidable.
-                        //ASSERT(!"nbcd power operation failed");
+                        failed=true;
                     }
                 }
 
                 sofar1.multiply(value);
                 sofar2.divide(value);
             }
+            ASSERT(!failed);
         }
     }
 
