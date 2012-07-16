@@ -44,11 +44,74 @@ typedef byte transformdepth_t;
 
 class CHqlExprMeta;
 
-class HQL_API CHqlExpression : implements IHqlExpression, public CInterface
+//class HQL_API CHqlExpression : implements IHqlExpression, public CInterface
+class HQL_API CHqlDynamicAttribute
+{
+    friend class CHqlExpression;
+public:
+    inline CHqlDynamicAttribute(_ATOM _name, IHqlExpression *_value)
+        : name(_name), value(_value)
+    {
+        next = NULL;
+    }
+    ~CHqlDynamicAttribute() { delete next; }
+
+protected:
+    _ATOM name;
+    CHqlDynamicAttribute * next;
+    LinkedHqlExpr value;
+};
+
+class CUsedTablesBuilder;
+
+//Optimized representation of the number of used tables
+//Special case a single row and don't create a child array
+//Create once all the processing is done so the array is exactly the right size.
+class HQL_API CUsedTables
+{
+public:
+    CUsedTables();
+    ~CUsedTables();
+
+    inline bool isIndependentOfScope() const { return (numActiveTables == 0); }
+    bool usesSelector(IHqlExpression * selector) const;
+    void gatherTablesUsed(CUsedTablesBuilder & used) const;
+    void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) const;
+    void set(HqlExprCopyArray & _activeTables, HqlExprCopyArray & _newTables);
+    void setActiveTable(IHqlExpression * expr);
+
+private:
+    union
+    {
+        IHqlExpression * single;
+        IHqlExpression * * multi;
+    } tables;
+    unsigned numTables;
+    unsigned numActiveTables;
+};
+
+class HQL_API CUsedTablesBuilder
+{
+public:
+    void addNewTable(IHqlExpression * expr);
+    void addHiddenTable(IHqlExpression * expr, IHqlExpression * selSeq);
+    void addActiveTable(IHqlExpression * expr);
+    void cleanupProduction();
+    inline void removeActive(IHqlExpression * expr) { inScopeTables.zap(*expr); }
+    void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
+    void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
+
+protected:
+    HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
+    HqlExprCopyArray newScopeTables;
+};
+
+class HQL_API CHqlExpression : public CInterfaceOf<IHqlExpression>
 {
 public:
     friend HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
     friend class CHqlExprMeta;
+    typedef CInterfaceOf<IHqlExpression> Parent;
 
 #ifdef USE_TBB
     void *operator new(size32_t size) { return scalable_malloc(size); }
@@ -56,21 +119,18 @@ public:
 #endif
 
 protected:
-    unsigned hashcode;          // CInterface is 4 byte aligned in 64bits
+    unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
     ITypeInfo *type;
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
-    OwnedHqlExpr locationIndependent;
     unsigned cachedCRC;
     unsigned infoFlags;
     node_operator op;                           // 2 bytes
     unsigned short infoFlags2;
     transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
 
+    CHqlDynamicAttribute * attributes;
     HqlExprArray operands;
-    HqlExprArray attributes;
-    HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
-    HqlExprCopyArray newScopeTables;
-
+    CUsedTables usedTables;
 
 protected:
     //protected virtual members not in public interface
@@ -105,14 +165,14 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void cacheChildrenTablesUsed(unsigned from, unsigned to);
-    void cacheInheritChildTablesUsed(IHqlExpression * ds, HqlExprCopyArray & childInScopeTables);
-    void cachePotentialTablesUsed();
-    void cacheTablesProcessChildScope();
+    void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
+    void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
+    void cachePotentialTablesUsed(CUsedTablesBuilder & used);
+    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
     void cacheTablesUsed();
-    void cacheTableUseage(IHqlExpression * expr);
+    void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
 
-    void addAttributeOwn(IHqlExpression * attr);
+    void addAttribute(_ATOM name, IHqlExpression * value);
 
 public:
     virtual void Link(void) const;
@@ -172,6 +232,7 @@ public:
     virtual unsigned numChildren() const ;
     virtual bool isIndependentOfScope();
     virtual bool usesSelector(IHqlExpression * selector);
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
 
     virtual ITypeInfo *queryRecordType();
@@ -206,16 +267,6 @@ public:
     
     virtual void beforeDispose();               // called before item is freed so whole object still valid
     virtual unsigned getSymbolFlags() const;
-
-    void setLocationIndependent(IHqlExpression * value);
-    inline IHqlExpression * queryLocationIndependent()
-    {
-        if (!(infoFlags & HEFhasunadorned))
-            return NULL;
-        if (locationIndependent)
-            return locationIndependent;
-        return this;
-    }
 
 public:
     inline void doSetTransformExtra(IInterface * x, unsigned depthMask);
@@ -354,6 +405,7 @@ public:
     virtual unsigned numChildren() const;
     virtual bool isIndependentOfScope();
     virtual bool usesSelector(IHqlExpression * selector);
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
     virtual IValue *queryValue() const;
     virtual IInterface *queryUnknownExtra();

@@ -2541,7 +2541,7 @@ class PseudoPatternScope : public CHqlScope
 {
 public:
     PseudoPatternScope(IHqlExpression * _patternList);
-    IMPLEMENT_IINTERFACE
+    IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
@@ -11094,6 +11094,13 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 
 void testHqlInternals()
 {
+    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u)\n",
+            (unsigned)sizeof(CHqlConstant),
+            (unsigned)sizeof(CHqlExpression),
+            (unsigned)sizeof(CHqlSelectExpression),
+            (unsigned)sizeof(CHqlDataset),
+            (unsigned)sizeof(CHqlAnnotation));
+
     //
     // test getOpString()
     int error = 0,i;

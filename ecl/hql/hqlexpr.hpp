@@ -1055,6 +1055,7 @@ extern HQL_API int getPrecedence(node_operator op);
 
 struct BindParameterContext;
 interface IHqlAnnotation;
+class HQL_API CUsedTablesBuilder;
 interface IHqlExpression : public IInterface
 {
     virtual _ATOM queryName() const = 0;
@@ -1135,7 +1136,6 @@ interface IHqlExpression : public IInterface
     virtual unsigned getSymbolFlags() const = 0;              // only valid for a named symbol
     virtual bool isExported() const = 0;
 
-    virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const = 0;
 
 // The following are added to allow efficient storage/retreival in a hashtable.
@@ -1144,6 +1144,11 @@ interface IHqlExpression : public IInterface
     virtual unsigned            getHash() const = 0;
     virtual bool                equals(const IHqlExpression & other) const = 0;
 
+//purely used for internal processing.  Should not be called directly
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used) = 0;
+    virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
+
+public:
 // The following inline functions are purely derived from the functions in this interface
     inline int getPrecedence() const { return ::getPrecedence(getOperator()); }
     inline bool isAnnotation() const { return getAnnotationKind() != annotate_none; }
