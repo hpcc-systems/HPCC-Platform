@@ -31,6 +31,22 @@
 
 template <byte length, byte precision> class decimal;
 
+/*
+ * Decimal implements Binary Coded Decimal (BCD) arithmetic.
+ *
+ * The internal representation is an array of digits, with size
+ * equals maxDigits, divided in two sections:
+ *  * 0~max/2: integer part
+ *  * max/2+1~max: decimal part
+ *
+ * The decimal point is always in the middle and msb and lsb
+ * point to the beginning of the integer part and the end
+ * of the decimal part. Sign is a boolean flag, but represented
+ * with standard C/D/F flags (+/-/unsigned) in BCD format.
+ *
+ * This class is notably used in the Decimal run-time library
+ * (nbcds.cpp), providing decimal arithmetic to ECL programs.
+ */
 class nbcd_decl TempDecimal
 {
 public:

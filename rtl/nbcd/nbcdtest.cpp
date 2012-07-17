@@ -28,22 +28,35 @@ const char * hex = "0123456789ABCDEF";
 
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
-#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 
-// Usage: ASSERT(check(statement, "error: foo bar %d", variable));
-//    or: success &= check(statement, "error: foo bar %d", variable);
-bool check(bool condition, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-bool check(bool condition, const char *fmt, ...)
+// Usage: success &= check(statement, "error: foo bar %d", variable);
+static bool check(bool condition, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+static bool check(bool condition, const char *fmt, ...)
 {
     if (!condition)
     {
         va_list args;
         va_start(args, fmt);
-        VALOG(MCuserError, unknownJob, fmt, args);
+        VALOG(MCdebugInfo, unknownJob, fmt, args);
         va_end(args);
     }
     return condition;
 }
+
+// Usage: cppunit_assert(statement, "error: foo bar %d", variable));
+static void cppunit_assert(bool condition, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+static void cppunit_assert(bool condition, const char *fmt, ...)
+{
+    if (!condition)
+    {
+        va_list args;
+        va_start(args, fmt);
+        VALOG(MCdebugInfo, unknownJob, fmt, args);
+        va_end(args);
+        CPPUNIT_ASSERT(!"Please refer to the errors above");
+    }
+}
+// Do not use: cppunit_cppunit_assert(condition, "string")), as that will print the string twice
 
 class NBcdTest : public CppUnit::TestFixture  
 {
@@ -83,12 +96,12 @@ protected:
         TempDecimal b = right;
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testMultiply/getCString: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testMultiply/getCString: expected '%s', got '%s'", expected, temp);
         DecPushCString(left);
         DecPushCString(right);
         DecMul();
         DecPopCString(sizeof(temp),temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testMultiply/DecMul: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testMultiply/DecMul: expected '%s', got '%s'", expected, temp);
     }
 
     void testDivide(const char * left, const char * right, const char * expected)
@@ -98,12 +111,12 @@ protected:
         TempDecimal b = right;
         a.divide(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp);
         DecPushCString(left);
         DecPushCString(right);
         DecDivide();
         DecPopCString(sizeof(temp),temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testDivide/DecDivide: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/DecDivide: expected '%s', got '%s'", expected, temp);
     }
 
     void testCompare(const char * left, const char * right, int expected)
@@ -111,14 +124,14 @@ protected:
         TempDecimal a = left;
         TempDecimal b = right;
         int temp = a.compare(b);
-        ASSERT(check(temp == expected, "ERROR: testCompare/positive: expected '%d', got '%d'", expected, temp));
+        cppunit_assert(temp == expected, "ERROR: testCompare/positive: expected '%d', got '%d'", expected, temp);
         temp = b.compare(a);
-        ASSERT(check(temp == -expected, "ERROR: testCompare/negative: expected '%d', got '%d'", expected, temp));
+        cppunit_assert(temp == -expected, "ERROR: testCompare/negative: expected '%d', got '%d'", expected, temp);
 
         DecPushCString(left);
         DecPushCString(right);
         temp = DecDistinct();
-        ASSERT(check(expected == temp, "ERROR: testCompare/DecDistinct: expected '%d', got '%d'", expected, temp));
+        cppunit_assert(expected == temp, "ERROR: testCompare/DecDistinct: expected '%d', got '%d'", expected, temp);
     }
 
     void testModulus(const char * left, const char * right, const char * expected)
@@ -128,33 +141,33 @@ protected:
         TempDecimal b = right;
         a.modulus(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp);
     }
 
     void checkDecimal(const TempDecimal & value, const char * expected)
     {
         char temp[80];
         value.getCString(sizeof(temp), temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: checkDecimal: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: checkDecimal/char: expected '%s', got '%s'", expected, temp);
     }
 
     void checkDecimal(const TempDecimal & value, unsigned __int64 expected)
     {
         unsigned __int64 temp = value.getUInt64();
-        ASSERT(check(expected == temp, "ERROR: checkDecimal/uint64: expected '%" I64F "d', got '%" I64F "d'", expected, temp));
+        cppunit_assert(expected == temp, "ERROR: checkDecimal/uint64: expected '%" I64F "d', got '%" I64F "d'", expected, temp);
     }
 
     void checkDecimal(const TempDecimal & value, __int64 expected)
     {
         __int64 temp = value.getInt64();
-        ASSERT(check(expected == temp, "ERROR: checkDecimal/int64: expected '%" I64F "d', got '%" I64F "d'", expected, temp));
+        cppunit_assert(expected == temp, "ERROR: checkDecimal/int64: expected '%" I64F "d', got '%" I64F "d'", expected, temp);
     }
 
     void checkBuffer(const void * buffer, const char * expected)
     {
         char temp[40];
         expandHex(buffer, strlen(expected)/2, temp);
-        ASSERT(check(strcmp(expected, temp) == 0, "ERROR: checkBuffer: expected '%s', got '%s'", expected, temp));
+        cppunit_assert(strcmp(expected, temp) == 0, "ERROR: checkBuffer: expected '%s', got '%s'", expected, temp);
     }
 
     // ========================================================= UNIT TESTS BELOW
@@ -162,10 +175,11 @@ protected:
     {
         for (int i = 0; i < 1000; i++)
         {
-            unsigned __int64 val1 = (rand() << 16) | rand();
-            unsigned __int64 val2 = (rand() << 16) | rand();
-            unsigned __int64 val3 = (rand() << 16) | rand();
-            unsigned __int64 val4 = (rand() << 16) | rand();
+            // 14-digit numbers, multiplications can't pass 28 digits (32 max)
+            unsigned __int64 val1 = ((__int64) rand() << 16) | rand();
+            unsigned __int64 val2 = ((__int64) rand() << 16) | rand();
+            unsigned __int64 val3 = ((__int64) rand() << 16) | rand();
+            unsigned __int64 val4 = ((__int64) rand() << 16) | rand();
 
             for (int i = 0; i < 2; i++)
             {
@@ -242,11 +256,6 @@ protected:
         c.round(-3);
         checkDecimal(c, "1235000");
 
-        c = 1234567.8901234567;
-        c.getCString(sizeof(temp), temp);
-        ASSERT(check(c.getReal() == 1234567.890123457, "ERROR: testBcdRoundTruncate/real: expected '1234567.890123457', got '%.8f'", c.getReal()));
-        ASSERT(check(strcmp("1234567.890123457", temp) == 0, "ERROR: testBcdRoundTruncate/cstr: expected '1234567.890123457', got '%s'", temp));
-
         c = "9.53456";
         c.truncate(4);
         checkDecimal(c, "9.5345");
@@ -290,6 +299,11 @@ protected:
         TempDecimal x11 = -10500;
         x11.round(-3);
         checkDecimal(x11, (__int64)-11000);
+
+        c = 1234567.8901234567;
+        c.getCString(sizeof(temp), temp);
+        cppunit_assert(strcmp("1234567.8901234567", temp) == 0, "ERROR: testBcdRoundTruncate/cstr: expected '1234567.8901234567', got '%s'", temp);
+        cppunit_assert(c.getReal() == 1234567.8901234567, "ERROR: testBcdRoundTruncate/real: expected '1234567.8901234567', got '%.8f'", c.getReal());
     }
 
     void testBcdDecimal()
@@ -385,14 +399,14 @@ protected:
         for (unsigned i1 = 0; i1 <= 1000; i1++)
         {
             a = i1;
-            ASSERT(check(a.getUInt() == i1, "ERROR: testBcdInt/getUInt: expected '%d', got '%d'", i1, a.getUInt()));
+            cppunit_assert(a.getUInt() == i1, "ERROR: testBcdInt/getUInt: expected '%d', got '%d'", i1, a.getUInt());
         }
         for (unsigned i3 = 0; i3 <= 100; i3++)
         {
             a = i3;
             b = 10;
             a.multiply(b);
-            ASSERT(check(a.getUInt() == i3*10, "ERROR: testBcdInt/getUInt*3: expected '%d', got '%d'", i3*10, a.getUInt()));
+            cppunit_assert(a.getUInt() == i3*10, "ERROR: testBcdInt/getUInt*3: expected '%d', got '%d'", i3*10, a.getUInt());
         }
 
         for (unsigned i2 = 0; i2 <= 100; i2++)
@@ -400,9 +414,9 @@ protected:
             TempDecimal x = i2;
             TempDecimal y = 100;
             y.multiply(x);
-            ASSERT(check(100*i2 == (unsigned)y.getInt(), "ERROR: testBcdInt/getInt*100: expected '%d', got '%d'", 100*i2, y.getInt()));
+            cppunit_assert(100*i2 == (unsigned)y.getInt(), "ERROR: testBcdInt/getInt*100: expected '%d', got '%d'", 100*i2, y.getInt());
             x.multiply(x);
-            ASSERT(check(i2*i2 == (unsigned)x.getInt(), "ERROR: testBcdInt/getInt*getInt: expected '%d', got '%d'", i2*i2, x.getInt()));
+            cppunit_assert(i2*i2 == (unsigned)x.getInt(), "ERROR: testBcdInt/getInt*getInt: expected '%d', got '%d'", i2*i2, x.getInt());
         }
     }
 
@@ -433,7 +447,7 @@ protected:
         char temp[80];
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
-        ASSERT(check(strcmp("9999999999999998", temp) == 0, "ERROR: testBcdMultiply/overflow: expected '9999999999999998', got '%s'", temp));
+        cppunit_assert(strcmp("9999999999999998", temp) == 0, "ERROR: testBcdMultiply/overflow: expected '9999999999999998', got '%s'", temp);
     }
 
     void testBcdDivideModulus()
@@ -541,7 +555,7 @@ protected:
                 sofar1.multiply(value);
                 sofar2.divide(value);
             }
-            ASSERT(check(success, "ERROR: testBcdPower: one or more errors detected above."));
+            cppunit_assert(success, "ERROR: testBcdPower: one or more errors detected above.");
         }
     }
 
