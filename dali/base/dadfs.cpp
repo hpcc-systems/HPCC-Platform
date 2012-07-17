@@ -4084,78 +4084,63 @@ protected:
         StringBuffer subname;
         subfiles.kill();
 
-        // First, find all subfiles listed in the superfile
-        unsigned n=root->getPropInt("@numsubfiles");
-        IPropertyTree **subs;
+        unsigned n = root->getPropInt("@numsubfiles");
+        if (n == 0)
+            return;
         try {
-            // MORE - use ArrayOf<IPropertyTree>
-            subs = (IPropertyTree **)calloc(sizeof(IPropertyTree *),n);
+            // Find all reported indexes and bail on bad range (before we lock any file)
             Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-            // Find all reported indexes and bail on bad range
-            ForEach (*subit) {
+            unsigned index = 1; // indexes must be in order
+            ForEach (*subit)
+            {
                 IPropertyTree &sub = subit->query();
                 unsigned sn = sub.getPropInt("@num",0);
-                if ((sn>0)&&(sn<=n))
-                    subs[sn-1] = &sub;
-                else
-                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d",logicalName.get(),sn,n);
+                if (sn != index++ || sn > n)
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d", logicalName.get(), sn, n);
             }
-            // Pre-check, to make sure we got all files in the range before we lock any sub-file
-            for (unsigned i=0;i<n;i++) {
-                if (!subs[i])
-                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file part %d cannot be found",logicalName.get(),i+1);
-            }
-            // Now try to resolve them all (file/superfile) MORE - fix this with URIs
-            for (unsigned i=0;i<n;i++) {
-                IPropertyTree *sub = subs[i];
-                sub->getProp("@name",subname.clear());
+            if (--index != n)
+                ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad number of files. Expecting %d, got %d", logicalName.get(), n, index);
+
+            // Now try to resolve them all (file/superfile)
+            subit->first();
+            ForEach (*subit)
+            {
+                IPropertyTree &sub = subit->query();
+                sub.getProp("@name",subname.clear());
                 Owned<IDistributedFile> subfile;
                 subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(),udesc,false,transaction,timeout));
                 if (!subfile.get())
                     subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,timeout));
+
                 // Some files are ok not to exist
-                if (!subfile.get()) {
-                    CDfsLogicalFileName tmpsub;
-                    tmpsub.set(subname);
-                    if (tmpsub.isForeign()) {
-                        // MORE - This code is ugly
-                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file %s is foreign, removing it from super",logicalName.get(),subname.str());
-                        root->removeTree(sub);
-                        for (unsigned j=i+1;j<n; j++) {
-                            sub = subs[j];
-                            if (sub)
-                                sub->setPropInt("@num",j);
-                            if (j==1) {
-                                resetFileAttr(createPTreeFromIPT(sub->queryPropTree("Attr")));
-                            }
-                            subs[j-1] = sub;
-                            subs[j] = NULL;
-                        }
-                        n--;
-                        if ((i==0)&&(n==0)) {
-                            resetFileAttr(getEmptyAttr());
-                        }
-                        i--; // will get incremented by for
+                if (!subfile.get())
+                {
+                    CDfsLogicalFileName cdfsl;
+                    cdfsl.set(subname);
+                    if (cdfsl.isForeign())
+                    {
+                        // MORE - This foreign treatment seems flaky at best
+                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, removing it from super", logicalName.get(), subname.str());
+                        root->removeTree(&sub);
                         continue;
                     }
                     else
-                        ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file part %d cannot be found",logicalName.get(),i+1);
+                        ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
                 }
                 subfiles.append(*subfile.getClear());
             }
-            if (subfiles.ordinality()<n)
+            // This is *only* due to foreign files
+            if (subfiles.ordinality() != n)
             {
-                WARNLOG("CDistributedSuperFile: SuperFile %s: less subfiles than expected: found %d, expecting %d",logicalName.get(), n, subfiles.ordinality());
-                root->setPropInt("@numsubfiles",subfiles.ordinality());
+                WARNLOG("CDistributedSuperFile: SuperFile %s's number of sub-files updated to %d", logicalName.get(), subfiles.ordinality());
+                root->setPropInt("@numsubfiles", subfiles.ordinality());
             }
         }
         catch (IException *) {
             partscache.kill();
             subfiles.kill();    // one out, all out
-            free(subs);
             throw;
         }
-        free(subs);
     }
 
     void addItem(unsigned pos,IDistributedFile *_file)
