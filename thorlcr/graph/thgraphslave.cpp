@@ -382,7 +382,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
     if (needActInit)
     {
         mptag_t replyTag = TAG_NULL;
-        unsigned len;
+        size32_t len;
         CMessageBuffer actInitRtnData;
         actInitRtnData.append(false);
         CMessageBuffer msg;
@@ -555,7 +555,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 throw MakeStringException(0, "Error receiving createctx data for graph: %"GIDPF"d", graphId);
             try
             {
-                unsigned len;
+                size32_t len;
                 msg.read(len);
                 if (len)
                 {
@@ -595,7 +595,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 msg.append(graphId);
                 if (!queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
                     throwUnexpected();
-                unsigned len;
+                size32_t len;
                 msg.read(len);
                 if (len)
                     deserializeCreateContexts(msg);

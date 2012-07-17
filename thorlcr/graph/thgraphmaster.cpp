@@ -2032,8 +2032,7 @@ void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
 bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter)
 {
     CriticalBlock b(createdCrit);
-    unsigned pos=mb.length();
-    mb.append((unsigned)0);
+    DelayedSizeMarker sizeMark1(mb);
     ForEach (iter)
     {
         CMasterGraphElement &element = (CMasterGraphElement &)iter.query();
@@ -2043,19 +2042,16 @@ bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, I
             if (activity)
             {
                 mb.append(element.queryId());
-                unsigned pos = mb.length();
-                mb.append((size32_t)0);
+                DelayedSizeMarker sizeMark2(mb);
                 activity->serializeSlaveData(mb, slave);
-                size32_t sz = (mb.length()-pos)-sizeof(size32_t);
-                mb.writeDirect(pos, sizeof(sz), &sz);
+                sizeMark2.write();
             }
         }
     }
-    if (pos == (mb.length()-sizeof(unsigned)))
+    if (0 == sizeMark1.size())
         return false;
     mb.append((activity_id)0); // terminator
-    unsigned len=mb.length()-pos-sizeof(unsigned);
-    mb.writeDirect(pos, sizeof(len), &len);
+    sizeMark1.write();
     return true;
 }
 

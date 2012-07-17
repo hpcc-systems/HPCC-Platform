@@ -554,8 +554,7 @@ CSlavePartMapping::CSlavePartMapping(const char *_logicalName, IFileDescriptor &
 void CSlavePartMapping::serializeFileOffsetMap(MemoryBuffer &mb)
 {
     mb.append(fileWidth);
-    unsigned pos = mb.length();
-    mb.append((unsigned)0);
+    DelayedSizeMarker sizeMark(mb);
     ForEachItemIn(sm, maps)
     {
         CSlaveMap &map = maps.item(sm);
@@ -570,8 +569,7 @@ void CSlavePartMapping::serializeFileOffsetMap(MemoryBuffer &mb)
             mb.append(sizeof(FPosTableEntry), &entry);
         }
     }
-    unsigned l = mb.length()-pos-sizeof(unsigned);
-    mb.writeDirect(pos, sizeof(unsigned), &l);
+    sizeMark.write();
 }
 
 CSlavePartMapping *getFileSlaveMaps(const char *logicalName, IFileDescriptor &fileDesc, IUserDescriptor *userDesc, IGroup &localGroup, bool local, bool index, IHash *hash, IDistributedSuperFile *super)
