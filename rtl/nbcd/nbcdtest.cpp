@@ -92,8 +92,8 @@ protected:
     {
         if (!right) right = left;
         char temp[80];
-        TempDecimal a = left;
-        TempDecimal b = right;
+        Decimal a = left;
+        Decimal b = right;
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testMultiply/getCString: expected '%s', got '%s'", expected, temp);
@@ -107,8 +107,8 @@ protected:
     void testDivide(const char * left, const char * right, const char * expected)
     {
         char temp[80];
-        TempDecimal a = left;
-        TempDecimal b = right;
+        Decimal a = left;
+        Decimal b = right;
         a.divide(b);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp);
@@ -121,8 +121,8 @@ protected:
 
     void testCompare(const char * left, const char * right, int expected)
     {
-        TempDecimal a = left;
-        TempDecimal b = right;
+        Decimal a = left;
+        Decimal b = right;
         int temp = a.compare(b);
         cppunit_assert(temp == expected, "ERROR: testCompare/positive: expected '%d', got '%d'", expected, temp);
         temp = b.compare(a);
@@ -137,27 +137,27 @@ protected:
     void testModulus(const char * left, const char * right, const char * expected)
     {
         char temp[80];
-        TempDecimal a = left;
-        TempDecimal b = right;
+        Decimal a = left;
+        Decimal b = right;
         a.modulus(b);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp);
     }
 
-    void checkDecimal(const TempDecimal & value, const char * expected)
+    void checkDecimal(const Decimal & value, const char * expected)
     {
         char temp[80];
         value.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: checkDecimal/char: expected '%s', got '%s'", expected, temp);
     }
 
-    void checkDecimal(const TempDecimal & value, unsigned __int64 expected)
+    void checkDecimal(const Decimal & value, unsigned __int64 expected)
     {
         unsigned __int64 temp = value.getUInt64();
         cppunit_assert(expected == temp, "ERROR: checkDecimal/uint64: expected '%" I64F "d', got '%" I64F "d'", expected, temp);
     }
 
-    void checkDecimal(const TempDecimal & value, __int64 expected)
+    void checkDecimal(const Decimal & value, __int64 expected)
     {
         __int64 temp = value.getInt64();
         cppunit_assert(expected == temp, "ERROR: checkDecimal/int64: expected '%" I64F "d', got '%" I64F "d'", expected, temp);
@@ -183,10 +183,10 @@ protected:
 
             for (int i = 0; i < 2; i++)
             {
-                TempDecimal d1 = val1;
-                TempDecimal d2 = val2;
-                TempDecimal d3 = val3;
-                TempDecimal d4 = val4;
+                Decimal d1 = val1;
+                Decimal d2 = val2;
+                Decimal d3 = val3;
+                Decimal d4 = val4;
 
                 d1.multiply(d2);
                 d3.multiply(d4);
@@ -204,7 +204,7 @@ protected:
     void testBcdUninitialized()
     {
         // Test uninitialised
-        TempDecimal zero, one=1, two(2);
+        Decimal zero, one=1, two(2);
         checkDecimal(zero, 0ULL);
         checkDecimal(one, 1ULL);
         checkDecimal(two, 2ULL);
@@ -216,7 +216,7 @@ protected:
 
     void testBcdCString()
     {
-        TempDecimal a,b,c;
+        Decimal a,b,c;
         a.setString(10,"1234.56789");   // 1234.56789
         b.setString(8,"  123456.88");   // 123456
         c.setString(6," 0.123 ");
@@ -240,7 +240,7 @@ protected:
     void testBcdRoundTruncate()
     {
         char temp[80];
-        TempDecimal c = "9.53456";
+        Decimal c = "9.53456";
         checkDecimal(c, "9.53456");
         c.round(4);
         checkDecimal(c,"9.5346");
@@ -266,37 +266,37 @@ protected:
         c.truncate();
         checkDecimal(c, "9");
 
-        TempDecimal x1 = 1;
+        Decimal x1 = 1;
         x1.round(-3);
         checkDecimal(x1, (__int64)0);
-        TempDecimal x2 = 100;
+        Decimal x2 = 100;
         x2.round(-3);
         checkDecimal(x2, (__int64)0);
-        TempDecimal x3 = 499;
+        Decimal x3 = 499;
         x3.round(-3);
         checkDecimal(x3, (__int64)0);
-        TempDecimal x4 = 500;
+        Decimal x4 = 500;
         x4.round(-3);
         checkDecimal(x4, (__int64)1000);
-        TempDecimal x5 = 1000;
+        Decimal x5 = 1000;
         x5.round(-3);
         checkDecimal(x5, (__int64)1000);
-        TempDecimal x6 = 1499;
+        Decimal x6 = 1499;
         x6.round(-3);
         checkDecimal(x6, (__int64)1000);
-        TempDecimal x7 = 1500;
+        Decimal x7 = 1500;
         x7.round(-3);
         checkDecimal(x7, (__int64)2000);
-        TempDecimal x8 = 10000;
+        Decimal x8 = 10000;
         x8.round(-3);
         checkDecimal(x8, (__int64)10000);
-        TempDecimal x9 = 10499;
+        Decimal x9 = 10499;
         x9.round(-3);
         checkDecimal(x9, (__int64)10000);
-        TempDecimal x10 = 10500;
+        Decimal x10 = 10500;
         x10.round(-3);
         checkDecimal(x10, (__int64)11000);
-        TempDecimal x11 = -10500;
+        Decimal x11 = -10500;
         x11.round(-3);
         checkDecimal(x11, (__int64)-11000);
 
@@ -308,7 +308,7 @@ protected:
 
     void testBcdDecimal()
     {
-        TempDecimal a = "123.2345";
+        Decimal a = "123.2345";
         unsigned decBufferSize=5;
         char decBuffer[7];
         char * decBufferPtr = decBuffer+1;
@@ -395,7 +395,7 @@ protected:
 
     void testBcdInt()
     {
-        TempDecimal a, b;
+        Decimal a, b;
         for (unsigned i1 = 0; i1 <= 1000; i1++)
         {
             a = i1;
@@ -411,8 +411,8 @@ protected:
 
         for (unsigned i2 = 0; i2 <= 100; i2++)
         {
-            TempDecimal x = i2;
-            TempDecimal y = 100;
+            Decimal x = i2;
+            Decimal y = 100;
             y.multiply(x);
             cppunit_assert(100*i2 == (unsigned)y.getInt(), "ERROR: testBcdInt/getInt*100: expected '%d', got '%d'", 100*i2, y.getInt());
             x.multiply(x);
@@ -442,8 +442,8 @@ protected:
         testMultiply("0.000000000000000101","0.000000000000000099009901","0.00000000000000000000000000000001");
         testMultiply("109", "9174311926605504587155963302.75229357798165137614678899082568", "999999999999999999999999999999.99999999999999999999999999999912");
 
-        TempDecimal a = "9999999999999999";
-        TempDecimal b = "10000000000000002";
+        Decimal a = "9999999999999999";
+        Decimal b = "10000000000000002";
         char temp[80];
         a.multiply(b);
         a.getCString(sizeof(temp), temp);
@@ -502,25 +502,25 @@ protected:
     {
         //MORE: Test power functions...
         const char * values[] = { "0.00001", "10000", "-1", "-10", "1.0001", "9.99" };
-        TempDecimal one(1);
+        Decimal one(1);
         for (unsigned idx = 0; idx < _elements_in(values); idx++)
         {
-            TempDecimal value = values[idx];
-            TempDecimal sofar1 = 1;
-            TempDecimal sofar2 = 1;
+            Decimal value = values[idx];
+            Decimal sofar1 = 1;
+            Decimal sofar2 = 1;
 
             bool success=true;
             for (int power = 0; power < 10; power++)
             {
-                TempDecimal powerValue1 = values[idx];
-                TempDecimal powerValue2 = values[idx];
+                Decimal powerValue1 = values[idx];
+                Decimal powerValue2 = values[idx];
                 powerValue1.power(power);
                 powerValue2.power(-power);
 
                 char temp1[80], temp2[80], temp3[80];
                 if (sofar1.compare(powerValue1) != 0)
                 {
-                    TempDecimal diff = powerValue1;
+                    Decimal diff = powerValue1;
                     diff.subtract(sofar1);
                     sofar1.getCString(sizeof(temp1), temp1);
                     powerValue1.getCString(sizeof(temp2), temp2);
@@ -529,7 +529,7 @@ protected:
                 }
                 if (sofar2.compare(powerValue2) != 0)
                 {
-                    TempDecimal diff = powerValue2;
+                    Decimal diff = powerValue2;
                     diff.subtract(sofar2);
                     sofar2.getCString(sizeof(temp1), temp1);
                     powerValue2.getCString(sizeof(temp2), temp2);
@@ -543,7 +543,7 @@ protected:
                     powerValue1.multiply(powerValue2);
                     if (power && (powerValue1.compareNull() != 0) && (powerValue1.compare(one) != 0))
                     {
-                        TempDecimal diff = powerValue1;
+                        Decimal diff = powerValue1;
                         diff.subtract(one);
                         one.getCString(sizeof(temp1), temp1);
                         powerValue1.getCString(sizeof(temp2), temp2);
