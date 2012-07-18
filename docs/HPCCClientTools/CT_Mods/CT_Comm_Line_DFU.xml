@@ -217,6 +217,13 @@
                   <entry>Specify a jobname for the DFU operation's
                   workunit.</entry>
                 </row>
+
+                <row>
+                  <entry>transferbuffersize=nnn</entry>
+
+                  <entry>Optional. Overrides the DFU Server's buffer size
+                  value (default is 64k)</entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable>
@@ -356,8 +363,8 @@ replicate=1</programlisting>
                     <entry><emphasis>format</emphasis></entry>
 
                     <entry>Optional. One of the following values: <emphasis
-                    role="bold">fixed csv xml</emphasis> If omitted, the
-                    default is fixed.</entry>
+                    role="bold">fixed csv xml recfmv recfmb</emphasis> If
+                    omitted, the default is fixed.</entry>
                   </row>
 
                   <row>
