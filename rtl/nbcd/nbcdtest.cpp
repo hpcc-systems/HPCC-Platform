@@ -300,10 +300,10 @@ protected:
         x11.round(-3);
         checkDecimal(x11, (__int64)-11000);
 
-        c = 1234567.8901234567;
+        c = 1234567.8901234567; // Expect rounding of the last digit
         c.getCString(sizeof(temp), temp);
-        cppunit_assert(strcmp("1234567.8901234567", temp) == 0, "ERROR: testBcdRoundTruncate/cstr: expected '1234567.8901234567', got '%s'", temp);
-        cppunit_assert(c.getReal() == 1234567.8901234567, "ERROR: testBcdRoundTruncate/real: expected '1234567.8901234567', got '%.8f'", c.getReal());
+        cppunit_assert(strcmp("1234567.890123457", temp) == 0, "ERROR: testBcdRoundTruncate/cstr: expected '1234567.890123457', got '%s'", temp);
+        cppunit_assert(c.getReal() == 1234567.890123457, "ERROR: testBcdRoundTruncate/real: expected '1234567.890123457', got '%.8f'", c.getReal());
     }
 
     void testBcdDecimal()
