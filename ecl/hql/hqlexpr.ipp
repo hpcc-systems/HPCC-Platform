@@ -309,7 +309,7 @@ protected:
     HqlExprAttr normalized;
 };
 
-class CFileContents : public CInterface, implements IFileContents
+class CFileContents : public CInterfaceOf<IFileContents>
 {
 private:
     Linked<IFile> file;
@@ -321,7 +321,6 @@ public:
     CFileContents(IFile * _file, ISourcePath * _sourcePath);
     CFileContents(const char *query, ISourcePath * _sourcePath);
     CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath);
-    IMPLEMENT_IINTERFACE;
 
     virtual IFile * queryFile() { return file; }
     virtual ISourcePath * querySourcePath() { return sourcePath; }
