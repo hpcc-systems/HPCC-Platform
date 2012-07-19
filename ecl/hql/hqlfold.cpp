@@ -4287,6 +4287,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             unwindChildren(args, expr, 1); // (count, trans)
             if (newTransform)
                 args.replace(*newTransform.getClear(), 1);
+            removeProperty(args, _selectorSequence_Atom);
 
             return createDataset(no_dataset_from_transform, args);
         }
