@@ -6689,28 +6689,10 @@ dataRow
 simpleDataRow
     : DATAROW_ID
     | LEFT              {
-                            IHqlExpression *left = parser->queryLeftScope();
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            if (left)
-                                $$.setExpr(createSelector(no_left, left, selSeq));
-                            else
-                            {
-                                parser->reportError(ERR_LEFT_ILL_HERE, $1, "LEFT not legal here");
-                                $$.setExpr(createSelector(no_left, queryNullRecord(), selSeq));
-                            }
+                            $$.setExpr(parser->getSelector($1, no_left), $1);
                         }
     | RIGHT             {
-                            IHqlExpression *right = parser->queryRightScope();
-                            if (right)
-                            {
-                                OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                                $$.setExpr(createSelector(no_right, right, selSeq));
-                            }
-                            else
-                            {
-                                parser->reportError(ERR_RIGHT_ILL_HERE, $1, "RIGHT not legal here");
-                                $$.setExpr(createRow(no_null, LINK(queryNullRecord())), $1);
-                            }
+                            $$.setExpr(parser->getSelector($1, no_right), $1);
                         }
     | RIGHT_NN
                         {
@@ -7159,7 +7141,7 @@ simpleDataSet
                             $$.setExpr(createDatasetF(no_distribute, $3.getExpr(), value.getClear(), $11.getExpr(), NULL));
                             $$.setPosition($1);
                         }
-    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter swapTopForLeft ',' expression optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter endTopFilter ',' expression optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($9, type_boolean, false);
                             IHqlExpression * left = $3.getExpr();
@@ -7186,7 +7168,7 @@ simpleDataSet
                             $$.setPosition($1);
                         }
 
-    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter swapTopForLeft optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter endTopFilter optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $6.getExpr();
@@ -7223,7 +7205,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_distribute, $3.getExpr(), value.getClear()));
                             $$.setPosition($1);
                         }
-    | JOIN '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression opt_join_transform_flags ')' endRightFilter endLeftFilter endSelectorSequence
+    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression opt_join_transform_flags ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
 
@@ -7313,7 +7295,7 @@ simpleDataSet
                             $$.setExpr(join, $1);
                             parser->attachPendingWarnings($$);
                         }
-    | PROCESS '(' startLeftSeqFilter ',' startRightRowUpdateSeq ',' beginCounterScope transform ',' transform optCommonAttrs ')' endCounterScope endRightFilter endLeftFilter endSelectorSequence
+    | PROCESS '(' startLeftDelaySeqFilter ',' startRightRow ',' beginCounterScope transform ',' transform optCommonAttrs ')' endCounterScope endRightFilter endLeftFilter endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
@@ -7380,7 +7362,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_rollupgroup, $3.getExpr(), createComma($7.getExpr(), attr, $9.getExpr(), $11.getExpr())));
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ')' endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
@@ -7389,7 +7371,7 @@ simpleDataSet
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
@@ -7397,7 +7379,7 @@ simpleDataSet
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' startRightRowsGroup ',' transform optCommonAttrs ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ',' startRightRowsGroup ',' transform optCommonAttrs ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
@@ -7641,7 +7623,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createAttribute(pullAtom)));
                             $$.setPosition($1);
                         }
-    | DENORMALIZE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' beginCounterScope transform endCounterScope optJoinFlags ')' endRightFilter endLeftFilter endSelectorSequence
+    | DENORMALIZE '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' beginCounterScope transform endCounterScope optJoinFlags ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
                             IHqlExpression * ds = $3.getExpr();
@@ -7658,7 +7640,7 @@ simpleDataSet
                             $$.setPosition($1);
                             parser->checkJoinFlags($1, $$.queryExpr());
                         }
-    | DENORMALIZE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' beginCounterScope startRightRowsGroup endCounterScope ',' transform optJoinFlags ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
+    | DENORMALIZE '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' beginCounterScope startRightRowsGroup endCounterScope ',' transform optJoinFlags ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
                             IHqlExpression * ds = $3.getExpr();
@@ -7834,7 +7816,7 @@ simpleDataSet
                         {
                             $$.setExpr(createDataset(no_dataset_alias, $3.getExpr(), ::createUniqueId()), $1);
                         }
-    | FETCH '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | FETCH '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_int, false);
                             IHqlExpression * left = $3.getExpr();
@@ -7851,7 +7833,7 @@ simpleDataSet
                             $$.setExpr(join);
                             $$.setPosition($1);
                         }
-    | FETCH '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | FETCH '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_int, false);
                             IHqlExpression * left = $3.getExpr();
@@ -8624,19 +8606,19 @@ simpleDataSet
                             $$.setExpr(createDatasetF(no_executewhen, $3.getExpr(), $5.getExpr(), createAttribute(successAtom), NULL), $1);
                         }
     //Slightly unusual arrangement of the productions there to resolve s/r errors
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ')' endRowsGroup endLeftRightFilter endSelectorSequence
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, NULL, $10, $12), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, &$10, $12, $14), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' transform ')' endRowsGroup endLeftRightFilter endSelectorSequence
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, NULL, $12, $14), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' transform ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
                         {
                             $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, &$12, $14, $16), $1);
                         }
@@ -9912,29 +9894,14 @@ startTopFilter
     : dataSet           {   parser->pushTopScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
     ;
 
-startLeftFilter
-    : dataSet           {   parser->pushLeftScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
-    ;
-
 startRightFilter
-    : dataSet           {   parser->pushRightScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
+    : dataSet           {   parser->setRightScope($1.queryExpr()); $$.inherit($1); }
     ;
 
-startRightFilterUpdateSeq
-    : startRightFilter
-                        {
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), parser->queryRightScope());
-                            $$.inherit($1);
-                        }
-    ;
-
-startRightRowsRecordUpdateSeq
+startRightRowsRecord
     : recordDef
                         {
-                            parser->pushRightScope($1.queryExpr());                     
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), parser->queryRightScope());
+                            parser->setRightScope($1.queryExpr());                     
 
                             OwnedHqlExpr selSeq = parser->getSelectorSequence();
                             OwnedHqlExpr right = createSelector(no_right, parser->queryRightScope(), selSeq);
@@ -9946,10 +9913,9 @@ startRightRowsRecordUpdateSeq
 startLeftRightSeqFilter
     : dataSet
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            $$.inherit($1);
                         }
     ;
 
@@ -9957,9 +9923,8 @@ startTopLeftSeqFilter
     : dataSet
                         {
                             parser->pushTopScope($1.queryExpr());
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
+                            $$.inherit($1);
                         }
     ;
 
@@ -9967,27 +9932,20 @@ startTopLeftRightSeqFilter
     : dataSet
                         {
                             parser->pushTopScope($1.queryExpr());
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            $$.inherit($1);
                         }
     ;
 
 startTopLeftRightSeqSetDatasets
     : setOfDatasets
                         {
-                            OwnedHqlExpr expr = $1.getExpr();
-                            IHqlExpression * record = expr->queryRecord();
-                            //Push LEFT as if it was the top dataset, because $1 isn't really a dataset at all.
-                            parser->pushSelectorSequence(expr, NULL);
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr pseudoTop = createSelector(no_left, record, selSeq);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            OwnedHqlExpr pseudoTop = parser->getSelector($1, no_left);
                             parser->pushTopScope(pseudoTop);
-                            parser->pushLeftScope(record);
-                            parser->pushRightScope(record);
-                            $$.setExpr(expr.getClear());
-                            $$.setPosition($1);
+                            $$.inherit($1);
                         }
     ;
 
@@ -10020,18 +9978,14 @@ startSimpleFilter
 startLeftSeqRow
     : dataRow
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            //parser->pushUniqueSelectorSequence();
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
                             $$.inherit($1);
                         }
     ;
 
-startRightRowUpdateSeq
+startRightRow
     : dataRow               {
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), $1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
+                            parser->setRightScope($1.queryExpr());
                             $$.setExpr($1.getExpr());
                         }
     ;
@@ -10039,8 +9993,7 @@ startRightRowUpdateSeq
 startLeftRowsSeqFilter
     : dataSet
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
                             OwnedHqlExpr selSeq = parser->getSelectorSequence();
                             OwnedHqlExpr left = createSelector(no_left, parser->queryLeftScope(), selSeq);
                             parser->pushRowsScope(left);
@@ -10049,19 +10002,27 @@ startLeftRowsSeqFilter
     ;
 
 startLeftSeqFilter
-    : startLeftFilter
+    : dataSet
                         {
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
                             $$.inherit($1);
                         }
     ;
 
+startLeftDelaySeqFilter
+    : dataSet
+                        {
+                            //Since the SEQUENCE is based on left and right left and right aren't valid until we have seen both datasets
+                            parser->pushPendingLeftRightScope($1.queryExpr(), NULL);
+                            $$.inherit($1);
+                        }
+    ;
 
 //Used for the RHS of a distribute.  Top filter has already been processed, so selector id should be based on both.
 startRightDistributeSeqFilter
-    : startRightFilter
+    : dataSet
                         {
-                            parser->pushSelectorSequence(parser->queryTopScope(), $1.queryExpr());
+                            parser->pushLeftRightScope(parser->queryTopScope(), $1.queryExpr());
                             $$.inherit($1);
                         }
     ;
@@ -10069,7 +10030,7 @@ startRightDistributeSeqFilter
 
 endSelectorSequence
     :                   {
-                            $$.setExpr(parser->popSelectorSequence());
+                            $$.setExpr(parser->popLeftRightScope());
                         }
     ;
 
@@ -10114,27 +10075,23 @@ endTopFilter
     ;
 
 endLeftFilter
-    :                   {   parser->popLeftScope(); $$.clear(); }
+    :                   {   $$.clear(); }
     ;
 
 endRightFilter
-    :                   {   parser->popRightScope(); $$.clear(); }
+    :                   {   $$.clear(); }
     ;
 
 endLeftRightFilter
-    :                   {   parser->popLeftScope(); parser->popRightScope(); $$.clear(); }
+    :                   {   $$.clear(); }
     ;
 
 endTopLeftFilter
-    :                   {   parser->popTopScope(); parser->popLeftScope(); $$.clear(); }
+    :                   {   parser->popTopScope(); $$.clear(); }
     ;
 
 endTopLeftRightFilter
-    :                   {   parser->popTopScope(); parser->popLeftScope(); parser->popRightScope(); $$.clear(); }
-    ;
-
-swapTopForLeft
-    :                   {   parser->swapTopScopeForLeftScope(); $$.clear(); }
+    :                   {   parser->popTopScope(); $$.clear(); }
     ;
 
 scopedDatasetId

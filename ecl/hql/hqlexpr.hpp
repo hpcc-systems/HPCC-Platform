@@ -27,7 +27,7 @@
 //  #define USE_TBB
 #endif
 
-#define USE_SELSEQ_UID
+//#define USE_SELSEQ_UID
 //It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
 //x := PROJECT(ds, t(LEFT));
 //y := x(field not in SET(x, field2));

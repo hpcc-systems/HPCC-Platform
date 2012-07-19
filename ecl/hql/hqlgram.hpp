@@ -366,6 +366,14 @@ struct TokenMap;
 
 class HqlGram;
 
+class LeftRightScope : public CInterface
+{
+public:
+    OwnedHqlExpr left;
+    OwnedHqlExpr right;
+    OwnedHqlExpr selSeq;
+};
+
 extern int eclyyparse(HqlGram * parser);
 class HqlGram : public CInterface, implements IErrorReceiver
 {
@@ -662,7 +670,6 @@ public:
 
 
     IHqlExpression * createUniqueId();  
-    IHqlExpression * doCreateUniqueSelectorSequence();
 
     void onOpenBra();
     void onCloseBra();
@@ -829,8 +836,7 @@ protected:
     IHqlScope* globalScope;
     ITypeInfo *current_type;
     HqlExprArray topScopes;
-    HqlExprArray leftScopes;
-    HqlExprArray rightScopes;
+    CIArrayOf<LeftRightScope> leftRightScopes;
     HqlExprArray rowsScopes;
     HqlExprArray rowsIds;
     HqlExprArray selfScopes;
@@ -860,7 +866,6 @@ protected:
     HqlExprAttr curFeatureParams;
     HqlExprCopyArray implicitFeatureNames;
     HqlExprCopyArray implicitFeatureValues;
-    HqlExprArray activeSelectorSequences;
     Owned<IHqlScope> parseScope;
     HqlExprAttr lastEnumValue;
     Owned<ITypeInfo> curEnumType;
@@ -884,22 +889,23 @@ protected:
     IHqlExpression * addDatasetSelector(IHqlExpression * lhs, IHqlExpression * rhs);
 
     void pushTopScope(IHqlExpression *);
-    void pushLeftScope(IHqlExpression *);
-    void pushRightScope(IHqlExpression *);
+    void pushLeftRightScope(IHqlExpression * left, IHqlExpression * right);
+    void pushPendingLeftRightScope(IHqlExpression * left, IHqlExpression * right);
+    void setRightScope(IHqlExpression *);
     void pushRowsScope(IHqlExpression *);
+
     void pushSelfScope(IHqlExpression *);
     void pushSelfScope(ITypeInfo * selfType);
-    void pushSelectorSequence(IHqlExpression * left, IHqlExpression * right);
-    void pushUniqueSelectorSequence();
-    IHqlExpression * popSelectorSequence();
+
+    IHqlExpression * getSelector(const attribute & errpos, node_operator side);
+
     IHqlExpression * createActiveSelectorSequence(IHqlExpression * left, IHqlExpression * right);
 
     IHqlExpression * getSelectorSequence();
     IHqlExpression * forceEnsureExprType(IHqlExpression * expr, ITypeInfo * type);
 
     void popTopScope();
-    void popLeftScope();
-    void popRightScope();
+    IHqlExpression * popLeftRightScope();
     IHqlExpression * popRowsScope();
     void popSelfScope();
     void swapTopScopeForLeftScope();
@@ -921,8 +927,6 @@ protected:
     IHqlExpression *queryLeftScope();
     IHqlExpression *queryRightScope();
     IHqlExpression *queryRowsScope();
-    IHqlExpression *getLeftScope();
-    IHqlExpression *getRightScope();
     IHqlExpression *getSelfScope();
     IHqlExpression *getSelfDotExpr(const attribute & errpos);
     IHqlExpression *resolveRows(const attribute & errpos, IHqlExpression * ds);
