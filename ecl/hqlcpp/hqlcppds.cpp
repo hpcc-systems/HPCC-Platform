@@ -2652,6 +2652,37 @@ void HqlCppTranslator::buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppData
     }
 }
 
+void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_dataset_from_transform);
+    IHqlExpression * count = expr->queryChild(0);
+    if (isZero(count))
+        return;
+
+    IHqlExpression * transform = expr->queryChild(1);
+    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+
+    BuildCtx loopctx(ctx);
+    // loopVar = 1;
+    OwnedHqlExpr loopVar = loopctx.getTempDeclare(counterType, NULL);
+    OwnedHqlExpr one = getSizetConstant(1);
+    buildAssignToTemp(loopctx, loopVar, one);
+
+    // for(; loopVar <= maxRows; loopVar++)
+    CHqlBoundExpr boundCount;
+    buildSimpleExpr(loopctx, count, boundCount);
+    OwnedHqlExpr loopTest = createValue(no_le, makeBoolType(), LINK(loopVar), LINK(boundCount.expr));
+    OwnedHqlExpr inc = createValue(no_postinc, loopVar->getType(), LINK(loopVar));
+    loopctx.addLoop(loopTest, inc, false);
+    if (counter)
+        loopctx.associateExpr(counter, loopVar);
+
+    OwnedHqlExpr rowValue = createRow(no_createrow, LINK(transform));
+    BoundRow * targetRow = target->buildCreateRow(loopctx);
+    Owned<IReferenceSelector> targetRef = buildActiveRow(loopctx, targetRow->querySelector());
+    buildRowAssign(loopctx, targetRef, rowValue);
+    target->finishRow(loopctx, targetRow);
+}
 
 class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
 {
@@ -2826,6 +2857,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
+        return;
+    case no_dataset_from_transform:
+        buildDatasetAssignDatasetFromTransform(subctx, target, expr);
         return;
     case no_xmlproject:
         buildDatasetAssignXmlProject(subctx, target, expr);
