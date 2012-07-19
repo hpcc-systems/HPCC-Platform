@@ -22,6 +22,8 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -42,6 +44,8 @@ public class HPCCResultSet implements ResultSet
 	private String 					defaultEclQueryReturnDatasetName;
 	private Object					lastResult;
 	private ArrayList<SQLWarning> 	warnings;
+	private HashMap<String, HPCCColumnMetaData> availableCols;
+
 	private static final int NumberOfCommonParamInThisIndex = 0;
 	private static final int LeftMostKeyIndexPosition = 1;
 	private static final int NumberofColsKeyedInThisIndex = 2;
@@ -53,6 +57,17 @@ public class HPCCResultSet implements ResultSet
 		rows = new ArrayList<List>(recrows);
 		lastResult = new Object();
 		warnings = new ArrayList<SQLWarning>();
+		availableCols = new HashMap<String, HPCCColumnMetaData>();
+	}
+
+	private void addFileColsToAvailableCols(DFUFile dfufile)
+	{
+		Enumeration fields = dfufile.getAllFields();
+		while (fields.hasMoreElements())
+		{
+			HPCCColumnMetaData col = (HPCCColumnMetaData)fields.nextElement();
+			availableCols.put(col.getTableName()+"."+col.getColumnName(), col);
+		}
 	}
 
 	public HPCCResultSet(Statement statement, String query, Map inParameters) throws SQLException
@@ -60,38 +75,72 @@ public class HPCCResultSet implements ResultSet
 		warnings = new ArrayList<SQLWarning>();
 		try
 		{
-			lastResult = new Object();
-			List<HPCCColumnMetaData> expectedretcolumns = null;
+			this.lastResult = new Object();
+			this.availableCols = new HashMap<String, HPCCColumnMetaData>();
 			this.statement = statement;
+			this.rows = new ArrayList();
+
 			HPCCConnection connection = (HPCCConnection) statement.getConnection();
-			dbMetadata = connection.getDatabaseMetaData();
+			this.dbMetadata = connection.getDatabaseMetaData();
+
+			List<HPCCColumnMetaData> expectedretcolumns = null;
+
 			ArrayList dsList = null;
-			rows = new ArrayList();
-			String indextousename = null;
+
+			HashMap<String, String> indexToUseMap = new HashMap<String, String>();
+
 			SQLParser parser = new SQLParser();
 			parser.process(query);
+
 			int sqlreqtype = parser.getSqlType();
+
 			//not sure this is actually needed...
 			parser.populateParametrizedExpressions(inParameters);
 			ECLEngine eclengine;
+
 			if(sqlreqtype == SQLParser.SQL_TYPE_SELECT)
 			{
-				String hpccfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
-				DFUFile dfufile = dbMetadata.getDFUFile(hpccfilename);
-				if (dfufile == null)
-					throw new Exception("Invalid table name found: " + hpccfilename);
+				boolean avoidindex = false;
+
+				String queryfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
+				if(!dbMetadata.tableExists("", queryfilename))
+					throw new Exception("Invalid table found: " + queryfilename);
+
+				DFUFile dfufile = dbMetadata.getDFUFile(queryfilename);
+
 				if (!dfufile.hasFileRecDef())
-					throw new Exception("Cannot query: " + hpccfilename + " because it does not contain a record definition.");
-				parser.verifySelectColumns(dfufile);
-				expectedretcolumns = parser.getSelectColumns();
-				if(((HPCCPreparedStatement)statement).isIndexSet())
+					throw new Exception("Cannot query: " + queryfilename + " because it does not contain an ECL record definition.");
+
+				addFileColsToAvailableCols(dfufile);
+
+				if (parser.hasJoinClause())
 				{
-					indextousename = ((HPCCPreparedStatement)statement).getIndexToUse();
+					String joinTableName = parser.getJoinClause().getJoinTableName();
+					if(!dbMetadata.tableExists("", joinTableName))
+						throw new Exception("Invalid Join table found: " + joinTableName);
+
+					DFUFile joinTableFile = dbMetadata.getDFUFile(joinTableName);
+					if (!dfufile.hasFileRecDef())
+						throw new Exception("Cannot query: " + joinTableName + " because it does not contain an ECL record definition.");
+
+					addFileColsToAvailableCols(joinTableFile);
+
+					avoidindex = true; //will not be using index
+					System.out.println("Will not use INDEX files for \"Join\" query.");
+				}
+
+				parser.verifyAndProcessALLSelectColumns(availableCols);
+
+				expectedretcolumns = parser.getSelectColumns();
+				if(((HPCCPreparedStatement)statement).isIndexSet(queryfilename))
+				{
+					indexToUseMap.put(queryfilename, ((HPCCPreparedStatement)statement).getIndexToUse(queryfilename));
 				}
 				else
 				{
+					String tmpindexname = null;
+
 					String indexhint = parser.getIndexHint();
-					boolean avoidindex = false;
 					if ( indexhint != null)
 					{
 						if (indexhint.trim().equals("0"))
@@ -101,26 +150,32 @@ public class HPCCResultSet implements ResultSet
 						}
 						if (!avoidindex)
 						{
-							indextousename = findAppropriateIndex(indexhint,  expectedretcolumns, parser);
-							if (indextousename == null)
+							tmpindexname = findAppropriateIndex(indexhint,  expectedretcolumns, parser);
+							if (tmpindexname == null)
 								System.out.println("Cannot use USE INDEX hint: " + indexhint);
+							else
+								indexToUseMap.put(queryfilename, tmpindexname);
 						}
 					}
-					if (indextousename == null && dfufile.hasRelatedIndexes() && !avoidindex)
+					if (indexToUseMap.get(queryfilename) == null && dfufile.hasRelatedIndexes() && !avoidindex)
 					{
-						indextousename = findAppropriateIndex(dfufile.getRelatedIndexesList(),  expectedretcolumns, parser);
+						tmpindexname = findAppropriateIndex(dfufile.getRelatedIndexesList(),  expectedretcolumns, /*queryfilename, */parser);
+						indexToUseMap.put(queryfilename, tmpindexname);
 					}
-					((HPCCPreparedStatement)statement).setIndexToUse(indextousename);
+					//If an appropriate index was found, cache it.
+					if (tmpindexname != null)
+						((HPCCPreparedStatement)statement).setIndexToUse(queryfilename, tmpindexname);
+
 				}
 				//columns are base 1 indexed
-				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, hpccfilename);
-				eclengine = new ECLEngine(parser, dbMetadata, connection.getProperties(), indextousename);
+				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, queryfilename);
+				eclengine = new ECLEngine(parser, dbMetadata, connection.getProperties(), indexToUseMap);
 			}
 			else if(sqlreqtype == SQLParser.SQL_TYPE_SELECTCONST)
 			{
 				expectedretcolumns = parser.getSelectColumns();
 				resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, "Constants");
-				eclengine = new ECLEngine(parser, dbMetadata, connection.getProperties(), indextousename);
+				eclengine = new ECLEngine(parser, dbMetadata, connection.getProperties(), indexToUseMap);
 			}
 			else if(sqlreqtype == SQLParser.SQL_TYPE_CALL)
 			{
@@ -141,7 +196,6 @@ public class HPCCResultSet implements ResultSet
 				throw new SQLException("SQL request type not determined");
 			}
 			dsList = eclengine.execute();
-
 			// Get the data
 			fetchData(dsList,expectedretcolumns);
 			return;
@@ -182,13 +236,15 @@ public class HPCCResultSet implements ResultSet
 			}
 		}
 	}
-	public String findAppropriateIndex(String index, List<HPCCColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SQLParser parser)
+
+	public String findAppropriateIndex(String index, List<HPCCColumnMetaData> expectedretcolumns, SQLParser parser)
 	{
 		List<String> indexhint = new ArrayList<String>();
 		indexhint.add(index);
 		return findAppropriateIndex(indexhint, expectedretcolumns, parser);
 	}
-	public String findAppropriateIndex(List<String> relindexes, List<HPCCColumnMetaData> expectedretcolumns, /*HashMap parameters, */ SQLParser parser)
+
+	public String findAppropriateIndex(List<String> relindexes, List<HPCCColumnMetaData> expectedretcolumns, SQLParser parser)
 	{
 		String indextouse = null;
 		String [] sqlqueryparamnames = parser.getWhereClauseNames();
@@ -211,6 +267,7 @@ public class HPCCResultSet implements ResultSet
 				if (payloadIdxWithAtLeast1KeyedFieldFound && indexscore[indexcounter][NumberOfCommonParamInThisIndex] == 0)
 					break; //Don't bother with this index
 				int localleftmostindex = Integer.MAX_VALUE;
+
 				Properties KeyColumns = indexfile.getKeyedColumns();
 				if(KeyColumns!=null)
 				{
@@ -221,7 +278,7 @@ public class HPCCResultSet implements ResultSet
 						{
 							++indexscore[indexcounter][NumberofColsKeyedInThisIndex];
 							int paramindex = indexfile.getKeyColumnIndex(currentparam);
-							if (localleftmostindex>paramindex)
+							if (localleftmostindex > paramindex)
 								localleftmostindex = paramindex;
 						}
 					}
@@ -233,6 +290,7 @@ public class HPCCResultSet implements ResultSet
 					payloadIdxWithAtLeast1KeyedFieldFound = true; // during scoring, give this priority
 			}
 		}
+
 		for (int i = 0; i<relindexes.size(); i++)
 		{
 			if (indexscore[i][NumberofColsKeyedInThisIndex] == 0) //does one imply the other?
@@ -254,10 +312,12 @@ public class HPCCResultSet implements ResultSet
 		}
 		return indextouse;
 	}
+
 	public int getRowCount()
 	{
 		return rows.size();
 	}
+
 	public boolean next() throws SQLException
 	{
 		index++;
@@ -276,10 +336,12 @@ public class HPCCResultSet implements ResultSet
 		closed = true;
 		lastResult = new Object(); // not null
 	}
+
 	public boolean wasNull() throws SQLException
 	{
 		return lastResult == null;
 	}
+
 	public String getString(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -295,6 +357,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public boolean getBoolean(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -311,6 +374,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public byte getByte(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -326,6 +390,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public short getShort(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -342,6 +407,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public int getInt(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -358,6 +424,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public long getLong(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -374,6 +441,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public float getFloat(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -390,6 +458,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public double getDouble(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -406,6 +475,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public BigDecimal getBigDecimal(int columnIndex, int scale)	throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -423,6 +493,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public byte[] getBytes(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -438,6 +509,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public Date getDate(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -454,6 +526,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public Time getTime(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -470,6 +543,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public Timestamp getTimestamp(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -486,6 +560,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public InputStream getAsciiStream(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -501,6 +576,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public InputStream getUnicodeStream(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -516,6 +592,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public InputStream getBinaryStream(int columnIndex) throws SQLException
 	{
 		if (index >= 0 && index <= rows.size())
@@ -531,6 +608,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public String getString(String columnLabel) throws SQLException
 	{
 		if (index >= 0  && index <= rows.size())
@@ -552,6 +630,7 @@ public class HPCCResultSet implements ResultSet
 		else
 			throw new SQLException("Invalid Row Index");
 	}
+
 	public boolean getBoolean(String columnLabel) throws SQLException
 	{
 		if (index >= 0  && index <= rows.size())

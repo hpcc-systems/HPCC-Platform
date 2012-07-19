@@ -10,7 +10,7 @@ SET (CLASS_DIR "class")
 FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CLASS_DIR})
 SET (JAR_FILE "${PRODUCT_PREFIX}-${PROJECT_NAME}_${HPCC_PROJECT}-${HPCC_MAJOR}.${HPCC_MINOR}.${HPCC_POINT}.jar")
 SET (JAVA_FILES
-HPCCDatabaseMetaData.java HPCCQuery.java SQLExpression.java DFUFile.java HPCCDriver.java HPCCResultSet.java SQLOperator.java HPCCColumn.java ECLEngine.java HPCCResultSetMetadata.java SQLParser.java HPCCColumnMetaData.java HPCCPreparedStatement.java HPCCStatement.java SQLWhereClause.java HPCCConnection.java HPCCQueries.java SQLColumn.java HPCCJDBCUtils.java ECLFunction.java ECLFunctions.java HPCCVersionTracker.java 
+HPCCDatabaseMetaData.java HPCCQuery.java SQLExpressionFragment.java DFUFile.java HPCCDriver.java HPCCResultSet.java SQLOperator.java HPCCColumn.java ECLEngine.java HPCCResultSetMetadata.java SQLParser.java HPCCColumnMetaData.java HPCCPreparedStatement.java HPCCStatement.java SQLWhereClause.java HPCCConnection.java HPCCQueries.java SQLColumn.java HPCCJDBCUtils.java ECLFunction.java ECLFunctions.java HPCCVersionTracker.java
 
 )
 
