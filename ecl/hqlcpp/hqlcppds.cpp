@@ -2629,6 +2629,39 @@ void HqlCppTranslator::buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppData
     }
 }
 
+void HqlCppTranslator::buildDatasetAssignInlineCount(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_dataset_from_transform);
+    IHqlExpression * count = expr->queryChild(0);
+    if (isZero(count))
+        return;
+
+    IHqlExpression * transform = expr->queryChild(1);
+    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+
+    // loopVar = 1;
+    OwnedHqlExpr loopVar = ctx.getTempDeclare(counterType, NULL);
+    OwnedHqlExpr one = getSizetConstant(1);
+    buildAssignToTemp(ctx, loopVar, one);
+    // for(; loopVar <= maxRows; loopVar++)
+    CHqlBoundExpr boundCount;
+    buildSimpleExpr(ctx, count, boundCount);
+    OwnedHqlExpr loopTest = createValue(no_le, makeBoolType(), LINK(loopVar), LINK(boundCount.expr));
+    OwnedHqlExpr inc = createValue(no_postinc, loopVar->getType(), LINK(loopVar));
+    if (counter)
+        ctx.associateExpr(counter, loopVar);
+    ctx.addLoop(loopTest, inc, false);
+
+//    Owned<BoundRow> tempRow = declareTempAnonRow(ctx, ctx, expr);
+//    Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);
+
+    OwnedHqlExpr rowValue = createRow(no_createrow, LINK(transform));
+    BoundRow * targetRow = target->buildCreateRow(ctx);
+    Owned<IReferenceSelector> targetRef = buildActiveRow(ctx, targetRow->querySelector());
+    buildRowAssign(ctx, targetRef, rowValue);
+    target->finishRow(ctx, targetRow);
+    Owned<BoundRow> foo = bindTableCursor(ctx, expr, targetRow->queryBound());
+}
 
 class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
 {
@@ -2780,6 +2813,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
+        return;
+    case no_dataset_from_transform:
+        buildDatasetAssignInlineCount(subctx, target, expr);
         return;
     case no_xmlproject:
         buildDatasetAssignXmlProject(subctx, target, expr);
