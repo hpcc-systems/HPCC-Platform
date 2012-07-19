@@ -27,7 +27,7 @@
 # in your build directory. (option: -e $BUILDDIR/Debug/bin/eclcc)
 ##############################################################################
 
-syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program] [-q query.ecl]"
+syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program] [-q query.ecl] [-l log_file] "
 
 ## Default arguments
 target_dir=run_$$
@@ -50,12 +50,14 @@ if [[ $1 = '' ]]; then
     echo " * include dir for special ECL headers (allows multiple paths)"
     echo " * eclcc necessary for compilation, otherwise, only comparison will be made"
     echo " * diff_program must be able to handle directories"
+    echo
     echo " * -q can be used to run/rerun a single query"
+    echo " * -l is used to generate a detailed log for debugging"
     echo
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:f:q:" opt; do
+    while getopts "t:c:I:e:d:f:q:l:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -77,6 +79,9 @@ if [[ $* != '' ]]; then
                 ;;
             q)
                 query="$OPTARG"
+                ;;
+            l)
+                userflags="$userflags --logdetail 999 --logfile $OPTARG"
                 ;;
             :)
                 echo $syntax
