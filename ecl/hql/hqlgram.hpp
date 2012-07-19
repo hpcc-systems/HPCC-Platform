@@ -372,6 +372,8 @@ public:
     OwnedHqlExpr left;
     OwnedHqlExpr right;
     OwnedHqlExpr selSeq;
+    OwnedHqlExpr rowsScope;
+    OwnedHqlExpr rowsId;
 };
 
 extern int eclyyparse(HqlGram * parser);
@@ -837,8 +839,6 @@ protected:
     ITypeInfo *current_type;
     HqlExprArray topScopes;
     CIArrayOf<LeftRightScope> leftRightScopes;
-    HqlExprArray rowsScopes;
-    HqlExprArray rowsIds;
     HqlExprArray selfScopes;
     HqlExprArray localeStack;
     HqlExprArray localFunctionCache;
@@ -892,7 +892,7 @@ protected:
     void pushLeftRightScope(IHqlExpression * left, IHqlExpression * right);
     void pushPendingLeftRightScope(IHqlExpression * left, IHqlExpression * right);
     void setRightScope(IHqlExpression *);
-    void pushRowsScope(IHqlExpression *);
+    void beginRowsScope(node_operator side);
 
     void pushSelfScope(IHqlExpression *);
     void pushSelfScope(ITypeInfo * selfType);
@@ -905,10 +905,9 @@ protected:
     IHqlExpression * forceEnsureExprType(IHqlExpression * expr, ITypeInfo * type);
 
     void popTopScope();
+    IHqlExpression * endRowsScope();
     IHqlExpression * popLeftRightScope();
-    IHqlExpression * popRowsScope();
     void popSelfScope();
-    void swapTopScopeForLeftScope();
 
     void beginList();
     void addListElement(IHqlExpression * expr);
@@ -926,7 +925,6 @@ protected:
     IHqlExpression *getTopScope();
     IHqlExpression *queryLeftScope();
     IHqlExpression *queryRightScope();
-    IHqlExpression *queryRowsScope();
     IHqlExpression *getSelfScope();
     IHqlExpression *getSelfDotExpr(const attribute & errpos);
     IHqlExpression *resolveRows(const attribute & errpos, IHqlExpression * ds);

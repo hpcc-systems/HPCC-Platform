@@ -466,11 +466,12 @@ void HqlGram::setRightScope(IHqlExpression *newScope)
         topScope.selSeq.setown(createActiveSelectorSequence(topScope.left, topScope.right));
 }
 
-void HqlGram::pushRowsScope(IHqlExpression *newScope)
+void HqlGram::beginRowsScope(node_operator side)
 {
-    newScope->Link();
-    rowsScopes.append(*newScope);
-    rowsIds.append(*createUniqueRowsId());
+    LeftRightScope & topScope = leftRightScopes.tos();
+    IHqlExpression * ds = (side == no_left) ? topScope.left : topScope.right;
+    topScope.rowsScope.setown(createSelector(side, ds, topScope.selSeq));
+    topScope.rowsId.setown(createUniqueRowsId());
 }
 
 /* in: linked */
@@ -494,27 +495,23 @@ void HqlGram::popTopScope()
     }
 }                                       
 
-IHqlExpression * HqlGram::popRowsScope()
+IHqlExpression * HqlGram::endRowsScope()
 {
-    if(rowsScopes.length() > 0)
+    if(leftRightScopes.length() > 0)
     {
-        rowsScopes.pop();
-        return &rowsIds.popGet();
+        LeftRightScope & tos = leftRightScopes.tos();
+        tos.rowsScope.clear();
+        return tos.rowsId.getClear();
     }
+
     return createAttribute(_rowsid_Atom, createConstant(0));
-} 
+}
 
 void HqlGram::popSelfScope()
 {
     if(selfScopes.length() > 0)
         selfScopes.pop();
 } 
-
-void HqlGram::swapTopScopeForLeftScope()
-{
-    assertex(topScopes.ordinality() > 0);
-    pushLeftRightScope(&topScopes.popGet(), NULL);
-}
 
 IHqlExpression * HqlGram::getSelectorSequence()
 {
@@ -1042,21 +1039,32 @@ IHqlExpression * HqlGram::processModuleDefinition(const attribute & errpos)
 IHqlExpression * HqlGram::processRowset(attribute & selectorAttr)
 {
     OwnedHqlExpr ds = selectorAttr.getExpr();
-    unsigned match = rowsScopes.find(*ds);
-    IHqlExpression * id = NULL;
-    if (match == NotFound)
+    bool hadRows = false;
+    OwnedHqlExpr id;
+    ForEachItemInRev(i, leftRightScopes)
     {
-        if (rowsScopes.ordinality() == 0)
-            reportError(ERR_LEFT_ILL_HERE, selectorAttr, "ROWS not legal here");
+        LeftRightScope & curScope = leftRightScopes.item(i);
+        if (curScope.rowsScope == ds)
+        {
+            id.set(curScope.rowsId);
+            break;
+        }
+        else if (curScope.rowsScope)
+            hadRows = true;
+    }
+
+    if (!id)
+    {
+        if (!hadRows)
+            reportError(ERR_LEFT_ILL_HERE, selectorAttr, "ROWSET not legal here");
         else
-            reportError(ERR_LEFT_ILL_HERE, selectorAttr, "ROWS not legal on this dataset");
+            reportError(ERR_LEFT_ILL_HERE, selectorAttr, "ROWSET not legal on this dataset");
 
         OwnedHqlExpr selSeq = createDummySelectorSequence();
         ds.setown(createSelector(no_left, queryNullRecord(), selSeq));
     }
-    else
-        id = &OLINK(rowsIds.item(match));
-    OwnedHqlExpr rows = createDataset(no_rows, LINK(ds), id);
+
+    OwnedHqlExpr rows = createDataset(no_rows, LINK(ds), LINK(id));
     return createValue(no_rowset, makeSetType(rows->getType()), LINK(rows));
 }
 
@@ -2582,7 +2590,6 @@ void HqlGram::releaseScopes()
         popTopScope();
 
     leftRightScopes.kill();
-    rowsScopes.kill();
     
     while (selfScopes.length()>0)
         popSelfScope();
@@ -2791,28 +2798,27 @@ IHqlExpression *HqlGram::queryRightScope()
     return NULL;
 }
 
-IHqlExpression *HqlGram::queryRowsScope()
-{
-    if (!rowsScopes.length())
-        return NULL;
-    return &rowsScopes.tos();
-}
-
 IHqlExpression *HqlGram::resolveRows(const attribute & errpos, IHqlExpression * ds)
 {
-    unsigned match = rowsScopes.find(*ds);
-    if (match == NotFound)
+    bool hadRows = false;
+    ForEachItemInRev(i, leftRightScopes)
     {
-        if (rowsScopes.ordinality() == 0)
-            reportError(ERR_LEFT_ILL_HERE, errpos, "ROWS not legal here");
-        else
-            reportError(ERR_LEFT_ILL_HERE, errpos, "ROWS not legal on this dataset");
-
-        return createDataset(no_null, LINK(ds->queryRecord()));
+        LeftRightScope & curScope = leftRightScopes.item(i);
+        if (curScope.rowsScope == ds)
+        {
+            IHqlExpression * id = LINK(curScope.rowsId);
+            return createDataset(no_rows, LINK(ds), id);
+        }
+        else if (curScope.rowsScope)
+            hadRows = true;
     }
 
-    IHqlExpression * id = &OLINK(rowsIds.item(match));
-    return createDataset(no_rows, LINK(ds), id);
+    if (!hadRows)
+        reportError(ERR_LEFT_ILL_HERE, errpos, "ROWS not legal here");
+    else
+        reportError(ERR_LEFT_ILL_HERE, errpos, "ROWS not legal on this dataset");
+
+    return createDataset(no_null, LINK(ds->queryRecord()));
 }
 
 
