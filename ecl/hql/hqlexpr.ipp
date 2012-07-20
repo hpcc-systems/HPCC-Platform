@@ -310,23 +310,45 @@ public:
 };
 
 
-class CHqlSelectExpression : public CHqlExpression
+class CHqlSelectBaseExpression : public CHqlExpression
 {
 public:
     static IHqlExpression * makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
     static IHqlExpression * makeSelectExpression(HqlExprArray & ownedOperands);
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
-    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
 
+    virtual void calcNormalized() = 0;
+
 protected:
-    CHqlSelectExpression();
+    CHqlSelectBaseExpression();
 
     void setOperands(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
     void setOperands(HqlExprArray & _ownedOperands);
+};
 
+class CHqlNormalizedSelectExpression : public CHqlSelectBaseExpression
+{
+    friend class CHqlSelectBaseExpression;
+public:
+    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
+    virtual void calcNormalized();
+
+protected:
+    CHqlNormalizedSelectExpression() {}
+};
+
+class CHqlSelectExpression : public CHqlSelectBaseExpression
+{
+    friend class CHqlSelectBaseExpression;
+public:
+    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
+    virtual void calcNormalized();
+
+protected:
+    CHqlSelectExpression() {}
 
 protected:
     HqlExprAttr normalized;

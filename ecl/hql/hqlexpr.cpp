@@ -5158,25 +5158,25 @@ IHqlExpression * CHqlExpression::calcNormalizedSelector() const
 
 //==============================================================================================================
 
-CHqlSelectExpression::CHqlSelectExpression()
+CHqlSelectBaseExpression::CHqlSelectBaseExpression()
 : CHqlExpression(no_select)
 {
 }
 
-ITypeInfo *CHqlSelectExpression::queryType() const
+ITypeInfo *CHqlSelectBaseExpression::queryType() const
 {
     dbgassertex(operands.ordinality()>=2);
     return operands.item(1).queryType();
 }
 
-ITypeInfo *CHqlSelectExpression::getType()
+ITypeInfo *CHqlSelectBaseExpression::getType()
 {
     dbgassertex(operands.ordinality()>=2);
     return operands.item(1).getType();
 }
 
 
-void CHqlSelectExpression::setOperands(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
+void CHqlSelectBaseExpression::setOperands(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
 {
     //Need to be very careful about the order that this is done in, since queryType() depends on operand2
     unsigned max = attr ? 3 : 2;
@@ -5189,19 +5189,71 @@ void CHqlSelectExpression::setOperands(IHqlExpression * left, IHqlExpression * r
     for (unsigned i=0; i < max; i++)
         onAppendOperand(operands.item(i), i);
 
-    normalized.setown(calcNormalizedSelector());
 }
 
-void CHqlSelectExpression::setOperands(HqlExprArray & _ownedOperands)
+void CHqlSelectBaseExpression::setOperands(HqlExprArray & _ownedOperands)
 {
     //base setOperands() already processes things in the correct order
     CHqlExpression::setOperands(_ownedOperands);
-    normalized.setown(calcNormalizedSelector());
 }
 
-IHqlExpression * CHqlSelectExpression::clone(HqlExprArray &newkids)
+IHqlExpression * CHqlSelectBaseExpression::clone(HqlExprArray &newkids)
 {
     return createSelectExpr(newkids);
+}
+
+IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
+{
+#ifdef _DEBUG
+    assertex(!right->isDataset());
+    assertex(left->getOperator() != no_activerow);
+#endif
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    bool needNormalize = (normalizedLeft != left) || (attr && attr->queryName() == newAtom);
+
+    CHqlSelectBaseExpression * select;
+    if (needNormalize)
+        select = new CHqlSelectExpression;
+    else
+        select = new CHqlNormalizedSelectExpression;
+    select->setOperands(left, right, attr);
+    select->calcNormalized();
+    return select->closeExpr();
+}
+
+IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & ownedOperands)
+{
+#ifdef _DEBUG
+    assertex(!ownedOperands.item(1).isDataset());
+    assertex(ownedOperands.item(0).getOperator() != no_activerow);
+#endif
+    IHqlExpression * left = &ownedOperands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    bool needNormalize = (normalizedLeft != left) || ((ownedOperands.ordinality() > 2) && ::hasProperty(newAtom, ownedOperands));
+
+    CHqlSelectBaseExpression * select;
+    if (needNormalize)
+        select = new CHqlSelectExpression;
+    else
+        select = new CHqlNormalizedSelectExpression;
+    select->setOperands(ownedOperands);
+    select->calcNormalized();
+    return select->closeExpr();
+}
+
+//==============================================================================================================
+
+IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector(bool skipIndex)
+{
+    return this;
+}
+
+void CHqlNormalizedSelectExpression::calcNormalized()
+{
+#ifdef VERIFY_EXPR_INTEGRITY
+    OwnedHqlExpr normalized = calcNormalizedSelector();
+    assertex(!normalized);
+#endif
 }
 
 IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
@@ -5211,26 +5263,10 @@ IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
     return this;
 }
 
-IHqlExpression * CHqlSelectExpression::makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
+void CHqlSelectExpression::calcNormalized()
 {
-#ifdef _DEBUG
-    assertex(!right->isDataset());
-    assertex(left->getOperator() != no_activerow);
-#endif
-    CHqlSelectExpression * select = new CHqlSelectExpression;
-    select->setOperands(left, right, attr);
-    return select->closeExpr();
-}
-
-IHqlExpression * CHqlSelectExpression::makeSelectExpression(HqlExprArray & _ownedOperands)
-{
-#ifdef _DEBUG
-    assertex(!_ownedOperands.item(1).isDataset());
-    assertex(_ownedOperands.item(0).getOperator() != no_activerow);
-#endif
-    CHqlSelectExpression * select = new CHqlSelectExpression;
-    select->setOperands(_ownedOperands);
-    return select->closeExpr();
+    normalized.setown(calcNormalizedSelector());
+    assertex(normalized);
 }
 
 //==============================================================================================================
@@ -11960,7 +11996,7 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
     if (t == type_row)
         return createRow(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
 
-    return CHqlSelectExpression::makeSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
+    return CHqlSelectBaseExpression::makeSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
 }
 
 static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
@@ -11974,7 +12010,7 @@ static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
     if (t == type_row)
         return createRow(no_select, args);
 
-    return CHqlSelectExpression::makeSelectExpression(args);
+    return CHqlSelectBaseExpression::makeSelectExpression(args);
 }
 
 extern IHqlExpression * createSelectExpr(HqlExprArray & args)
