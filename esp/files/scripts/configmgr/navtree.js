@@ -1948,35 +1948,57 @@ function populateOpenEnvTable() {
 
           var files = result.split(/;/g);
           var objs = new Array();
-          for (var i = 0; i < files.length; i++) {
-            objs[i] = {};
-            objs[i].name = files[i];
-          }
-
-          if (!openEnvTableDiv.openEnvDS) {
-            var openEnvColumnDefs = [{ key: "name", label: "Name", width: 280}];
-            var openEnvDataSource = new YAHOO.util.DataSource(objs);
-            openEnvDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-            var openEnvDataTable = new YAHOO.widget.DataTable("openEnvTableDiv", openEnvColumnDefs,
-                                                              openEnvDataSource,
-                                                              { initialLoad: false, resize: true, selectionMode: "single" });
-
-            openEnvDataTable.subscribe("rowClickEvent", openEnvDataTable.onEventSelectRow);
-            openEnvDataTable.subscribe("cellClickEvent", function() { openEnvDataTable.clearTextSelection() });
-            openEnvDataTable.subscribe("cellDblclickEvent", function(oArgs) {
-              var tmpdt = top.document;
-              var btns = tmpdt.openEnvPanel.cfg.getProperty("buttons");
-              for (var bIdx = 0; bIdx < btns.length; bIdx++) {
-                if (btns[bIdx].text === 'Ok') {
-                  YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
-                  return false;
-                }
+          var staged_configuration = new Array();
+          for (var i = 0, j = 0, k = 0; i < files.length; i++) {
+            if (files[i] == "<StagedConfiguration>")
+            {
+              i++;
+              staged_configuration[k] = files[i];
+              k++;
+            }
+            else if (files[i] == "</StagedConfiguration>")
+            {
+              if (i+1 >= files.length)
+              {
+                break;
               }
-            });
-            openEnvTableDiv.openEnvTable = openEnvDataTable;
-            openEnvTableDiv.openEnvDS = openEnvDataSource;
+              else
+              {
+                continue;
+              }
+            }
+            objs[j] = {};
+            objs[j].name = files[i];
+            j++;
           }
 
+          YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
+          if (staged_configuration.indexOf(oData) != -1)
+           elLiner.innerHTML = "<font style=\"background-color:#004ADE;color:white\" title=\"Staged Configuration\">" + oData + "</font>";
+          else
+           elLiner.innerHTML = oData; };
+
+          var openEnvColumnDefs = [{ key: "name", label: "Name", width: 280, formatter:YAHOO.widget.DataTable.formatName}];
+          var openEnvDataSource = new YAHOO.util.DataSource(objs);
+          openEnvDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+          var openEnvDataTable = new YAHOO.widget.DataTable("openEnvTableDiv", openEnvColumnDefs,
+                                                            openEnvDataSource,
+                                                            { initialLoad: false, resize: true, selectionMode: "single" });
+
+          openEnvDataTable.subscribe("rowClickEvent", openEnvDataTable.onEventSelectRow);
+          openEnvDataTable.subscribe("cellClickEvent", function() { openEnvDataTable.clearTextSelection() });
+          openEnvDataTable.subscribe("cellDblclickEvent", function(oArgs) {
+            var tmpdt = top.document;
+            var btns = tmpdt.openEnvPanel.cfg.getProperty("buttons");
+            for (var bIdx = 0; bIdx < btns.length; bIdx++) {
+              if (btns[bIdx].text === 'Ok') {
+                YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
+                return false;
+              }
+            }
+          });
+          openEnvTableDiv.openEnvTable = openEnvDataTable;
+          openEnvTableDiv.openEnvDS = openEnvDataSource;
           openEnvTableDiv.openEnvDS.handleResponse("", objs, { success: openEnvTableDiv.openEnvTable.onDataReturnInitializeTable,
             scope: openEnvTableDiv.openEnvTable
           }, this, 999);
