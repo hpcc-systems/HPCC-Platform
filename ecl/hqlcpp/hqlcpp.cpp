@@ -1683,6 +1683,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
+        DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
     };
 
     //get options values from workunit

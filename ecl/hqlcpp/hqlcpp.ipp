@@ -712,6 +712,7 @@ struct HqlCppOptions
     bool                reportFieldUsage;
     bool                shuffleLocalJoinConditions;
     bool                projectNestedTables;
+    bool                showSeqInGraph;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

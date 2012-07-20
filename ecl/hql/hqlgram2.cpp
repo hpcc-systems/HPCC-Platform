@@ -8120,7 +8120,7 @@ IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExp
         return LINK(right);
     
     HqlExprArray assigns;
-    OwnedHqlExpr seq = createSelectorSequence();
+    OwnedHqlExpr seq = createActiveSelectorSequence(right, NULL);
     OwnedHqlExpr rightSelect = createSelector(no_left, right, seq);
     OwnedHqlExpr leftSelect = getSelf(left);
     if (!checkRecordCreateTransform(assigns, left->queryRecord(), leftSelect, right->queryRecord(), rightSelect, errpos))
