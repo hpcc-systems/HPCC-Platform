@@ -421,7 +421,7 @@
           </listitem>
 
           <listitem>
-            <para>A drop down list showing the 6 feature areas of the HPCC is
+            <para>A drop list showing the 6 feature areas of the HPCC is
             provided. Select the feature area you are interested in and press
             <emphasis role="bold">Add</emphasis>.</para>
 
@@ -432,7 +432,7 @@
           <listitem>
             <para>There may be more than one resource setting available,
             select the one you require from the <emphasis role="bold">Select
-            Resource</emphasis> drop down list provided.</para>
+            Resource</emphasis> drop list provided.</para>
           </listitem>
 
           <listitem>
@@ -684,7 +684,7 @@
           </listitem>
 
           <listitem>
-            <para>A drop down list showing the 6 feature areas of the HPCC is
+            <para>A drop list showing the 6 feature areas of the HPCC is
             shown. Select the feature area you want and press <emphasis
             role="bold">Add</emphasis>.</para>
 
@@ -696,7 +696,7 @@
           <listitem>
             <para>There may be more than one resource setting available,
             select the <emphasis role="bold">Resource</emphasis> you require
-            from the drop down list provided.</para>
+            from the drop list provided.</para>
           </listitem>
 
           <listitem>
@@ -856,8 +856,8 @@
 
         <listitem>
           <para>Select a <emphasis role="bold">User</emphasis> or <emphasis
-          role="bold">Group</emphasis> from the dropdown lists provided and
-          check the checkboxes for <emphasis role="bold">allow</emphasis> and
+          role="bold">Group</emphasis> from the drop lists provided and check
+          the checkboxes for <emphasis role="bold">allow</emphasis> and
           <emphasis role="bold">deny</emphasis> as appropriate.</para>
         </listitem>
 
