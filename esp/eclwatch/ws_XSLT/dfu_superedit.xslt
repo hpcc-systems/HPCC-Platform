@@ -78,9 +78,6 @@
             <form id="listitems" action="/WsDfu/SuperfileAction">
             <xsl:apply-templates select="subfiles" mode="list"/>
             <input type="hidden" name="superfile" value="{superfile}"/>
-            </form>
-            <form action="/WsDfu/SuperfileAddRaw">
-            <input type="hidden" name="superfile" value="{superfile}"/>
             <p/>
             <table xmlns="" name="table1">
             <tr>

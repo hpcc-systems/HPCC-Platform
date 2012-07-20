@@ -647,7 +647,6 @@ ESPservice [
 
     ESPmethod [resp_xsl_default("/esp/xslt/addto_superfile.xslt")] AddtoSuperfile(AddtoSuperfileRequest, AddtoSuperfileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_superedit.xslt")] SuperfileList(SuperfileListRequest, SuperfileListResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAddRaw(SuperfileAddRawRequest, SuperfileAddRawResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/dfu_superresult.xslt")] SuperfileAction(SuperfileActionRequest, SuperfileActionResponse);
     
     ESPmethod Savexml(SavexmlRequest, SavexmlResponse);
