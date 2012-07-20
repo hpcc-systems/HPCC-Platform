@@ -869,13 +869,13 @@ public:
     {
         return simpleQualifier.item(which);
     }
-    bool match(unsigned level, const char *tag)
+    bool match(unsigned level, const char *tag, bool noCase=false)
     {
         const char *nodeTag = queryNode(level);
         if (strchr(nodeTag, '*'))
-            return WildMatch(tag, strlen(tag), nodeTag, strlen(nodeTag), false);
+            return WildMatch(tag, strlen(tag), nodeTag, strlen(nodeTag), noCase);
         else
-            return (0 == strcmp(nodeTag, tag));
+            return (0 == (noCase ? strcmpi(nodeTag, tag) : strcmp(nodeTag, tag)));
     }
     bool qualify(IPropertyTree &tree, unsigned depth)
     {
@@ -1625,11 +1625,13 @@ class CXMLParse : public CInterface, implements IXMLParse
         bool contentRequired;
         unsigned lastMatchKeptLevel;
         IPropertyTree *lastMatchKeptNode, *lastMatchKeptNodeParent;
+        bool ignoreCaseServiceMethodName;//Ignore case when processing SOAP web service.method node
+        unsigned bodyLevel;
 
     public:
         IMPLEMENT_IINTERFACE;
 
-        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool ignoreNameSpaces) : xpath(_xpath, ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired)
+        CXMLMaker(const char *_xpath, IXMLSelect &_iXMLSelect, bool _contentRequired, bool _ignoreNameSpaces, bool _ignoreCaseServiceMethodName) : xpath(_xpath, _ignoreNameSpaces), iXMLSelect(&_iXMLSelect), contentRequired(_contentRequired), ignoreCaseServiceMethodName(_ignoreCaseServiceMethodName)
         {
             lastMatchKeptLevel = 0;
             lastMatchKeptNode = lastMatchKeptNodeParent = NULL;
@@ -1648,6 +1650,7 @@ class CXMLParse : public CInterface, implements IXMLParse
         void init()
         {
             level = 0;
+            bodyLevel = -1;
             nodeCreator.setown(new COffsetNodeCreator());
             maker = createRootLessPTreeMaker(ipt_none, NULL, nodeCreator);
             bool f;
@@ -1702,7 +1705,7 @@ class CXMLParse : public CInterface, implements IXMLParse
                 {
                     if (level >= xpath.queryDepth())
                         res = true;
-                    else if (xpath.match(level, tag))
+                    else if (xpath.match(level, tag, ignoreCaseServiceMethodName && (bodyLevel == level-1)))
                     {
                         res = true;
                         if (level == xpath.queryDepth()-1)
@@ -1732,6 +1735,8 @@ class CXMLParse : public CInterface, implements IXMLParse
                 current->startOffset = startOffset;
                 stackInfo->nodeMade = res;
                 stackInfo->iPTMade = current;
+                if (0==strcmp(tag, "Body"))//remember level for begin of "Body" node
+                    bodyLevel = level;
             }
         }
         virtual void newAttribute(const char *tag, const char *value)
@@ -1921,7 +1926,8 @@ public:
     {
         xmlReader = NULL;
         bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)xr_ignoreNameSpaces);
-        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
+        bool ignoreCaseServiceMethodName = 0 != ((unsigned)xmlOptions & (unsigned)xr_ignoreCaseServiceMethodName);
+        iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces, ignoreCaseServiceMethodName);
         iXMLMaker->init();
     }
 
