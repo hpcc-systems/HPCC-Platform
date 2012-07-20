@@ -27,24 +27,24 @@
 #endif
 
 static double Pow10[] = { 1, 10, 100, 1000, 10000, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10,1e11,1e12,1e13,1e14,1e15,1e16 };
-int signMap[16] = { 0,0,0,0,0,0,0,0,0,0,+1,-1,+1,-1,+1,+1 };
+static int signMap[16] = { 0,0,0,0,0,0,0,0,0,0,+1,-1,+1,-1,+1,+1 };
 
 
 
 
-TempDecimal::TempDecimal(const TempDecimal & other)
+Decimal::Decimal(const Decimal & other)
 {
     memcpy(this, &other, sizeof(*this));
 }
 
-TempDecimal & TempDecimal::abs()
+Decimal & Decimal::abs()
 {
     negative = false;
     return *this;
 }
 
 
-TempDecimal & TempDecimal::add(const TempDecimal & other)
+Decimal & Decimal::add(const Decimal & other)
 {
     if (negative == other.negative)
         return addDigits(other);
@@ -54,7 +54,7 @@ TempDecimal & TempDecimal::add(const TempDecimal & other)
 
 
 
-TempDecimal & TempDecimal::addDigits(const TempDecimal & other)
+Decimal & Decimal::addDigits(const Decimal & other)
 {
     extendRange(other);
     byte oLo = other.lsb;
@@ -93,7 +93,7 @@ TempDecimal & TempDecimal::addDigits(const TempDecimal & other)
     return *this;
 }
 
-int TempDecimal::compareNull() const
+int Decimal::compareNull() const
 {
     byte idx;
     for (idx = lsb; idx <= msb; idx++)
@@ -104,7 +104,7 @@ int TempDecimal::compareNull() const
 }
 
 
-int TempDecimal::compare(const TempDecimal & other) const
+int Decimal::compare(const Decimal & other) const
 {
     int lo1, hi1, lo2, hi2;
     clip(lo1, hi1);
@@ -142,7 +142,7 @@ int TempDecimal::compare(const TempDecimal & other) const
 }
 
 
-TempDecimal & TempDecimal::divide(const TempDecimal & other)
+Decimal & Decimal::divide(const Decimal & other)
 {
     //NB: Round towards zero
     int lo1, hi1, lo2, hi2;
@@ -233,7 +233,7 @@ TempDecimal & TempDecimal::divide(const TempDecimal & other)
 }
 
 
-void TempDecimal::extendRange(byte oLsb, byte oMsb)
+void Decimal::extendRange(byte oLsb, byte oMsb)
 {
     byte index;
     if (lsb > oLsb)
@@ -251,15 +251,15 @@ void TempDecimal::extendRange(byte oLsb, byte oMsb)
 }
 
 
-TempDecimal & TempDecimal::modulus(const TempDecimal & other)
+Decimal & Decimal::modulus(const Decimal & other)
 {
-    TempDecimal left(*this);
+    Decimal left(*this);
     left.divide(other).truncate(0).multiply(other);
     return subtract(left);
 }
 
 
-TempDecimal & TempDecimal::multiply(const TempDecimal & other)
+Decimal & Decimal::multiply(const Decimal & other)
 {
     int low1, high1, low2, high2, lowt, hight;
 
@@ -318,13 +318,13 @@ TempDecimal & TempDecimal::multiply(const TempDecimal & other)
 }
 
 
-TempDecimal & TempDecimal::negate()
+Decimal & Decimal::negate()
 {
     negative = !negative;
     return *this;
 }
 
-TempDecimal & TempDecimal::power(unsigned value)
+Decimal & Decimal::power(unsigned value)
 {
     if (value == 0)
         setInt(1);
@@ -334,14 +334,14 @@ TempDecimal & TempDecimal::power(unsigned value)
 }
 
 
-TempDecimal & TempDecimal::power(int value)
+Decimal & Decimal::power(int value)
 {
     if ( value >= 0)
         return power((unsigned)value);
 
 #if 1
     //This probably gives slightly more expected results, but both suffer from rounding errors.
-    TempDecimal reciprocal;
+    Decimal reciprocal;
     reciprocal.setInt(1);
     reciprocal.divide(*this);
     set(reciprocal);
@@ -349,7 +349,7 @@ TempDecimal & TempDecimal::power(int value)
     return *this;
 #else
     doPower((unsigned)-value);
-    TempDecimal reciprocal;
+    Decimal reciprocal;
     reciprocal.setInt(1);
     reciprocal.divide(*this);
     set(reciprocal);
@@ -358,7 +358,7 @@ TempDecimal & TempDecimal::power(int value)
 }
 
 
-TempDecimal & TempDecimal::incLSD()
+Decimal & Decimal::incLSD()
 {
     unsigned index = lsb;
     while (index <= msb)
@@ -376,7 +376,7 @@ TempDecimal & TempDecimal::incLSD()
 }
 
 
-TempDecimal & TempDecimal::round(int places)
+Decimal & Decimal::round(int places)
 {
     //out of range - either 0 or overflow
     if (places < -maxPrecision)
@@ -403,7 +403,7 @@ TempDecimal & TempDecimal::round(int places)
 }
 
 
-TempDecimal & TempDecimal::roundup(int places)
+Decimal & Decimal::roundup(int places)
 {
     if ((places >= maxPrecision) || (zeroDigit - places <= lsb))
         return *this;
@@ -419,7 +419,7 @@ TempDecimal & TempDecimal::roundup(int places)
 }
 
 
-void TempDecimal::getPrecision(unsigned & digits, unsigned & precision)
+void Decimal::getPrecision(unsigned & digits, unsigned & precision)
 {
     //Ensures digits>=precision && precision >= 0
     unsigned top = msb >= zeroDigit ? msb+1 : zeroDigit;
@@ -428,7 +428,7 @@ void TempDecimal::getPrecision(unsigned & digits, unsigned & precision)
     precision = zeroDigit-low;
 }
 
-void TempDecimal::getClipPrecision(unsigned & digits, unsigned & precision)
+void Decimal::getClipPrecision(unsigned & digits, unsigned & precision)
 {
     int lo, hi;
     clip(lo, hi);
@@ -448,7 +448,7 @@ void TempDecimal::getClipPrecision(unsigned & digits, unsigned & precision)
     }
 }
 
-TempDecimal & TempDecimal::setPrecision(byte numDigits, byte precision)
+Decimal & Decimal::setPrecision(byte numDigits, byte precision)
 {
     unsigned char newhigh = zeroDigit + numDigits - precision - 1;
     unsigned char newlow = zeroDigit - precision;
@@ -465,7 +465,7 @@ TempDecimal & TempDecimal::setPrecision(byte numDigits, byte precision)
 }
 
 
-TempDecimal & TempDecimal::subtract(const TempDecimal & other)
+Decimal & Decimal::subtract(const Decimal & other)
 {
     if (negative != other.negative)
         return addDigits(other);
@@ -474,7 +474,7 @@ TempDecimal & TempDecimal::subtract(const TempDecimal & other)
 }
 
 
-TempDecimal & TempDecimal::subtractDigits(const TempDecimal & other)
+Decimal & Decimal::subtractDigits(const Decimal & other)
 {
     extendRange(other);
     byte oLo = other.lsb;
@@ -527,7 +527,7 @@ TempDecimal & TempDecimal::subtractDigits(const TempDecimal & other)
     return *this;
 }
 
-TempDecimal & TempDecimal::truncate(int places)
+Decimal & Decimal::truncate(int places)
 {
     //out of range - either 0 or overflow
     if (places <= -maxIntegerDigits)
@@ -549,7 +549,7 @@ TempDecimal & TempDecimal::truncate(int places)
 }
 
 
-size32_t TempDecimal::getStringLength() const
+size32_t Decimal::getStringLength() const
 {
     int lo, hi;
     clip(lo, hi);
@@ -567,7 +567,7 @@ size32_t TempDecimal::getStringLength() const
 }
 
 
-void TempDecimal::getCString(size32_t length, char * buffer) const
+void Decimal::getCString(size32_t length, char * buffer) const
 {
     unsigned len = getStringLength();
     if (len >= length)
@@ -582,7 +582,7 @@ void TempDecimal::getCString(size32_t length, char * buffer) const
     buffer[len] = 0;
 }
 
-char * TempDecimal::getCString() const
+char * Decimal::getCString() const
 {
     unsigned len = getStringLength();
     char * buffer = (char *)malloc(len+1);
@@ -593,7 +593,7 @@ char * TempDecimal::getCString() const
 }
 
 
-void TempDecimal::getDecimal(byte length, byte precision, void * buffer, byte signs) const
+void Decimal::getDecimal(byte length, byte precision, void * buffer, byte signs) const
 {
     doGetDecimal(length, 2*length-1, precision, buffer);
     byte sign = negative ? (signs & 0x0f) : (signs >> 4);
@@ -601,7 +601,7 @@ void TempDecimal::getDecimal(byte length, byte precision, void * buffer, byte si
 }
 
 
-__int64 TempDecimal::getInt64() const
+__int64 Decimal::getInt64() const
 {
     unsigned __int64 value = getUInt64();
     if (negative)
@@ -610,7 +610,7 @@ __int64 TempDecimal::getInt64() const
 }
 
 
-int TempDecimal::getInt() const
+int Decimal::getInt() const
 {
     unsigned int value = getUInt();
     if (negative)
@@ -619,7 +619,7 @@ int TempDecimal::getInt() const
 }
 
 
-double TempDecimal::getReal() const
+double Decimal::getReal() const
 {
     int lo, hi;
     clip(lo, hi);
@@ -659,7 +659,7 @@ double TempDecimal::getReal() const
 }
 
 
-void TempDecimal::getString(size32_t length, char * buffer) const
+void Decimal::getString(size32_t length, char * buffer) const
 {
     unsigned len = getStringLength();
     if (len > length)
@@ -674,7 +674,7 @@ void TempDecimal::getString(size32_t length, char * buffer) const
 }
 
 
-void TempDecimal::getStringX(size32_t & length, char * & buffer) const
+void Decimal::getStringX(size32_t & length, char * & buffer) const
 {
     unsigned len = getStringLength();
     buffer = (char *)malloc(len);
@@ -684,13 +684,13 @@ void TempDecimal::getStringX(size32_t & length, char * & buffer) const
 }
 
 
-void TempDecimal::getUDecimal(byte length, byte precision, void * buffer) const
+void Decimal::getUDecimal(byte length, byte precision, void * buffer) const
 {
     doGetDecimal(length, 2*length, precision, buffer);
 }
 
 
-unsigned int TempDecimal::getUInt() const
+unsigned int Decimal::getUInt() const
 {
     const unsigned hi = msb;
     unsigned int value = 0;
@@ -716,7 +716,7 @@ unsigned int TempDecimal::getUInt() const
 }
 
 
-unsigned __int64 TempDecimal::getUInt64() const
+unsigned __int64 Decimal::getUInt64() const
 {
     //MORE: This isn't the most efficient way of doing it - see num2str in jutil for some hints.
     const unsigned hi = msb;
@@ -743,17 +743,17 @@ unsigned __int64 TempDecimal::getUInt64() const
 }
 
 
-void TempDecimal::overflow()
+void Decimal::overflow()
 {
 }
 
 
-void TempDecimal::set(const TempDecimal & value)
+void Decimal::set(const Decimal & value)
 {
     memcpy(this, &value, sizeof(*this));
 }
 
-void TempDecimal::setCString(const char * buffer)
+void Decimal::setCString(const char * buffer)
 {
     const char * cur = buffer;
     while (*cur == ' ')
@@ -798,7 +798,7 @@ void TempDecimal::setCString(const char * buffer)
 }
 
 
-void TempDecimal::setDecimal(byte length, byte precision, const void * _buffer)
+void Decimal::setDecimal(byte length, byte precision, const void * _buffer)
 {
     const byte * buffer = (const byte *)_buffer;
     lsb = zeroDigit - precision;
@@ -829,7 +829,7 @@ void TempDecimal::setDecimal(byte length, byte precision, const void * _buffer)
 }
 
 
-void TempDecimal::setInt64(__int64 value)
+void Decimal::setInt64(__int64 value)
 {
     if (value >= 0)
         setUInt64((unsigned __int64)value);
@@ -841,7 +841,7 @@ void TempDecimal::setInt64(__int64 value)
 }
 
 
-void TempDecimal::setInt(int value)
+void Decimal::setInt(int value)
 {
     if (value >= 0)
         setUInt((unsigned int)value);
@@ -852,7 +852,7 @@ void TempDecimal::setInt(int value)
     }
 }
 
-void TempDecimal::setReal(double value)
+void Decimal::setReal(double value)
 {
     setZero();
 
@@ -906,7 +906,7 @@ void TempDecimal::setReal(double value)
 }
 
 
-void TempDecimal::setString(size32_t length, const char * buffer)
+void Decimal::setString(size32_t length, const char * buffer)
 {
     const char * limit = buffer+length;
     const char * cur = buffer;
@@ -953,7 +953,7 @@ void TempDecimal::setString(size32_t length, const char * buffer)
 }
 
 
-void TempDecimal::setUInt(unsigned int value)
+void Decimal::setUInt(unsigned int value)
 {
     negative = false;
     lsb = zeroDigit;
@@ -969,7 +969,7 @@ void TempDecimal::setUInt(unsigned int value)
 }
 
 
-void TempDecimal::setUInt64(unsigned __int64 value)
+void Decimal::setUInt64(unsigned __int64 value)
 {
     negative = false;
     //MORE: This isn't the most efficient way of doing it - see num2str in jutil for some hints.
@@ -986,7 +986,7 @@ void TempDecimal::setUInt64(unsigned __int64 value)
 }
 
 
-void TempDecimal::setUDecimal(byte length, byte precision, const void * _buffer)
+void Decimal::setUDecimal(byte length, byte precision, const void * _buffer)
 {
     const byte * buffer = (const byte *)_buffer;
     lsb = zeroDigit - precision;
@@ -1003,7 +1003,7 @@ void TempDecimal::setUDecimal(byte length, byte precision, const void * _buffer)
 
 //-- helper functions:
 
-void TempDecimal::clip(int & newLsb, int & newMsb) const
+void Decimal::clip(int & newLsb, int & newMsb) const
 {
     int lo = lsb;
     int hi = msb;
@@ -1015,7 +1015,7 @@ void TempDecimal::clip(int & newLsb, int & newMsb) const
     newMsb = hi;
 }
 
-void TempDecimal::clip(int & newLsb, int & newMsb, unsigned minLsb, unsigned maxMsb) const
+void Decimal::clip(int & newLsb, int & newMsb, unsigned minLsb, unsigned maxMsb) const
 {
     clip(newLsb, newMsb);
     if (newLsb < (int)minLsb)
@@ -1026,7 +1026,7 @@ void TempDecimal::clip(int & newLsb, int & newMsb, unsigned minLsb, unsigned max
         newMsb = newLsb-1;
 }
 
-unsigned TempDecimal::doGetString(char * buffer) const
+unsigned Decimal::doGetString(char * buffer) const
 {
     char * cur = buffer;
     int lo, hi;
@@ -1076,7 +1076,7 @@ unsigned TempDecimal::doGetString(char * buffer) const
 }
 
 
-void TempDecimal::doGetDecimal(byte length, byte maxDigits, byte precision, void * buffer) const
+void Decimal::doGetDecimal(byte length, byte maxDigits, byte precision, void * buffer) const
 {
     int tgtHighPos = zeroDigit+maxDigits-precision-1;
     int tgtLowPos = tgtHighPos - length*2 + 1;
@@ -1132,14 +1132,14 @@ void TempDecimal::doGetDecimal(byte length, byte maxDigits, byte precision, void
     }
 }
 
-void TempDecimal::doPower(unsigned value)
+void Decimal::doPower(unsigned value)
 {
     if (value == 1)
         return;
 
     if (value & 1)
     {
-        TempDecimal saved(*this);
+        Decimal saved(*this);
         doPower(value >> 1);
         multiply(*this);
         multiply(saved);
@@ -1151,7 +1151,7 @@ void TempDecimal::doPower(unsigned value)
     }
 }
 
-void TempDecimal::setZero()
+void Decimal::setZero()
 {
     negative = false;
     lsb = msb = zeroDigit;

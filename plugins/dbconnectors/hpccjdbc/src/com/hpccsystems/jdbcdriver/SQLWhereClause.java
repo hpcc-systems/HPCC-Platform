@@ -1,12 +1,13 @@
 package com.hpccsystems.jdbcdriver;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
 public class SQLWhereClause
 {
-	private List<SQLExpression> expressions;
+	private List<SQLExpressionFragment> expressions;
 	private List<String> expressionUniqueColumnNames;
 	private int expressionsCount;
 	private int operatorsCount;
@@ -14,21 +15,21 @@ public class SQLWhereClause
 
 	public SQLWhereClause()
 	{
-		expressions = new ArrayList<SQLExpression>();
+		expressions = new ArrayList<SQLExpressionFragment>();
 		expressionUniqueColumnNames = new ArrayList<String>();
 		expressionsCount = 0;
 		operatorsCount = 0;
 		orOperatorUsed = false;
 	}
 
-	public void addExpression(SQLExpression expression)
+	public void addExpression(SQLExpressionFragment expression)
 	{
 		expressions.add(expression);
-		if (expression.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE)
+		if (expression.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE)
 		{
 			expressionsCount++;
-			if (!expressionUniqueColumnNames.contains(expression.getName()))
-					expressionUniqueColumnNames.add(expression.getName());
+			if (!expressionUniqueColumnNames.contains(expression.getPrefixName()))
+					expressionUniqueColumnNames.add(expression.getPrefixName());
 		}
 		else
 		{
@@ -38,7 +39,7 @@ public class SQLWhereClause
 		}
 	}
 
-	public Iterator<SQLExpression> getExpressions()
+	public Iterator<SQLExpressionFragment> getExpressions()
 	{
 		return expressions.iterator();
 	}
@@ -55,10 +56,32 @@ public class SQLWhereClause
 	public String toString()
 	{
 		String clause = new String("");
-		Iterator<SQLExpression> it = expressions.iterator();
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			clause += ((SQLExpression)it.next()).toString();
+			clause += ((SQLExpressionFragment)it.next()).toString();
+		}
+		return clause;
+	}
+
+	public String fullToString()
+	{
+		String clause = new String("");
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
+		while (it.hasNext())
+		{
+			clause += ((SQLExpressionFragment)it.next()).fullToString();
+		}
+		return clause;
+	}
+
+	public String toStringTranslateSource(HashMap<String, String> map)
+	{
+		String clause = new String("");
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
+		while (it.hasNext())
+		{
+			clause += ((SQLExpressionFragment)it.next()).toStringTranslateSource(map);
 		}
 		return clause;
 	}
@@ -66,26 +89,26 @@ public class SQLWhereClause
 	public String [] getExpressionNames()
 	{
 		String [] names = new String[getExpressionsCount()];
-		Iterator<SQLExpression> it = expressions.iterator();
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
 		int i = 0;
 		while (it.hasNext())
 		{
-			SQLExpression exp = it.next();
-			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE)
+			SQLExpressionFragment exp = it.next();
+			if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE)
 			{
-				names[i++] = exp.getName();
+				names[i++] = exp.getPrefixName();
 			}
 		}
 		return names;
 	}
 
-	public SQLExpression getExpressionFromName(String name)
+	public SQLExpressionFragment getExpressionFromName(String name)
 	{
-		Iterator<SQLExpression> it = expressions.iterator();
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			SQLExpression exp = it.next();
-			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
+			SQLExpressionFragment exp = it.next();
+			if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixName().equals(name))
 			{
 				return exp;
 			}
@@ -95,11 +118,11 @@ public class SQLWhereClause
 
 	public boolean containsKey(String name)
 	{
-		Iterator<SQLExpression> it = expressions.iterator();
+		Iterator<SQLExpressionFragment> it = expressions.iterator();
 		while (it.hasNext())
 		{
-			SQLExpression exp = it.next();
-			if (exp.getType() == SQLExpression.LOGICAL_EXPRESSION_TYPE && exp.getName().equals(name))
+			SQLExpressionFragment exp = it.next();
+			if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixName().equals(name))
 				return true;
 		}
 		return false;
