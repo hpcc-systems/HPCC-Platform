@@ -266,6 +266,100 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     }
 }
 
+void CSoapComplexType::appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype)
+{
+    StringBuffer content;
+    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        content.append('{');
+        serializeStruct(ctx, content, (const char *)NULL);
+        content.append('}');
+        mimetype.set("application/json; charset=UTF-8");
+    }
+    else
+    {
+        buffer.append(38, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        serializeStruct(ctx, content, (const char *)NULL);
+        mimetype.set("text/xml; charset=UTF-8");
+    }
+
+    buffer.append(content.length(), content.str());
+}
+
+inline void open_element(IEspContext *ctx, StringBuffer &xml, const char *name, const char *uri, const char *prefix)
+{
+    if (!name || !*name)
+        return;
+    xml.append("<");
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(name);
+    if (uri && *uri)
+    {
+        xml.append("xmlns");
+        if (prefix && *prefix)
+            xml.append(':').append(prefix);
+        xml.append("=\"").append(uri).append('\"');
+    }
+}
+
+inline void start_child_attributes(IEspContext *ctx, StringBuffer &xml, const char *name)
+{
+}
+
+inline void start_child_elements(IEspContext *ctx, StringBuffer &xml, const char *name)
+{
+    if (!name || !*name)
+        return;
+    xml.append('>');
+}
+
+inline void close_element(IEspContext *ctx, StringBuffer &xml, const char *name, const char *prefix)
+{
+    if (!name || !*name)
+        return;
+    xml.append("</");
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(name).append('>');
+}
+
+void CSoapComplexType::serializeJSONStruct(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        if (s.length() && !strchr("[{:", s.charAt(s.length()-1)))
+            s.append(", ");
+        if (name && *name)
+            s.append('\"').append(name).append("\": ");
+        s.append("{");
+        serializeContent(ctx, s);
+        s.append("}");
+        return;
+    }
+}
+
+void CSoapComplexType::serializeStruct(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    const char *tag = (name && *name) ? name : getRootName();
+    if (ctx->getResponseFormat()==ESPSerializationJSON)
+        return serializeJSONStruct(ctx, s, tag);
+
+    open_element(ctx, s, tag, getNsURI(), getNsPrefix());
+    start_child_attributes(ctx, s, name);
+    serializeAttributes(ctx, s);
+    start_child_elements(ctx, s, tag);
+    serializeContent(ctx, s);
+    close_element(ctx, s, tag, getNsPrefix());
+}
+
+void CSoapComplexType::serializeItem(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    if (ctx->getResponseFormat()==ESPSerializationJSON)
+        return serializeJSONStruct(ctx, s, NULL);
+    serializeStruct(ctx, s, name);
+}
+
 void CSoapResponseBinding::handleExceptions(IMultiException *me, const char *serv, const char *meth)
 {
     if (me->ordinality() > 0)

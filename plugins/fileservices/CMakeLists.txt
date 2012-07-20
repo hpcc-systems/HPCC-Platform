@@ -69,6 +69,7 @@ target_link_libraries ( fileservices
          remote 
          dalibase 
          environment 
+         esphttp
          dllserver 
          nbcd 
          eclrtl  
