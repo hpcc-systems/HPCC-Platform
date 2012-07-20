@@ -4102,7 +4102,6 @@ protected:
                 ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad number of files. Expecting %d, got %d", logicalName.get(), n, index);
 
             // Now try to resolve them all (file/superfile)
-            subit->first();
             ForEach (*subit)
             {
                 IPropertyTree &sub = subit->query();
