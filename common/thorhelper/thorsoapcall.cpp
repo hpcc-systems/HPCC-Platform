@@ -1199,7 +1199,7 @@ void CWSCHelperThread::createXmlSoapQuery(CommonXmlWriter &xmlWriter, ConstPoint
 void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
 {
     unsigned xmlWriteFlags = 0;
-    unsigned xmlReadFlags = xr_ignoreNameSpaces; 
+    unsigned xmlReadFlags = xr_ignoreNameSpaces | xr_ignoreCaseServiceMethodName;
     if (master->flags & SOAPFtrim)
         xmlWriteFlags |= XWFtrim;
     if ((master->flags & SOAPFpreserveSpace) == 0)

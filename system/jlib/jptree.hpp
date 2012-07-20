@@ -137,7 +137,7 @@ interface jlib_thrown_decl IXMLReadException : extends IException
 };
 extern jlib_decl IXMLReadException *createXmlReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset);
 
-enum XmlReaderOptions { xr_none=0x00, xr_ignoreWhiteSpace=0x01, xr_noRoot=0x02, xr_ignoreNameSpaces=0x04 };
+enum XmlReaderOptions { xr_none=0x00, xr_ignoreWhiteSpace=0x01, xr_noRoot=0x02, xr_ignoreNameSpaces=0x04, xr_ignoreCaseServiceMethodName=0x08 };
 
 interface IXMLReader : extends IInterface
 {
