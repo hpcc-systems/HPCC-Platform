@@ -123,11 +123,9 @@ public:
             LOG(MCdebugProgress, thorJob, "%s", str.append(graph.queryGraphId()).str());
             if (mb)
             {
-                unsigned pos=mb->length();
-                mb->append((size32_t)0); // placeholder
+                DelayedSizeMarker sizeMark(*mb);
                 gatherData(*mb);
-                size32_t len=(mb->length()-pos)-sizeof(size32_t);
-                mb->writeDirect(pos, sizeof(len), &len);
+                sizeMark.write();
             }
             activeGraphs.zap(graph);
         }

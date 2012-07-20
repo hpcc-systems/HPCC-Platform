@@ -108,14 +108,11 @@ protected:
     void sendResult(const void *row, IOutputRowSerializer *serializer, rank_t dst)
     {
         CMessageBuffer mb;
-        size32_t start = mb.length();
-        size32_t sz = 0;
-        mb.append(sz);
+        DelayedSizeMarker sizeMark(mb);
         if (row&&hadElement) {
             CMemoryRowSerializer mbs(mb);
             serializer->serialize(mbs,(const byte *)row);
-            sz = mb.length()-start-sizeof(size32_t);
-            mb.writeDirect(start,sizeof(size32_t),&sz);
+            sizeMark.write();
         }
         container.queryJob().queryJobComm().send(mb, dst, mpTag);
     }
