@@ -1148,7 +1148,6 @@ interface IHqlExpression : public IInterface
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) = 0;
     virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
 
-public:
 // The following inline functions are purely derived from the functions in this interface
     inline int getPrecedence() const { return ::getPrecedence(getOperator()); }
     inline bool isAnnotation() const { return getAnnotationKind() != annotate_none; }
@@ -1215,7 +1214,6 @@ extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, u
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, HqlExprArray & args);        //NB: This deletes the array that is passed
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max);
-extern HQL_API IHqlExpression *createValueFromList(node_operator op, ITypeInfo * type, ...);
 extern HQL_API IHqlExpression *createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr);
 
 //These all consume their arguments

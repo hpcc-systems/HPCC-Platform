@@ -109,7 +109,6 @@ protected:
 class HQL_API CHqlExpression : public CInterfaceOf<IHqlExpression>
 {
 public:
-    friend HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
     friend class CHqlExprMeta;
     typedef CInterfaceOf<IHqlExpression> Parent;
 
@@ -120,7 +119,7 @@ public:
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
-    ITypeInfo *type;
+                                // Worth storing becuase it significantly speeds up equality checking
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
     unsigned cachedCRC;
     unsigned infoFlags;
@@ -133,6 +132,10 @@ protected:
     CUsedTables usedTables;
 
 protected:
+    CHqlExpression(node_operator op);
+    void appendOperands(IHqlExpression * arg0, ...);
+    void setOperands(HqlExprArray & ownedOperands);
+
     //protected virtual members not in public interface
     virtual void sethash();
 
@@ -160,8 +163,6 @@ protected:
     IHqlExpression * calcNormalizedSelector() const;
     void mergeGathered(CopyArray &, CopyArray &);
     IHqlExpression *fixScope(IHqlDataset *table);
-    CHqlExpression(node_operator op, ITypeInfo *type, ...);
-    CHqlExpression(node_operator op, ITypeInfo *type, HqlExprArray & ownedOperands);
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
@@ -177,9 +178,6 @@ protected:
 public:
     virtual void Link(void) const;
     virtual bool Release(void) const;
-
-    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, HqlExprArray &operands);
-    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, ...);
 
     virtual ~CHqlExpression();
 
@@ -220,8 +218,6 @@ public:
     virtual int  getStartColumn() const { throwUnexpected(); }
     virtual IPropertyTree * getDocumentation() const { return NULL; }
 
-    virtual ITypeInfo *queryType() const;
-    virtual ITypeInfo *getType();
     virtual IHqlExpression *queryBody(bool singleLevel = false) { return this; }
     virtual IValue *queryValue() const { return NULL; }
     virtual IInterface *queryUnknownExtra() { return NULL; }
@@ -238,7 +234,6 @@ public:
     virtual ITypeInfo *queryRecordType();
     virtual IHqlExpression *queryRecord();
 
-    virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) { return LINK(body); }
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body) { return LINK(body); }
     virtual void unwindList(HqlExprArray &dst, node_operator);
@@ -273,8 +268,27 @@ public:
     inline void resetTransformExtra(IInterface * _extra, unsigned depth);
 };
 
+class HQL_API CHqlExpressionWithType : public CHqlExpression
+{
+    friend HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
+public:
+    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, HqlExprArray &operands);
+    static CHqlExpression *makeExpression(node_operator op, ITypeInfo *type, ...);
 
-class CHqlNamedExpression : public CHqlExpression
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
+    virtual IHqlExpression *clone(HqlExprArray &newkids);
+
+protected:
+    CHqlExpressionWithType(node_operator op, ITypeInfo *type);
+    CHqlExpressionWithType(node_operator op, ITypeInfo *type, HqlExprArray & ownedOperands);
+    ~CHqlExpressionWithType();
+
+protected:
+    ITypeInfo *type;
+};
+
+class CHqlNamedExpression : public CHqlExpressionWithType
 {
     friend HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name);
     friend HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, _ATOM name, HqlExprArray & args);
@@ -299,11 +313,20 @@ public:
 class CHqlSelectExpression : public CHqlExpression
 {
 public:
-    CHqlSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
-    CHqlSelectExpression(HqlExprArray & ownedOperands);
+    static IHqlExpression * makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
+    static IHqlExpression * makeSelectExpression(HqlExprArray & ownedOperands);
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
+
+protected:
+    CHqlSelectExpression();
+
+    void setOperands(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr);
+    void setOperands(HqlExprArray & _ownedOperands);
+
 
 protected:
     HqlExprAttr normalized;
@@ -385,6 +408,8 @@ public:
 //  virtual bool isField();
 
 //Following are redirected to body
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
     virtual _ATOM queryName() const;
     virtual bool isScope();
     virtual bool isType();
@@ -628,7 +653,7 @@ protected:
     CHqlJavadocAnnotation(IHqlExpression * _expr, IPropertyTree * _ownedJavadoc);
 };
 
-class CHqlField: public CHqlExpression
+class CHqlField: public CHqlExpressionWithType
 {
 private:
     _ATOM               name;
@@ -648,7 +673,7 @@ public:
     virtual _ATOM queryName() const { return name; }
 };
 
-class CHqlRow: public CHqlExpression
+class CHqlRow: public CHqlExpressionWithType
 {
     CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _operands);
 
@@ -663,7 +688,7 @@ public:
 };
 
 
-class CHqlExternal: public CHqlExpression
+class CHqlExternal: public CHqlExpressionWithType
 {
     _ATOM name;
 
@@ -674,7 +699,7 @@ public:
     virtual _ATOM queryName() const { return name; }
 };
 
-class CHqlExternalCall: public CHqlExpression
+class CHqlExternalCall: public CHqlExpressionWithType
 {
 protected:
     OwnedHqlExpr funcdef;
@@ -809,7 +834,7 @@ typedef class MapXToMyClassViaBase<_ATOM, _ATOM, CHqlField, IHqlExpression> Fiel
 
 typedef class MapXToMyClassViaBase<_ATOM, _ATOM, IFileContents, IFileContents> FileContentsTable;
 
-class CHqlDelayedCall: public CHqlExpression
+class CHqlDelayedCall: public CHqlExpressionWithType
 {
     OwnedHqlExpr param;
 protected:
@@ -882,7 +907,7 @@ protected:
 };
 
 //This is abstract.  Either CHqlRemoteScope or CHqlLocalScope should be used......
-class HQL_API CHqlScope : public CHqlExpression, implements IHqlScope, implements ITypeInfo
+class HQL_API CHqlScope : public CHqlExpressionWithType, implements IHqlScope, implements ITypeInfo
 {
 protected:
     Owned<IFileContents> text;
@@ -1146,12 +1171,15 @@ public:
 
 };
 
-class CHqlTemplateFunctionContext : public CHqlExpression
+class CHqlTemplateFunctionContext : public CHqlExpressionWithType
 {
 public:
     CHqlTemplateFunctionContext(IHqlExpression* expr,  IHqlScope* scope)
-        : CHqlExpression(no_template_context,expr->getType(),expr,NULL)
-    {   context = scope; }
+        : CHqlExpressionWithType(no_template_context,expr->getType())
+    {
+        addOperand(expr);
+        context = scope;
+    }
     virtual ~CHqlTemplateFunctionContext() { ::Release(context); }
 
     virtual IHqlScope* queryScope() { return context; }
@@ -1178,9 +1206,11 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
     virtual IValue *queryValue() const { return val; }
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
 };
 
-class CHqlParameter : public CHqlExpression
+class CHqlParameter : public CHqlExpressionWithType
 {
 protected:
     unique_id_t uid;
@@ -1282,7 +1312,7 @@ public:
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols);
 };
 
-class CHqlVariable : public CHqlExpression
+class CHqlVariable : public CHqlExpressionWithType
 {
 protected:
     StringAttr name;
@@ -1310,9 +1340,11 @@ public:
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
 };
 
-class CHqlUnknown : public CHqlExpression
+class CHqlUnknown : public CHqlExpressionWithType
 {
 protected:
     _ATOM name;
@@ -1329,7 +1361,7 @@ public:
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
 };
 
-class CHqlSequence : public CHqlExpression
+class CHqlSequence : public CHqlExpressionWithType
 {
 protected:
     unsigned __int64 seq;
@@ -1352,6 +1384,10 @@ class CHqlCachedBoundFunction : public CHqlExpression
 {
 public:
     CHqlCachedBoundFunction(IHqlExpression * func, bool _forceOutOfLineExpansion);
+
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
+    virtual IHqlExpression *clone(HqlExprArray &);
 
 public:
     LinkedHqlExpr bound;
@@ -1377,6 +1413,8 @@ public:
     virtual bool equals(const IHqlExpression & other) const;
     virtual _ATOM queryName() const { return unnamedAtom; }
     virtual void sethash();
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
 
 //ITypeInfo
     virtual type_t getTypeCode() const { return type_record; }
@@ -1428,7 +1466,7 @@ public:
 
 
 
-class CHqlDataset : public CHqlExpression, implements IHqlDataset
+class CHqlDataset : public CHqlExpressionWithType, implements IHqlDataset
 {
 public:
     IMPLEMENT_IINTERFACE_USING(CHqlExpression)
@@ -1485,6 +1523,8 @@ public:
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual void sethash();
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
 
 //ITypeInfo
     virtual type_t getTypeCode() const { return type_alien; }
@@ -1548,7 +1588,7 @@ private:
     IHqlExpression * queryMemberFunc(_ATOM name);
 };
 
-class CHqlEnumType : public CHqlExpression
+class CHqlEnumType : public CHqlExpressionWithType
 {
 private:
     IHqlScope *scope;

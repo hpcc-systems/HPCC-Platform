@@ -11096,7 +11096,7 @@ void testHqlInternals()
 {
     printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u)\n",
             (unsigned)sizeof(CHqlConstant),
-            (unsigned)sizeof(CHqlExpression),
+            (unsigned)sizeof(CHqlExpressionWithType),
             (unsigned)sizeof(CHqlSelectExpression),
             (unsigned)sizeof(CHqlDataset),
             (unsigned)sizeof(CHqlAnnotation));
