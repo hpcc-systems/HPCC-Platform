@@ -7208,7 +7208,7 @@ void CLocalWUResult::getResultDecimal(void * val, unsigned len, unsigned precisi
         const char *xmlVal = p->queryProp("xmlValue");
         if (xmlVal)
         {
-            TempDecimal d;
+            Decimal d;
             d.setString(strlen(xmlVal), xmlVal);
             if (isSigned)
                 d.getDecimal(len, precision, val);

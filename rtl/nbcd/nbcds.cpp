@@ -35,7 +35,7 @@ nbcd_decl void _fastcall  DecUnlock()
     bcdCriticalSection.leave();
 }
 
-static TempDecimal stack[32];
+static Decimal stack[32];
 unsigned  curStack;
 
 
@@ -253,10 +253,10 @@ nbcd_decl void _fastcall  DecRoundTo(unsigned places)
 
 nbcd_decl void _fastcall  DecSwap()
 {
-    char temp[sizeof(TempDecimal)];
-    memcpy(&temp, &stack[curStack-1], sizeof(TempDecimal));
-    memcpy(&stack[curStack-1], &stack[curStack-2], sizeof(TempDecimal));
-    memcpy(&stack[curStack-2], &temp, sizeof(TempDecimal));
+    char temp[sizeof(Decimal)];
+    memcpy(&temp, &stack[curStack-1], sizeof(Decimal));
+    memcpy(&stack[curStack-1], &stack[curStack-2], sizeof(Decimal));
+    memcpy(&stack[curStack-2], &temp, sizeof(Decimal));
 }
 
 
