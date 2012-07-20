@@ -21,6 +21,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/collapse.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/expand.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/save.gif
+    ${CMAKE_CURRENT_SOURCE_DIR}/saveasimg.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/cloud.jpg
     ${CMAKE_CURRENT_SOURCE_DIR}/wizard.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/tooltip.jpg
