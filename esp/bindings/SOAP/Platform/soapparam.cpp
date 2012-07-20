@@ -271,8 +271,7 @@ void SoapParamBinary::marshall(IRpcMessage &rpc_call, const char *tagname, const
 
 void SoapParamBinary::toJSON(IEspContext* ctx, StringBuffer &s, const char *tagname)
 {
-    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
-        s.append(", ");
+    delimitJSON(s);
     if (tagname && *tagname)
         s.append('"').append(tagname).append("\": ");
     s.append('"');
@@ -406,8 +405,7 @@ void EspBaseArrayParam::toJSON(IEspContext* ctx, StringBuffer &s, const char *ta
     {
         if (nilBH!=nilRemove)
         {
-            if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
-                s.append(", ");
+            delimitJSON(s);
             if (tagname && *tagname)
                 s.append('\"').append(tagname).append("\": ");
             s.append("[]");

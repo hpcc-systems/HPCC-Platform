@@ -404,6 +404,13 @@ inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char
     return appendXMLCloseTag(xml, tag, prefix);
 }
 
+inline StringBuffer &delimitJSON(StringBuffer &s)
+{
+    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
+        s.append(", ");
+    return s;
+}
+
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
 

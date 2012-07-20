@@ -1822,8 +1822,7 @@ jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name)
 {
     if (!name || !*name)
         return s;
-    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
-        s.append(", ");
+    delimitJSON(s);
     return encodeJSON(s.append('"'), name).append("\": ");
 }
 
