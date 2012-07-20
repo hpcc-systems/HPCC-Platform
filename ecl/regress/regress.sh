@@ -27,28 +27,17 @@
 # in your build directory. (option: -e $BUILDDIR/Debug/bin/eclcc)
 ##############################################################################
 
-syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program]"
-
-## Create Makefile (git doesn't like tabs)
-echo "FILES=\$(shell echo *.ecl*)" > Makefile
-echo "LOGS_=\$(FILES:%.ecl=\$(target_dir)/%.log)" >> Makefile
-echo "LOGS=\$(LOGS_:%.eclxml=\$(target_dir)/%.log)" >> Makefile
-echo >> Makefile
-echo "all: \$(LOGS)" >> Makefile
-echo >> Makefile
-echo "\$(target_dir)/%.log: %.ecl" >> Makefile
-echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
-echo >> Makefile
-echo "\$(target_dir)/%.log: %.eclxml" >> Makefile
-echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
+syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program] [-q query.ecl] [-l log_file] "
 
 ## Default arguments
 target_dir=run_$$
 compare_dir=
 include_dir=
 compare_only=0
+userflags=
 eclcc=
 diff=
+query=
 np=`grep -c processor /proc/cpuinfo`
 export ECLCC_ECLINCLUDE_PATH=
 
@@ -62,10 +51,13 @@ if [[ $1 = '' ]]; then
     echo " * eclcc necessary for compilation, otherwise, only comparison will be made"
     echo " * diff_program must be able to handle directories"
     echo
+    echo " * -q can be used to run/rerun a single query"
+    echo " * -l is used to generate a detailed log for debugging"
+    echo
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:" opt; do
+    while getopts "t:c:I:e:d:f:q:l:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -82,6 +74,15 @@ if [[ $* != '' ]]; then
             d)
                 diff=$OPTARG
                 ;;
+            f)
+                userflags="$userflags -f$OPTARG"
+                ;;
+            q)
+                query="$OPTARG"
+                ;;
+            l)
+                userflags="$userflags --logdetail 999 --logfile $OPTARG"
+                ;;
             :)
                 echo $syntax
                 exit -1
@@ -92,18 +93,46 @@ fi
 
 if [[ $eclcc != '' ]]; then
     ## Set flags
-    default_flags="-P$target_dir -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph"
-    flags="$default_flags $include_dir -fshowMetaInGraph"
+    default_flags="-P$target_dir -legacy -target=thorlcr -fforceGenerate -fregressionTest -b -S -shared"
+    flags="$default_flags $include_dir -fshowMetaInGraph $userflags"
 
     ## Prepare target directory
-    rm -rf $target_dir
+    if [[ $query == '' ]]; then
+        rm -rf $target_dir
+    fi
     mkdir -p $target_dir
 
-    ## Compile all regressions
-    echo "* Compiling all regression tests"
-    echo
-    export eclcc flags include_dir target_dir
-    time make -j $np > /dev/null
+    ## Create Makefile (git doesn't like tabs)
+    echo "#Auto generated make file" > Makefile
+    echo "FLAGS=$flags" >> Makefile
+    echo "ECLCC=$eclcc" >> Makefile
+    echo "TARGET=$target_dir" >> Makefile
+    echo "FILES=\$(shell echo *.ecl*)" >> Makefile
+    echo "LOGS_=\$(FILES:%.ecl=\$(TARGET)/%.ecl.log)" >> Makefile
+    echo "LOGS=\$(LOGS_:%.eclxml=\$(TARGET)/%.eclxml.log)" >> Makefile
+    echo >> Makefile
+    echo "all: \$(LOGS)" >> Makefile
+    echo >> Makefile
+    echo "%.run: \$(TARGET)/%.log" >> Makefile
+    echo -e "\t#do nothing" >> Makefile
+    echo >> Makefile
+    echo "\$(TARGET)/%.ecl.log: %.ecl" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+    echo >> Makefile
+    echo "\$(TARGET)/%.eclxml.log: %.eclxml" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+
+    if [[ $query != '' ]]; then
+        ## Compile all regressions
+        echo "Compiling $query regression test"
+        echo
+        time make $query.run -B > /dev/null
+    else
+        ## Compile all regressions
+        echo "* Compiling all regression tests"
+        echo
+        time make -j $np > /dev/null
+    fi
 fi
 
 ## Compare to golden standard (ignore obvious differences)
