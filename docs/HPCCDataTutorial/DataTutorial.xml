@@ -404,7 +404,7 @@
 
           <listitem>
             <para>Using the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop-down list, select the
+            role="bold">Machine/dropzone</emphasis> drop list, select the
             Landing Zone where the file was placed.</para>
 
             <para>In the VM or Community Edition, there is only one Landing
@@ -1147,8 +1147,8 @@ OUTPUT(resultset);
           <listitem>
             <para>Provide a zip code (e.g., 33024) in the <emphasis
             role="bold">zipvalue</emphasis> field, , select <emphasis
-            role="bold">Output Tables</emphasis> from the droplist, then press
-            the <emphasis role="bold">Submit</emphasis> button.</para>
+            role="bold">Output Tables</emphasis> from the drop list, then
+            press the <emphasis role="bold">Submit</emphasis> button.</para>
 
             <para>The results display.</para>
 
@@ -1180,7 +1180,7 @@ OUTPUT(resultset);
           </listitem>
 
           <listitem>
-            <para>Using the <emphasis role="bold">Target</emphasis> droplist,
+            <para>Using the <emphasis role="bold">Target</emphasis> drop list,
             select Roxie as the Target cluster.</para>
 
             <para><figure>
@@ -1316,7 +1316,7 @@ OUTPUT(resultset);
             <?dbfo keep-together="always"?>
 
             <para>Provide a zip code (e.g., 33024), select <emphasis
-            role="bold">Output Tables</emphasis> from the droplist, and press
+            role="bold">Output Tables</emphasis> from the drop list, and press
             the Submit button.</para>
 
             <para>The results display.</para>

@@ -1089,12 +1089,12 @@
       advantage of the true power of an HPCC—the ability to perform operations
       using Massively Parallel Processing (MPP). This section provides the
       steps to expand your single-node system into a multi-node system using
-      the Configuration Manager Wizard. </para>
+      the Configuration Manager Wizard.</para>
 
       <para>To run a multi-node system, ensure that you have exactly the same
       packages installed on every node. Follow the steps below to configure
       your multi-node system to leverage the full power of Massively Parallel
-      Processing. </para>
+      Processing.</para>
 
       <sect2 id="configuring-a-multi-node-system">
         <title>Using the Configuration Manager Wizard</title>
@@ -1103,8 +1103,7 @@
         nodes. Before you start this section, you must have already downloaded
         the correct packages for your distro from the HPCC Systems website:
         <ulink
-        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.
-        </para>
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
           <listitem>
@@ -1899,7 +1898,7 @@ OUTPUT(L);</programlisting></para>
 
           <listitem>
             <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop-list.</para>
+            role="bold">Machine/dropzone</emphasis> drop list.</para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
@@ -2337,7 +2336,7 @@ OUTPUT(ValidWords)
           </listitem>
 
           <listitem>
-            <para>Select Output Tables in the drop-list.</para>
+            <para>Select Output Tables in the drop list.</para>
           </listitem>
 
           <listitem>
@@ -2864,7 +2863,7 @@ sudo /sbin/service hpcc-init -c esp start
         </listitem>
 
         <listitem>
-          <para>In the New override for library droplist, select
+          <para>In the New override for library drop list, select
           <emphasis>msxml3</emphasis>, then press the add button.</para>
         </listitem>
 

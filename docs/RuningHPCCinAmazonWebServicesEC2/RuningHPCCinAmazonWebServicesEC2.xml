@@ -955,7 +955,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            droplist, select <emphasis role="bluebold">SSH.</emphasis></para>
+            drop list, select <emphasis role="bluebold">SSH.</emphasis></para>
           </listitem>
 
           <listitem>
@@ -1019,13 +1019,13 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
                 </row>
 
                 <row>
-                  <entry>WsAtrtributes </entry>
+                  <entry>WsAtrtributes</entry>
 
                   <entry>8145</entry>
                 </row>
 
                 <row>
-                  <entry>Roxie Config </entry>
+                  <entry>Roxie Config</entry>
 
                   <entry>8050</entry>
                 </row>
@@ -1042,7 +1042,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            droplist, select <emphasis role="bluebold">Custom TCP
+            drop list, select <emphasis role="bluebold">Custom TCP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1089,7 +1089,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            droplist, select <emphasis role="bluebold">Custom TCP
+            drop list, select <emphasis role="bluebold">Custom TCP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1137,7 +1137,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
         <orderedlist numeration="arabic">
           <listitem>
             <para>From the <emphasis role="bold">Create a new rule</emphasis>
-            droplist, select <emphasis role="bluebold">Custom UDP
+            drop list, select <emphasis role="bluebold">Custom UDP
             rule</emphasis>.</para>
           </listitem>
 
@@ -1186,12 +1186,12 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
         <orderedlist numeration="arabic">
           <listitem>
-            <para>From the Create a new rule droplist, select <emphasis
+            <para>From the Create a new rule drop list, select <emphasis
             role="bluebold">Custom ICMP rule</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>From the type droplist, select <emphasis
+            <para>From the type drop list, select <emphasis
             role="bluebold">Echo Request</emphasis>.</para>
           </listitem>
 
@@ -1218,12 +1218,12 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
           </listitem>
 
           <listitem>
-            <para>From the Create a new rule droplist, select <emphasis
+            <para>From the Create a new rule drop list, select <emphasis
             role="bluebold">Custom ICMP rule</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>From the type droplist, select <emphasis
+            <para>From the type drop list, select <emphasis
             role="bluebold">Echo Reply</emphasis>.</para>
           </listitem>
 
@@ -1262,7 +1262,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
         <orderedlist numeration="arabic">
           <listitem>
-            <para>In the Region droplist on the left, select <emphasis
+            <para>In the Region drop list on the left, select <emphasis
             role="bluebold">US East (Virginia)</emphasis>.</para>
           </listitem>
 
@@ -1306,7 +1306,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
           </listitem>
 
           <listitem>
-            <para>In the Viewing droplist, select <emphasis
+            <para>In the Viewing drop list, select <emphasis
             role="bluebold">All Images</emphasis>.</para>
           </listitem>
 
@@ -1536,7 +1536,7 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
             <para>On the <emphasis role="bold">Create Key Pair</emphasis> tab,
             select <emphasis role="bold">Choose from your existing Key
             Pairs</emphasis>, then select the <emphasis
-            role="bluebold">HPCC_Key</emphasis> from the droplist, then press
+            role="bluebold">HPCC_Key</emphasis> from the drop list, then press
             the <emphasis role="bold">Continue</emphasis> button.</para>
           </listitem>
 
@@ -2645,7 +2645,7 @@ OUTPUT(L);</programlisting></para>
 
           <listitem>
             <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop-list.</para>
+            role="bold">Machine/dropzone</emphasis> drop list.</para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
@@ -3247,7 +3247,7 @@ s3cmd --configure
 
           <answer>
             <para>Peer support is available in the Forums on the HPCC Systems
-            Portal. </para>
+            Portal.</para>
           </answer>
         </qandaentry>
 

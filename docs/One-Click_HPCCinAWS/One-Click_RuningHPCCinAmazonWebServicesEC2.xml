@@ -40,11 +40,9 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para />
+      <para></para>
 
-      <para>
-        <emphasis role="redbold" />
-      </para>
+      <para><emphasis role="redbold"></emphasis></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -216,8 +214,7 @@
 
             <tbody>
               <row>
-                <entry><inlinegraphic
-                fileref="images/OSSgr3.png" /></entry>
+                <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
                 <entry>For detailed PuTTY/pcsp/PUTTYGen directions from
                 Amazon, see: <para><ulink
@@ -250,7 +247,8 @@
 
       <!--Include follows-->
 
-      <xi:include href="One-Click_HPCCinAWS/AWS-Mods/AWSIncludes.xml" xpointer="Find_AWS_Keys"
+      <xi:include href="One-Click_HPCCinAWS/AWS-Mods/AWSIncludes.xml"
+                  xpointer="Find_AWS_Keys"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -671,8 +669,8 @@
                         fileref="images/caution.png" /></entry>
 
                         <entry>Your IP address could be different from the
-                        ones provided in the example images. Please use the
-                        IP address of <emphasis role="bold">your</emphasis>
+                        ones provided in the example images. Please use the IP
+                        address of <emphasis role="bold">your</emphasis>
                         node.</entry>
                       </row>
                     </tbody>
@@ -1177,7 +1175,7 @@ OUTPUT(L);</programlisting></para>
 
           <listitem>
             <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop-list.</para>
+            role="bold">Machine/dropzone</emphasis> drop list.</para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
@@ -1380,7 +1378,8 @@ OUTPUT(ValidWords)
 
       <!--*** include follows-->
 
-      <xi:include href="RuningHPCCinAmazonWebServicesEC2/AWSIncludes.xml" xpointer="Find_AWS_Keys"
+      <xi:include href="One-Click_HPCCinAWS/AWS-Mods/AWSIncludes.xml"
+                  xpointer="Find_AWS_Keys"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
       <sect2>
@@ -1390,8 +1389,7 @@ OUTPUT(ValidWords)
         <para>To move files to or from S3 storage, the S3 packages must be
         installed and configured on your Landing Zone node.</para>
 
-        <para>
-          <orderedlist>
+        <para><orderedlist>
             <listitem>
               <para>Open a console window and connect to the Landing Zone (LZ)
               node</para>
@@ -1400,11 +1398,9 @@ OUTPUT(ValidWords)
             <listitem>
               <para>Run these commands:</para>
 
-              <para>
-                <programlisting>sudo apt-get install s3cmd
+              <para><programlisting>sudo apt-get install s3cmd
 s3cmd --configure
-</programlisting>
-              </para>
+</programlisting></para>
             </listitem>
 
             <listitem>
@@ -1453,8 +1449,7 @@ s3cmd --configure
               <para>Enter <emphasis role="bold">Yes</emphasis> to Save
               Settings</para>
             </listitem>
-          </orderedlist>
-        </para>
+          </orderedlist></para>
       </sect2>
 
       <sect2>
@@ -1474,26 +1469,20 @@ s3cmd --configure
         <sect3>
           <title>Create a bucket</title>
 
-          <para>
-            <programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting>
-          </para>
+          <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
         </sect3>
 
         <sect3>
           <title>List Buckets</title>
 
-          <para>
-            <programlisting>s3cmd ls</programlisting>
-          </para>
+          <para><programlisting>s3cmd ls</programlisting></para>
         </sect3>
 
         <sect3>
           <title>Upload a file to a bucket</title>
 
-          <para>
-            <programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
-</programlisting>
-          </para>
+          <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
+</programlisting></para>
         </sect3>
 
         <sect3>
