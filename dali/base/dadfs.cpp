@@ -870,7 +870,7 @@ public:
         redirection.setown(createDFSredirection());
     }
 
-    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing, unsigned timeout);
+    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout);
 
     IDistributedFile *lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
     IDistributedFile *lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
@@ -912,7 +912,7 @@ public:
     bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user);
     void removeEmptyScope(const char *name);
 
-    IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,bool fixmissing=false,unsigned timeout=INFINITE);
+    IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,unsigned timeout=INFINITE);
 
     int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
     int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
@@ -1327,7 +1327,7 @@ public:
         return ret;
     }
 
-    IDistributedSuperFile *lookupSuperFile(const char *name, bool fixmissing,unsigned timeout)
+    IDistributedSuperFile *lookupSuperFile(const char *name, unsigned timeout)
     {
         IDistributedSuperFile *ret;
         IDistributedFile * f = findFile(name);
@@ -1336,7 +1336,7 @@ public:
             if (ret)
                 return LINK(ret);
         }
-        ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,fixmissing,timeout);
+        ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,timeout);
         if (!ret)
             return NULL;
         if (isactive) {
@@ -3859,40 +3859,6 @@ static unsigned findSubFileOrd(const char *name)
     return NotFound;
 }
 
-struct SuperFileSubTreeCache
-{
-    unsigned n;
-    IPropertyTree **subs;
-    SuperFileSubTreeCache(IPropertyTree *root,bool fixerr)
-    {
-        IArrayOf<IPropertyTree> todelete;
-        n=root->getPropInt("@numsubfiles");
-        subs = (IPropertyTree **)calloc(sizeof(IPropertyTree *),n);
-        Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-        ForEach (*subit) {
-            IPropertyTree &sub = subit->query();
-            unsigned sn = sub.getPropInt("@num",0);
-            if ((sn>0)&&(sn<=n)) 
-                subs[sn-1] = &sub;
-            else  {
-                const char *name = root->queryProp("OrigName");
-                if (!name)
-                    name = "UNKNOWN";
-                WARNLOG("CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d",name,sn,n);
-                if (fixerr) 
-                    todelete.append(sub);
-            }
-        }
-        ForEachItemIn(i,todelete) {
-            root->removeTree(&todelete.item(i));
-        }
-    }
-    ~SuperFileSubTreeCache()
-    {
-        free(subs);
-    }
-};
-
 class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
 {
     void checkNotForeign()
@@ -4111,74 +4077,63 @@ protected:
         return path.append("SubFile[@num=\"").append(idx+1).append("\"]");
     }
 
-    void loadSubFiles(bool fixerr,IDistributedFileTransaction *transaction, unsigned timeout)
+    void loadSubFiles(IDistributedFileTransaction *transaction, unsigned timeout)
     {
         partscache.kill();
         StringBuffer path;
         StringBuffer subname;
         subfiles.kill();
-        try {
-            SuperFileSubTreeCache subtrees(root,fixerr);
-            for (unsigned i=0;i<subtrees.n;i++) {
-                IPropertyTree *sub = subtrees.subs[i];
-                if (!sub) {
-                    StringBuffer s;
-                    s.appendf("CDistributedSuperFile: SuperFile %s: corrupt subfile file part %d cannot be found",logicalName.get(),i+1);
-                    if (fixerr) {
-                        WARNLOG("%s",s.str());
-                        break;
-                    }
-                    throw MakeStringException(-1,"%s",s.str());
-                }
-                sub->getProp("@name",subname.clear());
-                Owned<IDistributedFile> subfile;
-                if (!fixerr) 
-                    subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(),udesc,false,transaction,timeout));
-                else {
-                    try {
-                        subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(),udesc,false,transaction,timeout));
-                    }
-                    catch (IException *e) {
-                        // bit of a kludge to handle subfiles missing 
-                        subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),fixerr,timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,fixerr,timeout));
-                        if (!subfile.get())
-                            throw;
-                        e->Release();
 
-                    }
-                }
-                if (!subfile.get()) {
-                    StringBuffer s;
-                    s.appendf("CDistributedSuperFile: SuperFile %s is missing sub-file file %s",logicalName.get(),subname.str());
-                    CDfsLogicalFileName tmpsub;
-                    tmpsub.set(subname);
-                    if (fixerr||tmpsub.isForeign()) {
-                        WARNLOG("%s",s.str());
-                        root->removeTree(sub);
-                        for (unsigned j=i+1;j<subtrees.n; j++) {
-                            sub = subtrees.subs[j];
-                            if (sub)
-                                sub->setPropInt("@num",j);
-                            if (j==1) {
-                                resetFileAttr(createPTreeFromIPT(sub->queryPropTree("Attr")));
-                            }
-                            subtrees.subs[j-1] = sub;
-                            subtrees.subs[j] = NULL;
-                        }
-                        subtrees.n--;
-                        root->setPropInt("@numsubfiles",subtrees.n);
-                        if ((i==0)&&(subtrees.n==0)) {
-                            resetFileAttr(getEmptyAttr());
-                        }
-                        i--; // will get incremented by for
+        unsigned n = root->getPropInt("@numsubfiles");
+        if (n == 0)
+            return;
+        try {
+            // Find all reported indexes and bail on bad range (before we lock any file)
+            Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
+            unsigned index = 1; // indexes must be in order
+            ForEach (*subit)
+            {
+                IPropertyTree &sub = subit->query();
+                unsigned sn = sub.getPropInt("@num",0);
+                if (sn != index++ || sn > n)
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d", logicalName.get(), sn, n);
+            }
+            if (--index != n)
+                ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad number of files. Expecting %d, got %d", logicalName.get(), n, index);
+
+            // Now try to resolve them all (file/superfile)
+            ForEach (*subit)
+            {
+                IPropertyTree &sub = subit->query();
+                sub.getProp("@name",subname.clear());
+                Owned<IDistributedFile> subfile;
+                subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(),udesc,false,transaction,timeout));
+                if (!subfile.get())
+                    subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,timeout));
+
+                // Some files are ok not to exist
+                if (!subfile.get())
+                {
+                    CDfsLogicalFileName cdfsl;
+                    cdfsl.set(subname);
+                    if (cdfsl.isForeign())
+                    {
+                        // MORE - This foreign treatment seems flaky at best
+                        WARNLOG("CDistributedSuperFile: SuperFile %s's sub-file file '%s' is foreign, removing it from super", logicalName.get(), subname.str());
+                        root->removeTree(&sub);
                         continue;
                     }
-                    throw MakeStringException(-1,"%s",s.str());
+                    else
+                        ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile file '%s' cannot be found", logicalName.get(), subname.str());
                 }
                 subfiles.append(*subfile.getClear());
             }
-            if (subfiles.ordinality()<subtrees.n) 
-                root->setPropInt("@numsubfiles",subfiles.ordinality());
+            // This is *only* due to foreign files
+            if (subfiles.ordinality() != n)
+            {
+                WARNLOG("CDistributedSuperFile: SuperFile %s's number of sub-files updated to %d", logicalName.get(), subfiles.ordinality());
+                root->setPropInt("@numsubfiles", subfiles.ordinality());
+            }
         }
         catch (IException *) {
             partscache.kill();
@@ -4359,7 +4314,7 @@ public:
     
     IMPLEMENT_IINTERFACE;
 
-    void init(CDistributedFileDirectory *_parent, IPropertyTree *_root, const CDfsLogicalFileName &_name, IUserDescriptor* user, bool fixerr, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE) 
+    void init(CDistributedFileDirectory *_parent, IPropertyTree *_root, const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE)
     {
         assertex(_name.isSet());
         setUserDescriptor(udesc,user);
@@ -4371,26 +4326,26 @@ public:
             interleaved = atoi(val);
         else
             interleaved = strToBool(val)?1:0;
-        loadSubFiles(fixerr,transaction,timeout);
+        loadSubFiles(transaction,timeout);
     }
 
     CDistributedSuperFile(CDistributedFileDirectory *_parent, IPropertyTree *_root,const CDfsLogicalFileName &_name,IUserDescriptor* user) 
     {
-        init(_parent,_root,_name,user,false,NULL);
+        init(_parent,_root,_name,user,NULL);
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &_name,IUserDescriptor* user, bool fixerr, IDistributedFileTransaction *transaction,bool fixmissing,unsigned timeout) 
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, IRemoteConnection *_conn,const CDfsLogicalFileName &_name,IUserDescriptor* user, IDistributedFileTransaction *transaction,unsigned timeout)
     {
         conn.setown(_conn);
-        init(_parent,conn->queryRoot(),_name,user,fixmissing,transaction,timeout);
+        init(_parent,conn->queryRoot(),_name,user,transaction,timeout);
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent,const CDfsLogicalFileName &_name, IUserDescriptor* user, bool fixerr, IDistributedFileTransaction *transaction)
+    CDistributedSuperFile(CDistributedFileDirectory *_parent,const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction)
     {
         // temp super file
         assertex(_name.isMulti());
         Owned<IPropertyTree> tree = _name.createSuperTree();
-        init(_parent,tree,_name,user,false,transaction);
+        init(_parent,tree,_name,user,transaction);
     }
 
     ~CDistributedSuperFile()
@@ -5068,7 +5023,7 @@ private:
             if (pos) {
                 DistributedFilePropertyLock lock(this);
                 if (lock.needsReload())
-                    loadSubFiles(true,transaction,1000*60*10); 
+                    loadSubFiles(transaction,1000*60*10);
                 pos = subfiles.ordinality();
                 if (pos) {
                     do {
@@ -6380,12 +6335,12 @@ IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname,IUs
     return lookup(logicalname,user,writeattr,transaction,timeout);
 }
 
-IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing,unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout)
 {
     const CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti()) 
         // don't bother checking because the sub file creation will
-        return new CDistributedSuperFile(this,*logicalname,user,true,transaction); // temp superfile
+        return new CDistributedSuperFile(this,*logicalname,user,transaction); // temp superfile
     Owned<IDfsLogicalFileNameIterator> redmatch;
     loop {
         checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
@@ -6423,7 +6378,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
                     start = msTick();
                 unsigned elapsed;
                 try {
-                    return new CDistributedSuperFile(this,fcl.detach(),*logicalname,user,true,transaction,fixmissing,SDS_SUB_LOCK_TIMEOUT);
+                    return new CDistributedSuperFile(this,fcl.detach(),*logicalname,user,transaction,SDS_SUB_LOCK_TIMEOUT);
                 }
                 catch (IDFS_Exception *e) {
                     elapsed = msTick()-start;
@@ -6455,14 +6410,14 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
 
 IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout)
 {
-    return dolookup(logicalname,user,writeattr,transaction,false,timeout);
+    return dolookup(logicalname,user,writeattr,transaction,timeout);
 }
 
-IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction, bool fixmissing, unsigned timeout)
+IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction, unsigned timeout)
 {
     CDfsLogicalFileName logicalname;    
     logicalname.set(_logicalname);
-    IDistributedFile *file = dolookup(logicalname,user,false,transaction,fixmissing,timeout);
+    IDistributedFile *file = dolookup(logicalname,user,false,transaction,timeout);
     if (file) {
         IDistributedSuperFile *sf = file->querySuperFile();
         if (sf)
@@ -6564,7 +6519,7 @@ public:
     {
         logicalname.set(_flname);
         // We *have* to make sure the file doesn't exist here
-        IDistributedSuperFile *sfile = parent->lookupSuperFile(logicalname.get(), user, transaction, false, SDS_SUB_LOCK_TIMEOUT);
+        IDistributedSuperFile *sfile = parent->lookupSuperFile(logicalname.get(), user, transaction, SDS_SUB_LOCK_TIMEOUT);
         if (sfile) {
             super.setown(sfile);
         } else {
