@@ -513,21 +513,17 @@ void CGraphElementBase::serializeCreateContext(MemoryBuffer &mb)
 {
     if (!onCreateCalled) return;
     mb.append(queryId());
-    unsigned pos = mb.length();
-    mb.append((size32_t)0);
+    DelayedSizeMarker sizeMark(mb);
     queryHelper()->serializeCreateContext(mb);
-    size32_t sz = (mb.length()-pos)-sizeof(size32_t);
-    mb.writeDirect(pos, sizeof(sz), &sz);
+    sizeMark.write();
 }
 
 void CGraphElementBase::serializeStartContext(MemoryBuffer &mb)
 {
     assertex(onStartCalled);
-    unsigned pos = mb.length();
-    mb.append((size32_t)0);
+    DelayedSizeMarker sizeMark(mb);
     queryHelper()->serializeStartContext(mb);
-    size32_t sz = (mb.length()-pos)-sizeof(size32_t);
-    mb.writeDirect(pos, sizeof(sz), &sz);
+    sizeMark.write();
 }
 
 void CGraphElementBase::deserializeCreateContext(MemoryBuffer &mb)
@@ -1052,8 +1048,7 @@ void CGraphBase::clean()
 
 void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
 {
-    unsigned pos = mb.length();
-    mb.append((unsigned)0);
+    DelayedSizeMarker sizeMark(mb);
     Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getIterator() : getTraverseIterator(true); // all if non-global-child, or graph with conditionals
     ForEach (*iter)
     {
@@ -1061,14 +1056,12 @@ void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
         element.serializeCreateContext(mb);
     }
     mb.append((activity_id)0);
-    unsigned len=mb.length()-pos-sizeof(unsigned);
-    mb.writeDirect(pos, sizeof(len), &len);
+    sizeMark.write();
 }
 
 void CGraphBase::serializeStartContexts(MemoryBuffer &mb)
 {
-    unsigned pos = mb.length();
-    mb.append((unsigned)0);
+    DelayedSizeMarker sizeMark(mb);
     Owned<IThorActivityIterator> iter = getTraverseIterator();
     ForEach (*iter)
     {
@@ -1077,8 +1070,7 @@ void CGraphBase::serializeStartContexts(MemoryBuffer &mb)
         element.serializeStartContext(mb);
     }
     mb.append((activity_id)0);
-    unsigned len=mb.length()-pos-sizeof(unsigned);
-    mb.writeDirect(pos, sizeof(len), &len);
+    sizeMark.write();
 }
 
 void CGraphBase::deserializeCreateContexts(MemoryBuffer &mb)

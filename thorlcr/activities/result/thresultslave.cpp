@@ -48,13 +48,12 @@ public:
 
         OwnedConstThorRow row = input->ungroupedNextRow();
         CMessageBuffer mb;
-        size32_t lenpos = mb.length(); // its 0 really
-        mb.append((size32_t)0);
-        if (row) {
+        DelayedSizeMarker sizeMark(mb);
+        if (row)
+        {
             CMemoryRowSerializer msz(mb);
             ::queryRowSerializer(input)->serialize(msz,(const byte *)row.get());
-            size32_t sz = mb.length()-lenpos-sizeof(size32_t);
-            mb.writeDirect(lenpos,sizeof(size32_t),&sz);
+            sizeMark.write();
             processed++;
         }
         container.queryJob().queryJobComm().send(mb, 0, masterMpTag);
