@@ -411,8 +411,13 @@ typedef int socklen_t;
 // #define  inline
 
 #define SharedObjectPrefix          "lib"
+#if defined (__APPLE__)
+#define SharedObjectExtension       ".dylib"
+#define LibraryExtension            ".dylib"
+#else
 #define SharedObjectExtension       ".so"
 #define LibraryExtension            ".so"
+#endif
 #define ProcessExtension            ""
 #define GetSharedProcedure(h,name)  dlsym(h,(char *)name)
 #define LoadSucceeded(h)            (h != NULL)

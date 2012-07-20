@@ -283,9 +283,9 @@
           <para>Press <emphasis role="bold">Apply</emphasis> and then
           <emphasis role="bold">OK</emphasis> to save the current information
           to a new configuration file. All available configuration files are
-          shown on the <emphasis role="bold">Configurations</emphasis>
-          drop-list when you log in and you simply select the one you want ECL
-          IDE to use to connect to an HPCC environment.</para>
+          shown on the <emphasis role="bold">Configurations</emphasis> drop
+          list when you log in and you simply select the one you want ECL IDE
+          to use to connect to an HPCC environment.</para>
 
           <informaltable colsep="1" frame="all" rowsep="1">
             <tgroup cols="2">
@@ -452,7 +452,7 @@
                   <entry><emphasis role="bold">Element</emphasis></entry>
 
                   <entry>Specify the Element the formatting should be applied
-                  to. The drop down list shows all available elements.</entry>
+                  to. The drop list shows all available elements.</entry>
                 </row>
 
                 <row>
@@ -479,15 +479,15 @@
                 <row>
                   <entry><emphasis role="bold">Foreground</emphasis></entry>
 
-                  <entry>Select a color for the foreground from the drop down
-                  list provided.</entry>
+                  <entry>Select a color for the foreground from the drop list
+                  provided.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Background</emphasis></entry>
 
-                  <entry>Select a color for the background from the drop down
-                  list provided.</entry>
+                  <entry>Select a color for the background from the drop list
+                  provided.</entry>
                 </row>
 
                 <row>
@@ -740,7 +740,7 @@
             <listitem>
               <para>If you have created a configuration file to connect to the
               desired HPCC environment, select it from the <emphasis
-              role="bold">Configurations</emphasis> drop-list. If not, press
+              role="bold">Configurations</emphasis> drop list. If not, press
               the <emphasis role="bold">Preferences</emphasis>button to create
               one.</para>
             </listitem>
@@ -983,7 +983,7 @@
                   <row>
                     <entry><emphasis role="bold">Mode</emphasis></entry>
 
-                    <entry>Select the search mode from the drop-list. There
+                    <entry>Select the search mode from the drop list. There
                     are several options. <programlisting role="tab"><emphasis
                           role="bold">Wildcard match:</emphasis> allows a standard search and supports the use of ? to represent any 
                               single character or * to represent any number of characters.
@@ -1105,7 +1105,7 @@
                     <entry><emphasis role="bold"><emphasis
                     role="bold">Cluster</emphasis> </emphasis></entry>
 
-                    <entry>If enabled, select a cluster from the drop-list to
+                    <entry>If enabled, select a cluster from the drop list to
                     see only that cluster’s Workunits.</entry>
                   </row>
 
@@ -1113,7 +1113,7 @@
                     <entry><emphasis role="bold"><emphasis
                     role="bold">State</emphasis> </emphasis></entry>
 
-                    <entry>If enabled, select a State from the drop-list to
+                    <entry>If enabled, select a State from the drop list to
                     see Workunits with that state.</entry>
                   </row>
 
@@ -1961,12 +1961,12 @@
             </tgroup>
           </informaltable>
 
-          <para>As well as these options, there is also a Windows drop down
-          menu on this tab. These are provided to help you control specific
-          windows which are open on the desktop. All currently open windows
-          are listed on this menu and you can switch to any window listed by
-          simply clicking on the one you want to view. Other available
-          selections are:</para>
+          <para>As well as these options, there is also a Windows drop menu on
+          this tab. These are provided to help you control specific windows
+          which are open on the desktop. All currently open windows are listed
+          on this menu and you can switch to any window listed by simply
+          clicking on the one you want to view. Other available selections
+          are:</para>
 
           <para><informaltable colsep="0" frame="none" rowsep="0">
               <tgroup cols="2">
@@ -2684,7 +2684,7 @@ ENDMACRO;
           workunit. Select the options you want to use when running the
           workunit as follows:</para>
 
-          <para>The <emphasis role="bold">Target </emphasis>drop-list shows
+          <para>The <emphasis role="bold">Target </emphasis>drop list shows
           the cluster where the query will be sent. Select Local, if you want
           to run the query locally on your computer.</para>
 
@@ -2700,7 +2700,7 @@ ENDMACRO;
           a clock icon). You can monitor the workunit in the same manner as a
           submitted workunit.</para>
 
-          <para>The <emphasis role="bold">Label </emphasis>drop-list allows
+          <para>The <emphasis role="bold">Label </emphasis>drop list allows
           you to select a Repository Label which specifies a previous version
           of ECL files.</para>
 

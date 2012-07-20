@@ -252,29 +252,24 @@ public:
             return false;
         CMessageBuffer msg;
         msg.append(numKept);
-        unsigned msgPos = msg.length();
-        msg.append((size32_t)0);
+        DelayedSizeMarker sizeMark(msg);
         if (kept.get())
         {
             CMemoryRowSerializer msz(msg);
             rowif->queryRowSerializer()->serialize(msz,(const byte *)kept.get());
-            size32_t sz = msg.length()-(msgPos+sizeof(sz));
-            msg.writeDirect(msgPos, sizeof(sz), &sz);
+            sizeMark.write();
             if (rollup)
             {
-                msgPos = msg.length();
-                msg.append((size32_t)0);
+                sizeMark.restart();
                 if (kept.get()!=keptTransformed.get())
                 {
-                    sz = msg.length();
                     rowif->queryRowSerializer()->serialize(msz,(const byte *)keptTransformed.get());
-                    sz = msg.length()-(msgPos+sizeof(sz));
-                    msg.writeDirect(msgPos, sizeof(sz), &sz);
+                    sizeMark.write();
                 }
             }
         }
         else if (rollup)
-            msg.append((size32_t)0);
+            sizeMark.restart(); // write (0 size) for keptTransformed row
         container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag); // to next node
         return true;
     }

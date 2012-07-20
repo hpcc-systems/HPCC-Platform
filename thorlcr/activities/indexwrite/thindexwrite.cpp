@@ -23,6 +23,7 @@
 #include "dadfs.hpp"
 #include "dautils.hpp"
 
+#include "ctfile.hpp"
 #include "eclrtl.hpp"
 #include "thorfile.hpp"
 
@@ -61,8 +62,8 @@ public:
         dlfn.set(helper->getFileName());
         isLocal = 0 != (TIWlocal & helper->getFlags());
         unsigned maxSize = helper->queryDiskRecordSize()->getMinRecordSize();
-        if (maxSize >= 0x8000)
-            throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds 32767 internal limit", maxSize);
+        if (maxSize > KEYBUILD_MAXLENGTH)
+            throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds %d internal limit", maxSize, KEYBUILD_MAXLENGTH);
 
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();

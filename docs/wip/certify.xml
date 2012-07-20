@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<book lang="en_US">
+<book lang="en_US" xml:base="../">
   <bookinfo>
     <title>HPCC System Certification</title>
 
@@ -35,15 +35,15 @@ Date is used as the dateline/version number in the title page. The ID attribute 
 Copyright is used for the copyright line on title page. The ID attribute is CopyRight--></para>
     </legalnotice>
 
-    <xi:include href="Version.xml" xpointer="FooterInfo"
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="Version.xml" xpointer="DateVer"
+    <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <corpname>HPCC Systems</corpname>
 
-    <xi:include href="Version.xml" xpointer="Copyright"
+    <xi:include href="common/Version.xml" xpointer="Copyright"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <mediaobject role="logo">
@@ -623,8 +623,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <listitem>
             <para>In the builder window, Select <emphasis
-            role="bold">thor</emphasis> as Target from the drop-down menu on
-            the right side.</para>
+            role="bold">thor</emphasis> as Target from the drop menu on the
+            right side.</para>
 
             <para><figure>
                 <title>Target thor</title>
@@ -827,8 +827,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <listitem>
             <para>In the builder window, Select <emphasis
-            role="bold">thor</emphasis> as Target from the drop-down menu on
-            the right side.</para>
+            role="bold">thor</emphasis> as Target from the drop menu on the
+            right side.</para>
 
             <para><figure>
                 <title>Target: thor</title>
@@ -1002,8 +1002,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <listitem>
             <para>In the builder window, Select <emphasis
-            role="bold">thor</emphasis> as Target from the drop-down menu on
-            the right side.</para>
+            role="bold">thor</emphasis> as Target from the drop menu on the
+            right side.</para>
 
             <para><figure>
                 <title>Target: thor</title>
@@ -1157,8 +1157,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <listitem>
             <para>In the builder window, Select <emphasis
-            role="bold">thor</emphasis> as Target from the drop-down menu on
-            the right side.</para>
+            role="bold">thor</emphasis> as Target from the drop menu on the
+            right side.</para>
 
             <para><figure>
                 <title>Target: thor</title>
@@ -1250,7 +1250,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>In the builder window, Select <emphasis
-          role="bold">thor</emphasis> as Target from the drop-down menu on the
+          role="bold">thor</emphasis> as Target from the drop menu on the
           right side.</para>
 
           <para><figure>
@@ -1445,8 +1445,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>In the builder window, Select <emphasis
-          role="bold">roxie</emphasis> as Target from the drop-down menu on
-          the right side.</para>
+          role="bold">roxie</emphasis> as Target from the drop menu on the
+          right side.</para>
 
           <para><figure>
               <title>Target roxie</title>
@@ -1800,7 +1800,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 
 -->
 
-      <xi:include href="DataTutorial.xml"
+      <xi:include href="HPCCDataTutorial/DataTutorial.xml"
                   xpointer="Spray_the_Data_File_to_your_DR-THOR_Cluster"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -1893,7 +1893,8 @@ Why retype and maintain in two places when we can just keep the cromulent data i
         <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
 Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***-->
 
-        <xi:include href="DataHandling.xml" xpointer="Desprays"
+        <xi:include href="HPCCDataHandling/DataHandling.xml"
+                    xpointer="Desprays"
                     xmlns:xi="http://www.w3.org/2001/XInclude" />
 
         <sect3>

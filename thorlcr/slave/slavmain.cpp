@@ -274,7 +274,7 @@ public:
                         subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
                         PROGLOG("GraphInit: %s, graphId=%"GIDPF"d", jobKey.get(), subGraph->queryGraphId());
                         subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
-                        unsigned len;
+                        size32_t len;
                         msg.read(len);
                         MemoryBuffer initData;
                         initData.append(len, msg.readDirect(len));

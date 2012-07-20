@@ -29441,7 +29441,7 @@ public:
                 CriticalBlock b(contextCrit);
                 useContext(sequence).getProp(stepname, x);
             }
-            TempDecimal d;
+            Decimal d;
             d.setString(x.length(), x.str());
             if (isSigned)
                 d.getDecimal(tlen, precision, tgt);

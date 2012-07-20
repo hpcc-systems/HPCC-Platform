@@ -6972,10 +6972,13 @@ void CHThorWSCBaseActivity::init()
     // Build authentication token
     StringBuffer uidpair;
     IUserDescriptor *userDesc = agent.queryCodeContext()->queryUserDescriptor();
-    userDesc->getUserName(uidpair);
-    uidpair.append(":");
-    userDesc->getPassword(uidpair);
-    JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+    if (userDesc)//NULL if standalone
+    {
+        userDesc->getUserName(uidpair);
+        uidpair.append(":");
+        userDesc->getPassword(uidpair);
+        JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+    }
     soapTraceLevel = agent.queryWorkUnit()->getDebugValueInt("soapTraceLevel", 1);
 }
 

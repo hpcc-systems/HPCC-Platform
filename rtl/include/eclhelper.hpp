@@ -959,6 +959,7 @@ enum ActivityInterfaceEnum
     TAIinlinetablearg_1,
     TAIshuffleextra_1,
     TAIhashdeduparg_2,
+    TAIsoapcallextra_2,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -2106,8 +2107,14 @@ struct IHThorWebServiceCallExtra : public IInterface
 };
 typedef IHThorWebServiceCallExtra IHThorSoapCallExtra;
 
+struct IHThorWebServiceCallExtra2 : public IInterface
+{
+    virtual double getTimeoutMS()   { return (double)-1.0; }//not specified, use default
+    virtual double getTimeLimitMS() { return (double)-1.0; }//not specified, use default
+};
+typedef IHThorWebServiceCallExtra2 IHThorSoapCallExtra2;
 
-struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra
+struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra, public IHThorWebServiceCallExtra2
 {
     COMMON_NEWTHOR_FUNCTIONS
 };

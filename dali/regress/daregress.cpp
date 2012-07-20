@@ -680,14 +680,14 @@ static void testDFSPromote()
     printf("Promote (1, -, -) - first iteration\n");
     dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1", delsub, createonlyone, NULL, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") != 0)
             ERROR("promote failed, wrong name for sub1");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
         if (sfile2.get())
             ERROR("promote failed, super2 does exist");
         if (outlinked.length() != 0)
@@ -697,21 +697,21 @@ static void testDFSPromote()
     printf("Promote (2, 1, -) - second iteration\n");
     dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2", delsub, createonlyone, NULL, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub1") != 0)
             ERROR("promote failed, wrong name for sub1");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
         if (sfile3.get())
             ERROR("promote failed, super3 does exist");
         if (outlinked.length() != 0)
@@ -721,21 +721,21 @@ static void testDFSPromote()
     printf("Promote (3, 2, 1) - third iteration\n");
     dir.promoteSuperFiles(3, sfnames, "regress::trans::sub3", delsub, createonlyone, NULL, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub3") != 0)
             ERROR("promote failed, wrong name for sub3");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
@@ -749,21 +749,21 @@ static void testDFSPromote()
     printf("Promote (4, 3, 2) - fourth iteration, expect outlinked\n");
     dir.promoteSuperFiles(3, sfnames, "regress::trans::sub4", delsub, createonlyone, NULL, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub4") != 0)
             ERROR("promote failed, wrong name for sub4");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub3") != 0)
             ERROR("promote failed, wrong name for sub3");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
@@ -782,7 +782,7 @@ static void testDFSPromote()
     printf("Promote ([1,2], 4, 3) - fifth iteration, two in-files\n");
     dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1,regress::trans::sub2", delsub, createonlyone, NULL, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 2)
@@ -791,14 +791,14 @@ static void testDFSPromote()
             ERROR("promote failed, wrong name for sub1");
         if (strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub4") != 0)
             ERROR("promote failed, wrong name for sub4");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, false, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
