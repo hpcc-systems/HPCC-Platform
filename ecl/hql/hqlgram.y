@@ -9901,7 +9901,7 @@ startRightFilter
 startRightRowsRecord
     : recordDef
                         {
-                            parser->setRightScope($1.queryExpr());                     
+                            parser->setRightScope($1.queryExpr());  
                             parser->beginRowsScope(no_right);
                             $$.inherit($1);
                         }
