@@ -179,6 +179,7 @@ ESPresponse UserInfoEditInputResponse
     string username;
     string firstname;
     string lastname;
+    [min_ver("1.07")] string employeeID;
 };
 
 ESPrequest UserInfoEditRequest
@@ -186,6 +187,7 @@ ESPrequest UserInfoEditRequest
     string username;
     string firstname;
     string lastname;
+    [min_ver("1.07")] string employeeID;
 };
 
 ESPresponse UserInfoEditResponse
@@ -200,6 +202,7 @@ ESPrequest AddUserRequest
     [label("User Name"), cols(20)] string username;
     [label("First Name"), cols(20)] string firstname;
     [label("Last Name"), cols(20)] string lastname;
+    [label("Employee ID"), cols(20)] string employeeID;
     [label("Password"), password, cols(20)] password1;
     [label("Retype password"), password, cols(20)] password2;
 };
@@ -647,7 +650,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
 };
 
 
-ESPservice [version("1.06"), default_client_version("1.06"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.07"), default_client_version("1.07"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);

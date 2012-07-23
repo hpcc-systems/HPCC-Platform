@@ -113,6 +113,7 @@ private:
     StringBuffer               m_dbserver;
     StringBuffer               m_dbuser;
     StringBuffer               m_dbpassword;
+    StringBuffer               m_employeeID;
     int                        m_poolsize;
     SecPasswordEncoding        m_dbpasswordEncoding;
     MapStrToInt                m_usermap;
@@ -283,6 +284,10 @@ public:
     virtual unsigned getPasswordExpirationWarningDays()
     {
         return m_passwordExpirationWarningDays;
+    }
+    virtual const char *getEmployeeID()
+    {
+        return m_employeeID.toCharArray();
     }
 
 protected:

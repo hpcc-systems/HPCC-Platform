@@ -63,6 +63,12 @@
                 </td>
             </tr>
             <tr>
+                <td>Employee ID:</td>
+                <td>
+                    <input type="text" name="employeeID" value="{employeeID}" size="35"/>
+                </td>
+            </tr>
+            <tr>
                 <td/>
                 <td><input type="submit" value="Submit" name="S1"/></td>
             </tr>

@@ -78,6 +78,14 @@
             </tr>
             <tr>
               <td>
+                <b>Employee ID: </b>
+              </td>
+              <td>
+                <xsl:value-of select="employeeID"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
                 <b>Password Expiration: </b>
               </td>
               <td>

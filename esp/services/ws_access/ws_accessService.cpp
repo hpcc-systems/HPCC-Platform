@@ -646,7 +646,7 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
         if(username == NULL || *username == '\0')
         {
             resp.setRetcode(-1);
-            resp.setRetmsg("username can't be empty");
+            resp.setRetmsg("Username can't be empty");
             return false;
         }
         if(strchr(username, ' '))
@@ -669,7 +669,15 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
         if(pass1 == NULL || pass2 == NULL || *pass1 == '\0' || *pass2 == '\0' || strcmp(pass1, pass2) != 0)
         {
             resp.setRetcode(-1);
-            resp.setRetmsg("password and retype can't be empty and must match.");
+            resp.setRetmsg("Password and retype can't be empty and must match.");
+            return false;
+        }
+
+        const char* employeeID = req.getEmployeeID();
+        if(employeeID != NULL && (0 != strchr(employeeID, ' ')))
+        {
+            resp.setRetcode(-1);
+            resp.setRetmsg("Employee ID can't cannot contain spaces");
             return false;
         }
 
@@ -683,6 +691,8 @@ bool Cws_accessEx::onAddUser(IEspContext &context, IEspAddUserRequest &req, IEsp
             user->setLastName(lastname);
         if(pass1 != NULL)
             cred.setPassword(pass1);
+        if(employeeID != NULL)
+            user->setEmployeeID(employeeID);
         try
         {
             secmgr->addUser(*user.get());
@@ -2670,10 +2680,17 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
 
         const char* firstname = req.getFirstname();
         const char* lastname = req.getLastname();
+        const char* employeeID = req.getEmployeeID();
         if((!firstname || !*firstname) && (!lastname || !*lastname))
         {
             resp.setRetcode(-1);
             resp.setRetmsg("Please specify both firstname and lastname");
+            return false;
+        }
+        if(employeeID && *employeeID && strchr(employeeID, ' '))
+        {
+            resp.setRetcode(-1);
+            resp.setRetmsg("Employee ID cannot contain spaces");
             return false;
         }
 
@@ -2681,6 +2698,7 @@ bool Cws_accessEx::onUserInfoEdit(IEspContext &context, IEspUserInfoEditRequest 
 
         user->setFirstName(firstname);
         user->setLastName(lastname);
+        user->setEmployeeID(employeeID);
 
         try
         {
@@ -2730,6 +2748,7 @@ bool Cws_accessEx::onUserInfoEditInput(IEspContext &context, IEspUserInfoEditInp
 
         resp.setFirstname(user->getFirstName());
         resp.setLastname(user->getLastName());
+        resp.setEmployeeID(user->getEmployeeID());
     }
     catch(IException* e)
     {

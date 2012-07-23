@@ -1035,7 +1035,7 @@ public:
                 filter.append("uid=");
             filter.append(username);
 
-            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", NULL};
+            char* attrs[] = {"cn", "userAccountControl", "pwdLastSet", "givenName", "sn", "employeeID", NULL};
 
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
@@ -1113,6 +1113,12 @@ public:
                     //UF_DONT_EXPIRE_PASSWD 0x10000
                     if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
                         m_passwordNeverExpires = true;
+                    ldap_value_free( values );
+                }
+                else if((stricmp(attribute, "employeeID") == 0) && ( values = ldap_get_values( sys_ld, entry, attribute))  != NULL )
+                {
+                    if(values[0] != NULL)
+                        user.setEmployeeID(values[0]);
                     ldap_value_free( values );
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
@@ -1495,7 +1501,7 @@ public:
             Owned<ILdapConnection> lconn = m_connections->getConnection();
             LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
 
-            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", NULL};
+            char        *attrs[] = {"cn", "givenName", "sn", "gidnumber", "uidnumber", "homedirectory", "loginshell", "objectClass", "employeeID", NULL};
             CLDAPMessage searchResult;
             int rc = ldap_search_ext_s(ld, (char*)basedn, LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,   &searchResult.msg );
 
@@ -1567,6 +1573,15 @@ public:
                         {
                             if(values[0] != NULL)
                                 ((CLdapSecUser*)&user)->setHomedirectory(values[0]);
+                            ldap_value_free( values );
+                        }
+                    }
+                    else if(stricmp(attribute, "employeeID") == 0)
+                    {
+                        if (( values = ldap_get_values( ld, message, attribute)) != NULL )
+                        {
+                            if(values[0] != NULL)
+                                ((CLdapSecUser*)&user)->setEmployeeID(values[0]);
                             ldap_value_free( values );
                         }
                     }
@@ -2098,6 +2113,7 @@ public:
             StringBuffer cnbuf;
             const char* fname = user.getFirstName();
             const char* lname = user.getLastName();
+            const char* employeeID = user.getEmployeeID();
             if(fname && *fname && lname && *lname)
             {
                 cnbuf.append(fname).append(" ").append(lname);
@@ -2119,6 +2135,13 @@ public:
                 sn_values
             };
 
+            char *eid_values[] = { (char*)employeeID, NULL };
+            LDAPMod eid_attr = {
+                employeeID && *employeeID ? LDAP_MOD_REPLACE : LDAP_MOD_DELETE,
+                "employeeID",
+                employeeID && *employeeID ? eid_values : NULL
+            };
+
             char *cn_values[] = {(char*)cnbuf.str(), NULL };
             LDAPMod cn_attr = 
             {
@@ -2135,7 +2158,7 @@ public:
                 dispname_values
             };
 
-            LDAPMod *attrs[4];
+            LDAPMod *attrs[5];
             int ind = 0;
         
             attrs[ind++] = &gn_attr;
@@ -2144,6 +2167,7 @@ public:
             if(m_ldapconfig->getServerType() == ACTIVE_DIRECTORY)
             {
                 attrs[ind++] = &dispname_attr;
+                attrs[ind++] = &eid_attr;
             }
             else
             {
@@ -4980,7 +5004,16 @@ private:
             username_values
         };
 
-        LDAPMod *attrs[8];
+        const char * employeeID = (char*)user.getEmployeeID();
+        char* employeeID_values[] = {(char*)employeeID, NULL};
+        LDAPMod employeeID_attr =
+        {
+            LDAP_MOD_ADD,
+            "employeeID",
+            employeeID_values
+        };
+
+        LDAPMod *attrs[9];
         int ind = 0;
         
         attrs[ind++] = &cn_attr;
@@ -4995,6 +5028,8 @@ private:
         {
             attrs[ind++] = &username_attr;
             attrs[ind++] = &dispname_attr;
+            if(employeeID != NULL && *employeeID != '\0')
+                attrs[ind++] = &employeeID_attr;
         }
         else
         {

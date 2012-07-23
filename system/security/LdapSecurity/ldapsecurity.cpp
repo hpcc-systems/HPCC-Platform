@@ -201,6 +201,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setUserSid(m_usersid.length(), m_usersid.toByteArray());
     dest->setUserID(m_userid);
     dest->setPasswordExpiration(m_passwordExpiration);
+    dest->setEmployeeID(getEmployeeID());
 }
 
 ISecUser * CLdapSecUser::clone()

@@ -172,6 +172,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             resp.setFirstName(user->getFirstName());
             resp.setLastName(user->getLastName());
             resp.setUsername(user->getName());
+            resp.setEmployeeID(user->getEmployeeID());
         }
     }
     catch(IException* e)
