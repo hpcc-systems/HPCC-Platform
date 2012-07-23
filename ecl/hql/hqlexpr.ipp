@@ -20,7 +20,7 @@
 
 #define NUM_PARALLEL_TRANSFORMS 1
 //I'm not sure if the following is needed or not - I'm slight concerned that remote scopes (e.g.,, plugins)
-//may be accessed in parallel fro mmultiple threads, causing potential conflicts
+//may be accessed in parallel from multiple threads, causing potential conflicts
 #define THREAD_SAFE_SYMBOLS
 
 #include "jexcept.hpp"
@@ -129,7 +129,6 @@ protected:
 
     CHqlDynamicAttribute * attributes;
     HqlExprArray operands;
-    CUsedTables usedTables;
 
 protected:
     CHqlExpression(node_operator op);
@@ -144,6 +143,18 @@ protected:
     inline bool functionOfGroupAggregate() const { return (infoFlags & HEFfunctionOfGroupAggregate) != 0; }
     inline bool fullyBound() const { return (infoFlags & HEFunbound) == 0; }
     inline bool pure() const { return (infoFlags & HEFimpure) == 0; }
+
+    //For a no_select, is this the root no_select (rather than a.b.c), and is it also an active selector.
+    //Used for determining how a no_select should be interpreted e.g., in table gathering. 
+    inline bool isSelectRootAndActive() const
+    {
+        if (hasProperty(newAtom))
+            return false;
+        IHqlExpression * ds = queryChild(0);
+        if ((ds->getOperator() == no_select) && ds->isDatarow())
+            return false;
+        return true;
+    }
 
     bool isAggregate();
     IHqlExpression * commonUpExpression();
@@ -161,17 +172,9 @@ protected:
     void updateFlagsAfterOperands();
 
     IHqlExpression * calcNormalizedSelector() const;
-    void mergeGathered(CopyArray &, CopyArray &);
     IHqlExpression *fixScope(IHqlDataset *table);
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
-
-    void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
-    void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
-    void cachePotentialTablesUsed(CUsedTablesBuilder & used);
-    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
-    void cacheTablesUsed();
-    void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
 
     void addAttribute(_ATOM name, IHqlExpression * value);
 
@@ -226,10 +229,6 @@ public:
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const ;
-    virtual bool isIndependentOfScope();
-    virtual bool usesSelector(IHqlExpression * selector);
-    virtual void gatherTablesUsed(CUsedTablesBuilder & used);
-    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
 
     virtual ITypeInfo *queryRecordType();
     virtual IHqlExpression *queryRecord();
@@ -268,7 +267,29 @@ public:
     inline void resetTransformExtra(IInterface * _extra, unsigned depth);
 };
 
-class HQL_API CHqlExpressionWithType : public CHqlExpression
+class HQL_API CHqlExpressionWithTables : public CHqlExpression
+{
+public:
+    inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
+
+    virtual bool isIndependentOfScope();
+    virtual bool usesSelector(IHqlExpression * selector);
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used);
+    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
+
+protected:
+    void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
+    void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
+    void cachePotentialTablesUsed(CUsedTablesBuilder & used);
+    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
+    void cacheTablesUsed();
+    void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
+
+protected:
+    CUsedTables usedTables;
+};
+
+class HQL_API CHqlExpressionWithType : public CHqlExpressionWithTables
 {
     friend HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
 public:
@@ -280,7 +301,8 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
 protected:
-    CHqlExpressionWithType(node_operator op, ITypeInfo *type);
+    inline CHqlExpressionWithType(node_operator op, ITypeInfo * _type) : CHqlExpressionWithTables(op), type(_type) {}
+    
     CHqlExpressionWithType(node_operator op, ITypeInfo *type, HqlExprArray & ownedOperands);
     ~CHqlExpressionWithType();
 
@@ -319,6 +341,11 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
+
+    virtual bool isIndependentOfScope();
+    virtual bool usesSelector(IHqlExpression * selector);
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used);
+    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
 
     virtual void calcNormalized() = 0;
 
@@ -1230,6 +1257,11 @@ public:
     virtual IValue *queryValue() const { return val; }
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
+
+    virtual bool isIndependentOfScope() { return true; }
+    virtual bool usesSelector(IHqlExpression * selector) { return false; }
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used) {}
+    virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) {}
 };
 
 class CHqlParameter : public CHqlExpressionWithType
@@ -1348,7 +1380,7 @@ public:
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
 };
 
-class CHqlAttribute : public CHqlExpression
+class CHqlAttribute : public CHqlExpressionWithTables
 {
 protected:
     _ATOM name;
@@ -1402,7 +1434,7 @@ public:
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
 };
 
-class CHqlCachedBoundFunction : public CHqlExpression
+class CHqlCachedBoundFunction : public CHqlExpressionWithTables
 {
 public:
     CHqlCachedBoundFunction(IHqlExpression * func, bool _forceOutOfLineExpansion);
@@ -1415,7 +1447,7 @@ public:
     LinkedHqlExpr bound;
 };
 
-class CHqlRecord: public CHqlExpression, implements ITypeInfo, implements IHqlSimpleScope
+class CHqlRecord: public CHqlExpressionWithTables, implements ITypeInfo, implements IHqlSimpleScope
 {
 private:
     FieldTable fields;
@@ -1523,7 +1555,7 @@ public:
 };
 
 
-class CHqlAlienType : public CHqlExpression, implements ITypeInfo, implements IHqlSimpleScope, implements IHqlAlienTypeInfo
+class CHqlAlienType : public CHqlExpressionWithTables, implements ITypeInfo, implements IHqlSimpleScope, implements IHqlAlienTypeInfo
 {
 private:
     IHqlScope *scope;

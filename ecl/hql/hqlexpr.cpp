@@ -4376,6 +4376,21 @@ IHqlExpression * CHqlExpression::commonUpExpression()
     return match;
 }
 
+IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+{
+    IHqlExpression * left = &operands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
+    {
+        HqlExprArray args;
+        appendArray(args, operands);
+        args.replace(*LINK(normalizedLeft), 0);
+        removeProperty(args, newAtom);
+        return doCreateSelectExpr(args);
+    }
+    return NULL;
+}
+
 void displayHqlCacheStats()
 {
 #if 0
@@ -4403,14 +4418,8 @@ void displayHqlCacheStats()
 }
 //--------------------------------------------------------------------------------------------------------------
 
-CHqlExpressionWithType::CHqlExpressionWithType(node_operator _op, ITypeInfo * _type)
-: CHqlExpression(_op)
-{
-    type = _type;
-}
-
 CHqlExpressionWithType::CHqlExpressionWithType(node_operator _op, ITypeInfo * _type, HqlExprArray & _ownedOperands)
-: CHqlExpression(_op)
+: CHqlExpressionWithTables(_op)
 {
     type = _type;
     setOperands(_ownedOperands); // after type is initialized
@@ -4744,14 +4753,14 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
 //---------------------------------------------------------------------------------------------------------------------
 
 //Don't need to check if already visited, because the information is cached in the expression itself.
-void CHqlExpression::cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to)
+void CHqlExpressionWithTables::cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to)
 {
     for (unsigned i=from; i < to; i++)
         queryChild(i)->gatherTablesUsed(used);
 }
 
 
-void CHqlExpression::cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables)
+void CHqlExpressionWithTables::cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables)
 {
     //The argument to the operator is a new table, don't inherit grandchildren
     used.addNewTable(ds);
@@ -4767,7 +4776,7 @@ void CHqlExpression::cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTable
     }
 }
 
-void CHqlExpression::cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr)
+void CHqlExpressionWithTables::cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr)
 {
 #ifdef GATHER_HIDDEN_SELECTORS
     expr->gatherTablesUsed(used);
@@ -4785,7 +4794,7 @@ void CHqlExpression::cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression 
 #endif
 }
 
-void CHqlExpression::cachePotentialTablesUsed(CUsedTablesBuilder & used)
+void CHqlExpressionWithTables::cachePotentialTablesUsed(CUsedTablesBuilder & used)
 {
     ForEachChild(i, this)
     {
@@ -4798,7 +4807,7 @@ void CHqlExpression::cachePotentialTablesUsed(CUsedTablesBuilder & used)
 }
 
 
-void CHqlExpression::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
+void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
 {
     unsigned max = numChildren();
     switch (getChildDatasetType(this))
@@ -4931,7 +4940,7 @@ void CHqlExpression::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
 }
 
 
-void CHqlExpression::cacheTablesUsed()
+void CHqlExpressionWithTables::cacheTablesUsed()
 {
     if (!(infoFlags & HEFgatheredNew))
     {
@@ -4955,14 +4964,16 @@ void CHqlExpression::cacheTablesUsed()
         case no_select:
             {
                 IHqlExpression * ds = queryChild(0);
-                if (hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
+                if (isSelectRootAndActive())
+                {
+                    usedTables.setActiveTable(ds);
+                }
+                else
                 {
                     //MORE: ds->gatherTablesUsed(usedTables);
                     //which could ideally clone
                     specialCased = false;
                 }
-                else
-                    usedTables.setActiveTable(ds);
                 break;
             }
         case no_activerow:
@@ -5000,7 +5011,7 @@ void CHqlExpression::cacheTablesUsed()
                 case no_select:
                     {
                         IHqlExpression * ds = queryChild(0);
-                        dbgassertex(hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()));
+                        dbgassertex(!isSelectRootAndActive());
                         ds->gatherTablesUsed(used);
                         break;
                     }
@@ -5117,43 +5128,28 @@ void CHqlExpression::cacheTablesUsed()
     }
 }
 
-bool CHqlExpression::isIndependentOfScope()
+bool CHqlExpressionWithTables::isIndependentOfScope()
 {
     cacheTablesUsed();
     return usedTables.isIndependentOfScope();
 }
 
-bool CHqlExpression::usesSelector(IHqlExpression * selector)
+bool CHqlExpressionWithTables::usesSelector(IHqlExpression * selector)
 {
     cacheTablesUsed();
     return usedTables.usesSelector(selector);
 }
 
-void CHqlExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
+void CHqlExpressionWithTables::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
 {
     cacheTablesUsed();
     usedTables.gatherTablesUsed(newScope, inScope);
 }
 
-void CHqlExpression::gatherTablesUsed(CUsedTablesBuilder & used)
+void CHqlExpressionWithTables::gatherTablesUsed(CUsedTablesBuilder & used)
 {
     cacheTablesUsed();
     usedTables.gatherTablesUsed(used);
-}
-
-IHqlExpression * CHqlExpression::calcNormalizedSelector() const
-{
-    IHqlExpression * left = &operands.item(0);
-    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
-    {
-        HqlExprArray args;
-        appendArray(args, operands);
-        args.replace(*LINK(normalizedLeft), 0);
-        removeProperty(args, newAtom);
-        return doCreateSelectExpr(args);
-    }
-    return NULL;
 }
 
 //==============================================================================================================
@@ -5240,6 +5236,61 @@ IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & o
     select->calcNormalized();
     return select->closeExpr();
 }
+
+
+bool CHqlSelectBaseExpression::isIndependentOfScope()
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        return false;
+    }
+    else
+    {
+        return ds->isIndependentOfScope();
+    }
+}
+
+bool CHqlSelectBaseExpression::usesSelector(IHqlExpression * selector)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        return (selector == ds);
+    }
+    else
+    {
+        return ds->usesSelector(selector);
+    }
+}
+
+void CHqlSelectBaseExpression::gatherTablesUsed(CUsedTablesBuilder & used)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        used.addActiveTable(ds);
+    }
+    else
+    {
+        ds->gatherTablesUsed(used);
+    }
+}
+
+void CHqlSelectBaseExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        if (inScope)
+            ::addActiveTable(*inScope, ds);
+    }
+    else
+    {
+        ds->gatherTablesUsed(newScope, inScope);
+    }
+}
+
 
 //==============================================================================================================
 
@@ -5905,12 +5956,12 @@ node_operator queryTableMode(IHqlExpression * expr)
 
 //==============================================================================================================
 
-CHqlRecord::CHqlRecord() : CHqlExpression (no_record)
+CHqlRecord::CHqlRecord() : CHqlExpressionWithTables(no_record)
 {
     thisAlignment = 0;
 }
 
-CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpression (no_record)
+CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpressionWithTables(no_record)
 {
     setOperands(operands);
     thisAlignment = 0;
@@ -6341,7 +6392,7 @@ ITypeInfo * CHqlAnnotation::getType()
 //==============================================================================================================
 
 CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func, bool _forceOutOfLineExpansion)
-: CHqlExpression(no_bound_func)
+: CHqlExpressionWithTables(no_bound_func)
 {
     appendOperands(LINK(func), NULL);
     if (_forceOutOfLineExpansion)
@@ -8871,7 +8922,7 @@ StringBuffer &CHqlVariable::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpression(_op)
+CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpressionWithTables(_op)
 {
     name = _name;
 }
@@ -9209,7 +9260,7 @@ bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
 #pragma warning( disable : 4355 )
 #endif
 /* In parm: scope is linked */
-CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpression(no_type)
+CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
 {
     name = _name;
     scope = _scope;
