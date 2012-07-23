@@ -32,6 +32,7 @@
 #include "workunit.hpp"
 #include "eclhelper.hpp"
 #include "thexception.hpp"
+#include "thorcommon.hpp"
 #include "thor.hpp"
 
 
@@ -134,6 +135,51 @@ public:
     }
     virtual bool action() = 0;
 };
+
+// simple class which takes ownership of the underlying file and deletes it on destruction
+class graph_decl CFileOwner : public CSimpleInterface, implements IInterface
+{
+    IFile *iFile;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    CFileOwner(IFile *_iFile) : iFile(_iFile)
+    {
+    }
+    ~CFileOwner()
+    {
+        iFile->remove();
+    }
+    IFile &queryIFile() const { return *iFile; }
+};
+
+// stream wrapper, that takes ownership of a CFileOwner
+class graph_decl CStreamFileOwner : public CSimpleInterface, implements IExtRowStream
+{
+    Linked<CFileOwner> fileOwner;
+    IExtRowStream *stream;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    CStreamFileOwner(CFileOwner *_fileOwner, IExtRowStream *_stream) : fileOwner(_fileOwner)
+    {
+        stream = LINK(_stream);
+    }
+    ~CStreamFileOwner()
+    {
+        stream->Release();
+    }
+// IExtRowStream
+    virtual const void *nextRow() { return stream->nextRow(); }
+    virtual void stop() { stream->stop(); }
+    virtual offset_t getOffset() { return stream->getOffset(); }
+    virtual void stop(CRC32 *crcout=NULL) { stream->stop(); }
+    virtual const void *prefetchRow(size32_t *sz=NULL) { return stream->prefetchRow(sz); }
+    virtual void prefetchDone() { stream->prefetchDone(); }
+    virtual void reinit(offset_t offset, offset_t len, unsigned __int64 maxRows)
+    {
+        stream->reinit(offset, len, maxRows);
+    }
+};
+
 
 #define DEFAULT_QUERYSO_LIMIT 10
 

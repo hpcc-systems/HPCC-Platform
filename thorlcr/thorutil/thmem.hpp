@@ -154,6 +154,8 @@ interface IThorAllocator : extends IInterface
 {
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
     virtual roxiemem::IRowManager *queryRowManager() const = 0;
+    virtual bool queryPacked() const = 0;
+    virtual bool queryCrc() const = 0;
 };
 
 IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool usePacked);
@@ -206,6 +208,7 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 #define SPILL_PRIORITY_HASHJOIN 10
 #define SPILL_PRIORITY_LARGESORT 10
 #define SPILL_PRIORITY_GROUPSORT 20
+#define SPILL_PRIORITY_HASHDEDUP 30
 #define SPILL_PRIORITY_OVERFLOWABLE_BUFFER SPILL_PRIORITY_DEFAULT
 #define SPILL_PRIORITY_SPILLABLE_STREAM SPILL_PRIORITY_DEFAULT
 #define SPILL_PRIORITY_RESULT SPILL_PRIORITY_DEFAULT
@@ -228,7 +231,7 @@ protected:
     bool allowNulls;
     StableSortFlag stableSort;
     rowidx_t maxRows;  // Number of rows that can fit in the allocated memory.
-    rowidx_t numRows;  // rows that have been added can only be updated by writing thread.
+    rowidx_t numRows;  // High water mark of rows added
 
     void init(rowidx_t initialSize, StableSortFlag stableSort);
     void **allocateStableTable(bool error); // allocates stable table based on std. ptr table
@@ -251,12 +254,12 @@ public:
     void setRow(rowidx_t idx, const void *row) // NB: takes ownership
     {
         OwnedConstThorRow _row = row;
-        assertex(idx < maxRows);
+        dbgassertex(idx < maxRows);
         const void *oldRow = rows[idx];
         if (oldRow)
             ReleaseThorRow(oldRow);
         rows[idx] = _row.getClear();
-        if (idx+1>numRows)
+        if (idx+1>numRows) // keeping high water mark
             numRows = idx+1;
     }
     inline bool append(const void *row) // NB: takes ownership on success
@@ -291,9 +294,12 @@ public:
             return NULL;
         const void *row = rows[i];
         rows[i] = NULL;
+        if (i == (numRows-1)) // keeping high water mark
+            --numRows;
         return row;
     }
     inline rowidx_t ordinality() const { return numRows; }
+    inline rowidx_t queryMaxRows() const { return maxRows; }
 
     inline const void **getRowArray() { return rows; }
     void swap(CThorExpandingRowArray &src);
