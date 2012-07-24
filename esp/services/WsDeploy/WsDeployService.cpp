@@ -4176,18 +4176,20 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
     StringBuffer xpath;
     Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
 
-    ForEach(*iterComp)
+    if (iterComp->first() && iterComp->isValid())
     {
       IPropertyTree& pComp = iterComp->query();
       const char* compName = pComp.queryProp(XML_ATTR_NAME);
       const char* compType = pComp.queryProp(XML_ATTR_COMPTYPE);
 
       sbNewName = compName;
-      xpath.clear().appendf("%s", compType);
+      xpath = compType;
       getUniqueName(pEnvRoot, sbNewName, xpath.str(), XML_TAG_SOFTWARE);
       xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, compName);
       IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpath.str());
-      xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, sbNewName.str());
+
+      if (pCompTree == NULL)
+        throw MakeStringException(-1,"XPATH: %s is invalid.", xpath.str());
 
       StringBuffer xml;
       toXML(pCompTree, xml);
@@ -4195,15 +4197,19 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
       IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
       dupTree->setProp(XML_ATTR_NAME, sbNewName.str());
 
+      xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, sbNewName.str());
+
       if (pEnvRoot->addPropTree(xpath, dupTree))
         resp.setStatus("true");
       else
         resp.setStatus("false");
-
-      resp.setCompName(XML_TAG_SOFTWARE);
     }
+    else
+    {
+      resp.setStatus("false");
+    }
+    resp.setCompName(XML_TAG_SOFTWARE);
   }
-
   return true;
 }
 
