@@ -160,7 +160,7 @@ void ParsePath(const char * fullPath, StringBuffer &ip, StringBuffer &filePath, 
 const char * const NODATETIME="1970-01-01T00:00:00Z";
 
 // Assign from a dfuwu workunit structure to an esp request workunit structure. 
-static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
+static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
 {
     if(src == NULL)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Source DFU workunit' doesn't exist.");
@@ -173,6 +173,7 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
     if (!root)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
+    double version = context.getClientVersion();
     StringBuffer tmp, encoded;
     dest.setID(src->queryId());
     if (src->getClusterName(tmp.clear()).length()!=0)
@@ -345,6 +346,18 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
         file->getRowTag(rowtag);
         if(rowtag.length() > 0)
             dest.setRowTag(rowtag.str());
+
+        if (version > 1.03 && (file->getFormat() == DFUff_csv))
+        {
+            StringBuffer separate, terminate, quote;
+            file->getCsvOptions(separate,terminate,quote);
+            if(separate.length() > 0)
+                dest.setSourceCsvSeparate(separate.str());
+            if(terminate.length() > 0)
+                dest.setSourceCsvTerminate(terminate.str());
+            if(quote.length() > 0)
+                dest.setSourceCsvQuote(quote.str());
+        }
     }
 
     file = src->queryDestination();
@@ -1224,7 +1237,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
         {
             IEspDFUWorkunit &result = resp.updateResult();
             
-            DeepAssign(wu, result);
+            DeepAssign(context, wu, result);
             int n = resp.getResult().getState();
             if (n == DFUstate_scheduled || n == DFUstate_queued || n == DFUstate_started)
             {
@@ -1314,7 +1327,7 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
         wu->commit();
         const char * d = wu->queryId();
         IEspDFUWorkunit &result = resp.updateResult();
-        DeepAssign(wu, result);
+        DeepAssign(context, wu, result);
         result.setOverwrite(false);
         result.setReplicate(true);
     }
