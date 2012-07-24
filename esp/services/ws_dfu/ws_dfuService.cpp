@@ -978,8 +978,8 @@ void CWsDfuEx::parseStringArray(const char *input, StringArray& strarray)
     if (!input || !*input)
         return;
 
-    char *ptr = (char *) input;
-    char *pptr = ptr;
+    const char *ptr = input;
+    const char *pptr = ptr;
     while (pptr[0])
     {
         if (pptr[0] == ',')
@@ -997,8 +997,6 @@ void CWsDfuEx::parseStringArray(const char *input, StringArray& strarray)
         tmp.set(ptr, pptr-ptr);
         strarray.append(tmp.get());
     }
-
-    return;
 }
 
 int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
@@ -1032,12 +1030,12 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
         if (existingSuperfile)
         {
             if (!df)
-                  throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",superfile);
+                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",superfile);
             if(!df->querySuperFile())
-                  throw MakeStringException(ECLWATCH_NOT_SUPERFILE,"%s is not a superfile.",superfile);
+                throw MakeStringException(ECLWATCH_NOT_SUPERFILE,"%s is not a superfile.",superfile);
         }
         else if (df)
-            throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s has already existed.",superfile);
+            throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s already exists.",superfile);
     }
 
     StringBuffer msg;
