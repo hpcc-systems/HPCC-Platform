@@ -346,6 +346,7 @@ public:
 #define ENCODE_SPACES 1
 #define ENCODE_NEWLINES 2
 #define ENCODE_WHITESPACE 3
+#define ENCODE_NONE 4
 
 interface IEntityHelper
 {
@@ -360,7 +361,7 @@ extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned l
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
 
-extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
+jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
 extern jlib_decl const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl const char *decodeXML(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL, IEntityHelper *entityHelper=NULL);
 extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
@@ -371,26 +372,84 @@ inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flag
     return encodeXML(x, ret, flags, len, true);
 }
 
-inline StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag)
+inline StringBuffer &appendXMLTagName(StringBuffer &xml, const char *tag, const char *prefix=NULL)
 {
-    if (tag && *tag)
-        xml.append('<').append(tag).append('>');
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(tag);
     return xml;
 }
 
-inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag)
+extern jlib_decl StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix=NULL, bool complete=true, bool close=false, const char *uri=NULL);
+
+inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag, const char *prefix=NULL)
 {
-    if (tag && *tag)
-        xml.append("</").append(tag).append('>');
-    return xml;
+    if (!tag || !*tag)
+        return xml;
+
+    xml.append("</");
+    return appendXMLTagName(xml, tag, prefix).append('>');
 }
 
-inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
+inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, const char *prefix=NULL, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
 {
-    appendXMLOpenTag(xml, tag);
+    appendXMLOpenTag(xml, tag, prefix);
     if (value && *value)
-        encodeXML(value, xml, flags, len, utf8);
-    return appendXMLCloseTag(xml, tag);
+    {
+        if (flags != ENCODE_NONE)
+            encodeXML(value, xml, flags, len, utf8);
+        else
+            xml.append(value);
+    }
+    return appendXMLCloseTag(xml, tag, prefix);
+}
+
+inline StringBuffer &delimitJSON(StringBuffer &s)
+{
+    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
+        s.append(", ");
+    return s;
+}
+
+jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
+jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
+
+template <typename type>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, type value)
+{
+    appendJSONName(s, name);
+    return s.append(value);
+}
+
+//specialization
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, bool value)
+{
+    appendJSONName(s, name);
+    return s.append((value) ? "true" : "false");
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const char *value)
+{
+    appendJSONName(s, name);
+    if (!value)
+        return s.append("null");
+    return encodeJSON(s.append('"'), value).append('"');
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, long value)
+{
+    appendJSONName(s, name);
+    return s.appendlong(value);
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned long value)
+{
+    appendJSONName(s, name);
+    s.appendulong(value);
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);

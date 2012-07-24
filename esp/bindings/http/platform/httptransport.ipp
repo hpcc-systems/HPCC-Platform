@@ -101,7 +101,6 @@ protected:
     StringArray  m_headers;
 
     Owned<IEspContext> m_context;
-
     IArrayOf<CEspCookie> m_cookies;
 
     Owned<CMimeMultiPart> m_multipart;
@@ -112,8 +111,6 @@ protected:
     int readContent();  
     int readContentTillSocketClosed();
     virtual void addParameter(const char* paramname, const char *value);
-//  void addRawXMLParameter(const char* paramname, const char *value);
-//  void addRawXMLParameter(const char* path, IPropertyTree* tree);
     virtual void addAttachment(const char* name, StringBuffer& value);
 
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLength);
@@ -318,6 +315,7 @@ private:
     sub_service     m_sstype;
     bool            m_authrequired;
     int             m_MaxRequestEntityLength;
+    ESPSerializationFormat respSerializationFormat;
 
     virtual int parseFirstLine(char* oneline);
     virtual StringBuffer& constructHeaderBuffer(StringBuffer& headerbuf, bool inclLen);
@@ -409,6 +407,11 @@ public:
 inline bool canRedirect(CHttpRequest &req)
 {
     return !req.queryParameters()->hasProp("rawxml_");
+}
+
+inline bool skipXslt(IEspContext &context)
+{
+    return (context.getResponseFormat()!=ESPSerializationANY);  //for now
 }
 
 #endif

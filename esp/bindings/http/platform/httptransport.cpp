@@ -460,96 +460,6 @@ bool CHttpMessage::supportClientXslt()
     return m_supportClientXslt==1;
 }
 
-/*
-void CHttpMessage::addRawXMLParameter(const char* path, IPropertyTree* tree)
-{
-    const char* name = tree->queryName();
-    if (stricmp(name, "RawArray")==0)
-    {
-        Owned<IPropertyTreeIterator> row = tree->getElements("Item");
-
-        int items = 0;
-        for (row->first(); row->isValid(); row->next())
-        {
-            IPropertyTree* pRow = &row->query();
-
-            StringBuffer newpath(path);
-            newpath.appendf(".%d",items);
-
-            const char* value = pRow->queryProp(NULL);
-
-            if (value)
-            {
-                if (*value)
-                    m_queryparams->setProp(newpath, value);
-            }
-            else
-            {
-                Owned<IPropertyTreeIterator> field = pRow->getElements("*");
-                int baseLen = newpath.length();
-                for (field->first(); field->isValid(); field->next())
-                {
-                    newpath.appendf(".%s", field->query().queryName());
-                    addRawXMLParameter(newpath, &field->query());
-                    newpath.setLength(baseLen);
-                }
-            }
-
-            items++;
-        }
-
-        if (items>0)
-        {
-            StringBuffer newpath(path),v;
-            newpath.append(".itemcount");
-            v.append(items);
-            m_queryparams->setProp(newpath, v);
-            m_paramCount++;
-        }
-    }
-    else
-    {
-        const char* value = tree->queryProp(NULL);
-
-        if (value)
-        {
-            if (*value)
-                m_queryparams->setProp(path, value);
-        }
-        else // subtree
-        {
-            Owned<IPropertyTreeIterator> field = tree->getElements("*");
-            for (field->first(); field->isValid(); field->next())
-            {
-                const char* fieldName = field->query().queryName();
-                StringBuffer newpath(path);
-                if (stricmp(fieldName, "RawArray")!=0)  
-                    newpath.appendf(".%s",field->query().queryName());
-                addRawXMLParameter(newpath, &field->query());
-            }
-        }
-
-    }
-}
-
-void CHttpMessage::addRawXMLParameter(const char* path, const char *value)
-{
-    Owned<IPropertyTree> tree;
-    try
-    {
-        tree.setown(createPTreeFromXMLString(value));
-    }
-    catch(IException* e)
-    {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        ERRLOG("Error parsing struct array: %s", msg.str());
-        return;
-    }
-
-    addRawXMLParameter(path, tree);
-}
-*/
 
 void CHttpMessage::addParameter(const char* paramname, const char *value)
 {
@@ -1168,7 +1078,8 @@ bool CHttpMessage::isFormSubmission()
               CHttpRequest Implementation
 *******************************************************************************/
 
-CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket), m_pathIsParsed(false), m_sstype(sub_serv_unknown), m_MaxRequestEntityLength(0)
+CHttpRequest::CHttpRequest(ISocket& socket) : CHttpMessage(socket), m_pathIsParsed(false), 
+    m_sstype(sub_serv_unknown), m_MaxRequestEntityLength(0)
 {
 };
 
@@ -1431,6 +1342,16 @@ void CHttpRequest::parseCookieHeader(char* cookiestr)
     }
 }
 
+ESPSerializationFormat lookupResponseFormatByExtension(const char *ext)
+{
+    if (!ext || !*ext)
+        return ESPSerializationANY;
+    if (strieq(ext, ".xml"))
+        return ESPSerializationXML;
+    if (strieq(ext, ".json"))
+        return ESPSerializationJSON;
+    return ESPSerializationANY;
+}
 
 void CHttpRequest::parseEspPathInfo()
 {
@@ -1439,6 +1360,9 @@ void CHttpRequest::parseEspPathInfo()
         m_espPathEx.clear();
         m_espMethodName.clear();
         m_espServiceName.clear();
+
+        if (queryParameters()->hasProp("rawxml_"))
+            m_context->setResponseFormat(ESPSerializationXML);
 
         size32_t pathlen=m_httpPath.length();
         if (!pathlen)
@@ -1484,7 +1408,14 @@ void CHttpRequest::parseEspPathInfo()
                         }
                             
                         *thumb=0;
-                        m_espMethodName.append(thumb+1);
+                        m_espMethodName.append(++thumb);
+                        const char *tail = strrchr(thumb, '.');
+                        ESPSerializationFormat fmt = lookupResponseFormatByExtension(tail);
+                        if (fmt!=ESPSerializationANY)
+                        {
+                            m_context->setResponseFormat(fmt);
+                            m_espMethodName.setLength(tail-thumb);
+                        }
                     }
                     else 
                         missingTrailSlash = true; 
@@ -1738,7 +1669,6 @@ void CHttpRequest::updateContext()
         if(temp.length())
             m_context->setPeer(temp.str());
 
-        
         m_context->setRequestParameters(queryParameters());
 
         short servPort;

@@ -75,6 +75,8 @@ private:
     bool        m_hasException;
     int         m_exceptionCode;
 
+    ESPSerializationFormat respSerializationFormat;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -83,6 +85,7 @@ public:
         m_hasException =  false;
         m_creationTime = msTick();
         m_active=ActiveRequests::getCount();
+        respSerializationFormat=ESPSerializationANY;
     }
 
     ~CEspContext()
@@ -454,6 +457,9 @@ public:
 
         DBGLOG("TxSummary[%s]", logstr.str());
     }
+
+    virtual ESPSerializationFormat getResponseFormat(){return respSerializationFormat;}
+    virtual void setResponseFormat(ESPSerializationFormat fmt){respSerializationFormat = fmt;}
 };
 
 //---------------------------------------------------------
