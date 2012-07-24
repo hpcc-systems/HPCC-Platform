@@ -78,7 +78,7 @@ MACRO(DOCBOOK_TO_PDF _xsl _file _name)
 	IF(MAKE_DOCS)
 		STRING(REGEX REPLACE "([0-9a-z_-]*).xml" "\\1" _file_base "${_file}")
 		SET(_fo_file ${_file_base}.fo)
-		SET(_pdf_file ${_name}.pdf)
+		SET(_pdf_file ${_name}-${version}-${stagever}.pdf)
 		SET( _docs_target "doc_${_pdf_file}")  # File to Name of type.
 		CLEAN_REL_BOOK(${_file} ${VERSION_DIR} ${DOC_IMAGES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 		set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/${_file_base}.xsl  PROPERTIES GENERATED TRUE)
