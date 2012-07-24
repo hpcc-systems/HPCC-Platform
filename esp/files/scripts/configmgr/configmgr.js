@@ -829,6 +829,12 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
       return;
     }
+
+    if (record._oData.name === "name")
+    {
+      top.document.ResetFocus = true;
+      top.document.ResetFocusValue = newValue;
+    }
     var attrName = getAttrName(datatable, column, record, isComplex); // = record.getData('name');
     var recordIndex = datatable.getRecordIndex(record);
 

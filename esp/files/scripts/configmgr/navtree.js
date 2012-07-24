@@ -476,6 +476,12 @@ function createNavigationTree(navTreeData) {
     expandRecord(this, "Name", "Environment");
     expandRecord(this, "Name", "Software");
 
+    if (top.document.ResetFocus == true)
+    {
+      top.document.ResetFocus = false;
+      top.document.navDT.clickCurrentSelOrName(top.document.navDT,top.document.ResetFocusValue);
+    }
+
     top.document.activeTab = prevTab;
     if (typeof (prevSelRec) !== "undefined")
       clickCurrentSelOrName(this, prevSelRec);
