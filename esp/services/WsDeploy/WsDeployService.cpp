@@ -5298,7 +5298,7 @@ bool CWsDeployFileInfo::deploy(IEspContext &context, IEspDeployRequest& req, IEs
   {
     resp.setStatus( "Please select at least one component to deploy!" );
     CDeployOptions& depOptions = dynamic_cast<CDeployOptions&>( depInfo.getOptions() );
-    depOptions.serialize(&context,deployResult, "Options");
+    depOptions.serializeStruct(&context,deployResult, "Options");
   }
   else
   {
