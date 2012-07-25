@@ -1038,20 +1038,31 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
             throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s already exists.",superfile);
     }
 
-    StringBuffer msg;
+    StringBuffer msgHead;
     if(username.length() > 0)
-        msg.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
+        msgHead.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
     else
-        msg.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
+        msgHead.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
 
+    unsigned filesInMsgBuf = 0;
+    StringBuffer msgBuf = msgHead;
     const char** ptrs = (const char**)alloca(sizeof(char*)*num);
     for(unsigned i = 0; i < num; i++)
     {
         ptrs[i] = subfiles.item(i);
-        msg.appendf("%s, ", ptrs[i]);
+
+        msgBuf.appendf("%s, ", ptrs[i]);
+        filesInMsgBuf++;
+        if (filesInMsgBuf > 9)
+        {
+            PROGLOG(msgBuf.str());
+            msgBuf = msgHead;
+            filesInMsgBuf = 0;
+        }
     }
 
-    PROGLOG(msg.str());
+    if (filesInMsgBuf > 0)
+        PROGLOG(msgBuf.str());
 
     Owned<IDFUhelper> dfuhelper = createIDFUhelper();
 
