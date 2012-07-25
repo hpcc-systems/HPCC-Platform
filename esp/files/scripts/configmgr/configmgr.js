@@ -833,7 +833,9 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
     if (record._oData.name === "name")
     {
       top.document.ResetFocus = true;
-      top.document.ResetFocusValue = newValue;
+      top.document.ResetFocusValueName = newValue;
+      if (typeof(record._oData.compType) !== "undefined")
+       top.document.ResetFocusCompType = record._oData.compType;
     }
     var attrName = getAttrName(datatable, column, record, isComplex); // = record.getData('name');
     var recordIndex = datatable.getRecordIndex(record);

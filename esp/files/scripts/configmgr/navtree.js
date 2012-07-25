@@ -479,7 +479,7 @@ function createNavigationTree(navTreeData) {
     if (top.document.ResetFocus == true)
     {
       top.document.ResetFocus = false;
-      top.document.navDT.clickCurrentSelOrName(top.document.navDT,top.document.ResetFocusValue);
+      top.document.navDT.clickCurrentSelOrNameAndCompType(top.document.navDT,top.document.ResetFocusValueName, top.document.ResetFocusCompType);
     }
 
     top.document.activeTab = prevTab;
@@ -1243,6 +1243,7 @@ function createNavigationTree(navTreeData) {
   navDT.displayRoxieClusterReplaceServer = displayReplaceServerDlg;
   navDT.doPageRefresh = refresh;
   navDT.clickCurrentSelOrName = clickCurrentSelOrName;
+  navDT.clickCurrentSelOrNameAndCompType = clickCurrentSelOrNameAndCompType;
   navDT.displayAddInstance = displayAddInstanceDlg;
   navDT.promptVerifyPwd = promptVerifyPwd;
   navDT.promptNewRange = promptNewRange;
