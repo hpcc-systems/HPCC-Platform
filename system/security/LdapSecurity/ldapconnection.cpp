@@ -53,6 +53,8 @@
 #define LDAP_NO_ATTRS "1.1"
 #endif
 
+#define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
+
 class CLoadBalancer : public CInterface, implements IInterface
 {
 private:
@@ -980,14 +982,18 @@ public:
             return 0;
         }
         char **values;
-        values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
-        assertex(values);
-        char *val = values[0];
-        if (*val == '-')
-            ++val;
         __int64 maxAge = 0;
-        for (int x=0; val[x]; x++)
-            maxAge = maxAge * 10 + ( (int)val[x] - '0');
+        values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
+        if (values && *values)
+        {
+            char *val = values[0];
+            if (*val == '-')
+                ++val;
+            for (int x=0; val[x]; x++)
+                maxAge = maxAge * 10 + ( (int)val[x] - '0');
+        }
+        else
+            maxAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
         return maxAge;
     }
@@ -1006,7 +1012,7 @@ public:
                 return false;
 
             __int64 maxPWAge = getMaxPwdAge();
-            if (maxPWAge != (__int64)0x8000000000000000)
+            if (maxPWAge != PWD_NEVER_EXPIRES)
                 m_passwordNeverExpires = false;
             else
                 m_passwordNeverExpires = true;
