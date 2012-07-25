@@ -1958,7 +1958,7 @@ void ParamInfo::write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer, in
             if (isRpc)
                 outf("\"\", ");
             else if (kind==TK_ESPSTRUCT)
-                outf("\"\", false, ");
+                outf("false, \"\", ");
             else
                 outf("%s, \"\", ", encode);
             outf("%s);\n", prefix);
