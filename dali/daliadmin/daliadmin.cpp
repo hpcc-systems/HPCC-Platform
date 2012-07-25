@@ -86,7 +86,7 @@ void usage(const char *exe)
   printf("  setprotect <logicalname> <id>  -- overwrite protects logical file\n");
   printf("  unprotect <logicalname> <id>   -- unprotect (if id=* then clear all)\n");
   printf("  listprotect <logicalnamemask>  <id-mask> -- list protected files\n");
-  printf("  checksuperfile <superfilename> -- check superfile links consistent\n");
+  printf("  checksuperfile <superfilename> [fix=true|false] -- check superfile links consistent and optionally fix\n");
   printf("  checksubfile <subfilename>     -- check subfile links to parent consistent\n");
   printf("  listexpires <logicalnamemask>  -- lists logical files with expiry value\n");
   printf("  listrelationships <primary> <secondary>\n");
