@@ -60,6 +60,10 @@ ESPStruct [nil_remove] DFUWorkunit
     bool Overwrite;
     bool Compress;
 
+    [min_ver("1.04")] string SourceCsvSeparate;
+    [min_ver("1.04")] string SourceCsvQuote;
+    [min_ver("1.04")] string SourceCsvTerminate;
+
     string TimeStarted;
     string TimeStopped;
     string StateMessage;
@@ -581,7 +585,7 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
 };
 
 ESPservice [
-    version("1.03"), default_client_version("1.03"),
+    version("1.04"), default_client_version("1.04"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

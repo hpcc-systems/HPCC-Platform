@@ -48,60 +48,12 @@ SCMinterface IHttpMessage (IInterface)
     StringBuffer& getContent(StringBuffer& buf);
 };
 
-/*
-XSCMinterface IEspContext(IInterface)
+typedef enum ESPSerializationFormat_
 {
-    void setUserID(const char* userid);
-    StringBuffer& getUserID(StringBuffer& userid);
-    const char *queryUserId();
-
-    void setPassword(const char* password);
-    StringBuffer& getPassword(StringBuffer& password);
-    const char *queryPassword();
-
-    void setRealm(const char* realm);
-    StringBuffer& getRealm(StringBuffer& realm);
-    const char *queryRealm();
-
-    void setUser(ISecUser* user);
-    ISecUser* queryUser();
-
-    void setResources(ISecResourceList* rlist);
-    ISecResourceList* queryResources();
-
-    void setSecManger(ISecManager* mgr);
-    ISecManager* querySecManager();
-
-    void setContextPath(const char *path);
-    const char * getContextPath();
-
-    void setBindingValue(void *value);
-    void * getBindingValue();
-
-    void setServiceValue(void *value);
-    void * getServiceValue();
-
-    void setToBeAuthenticated(bool val);
-    bool toBeAuthenticated();
-
-    void setPeer(const char* peer);
-    StringBuffer& getPeer(StringBuffer& peer);
-    void setFeatureAuthMap(IAuthMap* map);
-
-
-    IAuthMap* queryAuthMap();
-
-    bool authorizeFeature(const char* pszFeatureUrl, SecAccessFlags& access);
-    bool authorizeFeatures(StringArray& features, IEspStringIntMap& pmap);
-    
-
-    bool validateFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt);
-    void setServAddress(const char *host, short port);
-    void getServAddress(StringBuffer& host, short &port);
-    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms);
-
-};
-*/
+    ESPSerializationANY,
+    ESPSerializationXML,
+    ESPSerializationJSON
+} ESPSerializationFormat;
 
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
@@ -196,6 +148,9 @@ interface IEspContext : extends IInterface
     virtual void addTraceSummaryValue(const char *name, int value)=0;
     virtual void addTraceSummaryTimeStamp(const char *name)=0;
     virtual void flushTraceSummary()=0;
+
+    virtual ESPSerializationFormat getResponseFormat()=0;
+    virtual void setResponseFormat(ESPSerializationFormat fmt)=0;
 };
 
 

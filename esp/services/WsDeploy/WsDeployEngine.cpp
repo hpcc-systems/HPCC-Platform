@@ -136,7 +136,7 @@ m_version(1)
 
   StringBuffer xml;
   CDeployInfo& depInfo = dynamic_cast<CDeployInfo&>( deployInfo );
-  depInfo.serialize(ctx,xml);
+  depInfo.serializeStruct(ctx, xml);
 
   m_pResponseXml.setown( createPTreeFromXMLString(xml.str()) );
   m_pSelComps = m_pResponseXml->queryPropTree("Components");
