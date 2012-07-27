@@ -35,8 +35,8 @@
 #define ALLOCATORID_CHECK_MASK  0x00300000
 #define ALLOCATORID_MASK                0x000fffff
 
-extern roxiemem_decl IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed);
-extern roxiemem_decl IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed);
+extern roxiemem_decl IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags flags);
+extern roxiemem_decl IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags);
 
 extern roxiemem_decl bool isRowCheckValid(unsigned allocatorId, const void * row);
 

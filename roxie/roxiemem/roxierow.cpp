@@ -216,10 +216,10 @@ template <class CHECKER>
 class RoxieEngineFixedRowAllocator : public RoxieEngineRowAllocatorBase
 {
 public:
-    RoxieEngineFixedRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed)
+    RoxieEngineFixedRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags _flags)
         : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
     {
-        unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
+        unsigned flags = _flags;
         if (meta.needsDestruct() || CHECKER::allocatorCheckFlag)
             flags |= roxiemem::RHFhasdestructor;
         heap.setown(rowManager.createFixedRowHeap(meta.getFixedSize()+CHECKER::extraSize, allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
@@ -258,10 +258,10 @@ template <class CHECKER>
 class RoxieEngineVariableRowAllocator : public RoxieEngineRowAllocatorBase
 {
 public:
-    RoxieEngineVariableRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, bool packed)
+    RoxieEngineVariableRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags _flags)
         : RoxieEngineRowAllocatorBase(_rowManager, _meta, _activityId, _allocatorId)
     {
-        unsigned flags = packed ? roxiemem::RHFpacked : roxiemem::RHFnone;
+        unsigned flags = _flags;
         if (meta.needsDestruct() || CHECKER::allocatorCheckFlag)
             flags |= roxiemem::RHFhasdestructor;
         heap.setown(rowManager.createVariableRowHeap(allocatorId | ACTIVITY_FLAG_ISREGISTERED | CHECKER::allocatorCheckFlag, (roxiemem::RoxieHeapFlags)flags));
@@ -307,20 +307,20 @@ protected:
 };
 
 
-IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed)
+IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags)
 {
     if (meta->getFixedSize() != 0)
-        return new RoxieEngineFixedRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+        return new RoxieEngineFixedRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, flags);
     else
-        return new RoxieEngineVariableRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+        return new RoxieEngineVariableRowAllocator<NoCheckingHelper>(rowManager, meta, activityId, allocatorId, flags);
 }
 
-IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, bool packed)
+IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags)
 {
     if (meta->getFixedSize() != 0)
-        return new RoxieEngineFixedRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+        return new RoxieEngineFixedRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, flags);
     else
-        return new RoxieEngineVariableRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, packed);
+        return new RoxieEngineVariableRowAllocator<Crc16CheckingHelper>(rowManager, meta, activityId, allocatorId, flags);
 }
 
 
@@ -393,11 +393,11 @@ protected:
         size32_t fixedSize;
     };
 
-    void testAllocator(IOutputMetaData * meta, bool packed, unsigned low, unsigned high, int modify, bool checking)
+    void testAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags, unsigned low, unsigned high, int modify, bool checking)
     {
         CheckingRowAllocatorCache cache;
         Owned<IRowManager> rm = createRowManager(0, NULL, logctx, &cache);
-        Owned<IEngineRowAllocator> alloc = checking ? createCrcRoxieRowAllocator(*rm, meta, 0, 0, packed) : createRoxieRowAllocator(*rm, meta, 0, 0, packed);
+        Owned<IEngineRowAllocator> alloc = checking ? createCrcRoxieRowAllocator(*rm, meta, 0, 0, flags) : createRoxieRowAllocator(*rm, meta, 0, 0, flags);
 
         for (unsigned size=low; size <= high; size++)
         {
@@ -433,12 +433,12 @@ protected:
         }
     }
 
-    void testAllocator(IOutputMetaData * meta, bool packed, unsigned low, unsigned high)
+    void testAllocator(IOutputMetaData * meta, roxiemem::RoxieHeapFlags flags, unsigned low, unsigned high)
     {
-        testAllocator(meta, packed, low, high, 0, false);
-        testAllocator(meta, packed, low, high, 0, true);
-        testAllocator(meta, packed, low, high, -1, true);
-        testAllocator(meta, packed, low, high, +1, true);
+        testAllocator(meta, flags, low, high, 0, false);
+        testAllocator(meta, flags, low, high, 0, true);
+        testAllocator(meta, flags, low, high, -1, true);
+        testAllocator(meta, flags, low, high, +1, true);
     }
 
     void testChecking()
@@ -448,15 +448,15 @@ protected:
         for (unsigned fixedSize=1; fixedSize<64; fixedSize++)
         {
             DummyOutputMeta meta(fixedSize, fixedSize);
-            testAllocator(&meta, false, fixedSize, fixedSize);
-            testAllocator(&meta, true, fixedSize, fixedSize);
+            testAllocator(&meta, RHFnone, fixedSize, fixedSize);
+            testAllocator(&meta, RHFpacked, fixedSize, fixedSize);
         }
 
         for (unsigned varSize=1; varSize<64; varSize++)
         {
             DummyOutputMeta meta(varSize, 0);
-            testAllocator(&meta, false, varSize, varSize);
-            testAllocator(&meta, false, 1, varSize);
+            testAllocator(&meta, RHFnone, varSize, varSize);
+            testAllocator(&meta, RHFnone, 1, varSize);
         }
     }
 

@@ -9794,7 +9794,7 @@ IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId,
 
 extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
 {
-    return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, false);
+    return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, roxiemem::RHFnone);
 }
 
 static class RowCallbackHook : implements IRtlRowCallback
