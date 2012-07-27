@@ -20,6 +20,9 @@ Copyright (C) 2011 HPCC Systems.
 #define ECLOPT_PACKAGE "--packagename"
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
+#define ECLOPT_PACKAGESET "--packageset"
+#define ECLOPT_PACKAGESET_S "-ps"
+
 
 //=========================================================================================
 
@@ -475,7 +478,7 @@ private:
 class EclCmdPackageAdd : public EclCmdCommon
 {
 public:
-    EclCmdPackageAdd() : optActivate(true), optOverWrite(true)
+    EclCmdPackageAdd() : optActivate(false), optOverWrite(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -500,9 +503,11 @@ public:
                 }
                 continue;
             }
-            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET))
+            if (iter.matchOption(optQuerySet, ECLOPT_QUERYSET)||iter.matchOption(optQuerySet, ECLOPT_QUERYSET_S))
                 continue;
-            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE))
+            if (iter.matchOption(optPackageSet, ECLOPT_PACKAGESET))
+                continue;
+            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE))
                 continue;
@@ -524,6 +529,9 @@ public:
         else if (optQuerySet.isEmpty())
             err.append("\n ... Specify either a cluster name of a package name\n\n");
 
+        if (optPackageSet.isEmpty())
+            optPackageSet.set(optFileName);
+
         if (err.length())
         {
             fprintf(stdout, "%s", err.str());
@@ -544,6 +552,7 @@ public:
         request->setActivate(optActivate);
         request->setInfo(pkgInfo);
         request->setQuerySet(optQuerySet);
+        request->setPackageSet(optPackageSet);
         request->setPackageName(optFileName);
         request->setOverWrite(optOverWrite);
 
@@ -559,15 +568,17 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl package add [options] [<filename>]\n\n"
             "   Options:\n"
-            "      --queryset=<queryset>        name of queryset to associate the information\n"
-            "      --overwritename=<true/false> overwrite existing information - defaults to true\n"
-            "      --activate=<true/false>      activate the package information - defaults to true\n"
+            "      -qa, --queryset=<queryset>        name of queryset to associate the information\n"
+            "      -ps, --packageset=<packageset>    will default to filename if omitted\n"
+            "      --overwrite=<true/false> overwrite existing information - defaults to false\n"
+            "      -A, --activate  activate the package information\n"
         );
         EclCmdCommon::usage();
     }
 private:
     StringAttr optFileName;
     StringAttr optQuerySet;
+    StringAttr optPackageSet;
     bool optActivate;
     bool optOverWrite;
     StringBuffer pkgInfo;
