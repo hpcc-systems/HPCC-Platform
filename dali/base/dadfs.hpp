@@ -467,7 +467,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual bool exists(const char *logicalname,bool notsuper=false,bool superonly=false,IUserDescriptor *user=NULL) = 0;                           // logical name exists
     virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user=NULL) = 0;                                                    // physical parts exists
 
-    virtual IPropertyTree *getFileTree(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true) =0;
+    virtual IPropertyTree *getFileTree(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true, bool appendForeign=true) =0;
     virtual IFileDescriptor *getFileDescriptor(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist=false,IUserDescriptor *user=NULL,IDistributedFileTransaction *transaction=NULL) = 0;
