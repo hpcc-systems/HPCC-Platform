@@ -1663,11 +1663,11 @@ protected:
     mutable IArrayOf<IEngineRowAllocator> allAllocators;
     mutable SpinLock allAllocatorsLock;
     Owned<roxiemem::IRowManager> rowManager;
-    bool usePacked;
+    roxiemem::RoxieHeapFlags flags;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(memsize_t memSize, bool _usePacked) : usePacked(_usePacked)
+    CThorAllocator(memsize_t memSize, roxiemem::RoxieHeapFlags _flags) : flags(_flags)
     {
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
         rtlSetReleaseRowHook(this);
@@ -1684,7 +1684,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
+        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), flags);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
@@ -1782,7 +1782,7 @@ public:
 class CThorCrcCheckingAllocator : public CThorAllocator
 {
 public:
-    CThorCrcCheckingAllocator(memsize_t memSize, bool usePacked) : CThorAllocator(memSize, usePacked)
+    CThorCrcCheckingAllocator(memsize_t memSize, roxiemem::RoxieHeapFlags flags) : CThorAllocator(memSize, flags)
     {
     }
 // IThorAllocator
@@ -1790,7 +1790,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), usePacked);
+        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), flags);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
@@ -1802,10 +1802,15 @@ IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool us
 {
     PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
     PROGLOG("Packed allocator %s", usePacked?"ON":"OFF");
-    if (crcChecking)
-        return new CThorCrcCheckingAllocator(memSize, usePacked);
+    roxiemem::RoxieHeapFlags flags;
+    if (usePacked)
+        flags = roxiemem::RHFpacked;
     else
-        return new CThorAllocator(memSize, usePacked);
+        flags = roxiemem::RHFnone;
+    if (crcChecking)
+        return new CThorCrcCheckingAllocator(memSize, flags);
+    else
+        return new CThorAllocator(memSize, flags);
 }
 
 

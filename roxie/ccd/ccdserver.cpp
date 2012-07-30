@@ -28119,7 +28119,7 @@ public:
     {
         // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator * ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), false);
+        IEngineRowAllocator * ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), roxiemem::RHFnone);
         LINK(ret);
         allAllocators.append(*ret);
         return ret;
