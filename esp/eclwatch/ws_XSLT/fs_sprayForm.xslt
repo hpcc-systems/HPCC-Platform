@@ -223,6 +223,25 @@
                     }
                   document.forms[0].sourcePath.value = s;
                 }
+
+                var sourceFile = document.forms[0].sourcePath.value;
+                var labelStart = 0;
+                if (linux != '')
+                    labelStart = sourceFile.lastIndexOf('/');
+                else
+                    labelStart = sourceFile.lastIndexOf('\\');
+                if (labelStart < 0)
+                    labelStart = 0;
+                else
+                    labelStart++;
+
+                var labelEnd = sourceFile.indexOf('.', labelStart);
+                if (labelEnd < 0)
+                    document.getElementById("label").value = sourceFile.substring(labelStart);
+                else
+                    document.getElementById("label").value = sourceFile.substring(labelStart,labelEnd);
+                onChangeLabel(document.getElementById("label"));
+
                 document.forms[0].sourcePathAndFile.value = document.forms[0].sourcePath.value;
                 document.getElementById('sourceN').innerHTML = pathSep + pathSep + selected.value + prefix + path;
                 handleSubmitBtn();
