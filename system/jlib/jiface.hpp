@@ -104,7 +104,7 @@ public:
 
     inline bool isAlive() const         { return atomic_read(&xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
-    bool Release(void) const
+    inline bool Release(void) const
     {
         if (atomic_dec_and_test(&xxcount))
         {
@@ -120,6 +120,69 @@ public:
         return false;
     }
 };
+
+//- Template variants -------------------------------------------------------------------------------------------------
+
+template <class INTERFACE>
+class CInterfaceOf;
+
+template <class INTERFACE>
+class CSimpleInterfaceOf : public INTERFACE
+{
+    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
+public:
+    inline virtual ~CSimpleInterfaceOf() {}
+
+    inline CSimpleInterfaceOf()           { atomic_set(&xxcount, 1); }
+    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
+    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
+
+    inline void Link() const            { atomic_inc(&xxcount); }
+
+    inline bool Release(void) const
+    {
+        if (atomic_dec_and_test(&xxcount))
+        {
+            delete this;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    mutable atomic_t xxcount;
+};
+
+// A more general implementation of IInterface that includes a virtual function beforeDispose().
+// beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
+// function calls still work (unlike a virtual destructor).
+// It makes it possible to implement a cache which doesn't link count the object, but is cleared when
+// the object is disposed without a critical section in Release().  (See pattern details below).
+template <class INTERFACE>
+class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
+{
+public:
+    virtual void beforeDispose() {}
+
+    inline bool isAlive() const         { return atomic_read(&this->xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+
+    inline bool Release(void) const
+    {
+        if (atomic_dec_and_test(&this->xxcount))
+        {
+            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
+            //to a a high mid-point positive number to avoid poss. of releasing again.
+            if (atomic_cas(&this->xxcount, DEAD_PSEUDO_COUNT, 0))
+            {
+                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                delete this;
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 
 /***
 A pattern for implementing a non-linking cached to a shared object.  Hash table variants are a slightly more complex variant.
