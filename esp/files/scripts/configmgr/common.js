@@ -135,6 +135,26 @@ function setFocusToTable(dt) {
   top.document.navDT.fireEvent("tableBlurEvent");
 }
 
+function clickCurrentSelOrNameAndCompType(dt, name, compType, donotclick) {
+  var recordSet = dt.getRecordSet();
+  var recordSetLength = recordSet.getLength();
+
+  for (var index=0; index < recordSetLength; index++)
+  {
+    rec = recordSet.getRecord(index);
+    if (rec._oData.Name === name && (rec._oData.BuildSet === compType || rec._oData.CompType === compType))
+      break;
+  }
+  expandRecordWithId(dt, rec.getData('parent'));
+  var el = dt.getTrEl(rec);
+  dt.unselectAllCells();
+  dt.unselectAllRows();
+  var tdEl = dt.getFirstTdEl(rec);
+  if (!donotclick)
+    YAHOO.util.UserAction.click(tdEl);
+  top.document.lastSelectedRow = rec.getData('Name');
+}
+
 function clickCurrentSelOrName(dt, name, donotclick) {
   var rec = getCurrentSelRec(dt, name);
 

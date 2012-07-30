@@ -476,6 +476,12 @@ function createNavigationTree(navTreeData) {
     expandRecord(this, "Name", "Environment");
     expandRecord(this, "Name", "Software");
 
+    if (top.document.ResetFocus == true)
+    {
+      top.document.ResetFocus = false;
+      top.document.navDT.clickCurrentSelOrNameAndCompType(top.document.navDT,top.document.ResetFocusValueName, top.document.ResetFocusCompType);
+    }
+
     top.document.activeTab = prevTab;
     if (typeof (prevSelRec) !== "undefined")
       clickCurrentSelOrName(this, prevSelRec);
@@ -1237,6 +1243,7 @@ function createNavigationTree(navTreeData) {
   navDT.displayRoxieClusterReplaceServer = displayReplaceServerDlg;
   navDT.doPageRefresh = refresh;
   navDT.clickCurrentSelOrName = clickCurrentSelOrName;
+  navDT.clickCurrentSelOrNameAndCompType = clickCurrentSelOrNameAndCompType;
   navDT.displayAddInstance = displayAddInstanceDlg;
   navDT.promptVerifyPwd = promptVerifyPwd;
   navDT.promptNewRange = promptNewRange;
