@@ -18,8 +18,6 @@ Copyright (C) 2011 HPCC Systems.
 #define ECLOPT_PACKAGEMAP "--packagemap"
 #define ECLOPT_OVERWRITE "--overwrite"
 #define ECLOPT_PACKAGE "--packagename"
-#define ECLOPT_DALIIP "--daliip"
-#define ECLOPT_PROCESS "--process"
 
 //=========================================================================================
 

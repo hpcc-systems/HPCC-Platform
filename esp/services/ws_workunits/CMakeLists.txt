@@ -29,10 +29,13 @@ include(${HPCC_SOURCE_DIR}/esp/scm/smcscm.cmake)
 
 set (    SRCS
          ../../../dali/sasha/sacmd.cpp
+         ../../../dali/dfu/dfuutil.cpp
          ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_workunits_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits.ecm
+         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.cpp
+         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.hpp
          ws_workunitsPlugin.cpp
          ws_workunitsService.cpp
          ws_workunitsService.hpp
@@ -49,8 +52,10 @@ include_directories (
          ./../../../dali/dfu
          ./../../../dali/sasha
          ./../../../common/roxiemanager
+         ./../../../common/remote
          ./../../../system/jlib
          ./../../../common/environment
+         ./../../../roxie/roxie
          ./../../services
          ./../common
          ./../../../system/xmllib

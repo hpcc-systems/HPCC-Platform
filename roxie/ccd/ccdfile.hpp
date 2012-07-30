@@ -65,7 +65,7 @@ interface ILazyFileIO : extends IFileIO
     virtual void removeCache(const IRoxieFileCache *) = 0;
 };
 
-extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts);
+extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts, SocketEndpoint &cloneFrom);
 
 interface IRoxieFileCache : extends IInterface
 {
