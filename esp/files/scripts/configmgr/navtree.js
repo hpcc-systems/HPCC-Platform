@@ -370,7 +370,7 @@ function createNavigationTree(navTreeData) {
   var navDS = new YAHOO.util.DataSource(navTreeData);
   navDS.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
   navDS.responseSchema = { fields: ["Name", "DisplayName", "Build", "BuildSet", "parent", "id", "depth", "menu", "Params", "CompType"] };
-  var navDT = new YAHOO.widget.DataTable(
+  var navDT = new YAHOO.widget.ScrollingDataTable(
             'pageBody',
             [
                 { key: "DisplayName", label: "Name", width: 275, maxAutoWidth: 275, formatter: function(el, oRecord, oColumn, oData) {
