@@ -107,7 +107,7 @@ private:
    cpptype value;
 
 public:
-    SoapParam(nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil){}
+    SoapParam(nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(0){}
     SoapParam(inittype val, nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(val){}
 
     cpptype getValue() const {return value;}
