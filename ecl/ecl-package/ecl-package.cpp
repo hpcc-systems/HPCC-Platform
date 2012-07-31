@@ -568,10 +568,10 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl package add [options] [<filename>]\n\n"
             "   Options:\n"
-            "      -qa, --queryset=<queryset>        name of queryset to associate the information\n"
+            "      -qs, --queryset=<queryset>        name of queryset to associate the information\n"
             "      -ps, --packageset=<packageset>    will default to filename if omitted\n"
-            "      --overwrite=<true/false> overwrite existing information - defaults to false\n"
-            "      -A, --activate  activate the package information\n"
+            "      --overwrite=<true/false>          overwrite existing information - defaults to false\n"
+            "      -A, --activate                    activate the package information\n"
         );
         EclCmdCommon::usage();
     }
