@@ -1046,12 +1046,11 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     unsigned filesInMsgBuf = 0;
     StringBuffer msgBuf = msgHead;
-    const char** ptrs = (const char**)alloca(sizeof(char*)*num);
+    PointerArrayOf<char> subfileArray;
     for(unsigned i = 0; i < num; i++)
     {
-        ptrs[i] = subfiles.item(i);
-
-        msgBuf.appendf("%s, ", ptrs[i]);
+        subfileArray.append((char*) subfiles.item(i));
+        msgBuf.appendf("%s, ", subfiles.item(i));
         filesInMsgBuf++;
         if (filesInMsgBuf > 9)
         {
@@ -1068,9 +1067,9 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     synchronized block(m_superfilemutex);
     if(strieq(action, "add"))
-        dfuhelper->addSuper(superfile, num, ptrs, beforeSubFile, userdesc.get());
+        dfuhelper->addSuper(superfile, num, (const char**) subfileArray.getArray(), beforeSubFile, userdesc.get());
     else
-        dfuhelper->removeSuper(superfile, num, ptrs, deleteFile, userdesc.get());
+        dfuhelper->removeSuper(superfile, num, (const char**) subfileArray.getArray(), deleteFile, userdesc.get());
 
     return num;
 }
