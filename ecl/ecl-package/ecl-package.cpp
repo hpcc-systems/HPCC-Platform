@@ -23,7 +23,6 @@ Copyright (C) 2011 HPCC Systems.
 #define ECLOPT_PACKAGESET "--packageset"
 #define ECLOPT_PACKAGESET_S "-ps"
 
-
 //=========================================================================================
 
 IClientWsPackageProcess *getWsPackageSoapService(const char *server, const char *port, const char *username, const char *password)

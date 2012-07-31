@@ -1526,6 +1526,32 @@ public:
     }
 };
 
+IFileDescriptor *checkCloneFrom(const char *id, IFileDescriptor *fdesc, Owned<IFileDescriptor> &cloneFDesc)
+{
+    if (id && !strnicmp(id, "foreign", 7)) //if need to support dali hopping should add each remote location
+        return fdesc;
+    if (!fdesc || (fdesc->numClusters() > 1) || !fdesc->queryProperties().hasProp("@cloneFrom"))
+        return fdesc;
+    StringBuffer clusterName;
+    if (!strieq(roxieName, fdesc->getClusterGroupName(0, clusterName)))
+        return fdesc;
+    SocketEndpoint cloneFrom;
+    cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
+    if (!cloneFrom.isNull())
+    {
+        CDfsLogicalFileName lfn;
+        lfn.set(id);
+        lfn.setForeign(cloneFrom, false);
+        Owned<IDistributedFile> cloneFile = queryDistributedFileDirectory().lookup(lfn);
+        if (cloneFile)
+        {
+            cloneFDesc.setown(cloneFile->getFileDescriptor());
+            return cloneFDesc;
+        }
+    }
+    return fdesc;
+}
+
 ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts)
 {
     IPropertyTree &partProps = pdesc->queryProperties();
@@ -2025,7 +2051,8 @@ public:
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
-        IFileDescriptor *fdesc = subFiles.item(0);
+        Owned<IFileDescriptor> cloneFDesc;
+        IFileDescriptor *fdesc = checkCloneFrom(subNames.item(0), subFiles.item(0), cloneFDesc);
         if (fdesc)
         {
             unsigned numParts = fdesc->numParts();
@@ -2104,7 +2131,8 @@ public:
                     ForEachItemIn(idx, subFiles)
                     {
                         Owned <ILazyFileIO> part;
-                        IFileDescriptor *fdesc = subFiles.item(idx);
+                        Owned<IFileDescriptor> cloneFDesc;
+                        IFileDescriptor *fdesc = checkCloneFrom(subNames.item(idx), subFiles.item(idx), cloneFDesc);
                         unsigned crc = 0;
                         if (fdesc) // NB there may be no parts for this channel 
                         {
@@ -2133,7 +2161,8 @@ public:
             Owned<IKeyIndexSet> keyset = createKeyIndexSet();
             ForEachItemIn(idx, subFiles)
             {
-                IFileDescriptor *fdesc = subFiles.item(idx);
+                Owned<IFileDescriptor> cloneFDesc;
+                IFileDescriptor *fdesc = checkCloneFrom(subNames.item(idx), subFiles.item(idx), cloneFDesc);
                 Owned<IKeyIndexBase> key;
                 if (fdesc)
                 {

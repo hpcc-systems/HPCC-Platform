@@ -94,6 +94,12 @@ public:
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -260,11 +266,17 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -281,11 +293,17 @@ public:
                 }
                 continue;
             }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
                 continue;
+            if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
+                continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+                continue;
+            if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -323,7 +341,10 @@ public:
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetQuerySet.get());
         req->setCluster(optCluster.get());
+        req->setDaliServer(optDaliIP.get());
         req->setActivate(optActivate);
+        req->setOverwrite(optOverwrite);
+        req->setDontCopyFiles(optDontCopyFiles);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
 
@@ -354,9 +375,12 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target_queryset>      name of queryset to copy the query into\n"
+            "   --no-files             Do not copy files referenced by query\n"
+            "   --daliip=<ip>          For file copying if remote version < 3.8\n"
             "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   -O, --overwrite        Overwrite existing files\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
@@ -366,9 +390,12 @@ private:
     StringAttr optSourceQueryPath;
     StringAttr optTargetQuerySet;
     StringAttr optCluster;
+    StringAttr optDaliIP;
     unsigned optMsToWait;
     bool optActivate;
     bool optNoReload;
+    bool optOverwrite;
+    bool optDontCopyFiles;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)

@@ -898,7 +898,7 @@ public:
     IDFScopeIterator *getScopeIterator(const char *subscope,bool recursive,bool includeempty,IUserDescriptor *user);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
 
-    IPropertyTree *getFileTree(const char *lname,const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout,bool expandnodes=false); 
+    IPropertyTree *getFileTree(const char *lname,const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout,bool expandnodes=false, bool appendForeign=true);
     void setFileAccessed(CDfsLogicalFileName &dlfn, const CDateTime &dt,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IFileDescriptor *getFileDescriptor(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
     IDistributedFile *getFile(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
@@ -8558,7 +8558,7 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn, const 
     checkDfsReplyException(mb);
 }
 
-IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout, bool expandnodes)
+IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout, bool expandnodes, bool appendForeign)
 {
     // this accepts either a foreign dali node or a foreign lfn
     Owned<INode> fnode;
@@ -8622,7 +8622,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const I
             dlfn2.setForeign(foreigndali->endpoint(),false);
         ret->setProp("OrigName",dlfn.get());
     }
-    if (foreigndali) 
+    if (foreigndali && appendForeign)
         resolveForeignFiles(ret,foreigndali);
     return ret.getClear();
 }
