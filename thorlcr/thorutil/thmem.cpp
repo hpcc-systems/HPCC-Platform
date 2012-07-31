@@ -582,12 +582,13 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
     assertex(!n || rows);
     if (rows)
     {
-        for (rowidx_t i = start; i < start+n; i++)
+        rowidx_t end = start+n;
+        for (rowidx_t i = start; i < end; i++)
             ReleaseThorRow(rows[i]);
         //firstRow = 0;
-        numRows -= n;
         const void **from = rows+start;
-        memmove(from, from+n, n * sizeof(void *));
+        memmove(from, from+n, (numRows-end) * sizeof(void *));
+        numRows -= n;
     }
 }
 
