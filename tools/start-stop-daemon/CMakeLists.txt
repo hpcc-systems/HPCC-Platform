@@ -17,11 +17,7 @@
 
 project(start-stop-daemon)
 
-if (CMAKE_COMPILER_IS_GNUCC)
-  if (CMAKE_C_COMPILER_VERSION VERSION_GREATER 4.1)
-    add_definitions( -Wno-noreturn )
-  endif ()
-endif ()
+add_definitions( -Wno-return-type )
 
 set( SRC start-stop-daemon.c )
 set( HEADER macros.h )
