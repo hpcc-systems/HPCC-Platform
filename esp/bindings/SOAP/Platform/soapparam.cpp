@@ -47,7 +47,7 @@ void BaseEspParam::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname,
     if (isNil && nilBH!=nilIgnore)
         return;
 
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return toJSON(ctx, s, tagname);
     toXML(ctx, s, tagname, prefix, encode);
 }
@@ -139,7 +139,7 @@ bool SoapStringParam::updateValue(const char *s)
 {
     if (!s)
         return false;
-    return esp_convert(s, value.clear());
+    return !esp_convert(s, value.clear());
 }
 
 bool SoapStringParam::unmarshallAttach(IEspContext* ctx, IProperties &params, MapStrToBuf *attachments, const char *tagname, const char *basepath, const char* optGroup, const char *xsdtype, const char *prefix)
@@ -209,7 +209,7 @@ void BaseEspStruct::toXML(IEspContext *ctx, StringBuffer &s, const char *tagname
 
 void BaseEspStruct::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath, bool encode, const char *xsdtype, const char *prefix)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return toJSON(ctx, s, tagname);
     toXML(ctx, s, tagname, prefix, encode);
 }
@@ -289,7 +289,7 @@ void SoapParamBinary::toXML(IEspContext *ctx, StringBuffer &s, const char *tagna
 
 void SoapParamBinary::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath, bool encode, const char *xsdtype, const char *prefix)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return toJSON(ctx, s, tagname);
     toXML(ctx, s, tagname, prefix, encode);
 }
@@ -353,7 +353,7 @@ void SoapAttachString::toXML(IEspContext *ctx, StringBuffer &s, const char *tagn
 
 void SoapAttachString::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath, bool encode, const char *xsdtype, const char *prefix)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return toJSON(ctx, s, tagname);
     toXML(ctx, s, tagname, prefix, encode);
 }
@@ -413,7 +413,7 @@ void EspBaseArrayParam::toJSON(IEspContext* ctx, StringBuffer &s, const char *ta
         return;
     }
 
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
         appendJSONName(s, tagname);
         if (tagname && *tagname && itemname && *itemname)
@@ -449,7 +449,7 @@ void EspBaseArrayParam::toXML(IEspContext *ctx, StringBuffer &s, const char *tag
 
 void EspBaseArrayParam::toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *itemname, const char *elementtype, const char *basepath, const char *prefix)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return toJSON(ctx, s, tagname, itemname);
     toXML(ctx, s, tagname, itemname, prefix, true);
 }
