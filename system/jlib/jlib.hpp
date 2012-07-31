@@ -23,9 +23,7 @@
 
 #include "jexpdef.hpp"
 
-#if !defined(_WIN32)
 #define EXPLICIT_INIT
-#endif
 
 
 #ifdef _MSC_VER
