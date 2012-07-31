@@ -344,7 +344,7 @@ public:
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_WAIT))
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
@@ -455,7 +455,7 @@ public:
 private:
     StringAttr optCluster;
     StringAttr optName;
-    int optMsToWait;
+    unsigned optMsToWait;
     bool optActivate;
     bool activateSet;
 };
