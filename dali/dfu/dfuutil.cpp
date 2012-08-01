@@ -711,9 +711,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
         // MORE - abstract this with DFSAccess, or at least enable caching with a flag
-        transaction->setActive(true);
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
-        transaction->setActive(false);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFileCached(superfname);
 
         bool newfile = false;
         if (!superfile) {
@@ -743,9 +741,7 @@ public:
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
         // MORE - abstract this with DFSAccess, or at least enable caching with a flag
-        transaction->setActive(true);
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
-        transaction->setActive(false);
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFileCached(superfname);
 
         if (!superfile)
             throwError1(DFUERR_DSuperFileNotFound, superfname);
