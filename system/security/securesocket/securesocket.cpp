@@ -746,6 +746,13 @@ static void locking_function(int mode, int n, const char * file, int line)
         mutexArray[n]->unlock();
 }
 
+#ifndef _WIN32
+unsigned long pthreads_thread_id(void)
+{
+    return((unsigned long)pthread_self());
+}
+#endif
+
 static void initSSLLibrary()
 {
     CriticalBlock b(mutexCrit);
@@ -760,6 +767,9 @@ static void initSSLLibrary()
             mutexArray[i] = new Mutex;
         }
         CRYPTO_set_locking_callback(locking_function);
+#ifndef _WIN32
+        CRYPTO_set_id_callback((unsigned long (*)())pthreads_thread_id);
+#endif
     }
 }
 
