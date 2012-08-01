@@ -3,6 +3,7 @@ package com.hpccsystems.jdbcdriver;
 /**
  * @author ChalaAX
  */
+
 public class HPCCColumn
 {
     private String name;

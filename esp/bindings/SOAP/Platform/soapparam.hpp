@@ -107,7 +107,7 @@ private:
    cpptype value;
 
 public:
-    SoapParam(nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil){}
+    SoapParam(nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(0){}
     SoapParam(inittype val, nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(val){}
 
     cpptype getValue() const {return value;}
@@ -154,7 +154,7 @@ public:
     {
         if (!s || (!*s && allowHttpNil))
             return false;
-        return esp_convert(s, value);
+        return !esp_convert(s, value);
     }
 };
 
@@ -211,7 +211,7 @@ public:
 
     virtual bool updateValue(const char *s)
     {
-        return esp_convert(s, value);
+        return !esp_convert(s, value);
     }
 
     void setEncodeNewlines(bool encodenl)
@@ -480,7 +480,7 @@ public:
 
     void toStr(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *basepath="", const char* optGroup=NULL, const char *xsdtype="", const char *prefix="")
     {
-        if (ctx->getResponseFormat()==ESPSerializationJSON)
+        if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
             return toJSON(ctx, s, tagname);
         return toXML(ctx, s, tagname, prefix);
     }
@@ -671,10 +671,10 @@ public:
 
     virtual void toStrItem(IEspContext *ctx, StringBuffer &s, unsigned index, const char *name)
     {
-        if (ctx->getResponseFormat()==ESPSerializationJSON)
+        if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
             toStrItemJSON(s, index);
         else
-            encodeUtf8XML(arr.item(index), s);
+            appendXMLTag(s, name, arr.item(index));
     }
 
     virtual void append(IEspContext *ctx, CSoapValue& v)
@@ -1005,7 +1005,7 @@ public:
 
     void toStr(IEspContext* ctx, StringBuffer &str, const char *tagname, const char *basepath="", bool encodeXml=true,const char *xsdtype="", const char *prefix="")
     {
-        if (ctx->getResponseFormat()==ESPSerializationJSON)
+        if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
             appendJSONValue(str, tagname, asString());
         else
             appendXMLTag(str, tagname, asString(), prefix);
@@ -1139,7 +1139,7 @@ public:
 
     virtual void toStrItem(IEspContext *ctx, StringBuffer &s, unsigned index, const char *name)
     {
-        if (ctx->getResponseFormat()==ESPSerializationJSON)
+        if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
             appendJSONValue(s, name, cxtype::stringOf(arr.item(index)));
         else
             appendXMLTag(s, name, cxtype::stringOf(arr.item(index)));

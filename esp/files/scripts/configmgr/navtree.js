@@ -370,7 +370,7 @@ function createNavigationTree(navTreeData) {
   var navDS = new YAHOO.util.DataSource(navTreeData);
   navDS.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
   navDS.responseSchema = { fields: ["Name", "DisplayName", "Build", "BuildSet", "parent", "id", "depth", "menu", "Params", "CompType"] };
-  var navDT = new YAHOO.widget.DataTable(
+  var navDT = new YAHOO.widget.ScrollingDataTable(
             'pageBody',
             [
                 { key: "DisplayName", label: "Name", width: 275, maxAutoWidth: 275, formatter: function(el, oRecord, oColumn, oData) {
@@ -475,6 +475,12 @@ function createNavigationTree(navTreeData) {
 
     expandRecord(this, "Name", "Environment");
     expandRecord(this, "Name", "Software");
+
+    if (top.document.ResetFocus == true)
+    {
+      top.document.ResetFocus = false;
+      top.document.navDT.clickCurrentSelOrNameAndCompType(top.document.navDT,top.document.ResetFocusValueName, top.document.ResetFocusCompType);
+    }
 
     top.document.activeTab = prevTab;
     if (typeof (prevSelRec) !== "undefined")
@@ -1237,6 +1243,7 @@ function createNavigationTree(navTreeData) {
   navDT.displayRoxieClusterReplaceServer = displayReplaceServerDlg;
   navDT.doPageRefresh = refresh;
   navDT.clickCurrentSelOrName = clickCurrentSelOrName;
+  navDT.clickCurrentSelOrNameAndCompType = clickCurrentSelOrNameAndCompType;
   navDT.displayAddInstance = displayAddInstanceDlg;
   navDT.promptVerifyPwd = promptVerifyPwd;
   navDT.promptNewRange = promptNewRange;

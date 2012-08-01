@@ -688,7 +688,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             if (flags & HEFcontainsNlpText) s.append('N');
             if (flags & HEFcontainsXmlText) s.append('X');
             if (flags & HEFcontainsSkip) s.append('S');
-            if (flags & HEFtransformSkips) s.append('K');
             if (flags & HEFcontainsCounter) s.append('C');
             if (flags & HEFtransformDependent) s.append('D');
             if (flags & HEFtranslated) s.append('R');

@@ -10,84 +10,89 @@ import java.util.StringTokenizer;
 
 public class HPCCDriver implements Driver
 {
-	static
-	{
-		try
-		{
-			HPCCDriver driver = new HPCCDriver();
-			DriverManager.registerDriver(driver);
-			System.out.println("EclDriver initialized");
-		}
-		catch (SQLException ex)
-		{
-			ex.printStackTrace();
-		}
-	}
+    static
+    {
+        try
+        {
+            HPCCDriver driver = new HPCCDriver();
+            DriverManager.registerDriver(driver);
+            System.out.println("EclDriver initialized");
+        }
+        catch (SQLException ex)
+        {
+            ex.printStackTrace();
+        }
+    }
 
-	public HPCCDriver()	{}
+    public HPCCDriver()
+    {
+    }
 
-	public Connection connect(String url, Properties info) throws SQLException
-	{
-		Properties connprops = new Properties();
+    public Connection connect(String url, Properties info) throws SQLException
+    {
+        Properties connprops = new Properties();
 
-		if (info != null && info.size() > 0)
-			connprops.putAll(info);
+        if (info != null && info.size() > 0)
+            connprops.putAll(info);
 
-		try
-		{
-			StringTokenizer urltokens = new StringTokenizer(url,";");
-			while (urltokens.hasMoreTokens())
-			{
-				String token = urltokens.nextToken();
-				if (token.contains("="))
-				{
-					StringTokenizer keyvalues = new StringTokenizer(token, "=");
-					while (keyvalues.hasMoreTokens())
-					{
-						String key = keyvalues.nextToken();
-						String value = keyvalues.nextToken();
-						if (!connprops.containsKey(key))
-							connprops.put(key, value);
-						else
-							System.out.println("Connection property: " + key + " found in info properties and URL, ignoring URL value");
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			System.out.println("Issue parsing URL! \"" + url +"\"" );
-		}
+        try
+        {
+            StringTokenizer urltokens = new StringTokenizer(url, ";");
+            while (urltokens.hasMoreTokens())
+            {
+                String token = urltokens.nextToken();
+                if (token.contains("="))
+                {
+                    StringTokenizer keyvalues = new StringTokenizer(token, "=");
+                    while (keyvalues.hasMoreTokens())
+                    {
+                        String key = keyvalues.nextToken();
+                        String value = keyvalues.nextToken();
+                        if (!connprops.containsKey(key))
+                            connprops.put(key, value);
+                        else
+                            System.out.println("Connection property: " + key
+                                    + " found in info properties and URL, ignoring URL value");
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            System.out.println("Issue parsing URL! \"" + url + "\"");
+        }
 
-		String serverAddress = connprops.getProperty("ServerAddress");
-		System.out.println("EclDriver::connect" + serverAddress);
-		
-		return new HPCCConnection(connprops);
-	}
+        String serverAddress = connprops.getProperty("ServerAddress");
+        System.out.println("EclDriver::connect" + serverAddress);
 
-	public boolean acceptsURL(String url) throws SQLException {
-		return true;
-	}
+        return new HPCCConnection(connprops);
+    }
 
-	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
-	{
-		DriverPropertyInfo[] infoArray = new DriverPropertyInfo[1];
-		infoArray[0] = new DriverPropertyInfo("ip", "IP Address");
-		return infoArray;
-	}
+    public boolean acceptsURL(String url) throws SQLException
+    {
+        return true;
+    }
 
-	public int getMajorVersion()
-	{
-		return HPCCVersionTracker.HPCCMajor;
-	}
+    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
+    {
+        DriverPropertyInfo[] infoArray = new DriverPropertyInfo[1];
+        infoArray[0] = new DriverPropertyInfo("ip", "IP Address");
+        return infoArray;
+    }
 
-	public int getMinorVersion()
-	{
-		return HPCCVersionTracker.HPCCMinor;
-	}
+    public int getMajorVersion()
+    {
+        return HPCCVersionTracker.HPCCMajor;
+    }
 
-	public boolean jdbcCompliant() {
-		return true;
-	}
+    public int getMinorVersion()
+    {
+        return HPCCVersionTracker.HPCCMinor;
+    }
+
+    public boolean jdbcCompliant()
+    {
+        return true;
+    }
 
 }
