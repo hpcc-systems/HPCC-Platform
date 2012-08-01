@@ -324,7 +324,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000)
+    EclCmdPublish() : optActivate(false), activateSet(false), optNoReload(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -344,13 +344,15 @@ public:
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_WAIT))
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
             {
                 activateSet=true;
                 continue;
             }
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
+                continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -408,6 +410,7 @@ public:
         if (optCluster.length())
             req->setCluster(optCluster.get());
         req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
@@ -448,6 +451,7 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
+            "   --no-reload            do not request the (roxie) cluster to reload\n"
             "   --wait=<ms>            maximum time to wait for cluster to finish updating\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -455,9 +459,10 @@ public:
 private:
     StringAttr optCluster;
     StringAttr optName;
-    int optMsToWait;
+    unsigned optMsToWait;
     bool optActivate;
     bool activateSet;
+    bool optNoReload;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget
