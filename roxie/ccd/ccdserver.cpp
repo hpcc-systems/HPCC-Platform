@@ -20661,7 +20661,6 @@ protected:
     IHThorSteppedSourceExtra * steppedExtra;
     Linked<IKeyArray> keySet;
     Linked<TranslatorArray> translators;
-    unsigned rawSize;
     CSkippableRemoteResultAdaptor remote;
     CIndexTransformCallback callback;
     bool sorted;
@@ -20689,11 +20688,10 @@ protected:
 
 public:
     CRoxieServerIndexActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, bool _sorted, bool _isLocal, bool _maySkip)
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip)
         : CRoxieServerActivity(_factory, _probeManager), 
           keySet(_keySet),
           translators(_translators),
-          rawSize(_rawSize),
           indexHelper((IHThorIndexReadBaseArg &)basehelper),
           remote(_remoteId, meta.queryOriginal(), indexHelper, *this, _sorted, false, _maySkip),
           remoteId(_remoteId),
@@ -20893,8 +20891,8 @@ class CRoxieServerIndexReadBaseActivity : public CRoxieServerIndexActivity
     IHThorSourceLimitTransformExtra * limitTransformExtra;
 public:
     CRoxieServerIndexReadBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _sorted, _isLocal, _maySkip)
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip)
+        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip)
     {
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
     }
@@ -20947,8 +20945,8 @@ protected:
 
 public:
     CRoxieServerIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
-        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _maxRecordSize, _sorted, _isLocal, _maySkip), 
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal, bool _maySkip, unsigned _maxSeekLookahead)
+        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, _maySkip),
           readHelper((IHThorIndexReadArg &)basehelper)
     {
         rawMeta = readHelper.queryRawSteppingMeta();
@@ -21031,7 +21029,7 @@ public:
             keySet.setown(createKeyIndexSet());
             keySet->addIndex(LINK(key));
             if (owner.seekGEOffset)
-                tlk.setown(createKeyMerger(keySet, owner.rawSize, owner.seekGEOffset, &owner)); 
+                tlk.setown(createKeyMerger(keySet, 0, owner.seekGEOffset, &owner));
             else
                 tlk.setown(createKeyManager(keySet->queryPart(0), 0, &owner));
             tlk->setLayoutTranslator(trans);
@@ -21267,12 +21265,10 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
     unsigned accepted;
     unsigned rejected;
     unsigned keyedCount;
-    unsigned rawSize;
     ISteppingMeta * rawMeta;
     ISteppingMeta * projectedMeta;
     size32_t seekGEOffset;
     unsigned * seekSizes;
-    size32_t eclKeySize;
     CSteppingMeta steppingMeta;
     Owned<const IResolvedFile> varFileInfo;
     const RemoteActivityId &remoteId;
@@ -21327,12 +21323,11 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
 
 public:
     CRoxieServerSimpleIndexReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-            IKeyArray *_keyArray, TranslatorArray *_translatorArray, unsigned _rawSize, unsigned _maxRecordSize, bool _isLocal)
+            IKeyArray *_keyArray, TranslatorArray *_translatorArray, bool _isLocal)
         : CRoxieServerActivity(_factory, _probeManager), 
           readHelper((IHThorIndexReadArg &)basehelper), 
           indexHelper((IHThorIndexReadArg &)basehelper), 
           translators(_translatorArray),
-          rawSize(_rawSize), 
           keySet(_keyArray),
           isLocal(_isLocal),
           remoteId(_remoteId)
@@ -21355,7 +21350,6 @@ public:
         eof = false;
         rawMeta = readHelper.queryRawSteppingMeta();
         projectedMeta = readHelper.queryProjectedSteppingMeta();
-        eclKeySize = indexHelper.queryDiskRecordSize()->getRecordSize(NULL);
         seekGEOffset = 0;
         seekSizes = NULL;
         if (rawMeta)
@@ -21463,7 +21457,7 @@ public:
             }
             if (numParts > 1 || seekGEOffset)
             {
-                tlk.setown(createKeyMerger(keyIndexSet, rawSize, seekGEOffset, this));
+                tlk.setown(createKeyMerger(keyIndexSet, 0, seekGEOffset, this));
                 // note that we don't set up translator because we don't support it. If that ever changes...
             }
             else
@@ -21659,7 +21653,6 @@ public:
     Owned<IKeyArray> keySet;
     Owned<TranslatorArray> translatorArray;
     Owned<IDefRecordMeta> activityMeta;
-    unsigned maxRecordSize;
     RemoteActivityId remoteId;
     bool isSimple;
     bool isLocal;
@@ -21667,7 +21660,6 @@ public:
     bool sorted;
     bool variableFileName;
     bool enableFieldTranslation;
-    unsigned rawSize;
     unsigned maxSeekLookahead;
     Owned<const IResolvedFile> indexfile;
 
@@ -21697,8 +21689,6 @@ public:
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
-        maxRecordSize = meta.getRecordSize(NULL);
-        rawSize = indexHelper->queryDiskRecordSize()->getRecordSize(NULL);  
         isSimple = isLocal;
         maySkip = (flags & (TIRkeyedlimitskips|TIRlimitskips|TIRlimitcreates|TIRkeyedlimitcreates)) != 0;
 
@@ -21753,9 +21743,9 @@ public:
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
             return new CRoxieServerNullActivity(this, _probeManager);
         else if (isSimple && !maySkip)
-            return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, isLocal);
+            return new CRoxieServerSimpleIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
         else
-            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal, maySkip, maxSeekLookahead);
+            return new CRoxieServerIndexReadActivity(this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal, maySkip, maxSeekLookahead);
     }
 };
 
@@ -21809,8 +21799,8 @@ class CRoxieServerIndexCountActivity : public CRoxieServerIndexActivity
     bool done;
 
 public:
-    CRoxieServerIndexCountActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, false, _isLocal, false), 
+    CRoxieServerIndexCountActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
+        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           countHelper((IHThorIndexCountArg &)basehelper),
           done(false)
     {
@@ -22009,9 +21999,9 @@ public:
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
             return new CRoxieServerNullCountActivity(this, _probeManager);
 //      else if (isSimple)
-//          return new CRoxieServerSimpleIndexCountActivity(this, keySet->queryKeyPart(0)->queryPart(0), rawSize, maxRecordSize);
+//          return new CRoxieServerSimpleIndexCountActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexCountActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, isLocal);
+            return new CRoxieServerIndexCountActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -22025,14 +22015,12 @@ IRoxieServerActivityFactory *createRoxieServerIndexCountActivityFactory(unsigned
 class CRoxieServerNullIndexAggregateActivity : public CRoxieServerActivity
 {
     IHThorIndexAggregateArg &aggregateHelper;
-    unsigned maxRecordSize;
     bool done;
 public:
-    CRoxieServerNullIndexAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, unsigned _maxRecordSize)
+    CRoxieServerNullIndexAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper)
     {
-        maxRecordSize = _maxRecordSize;
         done = false;
     }
 
@@ -22062,8 +22050,8 @@ class CRoxieServerIndexAggregateActivity : public CRoxieServerIndexActivity
 
 public:
     CRoxieServerIndexAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, false, _isLocal, false), 
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
+        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           aggregateHelper((IHThorIndexAggregateArg &)basehelper),
           done(false)
     {
@@ -22171,11 +22159,11 @@ public:
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
-            return new CRoxieServerNullIndexAggregateActivity(this, _probeManager, maxRecordSize);
+            return new CRoxieServerNullIndexAggregateActivity(this, _probeManager);
 //      else if (isSimple)
-//          return new CRoxieServerSimpleIndexAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0), rawSize, maxRecordSize);
+//          return new CRoxieServerSimpleIndexAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, isLocal);
+            return new CRoxieServerIndexAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -22197,8 +22185,8 @@ class CRoxieServerIndexGroupAggregateActivity : public CRoxieServerIndexActivity
 
 public:
     CRoxieServerIndexGroupAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, bool _isLocal)
-        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, false, _isLocal, false), 
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _isLocal)
+        : CRoxieServerIndexActivity(_factory, _probeManager, _remoteId, _keySet, _translators, false, _isLocal, false),
           aggregateHelper((IHThorIndexGroupAggregateArg &)basehelper),
           singleAggregator(aggregateHelper, aggregateHelper),
           resultAggregator(aggregateHelper, aggregateHelper),
@@ -22366,9 +22354,9 @@ public:
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
             return new CRoxieServerNullActivity(this, _probeManager);
 //      else if (isSimple)
-//          return new CRoxieServerSimpleIndexGroupAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0), rawSize, maxRecordSize);
+//          return new CRoxieServerSimpleIndexGroupAggregateActivity(this, keySet->queryKeyPart(0)->queryPart(0));
         else
-            return new CRoxieServerIndexGroupAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, isLocal);
+            return new CRoxieServerIndexGroupAggregateActivity(this, _probeManager, remoteId, keySet, translatorArray, isLocal);
     }
 };
 
@@ -22385,8 +22373,8 @@ class CRoxieServerIndexNormalizeActivity : public CRoxieServerIndexReadBaseActiv
 
 public:
     CRoxieServerIndexNormalizeActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
-        IKeyArray * _keySet, TranslatorArray *_translators, unsigned _rawSize, unsigned _maxRecordSize, bool _sorted, bool _isLocal)
-        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _rawSize, _maxRecordSize, _sorted, _isLocal, false), 
+        IKeyArray * _keySet, TranslatorArray *_translators, bool _sorted, bool _isLocal)
+        : CRoxieServerIndexReadBaseActivity(_factory, _probeManager, _remoteId, _keySet, _translators, _sorted, _isLocal, false),
           readHelper((IHThorIndexNormalizeArg &)basehelper)
     {
     }
@@ -22497,7 +22485,7 @@ public:
         if (!variableFileName && (keySet==NULL || keySet->length()==0))
             return new CRoxieServerNullActivity(this, _probeManager);
         else
-            return new CRoxieServerIndexNormalizeActivity(this, _probeManager, remoteId, keySet, translatorArray, rawSize, maxRecordSize, sorted, isLocal);
+            return new CRoxieServerIndexNormalizeActivity(this, _probeManager, remoteId, keySet, translatorArray, sorted, isLocal);
     }
 };
 
