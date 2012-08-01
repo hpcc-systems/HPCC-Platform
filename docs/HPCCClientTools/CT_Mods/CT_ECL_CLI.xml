@@ -108,20 +108,20 @@
       <sect2 role="brk">
         <title>ecl deploy</title>
 
-        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
         --name=&lt;value&gt; &lt;ecl_file | - &gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
         --name=&lt;value&gt; &lt;archive | - &gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy [--cluster=&lt;value&gt;]
+        <para><emphasis role="bold">ecl deploy [--target=&lt;value&gt;]
         [--name=&lt;value&gt;] &lt;so | dll | - &gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl deploy --cluster=roxie --name=FindPersonService findperson.ecl
-ecl deploy --cluster=roxie --name=FindPersonService ArchiveQuery.xml
-ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
+        <programlisting>ecl deploy --target=roxie --name=FindPersonService findperson.ecl
+ecl deploy --target=roxie --name=FindPersonService ArchiveQuery.xml
+ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -168,9 +168,9 @@ ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -258,27 +258,27 @@ ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
       <sect2 role="brk">
         <title>ecl publish</title>
 
-        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
         [--name=&lt;val&gt;] [--activate] &lt;wuid&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
         [--name=&lt;val&gt;] [--activate] &lt;so | dll | -
         &gt;</emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
         --name=&lt;val&gt; [--activate] &lt;archive | - &gt;
         </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
         --name=&lt;val&gt; [--activate] &lt;ecl_file | -
         &gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl publish --cluster=roxie --name=FindPersonService -A W20120224-125557
-ecl publish --cluster=roxie --name=FindPersonService -A libW20120224-125557.so
-ecl publish --cluster=roxie --name=FindPersonService -A ArchiveQuery.xml
-ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
+        <programlisting>ecl publish --target=roxie --name=FindPersonService -A W20120224-125557
+ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
+ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
+ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -331,9 +331,9 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -516,32 +516,32 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
         <title>ecl run</title>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        [--target=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
         &lt;wuid&gt; </emphasis></para>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        [--target=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
         &lt;queryset&gt; &lt;query&gt; </emphasis></para>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        [--target=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;dll|-&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
         --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;archive|-&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
         --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;eclfile|-&gt;</emphasis></para>
 
         <para><emphasis role="bold">Examples</emphasis>:</para>
 
-        <programlisting>ecl run --cluster=thor --input=data.xml --wait=1000 W20120224-125557
-ecl run --cluster=thor --input=data.xml --wait=1000 thor findpersonservice
-ecl run --cluster=thor --input=data.xml --wait=1000 ArchiveQuery.xml
-ecl run --cluster=thor --input=data.xml --wait=1000 findperson.ecl
-ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
+        <programlisting>ecl run --target=thor --input=data.xml --wait=1000 W20120224-125557
+ecl run --target=thor --input=data.xml --wait=1000 thor findpersonservice
+ecl run --target=thor --input=data.xml --wait=1000 ArchiveQuery.xml
+ecl run --target=thor --input=data.xml --wait=1000 findperson.ecl
+ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -594,9 +594,9 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -860,7 +860,7 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
         <title id="eclquerieslist">ecl queries list</title>
 
         <para><emphasis role="bold">ecl queries list
-        [&lt;queryset&gt;][--cluster=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
+        [&lt;queryset&gt;][--target=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
 
         <para><emphasis role="bold"></emphasis></para>
 
@@ -906,10 +906,10 @@ ecl queries list roxie myroxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster associated with the queries to
-                  list</entry>
+                  <entry>The target cluster associated with the queries
+                  to list</entry>
                 </row>
 
                 <row>
@@ -1041,9 +1041,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate with the remote
+                  <entry>The target cluster to associate with the remote
                   workunit</entry>
                 </row>
 
@@ -1524,7 +1524,7 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
         <para>Examples:</para>
 
         <programlisting>ecl package list
-ecl package list --cluster=roxie
+ecl package list --process=roxie
 </programlisting>
 
         <para></para>
@@ -1557,11 +1557,11 @@ ecl package list --cluster=roxie
                 </row>
 
                 <row>
-                  <entry>--cluster</entry>
+                  <entry>--process</entry>
 
-                  <entry>The name of the cluster from which to list
-                  information. Default is all clusters associated with the
-                  Dali server.</entry>
+                  <entry>The name of the process cluster for which to list
+                  information. Default is all process clusters associated
+                  with the Dali server.</entry>
                 </row>
 
                 <row>
@@ -1603,16 +1603,16 @@ ecl package list --cluster=roxie
         <title>ecl package info</title>
 
         <para><emphasis role="bold">ecl package info [options]
-        [--cluster=&lt;clusterName&gt; |
+        [--process=&lt;processCluster&gt; |
         --packageName=MyPackage]</emphasis></para>
 
         <para>Examples:</para>
 
         <programlisting>ecl package info --packageName=mypackage
-ecl package list --cluster=roxie
+ecl package list --process=myroxie
 </programlisting>
 
-        <para>Specify either --cluster or packageName.</para>
+        <para>Specify either --process or packageName.</para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -1645,15 +1645,15 @@ ecl package list --cluster=roxie
                   <entry>--packageName</entry>
 
                   <entry>The name of the package from which to list
-                  information. (Specify either --cluster or
+                  information. (Specify either --process or
                   packageName)</entry>
                 </row>
 
                 <row>
-                  <entry>--cluster</entry>
+                  <entry>--process</entry>
 
-                  <entry>The name of the cluster from which to list
-                  information. (Specify either --cluster or
+                  <entry>The name of the process cluster for which to
+                  list information. (Specify either --process or 
                   packageName)</entry>
                 </row>
 

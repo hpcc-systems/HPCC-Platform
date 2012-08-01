@@ -102,7 +102,9 @@ public:
                 optQuerySet.set(arg);
                 continue;
             }
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER) || iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             StringAttr temp;
             if (iter.matchOption(temp, ECLOPT_SHOW))
@@ -214,7 +216,7 @@ public:
 
         Owned<IClientWUMultiQuerySetDetailsRequest> req = client->createWUMultiQuerysetDetailsRequest();
         req->setQuerySetName(optQuerySet.get());
-        req->setClusterName(optCluster.get());
+        req->setClusterName(optTargetCluster.get());
         req->setFilterType("All");
 
         Owned<IClientWUMultiQuerySetDetailsResponse> resp = client->WUMultiQuerysetDetails(req);
@@ -237,10 +239,10 @@ public:
             "cluster will be shown. If no queryset or cluster is specified all querysets\n"
             "are shown.\n"
             "\n"
-            "ecl queries list [<queryset>][--cluster=<cluster>][--show=<flags>]\n\n"
+            "ecl queries list [<queryset>][--target=<val>][--show=<flags>]\n\n"
             " Options:\n"
             "   <queryset>             name of queryset to get list of queries for\n"
-            "   -cl, --cluster=<name>  name of cluster to get list of published queries for\n"
+            "   -t, --target=<val>     target cluster to get list of published queries for\n"
             "   --show=<flags>         show only queries with matching flags\n"
             " Flags:\n"
             "   A                      query is active\n"
@@ -252,7 +254,7 @@ public:
         EclCmdCommon::usage();
     }
 private:
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     StringAttr optQuerySet;
     unsigned flags;
 };
@@ -285,7 +287,9 @@ public:
                 continue;
             if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -303,7 +307,7 @@ public:
             fputs("source and target must both be specified.\n\n", stderr);
             return false;
         }
-        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optCluster.isEmpty())
+        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optTargetCluster.isEmpty())
         {
             fputs("cluster must be specified for remote copies.\n\n", stderr);
             return false;
@@ -322,7 +326,7 @@ public:
         Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetQuerySet.get());
-        req->setCluster(optCluster.get());
+        req->setCluster(optTargetCluster.get());
         req->setActivate(optActivate);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
@@ -354,7 +358,7 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target_queryset>      name of queryset to copy the query into\n"
-            "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
+            "   -t, --target=<val>     Local target cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
@@ -365,7 +369,7 @@ public:
 private:
     StringAttr optSourceQueryPath;
     StringAttr optTargetQuerySet;
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     unsigned optMsToWait;
     bool optActivate;
     bool optNoReload;

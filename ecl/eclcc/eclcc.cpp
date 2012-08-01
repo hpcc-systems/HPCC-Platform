@@ -340,6 +340,19 @@ int main(int argc, const char *argv[])
 }
 
 //=========================================================================================
+bool setTargetPlatformOption(const char *platform, ClusterType &optTargetClusterType)
+{
+    if (!platform || !*platform)
+        return false;
+    ClusterType clusterType = getClusterType(platform);
+    if (clusterType == NoCluster)
+    {
+        ERRLOG("Unknown ecl target platform %s\n", platform);
+        return false;
+    }
+    optTargetClusterType = clusterType;
+    return true;
+}
 
 void EclCC::loadManifestOptions()
 {
@@ -360,12 +373,12 @@ void EclCC::loadManifestOptions()
             optLegacy = ecl->getPropBool("@legacy");
         if (!optQueryRepositoryReference && ecl->hasProp("@main"))
             optQueryRepositoryReference.set(ecl->queryProp("@main"));
-        if (ecl->hasProp("@targetClusterType"))
-        {
-            ClusterType clusterType = getClusterType(ecl->queryProp("@targetClusterType"));
-            if (clusterType != NoCluster)
-                optTargetClusterType = clusterType;
-        }
+
+        if (ecl->hasProp("@targetPlatform"))
+            setTargetPlatformOption(ecl->queryProp("@targetPlatform"), optTargetClusterType);
+        else if (ecl->hasProp("@targetClusterType")) //deprecated name
+            setTargetPlatformOption(ecl->queryProp("@targetClusterType"), optTargetClusterType);
+
         Owned<IPropertyTreeIterator> paths = ecl->getElements("IncludePath");
         ForEach(*paths)
         {
@@ -1270,7 +1283,6 @@ bool EclCompileInstance::reportErrorSummary()
 
 
 //=========================================================================================
-
 bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 {
     if (argc < 2)
@@ -1413,18 +1425,10 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (batchPart >= batchSplit)
                 batchPart = 0;
         }
-        else if (iter.matchOption(tempArg, "-target"))
-        {
-            const char * platform = tempArg.get();
-            ClusterType clusterType = getClusterType(platform);
-            if (clusterType != NoCluster)
-                optTargetClusterType = clusterType;
-            else
-            {
-                ERRLOG("Unknown ecl target platform %s\n", platform);
-                return false;
-            }
-        }
+        else if (iter.matchOption(tempArg, "-target")) //deprecated name
+            return setTargetPlatformOption(tempArg.get(), optTargetClusterType);
+        else if (iter.matchOption(tempArg, "-platform"))
+            return setTargetPlatformOption(tempArg.get(), optTargetClusterType);
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))
         {
             Owned<ILogMsgFilter> filter = getDefaultLogMsgFilter();
@@ -1512,9 +1516,9 @@ const char * const helpText[] = {
     "    -foption[=value] Set an ecl option (#option)",
     "    -main <ref>   Compile definition <ref> from the source collection",
     "    -syntax       Perform a syntax check of the ECL",
-    "    -target=hthor Generate code for hthor executable (default)",
-    "    -target=roxie Generate code for roxie cluster",
-    "    -target=thor  Generate code for thor cluster",
+    "    -platform=hthor Generate code for hthor executable (default)",
+    "    -platform=roxie Generate code for roxie cluster",
+    "    -platform=thor  Generate code for thor cluster",
     "",
     "Output control options",
     "    -E            Output preprocessed ECL in xml archive form",
