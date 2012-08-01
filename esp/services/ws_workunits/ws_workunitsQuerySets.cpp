@@ -317,10 +317,42 @@ IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *ms
     return sendRoxieControlAllNodes(sock, msg, allOrNothing, wait);
 }
 
+bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait);
+
+class BackgroundReloadThread : public Thread
+{
+    Linked<IConstWUClusterInfo> clusterInfo;
+
+public:
+    BackgroundReloadThread(IConstWUClusterInfo *_clusterInfo)
+        : Thread("BackgroundReloadThread"), clusterInfo(_clusterInfo){}
+
+    int run()
+    {
+        try {
+            reloadCluster(clusterInfo, 60000);
+        }
+        catch (IException *e)
+        {
+            SCMStringBuffer name;
+            VStringBuffer msg("Error reloading cluster %s", (clusterInfo) ? clusterInfo->getName(name).str() : "");
+            DBGLOG(e, msg.str());
+            e->Release();
+        }
+        return 0;
+    }
+};
+
 bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait)
 {
-    if (clusterInfo->getPlatform()==RoxieCluster)
+    if (clusterInfo && clusterInfo->getPlatform()==RoxieCluster)
     {
+        if (0==wait)
+        {
+            BackgroundReloadThread *reloader = new BackgroundReloadThread(clusterInfo);
+            reloader->startRelease();
+            return true;
+        }
         const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
         if (addrs.length())
         {
@@ -410,9 +442,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         resp.setClusterFiles(clusterfiles);
     }
 
-    bool reloaded = reloadCluster(clusterInfo, (unsigned)req.getWait());
-    resp.setReloadFailed(!reloaded);
-
+    resp.setReloadFailed(!reloadCluster(clusterInfo, (unsigned)req.getWait()));
     return true;
 }
 
