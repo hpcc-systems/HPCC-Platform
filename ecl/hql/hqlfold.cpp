@@ -4538,7 +4538,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                         ForEachChild(i, transforms)
                         {
                             IHqlExpression * cur = transforms->queryChild(i);
-                            if (!cur->isPure())
+                            if (!cur->isPure() || containsSkip(cur))
                             {
                                 ok = false;
                                 break;

@@ -980,7 +980,7 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
 
 IHqlExpression * getExtractSelect(IHqlExpression * expr, IHqlExpression * field)
 {
-    if (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips))
+    if (expr->getInfoFlags() & (HEFcontainsSkip))
         return NULL;
 
     ForEachChild(i, expr)
@@ -1043,7 +1043,7 @@ IHqlExpression * transformTrivialSelectProject(IHqlExpression * select)
 
     IHqlExpression * expr = row->queryChild(0);
     IHqlExpression * transform = queryNewColumnProvider(expr);
-    if (!transform) // || !transform->isPure())
+    if (!transform)
         return NULL;
     if (!transform->isPure() && transformHasSkipAttr(transform))
         return NULL;

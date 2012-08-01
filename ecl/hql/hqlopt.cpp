@@ -612,7 +612,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             }
             break;
         case no_fetch:
-            if (isSimpleCount && ds->queryChild(3)->isPure())
+            if (isSimpleCount && !containsSkip(ds->queryChild(3)))
                 next = ds->queryChild(1);
             break;
         case no_group:
@@ -2600,7 +2600,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
             case no_fetch:              //NB: Not filtered fetch
                 {
-                    if (isPureActivity(child))
+                    if (!containsSkip(child->queryChild(3)))
                         return swapNodeWithChild(transformed, 1);
                     break;
                 }
@@ -2759,7 +2759,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_compound_childnormalize:
             case no_compound_selectnew:
             case no_compound_inline:
-                if (!isLimitedDataset(child))// && child->isPure())
+                if (!isLimitedDataset(child))
                     return swapNodeWithChild(transformed);
                 break;
             case no_sorted:
