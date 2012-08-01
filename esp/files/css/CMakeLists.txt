@@ -29,5 +29,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tabs.css
     ${CMAKE_CURRENT_SOURCE_DIR}/ecl.css
 )
-    Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/css COMPONENT Runtime )
+    Install( FILES ${iFILES} DESTINATION componentfiles/files/css COMPONENT Runtime )
 ENDFOREACH ( iFILES )

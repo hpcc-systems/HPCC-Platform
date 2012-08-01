@@ -42,10 +42,10 @@ include_directories (
 ADD_DEFINITIONS( -DNO_SYBASE -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( eclagent ${SRCS} )
-install ( TARGETS eclagent DESTINATION ${OSSDIR}/bin )
+install ( TARGETS eclagent RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( eclagent
       hthor           
       ${CPPUNIT_LIBRARIES}
     )
 
-Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/start_eclagent DESTINATION ${OSSDIR}/bin COMPONENT Runtime )
+Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/start_eclagent DESTINATION ${EXEC_DIR} COMPONENT Runtime )

@@ -43,7 +43,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( daliadmin ${SRCS} )
-install ( TARGETS daliadmin DESTINATION ${OSSDIR}/bin )
+install ( TARGETS daliadmin RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( daliadmin  
          jlib
          mp 

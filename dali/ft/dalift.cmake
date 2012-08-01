@@ -50,7 +50,7 @@ set_target_properties (dalift PROPERTIES
     COMPILE_FLAGS -D_CONSOLE
     DEFINE_SYMBOL DALIFT_EXPORTS
     )
-install ( TARGETS dalift DESTINATION ${OSSDIR}/lib )
+install ( TARGETS dalift RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( dalift 
          jlib
          mp 

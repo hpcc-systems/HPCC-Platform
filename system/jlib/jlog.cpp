@@ -2383,7 +2383,8 @@ CSysLogEventLogger::~CSysLogEventLogger()
 
 CSysLogEventLogger::CSysLogEventLogger() : dataLogUsed(false), dataLogName(0), dataLogFile(-1)
 {
-    const char * processName = queryCurrentProcessName();
+    StringBuffer folder;
+    const char * processName = splitDirTail(queryCurrentProcessPath(), folder);
     if (!processName||!*processName)
         processName = "hpcc";
     openlog(processName, LOG_PID, LOG_USER);

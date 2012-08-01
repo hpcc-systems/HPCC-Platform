@@ -37,7 +37,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DLOGGING_EXPORTS )
 
 HPCC_ADD_LIBRARY( logging SHARED ${SRCS} )
-install ( TARGETS logging DESTINATION ${OSSDIR}/plugins )
+install ( TARGETS logging DESTINATION plugins )
 target_link_libraries ( logging 
          jlib 
     )
