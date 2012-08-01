@@ -155,7 +155,8 @@ define([
 			},
 
 			initTargets = function () {
-				var base = new ESPBase();
+				var base = new ESPBase({
+				});
 				var request = {
 					rawxml_: true
 				};
