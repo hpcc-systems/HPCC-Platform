@@ -2995,12 +2995,16 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     unsigned ins = 0;
     SocketEndpoint ep(0,queryMyNode()->endpoint());
     Owned<IGroup> mygrp = createIGroup(1,&ep);
-    loop {
+    loop
+    {
         Owned<IGroup> grp = queryNamedGroupStore().lookup(mygroupname.str());
         if (!grp)
             break;
         if (grp->equals(mygrp))
+        {
+            out.append(mygroupname);
             return grp.getClear();
+        }
         ins++;
         mygroupname.setLength(l);
         mygroupname.append('_').append(ins);
@@ -3008,6 +3012,7 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     // this shouldn't happen but..
     WARNLOG("Adding group %s",mygroupname.str());
     queryNamedGroupStore().add(mygroupname.str(),mygrp,true);
+    out.append(mygroupname);
     return queryNamedGroupStore().lookup(mygroupname.str());
 }
 
