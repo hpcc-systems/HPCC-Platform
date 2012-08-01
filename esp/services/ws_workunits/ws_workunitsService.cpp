@@ -653,6 +653,8 @@ void CWsWorkunitsEx::refreshValidClusters()
 
 bool CWsWorkunitsEx::isValidCluster(const char *cluster)
 {
+    if (!cluster || !*cluster)
+        return false;
     CriticalBlock block(crit);
     if (validClusters.getValue(cluster))
         return true;
@@ -754,6 +756,8 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         {
             if (origValueChanged(req.getClusterSelection(), req.getClusterOrig(), s.clear(), false))
             {
+                if (!isValidCluster(s.str()))
+                    throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", s.str());
                 if (req.getState() == WUStateBlocked)
                     switchWorkUnitQueue(wu.get(), s.str());
                 else if ((req.getState() != WUStateSubmitted) && (req.getState() != WUStateRunning) && (req.getState() != WUStateDebugPaused) && (req.getState() != WUStateDebugRunning))
@@ -3586,9 +3590,6 @@ void writeSharedObject(const char *srcpath, const MemoryBuffer &obj, const char 
 
 void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid, const char *filename, const char *cluster, const char *name, const MemoryBuffer &obj, const char *dir, const char *xml)
 {
-    if (notEmpty(cluster) && !isValidCluster(cluster))
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
-
     StringBuffer dllpath, dllname;
     StringBuffer srcname(filename);
     if (!srcname.length())
@@ -3661,6 +3662,8 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
         if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to create workunit. Permission denied.");
 
+        if (notEmpty(req.getCluster()) && !isValidCluster(req.getCluster()))
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", req.getCluster());
         if (strieq(type, "archive")|| strieq(type, "ecl_text"))
             deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))

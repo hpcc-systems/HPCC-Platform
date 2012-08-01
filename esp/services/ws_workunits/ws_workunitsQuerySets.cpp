@@ -221,6 +221,8 @@ bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogica
         cluster.set(req.getCluster());
     else
         cw->getClusterName(cluster);
+    if (!isValidCluster(req.getCluster()))
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster.str());
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
@@ -383,6 +385,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         cw->getClusterName(cluster);
     if (!cluster.length())
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", req.getWuid());
+    if (!isValidCluster(cluster.str()))
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster.str());
+
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
@@ -869,6 +874,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         const char *cluster = req.getCluster();
         if (!cluster || !*cluster)
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Must specify cluster to associate with workunit when copy from remote environment.");
+        if (!isValidCluster(cluster))
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", cluster);
         StringBuffer xml;
         MemoryBuffer dll;
         StringBuffer dllname;
