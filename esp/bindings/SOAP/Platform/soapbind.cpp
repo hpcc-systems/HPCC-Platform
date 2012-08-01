@@ -269,7 +269,7 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
 void CSoapComplexType::appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype)
 {
     StringBuffer content;
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
         content.append('{');
         serializeStruct(ctx, content, (const char *)NULL);
@@ -326,7 +326,7 @@ inline void close_element(IEspContext *ctx, StringBuffer &xml, const char *name,
 
 void CSoapComplexType::serializeJSONStruct(IEspContext* ctx, StringBuffer& s, const char *name)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
         if (s.length() && !strchr("[{:", s.charAt(s.length()-1)))
             s.append(", ");
@@ -342,7 +342,7 @@ void CSoapComplexType::serializeJSONStruct(IEspContext* ctx, StringBuffer& s, co
 void CSoapComplexType::serializeStruct(IEspContext* ctx, StringBuffer& s, const char *name)
 {
     const char *tag = (name && *name) ? name : getRootName();
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return serializeJSONStruct(ctx, s, tag);
 
     open_element(ctx, s, tag, getNsURI(), getNsPrefix());
@@ -355,7 +355,7 @@ void CSoapComplexType::serializeStruct(IEspContext* ctx, StringBuffer& s, const 
 
 void CSoapComplexType::serializeItem(IEspContext* ctx, StringBuffer& s, const char *name)
 {
-    if (ctx->getResponseFormat()==ESPSerializationJSON)
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
         return serializeJSONStruct(ctx, s, NULL);
     serializeStruct(ctx, s, name);
 }
