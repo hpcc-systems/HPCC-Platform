@@ -109,7 +109,7 @@ const unsigned UnadornedParameterIndex = (unsigned)-1;
 enum
 {
 // House keeping information on a per node basis
-    HEF____unused0____          = 0x00000001,
+  HEF____unused0____          = 0x00000001,
     HEFobserved                 = 0x00000002,
     HEFgatheredNew              = 0x00000004,
     HEFhasunadorned             = 0x00000008,
@@ -120,12 +120,12 @@ enum
     HEFunbound                  = 0x00000010,
     HEFinternalVirtual          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
-    HEF____unused2____          = 0x00000080,
-    HEF____unused3____          = 0x00000100,
+  HEF____unused2____          = 0x00000080,
+  HEF____unused3____          = 0x00000100,
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
     HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-    HEFtransformSkips           = 0x00001000,
+  HEF____unused4____          = 0x00000100,
     HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
     HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
     HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
@@ -161,7 +161,7 @@ enum
     HEFretainedByActiveSelect   = (HEFhousekeeping|HEFalwaysInherit),
 
     HEFintersectionFlags        = (0),
-    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|//HEFtransformSkips|
+    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
@@ -169,7 +169,7 @@ enum
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
-    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip|HEFtransformSkips),
+    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
 };
 
 //NB: increase the member variable if it grows 
@@ -1645,7 +1645,7 @@ inline bool containsAssertKeyed(IHqlExpression * expr)  { return (expr->getInfoF
 inline bool containsAssertStepped(IHqlExpression * expr){ return (expr->getInfoFlags2() & HEF2assertstepped) != 0; }
 inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoFlags() & HEFcontainsCounter) != 0; }
 inline bool isCountProject(IHqlExpression * expr)       { return expr->hasProperty(_countProject_Atom); }
-inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips)) != 0; }
+inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
 inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
                                                         { return (expr->getInfoFlags() & (HEFcontextDependent & ~HEFgraphDependent)) != 0; }
