@@ -451,8 +451,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
-            "   --no-reload            do not request the (roxie) cluster to reload\n"
-            "   --wait=<ms>            maximum time to wait for cluster to finish updating\n",
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n"
             stdout);
         EclCmdWithEclTarget::usage();
     }

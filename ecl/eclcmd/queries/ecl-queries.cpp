@@ -356,7 +356,7 @@ public:
             "   <target_queryset>      name of queryset to copy the query into\n"
             "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
-            "   --no-reload            Do not ask the (roxie) cluster to reload\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
