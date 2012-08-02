@@ -660,6 +660,21 @@ inline void indenter(StringBuffer &s, int count)
     s.appendN(count*3, ' ');
 }
 
+inline bool isNumericChar(char c, bool decimal)
+{
+    if ('.'==c)
+        return decimal;
+    return ('9'>=c && '0'<=c);
+}
+
+StringBuffer &appendJSONNumericString(StringBuffer &s, const char *value, bool decimal)
+{
+    if (!value || !*value || !isNumericChar(*value, false))
+        return s.append("null");
+    while (*value && isNumericChar(*value, decimal))
+        s.append(*value++);
+    return s;
+}
 
 inline const char *jsonNewline(unsigned flags){return ((flags & REQXML_ESCAPEFORMATTERS) ? "\\n" : "\n");}
 
@@ -809,16 +824,17 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
         {
             const char *tname = type->queryName();
             //TBD: HACK
-            if (!strnicmp(tname, "int", 3) ||
-                !strnicmp(tname, "real", 4) ||
+            if (!strnicmp(tname, "real", 4) ||
                 !strnicmp(tname, "dec", 3) ||
                 !strnicmp(tname, "double", 6) ||
                 !strnicmp(tname, "float", 5))
-                out.append(parmval);
+                appendJSONNumericString(out, parmval, true);
+            else if (!strnicmp(tname, "int", 3))
+                appendJSONNumericString(out, parmval, false);
             else if (!strnicmp(tname, "bool", 4))
-                out.append(((*parmval)=='1' || strieq(parmval, "true"))? "true" : "false");
+                appendJSONValue(out, NULL, (bool)('1'==*parmval || strieq(parmval, "true")));
             else
-                out.appendf("\"%s\"", parmval);
+                appendJSONValue(out, NULL, parmval);
         }
         else if (flags & REQXML_SAMPLE_DATA)
         {
