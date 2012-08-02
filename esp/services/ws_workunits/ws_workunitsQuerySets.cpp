@@ -206,15 +206,15 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
 
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
-    if (isEmpty(req.getWuid()))
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "WUCopyLogicalFiles WUID parameter not set.");
+    StringBuffer wuid = req.getWuid();
+    checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
     if (!cw)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s", req.getWuid());
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s", wuid.str());
 
-    resp.setWuid(req.getWuid());
+    resp.setWuid(wuid.str());
 
     SCMStringBuffer cluster;
     if (notEmpty(req.getCluster()))
@@ -358,15 +358,15 @@ bool reloadCluster(const char *cluster, unsigned wait)
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
-    if (isEmpty(req.getWuid()))
-        throw MakeStringException(ECLWATCH_NO_WUID_SPECIFIED,"No Workunit ID has been specified.");
+    StringBuffer wuid = req.getWuid();
+    checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstWorkUnit> cw = factory->openWorkUnit(req.getWuid(), false);
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
     if (!cw)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", req.getWuid());
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot find the workunit %s", wuid.str());
 
-    resp.setWuid(req.getWuid());
+    resp.setWuid(wuid.str());
 
     SCMStringBuffer queryName;
     if (notEmpty(req.getJobName()))
@@ -374,7 +374,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     else
         cw->getJobName(queryName).str();
     if (!queryName.length())
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", req.getWuid());
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query/Job name not defined for publishing workunit %s", wuid.str());
 
     SCMStringBuffer cluster;
     if (notEmpty(req.getCluster()))
@@ -382,7 +382,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     else
         cw->getClusterName(cluster);
     if (!cluster.length())
-        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", req.getWuid());
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
 
     Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
 
