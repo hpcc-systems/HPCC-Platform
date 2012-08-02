@@ -530,15 +530,15 @@ const char * cppSystemText[]  = {
 
     "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
     "   regexNewStrFind(boolean _compiled, const string _search, boolean _cloneSearch) : omethod,entrypoint='find';"
-    "   boolean regexNewStrFound() : method,entrypoint='found';"
-    "   string regexNewStrFoundX(unsigned4 idx) : method,entrypoint='getMatchX';"
-    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,entrypoint='replace';"
+    "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
+    "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
+    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace';"
 
     "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
     "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='find';"
-    "   boolean regexNewUStrFound() : method,entrypoint='found';"
-    "   unicode regexNewUStrFoundX(unsigned4 idx) : method,entrypoint='getMatchX';"
-    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,entrypoint='replace';"
+    "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
+    "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
+    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace';"
     
     //clibrary functions that are called from the code generation
     "   free(data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
@@ -683,15 +683,15 @@ const char * cppSystemText[]  = {
     
     "   utf8 ctxGetRowXml(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowXML';",
 
-    "   boolean getMatched(unsigned4 idx) : method,include,entrypoint='getMatched';",
-    "   unsigned4 getMatchLength(unsigned4 idx) : method,include,entrypoint='getMatchLength';",
-    "   unsigned4 getMatchPosition(unsigned4 idx) : method,include,entrypoint='getMatchPosition';",
-    "   string getMatchText(unsigned4 idx) : method,include,entrypoint='getMatchText';",
-    "   unicode getMatchUnicode(unsigned4 idx) : method,include,entrypoint='getMatchUnicode';",
-    "   utf8 getMatchUtf8(unsigned4 idx) : method,include,entrypoint='getMatchUtf8';",
-    "   row(dummyRecord) getMatchRow(unsigned4 idx) : method,include,entrypoint='queryMatchRow';",
+    "   boolean getMatched(unsigned4 idx) : method,pure,include,entrypoint='getMatched';",
+    "   unsigned4 getMatchLength(unsigned4 idx) : method,pure,include,entrypoint='getMatchLength';",
+    "   unsigned4 getMatchPosition(unsigned4 idx) : method,pure,include,entrypoint='getMatchPosition';",
+    "   string getMatchText(unsigned4 idx) : method,pure,include,entrypoint='getMatchText';",
+    "   unicode getMatchUnicode(unsigned4 idx) : method,pure,include,entrypoint='getMatchUnicode';",
+    "   utf8 getMatchUtf8(unsigned4 idx) : method,pure,include,entrypoint='getMatchUtf8';",
+    "   row(dummyRecord) getMatchRow(unsigned4 idx) : method,pure,include,entrypoint='queryMatchRow';",
 
-    "   row(dummyRecord) getRootResult() : method,include,entrypoint='queryRootResult';",
+    "   row(dummyRecord) getRootResult() : method,pure,include,entrypoint='queryRootResult';",
 
     "   string getProductionText(unsigned4 idx) : method,entrypoint='getText';",
     "   unicode getProductionUnicode(unsigned4 idx) : method,entrypoint='getUnicode';",
