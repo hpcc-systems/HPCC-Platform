@@ -69,6 +69,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(DOCS_DRUPAL "Create Drupal HTML Docs" OFF)
   option(DOCS_EPUB "Create EPUB Docs" OFF)
   option(DOCS_MOBI "Create Mobi Docs" OFF)
+  option(USE_RESOURCE "Use resource download in ECLWatch" OFF)
   
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_XALAN OFF)

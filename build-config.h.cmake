@@ -89,3 +89,7 @@
 #ifndef BUILD_LEVEL
     #cmakedefine BUILD_LEVEL "${BUILD_LEVEL}"
 #endif
+
+#ifndef USE_RESOURCE
+    #cmakedefine USE_RESOURCE "${USE_RESOURCE}"
+#endif
