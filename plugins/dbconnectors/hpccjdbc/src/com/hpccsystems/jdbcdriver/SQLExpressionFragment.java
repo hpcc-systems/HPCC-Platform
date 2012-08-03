@@ -98,16 +98,25 @@ public class SQLExpressionFragment
     {
         String[] parsedFrag = new String[2];
 
-        String fragsplit[] = fragment.split("\\.", 2);
-        if (fragsplit.length == 1)
+        if (!HPCCJDBCUtils.isLiteralString(fragment) && !HPCCJDBCUtils.isNumeric(fragment) )
         {
-            parsedFrag[PARENT_INDEX] = "";
-            parsedFrag[NAME_INDEX] = fragsplit[0].trim();
+
+            String fragsplit[] = fragment.split("\\.", 2);
+            if (fragsplit.length == 1)
+            {
+                parsedFrag[PARENT_INDEX] = "";
+                parsedFrag[NAME_INDEX] = fragsplit[0].trim();
+            }
+            else
+            {
+                parsedFrag[PARENT_INDEX] = fragsplit[0].trim();
+                parsedFrag[NAME_INDEX] = fragsplit[1].trim();
+            }
         }
         else
         {
-            parsedFrag[PARENT_INDEX] = fragsplit[0].trim();
-            parsedFrag[NAME_INDEX] = fragsplit[1].trim();
+            parsedFrag[PARENT_INDEX] = "";
+            parsedFrag[NAME_INDEX] = fragment;
         }
 
         return parsedFrag;
