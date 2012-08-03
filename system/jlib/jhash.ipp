@@ -72,11 +72,9 @@ class jlib_decl Mapping : extends MappingBase
 };
 
 
-class jlib_decl AtomBase : implements IAtom, public CInterface
+class jlib_decl AtomBase : public CInterfaceOf<IAtom>
 {
 public:
-    IMPLEMENT_IINTERFACE
-
     AtomBase(const void * k)  
     { 
         key = strdup((const char *)k); 
