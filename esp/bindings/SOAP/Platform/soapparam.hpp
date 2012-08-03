@@ -797,7 +797,7 @@ public:
         if (!arr.ordinality())
             return;
         StringBuffer s;
-        toStr(rpc_call.queryContext(), s, tagname, itemname, elementtype, basepath, prefix);
+        toStr(rpc_call.queryContext(), s, NULL, itemname, elementtype, basepath, prefix);
         rpc_call.add_value(basepath, prefix, tagname, elementtype, s.str(), false);
     }
 
