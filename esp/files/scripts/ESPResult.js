@@ -48,11 +48,11 @@ define([
 				field: this.store.idProperty,
 				width: "40px"
 			});
-			for (var i = 0; i < this.ECLSchemas.length; ++i) {
+			for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
 				retVal.push({
-					name: this.ECLSchemas[i].ColumnName,
-					field: this.ECLSchemas[i].ColumnName,
-					width: this.extractWidth(this.ECLSchemas[i].ColumnType, this.ECLSchemas[i].ColumnName)
+					name: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
+					field: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
+					width: this.extractWidth(this.ECLSchemas.ECLSchemaItem[i].ColumnType, this.ECLSchemas.ECLSchemaItem[i].ColumnName)
 				});
 			}
 			return retVal;
@@ -83,8 +83,8 @@ define([
 
 		getECLRecord: function () {
 			var retVal = "RECORD\n";
-			for (var i = 0; i < this.ECLSchemas.length; ++i) {
-				retVal += "\t" + this.ECLSchemas[i].ColumnType + "\t" + this.ECLSchemas[i].ColumnName + ";\n";
+			for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
+				retVal += "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnType + "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnName + ";\n";
 			}
 			retVal += "END;\n";
 			return retVal;

@@ -26,23 +26,20 @@ define([
 	"dijit/registry"
 ], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready, registry) {
     var initUi = function () {
-        var wuid = "";
-        var target = "hthor";
+        var wuid = "W20120722-100052";//"W20120601-121930";//"W20120530-153214";//
+        var graphName = "";
 
         var urlWuid = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
         if (urlWuid) {
             wuid = urlWuid;
         }
-        var urlTarget = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Target"];
-        if (urlTarget) {
-            target = urlTarget;
+        var urlGraphName = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["GraphName"];
+        if (urlGraphName) {
+            graphName = urlGraphName;
         }
 
-        var eclPlayground = registry.byId("appLayout");
-        if (wuid) {
-            eclPlayground.hideTitle();
-        }
-        eclPlayground.init(wuid, target);
+        var graphControl = registry.byId("appLayout");
+        graphControl.setWuid(wuid, graphName);
     },
 
 	startLoading = function (targetNode) {

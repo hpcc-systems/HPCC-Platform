@@ -23,7 +23,7 @@ define([
 	return declare(null, {
 		id: null,
 		samplesURL: null,
-		select: null,
+		selectControl: null,
 
 		onNewSelection: function (eclText) {
 		},
@@ -35,7 +35,7 @@ define([
 			});
 
 			var context = this;
-			this.select = new dijit.form.Select({
+			this.selectControl = new dijit.form.Select({
 				name: this.id,
 				store: sampleStore,
 				value: "default.ecl",
@@ -57,7 +57,7 @@ define([
 				}
 			}, this.id);
 			try {
-				this.select.startup();
+				this.selectControl.startup();
 			} catch (e) {
 			}
 		}
