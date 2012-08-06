@@ -25,6 +25,7 @@ ESPrequest AddPackageRequest
     boolean Activate;
     boolean OverWrite;
     string QuerySet;
+    strint PackageSet;
     string PackageName;
 };
 
