@@ -3397,7 +3397,6 @@ public:
         unsigned keyprocessedBefore = keyprocessed;
         bool continuationFailed = false;
         const byte *rawSeek = NULL;
-        size32_t eclKeySize = indexHelper->queryDiskRecordSize()->getRecordSize(NULL);
         if (steppingRow)
             rawSeek = steppingRow;
         bool continuationNeeded = false;
