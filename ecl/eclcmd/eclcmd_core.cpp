@@ -452,7 +452,7 @@ public:
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         activates query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
-            "   --wait=<ms>            Max time to wait in milliseconds\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
