@@ -6695,7 +6695,7 @@ void HqlCppTranslator::doBuildChoose(BuildCtx & ctx, const CHqlBoundTarget * tar
     }
 
     IHqlExpression * defaultExpr = expr->queryChild(max);
-    if (target || !isNullAction(expr))
+    if (target || !isNullAction(defaultExpr))
     {
         subctx.addDefault(stmt);
         buildExprOrAssign(subctx, target, defaultExpr, NULL);

@@ -8355,20 +8355,28 @@ simpleDataSet
                         {
                             parser->normalizeExpression($3, type_int, false);
                             OwnedHqlExpr values = $5.getExpr();
-                            HqlExprArray args;
-                            values->unwindList(args, no_comma);
+                            HqlExprArray unorderedArgs;
+                            values->unwindList(unorderedArgs, no_comma);
 
-                            bool groupingDiffers = false;
-                            IHqlExpression & elseDs = args.tos();
+                            HqlExprArray args;
+                            reorderAttributesToEnd(args, unorderedArgs);
+
+                            IHqlExpression * compareDs = NULL;
                             ForEachItemIn(idx, args)
                             {
                                 IHqlExpression * cur = &args.item(idx);
-                                if (isGrouped(cur) != isGrouped(&elseDs))
-                                    groupingDiffers = true;
-                                parser->checkRecordTypes(cur, &elseDs, $5);
+                                if (cur->queryRecord())
+                                {
+                                    if (compareDs)
+                                    {
+                                        if (isGrouped(cur) != isGrouped(compareDs))
+                                            parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
+                                        parser->checkRecordTypes(cur, compareDs, $5);
+                                    }
+                                    else
+                                        compareDs = cur;
+                                }
                             }
-                            if (groupingDiffers)
-                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
 
                             args.add(*$3.getExpr(), 0);
                             $$.setExpr(createDataset(no_chooseds, args), $1);

@@ -11282,8 +11282,8 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             bool allGrouped = isGrouped(datasetType);
             bool sameDistribution = true;
             bool allInputsIdentical = true;
-            unsigned first = (op == no_chooseds) ? 2 : 1;
-            for (unsigned i=first; i < max; i++)
+            unsigned firstDataset = (op == no_chooseds) ? 1 : 0;
+            for (unsigned i=firstDataset+1; i < max; i++)
             {
                 IHqlExpression & cur = parms.item(i);
                 if (!cur.isAttribute())

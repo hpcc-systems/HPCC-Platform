@@ -2681,16 +2681,13 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
             break;
         }
     case no_chooseds:
-        {
-            calcIntersectingRowInformation(info, expr, 1);
-            break;
-        }
     case no_regroup:
     case no_combinegroup:
     case no_addfiles:
     case no_merge:
         {
-            calcIntersectingRowInformation(info, expr, 0);
+            unsigned firstDataset = getFirstActivityArgument(expr);
+            calcIntersectingRowInformation(info, expr, firstDataset);
             break;
         }
     case no_choosen:
