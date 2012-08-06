@@ -912,10 +912,11 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
         else
         {
           CWsDeployFileInfo* fi = m_pService->getFileInfo(envSaveAs, true);
-          StringBuffer sbUser, sbIp, sbXml, sbErrMsg;
-          if ((fi->isLocked(sbUser, sbIp) && m_userWithLock.length() != 0 && m_userIp.length() != 0 &&
-               !strcmp(m_userWithLock.str(), sbUser.str()) && !strcmp(m_userIp.str(), sbIp.str())) ||
-               (!fi->isLocked(sbUser, sbIp) && m_userWithLock.length() != 0 && m_userIp.length() != 0))
+          StringBuffer sbUser, sbIp, sbXml;
+
+          if ( fi->isLocked(sbUser, sbIp) == true)
+            throw MakeStringException(-1, "%s is locked by another user. File not saved.", envSaveAs);
+          if (isLocked(sbUser,sbIp) == true)  // if we are in write only mode then save the working environment
             toXML(&m_Environment->getPTree(), sbXml);
           else
             toXML(&m_constEnvRdOnly->getPTree(), sbXml);
@@ -925,9 +926,8 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             throw MakeStringException(-1, "Environment Save as operation has failed");
 
-          if (m_userWithLock.length() != 0 && m_userIp.length() != 0)
+        if (m_userWithLock.length() != 0 && m_userIp.length() != 0)
           {
-            unlockEnvironment(&context, &req.getReqInfo(), "", sbErrMsg);
             if (sbErrMsg.length())
             {
               resp.setXmlArgs(sbErrMsg.str());

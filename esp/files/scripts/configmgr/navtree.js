@@ -151,7 +151,6 @@ function invokeWizard() {
       {
         document.getElementById('ReadWrite').disabled = true;
         document.getElementById('savebutton').disabled = true;
-        document.getElementById('saveasbutton').disabled = false;
         document.getElementById('validatebutton').disabled = true;
       }
       document.getElementById('top1').style.display = 'block';
@@ -784,7 +783,7 @@ function createNavigationTree(navTreeData) {
       saveAndUnlockEnv();
     else if (menuItemName === 'Save Environment')
       saveEnvironment();
-    else if (menuItemName === 'Save Environment As...') {
+    else if (menuItemName === 'Save Environment As') {
       saveEnvironmentAs();
     }
     else if (menuItemName === 'Validate Environment')
@@ -1092,7 +1091,7 @@ function createNavigationTree(navTreeData) {
 
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
-                    { text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
+                    { text: "Save Environment As", onclick: { fn: onMenuItemClick } },
                     {text: "Validate Environment", onclick: { fn: onMenuItemClick } }
                           ],
     "Hardware": [
@@ -1222,7 +1221,8 @@ function createNavigationTree(navTreeData) {
         for (iGroup = 0; iGroup < groups.length; iGroup++) {
           if (typeof (groups[iGroup]) !== 'undefined')
             for (i = 0; i < groups[iGroup].length; i++)
-            groups[iGroup][i].cfg.setProperty("disabled", true);
+            if (groups[iGroup][i].element.innerText != "Save Environment As")
+              groups[iGroup][i].cfg.setProperty("disabled", true);
         }
       }
 
@@ -1817,14 +1817,15 @@ function saveEnvironment(saveas) {
 }
 
 function saveEnvironmentAs() {
- if (document.getElementById('ReadWrite').checked == true)
-   return;
+ getWaitDlg().show();
+
  var handleCancel = function() {
     getWaitDlg().hide();
     top.document.envSaveAsDialog.hide();
   }
 
   var handleOk = function() {
+    getWaitDlg().hide();
     loadAndCheckFileNames('3');
   };
 
@@ -3355,7 +3356,6 @@ function saveAndUnlockEnv() {
 function updateEnvCtrls(flag) {
  var Dom = YAHOO.util.Dom;
   var sbtn = Dom.get("savebutton");
-  var sabtn = Dom.get("saveasbutton");
   var vbtn = Dom.get("validatebutton");
   var fileopened = window.location.href.split(/\?/g);
   if (document.forms['treeForm'].wizops.value != '3' || fileopened.length <= 1)
@@ -3363,19 +3363,15 @@ function updateEnvCtrls(flag) {
   
   if (flag) {
     Dom.removeClass(sbtn, "yui-button-disabled");
-    Dom.addClass(sabtn, "yui-button-disabled");
     Dom.removeClass(vbtn, "yui-button-disabled");
     document.getElementById('savebutton').disabled = false;
-    document.getElementById('saveasbutton').disabled = true;
     document.getElementById('validatebutton').disabled = false;
     document.getElementById('ReadWrite').checked = true;
   }
   else {
     Dom.addClass(sbtn, "yui-button-disabled");
-    Dom.removeClass(sabtn, "yui-button-disabled");
     Dom.addClass(vbtn, "yui-button-disabled");
     document.getElementById('savebutton').disabled = true;
-    document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
     document.getElementById('ReadWrite').checked = false;
   }
