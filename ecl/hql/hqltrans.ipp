@@ -424,7 +424,7 @@ protected:
 //---------------------------------------------------------------------------
 
 //This class is used for applying transformations to trees that have already been normalized, or
-//that need to assocaite extra information with the the expressions being transformed
+//that need to associate extra information with the the expressions being transformed
 //If the transformer inserts,swaps or hoists expressions then it should ensure that createTransformed()
 //processes the annotations and the body at the same time - otherwise they can become separated.
 class HQL_API NewHqlTransformer : public ANewHqlTransformer
@@ -943,34 +943,6 @@ class HQL_API HqlScopedMapSelectorTransformer : public MergingHqlTransformer
 public:
     HqlScopedMapSelectorTransformer (IHqlExpression * oldValue, IHqlExpression * newValue);
 };
-
-
-#if 0
-class HQL_API SelectorReplacingTransformer : public MergingHqlTransformer
-{
-public:
-    SelectorReplacingTransformer();
-
-    void initSelectorMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
-
-    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
-
-    inline bool foundAmbiguity() const { return introducesAmbiguity; }
-
-protected:
-    void updateMapping();
-    virtual void pushChildContext(IHqlExpression * expr, IHqlExpression * transformed);
-
-protected:
-    OwnedHqlExpr oldSelector;
-    OwnedHqlExpr newSelector;
-    OwnedHqlExpr oldDataset;
-    OwnedHqlExpr newDataset;
-    bool isHidden;
-    bool introducesAmbiguity;
-    IHqlExpression * savedNewDataset;
-};
-#endif
 
 
 class HQL_API NewSelectorReplacingInfo : public NewTransformInfo

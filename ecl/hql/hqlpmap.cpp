@@ -151,9 +151,21 @@ void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first,
     if (iChild == max)
         return;
 
-    HqlMapSelectorTransformer transformer(oldDataset, newDataset);
-    for (; iChild < max; iChild++)
-        out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -173,9 +185,21 @@ void replaceSelectors(HqlExprArray & exprs, unsigned first, IHqlExpression * old
     if (iChild == max)
         return;
 
-    HqlMapSelectorTransformer transformer(oldDataset, newDataset);
-    for (; iChild < max; iChild++)
-        exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
 }
 
 

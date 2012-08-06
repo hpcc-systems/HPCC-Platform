@@ -713,6 +713,7 @@ struct HqlCppOptions
     bool                shuffleLocalJoinConditions;
     bool                projectNestedTables;
     bool                showSeqInGraph;
+    bool                normalizeSelectorSequence;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

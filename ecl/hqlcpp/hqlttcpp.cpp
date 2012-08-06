@@ -9393,6 +9393,7 @@ void LeftRightTransformer::analyseExpr(IHqlExpression * _expr)
     NewHqlTransformer::analyseExpr(body);
     if (pass == 0)
     {
+        //First pass gathers a list of selectors that are potentially ambiguous if the sequence was removed
         IHqlExpression * left = NULL;
         IHqlExpression * right = NULL;
         switch (getChildDatasetType(body))
@@ -9434,12 +9435,24 @@ void LeftRightTransformer::analyseExpr(IHqlExpression * _expr)
     }
     else
     {
+        //Second pass - for each expression, gather a list of selectors that would actually be ambiguous.
         LeftRightTransformInfo * extra = queryExtra(body);
-        if (extra->rawLeft)
+        IHqlExpression * rawLeft = extra->rawLeft;
+        IHqlExpression * rawRight = extra->rawRight;
+
+        //If LEFT is potentially ambiguous, then add it to the list of selectors used by this expression
+        if (rawLeft)
         {
-            LeftRightTransformInfo * leftExtra = queryExtra(extra->rawLeft);
+            LeftRightTransformInfo * leftExtra = queryExtra(rawLeft);
             if (leftExtra->shared)
                 extra->add(leftExtra->shared);
+        }
+        //Ditto for right
+        if (rawRight)
+        {
+            LeftRightTransformInfo * rightExtra = queryExtra(rawRight);
+            if (rightExtra->shared)
+                extra->add(rightExtra->shared);
         }
 
         switch (body->getOperator())
@@ -9466,32 +9479,27 @@ void LeftRightTransformer::analyseExpr(IHqlExpression * _expr)
             }
         }
 
-        IHqlExpression * left = extra->rawLeft;
-        IHqlExpression * right = extra->rawRight;
         ForEachChild(i, body)
         {
             IHqlExpression * cur = body->queryChild(i);
             LeftRightTransformInfo * childExtra = queryExtra(cur->queryBody());
             //If this is one of the arguments to an operation which has an active top dataset,
             //check to see if any of the contained expressions reference this item
-            if ((i != 0) && (left || right))
+            if ((i != 0) && rawLeft)
             {
-                if (left)
+                SharedTableInfo * matchLeft = childExtra->uses(rawLeft);
+                SharedTableInfo * matchRight = rawRight ? childExtra->uses(rawRight) : NULL;
+                if (matchLeft || matchRight)
                 {
-                    SharedTableInfo * matchLeft = childExtra->uses(left);
-                    SharedTableInfo * matchRight = right ? childExtra->uses(right) : NULL;
-                    if (matchLeft || matchRight)
+                    unsigned leftDepth = matchLeft ? matchLeft->depth : 0;
+                    unsigned rightDepth = matchRight ? matchRight->depth : 0;
+                    unsigned depth = leftDepth > rightDepth ? leftDepth : rightDepth;
+                    SharedTableInfo * nested = createAmbiguityInfo(rawLeft, depth+1);
+                    extra->addAmbiguity(nested);
+                    if (rawRight)
                     {
-                        unsigned leftDepth = matchLeft ? matchLeft->depth : 0;
-                        unsigned rightDepth = matchRight ? matchRight->depth : 0;
-                        unsigned depth = leftDepth > rightDepth ? leftDepth : rightDepth;
-                        SharedTableInfo * nested = createAmbiguityInfo(left, depth+1);
+                        SharedTableInfo * nested = createAmbiguityInfo(rawRight, depth+1);
                         extra->addAmbiguity(nested);
-                        if (matchRight)
-                        {
-                            SharedTableInfo * nested = createAmbiguityInfo(right, depth+1);
-                            extra->addAmbiguity(nested);
-                        }
                     }
                 }
             }
@@ -12306,8 +12314,8 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
     checkNormalized(workflow);
     DEBUG_TIMER("EclServer: tree transform: stored results", msTick()-time4);
 
-#ifdef NORMALIZE_SELSEQ
 #ifdef USE_SELSEQ_UID
+    if (options.normalizeSelectorSequence)
     {
         unsigned time = msTick();
         ForEachItemIn(i, workflow)
@@ -12318,7 +12326,6 @@ bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, Workf
         DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: left right", msTick()-time);
         //traceExpressions("after implicit alias", workflow);
     }
-#endif
 #endif
 
     if (queryOptions().createImplicitAliases)
