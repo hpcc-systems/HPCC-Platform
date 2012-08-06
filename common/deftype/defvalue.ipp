@@ -22,14 +22,12 @@
 #include "eclrtl.hpp"
 #include "defvalue.hpp"
 
-class DEFTYPE_API CValue : public CInterface, public IValue
+class DEFTYPE_API CValue : public CInterfaceOf<IValue>
 {
 protected:
     ITypeInfo *type;
 
 public:
-    IMPLEMENT_IINTERFACE;
-
     CValue(ITypeInfo *);
     ~CValue();
 

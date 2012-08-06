@@ -183,11 +183,11 @@ protected:
     void transformAllCandidates();
 
 protected:
-    CIArrayOf<ConditionalContextInfo> candidates;
+    IArrayOf<ConditionalContextInfo> candidates;
     ConditionalContextInfo * activeParent;
     OwnedHqlExpr rootExpr;
     CopyCIArrayOf<CHqlExprMultiGuard> childGuards;
-    CopyCIArrayOf<ConditionalContextInfo> insertLocations;
+    ICopyArrayOf<ConditionalContextInfo> insertLocations;
     unsigned seq;
     bool alwaysEvaluateGuardedTogether;
     bool noteManyUnconditionalParents;

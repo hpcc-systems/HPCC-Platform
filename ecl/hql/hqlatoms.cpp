@@ -40,6 +40,7 @@ _ATOM assertConstAtom;
 _ATOM atAtom;
 _ATOM atmostAtom;
 _ATOM _attrAligned_Atom;
+_ATOM _attrLocationIndependent_Atom;
 _ATOM _attrRecordCount_Atom;
 _ATOM _attrSerializedForm_Atom;
 _ATOM _attrSize_Atom;
@@ -419,6 +420,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(at);
     MAKEATOM(atmost);
     MAKESYSATOM(attrAligned)->setAttrId(EAaligned);
+    MAKESYSATOM(attrLocationIndependent)->setAttrId(EAlocationIndependent);
     MAKESYSATOM(attrRecordCount)->setAttrId(EArecordCount);
     MAKESYSATOM(attrSerializedForm)->setAttrId(EAserializedForm);
     MAKESYSATOM(attrSize)->setAttrId(EAsize);
