@@ -1456,7 +1456,6 @@ const char *getOpString(node_operator op)
     case no_unused50: case no_unused52:
     case no_unused80:
     case no_unused81:
-    case no_unused82:
     case no_unused83:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
