@@ -2335,7 +2335,6 @@ protected:
 
     void gatherAmbiguousSelectors(IHqlExpression * expr)
     {
-#ifndef ENSURE_SELSEQ_UID
         //Horrible code to try and cope with ambiguous left selectors.
         //o Tree is ambiguous so same child expression can occur in different contexts - so can't depend on the context it is found in to work out if can hoist
         //o If any selector that is hidden within child expressions matches one in scope then can't hoist it.
@@ -2401,8 +2400,6 @@ protected:
                 break;
             }
         }
-
-#endif
     }
 
     bool isEvaluateable(IHqlExpression * ds, bool ignoreInline = false)

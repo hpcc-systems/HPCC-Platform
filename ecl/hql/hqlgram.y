@@ -2121,9 +2121,9 @@ actionStmt
                             // use an expr other than NULL to distinguish from error
                             $$.setExpr(createValue(no_loadxml, makeVoidType()), $1);
                         }
-    | UPDATE '(' startLeftSeqFilter ',' transform ')' endLeftFilter endSelectorSequence
+    | UPDATE '(' startLeftSeqFilter ',' transform ')' endSelectorSequence
                         {
-                            $$.setExpr(createValue(no_update, makeVoidType(), $3.getExpr(), $5.getExpr(), $8.getExpr()), $1);
+                            $$.setExpr(createValue(no_update, makeVoidType(), $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
                         }
     | BUILD '(' startTopFilter ',' ',' thorFilenameOrList optBuildFlags ')' endTopFilter
                         {
@@ -6689,28 +6689,10 @@ dataRow
 simpleDataRow
     : DATAROW_ID
     | LEFT              {
-                            IHqlExpression *left = parser->queryLeftScope();
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            if (left)
-                                $$.setExpr(createSelector(no_left, left, selSeq));
-                            else
-                            {
-                                parser->reportError(ERR_LEFT_ILL_HERE, $1, "LEFT not legal here");
-                                $$.setExpr(createSelector(no_left, queryNullRecord(), selSeq));
-                            }
+                            $$.setExpr(parser->getSelector($1, no_left), $1);
                         }
     | RIGHT             {
-                            IHqlExpression *right = parser->queryRightScope();
-                            if (right)
-                            {
-                                OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                                $$.setExpr(createSelector(no_right, right, selSeq));
-                            }
-                            else
-                            {
-                                parser->reportError(ERR_RIGHT_ILL_HERE, $1, "RIGHT not legal here");
-                                $$.setExpr(createRow(no_null, LINK(queryNullRecord())), $1);
-                            }
+                            $$.setExpr(parser->getSelector($1, no_right), $1);
                         }
     | RIGHT_NN
                         {
@@ -6804,17 +6786,17 @@ simpleDataRow
                             $$.setExpr(convertTempRowToCreateRow(parser->errorHandler, $3.pos, row));
                             $$.setPosition($1);
                         }
-    | ROW '(' startLeftSeqRow ',' recordDef ')' endLeftFilter endSelectorSequence
+    | ROW '(' startLeftSeqRow ',' recordDef ')' endSelectorSequence
                         {
                             OwnedHqlExpr row = $3.getExpr();
                             OwnedHqlExpr record = $5.getExpr();
-                            $8.release();
+                            $7.release();
                             OwnedHqlExpr transform = parser->createDefaultAssignTransform(record, row, $5);
                             $$.setExpr(createRow(no_createrow, transform.getClear()), $1);
                         }
-    | ROW '(' startLeftSeqRow ',' transform ')' endLeftFilter endSelectorSequence
+    | ROW '(' startLeftSeqRow ',' transform ')' endSelectorSequence
                         {
-                            $$.setExpr(parser->createProjectRow($3, $5, $8), $1);
+                            $$.setExpr(parser->createProjectRow($3, $5, $7), $1);
                         }
     | ROW '(' transform ')'
                         {
@@ -6842,9 +6824,9 @@ simpleDataRow
                             $$.setExpr(createRow(no_createrow, LINK(transform)));
                             $$.setPosition($1);
                         }
-    | PROJECT '(' startLeftSeqRow ',' transform ')' endLeftFilter endSelectorSequence
+    | PROJECT '(' startLeftSeqRow ',' transform ')' endSelectorSequence
                         {
-                            $$.setExpr(parser->createProjectRow($3, $5, $8), $1);
+                            $$.setExpr(parser->createProjectRow($3, $5, $7), $1);
                         }
     | GLOBAL '(' dataRow globalOpts ')'
                         {
@@ -7159,7 +7141,7 @@ simpleDataSet
                             $$.setExpr(createDatasetF(no_distribute, $3.getExpr(), value.getClear(), $11.getExpr(), NULL));
                             $$.setPosition($1);
                         }
-    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter swapTopForLeft ',' expression optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter endTopFilter ',' expression optKeyedDistributeAttrs ')' endSelectorSequence
                         {
                             parser->normalizeExpression($9, type_boolean, false);
                             IHqlExpression * left = $3.getExpr();
@@ -7170,7 +7152,7 @@ simpleDataSet
                             if (!isKey(right))
                                 parser->reportError(ERR_EXPECTED_INDEX,$5,"Expected an index as the second parameter");
 
-                            IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $14.getExpr()));
+                            IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $12.getExpr()));
 
                             HqlExprArray leftSorts, rightSorts;
                             bool isLimitedSubstringJoin;
@@ -7186,16 +7168,16 @@ simpleDataSet
                             $$.setPosition($1);
                         }
 
-    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter swapTopForLeft optKeyedDistributeAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | DISTRIBUTE '(' startTopFilter startDistributeAttrs ',' startRightDistributeSeqFilter endTopFilter optKeyedDistributeAttrs ')' endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $6.getExpr();
                             if (!isKey(right))
                                 parser->reportError(ERR_EXPECTED_INDEX,$6,"Expected an index as the second parameter");
 
-                            IHqlExpression * cond = parser->createDistributeCond(left, right, $6, $12);
+                            IHqlExpression * cond = parser->createDistributeCond(left, right, $6, $10);
 
-                            IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, $8.getExpr(), $12.getExpr()));
+                            IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, $8.getExpr(), $10.getExpr()));
                             //Should check that all index fields are accounted for...
 
                             $$.setExpr(ds);
@@ -7223,7 +7205,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_distribute, $3.getExpr(), value.getClear()));
                             $$.setPosition($1);
                         }
-    | JOIN '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression opt_join_transform_flags ')' endRightFilter endLeftFilter endSelectorSequence
+    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression opt_join_transform_flags ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
 
@@ -7249,11 +7231,11 @@ simpleDataSet
 
                             if (!transform)
                             {
-                                IHqlExpression * seq = $12.queryExpr();
+                                IHqlExpression * seq = $10.queryExpr();
                                 transform.setown(parser->createDefJoinTransform(left,right,$1,seq,flags));
                             }
 
-                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $12.getExpr())));
+                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $10.getExpr())));
 
                             bool isLocal = join->hasProperty(localAtom);
                             parser->checkDistribution($3, left, isLocal, true);
@@ -7313,7 +7295,7 @@ simpleDataSet
                             $$.setExpr(join, $1);
                             parser->attachPendingWarnings($$);
                         }
-    | PROCESS '(' startLeftSeqFilter ',' startRightRowUpdateSeq ',' beginCounterScope transform ',' transform optCommonAttrs ')' endCounterScope endRightFilter endLeftFilter endSelectorSequence
+    | PROCESS '(' startLeftDelaySeqFilter ',' startRightRow ',' beginCounterScope transform ',' transform optCommonAttrs ')' endCounterScope endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
@@ -7323,7 +7305,7 @@ simpleDataSet
                                 attr = createComma(attr, createAttribute(_countProject_Atom, counter));
                             parser->ensureTransformTypeMatch($8, left);
                             parser->ensureTransformTypeMatch($10, right);
-                            $$.setExpr(createDataset(no_process, left, createComma(right, $8.getExpr(), $10.getExpr(), createComma(attr, $16.getExpr()))));
+                            $$.setExpr(createDataset(no_process, left, createComma(right, $8.getExpr(), $10.getExpr(), createComma(attr, $14.getExpr()))));
                             $$.setPosition($1);
                         }
     | ROLLUP '(' startTopLeftRightSeqFilter ',' expression ',' transform optCommonAttrs ')' endTopLeftRightFilter endSelectorSequence
@@ -7380,32 +7362,32 @@ simpleDataSet
                             $$.setExpr(createDataset(no_rollupgroup, $3.getExpr(), createComma($7.getExpr(), attr, $9.getExpr(), $11.getExpr())));
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ')' endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ')' endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * transform = parser->createDefJoinTransform(parser->queryLeftScope(),parser->queryRightScope(),$1, $9.queryExpr(),NULL);
-                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, transform, $9.getExpr()));
+                            IHqlExpression * transform = parser->createDefJoinTransform(parser->queryLeftScope(),parser->queryRightScope(),$1, $7.queryExpr(),NULL);
+                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, transform, $7.getExpr()));
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ',' transform optCommonAttrs ')' endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, $7.getExpr(), $8.getExpr(), $12.getExpr()));
+                            IHqlExpression * combine = createDataset(no_combine, left, createComma(right, $7.getExpr(), $8.getExpr(), $10.getExpr()));
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
-    | COMBINE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' startRightRowsGroup ',' transform optCommonAttrs ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
+    | COMBINE '(' startLeftDelaySeqFilter ',' startRightFilter ',' startRightRowsGroup ',' transform optCommonAttrs ')' endRowsGroup endSelectorSequence
                         {
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * combine = createDataset(no_combinegroup, left, createComma(right, $9.getExpr(), $10.getExpr(), createComma($12.getExpr(), $15.getExpr())));
+                            IHqlExpression * combine = createDataset(no_combinegroup, left, createComma(right, $9.getExpr(), $10.getExpr(), createComma($12.getExpr(), $13.getExpr())));
                             $$.setExpr(combine);
                             $$.setPosition($1);
                         }
-    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endLeftFilter endSelectorSequence
+    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endSelectorSequence
                         {
                             parser->normalizeExpression($6);
                             parser->ensureDatasetTypeMatch($8, $3.queryExpr());
@@ -7415,13 +7397,13 @@ simpleDataSet
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), NULL, $14.queryExpr(), $12.queryExpr());
-                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $10.getExpr(), createComma($12.getExpr(), $14.getExpr())));
+                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), NULL, $13.queryExpr(), $12.queryExpr());
+                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $10.getExpr(), createComma($12.getExpr(), $13.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);
                             $$.setPosition($1);
                         }
-    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endLeftFilter endSelectorSequence
+    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endSelectorSequence
                         {
                             parser->ensureDatasetTypeMatch($10, $3.queryExpr());
                             parser->normalizeExpression($6);
@@ -7432,13 +7414,13 @@ simpleDataSet
                             IHqlExpression * counter = $11.getExpr();
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), $8.getExpr(), $16.queryExpr(), $14.queryExpr());
-                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $12.getExpr(), createComma($14.getExpr(), $16.getExpr())));
+                            IHqlExpression * loopCondition = parser->createLoopCondition(left, $6.getExpr(), $8.getExpr(), $15.queryExpr(), $14.queryExpr());
+                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $12.getExpr(), createComma($14.getExpr(), $15.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);
                             $$.setPosition($1);
                         }
-    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' expression ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endLeftFilter endSelectorSequence
+    | LOOP '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' expression ',' expression ',' dataSet endCounterScope loopOptions ')' endRowsGroup endSelectorSequence
                         {
                             //LOOP(ds, <count>,<filter-cond>,<loop-cond>, f(rows(left)))
                             parser->ensureDatasetTypeMatch($12, $3.queryExpr());
@@ -7451,12 +7433,12 @@ simpleDataSet
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
                             IHqlExpression * loopCondition = createComma($6.getExpr(), $8.getExpr(), $10.getExpr());
-                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $14.getExpr(), createComma($16.getExpr(), $18.getExpr())));
+                            IHqlExpression * loopExpr = createDataset(no_loop, left, createComma(loopCondition, body, $14.getExpr(), createComma($16.getExpr(), $17.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);
                             $$.setPosition($1);
                         }
-    | GRAPH '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' dataSet endCounterScope graphOptions ')' endRowsGroup endLeftFilter endSelectorSequence
+    | GRAPH '(' startLeftRowsSeqFilter beginCounterScope ',' expression ',' dataSet endCounterScope graphOptions ')' endRowsGroup endSelectorSequence
                         {
                             parser->ensureDatasetTypeMatch($8, $3.queryExpr());
                             parser->normalizeExpression($6);
@@ -7466,18 +7448,18 @@ simpleDataSet
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 body = createComma(body, createAttribute(_countProject_Atom, counter));
-                            IHqlExpression * loopExpr = createDataset(no_graphloop, left, createComma($6.getExpr(), body, $10.getExpr(), createComma($12.getExpr(), $14.getExpr())));
+                            IHqlExpression * loopExpr = createDataset(no_graphloop, left, createComma($6.getExpr(), body, $10.getExpr(), createComma($12.getExpr(), $13.getExpr())));
                             parser->checkLoopFlags($1, loopExpr);
                             $$.setExpr(loopExpr);
                             $$.setPosition($1);
                         }
-    | GRAPH '(' startLeftRowsSeqFilter ')' endRowsGroup endLeftFilter endSelectorSequence
+    | GRAPH '(' startLeftRowsSeqFilter ')' endRowsGroup endSelectorSequence
                         {
                             $5.release();
-                            $7.release();
+                            $6.release();
                             $$.setExpr(createDataset(no_forcegraph, $3.getExpr()), $1);
                         }
-    | ITERATE '(' startLeftRightSeqFilter ',' beginCounterScope transform optCommonAttrs ')' endCounterScope endLeftRightFilter endSelectorSequence
+    | ITERATE '(' startLeftRightSeqFilter ',' beginCounterScope transform optCommonAttrs ')' endCounterScope endSelectorSequence
                         {
                             parser->ensureTransformTypeMatch($6, $3.queryExpr());
 
@@ -7487,7 +7469,7 @@ simpleDataSet
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 attr = createComma(attr, createAttribute(_countProject_Atom, counter));
-                            $$.setExpr(createDataset(no_iterate, ds, createComma(tr, attr, $11.getExpr())));
+                            $$.setExpr(createDataset(no_iterate, ds, createComma(tr, attr, $10.getExpr())));
                             $$.setPosition($1);
                             parser->checkDistribution($3, $$.queryExpr(), false);
                         }
@@ -7618,9 +7600,9 @@ simpleDataSet
                             $$.setExpr(createDataset(no_nonempty, args));
                             $$.setPosition($1);
                         }
-    | PROJECT '(' startLeftSeqFilter ',' beginCounterScope transform endCounterScope projectOptions ')' endLeftFilter endSelectorSequence
+    | PROJECT '(' startLeftSeqFilter ',' beginCounterScope transform endCounterScope projectOptions ')' endSelectorSequence
                         {
-                            IHqlExpression *te = createComma($6.getExpr(), $8.getExpr(), $11.getExpr());
+                            IHqlExpression *te = createComma($6.getExpr(), $8.getExpr(), $10.getExpr());
                             IHqlExpression *ds = $3.getExpr();
                             OwnedHqlExpr counter = $7.getExpr();
                             if (counter)
@@ -7628,12 +7610,12 @@ simpleDataSet
                             $$.setExpr(createDataset(no_hqlproject, ds, te));
                             $$.setPosition($1);
                         }
-    | PROJECT '(' startLeftSeqFilter ',' beginCounterScope recordDef endCounterScope projectOptions ')' endLeftFilter endSelectorSequence
+    | PROJECT '(' startLeftSeqFilter ',' beginCounterScope recordDef endCounterScope projectOptions ')' endSelectorSequence
                         {
-                            OwnedHqlExpr transform = parser->createRowAssignTransform($3, $6, $11);
+                            OwnedHqlExpr transform = parser->createRowAssignTransform($3, $6, $10);
                             $6.release();
                             $7.release();
-                            $$.setExpr(createDataset(no_hqlproject, $3.getExpr(), createComma(transform.getClear(), $8.getExpr(), $11.getExpr())));
+                            $$.setExpr(createDataset(no_hqlproject, $3.getExpr(), createComma(transform.getClear(), $8.getExpr(), $10.getExpr())));
                             $$.setPosition($1);
                         }
     | PULL '(' startTopFilter ')' endTopFilter
@@ -7641,7 +7623,7 @@ simpleDataSet
                             $$.setExpr(createDataset(no_metaactivity, $3.getExpr(), createAttribute(pullAtom)));
                             $$.setPosition($1);
                         }
-    | DENORMALIZE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' beginCounterScope transform endCounterScope optJoinFlags ')' endRightFilter endLeftFilter endSelectorSequence
+    | DENORMALIZE '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' beginCounterScope transform endCounterScope optJoinFlags ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
                             IHqlExpression * ds = $3.getExpr();
@@ -7653,17 +7635,17 @@ simpleDataSet
                                 counter = createAttribute(_countProject_Atom, counter);
 
                             //MORE: This should require local otherwise it needs to do a full join type thing.
-                            IHqlExpression * extra = createComma($5.getExpr(), $7.getExpr(), transform, createComma($12.getExpr(), counter, $16.getExpr()));
+                            IHqlExpression * extra = createComma($5.getExpr(), $7.getExpr(), transform, createComma($12.getExpr(), counter, $14.getExpr()));
                             $$.setExpr(createDataset(no_denormalize, ds, extra));
                             $$.setPosition($1);
                             parser->checkJoinFlags($1, $$.queryExpr());
                         }
-    | DENORMALIZE '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' beginCounterScope startRightRowsGroup endCounterScope ',' transform optJoinFlags ')' endRowsGroup endRightFilter endLeftFilter endSelectorSequence
+    | DENORMALIZE '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' beginCounterScope startRightRowsGroup endCounterScope ',' transform optJoinFlags ')' endRowsGroup endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
                             IHqlExpression * ds = $3.getExpr();
                             IHqlExpression * transform = $13.getExpr();
-                            IHqlExpression * extra = createComma($5.getExpr(), $7.getExpr(), transform, createComma($14.getExpr(), $16.getExpr(), $19.getExpr()));
+                            IHqlExpression * extra = createComma($5.getExpr(), $7.getExpr(), transform, createComma($14.getExpr(), $16.getExpr(), $17.getExpr()));
                             $$.setExpr(createDataset(no_denormalizegroup, ds, extra));
                             $$.setPosition($1);
                             $11.release();
@@ -7684,36 +7666,36 @@ simpleDataSet
                             $$.setExpr(createDataset(no_nothor, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
-    | NORMALIZE '(' startLeftSeqFilter ',' expression ',' beginCounterScope transform endCounterScope optCommonAttrs ')' endLeftFilter endSelectorSequence
+    | NORMALIZE '(' startLeftSeqFilter ',' expression ',' beginCounterScope transform endCounterScope optCommonAttrs ')' endSelectorSequence
                         {
                             parser->normalizeExpression($5, type_numeric, false);
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            IHqlExpression * extra = createComma($5.getExpr(), $8.getExpr(), counter, createComma($10.getExpr(), $13.getExpr()));
+                            IHqlExpression * extra = createComma($5.getExpr(), $8.getExpr(), counter, createComma($10.getExpr(), $12.getExpr()));
                             $$.setExpr(createDataset(no_normalize, $3.getExpr(), extra));
                             $$.setPosition($1);
                         }
-    | NORMALIZE '(' startLeftSeqFilter ',' startRightFilter ',' beginCounterScope transform endCounterScope optCommonAttrs ')' endRightFilter endLeftFilter  endSelectorSequence
+    | NORMALIZE '(' startLeftSeqFilter ',' startRightFilter ',' beginCounterScope transform endCounterScope optCommonAttrs ')' endSelectorSequence
                         {
                             //NB: SelSeq is based only on the left dataset, not the right as well.
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            IHqlExpression * extra = createComma($5.getExpr(), $8.getExpr(), counter, createComma($10.getExpr(), $14.getExpr()));
+                            IHqlExpression * extra = createComma($5.getExpr(), $8.getExpr(), counter, createComma($10.getExpr(), $12.getExpr()));
                             $$.setExpr(createDataset(no_normalize, $3.getExpr(), extra));
                             $$.setPosition($1);
                         }
 /*
  * Needs more thought on the representation - so we can track distributions etc.
  * and need to implement an activity to generate it.
-    | NORMALIZE '(' startLeftSeqFilter ',' startLeftRowsGroup ',' beginCounterScope dataSet endCounterScope optCommonAttrs ')' endRowsGroup endLeftFilter endSelectorSequence
+    | NORMALIZE '(' startLeftSeqFilter ',' startLeftRowsGroup ',' beginCounterScope dataSet endCounterScope optCommonAttrs ')' endRowsGroup endSelectorSequence
                         {
                             parser->checkGrouped($3);
                             IHqlExpression * counter = $9.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            IHqlExpression *attr = createComma($10.getExpr(), $12.getExpr(), $14.getExpr());
+                            IHqlExpression *attr = createComma($10.getExpr(), $12.getExpr(), $13.getExpr());
                             $$.setExpr(createDataset(no_normalizegroup, $3.getExpr(), createComma($8.getExpr(), counter, attr)));
                             $$.setPosition($1);
                         }
@@ -7772,11 +7754,11 @@ simpleDataSet
                             $$.setExpr(createDataset(no_regroup, args));
                             $$.setPosition($1);
                         }
-    | HAVING '(' startLeftRowsSeqFilter ',' condList ')' endRowsGroup endLeftFilter endSelectorSequence
+    | HAVING '(' startLeftRowsSeqFilter ',' condList ')' endRowsGroup endSelectorSequence
                         {
                             parser->checkGrouped($3);
                             IHqlExpression *attr = NULL;        // possibly local may make sense if thor supported it as a global operation, but it would be too painful.
-                            $$.setExpr(createDataset(no_filtergroup, $3.getExpr(), createComma($5.getExpr(), attr, $7.getExpr(), $9.getExpr())));
+                            $$.setExpr(createDataset(no_filtergroup, $3.getExpr(), createComma($5.getExpr(), attr, $7.getExpr(), $8.getExpr())));
                             $$.setPosition($1);
                         }
     | KEYED '(' dataSet indexListOpt ')' endTopFilter
@@ -7834,7 +7816,7 @@ simpleDataSet
                         {
                             $$.setExpr(createDataset(no_dataset_alias, $3.getExpr(), ::createUniqueId()), $1);
                         }
-    | FETCH '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression ',' transform optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | FETCH '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression ',' transform optCommonAttrs ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_int, false);
                             IHqlExpression * left = $3.getExpr();
@@ -7846,17 +7828,17 @@ simpleDataSet
                             if ((modeOp != no_thor) && (modeOp != no_flat) && (modeOp != no_csv) && (modeOp != no_xml))
                                 parser->reportError(ERR_FETCH_NON_DATASET, $3, "First parameter of FETCH should be a disk file");
 
-                            IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), $9.getExpr(), createComma($10.getExpr(), $14.getExpr())));
+                            IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), $9.getExpr(), createComma($10.getExpr(), $12.getExpr())));
 
                             $$.setExpr(join);
                             $$.setPosition($1);
                         }
-    | FETCH '(' startLeftSeqFilter ',' startRightFilterUpdateSeq ',' expression optCommonAttrs ')' endRightFilter endLeftFilter endSelectorSequence
+    | FETCH '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression optCommonAttrs ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_int, false);
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
-                            IHqlExpression * transform = parser->createDefJoinTransform(left, right, $7, $12.queryExpr(),NULL);
+                            IHqlExpression * transform = parser->createDefJoinTransform(left, right, $7, $10.queryExpr(),NULL);
 
                             node_operator modeOp = no_none;
                             if (left->getOperator() == no_table)
@@ -7864,7 +7846,7 @@ simpleDataSet
                             if ((modeOp != no_thor) && (modeOp != no_flat) && (modeOp != no_csv) && (modeOp != no_xml))
                                 parser->reportError(ERR_FETCH_NON_DATASET, $3, "First parameter of FETCH should be a disk file");
 
-                            IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), transform, createComma($8.getExpr(), $12.getExpr())));
+                            IHqlExpression *join = createDataset(no_fetch, left, createComma(right, $7.getExpr(), transform, createComma($8.getExpr(), $10.getExpr())));
 
                             $$.setExpr(join);
                             $$.setPosition($1);
@@ -8624,21 +8606,21 @@ simpleDataSet
                             $$.setExpr(createDatasetF(no_executewhen, $3.getExpr(), $5.getExpr(), createAttribute(successAtom), NULL), $1);
                         }
     //Slightly unusual arrangement of the productions there to resolve s/r errors
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ')' endRowsGroup endSelectorSequence
                         {
-                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, NULL, $10, $12), $1);
+                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, NULL, $10, $11), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' sortList ')' endRowsGroup endSelectorSequence
                         {
-                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, &$10, $12, $14), $1);
+                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, NULL, &$10, $12, $13), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' transform ')' endRowsGroup endSelectorSequence
                         {
-                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, NULL, $12, $14), $1);
+                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, NULL, $12, $13), $1);
                         }
-    | AGGREGATE '(' startLeftSeqFilter ',' startRightRowsRecordUpdateSeq ',' transform beginList ',' transform ',' sortList ')' endRowsGroup endLeftRightFilter endSelectorSequence
+    | AGGREGATE '(' startLeftDelaySeqFilter ',' startRightRowsRecord ',' transform beginList ',' transform ',' sortList ')' endRowsGroup endSelectorSequence
                         {
-                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, &$12, $14, $16), $1);
+                            $$.setExpr(parser->processUserAggregate($1, $3, $5, $7, &$10, &$12, $14, $15), $1);
                         }
 /*
   //This may cause s/r problems with the attribute version if a dataset name clashes with a hint id
@@ -9912,33 +9894,15 @@ startTopFilter
     : dataSet           {   parser->pushTopScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
     ;
 
-startLeftFilter
-    : dataSet           {   parser->pushLeftScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
-    ;
-
 startRightFilter
-    : dataSet           {   parser->pushRightScope($1.queryExpr()); $$.setExpr($1.getExpr()); }
+    : dataSet           {   parser->setRightScope($1.queryExpr()); $$.inherit($1); }
     ;
 
-startRightFilterUpdateSeq
-    : startRightFilter
-                        {
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), parser->queryRightScope());
-                            $$.inherit($1);
-                        }
-    ;
-
-startRightRowsRecordUpdateSeq
+startRightRowsRecord
     : recordDef
                         {
-                            parser->pushRightScope($1.queryExpr());                     
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), parser->queryRightScope());
-
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr right = createSelector(no_right, parser->queryRightScope(), selSeq);
-                            parser->pushRowsScope(right);
+                            parser->setRightScope($1.queryExpr());  
+                            parser->beginRowsScope(no_right);
                             $$.inherit($1);
                         }
     ;
@@ -9946,10 +9910,9 @@ startRightRowsRecordUpdateSeq
 startLeftRightSeqFilter
     : dataSet
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            $$.inherit($1);
                         }
     ;
 
@@ -9957,9 +9920,8 @@ startTopLeftSeqFilter
     : dataSet
                         {
                             parser->pushTopScope($1.queryExpr());
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
+                            $$.inherit($1);
                         }
     ;
 
@@ -9967,27 +9929,20 @@ startTopLeftRightSeqFilter
     : dataSet
                         {
                             parser->pushTopScope($1.queryExpr());
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            $$.setExpr($1.getExpr());
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            $$.inherit($1);
                         }
     ;
 
 startTopLeftRightSeqSetDatasets
     : setOfDatasets
                         {
-                            OwnedHqlExpr expr = $1.getExpr();
-                            IHqlExpression * record = expr->queryRecord();
-                            //Push LEFT as if it was the top dataset, because $1 isn't really a dataset at all.
-                            parser->pushSelectorSequence(expr, NULL);
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr pseudoTop = createSelector(no_left, record, selSeq);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL); // selector only depends on left
+                            parser->setRightScope($1.queryExpr());
+                            OwnedHqlExpr pseudoTop = parser->getSelector($1, no_left);
                             parser->pushTopScope(pseudoTop);
-                            parser->pushLeftScope(record);
-                            parser->pushRightScope(record);
-                            $$.setExpr(expr.getClear());
-                            $$.setPosition($1);
+                            $$.inherit($1);
                         }
     ;
 
@@ -10020,18 +9975,14 @@ startSimpleFilter
 startLeftSeqRow
     : dataRow
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            //parser->pushUniqueSelectorSequence();
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
                             $$.inherit($1);
                         }
     ;
 
-startRightRowUpdateSeq
+startRightRow
     : dataRow               {
-                            OwnedHqlExpr oldSeq = parser->popSelectorSequence();
-                            parser->pushSelectorSequence(parser->queryLeftScope(), $1.queryExpr());
-                            parser->pushRightScope($1.queryExpr());
+                            parser->setRightScope($1.queryExpr());
                             $$.setExpr($1.getExpr());
                         }
     ;
@@ -10039,29 +9990,34 @@ startRightRowUpdateSeq
 startLeftRowsSeqFilter
     : dataSet
                         {
-                            parser->pushLeftScope($1.queryExpr());
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr left = createSelector(no_left, parser->queryLeftScope(), selSeq);
-                            parser->pushRowsScope(left);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
+                            parser->beginRowsScope(no_left);
                             $$.inherit($1);
                         }
     ;
 
 startLeftSeqFilter
-    : startLeftFilter
+    : dataSet
                         {
-                            parser->pushSelectorSequence($1.queryExpr(), NULL);
+                            parser->pushLeftRightScope($1.queryExpr(), NULL);
                             $$.inherit($1);
                         }
     ;
 
+startLeftDelaySeqFilter
+    : dataSet
+                        {
+                            //Since the SEQUENCE is based on left and right left and right aren't valid until we have seen both datasets
+                            parser->pushPendingLeftRightScope($1.queryExpr(), NULL);
+                            $$.inherit($1);
+                        }
+    ;
 
 //Used for the RHS of a distribute.  Top filter has already been processed, so selector id should be based on both.
 startRightDistributeSeqFilter
-    : startRightFilter
+    : dataSet
                         {
-                            parser->pushSelectorSequence(parser->queryTopScope(), $1.queryExpr());
+                            parser->pushLeftRightScope(parser->queryTopScope(), $1.queryExpr());
                             $$.inherit($1);
                         }
     ;
@@ -10069,40 +10025,34 @@ startRightDistributeSeqFilter
 
 endSelectorSequence
     :                   {
-                            $$.setExpr(parser->popSelectorSequence());
+                            $$.setExpr(parser->popLeftRightScope());
                         }
     ;
 
 
 startLeftRowsGroup
     : GROUP             {
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr left = createSelector(no_left, parser->queryLeftScope(), selSeq);
-                            parser->pushRowsScope(left);
+                            parser->beginRowsScope(no_left);
                             $$.clear();
                         }
     ;
 
 startLeftRows
     :                   {
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr left = createSelector(no_left, parser->queryLeftScope(), selSeq);
-                            parser->pushRowsScope(left);
+                            parser->beginRowsScope(no_left);
                             $$.clear();
                         }
     ;
 
 startRightRowsGroup
     : GROUP             {
-                            OwnedHqlExpr selSeq = parser->getSelectorSequence();
-                            OwnedHqlExpr right = createSelector(no_right, parser->queryRightScope(), selSeq);
-                            parser->pushRowsScope(right);
+                            parser->beginRowsScope(no_right);
                             $$.clear();
                         }
     ;
 
 endRowsGroup
-    :                   {   $$.setExpr(parser->popRowsScope()); }
+    :                   {   $$.setExpr(parser->endRowsScope()); }
     ;
 
 endSimpleFilter
@@ -10113,28 +10063,12 @@ endTopFilter
     :                   {   parser->popTopScope(); $$.clear(); }
     ;
 
-endLeftFilter
-    :                   {   parser->popLeftScope(); $$.clear(); }
-    ;
-
-endRightFilter
-    :                   {   parser->popRightScope(); $$.clear(); }
-    ;
-
-endLeftRightFilter
-    :                   {   parser->popLeftScope(); parser->popRightScope(); $$.clear(); }
-    ;
-
 endTopLeftFilter
-    :                   {   parser->popTopScope(); parser->popLeftScope(); $$.clear(); }
+    :                   {   parser->popTopScope(); $$.clear(); }
     ;
 
 endTopLeftRightFilter
-    :                   {   parser->popTopScope(); parser->popLeftScope(); parser->popRightScope(); $$.clear(); }
-    ;
-
-swapTopForLeft
-    :                   {   parser->swapTopScopeForLeftScope(); $$.clear(); }
+    :                   {   parser->popTopScope(); $$.clear(); }
     ;
 
 scopedDatasetId

@@ -115,6 +115,8 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
 }
 
 
+//oldDataset is either an active selector (e.g., no_left) or a dataset.
+//newDataset is either an active selector (e.g., no_left) or a dataset (implying activerow(dataset) or newrow(dataset).
 IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset)
 {
     if (!expr) return NULL;
@@ -125,12 +127,9 @@ IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldData
     if (ret)
         return ret;
 
-
-#ifndef ENSURE_SELSEQ_UID
     node_operator op = oldDataset->getOperator();
     if (op == no_left || op == no_right)
         return newReplaceSelector(expr, oldDataset, newDataset);
-#endif
 
     HqlMapSelectorTransformer transformer(oldDataset, newDataset);
     return transformer.transformRoot(expr);
@@ -152,12 +151,57 @@ void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first,
     if (iChild == max)
         return;
 
-    HqlMapSelectorTransformer transformer(oldDataset, newDataset);
-    for (; iChild < max; iChild++)
-        out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+void replaceSelectors(HqlExprArray & exprs, unsigned first, IHqlExpression * oldDataset, IHqlExpression * newDataset)
+{
+    unsigned max = exprs.ordinality();
+    unsigned iChild;
+    for (iChild = first; iChild < max; iChild++)
+    {
+        IHqlExpression *ret = optimizedReplaceSelector(&exprs.item(iChild), oldDataset->queryNormalizedSelector(), newDataset);
+        if (!ret)
+            break;
+        exprs.replace(*ret, iChild);
+    }
+
+    if (iChild == max)
+        return;
+
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
+}
+
 
 //NB: This can not be derived from NewHqlTransformer since it is called before the tree is normalised, and it creates
 //inconsistent expression trees.
