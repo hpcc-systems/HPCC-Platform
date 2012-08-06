@@ -2008,6 +2008,15 @@ function populateOpenEnvTable() {
             j++;
           }
 
+          if (!Array.prototype.indexof) {
+            Array.prototype.indexOf = function(obj, start) {
+              for (var i = (start || 0), j = this.length; i < j; i++) {
+                if (this[i] === obj) { return i; }
+              }
+              return -1;
+            }
+          }
+
           YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
           if (staged_configuration.indexOf(oData) != -1)
            elLiner.innerHTML = "<font style=\"background-color:#004ADE;color:white\" title=\"Staged Configuration\">" + oData + "</font>";
