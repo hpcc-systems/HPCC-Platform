@@ -309,7 +309,7 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
         }
         else
         {
-            unsigned xmlflags = WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG;
+            unsigned xmlflags = 0;
             if (outputFormat != CRunEclExFormat_ExtendedXml)
                 xmlflags |= WWV_OMIT_SCHEMAS;
             if (context.queryRequestParameters()->hasProp("display_xslt"))
