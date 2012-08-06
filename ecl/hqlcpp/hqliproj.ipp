@@ -293,7 +293,6 @@ class ComplexImplicitProjectInfo : public ImplicitProjectInfo
 {
 public:
     ComplexImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind);
-    IMPLEMENT_IINTERFACE
 
     virtual ComplexImplicitProjectInfo * queryComplexInfo() { return this; }
 

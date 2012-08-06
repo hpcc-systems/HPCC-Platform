@@ -301,11 +301,10 @@ enum
     NTFselectorOriginal     = 0x0002,
 };
 
-class HQL_API ANewTransformInfo : implements IInterface, public CInterface
+class HQL_API ANewTransformInfo : implements CInterfaceOf<IInterface> 
 {
 public:
     ANewTransformInfo(IHqlExpression * _original);
-    IMPLEMENT_IINTERFACE
 
     virtual IHqlExpression * queryTransformed() = 0;
     virtual IHqlExpression * queryTransformedSelector() = 0;
