@@ -2677,9 +2677,6 @@ OUTPUT(ValidWords)
 
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
-      <para>For Ubuntu installations a Debian package is provided. To install
-      the package, use:</para>
-
       <programlisting>sudo dpkg -r hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
 
       <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
