@@ -28,8 +28,8 @@ public class SQLWhereClause
         if (expression.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE)
         {
             expressionsCount++;
-            if (!expressionUniqueColumnNames.contains(expression.getPrefixName()))
-                expressionUniqueColumnNames.add(expression.getPrefixName());
+            if (!expressionUniqueColumnNames.contains(expression.getPrefixValue()))
+                expressionUniqueColumnNames.add(expression.getPrefixValue());
         }
         else
         {
@@ -98,7 +98,7 @@ public class SQLWhereClause
             SQLExpressionFragment exp = it.next();
             if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE)
             {
-                names[i++] = exp.getPrefixName();
+                names[i++] = exp.getPrefixValue();
             }
         }
         return names;
@@ -110,7 +110,7 @@ public class SQLWhereClause
         while (it.hasNext())
         {
             SQLExpressionFragment exp = it.next();
-            if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixName().equals(name)) { return exp; }
+            if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixValue().equals(name)) { return exp; }
         }
         return null;
     }
@@ -121,7 +121,7 @@ public class SQLWhereClause
         while (it.hasNext())
         {
             SQLExpressionFragment exp = it.next();
-            if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixName().equals(name))
+            if (exp.getType() == SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE && exp.getPrefixValue().equals(name))
                 return true;
         }
         return false;

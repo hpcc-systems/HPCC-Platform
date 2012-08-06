@@ -8,7 +8,7 @@ public class SQLExpressionFragment
     public static final int    LOGICAL_EXPRESSION_TYPE = 2;
 
     private static final short PARENT_INDEX            = 0;
-    private static final short NAME_INDEX              = 1;
+    private static final short VALUE_INDEX              = 1;
     private String[]           prefix;
     private String[]           postfix;
 
@@ -44,19 +44,19 @@ public class SQLExpressionFragment
         return prefix[PARENT_INDEX];
     }
 
-    public String getPrefixName()
+    public String getPrefixValue()
     {
-        return prefix[NAME_INDEX];
+        return prefix[VALUE_INDEX];
     }
 
     public String getFullPrefix()
     {
-        return getPrefixParent() + "." + getPrefixName();
+        return getPrefixParent() + "." + getPrefixValue();
     }
 
     public String getFullPostfix()
     {
-        return getPostfixParent() + "." + getPostfixName();
+        return getPostfixParent() + "." + getPostfixValue();
     }
 
     public void setPrefix(String prefix)
@@ -84,9 +84,9 @@ public class SQLExpressionFragment
         return operator != null ? operator.isValid() : false;
     }
 
-    public String getPostfixName()
+    public String getPostfixValue()
     {
-        return postfix[NAME_INDEX];
+        return postfix[VALUE_INDEX];
     }
 
     public String getPostfixParent()
@@ -98,16 +98,31 @@ public class SQLExpressionFragment
     {
         String[] parsedFrag = new String[2];
 
-        String fragsplit[] = fragment.split("\\.", 2);
-        if (fragsplit.length == 1)
+        if (fragment == null || fragment.length() <= 0)
         {
             parsedFrag[PARENT_INDEX] = "";
-            parsedFrag[NAME_INDEX] = fragsplit[0].trim();
+            parsedFrag[VALUE_INDEX] = "";
+        }
+        else
+            if (!HPCCJDBCUtils.isLiteralString(fragment) && !HPCCJDBCUtils.isNumeric(fragment) )
+        {
+
+            String fragsplit[] = fragment.split("\\.", 2);
+            if (fragsplit.length == 1)
+            {
+                parsedFrag[PARENT_INDEX] = "";
+                parsedFrag[VALUE_INDEX] = fragsplit[0].trim();
+            }
+            else
+            {
+                parsedFrag[PARENT_INDEX] = fragsplit[0].trim();
+                parsedFrag[VALUE_INDEX] = fragsplit[1].trim();
+            }
         }
         else
         {
-            parsedFrag[PARENT_INDEX] = fragsplit[0].trim();
-            parsedFrag[NAME_INDEX] = fragsplit[1].trim();
+            parsedFrag[PARENT_INDEX] = "";
+            parsedFrag[VALUE_INDEX] = fragment;
         }
 
         return parsedFrag;
@@ -137,7 +152,7 @@ public class SQLExpressionFragment
     public String toString()
     {
         if (type == LOGICAL_EXPRESSION_TYPE)
-            return prefix[NAME_INDEX] + " " + operator.toString() + " " + postfix[NAME_INDEX];
+            return prefix[VALUE_INDEX] + " " + operator.toString() + " " + postfix[VALUE_INDEX];
         else if (type == LOGICAL_OPERATOR_TYPE)
             return " " + operator.toString() + " ";
         else
@@ -164,12 +179,12 @@ public class SQLExpressionFragment
                 tmpsb.append(prefixtranslate);
             else
                 tmpsb.append(prefix[PARENT_INDEX]);
-            tmpsb.append(".").append(prefix[NAME_INDEX]).append(" ").append(operator.toString()).append(" ");
+            tmpsb.append(".").append(prefix[VALUE_INDEX]).append(" ").append(operator.toString()).append(" ");
             if (postfixtranslate != null)
                 tmpsb.append(postfixtranslate);
             else
                 tmpsb.append(postfix[PARENT_INDEX]);
-            tmpsb.append(".").append(postfix[NAME_INDEX]);
+            tmpsb.append(".").append(postfix[VALUE_INDEX]);
 
             return tmpsb.toString();
         }
