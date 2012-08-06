@@ -64,7 +64,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_SMC_EXPORTS )
 
 HPCC_ADD_LIBRARY( ws_smc SHARED ${SRCS}  )
 add_dependencies ( ws_smc espscm )
-install ( TARGETS ws_smc DESTINATION ${OSSDIR}/lib )
+install ( TARGETS ws_smc RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_smc 
          jlib
          xmllib 

@@ -36,8 +36,8 @@ HPCC_ADD_EXECUTABLE ( testsocket ${SRCS} )
 target_link_libraries ( testsocket
          jlib
          )
-install ( TARGETS testsocket DESTINATION ${OSSDIR}/bin )
+install ( TARGETS testsocket RUNTIME DESTINATION ${EXEC_DIR} )
 
 if ( PLATFORM )
-    install ( PROGRAMS testsocket.install DESTINATION ${DIR_NAME}/etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS testsocket.install DESTINATION etc/init.d/install COMPONENT Runtime )
 endif()

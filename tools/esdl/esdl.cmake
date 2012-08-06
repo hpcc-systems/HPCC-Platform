@@ -46,6 +46,6 @@ add_custom_command ( OUTPUT esdllex.cpp
 set ( SRCS esdlgram.cpp esdllex.cpp main.cpp esdlcomp.cpp esdl_utils.cpp )
 # esdlgram.y esdllex.l main.cpp esdlcomp.cpp esdl_utils.cpp 
 HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
-install ( TARGETS esdl DESTINATION ${OSSDIR}/bin )
+install ( TARGETS esdl RUNTIME DESTINATION ${EXEC_DIR} )
 #add_dependencies ( esdl esdlgram.cpp esdlgram.h esdllex.cpp )
 

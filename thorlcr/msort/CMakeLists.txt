@@ -65,7 +65,7 @@ if (WIN32)
         )
 else ()
     HPCC_ADD_LIBRARY( thorsort_lcr SHARED ${SRCS} )
-    install ( TARGETS thorsort_lcr DESTINATION ${OSSDIR}/lib )
+    install ( TARGETS thorsort_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
     target_link_libraries ( thorsort_lcr
          jlib
          eclrtl

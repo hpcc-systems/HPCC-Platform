@@ -59,7 +59,7 @@ endif (RELEASE_BUILD EQUAL 1)
 
 HPCC_ADD_LIBRARY( loggingclient SHARED ${SRCS} )
 add_dependencies( loggingclient espscm )
-install ( TARGETS loggingclient DESTINATION ${OSSDIR}/lib )
+install ( TARGETS loggingclient RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( loggingclient
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib

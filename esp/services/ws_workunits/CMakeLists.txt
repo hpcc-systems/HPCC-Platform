@@ -77,7 +77,7 @@ ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )
 
 HPCC_ADD_LIBRARY( ws_workunits SHARED ${SRCS} )
 add_dependencies ( ws_workunits espscm )
-install ( TARGETS ws_workunits DESTINATION ${OSSDIR}/lib )
+install ( TARGETS ws_workunits RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_workunits
          jlib
          mp

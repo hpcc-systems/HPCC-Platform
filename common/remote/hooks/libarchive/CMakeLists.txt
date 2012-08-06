@@ -40,7 +40,7 @@ include_directories ( ${LIBARCHIVE_INCLUDE_DIR} )
 ADD_DEFINITIONS( -D_USRDLL -DARCHIVEFILE_EXPORTS )
 
 HPCC_ADD_LIBRARY( archivefile SHARED ${SRCS}  )
-install ( TARGETS archivefile DESTINATION ${OSSDIR}/filehooks )
+install ( TARGETS archivefile DESTINATION filehooks )
 
 target_link_libraries ( archivefile
     jlib

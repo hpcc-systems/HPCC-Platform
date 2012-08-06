@@ -30,4 +30,4 @@ set (    SRCS
     )
 
 HPCC_ADD_EXECUTABLE ( prosysinfo ${SRCS} )
-install ( TARGETS prosysinfo DESTINATION ${OSSDIR}/bin )
+install ( TARGETS prosysinfo RUNTIME DESTINATION ${EXEC_DIR} )

@@ -40,7 +40,7 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE -DRMTSSH_LOCAL)
 
 HPCC_ADD_EXECUTABLE ( frunssh ${SRCS} )
-install ( TARGETS frunssh DESTINATION ${OSSDIR}/bin )
+install ( TARGETS frunssh RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( frunssh 
          jlib 
     )
