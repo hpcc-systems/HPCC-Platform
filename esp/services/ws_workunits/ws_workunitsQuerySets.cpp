@@ -321,32 +321,32 @@ IPropertyTree *sendRoxieControlAllNodes(const SocketEndpoint &ep, const char *ms
 
 bool reloadCluster(IConstWUClusterInfo *clusterInfo, unsigned wait)
 {
-    if (clusterInfo->getPlatform()==RoxieCluster)
+    if (0==wait || !clusterInfo || clusterInfo->getPlatform()!=RoxieCluster)
+        return true;
+
+    const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
+    if (addrs.length())
     {
-        const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
-        if (addrs.length())
+        try
         {
-            try
-            {
-                Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), "<control:reload/>", false, wait);
-                const char *status = result->queryProp("Endpoint[1]/Status");
-                if (!status || !strieq(status, "ok"))
-                    return false;
-            }
-            catch(IMultiException *me)
-            {
-                StringBuffer err;
-                DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
-                me->Release();
+            Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), "<control:reload/>", false, wait);
+            const char *status = result->queryProp("Endpoint[1]/Status");
+            if (!status || !strieq(status, "ok"))
                 return false;
-            }
-            catch(IException *e)
-            {
-                StringBuffer err;
-                DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
-                e->Release();
-                return false;
-            }
+        }
+        catch(IMultiException *me)
+        {
+            StringBuffer err;
+            DBGLOG("ERROR control:reloading roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+            me->Release();
+            return false;
+        }
+        catch(IException *e)
+        {
+            StringBuffer err;
+            DBGLOG("ERROR control:reloading roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+            e->Release();
+            return false;
         }
     }
     return true;
@@ -415,8 +415,10 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         resp.setClusterFiles(clusterfiles);
     }
 
-    bool reloaded = reloadCluster(clusterInfo, (unsigned)req.getWait());
-    resp.setReloadFailed(!reloaded);
+    bool reloadFailed = false;
+    if (0!=req.getWait() && !req.getNoReload())
+        reloadFailed = !reloadCluster(clusterInfo, (unsigned)req.getWait());
+    resp.setReloadFailed(reloadFailed);
 
     return true;
 }
@@ -908,8 +910,11 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     StringArray querysetClusters;
     getQuerySetTargetClusters(target, querysetClusters);
-    ForEachItemIn(i, querysetClusters)
-        reloadCluster(querysetClusters.item(i), remainingMsWait(req.getWait(), start));
 
+    if (0!=req.getWait() && !req.getNoReload())
+    {
+        ForEachItemIn(i, querysetClusters)
+            reloadCluster(querysetClusters.item(i), remainingMsWait(req.getWait(), start));
+    }
     return true;
 }
