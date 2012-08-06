@@ -9377,10 +9377,6 @@ void LeftRightTransformInfo::inherit(const LeftRightTransformInfo * other)
 }
 
 
-/*
-This transformer is responsible for reducing the number of selseq used as sequence numbers - so that they only remain
-when nesting makes the selectors ambiguous.  That allows expressions to be commoned up that wouldn't otherwise.
-*/
 static HqlTransformerInfo LeftRightTransformerInfo("LeftRightTransformer");
 LeftRightTransformer::LeftRightTransformer() : NewHqlTransformer(LeftRightTransformerInfo)
 {

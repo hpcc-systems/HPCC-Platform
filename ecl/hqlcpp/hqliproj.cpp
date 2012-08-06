@@ -935,11 +935,7 @@ static int compareHqlExprPtr(IInterface * * left, IInterface * * right)
 
 //------------------------------------------------------------------------
 
-#ifdef USE_MERGE
-ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : MergingTransformInfo(_original), kind(_kind)
-#else
 ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : NewTransformInfo(_original), kind(_kind)
-#endif
 {
     visited = false;
     gatheredSelectsUsed = false;
@@ -1232,11 +1228,7 @@ void ComplexImplicitProjectInfo::setMatchingOutput(ComplexImplicitProjectInfo * 
 
 static HqlTransformerInfo implicitProjectTransformerInfo("ImplicitProjectTransformer");
 ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills)
-#ifdef USE_MERGE
-: MergingHqlTransformer(implicitProjectTransformerInfo), translator(_translator)
-#else
 : NewHqlTransformer(implicitProjectTransformerInfo), translator(_translator)
-#endif
 {
     const HqlCppOptions & transOptions = translator.queryOptions();
     targetClusterType = translator.getTargetClusterType();
@@ -2662,28 +2654,7 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
 
 void ImplicitProjectTransformer::getTransformedChildren(IHqlExpression * expr, HqlExprArray & children)
 {
-    switch (getChildDatasetType(expr))
-    {
-#ifdef USE_MERGE
-    case childdataset_dataset: 
-    case childdataset_datasetleft: 
-    case childdataset_top_left_right:
-        {
-            IHqlExpression * arg0 = expr->queryChild(0);
-            OwnedHqlExpr child = transform(arg0);
-            children.append(*LINK(child));
-            pushChildContext(arg0, child);
-            transformChildren(expr, children);
-            popChildContext();
-            break;
-        }
-#endif
-    case childdataset_evaluate:
-        throwUnexpected();
-    default:
-        transformChildren(expr, children);
-        break;
-    }
+    transformChildren(expr, children);
 }
 
 IHqlExpression * ImplicitProjectTransformer::createParentTransformed(IHqlExpression * expr)

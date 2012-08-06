@@ -907,6 +907,10 @@ public:
 };
 
 
+/*
+This transformer is responsible for reducing the number of selseq used as sequence numbers - so that they only remain
+when nesting makes the selectors ambiguous.  That allows expressions to be commoned up that wouldn't otherwise.
+*/
 class LeftRightTransformer : public NewHqlTransformer
 {
 public:
