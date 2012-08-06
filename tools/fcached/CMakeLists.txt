@@ -39,6 +39,6 @@ ADD_DEFINITIONS( -DMODULE_PRIORITY=1 -D_CONSOLE )
 set ( SRCS fcached.cpp )
 
 HPCC_ADD_EXECUTABLE ( fcached ${SRCS} )
-install ( TARGETS fcached DESTINATION ${OSSDIR}/bin )
+install ( TARGETS fcached RUNTIME DESTINATION ${EXEC_DIR} )
 
 

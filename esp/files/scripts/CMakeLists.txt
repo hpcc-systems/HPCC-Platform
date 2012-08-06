@@ -52,5 +52,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectControl.js
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/scripts COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/files/scripts COMPONENT Runtime )
 ENDFOREACH ( iFILES )

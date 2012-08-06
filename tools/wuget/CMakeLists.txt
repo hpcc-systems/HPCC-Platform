@@ -38,5 +38,5 @@ target_link_libraries ( wuget
          jlib
          dllserver
          )
-install ( TARGETS wuget DESTINATION ${OSSDIR}/bin )
+install ( TARGETS wuget RUNTIME DESTINATION ${EXEC_DIR} )
 

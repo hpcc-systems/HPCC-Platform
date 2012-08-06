@@ -42,7 +42,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( hellodali ${SRCS} )
-install ( TARGETS hellodali DESTINATION ${OSSDIR}/bin )
+install ( TARGETS hellodali RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( hellodali
          jlib
          mp 

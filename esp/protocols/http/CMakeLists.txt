@@ -67,7 +67,7 @@ ADD_DEFINITIONS( -DESPHTTP_EXPORTS -DESP_TIMING -D_USRDLL -DESP_PLUGIN )
 
 HPCC_ADD_LIBRARY( esphttp SHARED ${SRCS} )
 add_dependencies (esphttp  espscm )
-install ( TARGETS esphttp DESTINATION ${OSSDIR}/lib )
+install ( TARGETS esphttp RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( esphttp 
          ${XALAN_LIBRARIES} ${XERCES_LIBRARIES}
          jlib

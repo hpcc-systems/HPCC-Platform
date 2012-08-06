@@ -263,7 +263,7 @@ extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, //
 extern jlib_decl const char * matchConfigurationDirectoryEntry(const char *path,const char *mask,StringBuffer &name, StringBuffer &component, StringBuffer &instance);
 extern jlib_decl bool replaceConfigurationDirectoryEntry(const char *path,const char *frommask,const char *tomask,StringBuffer &out);
 
-extern jlib_decl const char *queryCurrentProcessName(); 
+extern jlib_decl const char *queryCurrentProcessPath(); 
 
 extern jlib_decl int parseCommandLine(const char * cmdline, MemoryBuffer &mb, const char** &argvout); // parses cmdline into argvout returning arg count (mb used as buffer)
 

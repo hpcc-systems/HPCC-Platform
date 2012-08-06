@@ -71,7 +71,7 @@ ADD_DEFINITIONS( -D_USRDLL )
 
 HPCC_ADD_LIBRARY( ws_roxiequery SHARED ${SRCS} )
 add_dependencies ( ws_roxiequery espscm )
-install ( TARGETS ws_roxiequery DESTINATION ${OSSDIR}/lib )
+install ( TARGETS ws_roxiequery RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( ws_roxiequery 
          jlib
          fileview2

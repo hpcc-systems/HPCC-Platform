@@ -22,5 +22,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/configmgr.js
     ${CMAKE_CURRENT_SOURCE_DIR}/navtree.js
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/scripts/configmgr COMPONENT Runtime)
+    Install ( FILES ${iFILES} DESTINATION componentfiles/files/scripts/configmgr COMPONENT Runtime)
 ENDFOREACH( iFILES )

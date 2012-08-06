@@ -16,4 +16,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-add_subdirectory (gcc3)
+if ( UNIX )
+  add_subdirectory (gcc3)
+elseif ( WIN32 )
+  add_subdirectory (vc2008)
+endif ()
