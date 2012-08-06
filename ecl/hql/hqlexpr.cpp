@@ -1445,6 +1445,7 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
     case no_childquery: return "no_childquery";
+    case no_chooseds: return "CHOOSE";
 
 
     case no_unused3: case no_unused4: case no_unused5: case no_unused6:
@@ -1455,7 +1456,6 @@ const char *getOpString(node_operator op)
     case no_unused50: case no_unused52:
     case no_unused80:
     case no_unused81:
-    case no_unused82:
     case no_unused83:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
@@ -1950,6 +1950,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         if (expr->queryChild(1)->isDataset())
             return childdataset_leftright;
         return childdataset_left;
+    case no_chooseds:
+        return childdataset_many_noscope;
     case no_merge:
     case no_regroup:
     case no_cogroup:
@@ -2023,6 +2025,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_datasetlist:
     case no_nonempty:
     case no_cogroup:
+    case no_chooseds:
         {
             unsigned ret = 0;
             ForEachChild(idx, dataset)
@@ -2455,6 +2458,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_if:
     case no_map:
     case no_case:
+    case no_chooseds:
     case no_colon:
     case no_globalscope:
     case no_nothor:
@@ -5880,6 +5884,8 @@ void CHqlDataset::cacheParent()
             }
             break;
         }
+    case no_addfiles:
+    case no_chooseds:
     default:
         if (getNumChildTables(this) == 1)
         {
@@ -10619,6 +10625,9 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_translated:
     case no_rows:
         break;
+    case no_chooseds:
+        datasetType = parms.item(1).queryType();
+        break;
     case no_mergejoin:
     case no_nwayjoin:
     case no_nwaymerge:
@@ -11264,6 +11273,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_addfiles:
     case no_regroup:
     case no_cogroup:
+    case no_chooseds:
         {
             // Note Concatenation destroys sort order 
             // If all the source files have the same distribution then preserve it, else just mark as distributed...
@@ -11271,7 +11281,8 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             bool allGrouped = isGrouped(datasetType);
             bool sameDistribution = true;
             bool allInputsIdentical = true;
-            for (unsigned i=1; i < max; i++)
+            unsigned firstDataset = (op == no_chooseds) ? 1 : 0;
+            for (unsigned i=firstDataset+1; i < max; i++)
             {
                 IHqlExpression & cur = parms.item(i);
                 if (!cur.isAttribute())
@@ -13181,6 +13192,7 @@ static IHqlExpression * walkInstantEclTransformations(IHqlExpression * expr, uns
     case no_case:
     case no_map:
     case no_colon:
+    case no_chooseds:
         {
             HqlExprArray args;
             ForEachChild(i, expr)

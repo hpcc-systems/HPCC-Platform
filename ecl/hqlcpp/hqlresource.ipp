@@ -259,7 +259,6 @@ protected:
     IHqlExpression * createSpiller(IHqlExpression * transformed, bool reuseSplitter);
     IHqlExpression * createSplitter(IHqlExpression * transformed);
 
-    
 protected:
     void addSpillFlags(HqlExprArray & args, bool isRead);
     IHqlExpression * createSpillName();

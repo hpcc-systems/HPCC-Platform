@@ -1095,7 +1095,8 @@ protected:
     IHqlExpression * optimizeAssignSkip(HqlExprArray & children, IHqlExpression * expr, IHqlExpression * cond, unsigned depth);
     IHqlExpression * queryTransformPatternDefine(IHqlExpression * expr);
     IHqlExpression * transformActionList(IHqlExpression * expr);
-    IHqlExpression * transformCase(IHqlExpression * expr);
+    IHqlExpression * transformCaseToChoose(IHqlExpression * expr);
+    IHqlExpression * transformCaseToIfs(IHqlExpression * expr);
     IHqlExpression * transformExecuteWhen(IHqlExpression * expr);
     IHqlExpression * transformEvaluate(IHqlExpression * expr);
     IHqlExpression * transformIfAssert(node_operator newOp, IHqlExpression * expr);
@@ -1142,6 +1143,7 @@ protected:
         bool constantFoldNormalize;
         bool allowActivityForKeyedJoin;
         bool implicitShuffle;
+        bool transformCaseToChoose;
     } options;
     unsigned nextSequenceValue;
     bool seenForceLocal;

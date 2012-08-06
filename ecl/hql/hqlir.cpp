@@ -798,6 +798,7 @@ static const char * getOperatorText(node_operator op)
     DUMP_CASE(no,debug_option_value);
     DUMP_CASE(no,dataset_alias);
     DUMP_CASE(no,childquery);
+    DUMP_CASE(no,chooseds);
 
     case no_unused3: case no_unused4: case no_unused5: case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
