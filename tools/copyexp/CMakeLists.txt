@@ -38,7 +38,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( copyexp ${SRCS} )
-install ( TARGETS copyexp DESTINATION ${OSSDIR}/bin )
+install ( TARGETS copyexp RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( copyexp
          jlib 
     )

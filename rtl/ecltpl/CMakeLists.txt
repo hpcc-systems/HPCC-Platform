@@ -22,5 +22,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/thortpl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/childtpl.cpp
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles COMPONENT Runtime )
 ENDFOREACH ( iFILES )

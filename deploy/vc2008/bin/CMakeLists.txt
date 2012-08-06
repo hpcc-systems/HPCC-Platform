@@ -1,7 +1,9 @@
 ################################################################################
 #    Copyright (C) 2011 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    This program is free software: you can redistribute it and/or All rights
+#    reserved. This program is NOT PRESENTLY free software: you can NOT
+#    redistribute
 #    it under the terms of the GNU Affero General Public License as
 #    published by the Free Software Foundation, either version 3 of the
 #    License, or (at your option) any later version.
@@ -14,16 +16,5 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
-
-project(start-stop-daemon)
-
-add_definitions( -Wno-return-type )
-
-set( SRC start-stop-daemon.c )
-set( HEADER macros.h )
-
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-
-HPCC_ADD_EXECUTABLE( start-stop-daemon ${SRC} ${HEADER})
-install ( TARGETS start-stop-daemon RUNTIME DESTINATION ${EXEC_DIR} )
-
+Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/cl.bat DESTINATION componentfiles/cl/bin COMPONENT Runtime )
+Install ( PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/link.bat DESTINATION componentfiles/cl/bin COMPONENT Runtime )

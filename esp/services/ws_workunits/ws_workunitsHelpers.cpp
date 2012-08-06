@@ -368,6 +368,9 @@ bool WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
         return true;
     try
     {
+        StringBuffer totalThorTimeValue;
+        unsigned totalThorTimerCount; //Do we need this?
+
         IArrayOf<IEspECLTimer> timers;
         Owned<IStringIterator> it = &cw->getTimers();
         ForEach(*it)
@@ -382,6 +385,13 @@ bool WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
             for (unsigned i = 0; i < name.length(); i++)
              if (name.s.charAt(i)=='_')
                  name.s.setCharAt(i, ' ');
+
+            if (strieq(name.str(), TOTALTHORTIME))
+            {
+                totalThorTimeValue = fd;
+                totalThorTimerCount = count;
+                continue;
+            }
 
             Owned<IEspECLTimer> t= createECLTimer("","");
             t->setName(name.str());
@@ -408,6 +418,16 @@ bool WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 
             timers.append(*t.getLink());
         }
+
+        if (totalThorTimeValue.length() > 0)
+        {
+            Owned<IEspECLTimer> t= createECLTimer("","");
+            t->setName(TOTALTHORTIME);
+            t->setValue(totalThorTimeValue.str());
+            t->setCount(totalThorTimerCount);
+            timers.append(*t.getLink());
+        }
+
         info.setTimers(timers);
         return true;
     }
@@ -828,7 +848,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     if (version > 1.27)
     {
         StringBuffer totalThorTimeStr;
-        unsigned totalThorTimeMS = cw->getTimerDuration("Total thor time", NULL);
+        unsigned totalThorTimeMS = cw->getTimerDuration(TOTALTHORTIME, NULL);
         formatDuration(totalThorTimeStr, totalThorTimeMS);
         info.setTotalThorTime(totalThorTimeStr.str());
     }

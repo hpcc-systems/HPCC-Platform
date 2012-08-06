@@ -45,7 +45,7 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL )
 
 HPCC_ADD_LIBRARY( ws_packageprocess SHARED ${SRCS} )
-install ( TARGETS ws_packageprocess DESTINATION ${DIR_NAME}/lib )
+install ( TARGETS ws_packageprocess RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 add_dependencies (ws_packageprocess espscm)
 target_link_libraries ( ws_packageprocess
          jlib

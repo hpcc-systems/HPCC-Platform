@@ -17,6 +17,6 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (eclrtl)
-HPCC_ADD_SUBDIRECTORY (ecltpl "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (include "PLATFORM")
+HPCC_ADD_SUBDIRECTORY (ecltpl)
+HPCC_ADD_SUBDIRECTORY (include)
 HPCC_ADD_SUBDIRECTORY (nbcd)

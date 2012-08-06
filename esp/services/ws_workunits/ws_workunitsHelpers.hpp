@@ -43,6 +43,8 @@ namespace ws_workunits {
 #define    File_DLL "dll"
 #define    File_ArchiveQuery "ArchiveQuery"
 
+#define    TOTALTHORTIME    "Total thor time"
+
 #define    TEMPZIPDIR "tempzipfiles"
 
 static const long MAXXLSTRANSFER = 5000000;

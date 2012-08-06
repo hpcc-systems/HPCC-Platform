@@ -22,5 +22,5 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/seisint_small.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/slogo.gif
 )
-    Install( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files/logo COMPONENT Runtime )
+    Install( FILES ${iFILES} DESTINATION componentfiles/files/logo COMPONENT Runtime )
 ENDFOREACH ( iFILES )

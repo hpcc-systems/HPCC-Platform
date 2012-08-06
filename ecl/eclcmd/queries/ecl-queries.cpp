@@ -260,7 +260,7 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optMsToWait(10000)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -282,6 +282,8 @@ public:
                 continue;
             }
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+                continue;
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
                 continue;
             if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
                 continue;
@@ -323,6 +325,7 @@ public:
         req->setCluster(optCluster.get());
         req->setActivate(optActivate);
         req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
@@ -353,6 +356,7 @@ public:
             "   <target_queryset>      name of queryset to copy the query into\n"
             "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
@@ -364,6 +368,7 @@ private:
     StringAttr optCluster;
     unsigned optMsToWait;
     bool optActivate;
+    bool optNoReload;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)

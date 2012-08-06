@@ -24,7 +24,7 @@ import std.system.thorlib;
 
 trec := RECORD
  unsigned1 key;
- string1  v;
+ string v;
  unsigned2 node := 0;
 END;
 
@@ -58,11 +58,14 @@ iRec := RECORD
  d.filepos;
 END;
 
+
 // NB: avoid reusing same key file (see bug #13112)
 idx := INDEX(d, iRec, '~regress::key::test.idx');
 idx2 := INDEX(d, iRec, '~regress::key::test2.idx');
 idx3 := INDEX(d, iRec, '~regress::key::test3.idx');
 idx4 := INDEX(d, iRec, '~regress::key::test4.idx');
+idx5 := INDEX(d, iRec, {d}, '~regress::key::test5.idx');
+idx6 := INDEX(d, iRec, '~regress::key::test6.idx');
 
 thornodes := MAX(CHOOSEN(tmp, 1), thorlib.nodes()) : global;  // Force it to calculate nodes() on thor not hthor
 
@@ -75,5 +78,9 @@ OUTPUT((unsigned)(COUNT(idx2(key<3))/thornodes)),
 BUILDINDEX(idx3, OVERWRITE),
 OUTPUT((unsigned)(COUNT(idx3(key=5))/thornodes)),
 BUILDINDEX(idx4, OVERWRITE, FEW),
-OUTPUT((unsigned)(COUNT(idx4(key<>2))/thornodes))
+OUTPUT((unsigned)(COUNT(idx4(key<>2))/thornodes)),
+BUILDINDEX(idx5, COMPRESSED(FIRST), OVERWRITE),
+OUTPUT((unsigned)(COUNT(idx5(key<>2))/thornodes)),
+BUILDINDEX(idx6, COMPRESSED(ROW), OVERWRITE),
+OUTPUT((unsigned)(COUNT(idx6(key<>2))/thornodes))
 );

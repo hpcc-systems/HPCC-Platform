@@ -30,13 +30,11 @@ class CStringTypeInfo;
 class CBoolTypeInfo;
 class CVoidTypeInfo;
 
-class CTypeInfo : public ITypeInfo, public CInterface
+class CTypeInfo : public CInterfaceOf<ITypeInfo>
 {
 protected:
     size32_t length;
 public:
-    IMPLEMENT_IINTERFACE
-
     CTypeInfo(size32_t _length) : length(_length) {};
     ~CTypeInfo();
 

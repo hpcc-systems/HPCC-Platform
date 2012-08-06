@@ -1063,6 +1063,7 @@ ESPrequest WUPublishWorkunitRequest
     bool showFiles(0);
     bool CopyLocal(0);
     int Wait(10000);
+    bool NoReload(0);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1248,6 +1249,7 @@ ESPrequest WUQuerySetCopyQueryRequest
     string Cluster;
     int Activate;
     int Wait(10000);
+    bool NoReload(0);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse

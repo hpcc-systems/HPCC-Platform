@@ -42,7 +42,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( backupnode ${SRCS} )
-install ( TARGETS backupnode DESTINATION ${OSSDIR}/bin )
+install ( TARGETS backupnode RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries (  backupnode 
          jlib

@@ -45,7 +45,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl3_result.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/passwordupdate.xsl
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/xslt COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/xslt COMPONENT Runtime )
 ENDFOREACH ( iFILES )
 
 FOREACH ( iFILES
@@ -53,5 +53,5 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl_tabview.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/wsecl_tree.xsl
 )
-    Install ( FILES ${iFILES} DESTINATION ${OSSDIR}/componentfiles/files COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/files COMPONENT Runtime )
 ENDFOREACH ( iFILES )

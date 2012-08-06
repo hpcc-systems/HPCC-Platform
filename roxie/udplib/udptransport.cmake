@@ -40,7 +40,7 @@ include_directories (
 ADD_DEFINITIONS ( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( udptransport ${SRCS} )
-#install ( TARGETS udptransport DESTINATION ${OSSDIR}/bin )
+#install ( TARGETS udptransport RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( udptransport 
          jlib
          roxiemem 

@@ -45,7 +45,7 @@ include_directories (
     )
 
 HPCC_ADD_EXECUTABLE ( eclscheduler ${SRCS} ${INCLUDES} )
-install ( TARGETS eclscheduler DESTINATION ${OSSDIR}/bin )
+install ( TARGETS eclscheduler RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( eclscheduler 
          jlib
