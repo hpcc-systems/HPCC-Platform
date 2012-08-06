@@ -2442,7 +2442,7 @@ const char * queryCurrentProcessName()
             return "";
         const char *processPath = argv.item(0);
 #elif defined(__linux__)
-        char link[PATH_MAX];
+        char link[PATH_MAX+1];
         ssize_t len = readlink("/proc/self/exe", link, PATH_MAX);
         if (len == -1)
             return "";
