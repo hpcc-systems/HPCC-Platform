@@ -3,54 +3,28 @@
 #include "fileview.hpp"
 
 WsEclWuInfo::WsEclWuInfo(const char *wuid_, const char *qset, const char *qname, const char *user, const char *pw) :
-    wuid(wuid_), qsetname(qset), queryname(qname), username(user), password(pw)
+    wuid(wuid_), username(user), password(pw), qsetname(qset), queryname(qname)
 {
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
-    if (!wuid.length() && qsetname.length() && queryname.length())
+    if (!wuid.length() && qset && *qset && qname && *qname)
     {
-        Owned<IPropertyTree> qstree = getQueryRegistry(qsetname.sget(), true);
-        if (qstree)
-        {
-            IPropertyTree *query = NULL;
-            VStringBuffer xpath("Alias[@name=\"%s\"]", queryname.sget());
-            IPropertyTree *alias = qstree->queryPropTree(xpath.str());
-            if (alias)
-            {
-                const char *quid = alias->queryProp("@id");
-                if (!quid)
-                    throw MakeStringException(-1, "Alias %s/%s has no Query defined", qsetname.sget(), queryname.sget());
-                xpath.clear().appendf("Query[@id='%s']", quid);
-                query = qstree->queryPropTree(xpath.str());
-                if (!query)
-                    throw MakeStringException(-1, "Alias %s/%s refers to a non existing query %s", qsetname.sget(), queryname.sget(), quid);
-            }
-            else
-            {
-                xpath.clear().appendf("Query[@id=\"%s\"]", queryname.sget());
-                query = qstree->queryPropTree(xpath.str());
-            }
-            if (query)
-            {
-                if (query->getPropBool("@suspended"))
-                    throw MakeStringException(-1, "Query %s/%s is currently suspended", qsetname.sget(), queryname.sget());
+        Owned<IPropertyTree> qstree = getQueryRegistry(qset, true);
+        if (!qstree)
+            throw MakeStringException(-1, "QuerySet %s not found", qset);
 
-                wuid.set(query->queryProp("@wuid"));
-            }
-            else
-                throw MakeStringException(-1, "Query %s/%s not found", qsetname.sget(), queryname.sget());
-        }
-        else
-            throw MakeStringException(-1, "QuerySet %s not found", qsetname.sget());
+        IPropertyTree *query = resolveQueryAlias(qstree, qname);
+        if (!query)
+            throw MakeStringException(-1, "Query %s/%s not found", qset, qname);
+        if (query->getPropBool("@suspended"))
+            throw MakeStringException(-1, "Query %s/%s is currently suspended", qset, qname);
+
+        wuid.set(query->queryProp("@wuid"));
     }
-        
-    if (wuid.length())
-    {
-        wu.setown(wf->openWorkUnit(wuid.sget(), false));
-        if (!wu)
-            throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
-    }
-    else
+    if (!wuid.length())
         throw MakeStringException(-1, "Workunit not specified");
+    wu.setown(wf->openWorkUnit(wuid.sget(), false));
+    if (!wu)
+        throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
 }
 
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
@@ -118,10 +92,8 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
                     ptype.set("xsd:string");
                     break;
                 }
-
                 out.appendf("<part name=\"%s\" type=\"%s\" />", varname.str(), ptype.sget());
             }
-
         }
         out.append("</message>");
     }
