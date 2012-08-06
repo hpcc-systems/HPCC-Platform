@@ -3937,11 +3937,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 }
                 if (!sub.get())
                     throw MakeStringException(-1,"addSubFile: File %s cannot be found to add",subfile.get());
-                if (parent->querySubFileNamed(subfile)) 
-                    WARNLOG("addSubFile: File %s is already a subfile of %s", subfile.get(),parent->queryLogicalName());
-                // cannot abort here as may be clearsuperfile that hasn't been done
-                // will pick up as error later if it is
-//                  throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", subfile.get(),parent->queryLogicalName());
             }
             // Try to lock all files
             addFileLock(parent);
@@ -4637,10 +4632,11 @@ public:
 
     void attach(const char *_logicalname,IUserDescriptor *user)
     {
-        // I don't think this ever gets called on superfiles
-        WARNLOG("attach called on superfile! (%s)",_logicalname);
+        // will need more thought but this gives limited support for anon
+        if (isAnon())
+            return;
+        assertex(!conn.get()); // already attached
         CriticalBlock block (sect);
-        assertex(isAnon()); // already attached!
         StringBuffer tail;
         StringBuffer lfn;
         logicalName.set(_logicalname);
@@ -4649,15 +4645,17 @@ public:
         conn.clear();
         CFileConnectLock fcl("CDistributedSuperFile::attach",logicalName,DXB_SuperFile,false,false,defaultTimeout);
         conn.setown(fcl.detach());
+        assertex(conn.get()); // must have been attached
         root.setown(conn->getRoot());
     }
 
     void detach()
     {   
         // will need more thought but this gives limited support for anon
-        CriticalBlock block (sect);
         if (isAnon())
             return;
+        assertex(conn.get()); // must be attached
+        CriticalBlock block (sect);
         checkModify("CDistributedSuperFile::detach");
         subfiles.kill();    
         MemoryBuffer mb;
@@ -6583,7 +6581,7 @@ public:
     {
         // Attach the file to DFS, if wasn't there already
         if (created)
-            parent->addEntry(logicalname,root,true,false);
+            super->attach(logicalname.get(), user);
         if (lock())
             return true;
         unlock();
@@ -6597,14 +6595,14 @@ public:
     {
         // on retry, we need to remove the file so next lock doesn't fail
         if (created)
-            parent->removeEntry(logicalname.get(), user);
+            super->detach();
         CDFAction::retry();
     }
     void rollback()
     {
         state = TAS_FAILURE;
         if (created)
-            parent->removeEntry(logicalname.get(), user);
+            super->detach();
         CDFAction::rollback();
     }
 };
@@ -6640,8 +6638,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 
     localtrans->autoCommit();
 
-    // Should have been persisted to the DFS by now
-    return lookupSuperFile(logicalname.get(), user, localtrans, false, defaultTimeout);
+    return localtrans->lookupSuperFile(_logicalname);
 }
 
 // MORE - this should go when remove file gets into transactions
@@ -9543,7 +9540,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
                 files = i;
                 break;
             }
-            createSuperFile(sfnames[i],false,false,user,transaction);
+            Owned<IDistributedSuperFile> sfile = createSuperFile(sfnames[i],false,false,user,transaction);
             created = true;
         }
     }
@@ -9556,7 +9553,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
         for (unsigned i=0; i<lastSubs; i++) {
             outunlinked.append(last->querySubFile(i).queryLogicalName());
         }
-        last->removeSubFile(NULL,false,true,false,transaction,true);
+        last->removeSubFile(NULL,false,false,false,transaction,true);
     }
     last.clear();
 
