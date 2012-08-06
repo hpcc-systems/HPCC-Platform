@@ -2106,7 +2106,7 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
         StringBuffer roxieresp;
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, roxieresp, status);
 
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (web.get())
             web->expandResults(roxieresp.str(), output, xmlflags);
     }
@@ -2145,7 +2145,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     if (strieq(clustertype.str(), "roxie"))
     {
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status);
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
         else
@@ -2583,7 +2583,7 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
     {
         StringBuffer output;
         sendRoxieRequest(wsinfo.qsetname.get(), soapfromjson, output, status);
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (web.get())
             web->expandResults(output.str(), soapresp, xmlflags);
     }
@@ -2673,7 +2673,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
         StringBuffer content(request->queryContent());
         StringBuffer output;
         sendRoxieRequest(wsinfo.qsetname.get(), content, output, status);
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (web.get())
             web->expandResults(output.str(), soapresp, xmlflags);
     }
