@@ -1089,12 +1089,12 @@
       advantage of the true power of an HPCC—the ability to perform operations
       using Massively Parallel Processing (MPP). This section provides the
       steps to expand your single-node system into a multi-node system using
-      the Configuration Manager Wizard. </para>
+      the Configuration Manager Wizard.</para>
 
       <para>To run a multi-node system, ensure that you have exactly the same
       packages installed on every node. Follow the steps below to configure
       your multi-node system to leverage the full power of Massively Parallel
-      Processing. </para>
+      Processing.</para>
 
       <sect2 id="configuring-a-multi-node-system">
         <title>Using the Configuration Manager Wizard</title>
@@ -1103,8 +1103,7 @@
         nodes. Before you start this section, you must have already downloaded
         the correct packages for your distro from the HPCC Systems website:
         <ulink
-        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.
-        </para>
+        url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>.</para>
 
         <orderedlist>
           <listitem>
@@ -2666,15 +2665,24 @@ OUTPUT(ValidWords)
     <sect1 id="Uninstalling-the-HPCC">
       <title>Uninstalling the HPCC Platform</title>
 
-      <para>To uninstall the HPCC platform from your system, issue the
-      following command. If necessary, do so on each node that it is installed
+      <para>To uninstall the HPCC platform, issue the appropriate commands for
+      your system. If necessary, do so on each node that it is installed
       on.</para>
 
-      <programlisting>sudo rpm -e HPCCSystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
+      <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+      <programlisting>sudo rpm -e hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
 
       <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
 
-      <para></para>
+      <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+      <para>For Ubuntu installations a Debian package is provided. To install
+      the package, use:</para>
+
+      <programlisting>sudo dpkg -r hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
+
+      <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
     </sect1>
 
     <sect1 id="Helper-Applications">
