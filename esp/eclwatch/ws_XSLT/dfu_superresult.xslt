@@ -41,26 +41,22 @@
 <th align="left">
 <h2>Operation Result</h2>
 </th>
-<tr>
-<td>
-        <xsl:choose>
-            <xsl:when test="retcode=0">
-                <xsl:value-of select="superfile"/> operation succeeded.
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:value-of select="rtitle"/> operation failed.
-            </xsl:otherwise>
-        </xsl:choose>
-</td>
-</tr>
-<tr>
-<td>
-<br/>
-<br/>
-<!--a href="javascript:go('/WsDfu/SuperfileList?superfile={superfile}')"><xsl:value-of select="superfile"/></a-->
-<a href="javascript:go('/WsDfu/DFUInfo?Name={superfile}')"><xsl:value-of select="superfile"/></a>
-</td>
-</tr>
+    <tr>
+        <td>
+            <xsl:value-of select="superfile"/> operation succeeded.
+        </td>
+    </tr>
+    <xsl:if test="retcode=0">
+        <tr>
+            <td>
+                <br/>
+                <br/>
+                <a href="javascript:go('/WsDfu/DFUInfo?Name={superfile}')">
+                    <xsl:value-of select="superfile"/>
+                </a>
+            </td>
+        </tr>
+    </xsl:if>
 </tbody>
 </table>
 

@@ -149,9 +149,6 @@
                 <form id="listitems" action="/WsDfu/SuperfileAction">
                 <xsl:apply-templates select="subfiles" mode="list"/>
                 <input type="hidden" name="superfile" value="{Name}"/>
-                </form>
-                <form action="/WsDfu/SuperfileAddRaw">
-                <input type="hidden" name="superfile" value="{Name}"/>
                 <p/>
                 <table xmlns="" name="table1">
                 <xsl:if test="string-length(Wuid)">

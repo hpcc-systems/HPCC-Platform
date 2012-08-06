@@ -89,7 +89,6 @@ public:
     virtual bool onAddRemote(IEspContext &context, IEspAddRemoteRequest &req, IEspAddRemoteResponse &resp);
     virtual bool onSuperfileList(IEspContext &context, IEspSuperfileListRequest &req, IEspSuperfileListResponse &resp);
     virtual bool onSuperfileAction(IEspContext &context, IEspSuperfileActionRequest &req, IEspSuperfileActionResponse &resp);
-    virtual bool onSuperfileAddRaw(IEspContext &context, IEspSuperfileAddRawRequest &req, IEspSuperfileAddRawResponse &resp);
 
 private:
     void getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
@@ -137,7 +136,9 @@ private:
                                         __int64& count, __int64& read, __int64& total, StringBuffer& message, StringArray& columnLabels, 
                                         StringArray& columnLabelsType, IArrayOf<IEspDFUData>& DataList, bool webDisableUppercaseTranslation);
     bool getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, int& permission);
-
+    void parseStringArray(const char *input, StringArray& strarray);
+    int superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
+        const char* beforeSubFile, bool existingSuperfile, bool deleteFile);
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;

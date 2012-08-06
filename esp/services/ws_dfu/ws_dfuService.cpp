@@ -973,6 +973,107 @@ bool CWsDfuEx::setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuf
     return true;
 }
 
+void CWsDfuEx::parseStringArray(const char *input, StringArray& strarray)
+{
+    if (!input || !*input)
+        return;
+
+    const char *ptr = input;
+    const char *pptr = ptr;
+    while (pptr[0])
+    {
+        if (pptr[0] == ',')
+        {
+            StringAttr tmp;
+            tmp.set(ptr, pptr-ptr);
+            strarray.append(tmp.get());
+            ptr = pptr + 1;
+        }
+        pptr++;
+    }
+    if (pptr > ptr)
+    {
+        StringAttr tmp;
+        tmp.set(ptr, pptr-ptr);
+        strarray.append(tmp.get());
+    }
+}
+
+int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
+                               const char* beforeSubFile, bool existingSuperfile, bool deleteFile)
+{
+    if (!action || !*action)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Superfile action not specified");
+
+    if(!strieq(action, "add") && !strieq(action, "remove"))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Only Add or Remove is allowed.");
+
+    if (!superfile || !*superfile)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Superfile name not specified");
+
+    unsigned num = subfiles.length();
+    if (num < 1)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Subfile not specified");
+
+    StringBuffer username;
+    context.getUserID(username);
+    Owned<IUserDescriptor> userdesc;
+    if(username.length() > 0)
+    {
+        const char* passwd = context.queryPassword();
+        userdesc.setown(createUserDescriptor());
+        userdesc->set(username.str(), passwd);
+    }
+
+    {//a file lock created by the lookup() will be released after '}'
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);   
+        if (existingSuperfile)
+        {
+            if (!df)
+                throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",superfile);
+            if(!df->querySuperFile())
+                throw MakeStringException(ECLWATCH_NOT_SUPERFILE,"%s is not a superfile.",superfile);
+        }
+        else if (df)
+            throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s already exists.",superfile);
+    }
+
+    StringBuffer msgHead;
+    if(username.length() > 0)
+        msgHead.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
+    else
+        msgHead.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
+
+    unsigned filesInMsgBuf = 0;
+    StringBuffer msgBuf = msgHead;
+    PointerArrayOf<char> subfileArray;
+    for(unsigned i = 0; i < num; i++)
+    {
+        subfileArray.append((char*) subfiles.item(i));
+        msgBuf.appendf("%s, ", subfiles.item(i));
+        filesInMsgBuf++;
+        if (filesInMsgBuf > 9)
+        {
+            PROGLOG(msgBuf.str());
+            msgBuf = msgHead;
+            filesInMsgBuf = 0;
+        }
+    }
+
+    if (filesInMsgBuf > 0)
+        PROGLOG(msgBuf.str());
+
+    Owned<IDFUhelper> dfuhelper = createIDFUhelper();
+
+    synchronized block(m_superfilemutex);
+    if(strieq(action, "add"))
+        dfuhelper->addSuper(superfile, num, (const char**) subfileArray.getArray(), beforeSubFile, userdesc.get());
+    else
+        dfuhelper->removeSuper(superfile, num, (const char**) subfileArray.getArray(), deleteFile, userdesc.get());
+
+    return num;
+}
+
 bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest &req, IEspAddtoSuperfileResponse &resp)
 {
     try
@@ -980,162 +1081,51 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
             throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to AddtoSuperfile. Permission denied.");
 
-        StringBuffer username;
-        context.getUserID(username);
-
-        Owned<IUserDescriptor> userdesc;
-        if(username.length() > 0)
-        {
-            const char* passwd = context.queryPassword();
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
-        }
-
-        resp.setSubfiles(req.getSubfiles());
-
         double version = context.getClientVersion();
-        if (version > 1.15)
-        {
-            StringArray fileNames;
-            const char* files = req.getSubfiles();
-
-            if (files && *files)
-            {
-                char* pTr = (char*) files;
-                while (pTr)
-                {
-                    char* ppTr = strchr(pTr, ',');
-                    if (!ppTr)
-                    {
-                        fileNames.append(pTr);
-                        break;
-                    }
-
-                    if (ppTr - pTr > 1)
-                    {
-                        char fileName[255];
-                        strncpy(fileName, pTr, ppTr - pTr);
-                        fileName[ppTr - pTr] = 0;
-                        fileNames.append(fileName);
-                    }
-                    pTr = ppTr+1;
-                }
-                
-                if (fileNames.length() > 0)
-                    resp.setSubfileNames(fileNames);
-            }
-        }
         if (version > 1.17)
         {
             const char* backTo = req.getBackToPage();
             if (backTo && *backTo)
                 resp.setBackToPage(backTo);
         }
+        resp.setSubfiles(req.getSubfiles());
 
         const char* superfile = req.getSuperfile();
-        if (superfile && *superfile)
+        if (!superfile || !*superfile)
         {
-            bool option = req.getExistingFile();
-            if (option)
-            {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);   
-                if (!df)
-                {
-                      throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",superfile);
-                    return false;
-                }
-                
-                if(!df->querySuperFile())
-                {
-                      throw MakeStringException(ECLWATCH_NOT_SUPERFILE,"%s is not a superfile.",superfile);
-                    return false;
-                }
-            }
-            else
-            {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);   
-                if (df)
-                {
-                      throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s has already existed.",superfile);
-                    return false;
-                }
-            }
-
-            Owned<IDFUhelper> dfuhelper = createIDFUhelper();
             if (version > 1.15)
-            {
-                StringArray& subfileNames = req.getNames();
-                int num = subfileNames.length();
-                const char** ptrs = NULL;
-                if(num > 0)
+            {//Display the subfiles inside a table
+                const char* files = req.getSubfiles();
+                if (files && *files)
                 {
-                    ptrs = (const char**)alloca(sizeof(char*)*num);
-                    for(int i = 0; i < num; i++)
-                        ptrs[i] = subfileNames.item(i);
-                }
-                else if (option)
-                {
-                      throw MakeStringException(ECLWATCH_INVALID_INPUT,"No file has been selected to be added to file %s.",superfile);
-                    return false;
-                }
-
-                {
-                    synchronized block(m_superfilemutex);
-                    dfuhelper->addSuper(superfile, num, ptrs, NULL, userdesc.get());
-                }
-            }
-            else
-            {
-                StringArray subfiles;
-                const char *subfilesStr = req.getSubfiles();
-                char *ptr = (char *) subfilesStr;
-                char *pptr = (char *) subfilesStr;
-                while (pptr[0])
-                {
-                    if (pptr[0] == ',')
-                    {
-                        char buf[1024];
-                        strncpy(buf, ptr, pptr-ptr);
-                        buf[pptr-ptr] = 0;
-                        subfiles.append(buf);
-                        ptr = pptr + 1;
-                    }
-                    
-                    pptr++;
-                }
-                if (pptr > ptr)
-                {
-                    char buf[1024];
-                    strncpy(buf, ptr, pptr-ptr);
-                    buf[pptr-ptr] = 0;
-                    subfiles.append(buf);
-                }
-
-                int num = subfiles.length();
-                const char** ptrs = NULL;
-                if(num > 0)
-                {
-                    ptrs = (const char**)alloca(sizeof(char*)*num);
-                    for(int i = 0; i < num; i++)
-                        ptrs[i] = subfiles.item(i);
-                }
-                else if (option)
-                {
-                      throw MakeStringException(ECLWATCH_INVALID_INPUT,"No file has been selected to be added to file %s.",superfile);
-                    return false;
-                }
-
-                {
-                    synchronized block(m_superfilemutex);
-                    dfuhelper->addSuper(superfile, num, ptrs, NULL, userdesc.get());
+                    StringArray subfileNames;
+                    parseStringArray(files, subfileNames);
+                    if (subfileNames.length() > 0)
+                        resp.setSubfileNames(subfileNames);
                 }
             }
 
-            resp.setRedirectUrl(StringBuffer("/WsDFU/DFUInfo?Name=").append(superfile));
+            return true;//Display a form for user to specify superfile
         }
+
+        if (version > 1.15)
+        {
+            superfileAction(context, "add", superfile, req.getNames(), NULL, req.getExistingFile(), false);
+        }
+        else
+        {
+            StringArray subfileNames;
+            const char *subfilesStr = req.getSubfiles();
+            if (subfilesStr && *subfilesStr)
+                parseStringArray(subfilesStr, subfileNames);
+
+            superfileAction(context, "add", superfile, subfileNames, NULL, req.getExistingFile(), false);
+        }
+
+        resp.setRedirectUrl(StringBuffer("/WsDFU/DFUInfo?Name=").append(superfile));
     }
     catch(IException* e)
-    {   
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return true;
@@ -3088,113 +3078,21 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
 {
     try
     {
-        StringBuffer username;
-        context.getUserID(username);
-        Owned<IUserDescriptor> userdesc;
-        if(username.length() > 0)
-        {
-            const char* passwd = context.queryPassword();
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
-        }
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Write, false))
+            throw MakeStringException(ECLWATCH_DFU_ACCESS_DENIED, "Failed to Superfile action. Permission denied.");
 
-        Owned<IDFUhelper> dfuhelper = createIDFUhelper();
         const char* action = req.getAction();
-        if(stricmp(action, "add") == 0)
-        {
-            StringArray& subfiles = req.getSubfiles();
-            int num = subfiles.length();
-            const char** ptrs = NULL;
-            if(num > 0)
-            {
-                ptrs = (const char**)alloca(sizeof(char*)*num);
-                for(int i = 0; i < num; i++)
-                    ptrs[i] = subfiles.item(i);
-            }
-            {
-                synchronized block(m_superfilemutex);
-                dfuhelper->addSuper(req.getSuperfile(), num, ptrs, req.getBefore(), userdesc.get());
-            }
-        }
-        else if(stricmp(action, "remove") == 0)
-        {
-            StringArray& subfiles = req.getSubfiles();
-            int num = subfiles.length();
-            const char** ptrs = NULL;
-            if(num > 0)
-            {
-                ptrs = (const char**)alloca(sizeof(char*)*num);
-                for(int i = 0; i < num; i++)
-                    ptrs[i] = subfiles.item(i);
-            }
-            {
-                synchronized block(m_superfilemutex);
-                dfuhelper->removeSuper(req.getSuperfile(), num, ptrs, req.getDelete(), userdesc.get()); 
-            }
-        }
-        
-        resp.setSuperfile(req.getSuperfile());
+        const char* superfile = req.getSuperfile();
+        superfileAction(context, action, superfile, req.getSubfiles(), req.getBefore(), true, req.getDelete());
+
         resp.setRetcode(0);
-    }
-    catch(IException* e)
-    {   
-        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
-    }
-    return true;
-}
-
-bool CWsDfuEx::onSuperfileAddRaw(IEspContext &context, IEspSuperfileAddRawRequest &req, IEspSuperfileAddRawResponse &resp)
-{
-    try
-    {
-        StringBuffer username;
-        context.getUserID(username);
-        Owned<IUserDescriptor> userdesc;
-        if(username.length() > 0)
+        if (superfile && *superfile && action && strieq(action, "remove"))
         {
-            const char* passwd = context.queryPassword();
-            userdesc.setown(createUserDescriptor());
-            userdesc->set(username.str(), passwd);
+            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,NULL);
+            if (!fp)
+                resp.setRetcode(-1); //Superfile has been removed.
         }
-
-        StringArray subfiles;
-        const char* sfstr = req.getSubfiles();
-        if(sfstr != NULL && *sfstr != '\0')
-        {
-            const char* ptr = sfstr;
-            while(*ptr != '\0')
-            {
-                StringBuffer onesub;
-                while(*ptr != '\0' && *ptr != ',' && *ptr != ' ')
-                {
-                    onesub.append((char)(*ptr));
-                    ptr++;
-                }
-                if(onesub.length() > 0)
-                    subfiles.append(onesub.str());
-                while(*ptr == ',' || *ptr == ' ')
-                    ptr++;
-            }
-        }
-
-        int num = subfiles.length();
-        const char** ptrs = NULL;
-        if(num > 0)
-        {
-            ptrs = (const char**)alloca(sizeof(char*)*num);
-            for(int i = 0; i < num; i++)
-                ptrs[i] = subfiles.item(i);
-        }
-
-        Owned<IDFUhelper> dfuhelper = createIDFUhelper();
-
-        {
-            synchronized block(m_superfilemutex);
-            dfuhelper->addSuper(req.getSuperfile(), num, ptrs, req.getBefore(), userdesc.get());
-        }
-        
         resp.setSuperfile(req.getSuperfile());
-        resp.setRetcode(0);
     }
     catch(IException* e)
     {   
