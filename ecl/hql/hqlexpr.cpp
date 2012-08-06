@@ -4561,7 +4561,7 @@ inline void addUniqueTable(HqlExprCopyArray & array, IHqlExpression * ds)
 
 inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds, IHqlExpression * selSeq)
 {
-#if defined(GATHER_HIDDEN_SELECTORS) && !defined(ENSURE_SELSEQ_UID)
+#if defined(GATHER_HIDDEN_SELECTORS)
     if (array.find(*ds) == NotFound)
         array.append(*ds);
 #endif
@@ -14858,6 +14858,12 @@ static UniqueSequenceCounter selectorSequence;
 IHqlExpression * createUniqueSelectorSequence()
 {
     unsigned __int64 seq = selectorSequence.next();
+    return createSequence(no_attr, NULL, _selectorSequence_Atom, seq);
+}
+
+
+IHqlExpression * createSelectorSequence(unsigned __int64 seq)
+{
     return createSequence(no_attr, NULL, _selectorSequence_Atom, seq);
 }
 

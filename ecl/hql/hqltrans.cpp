@@ -258,9 +258,6 @@ extern HQL_API bool isTransformTracing() { return tracing; }
 //if it does return the number of arguments that aren't hidden
 unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpression * selector)
 {
-#ifdef ENSURE_SELSEQ_UID
-    return 0;
-#endif
     if (!selector)
         return 0;
     node_operator op = selector->getOperator();
@@ -292,6 +289,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         return 0;
     case childdataset_datasetleft:
     case childdataset_left:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if ((op == no_left) && recordTypesMatch(selector, expr->queryChild(0)))
         {
             switch (expr->getOperator())
@@ -303,6 +302,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         }
         return 0;
     case childdataset_leftright:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (op == no_left)
         {
             if (recordTypesMatch(selector, expr->queryChild(0)))
@@ -321,6 +322,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
     case childdataset_same_left_right:
     case childdataset_top_left_right:
     case childdataset_nway_left_right:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (recordTypesMatch(selector, expr->queryChild(0)))
             return 1;
         return 0;
@@ -1984,23 +1987,25 @@ IHqlExpression * replaceDataset(IHqlExpression * expr, IHqlExpression * original
 
 //---------------------------------------------------------------------------
 
-HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newDataset)
+HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newValue)
 {
     oldSelector.set(oldDataset);
-    IHqlExpression * newSelector = newDataset;
+    LinkedHqlExpr newSelector = newValue;
+    LinkedHqlExpr newDataset = newValue;
     if (newDataset->getOperator() == no_newrow)
-        newDataset = newDataset->queryChild(0);
+        newDataset.set(newDataset->queryChild(0));
+    else if (newDataset->isDataset())
+        newDataset.setown(ensureActiveRow(newDataset));
 
     node_operator op = oldDataset->getOperator();
-#ifndef ENSURE_SELSEQ_UID
     assertex(op != no_left && op != no_right);
-#endif
-    if (oldDataset->isDatarow() || op == no_activetable || op == no_self || op == no_selfref)
+    if (oldDataset->isDatarow() || (op == no_activetable) || (op == no_selfref))
     {
         setMappingOnly(oldDataset, newDataset);
     }
     else
     {
+        assertex(op != no_self);
         setMappingOnly(oldDataset, oldDataset);         // Don't change any new references to the dataset
     }
     setSelectorMapping(oldDataset, newSelector);
@@ -2479,10 +2484,6 @@ bool onlyTransformOnce(IHqlExpression * expr)
     case no_sequence:
     case no_self:
     case no_selfref:
-#ifdef ENSURE_SELSEQ_UID
-    case no_left:
-    case no_right:
-#endif
     case no_flat:
     case no_any:
     case no_existsgroup:
@@ -3257,9 +3258,9 @@ IHqlExpression * updateChildSelectors(IHqlExpression * expr, IHqlExpression * ol
 }
 
 
-IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newSelector, unsigned firstChild)
+IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector, unsigned firstChild)
 {
-    if (oldRecord == newSelector->queryRecord())
+    if (oldSelector->queryRecord() == newSelector->queryRecord())
         return LINK(expr);
 
     unsigned max = expr->numChildren();
@@ -3270,7 +3271,9 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldR
         args.append(*LINK(expr->queryChild(i)));
 
     NewSelectorReplacingTransformer transformer;
-    transformer.setRootMapping(newSelector, newSelector, oldRecord);
+    if (oldSelector != newSelector)
+        transformer.initSelectorMapping(oldSelector, newSelector);
+    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord());
     bool same = true;
     for (; i < max; i++)
     {

@@ -3415,7 +3415,19 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
             return foundDifference();       // break point here.
         }
 
-        return foundDifference();       // break point here.
+        IHqlExpression * leftBody = left->queryBody(true);
+        IHqlExpression * rightBody = right->queryBody(true);
+        annotate_kind leftAK = left->getAnnotationKind();
+        annotate_kind rightAK = right->getAnnotationKind();
+        if (leftBody != rightBody)
+        {
+            if ((left == leftBody) || (right == rightBody))
+                return foundDifference();  // one side has an annotation, the other doesn't
+            return debugFindFirstDifference(leftBody, rightBody);
+        }
+        if (leftAK != rightAK)
+            return foundDifference();  // different annotation
+        return foundDifference();  // some difference in the annotation details
     }
     if (left->getOperator() != right->getOperator())
         return foundDifference();
@@ -3447,6 +3459,14 @@ bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right)
     }
 
     return foundDifference();//something else
+}
+
+void debugTrackDifference(IHqlExpression * expr)
+{
+    static IHqlExpression * prev;
+    if (prev && prev != expr)
+        debugFindFirstDifference(prev, expr);
+    prev = expr;
 }
 
 //------------------------------------------------------------------------------------------------

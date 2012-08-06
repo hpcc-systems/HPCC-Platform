@@ -228,7 +228,7 @@ struct ImplicitProjectOptions
 class ImplicitProjectInfo;
 
 class ComplexImplicitProjectInfo;
-class ImplicitProjectInfo : public MergingTransformInfo
+class ImplicitProjectInfo : public NewTransformInfo
 {
 public:
     ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind);
@@ -338,11 +338,9 @@ public:
 public:
 };
 
-//MORE: Could remove dependency on insideCompound if it was ok to have compound operators scattered through the
-//      contents of a compound item.  Probably would cause few problems, and would make life simpler
-class ImplicitProjectTransformer : public MergingHqlTransformer
+class ImplicitProjectTransformer : public NewHqlTransformer
 {
-    typedef MergingHqlTransformer Parent;
+    typedef NewHqlTransformer Parent;
 
 public:
     ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills);
@@ -364,6 +362,7 @@ protected:
 
     void calculateFieldsUsed(IHqlExpression * expr);
     void connect(IHqlExpression * source, IHqlExpression * sink);
+    IHqlExpression * createParentTransformed(IHqlExpression * expr);
     void finalizeFields();
     void finalizeFields(IHqlExpression * expr);
     void gatherFieldsUsed(IHqlExpression * expr, ImplicitProjectInfo * extra);

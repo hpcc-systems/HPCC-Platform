@@ -2158,6 +2158,14 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (translator.queryOptions().includeHelperInGraph)
         addAttribute("helper", factoryName);
 
+    if (translator.queryOptions().showSeqInGraph)
+    {
+        IHqlExpression * selSeq = querySelSeq(dataset);
+        if (selSeq)
+            addAttributeInt("selSeq", selSeq->querySequenceExtra());
+    }
+
+
     if (translator.queryOptions().showMetaInGraph)
     {
         StringBuffer s;
