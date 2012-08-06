@@ -33,15 +33,25 @@ typedef unsigned __int64 rowcount_t;
 #define RCUNBOUND RCMAX
 #define RCUNSET RCMAX
 typedef size32_t rowidx_t;
+#define RCIDXMAX ((rowidx_t)(size32_t)-1)
 #define RIPF ""
 
+// validate that type T doesn't truncate
 template <class T>
 inline rowcount_t validRC(T X)
 {
-    assertex(X == (rowcount_t)X);
+    if (X != (rowcount_t)X)
+        throw MakeStringException(0, "rowcount_t value truncation");
     return (rowcount_t)X;
 }
 
+template <class T>
+inline rowidx_t validRIDX(T X)
+{
+    if (X != (rowidx_t)X)
+        throw MakeStringException(0, "rowidx_t value truncation");
+    return (rowidx_t)X;
+}
 
 #if 0
     #define CATCHALL ...
