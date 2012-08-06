@@ -358,8 +358,8 @@ public class SQLParser
 
                         String splitedsqlexp[] = splitedwhereandors[y].trim().split(operator);
 
-                        if (splitedsqlexp.length <= 0) // something went wrong, only the operator was found?
-                            throw new SQLException("Invalid SQL Where cluse found around: " + splitedwhereandors[y]);
+                        if (splitedsqlexp.length <= 1) // something went wrong, only the operator was found?
+                            throw new SQLException("Invalid SQL Where clause found around: " + splitedwhereandors[y]);
 
                         exp.setPrefix(splitedsqlexp[0]);
                         if (exp.getPrefixParent().length() > 0
