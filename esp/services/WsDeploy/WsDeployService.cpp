@@ -4257,6 +4257,13 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     IPropertyTree& pComp = iter->query();
     const char* name = pComp.queryProp(XML_ATTR_NAME);
     const char* tag_name = pComp.queryName();
+
+    StringBuffer xpath2;
+    xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
+
+    if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
+      continue;
+
     StringBuffer xml;
 
     xml.appendf("<%s", tag_name);
@@ -4272,14 +4279,6 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     xml.append("/>");
 
     IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
-
-    StringBuffer xpath2;
-    xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
-
-    if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
-    {
-      continue;
-    }
 
     bWrite = true;
 
