@@ -23,14 +23,20 @@
 
 #include "ws_machine_esp.ipp"
 #include "environment.hpp"
-#include "dasds.hpp"
-#include "thirdparty.h"
 #include <set>
 #include <map>
 
 class CMachineInfoThreadParam;
 class CMetricsThreadParam;
 class CRemoteExecThreadParam;
+
+static const char *legacyFilterStrings[] = {"AttrServerProcess:attrserver", "DaliProcess:daserver",
+"DfuServerProcess:dfuserver", "DKCSlaveProcess:dkcslave", "EclServerProcess:eclserver", "EclCCServerProcess:eclccserver",
+"EspProcess:esp", "FTSlaveProcess:ftslave", "HoleControlProcess:hoctrl", "HoleSocketProcess:hoserver",
+"HoleCollatorProcess:collator", "HoleProcessorProcess:processor", "JobServerProcess:jobserver",
+"RoxieServerProcess:roxie", "RoxieSlaveProcess:roxie", "RoxieServerProcess:ccd", "RoxieFarmerProcess:ccd",
+"RoxieSlaveProcess:ccd", "SchedulerProcess:scheduler","ThorMasterProcess:thormaster", "ThorSlaveProcess:thorslave",
+"SashaServerProcess:saserver", NULL };
 
 struct CEnvironmentConfData
 {
@@ -179,24 +185,428 @@ public:
    CFieldMap          m_fieldMap; 
 };
 
-static map<string, const char*>  s_processTypeToProcessMap;
-
-struct CMachineInfo
+class CProcessData : public CInterface
 {
-   StringBuffer m_sID;
-   StringBuffer m_sCPUIdle;
-   StringBuffer m_sProcessUptime;
-   StringBuffer m_sComputerUptime;
-   StringBuffer m_sSpace;
+    StringBuffer    m_type;
+    StringBuffer    m_name;
+    StringBuffer    m_path;
+    unsigned        m_processNumber;
+    bool            m_multipleInstances;     //required from ProcessFilter in environment.xml
 
-    void setMachineInfo( const char* id, const char* space, const char* CPUIdle, const char* processUptime, const char* computerUptime)
+    StringBuffer    m_pid;
+    StringBuffer    m_upTime;
+    set<string>     m_dependencies;
+public:
+IMPLEMENT_IINTERFACE;
+
+	CProcessData()
     {
-      m_sID = id;
-        m_sCPUIdle = CPUIdle;
-        m_sProcessUptime = processUptime;
-        m_sComputerUptime = computerUptime;
-        m_sSpace = space;
-   }
+        m_name.clear();
+        m_type.clear();
+        m_path.clear();
+        m_pid.clear();
+        m_upTime.clear();
+        m_processNumber = 0;
+        m_multipleInstances = false;
+        m_dependencies.clear();
+    }
+
+    CProcessData(const char* name, const char* type, const char* path, unsigned processNumber):
+        m_processNumber(processNumber)
+    {
+        m_name = name;
+        m_type = type;
+        m_path = path;
+        m_pid.clear();
+        m_upTime.clear();
+        m_multipleInstances = false;
+        m_dependencies.clear();
+    }
+	virtual ~CProcessData(){}
+
+    void setName(const char* name)
+    {
+        m_name.clear().append(name);
+    }
+
+    const char* getName()
+    {
+        return m_name.str();
+    }
+
+    void setType(const char* type)
+    {
+        m_type.clear().append(type);
+    }
+
+    const char* getType()
+    {
+        return m_type.str();
+    }
+
+    void setPath(const char* path)
+    {
+        m_path.clear().append(path);
+    }
+
+    const char* getPath()
+    {
+        return m_path.str();
+    }
+
+    void setPID(const char* pid)
+    {
+        m_pid.clear().append(pid);
+    }
+
+    const char* getPID()
+    {
+        return m_pid.str();
+    }
+
+    void setUpTime(const char* upTime)
+    {
+        m_upTime.clear().append(upTime);
+    }
+
+    const char* getUpTime()
+    {
+        return m_upTime.str();
+    }
+
+    void setProcessNumber(unsigned processNumber)
+    {
+        m_processNumber = processNumber;
+    }
+
+    const unsigned getProcessNumber()
+    {
+        return m_processNumber;
+    }
+
+    void setMultipleInstances(bool multipleInstances)
+    {
+        m_multipleInstances = multipleInstances;
+    }
+
+    const bool getMultipleInstances()
+    {
+        return m_multipleInstances;
+    }
+
+    set<string>& getDependencies()
+    {
+        return m_dependencies;
+    }
+};
+
+class CStorageData  : public CInterface
+{
+    StringBuffer    m_diskSpaceTitle;
+    __int64         m_diskSpaceAvailable;
+    __int64         m_diskSpaceTotal;
+    int             m_diskSpacePercentAvail;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+	CStorageData()
+    {
+        m_diskSpaceTitle.clear();
+        m_diskSpaceAvailable = 0;
+        m_diskSpaceTotal = 0;
+        m_diskSpacePercentAvail = 0;
+    }
+	CStorageData(const char* diskSpaceTitle, __int64 diskSpaceAvailable, __int64 diskSpaceTotal, int diskSpacePercentAvail)
+        : m_diskSpaceAvailable(diskSpaceAvailable), m_diskSpaceTotal(diskSpaceTotal), m_diskSpacePercentAvail(diskSpacePercentAvail)
+    {
+        m_diskSpaceTitle = diskSpaceTitle;
+    }
+	virtual ~CStorageData(){}
+
+    void setDiskSpaceTitle(const char* title)
+    {
+        m_diskSpaceTitle.clear().append(title);
+    }
+
+    const char* getDiskSpaceTitle()
+    {
+        return m_diskSpaceTitle.str();
+    }
+
+    void setDiskSpaceAvailable(__int64 space)
+    {
+        m_diskSpaceAvailable = space;
+    }
+
+    const __int64 getDiskSpaceAvailable()
+    {
+        return m_diskSpaceAvailable;
+    }
+
+    void setDiskSpaceTotal(__int64 space)
+    {
+        m_diskSpaceTotal = space;
+    }
+
+    const __int64 getDiskSpaceTotal()
+    {
+        return m_diskSpaceTotal;
+    }
+
+    void setDiskSpacePercentAvail(int space)
+    {
+        m_diskSpacePercentAvail = space;
+    }
+
+    const int getDiskSpacePercentAvail()
+    {
+        return m_diskSpacePercentAvail;
+    }
+};
+
+class CMachineData  : public CInterface
+{
+    char         m_pathSep;
+    EnvMachineOS m_os;
+    StringBuffer m_networkAddress;
+    StringBuffer m_networkAddressInEnvSetting;  //Used for retrieving domainName/userId for MachineOsW2K
+
+    int          m_CPULoad;
+    StringBuffer m_computerUpTime;
+
+    CIArrayOf<CStorageData>     m_storage;
+    CIArrayOf<CProcessData>     m_processes;
+    IArrayOf<IEspProcessInfo>   m_runningProcesses;
+    set<string>                 m_dependencies; //from "any" process filter section in environment.xml
+    set<string>                 m_additionalProcesses; //based on additionalProcessFilters in CGetMachineInfoUserOptions;
+public:
+    IMPLEMENT_IINTERFACE;
+
+	CMachineData()
+    {
+        m_pathSep = '/';
+        m_os = MachineOsLinux;
+        m_CPULoad = 0;
+        m_networkAddress.clear();
+        m_networkAddressInEnvSetting.clear();
+        m_computerUpTime.clear();
+    }
+    CMachineData(const char* networkAddress, const char* networkAddressInEnvSetting, EnvMachineOS os, char pathSep)
+        : m_os(os), m_pathSep(pathSep)
+    {
+        m_networkAddress = networkAddress;
+        m_networkAddressInEnvSetting = networkAddressInEnvSetting;
+        m_CPULoad = 0;
+        m_computerUpTime.clear();
+    }
+	virtual ~CMachineData(){}
+
+    void setNetworkAddress(const char* networkAddress)
+    {
+        m_networkAddress.clear().append(networkAddress);
+    }
+
+    const char* getNetworkAddress()
+    {
+        return m_networkAddress.str();
+    }
+
+    void setNetworkAddressInEnvSetting(const char* networkAddress)
+    {
+        m_networkAddressInEnvSetting.clear().append(networkAddress);
+    }
+
+    const char* getNetworkAddressInEnvSetting()
+    {
+        return m_networkAddressInEnvSetting.str();
+    }
+
+    void setComputerUpTime(const char* computerUpTime)
+    {
+        m_computerUpTime.clear().append(computerUpTime);
+    }
+
+    const char* getComputerUpTime()
+    {
+        return m_computerUpTime.str();
+    }
+
+    void setOS(EnvMachineOS os)
+    {
+        m_os = os;
+    }
+
+    EnvMachineOS getOS()
+    {
+        return m_os;
+    }
+
+    void setPathSep(const char pathSep)
+    {
+        m_pathSep = pathSep;
+    }
+
+    const char getPathSep()
+    {
+        return m_pathSep;
+    }
+
+    void setCPULoad(int CPULoad)
+    {
+        m_CPULoad = CPULoad;
+    }
+
+    const int getCPULoad()
+    {
+        return m_CPULoad;
+    }
+
+    CIArrayOf<CStorageData>& getStorage()
+    {
+        return m_storage;
+    }
+
+    CIArrayOf<CProcessData>& getProcesses()
+    {
+        return m_processes;
+    }
+
+    IArrayOf<IEspProcessInfo>& getRunningProcesses()
+    {
+        return m_runningProcesses;
+    }
+
+    set<string>& getDependencies()
+    {
+        return m_dependencies; //from "any" process filter section in environment.xml
+    }
+
+    set<string>& getAdditinalProcessFilters()
+    {
+        return m_additionalProcesses; //based on additionalProcessFilters in CGetMachineInfoUserOptions;
+    }
+};
+
+class CGetMachineInfoUserOptions : public CInterface
+{
+    StringBuffer m_userName;
+    StringBuffer m_password;
+    bool         m_getProcessorInfo;
+    bool         m_getStorageInfo;
+    bool         m_getSoftwareInfo;
+    bool         m_applyProcessFilter;
+    StringArray  m_additionalProcessFilters; //A user may add them using edit box 'Additional processes to filter:'.
+public:
+    IMPLEMENT_IINTERFACE;
+
+	CGetMachineInfoUserOptions()
+    {
+        m_userName.clear();
+        m_password.clear();
+        m_getProcessorInfo = true;
+        m_getStorageInfo = true;
+        m_getSoftwareInfo = true;
+        m_applyProcessFilter = true;
+    }
+	virtual ~CGetMachineInfoUserOptions(){}
+
+    void setUserName(const char* userName)
+    {
+        m_userName.clear().append(userName);
+    }
+
+    const char* getUserName()
+    {
+        return m_userName.str();
+    }
+
+    void setPassword(const char* password)
+    {
+        m_password.clear().append(password);
+    }
+
+    const char* getPassword()
+    {
+        return m_password.str();
+    }
+
+    void setGetProcessorInfo(bool getProcessorInfo)
+    {
+        m_getProcessorInfo = getProcessorInfo;
+    }
+
+    const bool getGetProcessorInfo()
+    {
+        return m_getProcessorInfo;
+    }
+
+    void setGetStorageInfo(bool getStorageInfo)
+    {
+        m_getStorageInfo = getStorageInfo;
+    }
+
+    const bool getGetStorageInfo()
+    {
+        return m_getStorageInfo;
+    }
+
+    void setGetSoftwareInfo(bool getSoftwareInfo)
+    {
+        m_getSoftwareInfo = getSoftwareInfo;
+    }
+
+    const bool getGetSoftwareInfo()
+    {
+        return m_getSoftwareInfo;
+    }
+
+    void setApplyProcessFilter(bool applyProcessFilter)
+    {
+        m_applyProcessFilter = applyProcessFilter;
+    }
+
+    const bool getApplyProcessFilter()
+    {
+        return m_applyProcessFilter;
+    }
+
+    StringArray& getAdditionalProcessFilters()
+    {
+        return m_additionalProcessFilters;
+    }
+};
+
+class CGetMachineInfoData
+{
+    //From request
+    CIArrayOf<CMachineData>         m_machine;
+    CGetMachineInfoUserOptions      m_options;
+
+    //For response
+    IArrayOf<IEspMachineInfoEx>     m_machineInfoTable;
+    StringArray                     m_machineInfoColumns;
+
+public:
+    CGetMachineInfoUserOptions& getOptions()
+    {
+        return m_options;
+    }
+
+    CIArrayOf<CMachineData>& getMachineData()
+    {
+        return m_machine;
+    }
+
+    IArrayOf<IEspMachineInfoEx>& getMachineInfoTable()
+    {
+        return m_machineInfoTable;
+    }
+
+    StringArray& getMachineInfoColumns()
+    {
+        return m_machineInfoColumns;
+    }
 };
 
 //---------------------------------------------------------------------------------------------
@@ -206,137 +616,124 @@ class Cws_machineEx : public Cws_machine
 public:
    IMPLEMENT_IINTERFACE;
 
-    enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
-
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
-   ~Cws_machineEx();
+    ~Cws_machineEx() {};
 
-    bool onGetMachineInfo(IEspContext &context, 
-        IEspGetMachineInfoRequest &req, IEspGetMachineInfoResponse &resp);
+    bool onGetMachineInfo(IEspContext &context, IEspGetMachineInfoRequest &req, IEspGetMachineInfoResponse &resp);
+    bool onGetTargetClusterInfo(IEspContext &context, IEspGetTargetClusterInfoRequest &req, IEspGetTargetClusterInfoResponse &resp);
+    bool onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
 
-    bool onGetTargetClusterInfo(IEspContext &context, 
-        IEspGetTargetClusterInfoRequest &req, IEspGetTargetClusterInfoResponse &resp);
-
-    bool onGetMachineInfoEx(IEspContext &context, 
-        IEspGetMachineInfoRequestEx &req, IEspGetMachineInfoResponseEx &resp);
-
-    bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, 
-                             IEspMetricsResponse &resp);
+    bool onGetMetrics(IEspContext &context, IEspMetricsRequest &req, IEspMetricsResponse &resp);
     bool onStartStop( IEspContext &context, IEspStartStopRequest &req,  IEspStartStopResponse &resp);
     bool onStartStopBegin( IEspContext &context, IEspStartStopBeginRequest &req,  IEspStartStopBeginResponse &resp);
     bool onStartStopDone( IEspContext &context, IEspStartStopDoneRequest &req,  IEspStartStopResponse &resp);
 
     void doGetMachineInfo(IEspContext& context, CMachineInfoThreadParam* pReq);
     void doGetMetrics(CMetricsThreadParam* pParam);
-
     bool doStartStop(IEspContext &context, StringArray& addresses, char* userName, char* password, bool bStop, IEspStartStopResponse &resp);
-   void getAccountAndPlatformInfo(const char* address, StringBuffer& userId, StringBuffer& password, bool& bLinux);
-    //IConstEnvironment* getConstEnvironment() const { return m_constEnv.getLink(); }
+
     IConstEnvironment* getConstEnvironment();
+
+    //Used in StartStop/Rexec
+    void getAccountAndPlatformInfo(const char* address, StringBuffer& userId, StringBuffer& password, bool& bLinux);
     IPropertyTree* getComponent(const char* compType, const char* compName);
-
-    bool excludePartition(const char* partition) const;
-//data members
-    static map<string, const char*> s_oid2CompTypeMap;
-
 private:
-    void setAttPath(StringBuffer& Path,const char* PathToAppend,const char* AttName,const char* AttValue);
-    int checkProcess(const char* type, const char* name, StringArray& typeArray, StringArray& nameArray);
-    void getMachineList(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* machineName,
-                                              const char* machineType, const char* directory,
-                                StringArray& processAddresses,
-                                set<string>* pMachineNames=NULL);
-    void getThorMachineList(IConstEnvironment* constEnv,  IPropertyTree* cluster, const char* machineName, const char* machineType, const char* directory,
-                                StringArray& processAddresses);
+    void setupLegacyFilters();
+    bool isLegacyFilter(const char* processType, const char* dependency);
+    bool excludePartition(const char* partition) const;
+    void appendProcessInstance(const char* name, const char* directory1, const char* directory2, StringArray& machineInstances, StringArray& directories);
+    void getProcesses(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses = NULL);
+    void getThorProcesses(IConstEnvironment* constEnv,  IPropertyTree* cluster, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses);
     const char* getProcessTypeFromMachineType(const char* machineType);
-    void getTargetClusterProcesses(StringArray& targetClusters, StringArray& processTypes, StringArray& processNames, StringArray& processAddresses, IPropertyTree* pTargetClusterTree);
+    void readSettingsForTargetClusters(IEspContext& context, StringArray& targetClusters, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
+    void readTargetClusterProcesses(IPropertyTree& targetClusters, const char* processType, BoolHash& uniqueProcesses, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
     void setTargetClusterInfo(IPropertyTree* pTargetClusterTree, IArrayOf<IEspMachineInfoEx>& machineArray, IArrayOf<IEspTargetClusterInfo>& targetClusterInfoList);
-    const char* getEnvironmentConf(const char* confFileName);
-    void doGetSecurityString (const char* address, StringBuffer& securityString);
-    bool applySoftwareFilters(const char* program, const char* ProcessType);
-    void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
 
-    void RunMachineQuery(IEspContext& context, StringArray &addresses,IEspRequestInfoStruct&  reqInfo,
-                                    IArrayOf<IEspMachineInfoEx>& machineArray,StringArray& columnArray);
-    void determineRequredProcesses(CMachineInfoThreadParam* pParam, const char* pszProcessType, 
-                                             bool bMonitorDaliFileServer, const StringArray& additionalProcesses, 
-                                             set<string>& requiredProcesses);
-    void parseProperties(const char* info, StringBuffer& processType, StringBuffer& sCompName, OpSysType& os, StringBuffer& path, unsigned& processNumber);
-    int lookupSnmpComponentIndex(const StringBuffer& sProcessType);
-    const char* GetDisplayProcessName(const char* processName, char* buf);
+    void buildPreflightCommand(IEspContext& context, CMachineInfoThreadParam* pParam, StringBuffer& preflightCommand);
+    int runCommand(IEspContext& context, const char* sAddress, const char *configAddress, EnvMachineOS os, const char* sCommand, const char* sUserId, const char* sPassword, StringBuffer& sResponse);
+    int invokeProgram(const char *command_line, StringBuffer& response);
 
     void getTimeStamp(char* timeStamp);
+    void getProcessDisplayName(const char* processName, StringBuffer& displayName);
+    void readALineFromResult(const char *result, const char *start, StringBuffer& value, bool bTrim = true);
+
+    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSwInfo, bool applyProcessFilter, StringArray& addresses, const char* addProcessesToFilters, CGetMachineInfoData& machineInfoData);
+    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSwInfo, bool applyProcessFilter, const char* addProcessesToFilters, StringArray& targetClustersIn, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
+    void getMachineInfo(IEspContext& context, CGetMachineInfoData& machineInfoData);
+    void setMachineInfoResponse(IEspContext& context, IEspGetMachineInfoRequest& req, CGetMachineInfoData& machineInfoData, IEspGetMachineInfoResponse& resp);
+    void setTargetClusterInfoResponse(IEspContext& context, IEspGetTargetClusterInfoRequest& req, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClusterTree, IEspGetTargetClusterInfoResponse& resp);
+
+    void setProcessRequest(CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses, const char* address1, const char* address2, const char* processType, const char* compName,  const char* path, unsigned processNumber = 0);
+    void addProcessRequestToMachineInfoData(CGetMachineInfoData& machineInfoData, const char* address1, const char* address2, const char* processType, const char* compName,  const char* path, unsigned processNumber);
+    void parseProcessString(StringArray& process, StringBuffer& address1, StringBuffer& address2, StringBuffer& processType, StringBuffer& compName, StringBuffer& path, unsigned& processNumber);
+    void parseAddresses(const char *address, StringBuffer& address1, StringBuffer& address2);
+    void readPreflightResponse(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response,int error);
+    void readStorageData(const char* response, CMachineInfoThreadParam* pParam);
+    void readProcessData(const char* response, CMachineInfoThreadParam* pParam);
+    void readRunningProcesses(const char* response, CMachineInfoThreadParam* pParam);
+    bool readStorageSpace(const char *line, StringBuffer& title, __int64& free, __int64& total, int& percentAvail);
+    void addProcessData(CMachineData* machine, const char* processType, const char* compName, const char* path, unsigned processNumber);
+    void setMachineInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char *response, int error);
+    void setProcessInfo(IEspContext& context, CMachineInfoThreadParam* pParam, const char* response, int error, CProcessData& process, bool firstProcess, IEspMachineInfoEx* pMachineInfo, IEspMachineInfoEx* pMachineInfo1);
+    void setProcessComponent(IEspContext& context, CMachineInfoThreadParam* pParam, CProcessData& process, bool firstProcess, IArrayOf<IEspSWRunInfo>& processArray, IEspComponentInfo* pComponentInfo);
+    void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, CProcessData& process, map<string, Linked<IEspSWRunInfo> >* processMap, bool firstProcess);
+
+    //Used in StartStop/Rexec
     void ConvertAddress( const char* originalAddress, StringBuffer& newAddress);
     void updatePathInAddress(const char* address, StringBuffer& addrStr);
-    void getUpTime(CMachineInfoThreadParam* pParam, StringBuffer& out);
     void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
     void doPostProcessing(CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
     void processValue(const char *oid, const char *value, const bool bShow, CFieldInfoMap& myfieldInfoMap, CFieldMap&  myfieldMap);
-    int remoteGetMachineInfo(IEspContext& context, const char *address, const char *configAddress, const char *preflightCommand, const char* user, const char* password, StringBuffer& sResponse, CMachineInfo& machineInfo);
-    void getRunningProcesses(IEspContext& context, const char* address, const char* configAddress, const char* userId, const char* securityString, IArrayOf<IEspProcessInfo>& runningProcesses);
-    int runCommand(IEspContext& context, const char* sAddress, const char *configAddress, const char* sCommand, const char* sUserId, const char* sPassword, StringBuffer& sResponse);
-    int invokeProgram(const char *command_line, StringBuffer& response);
-    int readMachineInfo(const char *response, CMachineInfo& machineInfo);
-    void readAString(const char *orig, const char *begin, const char *end, StringBuffer& strReturn, bool bTrim);
-    void readTwoStrings(const char *orig, const char *begin, const char *middle, const char *end, StringBuffer& strReturn1, StringBuffer& strReturn2, bool bTrim);
-    void readSpace(const char *line, char* title, __int64& free, __int64& total, int& percentage);
-    void doGetStorageInfo(CMachineInfoThreadParam* pParam, IArrayOf<IEspStorageInfo> &output, CMachineInfo machineInfo);
-    void doGetProcessorInfo(CMachineInfoThreadParam* pParam, IArrayOf<IEspProcessorInfo> &output, CMachineInfo machineInfo);
-    void doGetSWRunInfo(IEspContext& context, CMachineInfoThreadParam* pParam, IArrayOf<IEspSWRunInfo> &output, CMachineInfo machineInfo, 
-        IArrayOf<IEspProcessInfo>& runningProcesses, const char* pszProcessType, bool bFilterProcesses, bool bMonitorDaliFileServer, const StringArray& additionalProcesses);
-    const char* lookupProcessname(const StringBuffer& sProcessType);
-    void enumerateRunningProcesses(CMachineInfoThreadParam* pParam, IArrayOf<IEspProcessInfo>& runningProcesses, bool bLinuxInstance,
-            bool bFilterProcesses, map<string, Linked<IEspSWRunInfo> >* processMap, map<int, Linked<IEspSWRunInfo> >& pidMap,
-                                                             set<string>* pRequiredProcesses);
-    char* skipChar(const char* sBuf, char c);
-    void readRunningProcess(const char* lineBuf, IArrayOf<IEspProcessInfo>& runningProcesses);
-    void checkRunningProcessesByPID(IEspContext& context, CMachineInfoThreadParam* pParam, set<string>* pRequiredProcesses);
+    void addIpAddressesToBuffer( void** buffer, unsigned& count, const char* address);
 
-    //data members
+    //Still used in StartStop/Rexec, so keep them for now.
+    enum OpSysType { OS_Windows, OS_Solaris, OS_Linux };
     StringBuffer m_sTestStr1;
     StringBuffer m_sTestStr2;
-
     bool m_useDefaultHPCCInit;
 
-    Owned<IPropertyTree>     m_monitorCfg;
-    Owned<IPropertyTree>     m_processFilters;
-    Owned<IThreadPool>       m_threadPool;
-    Owned<IEnvironmentFactory> m_envFactory;
-    bool                     m_bMonitorDaliFileServer;
-    static map<string, int>  s_processTypeToSnmpIdMap;
-    set<string>                  m_excludePartitions;
-    set<string>                  m_excludePartitionPatterns;
-    StringBuffer                 m_machineInfoFile;
+    Owned<IEnvironmentFactory>  m_envFactory;
+    Owned<IPropertyTree>        m_processFilters;
+    Owned<IThreadPool>          m_threadPool;
+    int                         m_threadPoolSize;
+    int                         m_threadPoolStackSize;
+    int                         m_SSHConnectTimeoutSeconds;
+    bool                        m_bMonitorDaliFileServer;
+    set<string>                 m_excludePartitions;
+    set<string>                 m_excludePartitionPatterns;
+    StringBuffer                m_machineInfoFile;
+    BoolHash                    m_legacyFilters;
 };
 
 //---------------------------------------------------------------------------------------------
+
 class CWsMachineThreadParam : public CInterface
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   virtual ~CWsMachineThreadParam() {}
+    virtual ~CWsMachineThreadParam() {}
 
-   StringBuffer          m_sAddress;
+    StringBuffer          m_sAddress;
     StringBuffer          m_sSecurityString; 
     StringBuffer          m_sUserName; 
-   StringBuffer          m_sPassword; 
+    StringBuffer          m_sPassword;
     Linked<Cws_machineEx> m_pService;
 
-   virtual void doWork() = 0;
+    virtual void doWork() = 0;
 
 protected:
 
-   CWsMachineThreadParam( const char* pszAddress, 
+    CWsMachineThreadParam( const char* pszAddress,
                           const char* pszSecurityString, Cws_machineEx* pService)
-      : m_sAddress(pszAddress), m_sSecurityString(pszSecurityString), m_pService(pService)
-   {
-   }
-   CWsMachineThreadParam( const char* pszAddress, 
+        : m_sAddress(pszAddress), m_sSecurityString(pszSecurityString), m_pService(pService)
+    {
+    }
+    CWsMachineThreadParam( const char* pszAddress,
                           const char* pszUserName, const char* pszPassword, Cws_machineEx* pService)
-      : m_sAddress(pszAddress), m_sUserName(pszUserName), m_sPassword(pszPassword), m_pService(pService)
-   {
-   }
+        : m_sAddress(pszAddress), m_sUserName(pszUserName), m_sPassword(pszPassword), m_pService(pService)
+    {
+    }
 };
 
 //---------------------------------------------------------------------------------------------
@@ -347,14 +744,14 @@ class CWsMachineThread : public CInterface,
                          implements IPooledThread
 {
 public:
-   IMPLEMENT_IINTERFACE;
+    IMPLEMENT_IINTERFACE;
 
-   CWsMachineThread()
-   {
-   }
-   virtual ~CWsMachineThread()
-   {
-   }
+    CWsMachineThread()
+    {
+    }
+    virtual ~CWsMachineThread()
+    {
+    }
 
     void init(void *startInfo) 
     {
@@ -362,9 +759,9 @@ public:
     }
     void main()
     {
-      m_pParam->doWork();
+        m_pParam->doWork();
         m_pParam.clear();
-   }
+    }
 
     bool canReuse()
     {
@@ -376,7 +773,7 @@ public:
     }
    
 private:
-   Owned<CWsMachineThreadParam> m_pParam;
+    Owned<CWsMachineThreadParam> m_pParam;
 };
 
 //---------------------------------------------------------------------------------------------

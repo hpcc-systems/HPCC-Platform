@@ -191,89 +191,25 @@
        <ProcessFilter name="any">
         <Process name="dafilesrv"/>
        </ProcessFilter>
-       <ProcessFilter name="AttrServerProcess">
-        <Process name="attrserver"/>
-       </ProcessFilter>
-       <ProcessFilter name="DaliProcess">
-        <Process name="daserver"/>
-       </ProcessFilter>
-       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
-        <Process name="dfuserver"/>
-       </ProcessFilter>
-       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
-        <Process name="eclccserver"/>
-       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess"/>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess"/>
        <ProcessFilter multipleInstances="true" name="EspProcess">
-        <Process name="esp"/>
         <Process name="dafilesrv" remove="true"/>
-       </ProcessFilter>
-       <ProcessFilter name="FTSlaveProcess">
-        <Process name="ftslave"/>
-       </ProcessFilter>
-       <ProcessFilter name="RoxieServerProcess">
-        <Process name="roxie"/>
-       </ProcessFilter>
-       <ProcessFilter name="RoxieSlaveProcess">
-        <Process name="roxie"/>
-       </ProcessFilter>
-       <ProcessFilter name="SchedulerProcess">
-        <Process name="scheduler"/>
-       </ProcessFilter>
-       <ProcessFilter name="ThorMasterProcess">
-        <Process name="thormaster"/>
-       </ProcessFilter>
-       <ProcessFilter name="ThorSlaveProcess">
-        <Process name="thorslave"/>
-       </ProcessFilter>
-       <ProcessFilter name="SashaServerProcess">
-        <Process name="saserver"/>
        </ProcessFilter>
       </Platform>
       <Platform name="Linux">
        <ProcessFilter name="any">
         <Process name="dafilesrv"/>
        </ProcessFilter>
-       <ProcessFilter name="AttrServerProcess">
-        <Process name="attrserver"/>
-       </ProcessFilter>
-       <ProcessFilter name="DaliProcess">
-        <Process name="daserver"/>
-       </ProcessFilter>
-       <ProcessFilter multipleInstances="true" name="DfuServerProcess">
-        <Process name="dfuserver"/>
-       </ProcessFilter>
-       <ProcessFilter multipleInstances="true" name="EclCCServerProcess">
-        <Process name="eclccserver"/>
-       </ProcessFilter>
+       <ProcessFilter multipleInstances="true" name="DfuServerProcess"/>
+       <ProcessFilter multipleInstances="true" name="EclCCServerProcess"/>
        <ProcessFilter multipleInstances="true" name="EspProcess">
-        <Process name="esp"/>
         <Process name="dafilesrv" remove="true"/>
-       </ProcessFilter>
-       <ProcessFilter name="FTSlaveProcess">
-        <Process name="ftslave"/>
        </ProcessFilter>
        <ProcessFilter name="GenesisServerProcess">
         <Process name="httpd"/>
         <Process name="atftpd"/>
         <Process name="dhcpd"/>
-       </ProcessFilter>
-       <ProcessFilter name="RoxieServerProcess">
-        <Process name="roxie"/>
-       </ProcessFilter>
-       <ProcessFilter name="RoxieSlaveProcess">
-        <Process name="roxie"/>
-       </ProcessFilter>
-       <ProcessFilter name="SchedulerProcess">
-        <Process name="scheduler"/>
-       </ProcessFilter>
-       <ProcessFilter name="ThorMasterProcess">
-        <Process name="thormaster"/>
-       </ProcessFilter>
-       <ProcessFilter name="ThorSlaveProcess">
-        <Process name="thorslave"/>
-       </ProcessFilter>
-       <ProcessFilter name="SashaServerProcess">
-        <Process name="saserver"/>
        </ProcessFilter>
       </Platform>
      </ProcessFilters>
