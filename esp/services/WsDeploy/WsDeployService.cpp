@@ -3314,6 +3314,10 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
               {
                 xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
                 IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
+
+                if (pComputer == NULL)
+                  throw MakeStringException(-1, "XPATH: %s is invalid. (Did you add the Hardware?)",xpath.str());
+
                 const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
                 if (pszNetAddr)
                   pMasterNode->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
@@ -4210,6 +4214,159 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
     }
     resp.setCompName(XML_TAG_SOFTWARE);
   }
+  else if (!strcmp(operation, "CopySW"))
+  {
+    if (handleComponentCopy(pComponents, pEnvRoot.get()) == true)
+      resp.setStatus("true");
+    else
+      resp.setStatus("false");
+  }
+  else if (!strcmp(operation, "CopyHW"))
+  {
+    if (handleHardwareCopy(pComponents, pEnvRoot->queryPropTree("Hardware"))== true)
+      resp.setStatus("true");
+    else
+      resp.setStatus("false");
+  }
+  return true;
+}
+
+bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
+{
+  StringBuffer xpath;
+  StringBuffer filePath;
+  xpath.clear().appendf("%s", XML_TAG_HARDWARE);
+
+  Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
+  Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("*");
+
+  if (!iterComp->first())
+    return false;
+
+  CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp(XML_ATTR_TARGET));
+
+  Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
+
+  fi->m_skipEnvUpdateFromNotification = false;
+  fi->initFileInfo(false,false);
+  Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
+  bool bWrite = false;
+
+  ForEach(*iter)
+  {
+    IPropertyTree& pComp = iter->query();
+    const char* name = pComp.queryProp(XML_ATTR_NAME);
+    const char* tag_name = pComp.queryName();
+    StringBuffer xml;
+
+    xml.appendf("<%s", tag_name);
+    Owned<IAttributeIterator> pAttribIter = pComp.getAttributes();
+
+    ForEach(*pAttribIter)
+    {
+      const char* name = &(pAttribIter->queryName()[1]);
+      const char* value = pAttribIter->queryValue();
+
+      xml.appendf(" %s=\"%s\" ", name, value);
+    }
+    xml.append("/>");
+
+    IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
+
+    StringBuffer xpath2;
+    xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
+
+    if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
+    {
+      continue;
+    }
+
+    bWrite = true;
+
+    StringBuffer strTag;
+    strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
+
+    if (pEnvRoot2->addPropTree(strTag.str(), dupTree) == NULL)
+      return false;
+  }
+
+  if (bWrite == true)
+  {
+    StringBuffer err;
+    fi->saveEnvironment(NULL, NULL, err);
+    throw MakeStringException(-1, "Saved succeeded but some some element(s) could not be copied.  Element(s) may already exist in the target configuration.");
+  }
+
+  return true;
+}
+
+bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
+{
+  Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
+  bool bError = false;
+  StringBuffer errMsg;
+
+  char targetName[255] = "";
+  iterComp->first();
+  strncpy(targetName, iterComp->query().queryProp("@target"), 255);  //get the copy target configuration file name
+
+  StringBuffer filePath;
+  CWsDeployFileInfo::setFilePath(filePath, targetName);
+
+  Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
+
+  fi->m_skipEnvUpdateFromNotification = false;
+  fi->initFileInfo(false,false);
+
+  Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
+  Owned<IPropertyTreeIterator> iterComp2 = pComponents->getElements("*");
+
+  StringBuffer xpath;
+
+  ForEach(*iterComp)
+  {
+    IPropertyTree& pComp = iterComp->query();
+    const char* compName = pComp.queryProp(XML_ATTR_NAME);
+
+    if (compName == NULL)
+    {
+      if (bError == false)
+      {
+        bError = true;
+        errMsg.clear().appendf("Faild to query for @name attribute, continuing...");
+      }
+      continue;
+    }
+
+    const char* compType = pComp.queryProp("@compType");
+    StringBuffer sbNewName = compName;
+
+    xpath.clear().appendf("%s", compType);
+    getUniqueName(pEnvRoot2, sbNewName, xpath.str(), XML_TAG_SOFTWARE);
+    xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, compName);
+    IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpath.str());
+
+    if ( pCompTree == NULL)
+      throw MakeStringException(-1,"XPATH: %s is invalid in source configuration. Copy failed.", xpath.str());
+
+    xpath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, compType, XML_ATTR_NAME, sbNewName.str());
+    StringBuffer xml;
+
+    toXML(pCompTree, xml);
+
+    IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
+    dupTree->setProp(XML_ATTR_NAME, sbNewName.str());
+
+    if (pEnvRoot2->addPropTree(xpath, dupTree) == NULL)
+      throw MakeStringException(-1,"XPATH: %s is invalid in target. Copy failed.", xpath.str());
+  }
+
+  StringBuffer err;
+  fi->saveEnvironment(NULL, NULL, err);
+
+  if (bError == true)
+    throw MakeStringException(-1,"Save succeeded but an error was encountered with message: %s", errMsg.str());
+
   return true;
 }
 
@@ -5294,6 +5451,16 @@ const char* CWsDeployFileInfo::GetDisplayProcessName(const char* processName, ch
   }
 }
 
+void CWsDeployFileInfo::setFilePath(StringBuffer &filePath, const char* targetName)
+{
+  filePath.clear().append(CONFIG_SOURCE_DIR);
+
+  if (filePath.charAt(filePath.length() - 1) != PATHSEPCHAR)
+    filePath.append(PATHSEPCHAR);
+
+  filePath.append(targetName);
+}
+
 void CWsDeployFileInfo::updateConfigFromFile()
 {
   StringBuffer sbxml;
@@ -5988,7 +6155,7 @@ bool CWsDeployFileInfo::getSummary(IEspContext &context, IEspGetSummaryRequest &
   return true;
 }
 
-void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
+void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
 {
   StringBuffer xpath;
   m_skipEnvUpdateFromNotification = false;
@@ -6127,7 +6294,8 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite)
   if (!fileExists)
     toXML(pEnvRoot, sbxml.clear());
 
-  m_Environment.clear();
+  if ( bClearEnv == true )
+    m_Environment.clear();
 
   if (m_constEnvRdOnly.get() == NULL)
   {
