@@ -1335,7 +1335,7 @@
         </script>
       </head>
       <body class="yui-skin-sam" onload="onLoad()">
-        <h1>Exception(s) occured:</h1>
+        <h1>Exception(s) occurred:</h1>
         <table class="sort-table" id="resultsTable">
           <thead>
             <tr>

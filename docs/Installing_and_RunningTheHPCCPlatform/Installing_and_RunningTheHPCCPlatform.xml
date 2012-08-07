@@ -2665,15 +2665,21 @@ OUTPUT(ValidWords)
     <sect1 id="Uninstalling-the-HPCC">
       <title>Uninstalling the HPCC Platform</title>
 
-      <para>To uninstall the HPCC platform from your system, issue the
-      following command. If necessary, do so on each node that it is installed
+      <para>To uninstall the HPCC platform, issue the appropriate commands for
+      your system. If necessary, do so on each node that it is installed
       on.</para>
 
-      <programlisting>sudo rpm -e HPCCSystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
+      <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+
+      <programlisting>sudo rpm -e hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
 
       <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
 
-      <para></para>
+      <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+
+      <programlisting>sudo dpkg -r hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
+
+      <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
     </sect1>
 
     <sect1 id="Helper-Applications">
