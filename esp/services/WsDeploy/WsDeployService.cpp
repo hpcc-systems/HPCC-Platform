@@ -926,7 +926,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             throw MakeStringException(-1, "Environment Save as operation has failed");
 
-        if (m_userWithLock.length() != 0 && m_userIp.length() != 0)
+          if (m_userWithLock.length() != 0 && m_userIp.length() != 0)
           {
             if (sbErrMsg.length())
             {
