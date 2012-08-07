@@ -881,8 +881,9 @@ public:
         return LINK(allGraphs.find(gid));
     }
 
-    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
+    IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
     roxiemem::IRowManager *queryRowManager() const;
+    IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
     const bool &queryPausing() const { return pausing; }
     const bool &queryResumed() const { return resumed; }

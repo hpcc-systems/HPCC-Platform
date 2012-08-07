@@ -606,6 +606,7 @@ extern HQL_API void encryptEclAttribute(IStringVal & out, size32_t len, const vo
 extern void decryptEclAttribute(MemoryBuffer & out, const char * in);
 
 extern HQL_API bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right);
+extern HQL_API void debugTrackDifference(IHqlExpression * expr);
 
 extern HQL_API StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned inlen);
 extern HQL_API bool arraysSame(CIArray & left, CIArray & right);

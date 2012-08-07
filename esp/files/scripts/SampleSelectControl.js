@@ -38,7 +38,7 @@ define([
 				name: this.id,
 				store: sampleStore,
 				value: "default.ecl",
-				maxHeight: -1,
+				maxHeight: 480,
 				style: {
 					padding: 0
 				},

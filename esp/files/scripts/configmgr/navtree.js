@@ -706,13 +706,6 @@ function createNavigationTree(navTreeData) {
                 top.document.lastSelectedRow = temp1[0];
                 getWaitDlg().hide();
                 navDS.flushCache();
-                //                  var tid= YAHOO.util.Get.script('/esp/files/scripts/navtreedata.js',{ 
-                //                    onSuccess: function(obj) {
-                //                      var parsedResults = navDS.parseArrayData(o, navTreeData);
-                //                      navDS.handleResponse("", parsedResults.results, {   success:navDT.onDataReturnInitializeTable,
-                //                                                 scope:navDT}, this, 999);
-                //                      clickCurrentSelOrName(navDT, temp1[0]);
-                //                    }});
                 refreshNavTree(navDS, navDT, temp1[0])
               }
             }
@@ -731,6 +724,40 @@ function createNavigationTree(navTreeData) {
         scope: this
       },
         getFileName(true) + 'Operation=Delete&XmlArgs=' + xmlStr);
+    }
+    else if (menuItemName ==="Duplicate Component/Service")
+    {
+      var targetRec;
+      xmlStr = navDT.selectionToXML(targetRec, navDT.getSelectedRows(), targetRec, "Components");
+
+      YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
+        success: function(o) {
+          if (o.status === 200) {
+            if (o.responseText.indexOf("<?xml") === 0) {
+              var form = document.forms['treeForm'];
+              form.isChanged.value = "true";
+              var temp = o.responseText.split(/<CompName>/g);
+              var temp1 = temp[1].split(/<\/CompName>/g);
+              top.document.lastSelectedRow = temp1[0];
+              getWaitDlg().hide();
+              navDS.flushCache();
+              refreshNavTree(navDS, navDT)
+            }
+            else if (o.responseText.indexOf("<html") === 0) {
+              var temp = o.responseText.split(/td align=\"left\">/g);
+              var temp1 = temp[1].split(/<\/td>/g);
+              getWaitDlg().hide();
+              alert(temp1[0]);
+            }
+          }
+        },
+        failure: function(o) {
+          getWaitDlg().hide();
+          alert(o.statusText);
+        },
+        scope: this
+      },
+        getFileName(true) + 'Operation=Duplicate&XmlArgs=' + xmlStr);
     }
     else {
       var xmlStr = "<Components><Component buildSet='" + menuItemName + "'/></Components>";
@@ -1131,7 +1158,8 @@ function createNavigationTree(navTreeData) {
                                 },
                                 onclick: { fn: onMenuSWClick }
                               },
-                              { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} }
+                              { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} },
+                              { text: "Duplicate Component/Service", onclick: { fn: onMenuSWClick} }
                           ],
     "Columns": [
                               {
@@ -1201,6 +1229,7 @@ function createNavigationTree(navTreeData) {
 
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
         this.getItem(2).cfg.setProperty("disabled", true);
+        this.getItem(3).cfg.setProperty("disabled", true);
       }
 
       if (record.getData('id') === 0) {
@@ -1977,6 +2006,15 @@ function populateOpenEnvTable() {
             objs[j] = {};
             objs[j].name = files[i];
             j++;
+          }
+
+          if (!Array.prototype.indexof) {
+            Array.prototype.indexOf = function(obj, start) {
+              for (var i = (start || 0), j = this.length; i < j; i++) {
+                if (this[i] === obj) { return i; }
+              }
+              return -1;
+            }
           }
 
           YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
