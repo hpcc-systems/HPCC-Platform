@@ -32,6 +32,7 @@
         function fnce() {
           var oPushButton3 = new YAHOO.widget.Button("validatebutton", { onclick: { fn: validateEnvironment} });
           var oPushButton2 = new YAHOO.widget.Button("savebutton", { onclick: { fn: saveEnvironment} });
+          var oPushButton6 = new YAHOO.widget.Button("saveasbutton", { onclick: { fn: saveEnvironmentAs} });
           var oPushButton4 = new YAHOO.widget.Button("openbutton", { onclick: { fn: displayOpenEnvDialog} });
           var oPushButton5 = new YAHOO.widget.Button("wizardbutton", { onclick: { fn: invokeWizard} });
 
@@ -809,7 +810,7 @@ function createNavigationTree(navTreeData) {
       saveAndUnlockEnv();
     else if (menuItemName === 'Save Environment')
       saveEnvironment();
-    else if (menuItemName === 'Save Environment As...') {
+    else if (menuItemName === 'Save Environment As') {
       saveEnvironmentAs();
     }
     else if (menuItemName === 'Validate Environment')
@@ -1117,7 +1118,7 @@ function createNavigationTree(navTreeData) {
 
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
-                    { text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
+                    { text: "Save Environment As", onclick: { fn: onMenuItemClick } },
                     {text: "Validate Environment", onclick: { fn: onMenuItemClick } }
                           ],
     "Hardware": [
@@ -1249,7 +1250,8 @@ function createNavigationTree(navTreeData) {
         for (iGroup = 0; iGroup < groups.length; iGroup++) {
           if (typeof (groups[iGroup]) !== 'undefined')
             for (i = 0; i < groups[iGroup].length; i++)
-            groups[iGroup][i].cfg.setProperty("disabled", true);
+            if (groups[iGroup][i].element.innerText != "Save Environment As")
+              groups[iGroup][i].cfg.setProperty("disabled", true);
         }
       }
 
@@ -1816,7 +1818,7 @@ function saveEnvironment(saveas) {
           if (xmlargs.length > 0) {
             var xmlargs1 = xmlargs[1].split(/<\/XmlArgs>/g);
             if (xmlargs1.length > 0 && xmlargs1[0].length > 0 && xmlargs1[0].charAt(0) != '<') {
-              promptValidationErrs(xmlargs1[0]);
+              alert(xmlargs1[0]);
             }
           }
 
@@ -1844,12 +1846,15 @@ function saveEnvironment(saveas) {
 }
 
 function saveEnvironmentAs() {
-  var handleCancel = function() {
+ getWaitDlg().show();
+
+ var handleCancel = function() {
     getWaitDlg().hide();
     top.document.envSaveAsDialog.hide();
   }
 
   var handleOk = function() {
+    getWaitDlg().hide();
     loadAndCheckFileNames('3');
   };
 
@@ -3419,8 +3424,6 @@ function updateEnvCtrls(flag) {
   if (flag) {
     Dom.removeClass(sbtn, "yui-button-disabled");
     Dom.removeClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = false;
-    document.getElementById('validatebutton-button').disabled = false;
     document.getElementById('savebutton').disabled = false;
     document.getElementById('validatebutton').disabled = false;
     document.getElementById('ReadWrite').checked = true;
@@ -3428,8 +3431,6 @@ function updateEnvCtrls(flag) {
   else {
     Dom.addClass(sbtn, "yui-button-disabled");
     Dom.addClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = true;
-    document.getElementById('validatebutton-button').disabled = true;
     document.getElementById('savebutton').disabled = true;
     document.getElementById('validatebutton').disabled = true;
     document.getElementById('ReadWrite').checked = false;
@@ -4825,6 +4826,7 @@ function callHtmlSummaryPage()
   {
     document.getElementById('ReadWrite').disabled = true;
     document.getElementById('savebutton').disabled = true;
+    document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
   }
   
