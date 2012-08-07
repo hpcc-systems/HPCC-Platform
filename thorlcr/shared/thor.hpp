@@ -36,6 +36,8 @@ typedef size32_t rowidx_t;
 #define RCIDXMAX ((rowidx_t)(size32_t)-1)
 #define RIPF ""
 
+#include "jexcept.hpp"
+
 // validate that type T doesn't truncate
 template <class T>
 inline rowcount_t validRC(T X)
