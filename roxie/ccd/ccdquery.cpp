@@ -424,6 +424,7 @@ protected:
         case TAKskiplimit:
         case TAKcreaterowlimit:
             return createRoxieServerSkipLimitActivityFactory(id, subgraphId, *this, helperFactory, kind);
+        case TAKhttp_rowdataset:
         case TAKsoap_rowdataset:
             return createRoxieServerSoapRowCallActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKsoap_rowaction:

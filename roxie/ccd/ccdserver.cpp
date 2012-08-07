@@ -24486,7 +24486,10 @@ public:
 
         if (soaphelper == NULL)
         {
-            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+            if (factory->getKind()==TAKhttp_rowdataset)
+                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+            else
+                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
             soaphelper->start();
         }
 
