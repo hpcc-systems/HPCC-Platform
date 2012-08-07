@@ -26,7 +26,7 @@
             </script>
          </head>
          <body onload="nof5();onLoad()" class="yui-skin-sam">
-            <h3>Exception(s) occured:</h3>
+            <h3>Exception(s) occurred:</h3>
             <xsl:if test="Source">
                <h4>Reporter: <xsl:value-of select="Source"/></h4>
             </xsl:if>
