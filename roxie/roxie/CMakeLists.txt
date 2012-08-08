@@ -45,6 +45,9 @@ include_directories (
          ./../../roxie/roxiemem 
          ./../../common/thorhelper 
          ./../../common/roxiehelper 
+
+         ./../../embed/java
+
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -58,6 +61,7 @@ install ( TARGETS roxie RUNTIME DESTINATION ${EXEC_DIR} )
 
 target_link_libraries ( roxie
          ccd
+         javaembed
          jlib 
     )
 
