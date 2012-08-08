@@ -4250,7 +4250,9 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
   fi->m_skipEnvUpdateFromNotification = false;
   fi->initFileInfo(false,false);
   Owned<IPropertyTree> pEnvRoot2 = &(fi->m_Environment->getPTree());
+
   bool bWrite = false;
+  StringArray elems;
 
   ForEach(*iter)
   {
@@ -4262,7 +4264,10 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     xpath2.appendf("./%s/%s[%s = \"%s\"]", XML_TAG_HARDWARE, tag_name, XML_ATTR_NAME, name);
 
     if (pEnvRoot2->queryPropTree(xpath2.str()) != NULL) // check if target configuration has same named element
+    {
+      elems.append(name);
       continue;
+    }
 
     StringBuffer xml;
 
@@ -4293,7 +4298,25 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
   {
     StringBuffer err;
     fi->saveEnvironment(NULL, NULL, err);
-    throw MakeStringException(-1, "Saved succeeded but some some element(s) could not be copied.  Element(s) may already exist in the target configuration.");
+
+    if (elems.ordinality() > 0)
+    {
+      StringBuffer errMsg;
+      errMsg.appendf("Saved succeeded but some some element(s) could not be copied.  Element(s) may already exist in the target configuration.\n[");
+
+      ForEachItemIn(i, elems)
+      {
+        errMsg.appendf("%s, ",elems.item(i));
+      }
+
+      errMsg.setCharAt(errMsg.length()-2 , ']');
+
+      throw MakeStringException(-1, "%s", errMsg.str());
+    }
+  }
+  else
+  {
+    throw MakeStringException(-1, "Copy failed.  All elements may already exist in the target configuration.");
   }
 
   return true;
