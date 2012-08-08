@@ -389,9 +389,9 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 const char* name = node.queryProp("@name");
                 if (name && *name)
                 {
+                    node.getProp("@queue", qname);
                     if (0 == stricmp("ThorMaster", name))
                     {
-                        node.getProp("@queue", qname);
                         node.getProp("@thorname",instance);
                     }
                     else if (0 == stricmp(name, "ECLAgent"))
