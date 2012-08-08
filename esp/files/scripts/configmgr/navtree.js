@@ -391,7 +391,7 @@ function createNavigationTree(navTreeData) {
                   hasChildren = {};
                 hasChildren[prnt] = true;
                 return true;
-              }, width: "100%", selectionMode:"single"
+              }, width: "100%"
             }
         );
 
@@ -759,6 +759,10 @@ function createNavigationTree(navTreeData) {
       },
         getFileName(true) + 'Operation=Duplicate&XmlArgs=' + xmlStr);
     }
+    else if (p_oValue.parent.id ==="HWCopy" || p_oValue.parent.id === "SWCopy")
+    {
+      copyHWSWTo(menuItemName, (p_oValue.parent.id === "HWCopy" ? true : false) );
+    }
     else {
       var xmlStr = "<Components><Component buildSet='" + menuItemName + "'/></Components>";
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
@@ -772,14 +776,6 @@ function createNavigationTree(navTreeData) {
               top.document.lastSelectedRow = temp1[0];
               getWaitDlg().hide();
               navDS.flushCache();
-
-              //                 var tid= YAHOO.util.Get.script('/esp/files/scripts/navtreedata.js',{ 
-              //                   onSuccess: function(obj) {
-              //                     var parsedResults = navDS.parseArrayData(o, navTreeData);
-              //                     navDS.handleResponse("", parsedResults.results, {   success:navDT.onDataReturnInitializeTable,
-              //                                                 scope:navDT}, this, 999);
-              //                   }
-              //                  });
               refreshNavTree(navDS, navDT)
             }
             else if (o.responseText.indexOf("<html") === 0) {
@@ -812,6 +808,8 @@ function createNavigationTree(navTreeData) {
     else if (menuItemName === 'Save Environment As...') {
       saveEnvironmentAs();
     }
+    else if (menuItemName == 'Copy Hardware To')
+      copyHWSWTo(menuItemName, true);
     else if (menuItemName === 'Validate Environment')
       validateEnvironment();
     else if (menuItemName === 'Deploy...') {
@@ -1107,6 +1105,40 @@ function createNavigationTree(navTreeData) {
     }
   }
 
+  var copyCompMenu = new Array();
+  var fnDeleteComps = function(){
+  var params = "queryType=sourceEnvironments";
+
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetValue', {
+    success: function(o) {
+        if (o.responseText.indexOf("<?xml") === 0) {
+      var tmp = o.responseText.split(/<ReqValue>/g);
+      var tmp1;
+      if (tmp.length > 1) {
+        tmp1 = tmp[1].split(/<\/ReqValue>/g);
+        if (tmp1.length > 1)
+          result = tmp1[0];
+        else
+          result = '';
+        }
+        var files = result.split(/;/g);
+        for (var i = 0; i < files.length; i++) {
+          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration" || files[i] == "")
+            {
+               continue;
+            }
+           copyCompMenu[i] = { text: files[i], onclick: { fn: onMenuSWClick} };
+          }
+        }
+      },
+      failure: function(o) {
+      },
+      scope: this
+    },
+  getFileName(true) + 'Params=' + params);
+  }
+  fnDeleteComps();
+
   var compMenu = new Array();
   for (i = 0; i < navDT.navTreeData[0]["menuComps"].length; i++)
     compMenu[i] = { text: navDT.navTreeData[0]["menuComps"][i], onclick: { fn: onMenuSWClick} };
@@ -1117,8 +1149,15 @@ function createNavigationTree(navTreeData) {
 
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
-                    { text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
-                    {text: "Validate Environment", onclick: { fn: onMenuItemClick } }
+                    {text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
+                    {text: "Validate Environment", onclick: { fn: onMenuItemClick } },
+                    {text: "Copy Hardware To",
+                      submenu: {
+                           id: "HWCopy",
+                           lazyload: true,
+                           itemdata: copyCompMenu,
+                           onclick: { fn: onMenuItemClick },
+                          } }
                           ],
     "Hardware": [
                               "New",
@@ -1159,7 +1198,14 @@ function createNavigationTree(navTreeData) {
                                 onclick: { fn: onMenuSWClick }
                               },
                               { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} },
-                              { text: "Duplicate Component/Service", onclick: { fn: onMenuSWClick} }
+                              { text: "Duplicate Component/Service", onclick: { fn: onMenuSWClick} },
+                              { text: "Copy Component/Service To",
+                                submenu: {
+                                  id: "SWCopy",
+                                  lazyload: true,
+                                  itemdata: copyCompMenu
+                                 },
+                              }
                           ],
     "Columns": [
                               {
@@ -1841,6 +1887,56 @@ function saveEnvironment(saveas) {
     scope: this
   },
   getFileName(true) + args);
+}
+
+copyHWSWTo = function (menuItemName, IsHW)
+{
+  var targetRec;
+  var xmlStr = "";
+  var xmlStr2 = "";
+  var idx;
+
+  if (IsHW === true)
+  {
+    xmlStr2 = "<Components> <Component name=\"Hardware\" target=\"" + menuItemName + "\"/> " + "</Components>";
+  }
+  else // software
+  {
+    xmlStr = top.document.navDT.selectionToXML(targetRec, top.document.navDT.getSelectedRows(), targetRec, "Components");
+    idx = xmlStr.indexOf("build");
+    xmlStr2 = xmlStr.substr(0,idx-1) + " target=\"" + menuItemName + "\" " + xmlStr.substr(idx,xmlStr.length);
+  }
+
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
+    success: function(o)
+    {
+      if (o.status === 200)
+      {
+        if (o.responseText.indexOf("<?xml") === 0)
+        {
+          var form = document.forms['treeForm'];
+          form.isChanged.value = "true";
+          var temp = o.responseText.split(/<CompName>/g);
+          var temp1 = temp[1].split(/<\/CompName>/g);
+          top.document.lastSelectedRow = temp1[0];
+          getWaitDlg().hide();
+        }
+        else if (o.responseText.indexOf("<html") === 0)
+        {
+          var temp = o.responseText.split(/td align=\"left\">/g);
+          var temp1 = temp[1].split(/<\/td>/g);
+          getWaitDlg().hide();
+          alert(temp1[0]);
+        }
+      }
+    },
+    failure: function(o) {
+      getWaitDlg().hide();
+      alert(o.statusText);
+    },
+    scope: this
+  },
+  getFileName(true) + 'Operation=Copy' + (IsHW ? 'HW' : 'SW') + '&XmlArgs='  + xmlStr2);
 }
 
 function saveEnvironmentAs() {
