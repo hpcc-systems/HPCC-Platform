@@ -1185,6 +1185,10 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
           {
             sXPath.clear().appendf("Hardware/Computer[@name=\"%s\"]", computer);
             IPropertyTree* pComputer = pEnvRoot->queryPropTree(sXPath.str());
+
+            if (pComputer == NULL)
+              throw MakeStringException(-1,"XPATH: %s is invalid.\n(Did you configure the Hardware?)", sXPath.str());
+
             netAddr = pComputer->queryProp("@netAddress");
             if (matchDeployAddress(ipAddr, netAddr) || 
                 (!ipAddr && netAddr && *netAddr))

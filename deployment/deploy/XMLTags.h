@@ -161,6 +161,7 @@
 #define XML_ATTR_MULTISLAVES           "@multiSlaves"
 #define XML_ATTR_MYSQL                 "@mysql"
 #define XML_ATTR_NAME                  "@name"
+#define XML_ATTR_TARGET                "@target"
 #define XML_ATTR_NAMESERVICES          "@nameServices"
 #define XML_ATTR_NETADDRESS            "@netAddress"
 #define XML_ATTR_NICSPEED              "@nicSpeed"

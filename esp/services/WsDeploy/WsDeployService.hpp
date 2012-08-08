@@ -420,7 +420,7 @@ public:
         m_envFile.clear().append(pEnvFile);
     }
     ~CWsDeployFileInfo();
-    void initFileInfo(bool createFile);
+    void initFileInfo(bool createFile, bool bClearEnv = true);
     void setConfigChanged(bool b)
     {
       m_configChanged = b;
@@ -455,6 +455,7 @@ public:
        
       return m_pFile->queryFilename();
     };
+    static void setFilePath(StringBuffer &filePath, const char* targetName);
     virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool graph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
@@ -472,6 +473,8 @@ public:
     virtual bool handleRoxieOperation(IEspContext &context, IEspHandleRoxieOperationRequest &req, IEspHandleRoxieOperationResponse &resp);
     virtual bool handleThorTopology(IEspContext &context, IEspHandleThorTopologyRequest &req, IEspHandleThorTopologyResponse &resp);
     virtual bool handleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp);
+    virtual bool handleComponentCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot);
+    virtual bool handleHardwareCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot);
     virtual bool handleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp);
     virtual bool handleEspServiceBindings(IEspContext &context, IEspHandleEspServiceBindingsRequest &req, IEspHandleEspServiceBindingsResponse &resp);
     virtual bool handleComputer(IEspContext &context, IEspHandleComputerRequest &req, IEspHandleComputerResponse &resp);
