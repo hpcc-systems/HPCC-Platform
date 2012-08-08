@@ -137,6 +137,10 @@ int CEclAgentExecutionServer::run()
         ERRLOG("Terminating unexpectedly");
     }
 
+    CSDSServerStatus serverStatus("HThorServer");
+    serverStatus.queryProperties()->setProp("@queue",queueNames.str());
+    serverStatus.queryProperties()->setProp("@cluster", agentName);
+    serverStatus.commitProperties();
     writeSentinelFile(sentinelFile);
 
     try 
