@@ -355,6 +355,14 @@ public:
         inline CThorSpillableRowArrayLock(const CThorSpillableRowArray &_rows) : rows(_rows) { rows.lock(); }
         inline ~CThorSpillableRowArrayLock() { rows.unlock(); }
     };
+    class CThorSpillableRowArrayUnlock
+    {
+        CThorSpillableRowArrayUnlock(CThorSpillableRowArrayLock &); // avoid accidental use
+        const CThorSpillableRowArray & rows;
+    public:
+        inline CThorSpillableRowArrayUnlock(const CThorSpillableRowArray &_rows) : rows(_rows) { rows.unlock(); }
+        inline ~CThorSpillableRowArrayUnlock() { rows.lock(); }
+    };
 
     CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
