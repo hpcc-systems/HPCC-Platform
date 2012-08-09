@@ -31044,6 +31044,7 @@ public:
                     {
                         Owned<IJobQueue> queue = createJobQueue(queueNames.str());
                         queue->connect();
+                        daliHelper->noteQueuesRunning(queueNames.str());
                         while (running)
                         {
                             Owned<IJobQueueItem> item = queue->dequeue(5000);
@@ -31276,12 +31277,14 @@ public:
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
+        daliHelper->noteWorkunitRunning(wuid.get(), false);
     }
 
     void doMain(IConstWorkUnit *wu, IQueryFactory *queryFactory, StringContextLogger &logctx)
