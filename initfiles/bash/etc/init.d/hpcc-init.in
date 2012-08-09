@@ -34,12 +34,14 @@
 #                         chkconfig Parameters
 ##-----------------------------------------------------------------------------
 
-# chkconfig: 235 03 97
-# description: Starts the HPCC processes
+# chkconfig: 235 40 90
+# Description: Starts the HPCC processes
+# Provides: hpcc-init
+# Required-Start: dafilesrv
 
 ##-----------------------------------------------------------------------------
 #                         General Purpose Functions                           
-##----------------------------------------------------------------------------
+##-----------------------------------------------------------------------------
 
 ###<REPLACE>###
 
