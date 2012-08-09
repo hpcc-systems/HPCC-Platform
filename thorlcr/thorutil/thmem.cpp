@@ -954,13 +954,20 @@ bool CThorSpillableRowArray::ensure(rowidx_t requiredRows)
             rows = (const void **)newRows.getClear();
             ReleaseThorRow(oldRows);
         }
-
-        // NB: can't release lock, or change maxRows, until know this succeeds
         if (stableSort_earlyAlloc == stableSort)
         {
-            OwnedConstThorRow newStableSortTmp = allocateStableTable(false);
+            // Temporarily release the lock, since MM may callback to spill this.
+            OwnedConstThorRow newStableSortTmp;
+            {
+                CThorSpillableRowArrayUnlock block(*this);
+                newStableSortTmp.setown(allocateStableTable(false));
+            }
+            // NB: If the above alloc fails, 'rows' has expanded, but maxRows has not
+            // this means, that on a subsequent ensure() call, it will only need to [attempt] to resize the stable ptr array.
+            // (see comment if (getRowsCapacity() < requiredRows) check above
             if (!newStableSortTmp)
                 return false;
+
             void **oldStableSortTmp = stableSortTmp;
             stableSortTmp = (void **)newStableSortTmp.getClear();
             ReleaseThorRow(oldStableSortTmp);
