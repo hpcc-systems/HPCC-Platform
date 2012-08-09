@@ -371,7 +371,7 @@ void CDiskWriteSlaveActivityBase::close()
                 else
                     out->flush(&fileCRC);
             }
-            else
+            else if (!abortSoon)
                 out->flush();
             out.clear();
         }
@@ -490,20 +490,30 @@ void CDiskWriteSlaveActivityBase::process()
 
         try
         {
-            open(); 
+            open();
             assertex(out||outraw);
             write();
         }
         catch (IException *)
         {
             abortSoon = true;
-            close();
+            try { close(); }
+            catch (IException *e)
+            {
+                EXCLOG(e, "close()");
+                e->Release();
+            }
             throw;
         }
         catch (CATCHALL)
         {
             abortSoon = true;
-            close();
+            try { close(); }
+            catch (IException *e)
+            {
+                EXCLOG(e, "close()");
+                e->Release();
+            }
             throw;
         }
         close();
