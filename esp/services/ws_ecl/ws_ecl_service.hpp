@@ -173,6 +173,8 @@ public:
     void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
     
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
+    void handleJSONPost(CHttpRequest *request, CHttpResponse *response);
+
     int HandleSoapRequest(CHttpRequest* request, CHttpResponse* response);
     int getWsEclLinks(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
     int getWsEclDefinition(CHttpRequest* request, CHttpResponse* response, const char *thepath);
