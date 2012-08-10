@@ -8353,8 +8353,8 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
 {
     StringBuffer wuRoot;
     getXPath(wuRoot, wuid);
-    WorkUnitWaiter waiter(wuRoot.str());
-    LocalIAbortHandler abortHandler(waiter);
+    Owned<WorkUnitWaiter> waiter = new WorkUnitWaiter(wuRoot.str());
+    LocalIAbortHandler abortHandler(*waiter);
     WUState ret = WUStateUnknown;
     Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT);
     if (conn)
@@ -8373,12 +8373,12 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
             case WUStateCompleted:
             case WUStateFailed:
             case WUStateAborted:
-                waiter.unsubscribe();
+                waiter->unsubscribe();
                 return ret;
             case WUStateWait:
                 if(returnOnWaitState)
                 {
-                    waiter.unsubscribe();
+                    waiter->unsubscribe();
                     return ret;
                 }
                 break;
@@ -8393,7 +8393,7 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
                     SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
                     if((agent>0) && querySessionManager().sessionStopped(agent, 0))
                     {
-                        waiter.unsubscribe();
+                        waiter->unsubscribe();
                         conn->reload();
                         ret = (WUState) getEnum(conn->queryRoot(), "@state", states);
                         bool isEcl = false;
@@ -8427,14 +8427,14 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
             unsigned waited = msTick() - start;
             if (timeout==-1)
             {
-                waiter.wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
-                if (waiter.aborted)
+                waiter->wait(20000);  // recheck state every 20 seconds even if no timeout, in case eclagent has crashed.
+                if (waiter->aborted)
                 {
                     ret = WUStateUnknown;  // MORE - throw an exception?
                     break;
                 }
             }
-            else if (waited > timeout || !waiter.wait(timeout-waited))
+            else if (waited > timeout || !waiter->wait(timeout-waited))
             {
                 ret = WUStateUnknown;  // MORE - throw an exception?
                 break;
@@ -8442,7 +8442,7 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
             conn->reload();
         }
     }
-    waiter.unsubscribe();
+    waiter->unsubscribe();
     return ret;
 }
 

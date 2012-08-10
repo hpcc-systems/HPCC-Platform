@@ -20581,7 +20581,7 @@ public:
     CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
     {
-        isLocal = _graphNode.getPropBool("att[@name='local']/@value");
+        isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         sorted = (helper->getFlags() & TDRunsorted) == 0;
         variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
@@ -21671,7 +21671,7 @@ public:
         Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
         unsigned flags = indexHelper->getFlags();
         sorted = (flags & TIRsorted) != 0;
-        isLocal = _graphNode.getPropBool("att[@name='local']/@value");
+        isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         rtlDataAttr indexLayoutMeta;
         size32_t indexLayoutSize;
         if(!indexHelper->getIndexLayout(indexLayoutSize, indexLayoutMeta.refdata()))
@@ -22841,7 +22841,7 @@ public:
         {
             if (_graphNode.getPropBool("att[@name='_isSpill']/@value", false) || _graphNode.getPropBool("att[@name='_isSpillGlobal']/@value", false))
                 return;  // ignore 'spills'
-            bool isLocal = _graphNode.getPropBool("att[@name='local']/@value");
+            bool isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
             bool isOpt = _graphNode.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
             if (queryNodeIndexName(_graphNode))
             {
@@ -24336,7 +24336,7 @@ public:
         : CRoxieServerMultiInputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), headId(_headId), tailId(_tailId)
     {
         Owned<IHThorKeyedJoinArg> helper = (IHThorKeyedJoinArg *) helperFactory();
-        isLocal = _graphNode.getPropBool("att[@name='local']/@value");
+        isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         isSimple = isLocal;
         rtlDataAttr indexLayoutMeta;
         size32_t indexLayoutSize;
@@ -24486,7 +24486,10 @@ public:
 
         if (soaphelper == NULL)
         {
-            soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+            if (factory->getKind()==TAKhttp_rowdataset)
+                soaphelper.setown(createHttpCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
+            else
+                soaphelper.setown(createSoapCallHelper(this, rowAllocator, authToken.str(), SCrow, pClientCert, *ctx, this));
             soaphelper->start();
         }
 
@@ -31052,6 +31055,7 @@ public:
                     {
                         Owned<IJobQueue> queue = createJobQueue(queueNames.str());
                         queue->connect();
+                        daliHelper->noteQueuesRunning(queueNames.str());
                         while (running)
                         {
                             Owned<IJobQueueItem> item = queue->dequeue(5000);
@@ -31284,12 +31288,14 @@ public:
     {
         Owned <IRoxieDaliHelper> daliHelper = connectToDali();
         Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(wuid.get(), NULL);
+        daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
+        daliHelper->noteWorkunitRunning(wuid.get(), false);
     }
 
     void doMain(IConstWorkUnit *wu, IQueryFactory *queryFactory, StringContextLogger &logctx)
