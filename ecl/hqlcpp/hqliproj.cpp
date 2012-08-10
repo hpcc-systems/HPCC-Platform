@@ -1050,6 +1050,8 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
     IHqlExpression * transform = createMappingTransform(self, left);
     if (ds->isDataset())
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
+    else
+        assertex(!ds->isDictionary());
     return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
 }
 
@@ -1596,7 +1598,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
             break;
         case FixedInputActivity:
-            assertex(child && (child->isDataset() || child->isDatarow()));
+            assertex(child && (child->isDataset() || child->isDatarow() || child->isDictionary()));
             setOriginal(complexExtra->leftFieldsRequired, child);
             if (getNumChildTables(expr) >= 2)
                 setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
@@ -1620,7 +1622,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
     }
 
     IHqlExpression * record = expr->queryRecord();
-    if (record && !isPatternType(type) && !expr->isTransform())
+    if (record && !isPatternType(type) && !expr->isTransform() && !expr->isDictionary())
     {
         assertex(complexExtra);
         complexExtra->setOriginalRecord(queryBodyComplexExtra(record));
@@ -1972,6 +1974,11 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_inlinetable:
     case no_dataset_from_transform:
         return CreateRecordSourceActivity;
+    case no_inlinedictionary:
+        return NonActivity;
+    case no_indict:
+    case no_selectmap:
+        return FixedInputActivity;
     case no_extractresult:
     case no_apply:
         return SinkActivity;
@@ -2152,6 +2159,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case type_table:
     case type_groupedtable:
         break;
+    case type_dictionary:
     case type_transform:
         return NonActivity;
     default:
@@ -2239,7 +2247,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
     if (!extra->okToOptimize())
     {
-        if (expr->queryRecord())
+        if (expr->queryRecord() && !expr->isDictionary())
             extra->addAllOutputs();
     }
     else

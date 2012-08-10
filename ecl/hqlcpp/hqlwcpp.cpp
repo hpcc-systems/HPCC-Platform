@@ -74,6 +74,7 @@ bool isTypePassedByAddress(ITypeInfo * type)
     case type_set:
     case type_row:
         return true;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         return !isArrayRowset(type);
@@ -485,6 +486,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             //next = next->queryChildType();
             isPointer = false;
             break;
+        case type_dictionary:// MORE - is this right?
         case type_table:
             if (isArrayRowset(fullType))
             {
@@ -802,6 +804,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_data:
     case type_unicode:
     case type_utf8:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         if (paramType->getSize() == UNKNOWN_LENGTH)
@@ -843,6 +846,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_record:
         out.append("IOutputMetaData * ");
         break;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         if (isConst)
@@ -959,6 +963,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
         out.append("size32_t");
         params.append("ARowBuilder & __self");
         break;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         if (hasStreamedModifier(retType))
@@ -1156,6 +1161,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                         out.append("getbytes()");
                         break;
                     case type_set:
+                    case type_dictionary:
                     case type_table:
                     case type_groupedtable:
                         if (hasLinkCountedModifier(type))
@@ -1226,6 +1232,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                         out.append("getbytes()");
                         break;
                     case type_set:
+                    case type_dictionary:
                     case type_table:
                     case type_groupedtable:
                         if (hasLinkCountedModifier(type))
@@ -1264,6 +1271,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                         out.append("getbytes()");       //????
                         break;
                     case type_set:
+                    case type_dictionary:
                     case type_table:
                     case type_groupedtable:
                         if (hasLinkCountedModifier(childType))
@@ -1709,6 +1717,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
             else
                 throwUnexpected();
             break;
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             if (hasWrapperModifier(type))
@@ -1778,6 +1787,7 @@ void HqlCppWriter::generateStmtAssignModify(IHqlStmt * assign)
     switch (type->getTypeCode())
     {
         case type_row:
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             //check it is a pointer increment

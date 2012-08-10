@@ -1174,6 +1174,9 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
     if (left->isDataset() || right->isDataset())
         return createDataset(no_if, cond, createComma(left, right));
 
+    if (left->isDictionary() || right->isDictionary())
+        return createDictionary(no_if, cond, createComma(left, right));
+
     if (left->isDatarow() || right->isDatarow())
         return createRow(no_if, cond, createComma(left, right));
 
@@ -1879,9 +1882,12 @@ unsigned isEmptyRecord(IHqlExpression * record)
 
 bool isTrivialSelectN(IHqlExpression * expr)
 {
-    IHqlExpression * index = expr->queryChild(1);
-    if (index->queryValue() && (index->queryValue()->getIntValue() == 1))
-        return hasSingleRow(expr->queryChild(0));
+    if (expr->getOperator() == no_index || expr->getOperator() == no_selectnth)
+    {
+        IHqlExpression * index = expr->queryChild(1);
+        if (matchesConstantValue(index, 1))
+            return hasSingleRow(expr->queryChild(0));
+    }
     return false;
 }
 
@@ -3239,6 +3245,8 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
         return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
     case type_groupedtable:
         return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
+    case type_dictionary:
+        return createDictionary(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
     case type_row:
     case type_record:
          return createRow(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
@@ -5028,7 +5036,9 @@ bool isNullList(IHqlExpression * expr)
 class TempTableTransformer
 {
 public:
-    TempTableTransformer(IErrorReceiver * _errors, ECLlocation & _location) : errors(_errors), defaultLocation(_location) {}
+    TempTableTransformer(IErrorReceiver * _errors, ECLlocation & _location, bool _strictTypeChecking = false)
+      : errors(_errors), defaultLocation(_location), strictTypeChecking(_strictTypeChecking)
+    {}
 
     IHqlExpression * createTempTableTransform(IHqlExpression * curRow, IHqlExpression * record);
 
@@ -5042,6 +5052,7 @@ protected:
 protected:
     IErrorReceiver * errors;
     ECLlocation & defaultLocation;
+    bool strictTypeChecking;
 };
 
 
@@ -5058,6 +5069,24 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
     OwnedHqlExpr self = getSelf(record);
     HqlMapTransformer mapping;
     unsigned col = 0;
+    IHqlExpression * rowPayloadAttr = curRow->queryProperty(_payload_Atom);
+    IHqlExpression * recordPayloadAttr = record->queryProperty(_payload_Atom);
+    if (rowPayloadAttr)
+    {
+        unsigned rowPayload =  (unsigned) getIntValue(rowPayloadAttr->queryChild(0));
+        col++;
+        if (recordPayloadAttr)
+        {
+            unsigned recordPayload =  (unsigned) getIntValue(recordPayloadAttr->queryChild(0));
+            if (rowPayload != recordPayload)
+                ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+        }
+        else
+            ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+    }
+    else if (recordPayloadAttr)
+        ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+
     OwnedHqlExpr ret = createTempTableTransform(self, curRow, record, col, self, mapping, true);
     if (queryRealChild(curRow, col))
     {
@@ -5207,11 +5236,13 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     }
                     else if (type->isScalar() != src->queryType()->isScalar())
                     {
-//                  if (!type->assignableFrom(src->queryType()))            // stricter would be better, but might cause problems.
                         ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                         return;
                     }
-
+                    else if (strictTypeChecking && !type->assignableFrom(src->queryType()))
+                    {
+                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                    }
                     castValue.setown(ensureExprType(src, type));
                 }
                 else
@@ -5293,11 +5324,51 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     errors->reportWarning(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
+IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
+{
+    // MORE - should probably use an attr to cache this?
+    IHqlExpression * payload = record->queryProperty(_payload_Atom);
+    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    unsigned max = record->numChildren() - payloadSize;
+    IHqlExpression *newrec = createRecord();
+    for (unsigned idx = 0; idx < max; idx++)
+    {
+        IHqlExpression *child = record->queryChild(idx);
+        if (!child->isAttribute() || child->queryName()!=_payload_Atom)  // Strip off the payload attribute
+            newrec->addOperand(LINK(child));
+    }
+    return newrec->closeExpr();
+}
+
+IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    TempTableTransformer transformer(errors, location, true);
+    OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
+    return createRow(no_selectmap, dict, createRow(no_createrow, newTransform.getClear()));
+}
+
+IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    TempTableTransformer transformer(errors, location, true);
+    OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
+    return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), dict);
+}
+
+IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
+{
+    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    if (!record->queryType()->assignableFrom(row->queryType()))
+        errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
+    return createBoolExpr(no_indict, row, dict);
+}
+
 IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
-    OwnedHqlExpr values = normalizeListCasts(oldValues);
+    OwnedHqlExpr values = normalizeListCasts(oldValues); // ??? not used
 
     TempTableTransformer transformer(errors, location);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(oldValues, record);
@@ -5307,7 +5378,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr, bool isDictionary)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5344,10 +5415,40 @@ IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocat
     HqlExprArray children;
     children.append(*createValue(no_transformlist, makeNullType(), transforms));
     children.append(*LINK(record));
-    OwnedHqlExpr ret = createDataset(no_inlinetable, children);
+    OwnedHqlExpr ret = isDictionary ? createDictionary(no_inlinedictionary, children) : createDataset(no_inlinetable, children);
     return expr->cloneAllAnnotations(ret);
 }
 
+IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+{
+    return convertTempTableToInline(errors, location, expr, false);
+}
+
+IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+{
+    return convertTempTableToInline(errors, location, expr, true);
+}
+
+void setPayloadAttribute(HqlExprArray &args)
+{
+    // Locate a payload attribute in  an initializer value list. If found, move it to front and give it a position
+    int payloadPos = -1;
+    ForEachItemIn(idx, args)
+    {
+        IHqlExpression *cur = &args.item(idx);
+        if (cur->isAttribute())
+        {
+            assertex(payloadPos==-1);
+            assertex(cur->queryName()==_payload_Atom);
+            payloadPos = idx;
+        }
+    }
+    if (payloadPos != -1)
+    {
+        args.remove(payloadPos);
+        args.add(*createAttribute(_payload_Atom, createConstant((__int64) args.length()-payloadPos)), 0);
+    }
+}
 
 bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)
 {
@@ -5377,6 +5478,7 @@ bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType)
     case type_array:
         return areTypesComparable(leftType->queryChildType(), rightType->queryChildType());
     case type_row:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         return recordTypesMatch(leftType, rightType);
@@ -6964,6 +7066,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record) const
                         builder.addSetField(name, childName, *type);
                         break;
                     }
+                case type_dictionary:
                 case type_table:
                 case type_groupedtable:
                     {
@@ -7300,6 +7403,7 @@ bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * 
                 if (rhsOp == no_createrow)
                     return createConstantRow(out, rhs->queryChild(0));
                 return false;
+            case type_dictionary:
             case type_table:
             case type_groupedtable:
                 if (!expr->hasProperty(countAtom) && !expr->hasProperty(sizeofAtom))

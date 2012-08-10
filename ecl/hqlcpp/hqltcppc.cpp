@@ -2999,6 +2999,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
         }
     case type_groupedtable:
     case type_table:
+    case type_dictionary:
         {
             IHqlExpression * count = NULL;
             IHqlExpression * size = NULL;
@@ -3195,6 +3196,7 @@ static bool cachedCanReadFromCsv(IHqlExpression * record)
                     if (!cachedCanReadFromCsv(cur->queryRecord()))
                         return false;
                     break;
+                case type_dictionary:
                 case type_table:
                 case type_groupedtable:
                 case type_set:
