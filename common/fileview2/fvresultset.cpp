@@ -3355,7 +3355,7 @@ extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCurs
         text.append("<XmlSchema name=\"").append(schemaName).append("\">");
         const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
         StringBufferAdaptor adaptor(text);
-        meta.getXmlSchema(adaptor, false);
+        meta.getXmlXPathSchema(adaptor, false);
         text.append("</XmlSchema>").newline();
     }
 
