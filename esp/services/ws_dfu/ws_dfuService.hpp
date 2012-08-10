@@ -138,7 +138,7 @@ private:
     bool getUserFilePermission(IEspContext &context, IUserDescriptor* udesc, const char* logicalName, int& permission);
     void parseStringArray(const char *input, StringArray& strarray);
     int superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
-        const char* beforeSubFile, bool existingSuperfile, bool deleteFile);
+        const char* beforeSubFile, bool existingSuperfile, bool deleteFile, bool removeSuperfile =  true);
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;

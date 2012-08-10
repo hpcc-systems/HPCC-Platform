@@ -1000,7 +1000,7 @@ void CWsDfuEx::parseStringArray(const char *input, StringArray& strarray)
 }
 
 int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
-                               const char* beforeSubFile, bool existingSuperfile, bool deleteFile)
+                               const char* beforeSubFile, bool existingSuperfile, bool deleteFile, bool removeSuperfile)
 {
     if (!action || !*action)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Superfile action not specified");
@@ -1069,7 +1069,7 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
     if(strieq(action, "add"))
         dfuhelper->addSuper(superfile, num, (const char**) subfileArray.getArray(), beforeSubFile, userdesc.get());
     else
-        dfuhelper->removeSuper(superfile, num, (const char**) subfileArray.getArray(), deleteFile, userdesc.get());
+        dfuhelper->removeSuper(superfile, num, (const char**) subfileArray.getArray(), deleteFile, removeSuperfile, userdesc.get());
 
     return num;
 }
@@ -3083,7 +3083,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
 
         const char* action = req.getAction();
         const char* superfile = req.getSuperfile();
-        superfileAction(context, action, superfile, req.getSubfiles(), req.getBefore(), true, req.getDelete());
+        superfileAction(context, action, superfile, req.getSubfiles(), req.getBefore(), true, req.getDelete(), req.getRemoveSuperfile());
 
         resp.setRetcode(0);
         if (superfile && *superfile && action && strieq(action, "remove"))
