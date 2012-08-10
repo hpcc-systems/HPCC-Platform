@@ -391,6 +391,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_index:
     case no_selectnth:
         return buildDatasetIndex(ctx, expr);
+    case no_selectmap:
+        return buildDatasetSelectMap(ctx, expr);
     case no_left:
     case no_right:
     case no_self:
@@ -557,7 +559,7 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
     case no_activerow:
         return buildActiveRow(ctx, expr->queryChild(0));
     default:
-        if (!expr->isDataset())
+        if (!expr->isDataset() && !expr->isDictionary())
             return buildNewRow(ctx, expr);
         break;
     }
@@ -2100,15 +2102,22 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
-                IHqlExpression * choosenLimit = NULL;
-                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                if (expr->isDictionary())
                 {
-                    choosenLimit = expr->queryChild(1);
-                    expr = expr->queryChild(0);
+                    builder.setown(createLinkedDictionaryBuilder(record));
                 }
+                else
+                {
+                    IHqlExpression * choosenLimit = NULL;
+                    if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                    {
+                        choosenLimit = expr->queryChild(1);
+                        expr = expr->queryChild(0);
+                    }
 
-                //MORE: Extract limit and choosen and pass as parameters
-                builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                    //MORE: Extract limit and choosen and pass as parameters
+                    builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                }
             }
             else if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
             {
@@ -2171,6 +2180,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
             ctx.addAssign(target.expr, bound.expr);
             return;
         }
+    case no_inlinedictionary:
     case no_inlinetable:
         {
             //This will typically generate a loop.  If few items then it is more efficient to expand the assigns/clones out.
@@ -2401,14 +2411,20 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     Owned<IHqlCppDatasetBuilder> builder;
     if (targetOutOfLine)
     {
-        IHqlExpression * choosenLimit = NULL;
-        if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+        if (target.queryType()->getTypeCode() == type_dictionary)
         {
-            choosenLimit = expr->queryChild(1);
-            expr = expr->queryChild(0);
+            builder.setown(createLinkedDictionaryBuilder(record));
         }
-
-        builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+        else
+        {
+            IHqlExpression * choosenLimit = NULL;
+            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+            {
+                choosenLimit = expr->queryChild(1);
+                expr = expr->queryChild(0);
+            }
+            builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+        }
     }
     else
         builder.setown(createBlockedDatasetBuilder(record));
@@ -2649,6 +2665,11 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
 
     if (sourceCursor)
     {
+        if (isNullProject(expr, false))
+        {
+            if (target->buildLinkRow(iterctx, sourceCursor))
+                return;
+        }
         BoundRow * targetRow = target->buildCreateRow(iterctx);
         HqlExprAssociation * skipAssociation = NULL;
         if (containsSkip)
@@ -2663,6 +2684,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         case no_hqlproject:
             doBuildRowAssignProject(iterctx, targetRef, expr);
             break;
+        case no_newuserdictionary:
         case no_newusertable:
             doBuildRowAssignUserTable(iterctx, targetRef, expr);
             break;
@@ -2756,6 +2778,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         buildDatasetAssignTempTable(subctx, target, expr);
         //MORE: Create rows and assign each one in turn.  Could possibly be done with a different dataset selector
         return;
+    case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
         return;
@@ -2797,6 +2820,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         return;
     case no_hqlproject:
     case no_newusertable:
+    case no_newuserdictionary:
         buildDatasetAssignProject(subctx, target, expr);
         return;
     case no_compound_childread:
@@ -4180,6 +4204,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
             specialCase = !isMultiLevelDatasetSelector(expr, false);
             break;
         case no_if:
+        case no_inlinedictionary:
         case no_inlinetable:
         case no_join:
             //Always creates a temporary, so don't use an iterator
@@ -4210,7 +4235,33 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
     if (!row)
     {
         Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
-        row = cursor->buildSelect(ctx, expr);
+        row = cursor->buildSelectNth(ctx, expr);
+
+        if (!row)
+        {
+            CHqlBoundExpr boundCleared;
+            buildDefaultRow(ctx, dataset, boundCleared);
+            OwnedHqlExpr defaultRowPtr = getPointer(boundCleared.expr);
+            row = bindRow(ctx, expr, defaultRowPtr);
+        }
+    }
+    return createReferenceSelector(row);
+}
+
+IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHqlExpression * expr)
+{
+    HqlExprAssociation * match = ctx.queryAssociation(expr, AssocRow, NULL);
+    if (match)
+        return createReferenceSelector(static_cast<BoundRow *>(match));
+
+    OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
+    BoundRow * row = NULL;
+    assertex(canProcessInline(&ctx, expr));
+
+    if (!row)
+    {
+        Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
+        row = cursor->buildSelectMap(ctx, expr);
 
         if (!row)
         {
@@ -4327,6 +4378,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
     {
     case type_row:
         throwUnexpected();
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         buildTempExpr(ctx, call, tgt);

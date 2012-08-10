@@ -8486,6 +8486,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             ITypeInfo * type = expr->queryType();
             switch (type->getTypeCode())
             {
+            case type_dictionary:
             case type_table:
             case type_groupedtable:
                 if (expr->hasProperty(embeddedAtom))
@@ -8693,7 +8694,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     IHqlExpression * cursor = queryDatasetCursor(ds);
     if (cursor->isDataset())
     {
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
         {
             if (!isValidNormalizeSelector(cursor))
             {
@@ -10200,7 +10201,7 @@ IHqlExpression * HqlTreeNormalizer::convertSelectToProject(IHqlExpression * newR
     unsigned numChildren = expr->numChildren();
     for (unsigned idx = 2; idx < numChildren; idx++)
         args.append(*transform(expr->queryChild(idx)));
-    OwnedHqlExpr project = createDataset(no_newusertable, args);
+    OwnedHqlExpr project = expr->isDictionary() ? createDictionary(no_newuserdictionary, args) : createDataset(no_newusertable, args);
     return expr->cloneAllAnnotations(project);
 }
 
@@ -11268,6 +11269,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             }
             return Parent::createTransformed(cleaned);
         }
+    case no_userdictionary:
     case no_usertable:
     case no_selectfields:
         {

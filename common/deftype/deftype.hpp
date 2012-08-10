@@ -104,6 +104,7 @@ type_unused5            = 29,
     type_ifblock        = 43,       // not a real type -but used for the rtlfield serialization
     type_function       = 44,
     type_sortlist       = 45,
+    type_dictionary     = 46,
 
     type_modifier       = 0xff,     // used by getKind()
     type_unsigned       = 0x100,  // combined with some of the above, when returning summary type information. Not returned by getTypeCode()
@@ -254,6 +255,7 @@ extern DEFTYPE_API ITypeInfo *makeAnyType();
 extern DEFTYPE_API ITypeInfo *makeType(type_t type, int size);
 extern DEFTYPE_API IEnumeratedTypeBuilder *makeEnumeratedTypeBuilder(ITypeInfo *base, aindex_t numvalues);
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned);
+extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * distributeinfo, IInterface *gloalSortinfo, IInterface * localSortInfo);
 extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo);
 extern DEFTYPE_API ITypeInfo *makeRowType(ITypeInfo *basetype);

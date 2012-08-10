@@ -2996,6 +2996,19 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 return createConstant(value->castTo(expr->queryType()));
         }
         break;
+    case no_countdict:
+        {
+            IHqlExpression * child = expr->queryChild(0);
+            node_operator childOp = child->getOperator();
+            switch (childOp)
+            {
+            case no_inlinedictionary:
+                if (isPureInlineDataset(child))
+                    return createConstant(expr->queryType()->castFrom(false, (__int64)child->queryChild(0)->numChildren()));
+                break;
+            }
+            break;
+        }
     case no_countlist:
         {
             IHqlExpression * child = expr->queryChild(0);
@@ -5569,6 +5582,13 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_catchds:
     case no_catch:
         //all bets are off.
+        break;
+
+    case no_newuserdictionary:
+    case no_userdictionary:
+    case no_inlinedictionary:
+    case no_selectmap:
+        // MORE - maybe should be something here?
         break;
 
     case no_selectnth:
