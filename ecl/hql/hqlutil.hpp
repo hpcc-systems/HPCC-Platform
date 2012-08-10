@@ -447,8 +447,14 @@ extern HQL_API IHqlExpression * extractCppBodyAttrs(unsigned len, const char * v
 extern HQL_API unsigned cleanupEmbeddedCpp(unsigned len, char * buffer);
 extern HQL_API bool isNullList(IHqlExpression * expr);
 
+extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
+extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
+extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
 extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
 extern HQL_API IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API void setPayloadAttribute(HqlExprArray &args);
+
 extern HQL_API bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType);
 extern HQL_API bool arraysMatch(const HqlExprArray & left, const HqlExprArray & right);
 extern HQL_API IHqlExpression * ensureTransformType(IHqlExpression * transform, node_operator op);

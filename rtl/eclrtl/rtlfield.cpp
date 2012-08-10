@@ -834,7 +834,8 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         for (unsigned i= 0; i < thisCount; i++)
         {
             const byte * row = rows[i];
-            child->toXML(row, row, field, target);
+            if (row)
+                child->toXML(row, row, field, target);
         }
         thisSize = sizeof(size32_t) + sizeof(void * *);
     }

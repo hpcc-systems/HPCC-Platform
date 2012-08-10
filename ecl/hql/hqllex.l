@@ -142,6 +142,9 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     case type_transform:
         token = isFunction ? TRANSFORM_FUNCTION : TRANSFORM_ID;
         break;
+    case type_dictionary:
+        token = isFunction ? DICTIONARY_FUNCTION : DICTIONARY_ID;
+        break;
     case type_groupedtable:
     case type_table:
         token = isFunction ? DATASET_FUNCTION : DATASET_ID;
@@ -659,6 +662,7 @@ DENORMALIZE         { RETURNSYM(DENORMALIZE); }
 DEPRECATED          { RETURNSYM(DEPRECATED); }
 DESC                { RETURNSYM(DESC); }
 DESCEND             { RETURNSYM(DESC); }
+DICTIONARY          { RETURNSYM(DICTIONARY); }
 DISTRIBUTE          { RETURNSYM(DISTRIBUTE); }
 DISTRIBUTED         { RETURNSYM(DISTRIBUTED); }
 DISTRIBUTION        { RETURNSYM(DISTRIBUTION); }
@@ -821,7 +825,6 @@ PARALLEL            { RETURNSYM(PARALLEL); }
 PARSE               { RETURNSYM(PARSE); }
 PARTITION           { RETURNSYM(PARTITION); }
 PATTERN             { RETURNSYM(TOK_PATTERN); }
-PAYLOAD             { RETURNSYM(PAYLOAD); }
 PENALTY             { RETURNSYM(PENALTY); }
 PERSIST             { RETURNSYM(PERSIST); }
 PHYSICALFILENAME    { RETURNSYM(PHYSICALFILENAME); }

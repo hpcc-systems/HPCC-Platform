@@ -200,6 +200,7 @@ public:
     virtual bool isBoolean();
     virtual bool isConstant();
     virtual bool isDataset();
+    virtual bool isDictionary();
     virtual bool isDatarow();
     virtual bool isScope();
     virtual bool isMacro();
@@ -1325,6 +1326,33 @@ public:
     virtual IHqlSimpleScope* querySimpleScope() { return CHqlParameter::querySimpleScope(); }
 };
 
+class CHqlDictionaryParameter : public CHqlParameter, implements IHqlDataset
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CHqlParameter)
+
+    CHqlDictionaryParameter(_ATOM name, unsigned idx, ITypeInfo *type)
+     : CHqlParameter(name, idx, type) { }
+
+//IHqlExpression
+    virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_dictionary; }
+    virtual IHqlDataset *queryDataset() { return this; }
+
+//CHqlParameter
+
+    //virtual IHqlSimpleScope *querySimpleScope();
+
+//IHqlDataset
+    virtual IHqlDataset* queryTable() { return this; }
+    virtual IHqlDataset * queryRootTable() { return this; }
+    virtual IHqlExpression * queryContainer() { return NULL; }
+
+    virtual bool isAggregate() { return false; }
+
+//Overlapped methods
+    virtual IHqlSimpleScope* querySimpleScope() { return CHqlParameter::querySimpleScope(); }
+};
+
 class CHqlScopeParameter : public CHqlScope
 {
 protected:
@@ -1528,6 +1556,18 @@ public:
     void insertSymbols(IHqlExpression * expr);
 };
 
+class CHqlDictionary : public CHqlExpressionWithType // , implements IHqlDictionary
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CHqlExpression)
+    static CHqlDictionary *makeDictionary(node_operator op, ITypeInfo *type, HqlExprArray &operands);
+
+public:
+    CHqlDictionary(node_operator op, ITypeInfo *_type, HqlExprArray &_ownedOperands);
+    ~CHqlDictionary();
+
+    virtual IHqlExpression *clone(HqlExprArray &newkids);
+};
 
 
 class CHqlDataset : public CHqlExpressionWithType, implements IHqlDataset

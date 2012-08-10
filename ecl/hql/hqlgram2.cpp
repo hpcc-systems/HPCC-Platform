@@ -567,6 +567,13 @@ IHqlExpression* HqlGram::popRecord()
     return &activeRecords.pop();
 }                                       
 
+IHqlExpression* HqlGram::endRecordDef()
+{
+    IHqlExpression * record = popRecord();
+    record->Link();     // logically link should be in startrecord, but can only link after finished updating
+    popSelfScope();
+    return record->closeExpr();
+}
 
 void HqlGram::beginFunctionCall(attribute & function)
 {
@@ -2329,6 +2336,22 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpressio
     record->Release();
 }
 
+void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs)
+{
+    if (!name)
+        name = createUnnamedFieldName();
+    checkFieldnameValid(errpos, name);
+    if (queryPropertyInList(virtualAtom, attrs))
+        reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
+    if (!attrs)
+        attrs = extractAttrsFromExpr(value);
+
+    ITypeInfo * type = makeDictionaryType(makeRowType(createRecordType(record)));
+    IHqlExpression *newField = createField(name, type, value, attrs);
+    addToActiveRecord(newField);
+    record->Release();
+}
+
 void HqlGram::addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock)
 {
     activeRecords.tos().addOperand(LINK(ifblock));
@@ -3812,6 +3835,9 @@ void HqlGram::normalizeExpression(attribute & exprAttr, type_t expectedType, boo
         break;
     case type_set:
         checkList(exprAttr);
+        break;
+    case type_dictionary:
+        checkDictionary(exprAttr);
         break;
     case type_table:
         ensureDataset(exprAttr);
@@ -7667,6 +7693,7 @@ void HqlGram::ensureDataset(attribute & attr)
     }
     checkDataset(attr);
 }
+
 void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos)
 {
     ForEachChild(i2, payload)
@@ -7708,10 +7735,45 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
     }
 }
 
-void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos)
+void HqlGram::mergeDictionaryPayload(SharedHqlExpr & record, SharedHqlExpr & payload, const attribute & errpos)
 {
+    checkRecordIsValid(errpos, record.get());
     IHqlSimpleScope * scope = record->querySimpleScope();
 
+    // Move all the attributes to the front of the record
+    HqlExprArray fields;
+    ForEachChild(i3, record)
+    {
+        IHqlExpression * cur = record->queryChild(i3);
+        if (cur->isAttribute())
+            fields.append(*LINK(cur));
+    }
+    ForEachChild(i1, record)
+    {
+        IHqlExpression * cur = record->queryChild(i1);
+        if (!cur->isAttribute())
+            fields.append(*LINK(cur));
+    }
+
+    unsigned payloadCount = 0;
+    ITypeInfo * lastFieldType = NULL;
+    if (payload)
+    {
+        unsigned oldFields = fields.ordinality();
+        expandPayload(fields, payload,  scope, lastFieldType, errpos);
+        payloadCount = fields.ordinality() - oldFields;
+    }
+    fields.add(*createAttribute(_payload_Atom, createConstant((__int64) payloadCount)), 0);
+    record.setown(createRecord(fields));
+}
+
+
+void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos)
+{
+    checkRecordIsValid(errpos, record.get());
+    IHqlSimpleScope * scope = record->querySimpleScope();
+
+    // Move all the attributes to the front of the record
     HqlExprArray fields;
     ForEachChild(i3, record)
     {
@@ -7758,7 +7820,7 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
         payloadCount++;
     }
 
-    extra.setown(createComma(extra.getClear(), createAttribute(_payload_Atom, createConstant((__int64)payloadCount))));
+    extra.setown(createComma(extra.getClear(), createAttribute(_payload_Atom, createConstant((__int64) payloadCount))));
     record.setown(createRecord(fields));
 }
 
@@ -7803,32 +7865,6 @@ IHqlExpression * HqlGram::extractTransformFromExtra(SharedHqlExpr & extra)
     }
     return ret;
 }
-            
-
-void HqlGram::applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, SharedHqlExpr & extra)
-{
-    IHqlExpression * payload = queryPropertyInList(payloadAtom, extra);
-    if (payload)
-    {
-        HqlExprArray fields;
-        unwindChildren(fields, record);
-        IHqlExpression * search = payload->queryChild(0);
-        if (search->getOperator() == no_select)
-            search = search->queryChild(1);
-        unsigned match = fields.find(*search);
-        if (match != NotFound)
-        {
-            HqlExprArray args;
-            extra->unwindList(args, no_comma);
-            args.zap(*payload);
-            args.append(*createAttribute(_payload_Atom, createConstant((__int64)fields.ordinality()-match)));
-            extra.setown(createComma(args));
-        }
-        else
-            reportError(ERR_TYPEMISMATCH_RECORD, errpos, "The argument to the payload isn't found in the index record");
-    }
-}
-
 
 void HqlGram::checkBoolean(attribute &atr)
 {
@@ -7858,6 +7894,15 @@ void HqlGram::checkDataset(attribute &atr)
     {
         reportError(ERR_EXPECTED_DATASET, atr, "Expected dataset expression");
         atr.release().setExpr(createNullDataset());
+    }
+}
+
+void HqlGram::checkDictionary(attribute &atr)
+{
+    if (!atr.queryExpr()->isDictionary())
+    {
+        reportError(ERR_EXPECTED_DATASET, atr, "Expected dictionary expression");
+        atr.release().setExpr(createNullDictionary());
     }
 }
 
@@ -8214,7 +8259,7 @@ static bool isZeroSize(IHqlExpression * expr)
 }
 
 
-void HqlGram::checkRecordIsValid(attribute &atr, IHqlExpression *record)
+void HqlGram::checkRecordIsValid(const attribute &atr, IHqlExpression *record)
 {
     if (isZeroSize(record))
         reportError(ERR_ZEROSIZE_RECORD, atr, "Record must not be zero length");
@@ -8374,6 +8419,21 @@ void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, at
     targetAttr.setPosition(leftAttr);
 }
 
+void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind)
+{
+    OwnedHqlExpr left = leftAttr.getExpr();
+    OwnedHqlExpr right = rightAttr.getExpr();
+    assertex(left->isDictionary());
+    if (!right->isDictionary())
+        reportError(WRN_UNSUPPORTED_FEATURE, rightAttr, "Only dictionary may be appended to dictionary");
+    right.setown(checkEnsureRecordsMatch(left, right, rightAttr, right->isDatarow()));
+    // TODO: support for dict + row, dict + dataset
+//    if (right->isDatarow())
+//        right.setown(createDatasetFromRow(LINK(right)));
+    IHqlExpression * attr = kind ? createAttribute(kind) : NULL;
+    targetAttr.setExpr(createDictionary(no_addfiles, LINK(left), createComma(LINK(right), attr)));
+    targetAttr.setPosition(leftAttr);
+}
 
 IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr)
 {
@@ -9841,6 +9901,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case DENORMALIZE: msg.append("DENORMALIZE"); break;
     case DEPRECATED: msg.append("DEPRECATED"); break;
     case DESC: msg.append("DESC"); break;
+    case DICTIONARY: msg.append("DICTIONARY"); break;
     case DISTRIBUTE: msg.append("DISTRIBUTE"); break;
     case DISTRIBUTED: msg.append("DISTRIBUTED"); break;
     case DISTRIBUTION: msg.append("DISTRIBUTION"); break;
@@ -10011,7 +10072,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case PARTITION: msg.append("PARTITION"); break;
     case PARTITION_ATTR: msg.append("PARTITION"); break;
     case TOK_PATTERN: msg.append("PATTERN"); break;
-    case PAYLOAD: msg.append("PAYLOAD"); break;
     case PENALTY: msg.append("PENALTY"); break;
     case PERSIST: msg.append("PERSIST"); break;
     case PHYSICALFILENAME: msg.append("PHYSICALFILENAME"); break;
@@ -10159,6 +10219,7 @@ static void getTokenText(StringBuffer & msg, int token)
 
     case DATASET_ID: msg.append("dataset"); break;
     case DATAROW_ID: msg.append("datarow"); break;
+    case DICTIONARY_ID: msg.append("dictionary"); break;
     case RECORD_ID: msg.append("record-name"); break;
     case RECORD_FUNCTION: msg.append("record-name"); break;
     case VALUE_ID: msg.append("identifier"); break;
@@ -10184,6 +10245,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SCOPE_FUNCTION: msg.append("module-name"); break;
     case TRANSFORM_FUNCTION: msg.append("transform-name"); break;
     case DATAROW_FUNCTION: msg.append("datarow"); break;
+    case DICTIONARY_FUNCTION: msg.append("dictionary"); break;
     case LIST_DATASET_FUNCTION: msg.append("identifier"); break;
 
     case VALUE_FUNCTION: 
@@ -10280,7 +10342,7 @@ void HqlGram::simplifyExpected(int *expected)
                        TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
-    simplify(expected, VALUE_ID, DATASET_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, 0); 
+    simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, 0);
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, 0);
     simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
@@ -10328,6 +10390,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     {
     case DATAROW_ID:
     case DATASET_ID:
+    case DICTIONARY_ID:
     case SCOPE_ID:
     case VALUE_ID:
     case VALUE_ID_REF:
@@ -10346,6 +10409,7 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     case LIST_DATASET_ID:
     case DATAROW_FUNCTION:
     case DATASET_FUNCTION:
+    case DICTIONARY_FUNCTION:
     case VALUE_FUNCTION:
     case ACTION_FUNCTION:
     case PATTERN_FUNCTION:

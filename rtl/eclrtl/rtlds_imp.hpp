@@ -363,7 +363,6 @@ public:
     void appendRows(size32_t num, byte * * rows);
     inline void appendEOG() { appendOwn(NULL); }
     byte * createRow();
-    void cancelRow();
     void cloneRow(size32_t len, const void * ptr);
     void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
@@ -382,9 +381,6 @@ public:
     inline byte * row() const { return builder.row(); }
 
 protected:
-    void flush();
-
-protected:
     IEngineRowAllocator * rowAllocator;
     RtlDynamicRowBuilder builder;
     byte * * rowset;
@@ -392,6 +388,57 @@ protected:
     size32_t max;
     size32_t choosenLimit;
 };
+
+class ECLRTL_API RtlLinkedDictionaryBuilder
+{
+public:
+    RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialTableSize);
+    RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo);
+    ~RtlLinkedDictionaryBuilder();
+
+    void append(const void * source);
+    void appendOwn(const void * source);
+    void appendRows(size32_t num, byte * * rows);
+
+    inline size32_t getcount() { return tableSize; }
+    inline byte * * linkrows() { return rtlLinkRowset(table); }
+
+    byte * createRow()         { return builder.getSelf(); }
+    void finalizeRow(size32_t len);
+    inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
+    void cloneRow(size32_t len, const void * ptr);
+    /*
+        Not clear which if any of these we will want...
+    void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
+    void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
+    void expand(size32_t required);
+    void resize(size32_t required);
+    void finalizeRows();
+
+    inline void ensure(size32_t required) { if (required > max) expand(required); }
+    */
+    inline byte * * queryrows() { return table; }
+    inline byte * row() const { return builder.row(); }
+
+protected:
+    void checkSpace();
+    void init(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialTableSize);
+
+protected:
+    IEngineRowAllocator *rowAllocator;
+    IHash *hash;
+    ICompare *compare;
+    RtlDynamicRowBuilder builder;
+    byte * * table;
+    size32_t usedCount;
+    size32_t usedLimit;
+    size32_t initialSize;
+    size32_t tableSize;
+};
+
+extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
+extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
+extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);
 
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 
