@@ -7347,7 +7347,7 @@ StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupNam
 {
     const char *name = cluster.queryProp("@name");
     const char *nodeGroupName = cluster.queryProp("@nodeGroup");
-    if (nodeGroupName)
+    if (nodeGroupName && *nodeGroupName)
         name = nodeGroupName;
     groupName.append(name);
     return groupName.trim().toLowerCase();
