@@ -20,7 +20,7 @@ public class SQLParserTest
 		try
 		{
 			parser.process("select * from " + tablename);
-			success = parser.getTableName().equals(tablename) ? true : false;
+			success = parser.getTableName(0).equals(tablename) ? true : false;
 
 		}
 		catch (Exception e)
@@ -39,8 +39,8 @@ public class SQLParserTest
 		try
 		{
 			parser.process("select * from " + tablename + " AS " + alias);
-			success &= parser.getTableName().equals(tablename) ? true : false;
-			success &= parser.getTableAlias().equals(alias) ? true : false;
+			success &= parser.getTableName(0).equals(tablename) ? true : false;
+			success &= parser.getTableAlias(0).equals(alias) ? true : false;
 		}
 		catch (Exception e)
 		{
@@ -75,8 +75,8 @@ public class SQLParserTest
 							"(" + col.getAlias()  + ") " : ""));
 				}
 				System.out.println(" ] ");
-				System.out.println("Table Name: " + parser.getTableName());
-				System.out.println("Table Alias: " + parser.getTableAlias());
+				System.out.println("Table Name: " + parser.getTableName(0));
+				System.out.println("Table Alias: " + parser.getTableAlias(0));
 				System.out.println("Index Hint: " + parser.getIndexHint());
 				if (parser.hasJoinClause())
 					System.out.println("Join Clause: " + parser.getJoinClause().toString());
