@@ -130,6 +130,7 @@ private:
     Owned<IUserDescriptor> userdesc;
     InterruptableSemaphore disconnectSem;
     IArrayOf<IDaliPackageWatcher> watchers;
+    CSDSServerStatus *serverStatus;
 
     class CRoxieDaliConnectWatcher : public Thread
     {
@@ -273,7 +274,7 @@ private:
 public:
 
     IMPLEMENT_IINTERFACE;
-    CRoxieDaliHelper() : connectWatcher(this)
+    CRoxieDaliHelper() : connectWatcher(this), serverStatus(NULL)
     {
         if (topology)
         {
@@ -439,6 +440,34 @@ public:
         return wuFactory->openWorkUnit(wuid, false);
     }
 
+    virtual void noteWorkunitRunning(const char *wuid, bool running)
+    {
+        CriticalBlock b(daliConnectionCrit);
+        if (isConnected)
+        {
+            assertex(serverStatus);
+            if (running)
+                serverStatus->queryProperties()->addProp("WorkUnit",wuid);
+            else
+            {
+                VStringBuffer xpath("WorkUnit[.='%s']",wuid);
+                serverStatus->queryProperties()->removeProp(xpath.str());
+            }
+            serverStatus->commitProperties();
+        }
+    }
+
+    virtual void noteQueuesRunning(const char *queueNames)
+    {
+        CriticalBlock b(daliConnectionCrit);
+        if (isConnected)
+        {
+            assertex(serverStatus);
+            serverStatus->queryProperties()->setProp("@queue", queueNames);
+            serverStatus->commitProperties();
+        }
+    }
+
     static IRoxieDaliHelper *connectToDali(unsigned waitToConnect)
     {
         CriticalBlock b(daliHelperCrit);
@@ -529,7 +558,9 @@ public:
                     if (!initClientProcess(serverGroup, DCR_RoxyMaster, 0, NULL, NULL, timeout))
                         throw MakeStringException(ROXIE_DALI_ERROR, "Could not initialize dali client");
                     setPasswordsFromSDS();
-                    CSDSServerStatus serverstatus("Roxieserver");
+                    serverStatus = new CSDSServerStatus("RoxieServer");
+                    serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
+                    serverStatus->commitProperties();
                     initCache();
                     ForEachItemIn(idx, watchers)
                     {
@@ -557,6 +588,8 @@ public:
             CriticalBlock b(daliConnectionCrit);
             if (isConnected)
             {
+                delete serverStatus;
+                serverStatus = NULL;
                 closeDllServer();
                 closeEnvironment();
                 clientShutdownWorkUnit();
