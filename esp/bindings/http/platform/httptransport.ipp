@@ -406,7 +406,12 @@ public:
 
 inline bool canRedirect(CHttpRequest &req)
 {
-    return !req.queryParameters()->hasProp("rawxml_");
+    if (req.queryParameters()->hasProp("rawxml_"))
+        return false;
+    IEspContext *ctx = req.queryContext();
+    if (ctx && ctx->getResponseFormat()!=ESPSerializationANY)
+        return false;
+    return true;
 }
 
 inline bool skipXslt(IEspContext &context)
