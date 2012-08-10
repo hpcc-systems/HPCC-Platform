@@ -1332,6 +1332,37 @@ bool CRowTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //===========================================================================
 
+bool CDictionaryTypeInfo::assignableFrom(ITypeInfo *t2)
+{
+    if (getTypeCode()==t2->getTypeCode())
+    {
+        ITypeInfo *c1 = queryChildType();
+        ITypeInfo *c2 = t2->queryChildType();
+        if (c1==NULL || c2==NULL || c1->assignableFrom(c2))
+            return true;
+    }
+    return false;
+}
+
+StringBuffer & CDictionaryTypeInfo::getECLType(StringBuffer & out)
+{
+    ITypeInfo * recordType = ::queryRecordType(this);
+    out.append(queryTypeName());
+    if (recordType)
+    {
+        out.append(" of ");
+        recordType->getECLType(out);
+    }
+    return out;
+}
+
+void CDictionaryTypeInfo::serialize(MemoryBuffer &tgt)
+{
+    CBasedTypeInfo::serializeSkipChild(tgt);
+}
+
+//===========================================================================
+
 bool CTableTypeInfo::assignableFrom(ITypeInfo *t2)
 {
     if (getTypeCode()==t2->getTypeCode())
@@ -1983,6 +2014,12 @@ extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * di
 {
     assertex(!basetype || basetype->getTypeCode() == type_row);
     return commonUpType(new CTableTypeInfo(basetype, distributeinfo, globalsortinfo, localsortinfo));
+}
+
+extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
+{
+    assertex(!basetype || basetype->getTypeCode() == type_row);
+    return commonUpType(new CDictionaryTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo)
@@ -3213,6 +3250,7 @@ inline ITypeInfo * queryChildType(ITypeInfo * t, type_t search)
         switch (code)
         {
         case type_set:
+        case type_dictionary:
         case type_groupedtable:
         case type_row:
         case type_table:
@@ -3341,6 +3379,9 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
     OwnedITypeInfo newType;
     switch (type->getTypeCode())
     {
+    case type_dictionary:
+        newType.setown(makeDictionaryType(LINK(newChild)));
+        break;
     case type_table:
         newType.setown(makeTableType(LINK(newChild), LINK(type->queryDistributeInfo()), LINK(type->queryGlobalSortInfo()), LINK(type->queryLocalUngroupedSortInfo())));
         break;

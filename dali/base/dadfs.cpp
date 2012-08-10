@@ -959,7 +959,7 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
-    static bool cannotRemove(CDfsLogicalFileName &name,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
+    static bool cannotRemove(CDfsLogicalFileName &name,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
     void setFileProtect(CDfsLogicalFileName &dlfn, const char *owner, bool set, const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -6597,10 +6597,10 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 }
 
 // MORE - this should go when remove file gets into transactions
-bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,StringBuffer &reason,bool ignoresub, unsigned timeoutms)
+bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms)
 {
     // This is a hack while we don't move remove out of dir
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(dlfn, NULL, false, NULL, 6*1000);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(dlfn, user, false, NULL, 6*1000);
     if (file.get())
         return !file->canRemove(reason, ignoresub);
     return false;
@@ -6615,7 +6615,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     if (!checkLogicalName(dlfn,user,true,true,true,"remove"))
         return false;
     StringBuffer reason;
-    if (cannotRemove(dlfn,reason,ignoresub,defaultTimeout)) {
+    if (cannotRemove(dlfn,user,reason,ignoresub,defaultTimeout)) {
 #ifdef EXTRA_LOGGING
         PROGLOG("CDistributedFileDirectory::doRemoveEntry(cannotRemove) %s",reason.str());
 #endif
@@ -7347,7 +7347,7 @@ StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupNam
 {
     const char *name = cluster.queryProp("@name");
     const char *nodeGroupName = cluster.queryProp("@nodeGroup");
-    if (nodeGroupName)
+    if (nodeGroupName && *nodeGroupName)
         name = nodeGroupName;
     groupName.append(name);
     return groupName.trim().toLowerCase();

@@ -763,4 +763,3 @@ AColumnInfo * CChildLinkedDatasetColumnInfo::lookupColumn(IHqlExpression * searc
     return NULL;
 }
 
-

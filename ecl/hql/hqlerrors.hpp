@@ -73,6 +73,7 @@
 #define WRN_FILENAMEIGNORED         1047
 #define WRN_EXPORT_IGNORED          1048
 #define WRN_RECORDMANYFIELDS        1049
+#define WRN_RESERVED_FUTURE         1050 /* Identifier likely to be reserved in future versions */
 //#define ECL_WARN_END          1100
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -458,6 +459,7 @@
 #define HQLWRN_CouldNotConstantFoldIf           3124
 #define HQLERR_UnexpectedOperator               3125
 #define HQLERR_UnexpectedType                   3126
+#define HQLERR_PayloadMismatch                  3127
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -484,8 +486,9 @@
 #define HQLERR_IncompatiableInitailiser_Text    "Inline DATASET field '%s' cannot be initialized with a list of values"
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
-#define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s in inline dataset has the wrong type"
+#define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
 #define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
+#define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

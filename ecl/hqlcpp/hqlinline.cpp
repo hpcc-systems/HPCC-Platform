@@ -75,7 +75,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     //But it would be really good if the code could be made context independent - then it could go in hqlattr and be cached.
     if (ctx)
     {
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
         {
             if (ctx->queryMatchExpr(expr))
                 return RETevaluate;
@@ -151,6 +151,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETiterate;
             return RETiterate|HEFspillinline;
         }
+    case no_selectmap:
     case no_selectnth:
         {
             IHqlExpression * ds = expr->queryChild(0);
@@ -215,6 +216,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return 0;       // for the moment always do this out of line 
     case no_table:
         return 0;
+    case no_newuserdictionary:
+    case no_userdictionary:
+        return RETassign;
+    case no_inlinedictionary:
+        return RETassign;
     case no_owned_ds:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
