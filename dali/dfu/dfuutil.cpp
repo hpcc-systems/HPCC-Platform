@@ -738,7 +738,7 @@ public:
     }
 
 
-    void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, IUserDescriptor *user)
+    void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, bool removesuperfile, IUserDescriptor *user)
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
@@ -788,7 +788,7 @@ public:
             transaction->commit();
         }
         // Delete superfile if empty
-        if (superfile->numSubFiles() == 0) {
+        if (removesuperfile && (superfile->numSubFiles() == 0)) {
             superfile.clear();
             // MORE - add file deletion to transaction
             queryDistributedFileDirectory().removeEntry(superfname);

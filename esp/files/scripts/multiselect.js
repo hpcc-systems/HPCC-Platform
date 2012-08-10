@@ -91,20 +91,28 @@ function selectAll(select)
 
 function checkSelectAllCheckBoxes(check)
 {
-   if(document.forms[0] != null)
-   {
-       //var all = document.forms[0].all;
-       //if (all) {
-           selectAllCell = document.getElementById("selectAll1");
-           if (selectAllCell && selectAllCell.children[0])
-               selectAllCell.children[0].checked = check;
+    if(document.forms[0] === null)
+        return;
 
-           selectAllCell = document.getElementById("selectAll2");
-           if (selectAllCell)
-               selectAllCell.children[0].checked = check;
-           selectAllCheckboxChecked = check;
-       //}
-   }
+    selectAllCell = document.getElementById("selectAll1");
+    if (selectAllCell && selectAllCell.children[0])
+        selectAllCell.children[0].checked = check;
+
+    selectAllCell = document.getElementById("selectAll2");
+    if (selectAllCell && selectAllCell.children[0])
+        selectAllCell.children[0].checked = check;
+
+    selectAllCheckboxChecked = check;
+
+    selectRemoveSuperfile = document.getElementById("removeSuperfile");
+    if (selectRemoveSuperfile)
+    {
+        selectRemoveSuperfile.checked = false; /*default: not delete superfile*/
+        if (check)
+            selectRemoveSuperfile.disabled = false; /*enable it only when all files are selected to delete*/
+        else
+            selectRemoveSuperfile.disabled = true;
+    }
 }
 
 
