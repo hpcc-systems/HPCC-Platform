@@ -3129,7 +3129,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
             }
             {
                 synchronized block(m_superfilemutex);
-                dfuhelper->removeSuper(req.getSuperfile(), num, ptrs, req.getDelete(), userdesc.get()); 
+                dfuhelper->removeSuper(req.getSuperfile(), num, ptrs, req.getDelete(), req.getRemoveSuperfile(), userdesc.get()); 
             }
         }
         
