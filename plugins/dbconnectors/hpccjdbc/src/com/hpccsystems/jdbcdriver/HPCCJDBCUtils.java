@@ -238,4 +238,9 @@ public class HPCCJDBCUtils
         }
         return retVal;
     }
+
+    public static boolean isParametrizedStr(String value)
+    {
+        return  (value.contains("${") || value.equals("?"));
+    }
 }

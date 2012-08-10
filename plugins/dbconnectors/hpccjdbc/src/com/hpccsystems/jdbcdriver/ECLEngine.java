@@ -117,7 +117,7 @@ public class ECLEngine
         {
             case SQLParser.SQL_TYPE_SELECT:
             {
-                queryFileName = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
+                queryFileName = HPCCJDBCUtils.handleQuotedString(parser.getTableName(0));
                 if (!dbMetadata.tableExists("", queryFileName))
                     throw new Exception("Invalid table found: " + queryFileName);
 
@@ -250,11 +250,15 @@ public class ECLEngine
                     translator.put(hpccJoinFileName, "RIGHT");
 
                     eclCode.append("\n").append("JndDS := JOIN(").append(" Tbl1DS").append(", Tbl2DS").append(", ")
-                            .append(parser.getJoinClause().getOnClause().toStringTranslateSource(translator))
-                            .append(", ").append(parser.getJoinClause().getECLTypeStr()).append(" );\n");
+                            .append(parser.getJoinClause().getOnClause().toStringTranslateSource(translator));
+                    if (parser.getWhereClauseExpressionsCount() > 0)
+                        eclCode.append(" AND ").append(parser.getWhereClauseStringTranslateSource(translator));
+                    eclCode.append(", ").append(parser.getJoinClause().getECLTypeStr()).append(" );\n");
 
                     eclDSSourceMapping.put(queryFileName, "JndDS");
                     eclDSSourceMapping.put(hpccJoinFileName, "JndDS");
+
+                    eclEntities.put("JoinQuery", "1");
                 }
 
                 eclEntities.put("SourceDS", eclDSSourceMapping.get(queryFileName));
@@ -478,7 +482,7 @@ public class ECLEngine
         {
             String keyedcolname = (String) keyedcols.get(i);
             if (parser.whereClauseContainsKey(keyedcolname))
-                keyed.add(" " + parser.getExpressionFromName(keyedcolname).toString() + " ");
+                keyed.add(" " + parser.getExpressionFromColumnName(keyedcolname).toString() + " ");
             else if (keyed.isEmpty())
                 wild.add(" " + keyedcolname + " ");
         }
@@ -626,7 +630,7 @@ public class ECLEngine
                     sb.append("TABLE( ");
                     sb.append(eclEntities.get("SourceDS"));
 
-                    if (parameters.size() > 0)
+                    if (parameters.size() > 0 && !parameters.containsKey("JoinQuery"))
                         addFilterClause(sb, parameters);
 
                     sb.append(", SelectStruct");
@@ -869,6 +873,7 @@ public class ECLEngine
 
                                 ArrayList columnsArray = new ArrayList();
                                 rowArray.add(columnsArray);
+
 
                                 for (int k = 0; k < columnList.getLength(); k++)
                                 {
