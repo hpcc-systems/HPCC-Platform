@@ -659,6 +659,11 @@ DENORMALIZE         { RETURNSYM(DENORMALIZE); }
 DEPRECATED          { RETURNSYM(DEPRECATED); }
 DESC                { RETURNSYM(DESC); }
 DESCEND             { RETURNSYM(DESC); }
+DICTIONARY          {
+                        lexer->reportWarning(returnToken, WRN_RESERVED_FUTURE, "%s", "DICTIONARY will be a reserved word from release 3.10");
+                        setupdatepos;
+                        return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
+                    }
 DISTRIBUTE          { RETURNSYM(DISTRIBUTE); }
 DISTRIBUTED         { RETURNSYM(DISTRIBUTED); }
 DISTRIBUTION        { RETURNSYM(DISTRIBUTION); }
