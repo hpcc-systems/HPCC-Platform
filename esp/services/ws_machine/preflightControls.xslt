@@ -87,31 +87,30 @@
          {
           if (!fromTargetClusterPage)
           {
-            if ((name=='Start') || (name=='Stop'))
-              method = name;   
-            else
-                    document.forms['listitems'].action = '/ws_machine/' + name;
+             if ((name=='Start') || (name=='Stop'))
+                method = name;
+             else
+                document.forms['listitems'].action = '/ws_machine/' + name;
 
-            var c = document.forms['listitems'].all;
-            if (name != 'GetMachineInfo')
-               c['GetMachineInfo'].style.display="none";
-               
-            if (name != 'GetMetrics' && c['GetMetrics'] != undefined)
-               c['GetMetrics'].style.display="none";
-            
-            if (name != 'RemoteExec')
-               c['RemoteExec'].style.display="none";
-                  
-            if (name != 'Start' && name != 'Stop')
-               c['StartStop'].style.display="none";
-                  
-            c['AutoRefreshSection'].style.display= name == "GetMachineInfo" ? "block" : "none";
-            if (name!='Start' && name!='Stop')
-               c[name].style.display='block';
-                    else
-               c['StartStop'].style.display='block';
+             if (name != 'GetMachineInfo')
+                document.getElementById('GetMachineInfo').style.display="none";
 
-            method = name;
+             if (name != 'GetMetrics' && document.getElementById('GetMetrics') != undefined)
+                document.getElementById('GetMetrics').style.display="none";
+
+             if (name != 'RemoteExec')
+                document.getElementById('RemoteExec').style.display="none";
+                  
+             if (name != 'Start' && name != 'Stop')
+                document.getElementById('StartStop').style.display="none";
+
+             document.getElementById('AutoRefreshSection').style.display= name == "GetMachineInfo" ? "block" : "none";
+             if (name!='Start' && name!='Stop')
+                document.getElementById(name).style.display='block';
+             else
+                document.getElementById('StartStop').style.display='block';
+
+             method = name;
           }
           else
           {
