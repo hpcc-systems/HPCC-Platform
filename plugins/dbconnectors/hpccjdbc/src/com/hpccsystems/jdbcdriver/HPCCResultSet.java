@@ -104,6 +104,7 @@ public class HPCCResultSet implements ResultSet
             {
                 boolean avoidindex = false;
 
+                //Currently, query table is always 0th index.
                 String queryfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName(0));
                 if (!dbMetadata.tableExists("", queryfilename))
                     throw new Exception("Invalid table found: " + queryfilename);

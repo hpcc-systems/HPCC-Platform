@@ -54,7 +54,7 @@ public class SQLJoinClause
         this.OnClause = new SQLWhereClause();
     }
 
-    public SQLJoinClause(String joinclausestr) throws SQLException
+    public void parse(String joinclausestr) throws SQLException
     {
         this.OnClause = new SQLWhereClause();
 

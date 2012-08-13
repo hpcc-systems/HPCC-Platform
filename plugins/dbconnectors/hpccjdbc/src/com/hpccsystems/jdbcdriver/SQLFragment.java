@@ -72,12 +72,12 @@ public class SQLFragment
                 String fragsplit[] = fragment.split("\\.", 2);
                 if (fragsplit.length == 1)
                 {
-                    setValue(fragsplit[0].trim());
+                    setValue(fragsplit[0]);
                 }
                 else
                 {
-                    setParent(fragsplit[0].trim());
-                    setValue(fragsplit[1].trim());
+                    setParent(fragsplit[0]);
+                    setValue(fragsplit[1]);
                 }
                 break;
             default:
@@ -100,7 +100,7 @@ public class SQLFragment
         {
             return FragmentType.UNKNOWN_TYPE;
         }
-        else if (HPCCJDBCUtils.isParametrizedStr(fragStr))
+        else if (HPCCJDBCUtils.isParameterizedStr(fragStr))
         {
             return FragmentType.PARAMETRIZED_TYPE;
         }
@@ -128,17 +128,20 @@ public class SQLFragment
 
     public void updateFragmentColumParent(List<SQLTable> sqlTables) throws Exception
     {
-        if (parent != null && parent.length() > 0)
+        if (type == FragmentType.FIELD_TYPE)
         {
-            setParent(searchForPossibleTableName(sqlTables));
-        }
-        else if (sqlTables.size() == 1)
-        {
-            setParent(sqlTables.get(0).getName());
-        }
-        else
-        {
-            throw new Exception("Ambiguous field found: " + getValue());
+            if (parent != null && parent.length() > 0)
+            {
+                setParent(searchForPossibleTableName(sqlTables));
+            }
+            else if (sqlTables.size() == 1)
+            {
+                setParent(sqlTables.get(0).getName());
+            }
+            else
+            {
+                throw new Exception("Ambiguous field found: " + getValue());
+            }
         }
     }
 

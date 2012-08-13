@@ -438,7 +438,9 @@ public class SQLParser
     {
         if (joinOnClause.length() > 0)
         {
-            joinClause = new SQLJoinClause(joinOnClause);
+            joinClause = new SQLJoinClause();
+
+            joinClause.parse(joinOnClause);
             sqlTables.add(joinClause.getJoinTable());
         }
         else
@@ -596,7 +598,7 @@ public class SQLParser
                 int paramindex = 0;
                 for (int columindex = 0; columindex < procInParamValues.length; columindex++)
                 {
-                    if (HPCCJDBCUtils.isParametrizedStr(procInParamValues[columindex]))
+                    if (HPCCJDBCUtils.isParameterizedStr(procInParamValues[columindex]))
                     {
                         String value = (String) inParameters.get(new Integer(++paramindex));
                         if (value == null)
@@ -706,6 +708,8 @@ public class SQLParser
     public void verifyAndProcessAllColumn(HPCCColumnMetaData column, HashMap<String, HPCCColumnMetaData> availableCols)  throws Exception
     {
         String fieldName = column.getColumnName();
+        //Currently, query table is always 0th index.
+        //This will be the default table name.
         String tableName = sqlTables.get(0).getName();
 
         String colsplit[] = fieldName.split("\\.");
