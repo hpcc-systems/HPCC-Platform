@@ -50,6 +50,45 @@ based on the appropriate target - if the change is to go into the next 3.6 build
 base it on candidate-3.6.x, for example. All changes that are accepted into candidate-3.6.x
 are normally merged into the master branch too.
 
+Bug fixes for a specific release that has been named already go directly to its
+candidate branch. So, if there is a version 3.6.2 that is in final testing phase and
+a 3.6.4 that will be the next release, candidate-3.6.2 should be used to merge
+bug-fixes to the former, while candidate-3.6.x to the latter.
+
+Release cycle
+=============
+
+At any point in time, there are several concurrent versions being developed,
+each with its own branch. Each pending version will be released in order, so
+changes to the code will be assigned to the correct version depending on their
+priorities, severities and impact. Below is a simple table of the release
+cycle and the type of changes that will be accepted into each different
+release.
+
+Released: Version that is available for download on the website. Bugs will be
+          fixed on subsequent versions of the platform.
+
+    Gold: The current release, in late testing phase and approved internally for
+          release. If serious bugs or regressions are found, we might have
+          to create a new release-candidate. Otherwise, bugs will be fixed on
+          subsequent versions of the platform.
+
+  Stable: The next release, where major bugs and regressions are being fixed, and
+          only minor features are being developed. Only the features that have
+          been agreed should go in this release, with all new ones targeted to
+          Unstable release. Minor features that are required to fix a bug can
+          be included in the last minute, provided developers agree with it.
+
+Unstable: Current development version, where new important features are being
+          developed. New feature requests should be targeted to this release.
+          However, some major features (or ones that break compatibility) should
+          be target to Future. Some refactoring should go into this release,
+          provided it makes the platform more stable and robust.
+
+  Future: Big refactoring, long-term development, destructive/backward
+          incompatible features. This normally reflects the next major (x.0)
+          version.
+
 Tags
 ====
 
