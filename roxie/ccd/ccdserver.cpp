@@ -31295,7 +31295,9 @@ public:
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
+        queryFactory.clear();
         daliHelper->noteWorkunitRunning(wuid.get(), false);
+        clearKeyStoreCache(false);   // Bit of a kludge - cache should really be smarter
     }
 
     void doMain(IConstWorkUnit *wu, IQueryFactory *queryFactory, StringContextLogger &logctx)
