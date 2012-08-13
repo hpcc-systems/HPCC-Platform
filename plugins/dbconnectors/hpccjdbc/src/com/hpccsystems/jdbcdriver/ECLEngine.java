@@ -117,6 +117,7 @@ public class ECLEngine
         {
             case SQLParser.SQL_TYPE_SELECT:
             {
+                //Currently, query table is always 0th index.
                 queryFileName = HPCCJDBCUtils.handleQuotedString(parser.getTableName(0));
                 if (!dbMetadata.tableExists("", queryFileName))
                     throw new Exception("Invalid table found: " + queryFileName);
