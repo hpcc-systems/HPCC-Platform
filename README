@@ -65,3 +65,4 @@ make
 make package
  
  
+test
