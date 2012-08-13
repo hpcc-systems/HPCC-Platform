@@ -894,7 +894,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="udpResendEnabled" type="xs:boolean" use="optional" default="true">
+    <xs:attribute name="udpResendEnabled" type="xs:boolean" use="optional" default="false">
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>UDP transport layer packet resend ability</tooltip>
