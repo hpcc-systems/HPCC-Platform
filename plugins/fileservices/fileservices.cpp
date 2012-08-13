@@ -987,22 +987,7 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
             throw MakeStringException(0, "Foreign superfile not allowed: %s", lsfn.str());
     }
     if (cacheFiles)
-    {
-        struct CTempActiveTransaction
-        {
-            CTempActiveTransaction(IDistributedFileTransaction *_transaction, bool onOff) : transaction(_transaction)
-            {
-                prev = transaction->setActive(onOff);
-            }
-            ~CTempActiveTransaction()
-            {
-                transaction->setActive(prev);
-            }
-            IDistributedFileTransaction *transaction;
-            bool prev;
-        } temp(transaction, true);
-        file.setown(transaction->lookupSuperFile(lsfn.str()));
-    }
+        file.setown(transaction->lookupSuperFileCached(lsfn.str()));
     else
         file.setown(transaction->lookupSuperFile(lsfn.str()));
     if (file.get())
