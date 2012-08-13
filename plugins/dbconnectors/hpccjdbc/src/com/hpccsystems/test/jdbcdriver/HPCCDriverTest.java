@@ -607,8 +607,11 @@ public class HPCCDriverTest
 
 				success &= executeFreeHandSQL(info, "select count(persons.lastname) as zipcount, persons.city as mycity , zip from tutorial::rp::tutorialperson persons USE INDEX(0) limit 100", params);
 				success &= executeFreeHandSQL(info, "select count(*), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons limit 10", params);
+				success &= executeFreeHandSQL(info, "select count(*), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.zip = '33445' limit 10", params);
 				success &= executeFreeHandSQL(info, "select count(persons.*), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons limit 10", params);
 				success &= executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where  'a' > persons.firstname limit 10", params);
+				success &= executeFreeHandSQL(info, "select * from tutorial::rp::tutorialperson as persons where  'a' > persons.firstname limit 10", params);
+				expectedFailure |= executeFreeHandSQL(info, "select *, persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where  'a' > persons.firstname limit 10", params);
 				success &= executeFreeHandSQL(info, "select count(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.zip < '33445' limit 10", params);
 				success &= executeFreeHandSQL(info, "select min(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.firstname < 'a' limit 10", params);
 				success &= executeFreeHandSQL(info, "select max(persons.firstname), persons.firstname, persons.lastname from tutorial::rp::tutorialperson as persons where persons.zip < '33445' limit 10", params);
@@ -616,10 +619,21 @@ public class HPCCDriverTest
 				//Join where first table is index, and join table is not
 				success &= executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::peoplebyzipindex3 as persons outer join 	tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
 
+                //not supporting *.*
+				expectedFailure |= executeFreeHandSQL(info, "select *.* from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
+				//redundant fields after expanding wildcard
+				expectedFailure |=  executeFreeHandSQL(info, "select * from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
+
 				//table-wise wildcard
-				//success &= executeFreeHandSQL(info, "select persons.* from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
-                //table-wise wildcard
-				//success &= executeFreeHandSQL(info, "select persons.*, people2.* from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
+                success &= executeFreeHandSQL(info, "select people.gender, persons.*, people.middleinitial from tutorial::rp::peoplebyzipindex3 as persons outer join progguide::exampledata::people as people on people.zip = persons.zip limit 10", params);
+
+                //join inequality
+                expectedFailure |= executeFreeHandSQL(info, "select people.gender, persons.*, people.middleinitial from tutorial::rp::peoplebyzipindex3 as persons outer join progguide::exampledata::people as people on people.zip > persons.zip limit 10", params);
+
+				//table-wise wildcard
+				success &= executeFreeHandSQL(info, "select persons.* from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
+				//table-wise wildcard
+				expectedFailure |= executeFreeHandSQL(info, "select persons.*, people2.* from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where people2.firstname > 'A' limit 10", params);
 
 				//ambiguous field firstname
 				expectedFailure |= executeFreeHandSQL(info, "select persons.firstname, persons.lastname from tutorial::rp::peoplebyzipindex3 as persons outer join  tutorial::rp::tutorialperson as people2 on people2.firstname = persons.firstname where firstname > 'A' limit 10", params);

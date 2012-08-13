@@ -19,7 +19,7 @@ public class SQLParser
 
     private List<SQLTable>           sqlTables;
     private int                      sqlType;
-    private List<HPCCColumnMetaData> selectColumns;
+    private LinkedList<HPCCColumnMetaData> selectColumns;
     private SQLWhereClause           whereClause;
     private SQLJoinClause            joinClause;
     private SQLFragment[]            groupByFragments;
@@ -28,6 +28,7 @@ public class SQLParser
     private String                   storedProcName;
     private int                      limit;
     private boolean                  columnsVerified;
+    private boolean                  selectColsContainWildcard = false;
     private String                   indexHint;
 
     public void process(String insql) throws SQLException
@@ -36,7 +37,7 @@ public class SQLParser
         columnsVerified = false;
         limit = -1;
         sqlTables = new ArrayList<SQLTable>();
-        selectColumns = new ArrayList<HPCCColumnMetaData>();
+        selectColumns = new LinkedList<HPCCColumnMetaData>();
         whereClause = new SQLWhereClause();
         joinClause = null;
         procInParamValues = new String[0];
@@ -269,6 +270,9 @@ public class SQLParser
                 String colassplit[] = comatokens.nextToken().split("\\s+(?i)as\\s+");
                 String col = colassplit[0].trim();
 
+                if (!selectColsContainWildcard && col.contains("*"))
+                    selectColsContainWildcard = true;
+
                 if (col.contains("("))
                 {
                     int funcparampos = 1;
@@ -454,17 +458,6 @@ public class SQLParser
         {
             throw new SQLException("Invalid field found in Where clause.");
         }
-    }
-
-    public boolean columnsHasWildcard()
-    {
-        Iterator<HPCCColumnMetaData> it = selectColumns.iterator();
-        while (it.hasNext())
-        {
-            if (it.next().getColumnName().contains("*"))
-                return true;
-        }
-        return false;
     }
 
     public int orderByCount()
@@ -660,26 +653,46 @@ public class SQLParser
         return selectColumns;
     }
 
-    public void expandWildCardColumn(HashMap<String, HPCCColumnMetaData> allFields)
+    private void expandWildCardColumn(HashMap<String, HPCCColumnMetaData> allFields) throws Exception
     {
-        Iterator<HPCCColumnMetaData> it = selectColumns.iterator();
-
-        // for loop iterator b/c we need the index for each column.
-        for (int i = 0; it.hasNext(); i++)
+        for (int i = 0; i < selectColumns.size(); i++)
         {
-            if (it.next().getColumnName().equals("*"))
+            String curColName = selectColumns.get(i).getColumnName();
+            if (curColName.contains("*"))
             {
-                // fine for now, we do need to address at some point
-                System.out.println("Expanding wildcard, select columns order might be altered");
-                selectColumns.remove(i);
+                String nameSplit [] = curColName.split("\\.");
 
-                Iterator<Entry<String, HPCCColumnMetaData>> availablefields = allFields.entrySet().iterator();
-                while (availablefields.hasNext())
+                if (nameSplit.length <= 0 || nameSplit.length >= 3)
                 {
-                    HPCCColumnMetaData element = (HPCCColumnMetaData) availablefields.next().getValue();
-                    selectColumns.add(element);
+                    throw new Exception("Invalid column found: " + curColName);
                 }
-                break;
+                else
+                {
+                    String tableName = "";
+
+                    if (nameSplit.length == 2)
+                    {
+                        tableName = searchForPossibleTableName(nameSplit[0]);
+
+                        if (!nameSplit[1].equals("*"))
+                            throw new Exception("Invalid column found: " + curColName);
+                    }
+                    else if (!nameSplit[0].equals("*"))
+                            throw new Exception("Invalid column found: " + curColName);
+
+                    selectColumns.remove(i);
+
+                    Iterator<Entry<String, HPCCColumnMetaData>> availablefields = allFields.entrySet().iterator();
+                    while (availablefields.hasNext())
+                    {
+                        HPCCColumnMetaData element = (HPCCColumnMetaData) availablefields.next().getValue();
+                        if (tableName.equals("") || tableName.equals(element.getTableName()) )
+                        {
+                            selectColumns.add(i,element);
+                            availablefields.remove();
+                        }
+                    }
+                }
             }
         }
     }
@@ -699,7 +712,7 @@ public class SQLParser
             verifyAndProcessAllColumn(selectColumns.get(i), availableCols);
         }
 
-        if (columnsHasWildcard())
+        if (selectColsContainWildcard)
             expandWildCardColumn(availableCols);
 
         columnsVerified = true;
