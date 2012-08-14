@@ -870,10 +870,10 @@ public:
         redirection.setown(createDFSredirection());
     }
 
-    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing, unsigned timeout);
+    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing, unsigned timeout, bool checkScope=true);
 
-    IDistributedFile *lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
-    IDistributedFile *lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
+    IDistributedFile *lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout,bool checkScope=true);
+    IDistributedFile *lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout,bool checkScope=true);
     
     IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname,bool includeports=false);
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false)
@@ -1086,7 +1086,7 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
         throw e;
 }
 
-static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg, bool checkScope=true)
 {
     bool ret = true;
     if (dlfn.isMulti()) {
@@ -1108,9 +1108,12 @@ static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *us
                 throw MakeStringException(-1,"cannot %s a foreign file name (%s)",specialnotallowedmsg,dlfn.get());
             }
         }
-        StringBuffer scopes;
-        dlfn.getScopes(scopes);
-        checkLogicalScope(scopes.str(),user,readreq,createreq);
+        if (checkScope)
+        {
+            StringBuffer scopes;
+            dlfn.getScopes(scopes);
+            checkLogicalScope(scopes.str(),user,readreq,createreq);
+        }
     }
     return ret;
 }
@@ -6390,14 +6393,14 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
 
 
 
-IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout,bool checkScope)
 {
     CDfsLogicalFileName logicalname;    
     logicalname.set(_logicalname);
-    return lookup(logicalname,user,writeattr,transaction,timeout);
+    return lookup(logicalname,user,writeattr,transaction,timeout,checkScope);
 }
 
-IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing,unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,bool fixmissing,unsigned timeout,bool checkScope)
 {
     const CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti()) 
@@ -6405,7 +6408,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
         return new CDistributedSuperFile(this,*logicalname,user,true,transaction); // temp superfile
     Owned<IDfsLogicalFileNameIterator> redmatch;
     loop {
-        checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
+        checkLogicalName(*logicalname,user,true,writeattr,true,NULL,checkScope);
         if (logicalname->isExternal()) 
             return createExternal(*logicalname);    // external always works?
         if (logicalname->isForeign()) {
@@ -6470,9 +6473,9 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
     return NULL;
 }
 
-IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout,bool checkScope)
 {
-    return dolookup(logicalname,user,writeattr,transaction,false,timeout);
+    return dolookup(logicalname,user,writeattr,transaction,false,timeout,checkScope);
 }
 
 IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction, bool fixmissing, unsigned timeout)
@@ -6662,7 +6665,7 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
 bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms)
 {
     // This is a hack while we don't move remove out of dir
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(dlfn, user, false, NULL, 6*1000);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(dlfn, user, false, NULL, 6*1000, false);//dont check scope again
     if (file.get())
         return !file->canRemove(reason, ignoresub);
     return false;
