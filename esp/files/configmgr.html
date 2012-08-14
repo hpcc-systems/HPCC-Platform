@@ -213,7 +213,18 @@ body {
       .yui-skin-sam .yui-dt tr.outoffocus td {
       background-color: #D0D0D0;
       }
-      
+
+      .yui-button#saveasbutton button {
+      background: url(/esp/files/img/saveasimg.gif) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+
       .yui-button#savebutton button {
       background: url(/esp/files/img/save.gif) center center no-repeat;
       width: 2em;
@@ -662,6 +673,7 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
       <div id="envctrls">
         <input id="ReadWrite" type="checkbox" name="ReadWrite" value="false" onclick="setReadWrite(this.checked)"/>Write Access&nbsp;
         <input type="button" id='savebutton' class='yui-button savebutton' name="savebutton" title="Save Environment" />
+        <input type="button" id='saveasbutton' class='yui-button saveasbutton' name="saveasbutton" title="Save Environment As" />
         <input type="button" id='validatebutton' class='yui-button validatebutton' name="validatebutton" title="Validate Environment" />
         <input type="button" id='openbutton' class='yui-button openbutton' name="openbutton" title="Open Environment" />
         <input type="button" id='wizardbutton' class='yui-button wizardbutton' name="wizardbutton" title="Wizard" />

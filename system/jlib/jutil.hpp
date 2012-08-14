@@ -141,6 +141,9 @@ extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const 
 class StringArray : public ArrayOf<const char *, const char *>
 {
 };
+class CIStringArray : public StringArray, public CInterface
+{
+};
 
 // separated list to array
 extern jlib_decl void DelimToStringArray(const char *csl, StringArray &dst, const char * delim, bool deldup=false);

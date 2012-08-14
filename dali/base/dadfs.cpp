@@ -3371,6 +3371,40 @@ public:
         return afor.ok;
     }
 
+    // This method takes an existing physical directory path for a logical file
+    // and a constructed path to the same logical file created in this context
+    // and deduces the original base path e.g. /var/lib/HPCCSystems/hpcc-data/thor
+    // This is necessary, because there is no not enough context to directly fetch the
+    // original base path to construct new paths for the rename
+    bool getBase(const char *oldPath, const char *thisPath, StringBuffer &baseDir)
+    {
+        const char *oldEnd = oldPath+strlen(oldPath)-1;
+        const char *thisEnd = thisPath+strlen(thisPath)-1;
+        if (isPathSepChar(*oldEnd))
+            oldEnd--;
+        if (isPathSepChar(*thisEnd))
+            thisEnd--;
+        const char *oldP = oldEnd, *thisP = thisEnd;
+        loop {
+            if (oldP==oldPath || thisP==thisPath)
+                break;
+            if (*oldP != *thisP) {
+                // unless last was separator, continue until find one
+                if (isPathSepChar(*(oldP+1)))
+                    oldP++;
+                else {
+                    while (oldP != oldPath && (!isPathSepChar(*oldP)))
+                        oldP--;
+                }
+                baseDir.append(oldP-oldPath, oldPath);
+                return true;
+            }
+            --oldP;
+            --thisP;
+        }
+        return false;
+    }
+
     bool renamePhysicalPartFiles(const char *newname,
                                  const char *cluster,
                                  IMultiException *mexcept,
@@ -3386,58 +3420,42 @@ public:
         StringBuffer basedir;
         if (newbasedir)
             diroverride = newbasedir;
-        else
-        {
-            const char * base = queryBaseDirectory(false,os);
-            size32_t l = strlen(base);
-            if ((memcmp(base,directory.get(),l)==0)&&((l==directory.length())||isPathSepChar(directory.get()[l]))) {
-                basedir.append(base);
-                diroverride = basedir.str();
-            }
-            else {  // shouldn't get here normally
-                // now assume 'Base' dir is same as old
-                basedir.append(directory);
-                const char *e = strchr(basedir.str()+((psc=='/')?1:0),psc);
-                if (e) {
-                    const char *e2=strchr(e+1,psc);
-                    if (e2) 
-                        basedir.setLength(e2-basedir.str());
-                    diroverride = basedir.str();
-                }
-            }
-        }
-        makePhysicalPartName(newname, 0, 0, newdir, false, os, diroverride);
-        if (newdir.length()==0)
-            return false;
-        if (isPathSepChar(newdir.charAt(newdir.length()-1)))
-            newdir.setLength(newdir.length()-1);
+
+        const char *myBase = queryBaseDirectory(false,os);
+        StringBuffer baseDir, newPath;
+        makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
+        if (!getBase(directory, newPath, baseDir))
+            baseDir.append(myBase); // getBase returns false, if directory==newPath, so have common base
         getPartMask(newmask,newname,width);
         if (newmask.length()==0)
             return false;
-        StringAttrArray newnamesprim;
-        StringAttrArray newnamesrep;
-        StringBuffer tmp;
-        StringBuffer tmp2;
+        makePhysicalPartName(newname, 0, 0, newPath.clear(), false, os, diroverride);
+        if (newPath.length()==0)
+            return false;
+        if (isPathSepChar(newPath.charAt(newPath.length()-1)))
+            newPath.setLength(newPath.length()-1);
+        newPath.remove(0, strlen(myBase));
+        newdir.append(baseDir).append(newPath);
         StringBuffer fullname;
+        CIArrayOf<CIStringArray> newNames;
         unsigned i;
         for (i=0;i<width;i++) {
+            newNames.append(*new CIStringArray);
             CDistributedFilePart &part = parts.item(i);
-            const char *fn = expandMask(tmp.clear(),newmask,i,width).str();
-            fullname.clear();
-            if (findPathSepChar(fn)) 
-                fullname.append(fn);
-            else
-                addPathSepChar(fullname.append(newdir)).append(fn);
-            // ensure on same drive
-            setPathDrive(fullname,part.queryDrive(0));
+            for (unsigned copy=0; copy<part.numCopies(); copy++) {
+                makePhysicalPartName(newname, i+1, width, newPath.clear(), false, os, myBase);
+                newPath.remove(0, strlen(myBase));
 
-            newnamesprim.append(*new StringAttrItem(fullname.str()));
-            if (part.numCopies()>1) {                                            // NH *** TBD
-                setReplicateDir(fullname,tmp2.clear());
-                setPathDrive(tmp2,part.queryDrive(1));
-                newnamesrep.append(*new StringAttrItem(tmp2.str()));
+                StringBuffer copyDir(baseDir);
+                adjustClusterDir(i, copy, copyDir);
+                fullname.clear().append(copyDir).append(newPath);
+
+                PROGLOG("fullname = %s", fullname.str());
+                newNames.item(i).append(fullname);
             }
         }
+        // NB: the code below, specifically deals with 1 primary + 1 replicate
+        // it will need refactoring if it's to deal with multiple clusters/copies
 
         // first check file doestn't exist for any new part
 
@@ -3446,8 +3464,7 @@ public:
         {
         protected:
             CriticalSection &crit;
-            StringAttrArray &newnamesprim;
-            StringAttrArray &newnamesrep;
+            CIStringArray *&newNames;
             IDistributedFile *file;
             unsigned width;
             IMultiException *mexcept;
@@ -3459,8 +3476,8 @@ public:
             bool * donerep;
             IException *except;
 
-            casyncforbase(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : newnamesprim(_newnamesprim),newnamesrep(_newnamesrep),crit(_crit)
+            casyncforbase(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : newNames(_newNames),crit(_crit)
             {
                 width = _width;
                 file = _file;
@@ -3506,7 +3523,7 @@ public:
                     IException *ex = NULL;
                     RemoteFilename oldrfn;
                     part->getFilename(oldrfn,(unsigned)copy);
-                    const char *newfn = (copy==0)?newnamesprim.item(idx).text.get():newnamesrep.item(idx).text.get();
+                    const char *newfn = newNames[idx].item(copy);
                     if (!newfn||!*newfn)
                         continue;
                     RemoteFilename newrfn;
@@ -3541,8 +3558,8 @@ public:
         class casyncfor1: public casyncforbase
         {
         public:
-            casyncfor1(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
+            casyncfor1(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -3572,7 +3589,7 @@ public:
                 return true;
             }
 
-        } afor1 (this,newnamesprim,newnamesrep,width,mexcept,crit,NULL,NULL);
+        } afor1 (this,*newNames.getArray(),width,mexcept,crit,NULL,NULL);
         afor1.For(width,10,false,true);
         if (afor1.except)
             throw afor1.except; // no recovery needed
@@ -3601,8 +3618,8 @@ public:
         class casyncfor2: public casyncforbase
         {
         public:
-            casyncfor2(IDistributedFile *_file,StringAttrArray &_newnamesprim,StringAttrArray &_newnamesrep,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
-                : casyncforbase(_file,_newnamesprim,_newnamesrep,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
+            casyncfor2(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+                : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
             bool doPart(IDistributedFilePart *part,bool isrep,RemoteFilename &oldrfn,RemoteFilename &newrfn, bool &done)
@@ -3621,7 +3638,7 @@ public:
                 return true;;
             }
 
-        } afor2 (this,newnamesprim,newnamesrep,width,mexcept,crit,ignoreprim,ignorerep);
+        } afor2 (this,*newNames.getArray(),width,mexcept,crit,ignoreprim,ignorerep);
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
@@ -3648,7 +3665,7 @@ public:
                     if (done) {
                         RemoteFilename oldrfn;
                         part->getFilename(oldrfn,(unsigned)copy);
-                        const char *newfn = (copy==0)?newnamesprim.item(i).text.get():newnamesrep.item(i).text.get();
+                        const char *newfn = newNames.item(i).item(copy);
                         if (!newfn||!*newfn)
                             continue;
                         RemoteFilename newrfn;
