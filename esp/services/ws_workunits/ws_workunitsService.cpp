@@ -1647,6 +1647,9 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             getArchivedWUInfo(context, wuid.str(), resp);
         else
         {
+            //The access is checked here because getArchivedWUInfo() has its own access check.
+            ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
+
             unsigned flags=0;
             if (req.getTruncateEclTo64k())
                 flags|=WUINFO_TruncateEclTo64k;
