@@ -24,7 +24,6 @@
     <xsl:param name="method" select="'Despray'"/>
     <xsl:param name="sourceLogicalName" select="''"/>
     <xsl:param name="compressflag" select="''"/>
-    <xsl:param name="supercopyflag" select="''"/>
     <xsl:template match="/Environment">
     <xsl:choose>
       <xsl:when test="ErrorMessage">
@@ -729,14 +728,7 @@
             <tr>
                 <td>Retain Superfile Structure:</td>
                 <td>
-                    <xsl:choose>
-                        <xsl:when test="$supercopyflag &gt; 1">
-                            <input type="checkbox" name="superCopy" value="1" checked="true"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            <input type="checkbox" name="superCopy" value="0" disabled="false"/>
-                        </xsl:otherwise>
-                    </xsl:choose>
+                    <input type="checkbox" name="superCopy" value="1" checked="true"/>
                 </td>
             </tr>
             <span id="roxie_span" style="display:none">
