@@ -66,6 +66,8 @@ define([
 							editorControl.setText(text);
 						});
 						wu.monitor(monitorEclPlayground);
+					} else {
+						graphControl.watchSelect(sampleSelectControl.select);
 					}
 				}, 1);
 				on(dom.byId("submitBtn"), "click", doSubmit);
