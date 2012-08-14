@@ -155,7 +155,6 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
                                 params->setProp("@compressflag", 1);
                             }
                         }
-                        params->setProp("@supercopyflag", 0); //super copy only for remote copy
                     }
                     catch (IException *E)
                     {
@@ -173,7 +172,6 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
             else
             {
                 params->setProp("@compressflag", 1);
-                params->setProp("@supercopyflag", 2);
             }
 
             StringBuffer wuid;
