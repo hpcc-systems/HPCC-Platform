@@ -557,6 +557,67 @@ unsigned doCountWords(RuleBasedBreakIterator& bi, UnicodeString const & source)
     return count; 
 }
 
+static RuleBasedCollator * createRBCollator(const char * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    Locale locale(localename);
+    RuleBasedCollator * rbc = (RuleBasedCollator *)RuleBasedCollator::createInstance(locale, status);
+    rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
+    if (U_FAILURE(status))
+    {
+        delete rbc;
+        return NULL;
+    }
+    return rbc;
+}
+
+class RBCLocale
+{
+public:
+    RBCLocale(char const * _locale) : locale(_locale)
+    {
+        rbc = createRBCollator(locale);
+    }
+    ~RBCLocale()
+    {
+        delete rbc;
+    }
+    RuleBasedCollator * queryCollator() const { return rbc; }
+private:
+    StringAttr locale;
+    RuleBasedCollator * rbc;
+};
+
+typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
+static MapStrToRBC * localeMap;
+static CriticalSection localeCrit;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    delete localeMap;
+    localeMap = NULL;
+}
+
+static RuleBasedCollator * queryRBCollator(const char * localename)
+{
+    if (!localename) localename = "";
+    CriticalBlock b(localeCrit);
+    if (!localeMap)
+        localeMap = new MapStrToRBC;
+    RBCLocale * loc = localeMap->getValue(localename);
+    if(!loc)
+    {
+        //MORE: ECLRTL calls rtlGetNormalizedUnicodeLocaleName().  Should this be happening here?
+        const char * normalizedlocale = localename;
+        localeMap->setValue(localename, normalizedlocale);
+        loc = localeMap->getValue(localename);
+    }
+    return loc->queryCollator();
+}
 
 }//namespace
 
@@ -1019,68 +1080,6 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
     source.extract(0, tgtLen, tgt);
 }
 
-
-
-static RuleBasedCollator * createRBCollator(const char * localename)
-{
-    UErrorCode status = U_ZERO_ERROR;
-    Locale locale(localename);
-    RuleBasedCollator * rbc = (RuleBasedCollator *)RuleBasedCollator::createInstance(locale, status);
-    rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
-    if (U_FAILURE(status))
-    {
-        delete rbc;
-        return NULL;
-    }
-    return rbc;
-}
-
-class RBCLocale
-{
-public:
-    RBCLocale(char const * _locale) : locale(_locale)
-    {
-        rbc = createRBCollator(locale);
-    }
-    ~RBCLocale()
-    {
-        delete rbc;
-    }
-    RuleBasedCollator * queryCollator() const { return rbc; }
-private:
-    StringAttr locale;
-    RuleBasedCollator * rbc;
-};
-
-typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
-static MapStrToRBC * localeMap;
-static CriticalSection localeCrit;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    delete localeMap;
-    localeMap = NULL;
-}
-
-static RuleBasedCollator * queryRBCollator(const char * localename)
-{
-    if (!localename) localename = "";
-    CriticalBlock b(localeCrit);
-    if (!localeMap)
-        localeMap = new MapStrToRBC;
-    RBCLocale * loc = localeMap->getValue(localename);
-    if(!loc)
-    {
-        //MORE: ECLRTL calls rtlGetNormalizedUnicodeLocaleName().  Should this be happening here?
-        const char * normalizedlocale = localename;
-        localeMap->setValue(localename, normalizedlocale);
-        loc = localeMap->getValue(localename);
-    }
-    return loc->queryCollator();
-}
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
 {
