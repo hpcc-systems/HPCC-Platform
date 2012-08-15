@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CompareIgnoreCase">
-  <title><emphasis role="bold">CompareIgnoreCase</emphasis></title>
+  <title>CompareIgnoreCase</title>
 
   <para><emphasis role="bold">STD.Str.CompareIgnoreCase<indexterm>
       <primary>STD.Str.CompareIgnoreCase</primary>

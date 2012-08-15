@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Audit">
-  <title><emphasis role="bold">Audit</emphasis></title>
+  <title>Audit</title>
 
   <para><emphasis role="bold">STD.Audit.Audit<indexterm>
       <primary>STD.Audit.Audit</primary>
