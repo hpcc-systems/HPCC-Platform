@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Sleep">
-  <title><emphasis role="bold">Sleep</emphasis></title>
+  <title>Sleep</title>
 
   <para><emphasis role="bold">STD.System.Debug.Sleep<indexterm>
       <primary>STD.System.Debug.Sleep</primary>

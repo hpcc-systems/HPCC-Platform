@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="IsLeapYear">
-  <title><emphasis role="bold">IsLeapYear</emphasis></title>
+  <title>IsLeapYear</title>
 
   <para><emphasis role="bold">STD.Date.IsLeapYear<indexterm>
       <primary>STD.Date.IsLeapYear</primary>

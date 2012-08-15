@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="LogString">
-  <title><emphasis role="bold">LogString</emphasis></title>
+  <title>LogString</title>
 
   <para><emphasis role="bold">STD.System.Job.LogString<indexterm>
       <primary>STD.System.Job.LogString</primary>

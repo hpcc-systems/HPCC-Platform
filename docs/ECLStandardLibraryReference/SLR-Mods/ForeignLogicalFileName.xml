@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ForeignLogicalFileName">
-  <title><emphasis role="bold">ForeignLogicalFileName</emphasis></title>
+  <title>ForeignLogicalFileName</title>
 
   <para><emphasis role="bold">STD.File.ForeignLogicalFileName<indexterm>
       <primary>STD.File.ForeignLogicalFileName</primary>

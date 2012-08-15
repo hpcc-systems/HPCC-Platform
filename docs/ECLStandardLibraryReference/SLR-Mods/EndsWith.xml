@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EndsWith">
-  <title><emphasis role="bold">EndsWith</emphasis></title>
+  <title>EndsWith</title>
 
   <para><emphasis role="bold">STD.Str.EndsWith<indexterm>
       <primary>STD.Str.EndsWith</primary>
