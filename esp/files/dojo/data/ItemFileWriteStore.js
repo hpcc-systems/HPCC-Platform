@@ -5,7 +5,7 @@
 */
 
 //>>built
-define("dojo/data/ItemFileWriteStore",["../_base/lang","../_base/declare","../_base/array","../_base/json","../_base/window","./ItemFileReadStore","../date/stamp"],function(_1,_2,_3,_4,_5,_6,_7){
+define("dojo/data/ItemFileWriteStore",["../_base/lang","../_base/declare","../_base/array","../_base/json","../_base/kernel","./ItemFileReadStore","../date/stamp"],function(_1,_2,_3,_4,_5,_6,_7){
 return _2("dojo.data.ItemFileWriteStore",_6,{constructor:function(_8){
 this._features["dojo.data.api.Write"]=true;
 this._features["dojo.data.api.Notification"]=true;

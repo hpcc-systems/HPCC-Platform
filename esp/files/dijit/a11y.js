@@ -1,13 +1,13 @@
 //>>built
-define("dijit/a11y",["dojo/_base/array","dojo/_base/config","dojo/_base/declare","dojo/dom","dojo/dom-attr","dojo/dom-style","dojo/_base/sniff","./_base/manager","."],function(_1,_2,_3,_4,_5,_6,_7,_8,_9){
-var _a=(_9._isElementShown=function(_b){
-var s=_6.get(_b);
-return (s.visibility!="hidden")&&(s.visibility!="collapsed")&&(s.display!="none")&&(_5.get(_b,"type")!="hidden");
+define("dijit/a11y",["dojo/_base/array","dojo/_base/config","dojo/_base/declare","dojo/dom","dojo/dom-attr","dojo/dom-style","dojo/sniff","./main"],function(_1,_2,_3,_4,_5,_6,_7,_8){
+var _9=(_8._isElementShown=function(_a){
+var s=_6.get(_a);
+return (s.visibility!="hidden")&&(s.visibility!="collapsed")&&(s.display!="none")&&(_5.get(_a,"type")!="hidden");
 });
-_9.hasDefaultTabStop=function(_c){
-switch(_c.nodeName.toLowerCase()){
+_8.hasDefaultTabStop=function(_b){
+switch(_b.nodeName.toLowerCase()){
 case "a":
-return _5.has(_c,"href");
+return _5.has(_b,"href");
 case "area":
 case "button":
 case "input":
@@ -16,92 +16,92 @@ case "select":
 case "textarea":
 return true;
 case "iframe":
-var _d;
+var _c;
 try{
-var _e=_c.contentDocument;
-if("designMode" in _e&&_e.designMode=="on"){
+var _d=_b.contentDocument;
+if("designMode" in _d&&_d.designMode=="on"){
 return true;
 }
-_d=_e.body;
+_c=_d.body;
 }
 catch(e1){
 try{
-_d=_c.contentWindow.document.body;
+_c=_b.contentWindow.document.body;
 }
 catch(e2){
 return false;
 }
 }
-return _d&&(_d.contentEditable=="true"||(_d.firstChild&&_d.firstChild.contentEditable=="true"));
+return _c&&(_c.contentEditable=="true"||(_c.firstChild&&_c.firstChild.contentEditable=="true"));
 default:
-return _c.contentEditable=="true";
+return _b.contentEditable=="true";
 }
 };
-var _f=(_9.isTabNavigable=function(_10){
-if(_5.get(_10,"disabled")){
+var _e=(_8.isTabNavigable=function(_f){
+if(_5.get(_f,"disabled")){
 return false;
 }else{
-if(_5.has(_10,"tabIndex")){
-return _5.get(_10,"tabIndex")>=0;
+if(_5.has(_f,"tabIndex")){
+return _5.get(_f,"tabIndex")>=0;
 }else{
-return _9.hasDefaultTabStop(_10);
+return _8.hasDefaultTabStop(_f);
 }
 }
 });
-_9._getTabNavigable=function(_11){
-var _12,_13,_14,_15,_16,_17,_18={};
-function _19(_1a){
-return _1a&&_1a.tagName.toLowerCase()=="input"&&_1a.type&&_1a.type.toLowerCase()=="radio"&&_1a.name&&_1a.name.toLowerCase();
+_8._getTabNavigable=function(_10){
+var _11,_12,_13,_14,_15,_16,_17={};
+function _18(_19){
+return _19&&_19.tagName.toLowerCase()=="input"&&_19.type&&_19.type.toLowerCase()=="radio"&&_19.name&&_19.name.toLowerCase();
 };
-var _1b=function(_1c){
-for(var _1d=_1c.firstChild;_1d;_1d=_1d.nextSibling){
-if(_1d.nodeType!=1||(_7("ie")&&_1d.scopeName!=="HTML")||!_a(_1d)){
+var _1a=function(_1b){
+for(var _1c=_1b.firstChild;_1c;_1c=_1c.nextSibling){
+if(_1c.nodeType!=1||(_7("ie")&&_1c.scopeName!=="HTML")||!_9(_1c)){
 continue;
 }
-if(_f(_1d)){
-var _1e=_5.get(_1d,"tabIndex");
-if(!_5.has(_1d,"tabIndex")||_1e==0){
-if(!_12){
-_12=_1d;
+if(_e(_1c)){
+var _1d=+_5.get(_1c,"tabIndex");
+if(!_5.has(_1c,"tabIndex")||_1d==0){
+if(!_11){
+_11=_1c;
 }
-_13=_1d;
+_12=_1c;
 }else{
-if(_1e>0){
-if(!_14||_1e<_15){
-_15=_1e;
+if(_1d>0){
+if(!_13||_1d<_14){
 _14=_1d;
+_13=_1c;
 }
-if(!_16||_1e>=_17){
-_17=_1e;
+if(!_15||_1d>=_16){
 _16=_1d;
+_15=_1c;
 }
 }
 }
-var rn=_19(_1d);
-if(_5.get(_1d,"checked")&&rn){
-_18[rn]=_1d;
+var rn=_18(_1c);
+if(_5.get(_1c,"checked")&&rn){
+_17[rn]=_1c;
 }
 }
-if(_1d.nodeName.toUpperCase()!="SELECT"){
-_1b(_1d);
+if(_1c.nodeName.toUpperCase()!="SELECT"){
+_1a(_1c);
 }
 }
 };
-if(_a(_11)){
-_1b(_11);
+if(_9(_10)){
+_1a(_10);
 }
-function rs(_1f){
-return _18[_19(_1f)]||_1f;
+function rs(_1e){
+return _17[_18(_1e)]||_1e;
 };
-return {first:rs(_12),last:rs(_13),lowest:rs(_14),highest:rs(_16)};
+return {first:rs(_11),last:rs(_12),lowest:rs(_13),highest:rs(_15)};
 };
-_9.getFirstInTabbingOrder=function(_20){
-var _21=_9._getTabNavigable(_4.byId(_20));
-return _21.lowest?_21.lowest:_21.first;
+_8.getFirstInTabbingOrder=function(_1f,doc){
+var _20=_8._getTabNavigable(_4.byId(_1f,doc));
+return _20.lowest?_20.lowest:_20.first;
 };
-_9.getLastInTabbingOrder=function(_22){
-var _23=_9._getTabNavigable(_4.byId(_22));
-return _23.last?_23.last:_23.highest;
+_8.getLastInTabbingOrder=function(_21,doc){
+var _22=_8._getTabNavigable(_4.byId(_21,doc));
+return _22.last?_22.last:_22.highest;
 };
-return {hasDefaultTabStop:_9.hasDefaultTabStop,isTabNavigable:_9.isTabNavigable,_getTabNavigable:_9._getTabNavigable,getFirstInTabbingOrder:_9.getFirstInTabbingOrder,getLastInTabbingOrder:_9.getLastInTabbingOrder};
+return {hasDefaultTabStop:_8.hasDefaultTabStop,isTabNavigable:_8.isTabNavigable,_getTabNavigable:_8._getTabNavigable,getFirstInTabbingOrder:_8.getFirstInTabbingOrder,getLastInTabbingOrder:_8.getLastInTabbingOrder};
 });

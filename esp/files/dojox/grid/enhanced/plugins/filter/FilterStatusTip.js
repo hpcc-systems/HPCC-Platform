@@ -8,7 +8,7 @@ this._statusHeader=["<table border='0' cellspacing='0' class='",_e,"'><thead><tr
 this._removedCriterias=[];
 this._rules=[];
 this.statusPane=new _17();
-this._dlg=new _b({"class":"dojoxGridFStatusTipDialog",content:this.statusPane,autofocus:false});
+this._dlg=new _b({"class":"dijitTooltipBelow dojoxGridFStatusTipDialog",content:this.statusPane,autofocus:false});
 this._dlg.connect(this._dlg.domNode,"onmouseleave",_3.hitch(this,this.closeDialog));
 this._dlg.connect(this._dlg.domNode,"click",_3.hitch(this,this._modifyFilter));
 },destroy:function(){
@@ -74,5 +74,4 @@ this.closeDialog();
 var p=this.plugin;
 p.filterDefDialog.showDialog(p.filterBar.getColumnIdx(this._pos.x));
 }});
-return FilterStatusTip;
 });

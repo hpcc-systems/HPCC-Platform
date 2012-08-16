@@ -256,7 +256,9 @@ clearTimeout(this._handle_statusTooltip);
 this._handle_statusTooltip=null;
 },_showStatusTooltip:function(){
 this._handle_statusTooltip=null;
+if(this.plugin){
 this.plugin.filterStatusTip.showDialog(this._tippos.x,this._tippos.y,this.getColumnIdx(this._tippos.x));
+}
 },_highlightHeader:function(_3b){
 if(_3b!=this._previousHeaderIdx){
 var g=this.plugin.grid,_3c=g.getCell(this._previousHeaderIdx);

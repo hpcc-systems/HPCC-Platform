@@ -16,21 +16,24 @@ _3.normalizeEvent(_5);
 return _5;
 };
 }
-_1.fixEvent=function(_6,_7){
+var _6={fix:function(_7,_8){
 if(on._fixEvent){
-return on._fixEvent(_6,_7);
+return on._fixEvent(_7,_8);
+}
+return _7;
+},stop:function(_9){
+if(_2("dom-addeventlistener")||(_9&&_9.preventDefault)){
+_9.preventDefault();
+_9.stopPropagation();
+}else{
+_9=_9||window.event;
+_9.cancelBubble=true;
+on._preventDefault.call(_9);
+}
+}};
+if(1){
+_1.fixEvent=_6.fix;
+_1.stopEvent=_6.stop;
 }
 return _6;
-};
-_1.stopEvent=function(_8){
-if(_2("dom-addeventlistener")||(_8&&_8.preventDefault)){
-_8.preventDefault();
-_8.stopPropagation();
-}else{
-_8=_8||window.event;
-_8.cancelBubble=true;
-on._preventDefault.call(_8);
-}
-};
-return {fix:_1.fixEvent,stop:_1.stopEvent};
 });

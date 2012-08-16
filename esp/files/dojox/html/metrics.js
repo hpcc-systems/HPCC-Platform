@@ -93,6 +93,7 @@ fs.position="absolute";
 fs.width="5em";
 fs.height="10em";
 fs.top="-10000px";
+fs.display="none";
 if(_3("ie")){
 f.onreadystatechange=function(){
 if(f.contentWindow.document.readyState=="complete"){

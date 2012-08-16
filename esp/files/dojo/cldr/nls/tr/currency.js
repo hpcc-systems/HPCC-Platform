@@ -1,18 +1,8 @@
+/*
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Available via Academic Free License >= 2.1 OR the modified BSD license.
+	see: http://dojotoolkit.org/license for details
+*/
+
 //>>built
-define(
-"dojo/cldr/nls/tr/currency", //begin v1.x content
-{
-	"HKD_displayName": "Hong Kong Doları",
-	"CHF_displayName": "İsviçre Frangı",
-	"JPY_symbol": "¥",
-	"CAD_displayName": "Kanada Doları",
-	"CNY_displayName": "Çin Yuanı Renminbi",
-	"USD_symbol": "$",
-	"AUD_displayName": "Avustralya Doları",
-	"JPY_displayName": "Japon Yeni",
-	"USD_displayName": "ABD Doları",
-	"GBP_displayName": "İngiliz Sterlini",
-	"EUR_displayName": "Euro"
-}
-//end v1.x content
-);
+define("dojo/cldr/nls/tr/currency",{"AUD_displayName":"Avustralya Doları","CAD_displayName":"Kanada Doları","CHF_displayName":"İsviçre Frangı","CNY_displayName":"Çin Yuanı","EUR_displayName":"Euro","GBP_displayName":"İngiliz Sterlini","HKD_displayName":"Hong Kong Doları","JPY_displayName":"Japon Yeni","JPY_symbol":"¥","USD_displayName":"ABD Doları","USD_symbol":"$"});

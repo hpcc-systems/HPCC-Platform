@@ -3,7 +3,7 @@ require({cache:{"url:dijit/templates/ProgressBar.html":"<div class=\"dijitProgre
 define("dijit/ProgressBar",["require","dojo/_base/declare","dojo/dom-class","dojo/_base/lang","dojo/number","./_Widget","./_TemplatedMixin","dojo/text!./templates/ProgressBar.html"],function(_1,_2,_3,_4,_5,_6,_7,_8){
 return _2("dijit.ProgressBar",[_6,_7],{progress:"0",value:"",maximum:100,places:0,indeterminate:false,label:"",name:"",templateString:_8,_indeterminateHighContrastImagePath:_1.toUrl("./themes/a11y/indeterminate_progress.gif"),postMixInProperties:function(){
 this.inherited(arguments);
-if(!("value" in this.params)){
+if(!(this.params&&"value" in this.params)){
 this.value=this.indeterminate?Infinity:this.progress;
 }
 },buildRendering:function(){

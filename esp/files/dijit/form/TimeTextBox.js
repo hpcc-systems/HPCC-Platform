@@ -13,14 +13,14 @@ case _2.DOWN_ARROW:
 case _2.UP_ARROW:
 break;
 default:
-setTimeout(_3.hitch(this,function(){
+this.defer(function(){
 var _7=this.get("displayedValue");
 this.filterString=(_7&&!this.parse(_7,this.constraints))?_7.toLowerCase():"";
 if(this._opened){
 this.closeDropDown();
 }
 this.openDropDown();
-}),0);
+});
 }
 }});
 });

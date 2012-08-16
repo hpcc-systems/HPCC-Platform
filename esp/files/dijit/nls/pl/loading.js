@@ -1,9 +1,2 @@
 //>>built
-define(
-"dijit/nls/pl/loading", //begin v1.x content
-({
-	loadingState: "Ładowanie...",
-	errorState: "Niestety, wystąpił błąd"
-})
-//end v1.x content
-);
+define("dijit/nls/pl/loading",({loadingState:"Ładowanie...",errorState:"Niestety, wystąpił błąd"}));

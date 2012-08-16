@@ -1,90 +1,89 @@
 //>>built
-define("dijit/form/_ExpandingTextAreaMixin",["dojo/_base/declare","dojo/dom-construct","dojo/_base/lang","dojo/_base/window"],function(_1,_2,_3,_4){
-var _5;
+define("dijit/form/_ExpandingTextAreaMixin",["dojo/_base/declare","dojo/dom-construct","dojo/has","dojo/_base/lang","dojo/_base/window","../Viewport"],function(_1,_2,_3,_4,_5,_6){
+_3.add("textarea-needs-help-shrinking",function(){
+var _7=_5.body(),te=_2.create("textarea",{rows:"5",cols:"20",value:" ",style:{zoom:1,overflow:"hidden",visibility:"hidden",position:"absolute",border:"0px solid black",padding:"0px"}},_7,"last");
+var _8=te.scrollHeight>=te.clientHeight;
+_7.removeChild(te);
+return _8;
+});
 return _1("dijit.form._ExpandingTextAreaMixin",null,{_setValueAttr:function(){
 this.inherited(arguments);
 this.resize();
 },postCreate:function(){
 this.inherited(arguments);
-var _6=this.textbox;
-if(_5==undefined){
-var te=_2.create("textarea",{rows:"5",cols:"20",value:" ",style:{zoom:1,overflow:"hidden",visibility:"hidden",position:"absolute",border:"0px solid black",padding:"0px"}},_4.body(),"last");
-_5=te.scrollHeight>=te.clientHeight;
-_4.body().removeChild(te);
-}
-this.connect(_6,"onscroll","_resizeLater");
-this.connect(_6,"onresize","_resizeLater");
-this.connect(_6,"onfocus","_resizeLater");
-_6.style.overflowY="hidden";
+var _9=this.textbox;
+this.connect(_9,"onscroll","_resizeLater");
+this.connect(_9,"onresize","_resizeLater");
+this.connect(_9,"onfocus","_resizeLater");
+this.own(_6.on("resize",_4.hitch(this,"_resizeLater")));
+_9.style.overflowY="hidden";
 this._estimateHeight();
 this._resizeLater();
 },_onInput:function(e){
 this.inherited(arguments);
 this.resize();
 },_estimateHeight:function(){
-var _7=this.textbox;
-_7.style.height="auto";
-_7.rows=(_7.value.match(/\n/g)||[]).length+2;
+var _a=this.textbox;
+_a.style.height="auto";
+_a.rows=(_a.value.match(/\n/g)||[]).length+2;
 },_resizeLater:function(){
-setTimeout(_3.hitch(this,"resize"),0);
+this.defer("resize");
 },resize:function(){
-function _8(){
-var _9=false;
-if(_a.value===""){
-_a.value=" ";
-_9=true;
+var _b=this.textbox;
+function _c(){
+var _d=false;
+if(_b.value===""){
+_b.value=" ";
+_d=true;
 }
-var sh=_a.scrollHeight;
-if(_9){
-_a.value="";
+var sh=_b.scrollHeight;
+if(_d){
+_b.value="";
 }
 return sh;
 };
-var _a=this.textbox;
-if(_a.style.overflowY=="hidden"){
-_a.scrollTop=0;
+if(_b.style.overflowY=="hidden"){
+_b.scrollTop=0;
 }
-if(this.resizeTimer){
-clearTimeout(this.resizeTimer);
-}
-this.resizeTimer=null;
 if(this.busyResizing){
 return;
 }
 this.busyResizing=true;
-if(_8()||_a.offsetHeight){
-var _b=_a.style.height;
-if(!(/px/.test(_b))){
-_b=_8();
-_a.rows=1;
-_a.style.height=_b+"px";
+if(_c()||_b.offsetHeight){
+var _e=_b.style.height;
+if(!(/px/.test(_e))){
+_e=_c();
+_b.rows=1;
+_b.style.height=_e+"px";
 }
-var _c=Math.max(parseInt(_b)-_a.clientHeight,0)+_8();
-var _d=_c+"px";
-if(_d!=_a.style.height){
-_a.rows=1;
-_a.style.height=_d;
+var _f=Math.max(Math.max(_b.offsetHeight,parseInt(_e))-_b.clientHeight,0)+_c();
+var _10=_f+"px";
+if(_10!=_b.style.height){
+_b.rows=1;
+_b.style.height=_10;
 }
-if(_5){
-var _e=_8();
-_a.style.height="auto";
-if(_8()<_e){
-_d=_c-_e+_8()+"px";
+if(_3("textarea-needs-help-shrinking")){
+var _11=_c(),_12=_11,_13=_b.style.minHeight,_14=4,_15;
+_b.style.minHeight=_10;
+_b.style.height="auto";
+while(_f>0){
+_b.style.minHeight=Math.max(_f-_14,4)+"px";
+_15=_c();
+var _16=_12-_15;
+_f-=_16;
+if(_16<_14){
+break;
 }
-_a.style.height=_d;
+_12=_15;
+_14<<=1;
 }
-_a.style.overflowY=_8()>_a.clientHeight?"auto":"hidden";
+_b.style.height=_f+"px";
+_b.style.minHeight=_13;
+}
+_b.style.overflowY=_c()>_b.clientHeight?"auto":"hidden";
 }else{
 this._estimateHeight();
 }
 this.busyResizing=false;
-},destroy:function(){
-if(this.resizeTimer){
-clearTimeout(this.resizeTimer);
-}
-if(this.shrinkTimer){
-clearTimeout(this.shrinkTimer);
-}
-this.inherited(arguments);
 }});
 });

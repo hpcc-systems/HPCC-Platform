@@ -5,8 +5,9 @@
 */
 
 //>>built
-define("dojo/data/util/sorter",["dojo/_base/lang"],function(_1){
-var _2=_1.getObject("dojo.data.util.sorter",true);
+define("dojo/data/util/sorter",["../../_base/lang"],function(_1){
+var _2={};
+_1.setObject("dojo.data.util.sorter",_2);
 _2.basicComparator=function(a,b){
 var r=-1;
 if(a===null){

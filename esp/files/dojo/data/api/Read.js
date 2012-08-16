@@ -5,8 +5,8 @@
 */
 
 //>>built
-define("dojo/data/api/Read",["../..","./Request"],function(_1){
-_1.declare("dojo.data.api.Read",null,{getValue:function(_2,_3,_4){
+define("dojo/data/api/Read",["../../_base/declare"],function(_1){
+return _1("dojo.data.api.Read",null,{getValue:function(_2,_3,_4){
 throw new Error("Unimplemented API: dojo.data.api.Read.getValue");
 },getValues:function(_5,_6){
 throw new Error("Unimplemented API: dojo.data.api.Read.getValues");
@@ -35,5 +35,4 @@ throw new Error("Unimplemented API: dojo.data.api.Read.getLabel");
 },getLabelAttributes:function(_13){
 throw new Error("Unimplemented API: dojo.data.api.Read.getLabelAttributes");
 }});
-return _1.data.api.Read;
 });
