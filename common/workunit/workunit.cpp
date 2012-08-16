@@ -3845,6 +3845,39 @@ const char *clusterTypeString(ClusterType clusterType)
     throwUnexpected();
 }
 
+IPropertyTree *queryRoxieProcessTree(IPropertyTree *environment, const char *process)
+{
+    if (!process || !*process)
+        return NULL;
+    VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", process);
+    return environment->queryPropTree(xpath.str());
+}
+
+void getRoxieProcessServers(IPropertyTree *roxie, SocketEndpointArray &endpoints)
+{
+    if (!roxie)
+        return;
+    Owned<IPropertyTreeIterator> servers = roxie->getElements("RoxieServerProcess");
+    ForEach(*servers)
+    {
+        IPropertyTree &server = servers->query();
+        const char *netAddress = server.queryProp("@netAddress");
+        if (netAddress && *netAddress)
+        {
+            SocketEndpoint ep(netAddress, server.getPropInt("@port", 9876));
+            endpoints.append(ep);
+        }
+    }
+}
+
+void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return;
+    getRoxieProcessServers(queryRoxieProcessTree(conn->queryRoot(), process), servers);
+}
+
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 {
     StringAttr name;
@@ -3893,17 +3926,7 @@ public:
             roxieProcess.set(roxie->queryProp("@name"));
             clusterWidth = roxie->getPropInt("@numChannels", 1);
             platform = RoxieCluster;
-            Owned<IPropertyTreeIterator> servers = roxie->getElements("RoxieServerProcess");
-            ForEach(*servers)
-            {
-                IPropertyTree &server = servers->query();
-                const char *netAddress = server.queryProp("@netAddress");
-                if (netAddress && *netAddress)
-                {
-                    SocketEndpoint ep(netAddress, server.getPropInt("@port", 9876));
-                    roxieServers.append(ep);
-                }
-            }
+            getRoxieProcessServers(roxie, roxieServers);
         }
         else 
         {
@@ -4135,8 +4158,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
     if (roxieName) 
     {
-        xpath.clear().appendf("Software/RoxieCluster[@name=\"%s\"]", roxieName);
-        roxie = environment->queryPropTree(xpath.str());
+        roxie = queryRoxieProcessTree(environment, roxieName);
         querySetName.clear().append(roxieName);
     }
 

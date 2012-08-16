@@ -1947,6 +1947,19 @@
 
                   <entry><para>Full</para></entry>
                 </row>
+                <row>
+                  <entry>
+                    <para>RoxieControlAccess</para>
+                  </entry>
+
+                  <entry>
+                    <para>Access to Roxie Process Cluster Control</para>
+                  </entry>
+
+                  <entry>
+                    <para>Full</para>
+                  </entry>
+                </row>
               </tbody>
             </tgroup>
           </informaltable></para>

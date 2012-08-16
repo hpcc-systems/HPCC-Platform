@@ -199,6 +199,7 @@ void EclCMDShell::usage()
            "   activate    activate a published query\n"
            "   deactivate  deactivate the given query alias name\n"
            "   queries     show or manipulate queries and querysets\n"
+           "   roxie       commands specific to roxie clusters\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }

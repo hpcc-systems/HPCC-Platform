@@ -23,6 +23,9 @@ ws_smc:
         Full - thor activity, MoveJobDown, MoveJobUp, MoveJobBack, 
                  MoveJobFront, RemoveJob, StopQueue, ResumeQueue, PauseQueue, 
                  ClearQueue
+    RoxieControlAccess:
+        Full - roxie control commands: attach, detach, reload
+
 ws_config:
     ConfigAccess: 
         Read - Read only access to super computer environment

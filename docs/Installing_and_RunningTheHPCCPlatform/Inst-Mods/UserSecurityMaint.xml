@@ -1057,6 +1057,14 @@
               </row>
 
               <row>
+                <entry>RoxieControlAccess</entry>
+
+                <entry>Access to Roxie Process Cluster Control</entry>
+
+                <entry>Full</entry>
+              </row>
+
+              <row>
                 <entry>OwnWorkunitsAccess</entry>
 
                 <entry>Access to View Own Workunit</entry>
