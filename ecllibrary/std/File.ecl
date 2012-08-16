@@ -383,11 +383,11 @@ EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstr
 EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean compress=false, boolean forcePush=false, integer4 transferBufferSize=0) :=
     lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowoverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize);
 
-EXPORT varstring fMonitorLogicalFileName(varstring eventname, varstring name, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorLogicalFileName(eventname, name, shotcount, espServerIpPort);
+EXPORT varstring fMonitorLogicalFileName(varstring event_name, varstring name, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.fMonitorLogicalFileName(event_name, name, shotcount, espServerIpPort);
 
-EXPORT varstring fMonitorFile(varstring eventname, varstring ip, varstring filename, boolean subdirs=false, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.fMonitorFile(eventname, ip, filename, subdirs, shotcount, espServerIpPort);
+EXPORT varstring fMonitorFile(varstring event_name, varstring ip, varstring filename, boolean subdirs=false, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.fMonitorFile(event_name, ip, filename, subdirs, shotcount, espServerIpPort);
 
 EXPORT varstring fReplicate(varstring logicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
     lib_fileservices.FileServices.fReplicate(logicalName, timeOut, espServerIpPort);
@@ -398,11 +398,11 @@ EXPORT varstring WaitDfuWorkunit(varstring wuid, integer4 timeOut=-1, varstring 
 EXPORT AbortDfuWorkunit(varstring wuid, varstring espServerIpPort=GETENV('ws_fs_server')) :=
     lib_fileservices.FileServices.AbortDfuWorkunit(wuid, espServerIpPort);
 
-EXPORT MonitorLogicalFileName(varstring eventname, varstring name, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorLogicalFileName(eventname, name, shotcount, espServerIpPort);
+EXPORT MonitorLogicalFileName(varstring event_name, varstring name, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.MonitorLogicalFileName(event_name, name, shotcount, espServerIpPort);
 
-EXPORT MonitorFile(varstring eventname, varstring ip, varstring filename, boolean subdirs=false, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
-    lib_fileservices.FileServices.MonitorFile(eventname, ip, filename, subdirs, shotcount, espServerIpPort);
+EXPORT MonitorFile(varstring event_name, varstring ip, varstring filename, boolean subdirs=false, integer4 shotcount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+    lib_fileservices.FileServices.MonitorFile(event_name, ip, filename, subdirs, shotcount, espServerIpPort);
 
 EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowoverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean forcePush=false, integer4 transferBufferSize=0, boolean wrap=false, boolean compress=false) :=
     lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowoverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress);

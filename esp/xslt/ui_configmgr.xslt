@@ -458,13 +458,13 @@
                       i.compType = '<xsl:value-of select="$Component"/>';
                       i.depth = <xsl:value-of select="count(ancestor::*) - 1"/>;
                       i.name = "<xsl:value-of select="name()"/>";
-                     <xsl:variable name="value">
-                       <xsl:call-template name="string-replace-all">
-                         <xsl:with-param name="text" select="."/>
-                         <xsl:with-param name="replace" select="'\'" />
-                         <xsl:with-param name="by" select="'\\'" />
-                         </xsl:call-template>
-                     </xsl:variable>
+                      <xsl:variable name="value">
+                        <xsl:call-template name="string-replace-all">
+                          <xsl:with-param name="text" select="."/>
+                          <xsl:with-param name="replace" select="'\'" />
+                          <xsl:with-param name="by" select="'\\'" />
+                        </xsl:call-template>
+                      </xsl:variable>
                       i.value = "<xsl:value-of select="$value" />";
                       i.parent = parentIds[parentIds.length-1];
                       i.params = "parentParams" + i.depth + "=" + rows[i.parent].params;

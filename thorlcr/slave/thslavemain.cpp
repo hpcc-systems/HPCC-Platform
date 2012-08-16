@@ -277,7 +277,6 @@ int main( int argc, char *argv[]  )
         if (!master)
             usage();
 
-        setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
         const char *slave = globals->queryProp("@SLAVE");
         if (slave)
         {
@@ -349,6 +348,8 @@ int main( int argc, char *argv[]  )
             }
 
 // Initialization from globals
+            setIORetryCount(globals->getPropInt("Debug/@ioRetries")); // default == 0 == off
+
             StringBuffer str;
             if (globals->getProp("@externalProgDir", str.clear()))
                 _mkdir(str.str());
