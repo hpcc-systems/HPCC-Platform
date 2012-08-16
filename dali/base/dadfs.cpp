@@ -1496,10 +1496,10 @@ class CDFAttributeIterator: public CInterface, implements IDFAttributesIterator
 public:
     IMPLEMENT_IINTERFACE;
 
-    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, IPropertyTree &root, StringBuffer &name, bool issuper)
+    static MemoryBuffer &serializeFileAttributes(MemoryBuffer &mb, IPropertyTree &root, const char *name, bool issuper)
     {
         StringBuffer buf;
-        mb.append(name.str());
+        mb.append(name);
         if (issuper) {
             mb.append("!SF");
             mb.append(root.getPropInt("@numsubfiles",0));
@@ -7166,15 +7166,58 @@ IDFPartFilter *createPartFilter(const char *filter)
 //=====================================================================================
 // Server Side Support
 
+class CFileMatch : public CInterface
+{
+    StringAttr name;
+    IPropertyTree &tree;
+    bool isSuper;
+public:
+    CFileMatch(const char *_name, IPropertyTree &_tree, bool _isSuper) : name(_name), tree(_tree), isSuper(_isSuper)
+    {
+    }
+    IPropertyTree &queryFileTree() const { return tree; }
+    const char *queryName() const { return name; }
+    bool queryIsSuper() const { return isSuper; }
+};
+typedef CIArrayOf<CFileMatch> CFileMatchArray;
+
+class CScope : public CInterface
+{
+    StringAttr name;
+    CIArrayOf<CFileMatch> files; // matches
+    CIArrayOf<CScope> subScopes;
+public:
+    CScope(const char *_name) : name(_name)
+    {
+    }
+    const char *getName() const { return name; }
+    void addMatch(const char *name, IPropertyTree &fileTree, bool isSuper)
+    {
+        files.append(*new CFileMatch(name, fileTree, isSuper));
+    }
+    CScope *addScope(const char *scope)
+    {
+        CScope *subScope = new CScope(scope);
+        subScopes.append(*subScope);
+        return subScope;
+    }
+    void popLastScope()
+    {
+        subScopes.pop();
+    }
+    CIArrayOf<CScope> &getSubScopeIterator() { return subScopes; }
+    CFileMatchArray &getFiles() { return files; }
+};
+typedef CIArrayOf<CScope> CScopeArray;
+
 
 class CFileScanner
 {
     bool recursive;
     bool includesuper;
     StringAttr wildname;
-    IUserDescriptor *user;
-    StringArray *scopesallowed;
-    unsigned lastscope;
+    Owned<CScope> topLevelScope;
+    CScope *currentScope;
 
     bool scopeMatch(const char *name)
     {   // name has trailing '::'
@@ -7206,31 +7249,20 @@ class CFileScanner
         return true;
     }
 
-    void processScopes(IPropertyTree &root,StringBuffer &name)
+    bool processScopes(IPropertyTree &root,StringBuffer &name)
     {
-        size32_t ns = name.length();
-        if (ns) {
-            if (scopesallowed) {
-                // scopes *should* be in order so look from last+1
-                unsigned i=0;
-                for (;i<scopesallowed->ordinality();i++) {
-                    unsigned s = (lastscope+i+1)%scopesallowed->ordinality();
-                    if (stricmp(scopesallowed->item(s),name.str())==0) {
-                        lastscope = s;
-                        break;
-                    }
-                }
-                if (i==scopesallowed->ordinality())
-                    return;
-            }
-            else if (user) {
-                int perm = getScopePermissions(name.str(),user,0);      // don't audit
-                if (!HASREADPERMISSION(perm)) {
-                    return;
-                }
-            }
-            name.append("::");
+        bool ret = false;
+        CScope *parentScope = currentScope;
+        if (parentScope)
+            currentScope = parentScope->addScope(name);
+        else
+        { // once only
+            topLevelScope.setown(new CScope(""));
+            currentScope = topLevelScope;
         }
+        size32_t ns = name.length();
+        if (ns)
+            name.append("::");
         size32_t ns2 = name.length();
 
         if (scopeMatch(name.str())) {
@@ -7238,27 +7270,37 @@ class CFileScanner
             if (iter->first()) {
                 do {
                     IPropertyTree &scope = iter->query();
-                    name.append(scope.queryProp("@name"));
-                    processScopes(scope,name);
-                    name.setLength(ns2);
+                    if (scope.hasChildren()) {
+                        name.append(scope.queryProp("@name"));
+                        ret |= processScopes(scope, name);
+                        name.setLength(ns2);
+                    }
                 } while (iter->next());
             }
-            processFiles(root,name);
+            ret |= processFiles(root,name);
         }
+        if (!ret && parentScope)
+            parentScope->popLastScope(); // discard scopes where no matches
+        currentScope = parentScope;
         name.setLength(ns);
+        return ret;
     }
 
-    void processFiles(IPropertyTree &root,StringBuffer &name)
+    bool processFiles(IPropertyTree &root,StringBuffer &name)
     {
+        bool ret = false;
         const char *s1 = wildname.get();
         size32_t ns = name.length();
         Owned<IPropertyTreeIterator> iter = root.getElements(queryDfsXmlBranchName(DXB_File));
         if (iter->first()) {
+            IPropertyTree &scope = iter->query();
             do {
                 IPropertyTree &file = iter->query();
                 name.append(file.queryProp("@name"));
-                if (!s1||WildMatch(name.str(),s1,true)) 
-                    processFile(file,name,false);
+                if (!s1||WildMatch(name.str(),s1,true)) {
+                    currentScope->addMatch(name,file,false);
+                    ret = true;
+                }
                 name.setLength(ns);
             } while (iter->next());
         }
@@ -7268,129 +7310,69 @@ class CFileScanner
                 do {
                     IPropertyTree &file = iter->query();
                     name.append(file.queryProp("@name"));
-                    if (!s1||WildMatch(name.str(),s1,true)) 
-                        processFile(file,name,true);
+                    if (!s1||WildMatch(name.str(),s1,true)) {
+                        currentScope->addMatch(name,file,true);
+                        ret = true;
+                    }
                     name.setLength(ns);
                 } while (iter->next());
             }
         }
+        return ret;
     }
 
 public:
-
-    virtual void processFile(IPropertyTree &file,StringBuffer &name,bool issuper) = 0;
-
-
-    void scan(const char *_wildname,bool _recursive,bool _includesuper,IUserDescriptor *_user, StringArray *_scopesallowed=NULL)
+    void scan(const char *_wildname,bool _recursive,bool _includesuper)
     {
-        lastscope = 0;
-        scopesallowed = _scopesallowed;
         if (_wildname)
             wildname.set(_wildname);
         else
             wildname.clear();
-        user = _user;
         recursive = _recursive;
         includesuper = _includesuper;
         StringBuffer name;
+        topLevelScope.clear();
+        currentScope = NULL;
         Linked<IPropertyTree> sroot = querySDSServer().lockStoreRead();
-        try { 
+        try {
             processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name); 
         }
-        catch (...) { 
+        catch (...) {
             querySDSServer().unlockStoreRead(); 
             throw; 
         }
         querySDSServer().unlockStoreRead();
     }
-};
-
-class CScopeScanner
-{
-    bool recursive;
-    StringAttr wildname;
-    IUserDescriptor *user;
-    StringArray *scopesallowed;
-    unsigned lastscope;
-
-    bool scopeMatch(const char *name)
-    {   // name has trailing '::'
-        if (!*name)
-            return true;
-        if (wildname.isEmpty())
-            return true;
-        const char *s1 = wildname.get();
-        const char *s2 = name;
-        while (*s2) {
-            if (*s1=='*') {
-                if (recursive)
-                    return true;
-                if (*s2==':')
-                    return false;
-                // '*' can only come at end of scope in non-recursive
-                while (*s1&&(*s1!=':'))
-                    s1++;
-                while (*s2&&(*s2!=':'))
-                    s2++;
-            }
-            else if ((*s1==*s2)||(*s1=='?')) {
-                s1++;
-                s2++;
-            }
-            else
-                return false;
-        }
-        return true;
-    }
-
-    void processScopes(IPropertyTree &root,StringBuffer &name)
+    void _getResults(bool auth, IUserDescriptor *user, CScope &scope, CFileMatchArray &matchingFiles, StringArray &authScopes, unsigned &count)
     {
-        size32_t ns = name.length();
-        if (root.hasChildren()) // only process non-empty
-            processScope(name.str());
-        if (ns) 
-            name.append("::");
-        size32_t ns2 = name.length();
-        bool empty = true;
-        if (scopeMatch(name.str())) {
-            Owned<IPropertyTreeIterator> iter = root.getElements(queryDfsXmlBranchName(DXB_Scope));
-            if (iter->first()) {
-                do {
-                    IPropertyTree &scope = iter->query();
-                    name.append(scope.queryProp("@name"));
-                    processScopes(scope,name);
-                    name.setLength(ns2);
-                } while (iter->next());
-            }
+        if (auth)
+        {
+            int perm = getScopePermissions(scope.getName(),user,0);     // don't audit
+            if (!HASREADPERMISSION(perm))
+                return;
+            authScopes.append(scope.getName());
         }
-        name.setLength(ns);
+        CFileMatchArray &files = scope.getFiles();
+        ForEachItemIn(f, files)
+        {
+            CFileMatch *match = &files.item(f);
+            matchingFiles.append(*LINK(match));
+            ++count;
+        }
+        CScopeArray &subScopes = scope.getSubScopeIterator();
+        ForEachItemIn(s, subScopes)
+        {
+            CScope &subScope = subScopes.item(s);
+            _getResults(auth, user, subScope, matchingFiles, authScopes, count);
+        }
     }
-
-public:
-
-    virtual void processScope(const char *name) = 0;
-
-
-    void scan(const char *_wildname,bool _recursive)
+    unsigned getResults(bool auth, IUserDescriptor *user, CFileMatchArray &matchingFiles, StringArray &authScopes)
     {
-        if (_wildname)
-            wildname.set(_wildname);
-        else
-            wildname.clear();
-        recursive = _recursive;
-        StringBuffer name;
-        Linked<IPropertyTree> sroot = querySDSServer().lockStoreRead();
-        try { 
-            processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name); 
-        }
-        catch (...) { 
-            querySDSServer().unlockStoreRead(); 
-            throw; 
-        }
-        querySDSServer().unlockStoreRead();
+        unsigned count = 0;
+        _getResults(auth, user, *topLevelScope, matchingFiles, authScopes, count);
+        return count;
     }
 };
-
 
 struct CMachineEntry: public CInterface
 {
@@ -8073,59 +8055,32 @@ public:
         mb.clear();
         unsigned count=0;
         mb.append(count);
-        StringArray *allowedscopes=NULL;
-        StringArray scopes;
+
+        StringArray authScopes;
+        CIArrayOf<CFileMatch> matchingFiles;
+        CFileScanner scanner;
         unsigned start = msTick();
-        if (querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,NULL,(unsigned)-1)) {
+        scanner.scan(wildname.get(),recursive,includesuper);
+        unsigned tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
 
-            class cListScopeScanner: public CScopeScanner
-            {
-                StringArray &scopes;
-            public:
-                cListScopeScanner(StringArray &_scopes) 
-                    : scopes(_scopes)
-                {
-                }
-                void processScope(const char *name)
-                {
-                    scopes.append(name);
-                }
-            } sscanner(scopes);
-            sscanner.scan(wildname.get(),recursive);
-            if (msTick()-start>100)
-                PROGLOG("TIMING(scopescan): %s: took %dms for %d scopes",trc.str(),msTick()-start,scopes.ordinality());
-            start = msTick();
-            ForEachItemInRev(i,scopes) {
-                int perm = getScopePermissions(scopes.item(i),udesc,0);     // don't audit
-                if (!HASREADPERMISSION(perm)) 
-                    scopes.remove(i);
-            }
-            if (msTick()-start>100)
-                PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups",trc.str(),msTick()-start,scopes.ordinality());
-            start = msTick();
-            allowedscopes = &scopes;
+        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,NULL,(unsigned)-1);
+        start = msTick();
+        count = scanner.getResults(auth, udesc, matchingFiles, authScopes);
+        tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
+        start = msTick();
+        ForEachItemIn(m, matchingFiles)
+        {
+            CFileMatch &fileMatch = matchingFiles.item(m);
+            CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper());
         }
+        tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
 
-        if (!allowedscopes||(allowedscopes->ordinality())) {
-            class CAttributeScanner: public CFileScanner
-            {
-                MemoryBuffer &mb;
-                unsigned &count;
-            public:
-                CAttributeScanner(MemoryBuffer &_mb,unsigned &_count) 
-                    : mb(_mb), count(_count)
-                {
-                }
-                virtual void processFile(IPropertyTree &file,StringBuffer &name,bool issuper)
-                {
-                    CDFAttributeIterator::serializeFileAttributes(mb, file, name,issuper);
-                    count++;
-                }
-            } scanner(mb,count);
-            scanner.scan(wildname.get(),recursive,includesuper,NULL,allowedscopes);
-            if (msTick()-start>100)
-                PROGLOG("TIMING(filescan): %s: took %dms, %d files",trc.str(),msTick()-start,count);
-        }
         mb.writeDirect(0,sizeof(count),&count);
     }
 
