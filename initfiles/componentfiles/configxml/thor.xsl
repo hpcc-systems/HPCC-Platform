@@ -121,6 +121,16 @@
 
     <xsl:for-each select="ThorSlaveProcess">
       <xsl:variable name="slavenode" select="@computer"/>
+      <xsl:if test=" count(/Environment/Software/DafilesrvProcess/Instance[@computer=$slavenode]) = 0">
+         <xsl:message terminate="yes">
+            '<xsl:value-of select="$slavenode"/>' slave is not assigned to a Dafilesrv process.
+          </xsl:message>
+       </xsl:if>
+        <xsl:if test=" count(/Environment/Software/FTSlaveProcess/Instance[@computer=$slavenode]) = 0">
+          <xsl:message terminate="yes">
+            '<xsl:value-of select="$slavenode"/>' slave is not assigned to a FT Slave process.
+          </xsl:message>
+      </xsl:if>
       <xsl:for-each select="/Environment/Software/ThorCluster[@name!=string($process)]">
         <xsl:variable name="thisslaveport" select="@slaveport"/>
         <xsl:if test="string($thisslaveport)=string($slaveport)">
@@ -131,6 +141,20 @@
           </xsl:if>
         </xsl:if>
       </xsl:for-each>
+    </xsl:for-each>
+
+    <xsl:for-each select="ThorSpareProcess">
+      <xsl:variable name="thorSpareNode" select="@computer"/>
+            <xsl:if test=" count(/Environment/Software/DafilesrvProcess/Instance[@computer=$thorSpareNode]) = 0">
+              <xsl:message terminate="yes">
+                '<xsl:value-of select="$thorSpareNode"/>' spare is not assigned to a Dafilesrv process.
+              </xsl:message>
+          </xsl:if>
+          <xsl:if test=" count(/Environment/Software/FTSlaveProcess/Instance[@computer=$thorSpareNode]) = 0">
+            <xsl:message terminate="yes">
+              '<xsl:value-of select="$thorSpareNode"/>' spare is not assigned to a FT Slave process.
+            </xsl:message>
+        </xsl:if>
     </xsl:for-each>
 
     <Thor>

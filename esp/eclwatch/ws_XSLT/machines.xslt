@@ -37,8 +37,9 @@
     <xsl:variable name="cpuThreshold" select="/TpMachineQueryResponse/CpuThreshold"/>
     <xsl:variable name="memThresholdType" select="/TpMachineQueryResponse/MemThresholdType"/><!-- % -->
     <xsl:variable name="diskThresholdType" select="/TpMachineQueryResponse/DiskThresholdType"/><!-- % -->
-  <xsl:variable name="enableSNMP" select="/TpMachineQueryResponse/EnableSNMP"/>
-  <xsl:variable name="addProcessesToFilter" select="/TpMachineQueryResponse/PreflightProcessFilter"/>
+    <xsl:variable name="enableSNMP" select="/TpMachineQueryResponse/EnableSNMP"/>
+    <xsl:variable name="addProcessesToFilter" select="/TpMachineQueryResponse/PreflightProcessFilter"/>
+    <xsl:variable name="numSlaveNodes" select="count(/TpMachineQueryResponse/TpMachines/TpMachine/Type[text()='ThorSlaveProcess'])"/>
 
   <xsl:template match="/TpMachineQueryResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -110,16 +111,42 @@
           if (obj)
             obj.disabled = checkedCount == 0;
                 }
-                function onLoad()
-                {                           
-                    initSelection('resultsTable');
-                    <xsl:if test="$ShowPreflightInfo and not($SwapNode)">initPreflightControls();</xsl:if>
-                    onRowCheck(false);
-                    var table = document.getElementById('resultsTable');
-                    if (table)
-                        sortableTable = new SortableTable(table, table, ["None", "String", "IP_Address", "String", "String", "String", "String"]);
-                } 
-                <![CDATA[
+
+            <![CDATA[
+                function setSortableTable(tableId)
+                {
+                    var table = document.getElementById(tableId);
+                    if (table == null)
+                        return;
+
+                    //dynamically create a sort list since our table is defined at run time based on info returned
+                    var cells = table.tHead.rows[0].cells;
+                    var nCols = cells.length;
+                    var sortCriteria = new Array(nCols);
+                    sortCriteria[0] = "None";//multiselect checkbox
+
+                    for (var i = 1; i < nCols; i++)
+                    {
+                        var c = cells[i];
+                        var sort;
+                        switch (c.innerText)
+                        {
+                           case 'Network Address':
+                              sort = 'IP_Address';
+                              break;
+                           case 'Slave Number':
+                              sort = 'Number';
+                              break;
+                           default:
+                              sort = "String";
+                              break;
+                        }//switch
+                        sortCriteria[i] = sort;
+                    }//for
+
+                    sortableTable = new SortableTable(table, table, sortCriteria);
+                }
+
                 var browseUrl = null;
                 var browsePath = null;
                 var browseCaption = null;
@@ -156,6 +183,16 @@
                         bottomchkbox.checked = chkbox.checked;
                 }
                 ]]>
+
+                function onLoad()
+                {
+                    initSelection('resultsTable');
+                    document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
+                    onRowCheck(false);
+                    setSortableTable('resultsTable');
+
+                    <xsl:if test="$ShowPreflightInfo and not($SwapNode)">initPreflightControls();</xsl:if>
+                }
                 <xsl:if test="$SwapNode">
                     var OldIP = '<xsl:value-of select="/TpMachineQueryResponse/OldIP"/>';
                     var Path = '<xsl:value-of select="/TpMachineQueryResponse/Path"/>';
@@ -194,6 +231,7 @@
                 </xsl:if>
                 <input type="hidden" name="Path" value="{/TpMachineQueryResponse/Path}"/>
                 <input type="hidden" name="Cluster" value="{$clusterName}"/>
+                <input type="hidden" name="Addresses.itemcount" value=""/>
                 <h3>
                     <xsl:choose>
                         <xsl:when test="$SwapNode">Select a spare node to swap</xsl:when>
@@ -224,6 +262,7 @@
                         <col width="150"/>
                         <col width="100"/>
                         <col width="100"/>
+                        <col width="100"/>
                     </colgroup>
                     <thead>
                         <tr>
@@ -243,6 +282,9 @@
                                 </xsl:if>
                             <th>Network Address</th>
                             <th>Component</th>
+                            <xsl:if test="$numSlaveNodes > 0">
+                                <th>Slave Number</th>
+                            </xsl:if>
                             <th>Domain</th>
                             <th>Platform</th>
                         </tr>
@@ -310,12 +352,12 @@
                 <xsl:if test="$ShowPreflightInfo">
                     <xsl:choose>
                         <xsl:when test="not($SwapNode)">
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)">
+                            <input type="checkbox" name="Addresses.{position()-1}" value="{Netaddress}|{ConfigNetaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)">
                                 <xsl:attribute name="checked">true</xsl:attribute>
                             </input>
                         </xsl:when>
                         <xsl:otherwise>
-                            <input type="checkbox" name="Addresses_i{position()}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)"/>
+                            <input type="checkbox" name="Addresses.{position()-1}" value="{Netaddress}:{Type}:{$clusterName}:{OS}:{translate(Directory, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)"/>
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:if>
@@ -367,12 +409,16 @@
       <td>
         <xsl:value-of select="Netaddress"/>
       </td>
-      <td>
+            <td>
             <xsl:value-of select="$displayType"/>
-            <xsl:if test="Type='ThorSlaveProcess'">
-                <br/><xsl:value-of select="concat('[', ProcessNumber, ']')"/>
-            </xsl:if>
             </td>
+            <xsl:if test="$numSlaveNodes > 0">
+                <td>
+                    <xsl:if test="Type='ThorSlaveProcess'">
+                        <xsl:value-of select="ProcessNumber"/>
+                    </xsl:if>
+                </td>
+            </xsl:if>
             <td>
                 <xsl:value-of select="Domain"/>
             </td>

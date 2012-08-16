@@ -17,8 +17,9 @@
 define([
 	"dojo/_base/declare",
 	"dojo/_base/sniff",
+	"dojo/aspect",
 	"dojo/dom"
-], function (declare, sniff, dom) {
+], function (declare, sniff, aspect, dom) {
 	return declare(null, {
 		id: "gvc",
 		width: "",
@@ -147,6 +148,20 @@ define([
 			this.obj.centerOnItem(item, true);
 			var items = [item];
 			this.obj.setSelected(items, true);
+		},
+
+		watchSelect: function (select) {
+			if (sniff("chrome") && select) {
+				var context = this;
+
+				aspect.before(select, "openDropDown", function () {
+					dojo.style(context.obj, "height", "0px");
+				});
+
+				aspect.after(select, "closeDropDown", function (focus) {
+					dojo.style(context.obj, "height", "100%");
+				});
+			}
 		},
 
 		registerEvents: function () {

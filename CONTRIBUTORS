@@ -127,7 +127,7 @@ to fulfill the following requirements:
     to review it for them).
 5.  The code should compile, without warnings, on all supported targets.
 6.  If appropriate, new tests must accompany new functionality.
-7.  The commit messages should conform to the commit message guidelines described below
+7.  The commit messages must conform to the commit message guidelines described below
 8.  The commits in the branch should progress logically and forwards. If you started
     coding something one way, then changed your mind and coded it a different way, use
     git rebase -i to squash commits together so that the reviewer doesn't have to
@@ -158,13 +158,14 @@ Commit messages
 
 We follow the same guidelines that many other git projects have adopted for git comments.
 
-1.  The first line of the commit should summarize the change in no more than 50(ish)
-    characters. Start with a capital, do not end with a full stop. If the commit refers
-    to an open issue then start the comment with gh-NNN.
+1.  The first line of the commit must start gh-NNN where NNN is the github issue that the
+    commit is adddressing. This should be followed by a space, then a short summary of the
+    change (this will appear in the condensed form of the changelog generated from the
+    git history). Start with a capital, do not end with a full stop.
 
 2.  The second line of the commit message should be blank
 
-3.  The remainder of the commit message should be wrapped at 75 chars, and should contain
+3.  The remainder of the commit message should be wrapped at 80 chars, and should contain
     the following information (where appropriate):
 
       - what the behaviour was before this change.
@@ -180,4 +181,11 @@ We follow the same guidelines that many other git projects have adopted for git 
     should say "Add O(n) travelling salesman support" rather than "Adds fast TSP", "Added
     code to make system faster", or "I changed line 32".
 
-4.  The commit message must be signed. Use commit -s to make this easier.
+4.  If the commit is a complete fix for the github issue referenced in the summary line,
+    you can add a line "Fixes gh-NNNN." at the bottom of the commit message.
+
+5.  The commit message must be signed. Use commit -s to make this easier.
+
+If you copy the files from the githooks directory into .git/hooks, then git will automatically
+check (some of) these requirements whenevery you commit. This is strongly encouraged to
+ensure that we can accept commits promptly.

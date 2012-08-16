@@ -415,7 +415,11 @@ void ResourceManager::flush(const char *filename, bool flushText, bool target64b
         bfd_init ();
         bfd_set_default_target(target64bit ? "x86_64-unknown-linux-gnu" : "x86_32-unknown-linux-gnu");
         const bfd_arch_info_type *temp_arch_info = bfd_scan_arch ("i386");
+#if defined __APPLE__
+        file = bfd_openw(filename, NULL);//MORE: Quick fix to get working on OSX
+#else
         file = bfd_openw(filename, target64bit ? "elf64-x86-64" : NULL);//MORE: Test on 64 bit to see if we can always pass NULL
+#endif
         verifyex(file);
         verifyex(bfd_set_arch_mach(file, temp_arch_info->arch, temp_arch_info->mach));
         verifyex(bfd_set_start_address(file, 0));

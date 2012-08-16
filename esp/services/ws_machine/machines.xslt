@@ -65,6 +65,7 @@
    <xsl:variable name="autoRefresh" select="$reqInfo/AutoRefresh"/>
    <xsl:variable name="numColumns" select="count(/GetMachineInfoResponse/Columns/Item)"/>
    <xsl:variable name="SwapNode" select="$reqInfo/OldIP/text() and $clusterType='THORSPARENODES'"/>
+   <xsl:variable name="numSlaveNodes" select="count(/GetMachineInfoResponse/Machines/MachineInfoEx/ProcessType[text()='ThorSlaveProcess'])"/>
    
   <xsl:template match="/GetMachineInfoResponse">
     <html>
@@ -158,12 +159,16 @@
                        case 'Processes': 
                        case 'Processes Down':
                        case 'Condition':
+                       case 'Component':
                        case 'State':
                           sort = 'String'; 
                           break;
                        case 'Up Time':
                        case 'Computer Up Time': 
                           sort = 'TimePeriod'; 
+                          break;
+                       case 'Slave Number':
+                          sort = 'Number';
                           break;
                        default:
                           sort = "Percentage";
@@ -213,6 +218,7 @@
              </xsl:if>
              <input type="hidden" name="Path" value="{$reqInfo/Path}"/>
              <input type="hidden" name="Cluster" value="{$clusterName}"/>
+             <input type="hidden" name="Addresses.itemcount" value="{count(Machines/MachineInfoEx)}"/>
                <xsl:choose>
                   <xsl:when test="Exceptions">
                      <h1><xsl:value-of select="Exceptions"/></h1>
@@ -300,6 +306,9 @@
                </th>
                <th>Location</th>
                <th>Component</th>
+               <xsl:if test="$numSlaveNodes > 0">
+                  <th>Slave Number</th>
+               </xsl:if>
                <xsl:choose>
                   <xsl:when test="../Columns/Item">
                      <xsl:for-each select="../Columns/Item[text()='Condition']">
@@ -383,10 +392,10 @@
             </xsl:if-->
            <xsl:choose>
             <xsl:when test="string(ComponentName)='AgentExec'">
-               <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
+               <input type="checkbox" name="Addresses.{position()-1}" value="{Address}|{ConfigAddress}:EclAgentProcess:eclagent:{OS}:{translate(ComponentPath, ':', '$')}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:when>
             <xsl:otherwise>
-              <input type="checkbox" name="Addresses_i{position()}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)" checked="true"/>
+              <input type="checkbox" name="Addresses.{position()-1}" value="{Address}|{ConfigAddress}:{ProcessType}:{ComponentName}:{OS}:{translate(ComponentPath, ':', '$')}:{ProcessNumber}" onclick="return clicked(this, event)" checked="true"/>
             </xsl:otherwise>
            </xsl:choose>
          </td>
@@ -405,16 +414,18 @@
             <xsl:value-of select="DisplayType"/>
             <xsl:if test="string(ComponentName)!=''">
                <br/>
-               <xsl:choose>
-                  <xsl:when test="ProcessType='ThorSlaveProcess'">
-                     <xsl:value-of select="concat('[', ProcessNumber, ']')"/>
-                  </xsl:when>
-                  <xsl:when test="ProcessType!='ThorMasterProcess' and ProcessType!='RoxieServerProcess'">
-                     <xsl:value-of select="concat('[', ComponentName, ']')"/>
-                  </xsl:when>
-               </xsl:choose>
+                <xsl:if test="ProcessType!='ThorMasterProcess' and ProcessType!='RoxieServerProcess'">
+                    <xsl:value-of select="concat('[', ComponentName, ']')"/>
+                </xsl:if>
             </xsl:if>
          </td>
+         <xsl:if test="$numSlaveNodes > 0">
+             <td>
+                <xsl:if test="ProcessType='ThorSlaveProcess'">
+                    <xsl:value-of select="ProcessNumber"/>
+                </xsl:if>
+             </td>
+         </xsl:if>
          <xsl:choose>
             <xsl:when test="UpTime/text()">
                   <xsl:variable name="cond" select="ComponentInfo/Condition"/>

@@ -53,6 +53,8 @@
 #define LDAP_NO_ATTRS "1.1"
 #endif
 
+#define PWD_NEVER_EXPIRES (__int64)0x8000000000000000
+
 class CLoadBalancer : public CInterface, implements IInterface
 {
 private:
@@ -142,7 +144,7 @@ public:
     }
 };
 
-bool LdapServerDown(int rc)
+inline bool LdapServerDown(int rc)
 {
     return rc==LDAP_SERVER_DOWN||rc==LDAP_UNAVAILABLE||rc==LDAP_TIMEOUT;
 }
@@ -980,14 +982,18 @@ public:
             return 0;
         }
         char **values;
-        values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
-        assertex(values);
-        char *val = values[0];
-        if (*val == '-')
-            ++val;
         __int64 maxAge = 0;
-        for (int x=0; val[x]; x++)
-            maxAge = maxAge * 10 + ( (int)val[x] - '0');
+        values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
+        if (values && *values)
+        {
+            char *val = values[0];
+            if (*val == '-')
+                ++val;
+            for (int x=0; val[x]; x++)
+                maxAge = maxAge * 10 + ( (int)val[x] - '0');
+        }
+        else
+            maxAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
         return maxAge;
     }
@@ -1006,7 +1012,7 @@ public:
                 return false;
 
             __int64 maxPWAge = getMaxPwdAge();
-            if (maxPWAge != (__int64)0x8000000000000000)
+            if (maxPWAge != PWD_NEVER_EXPIRES)
                 m_passwordNeverExpires = false;
             else
                 m_passwordNeverExpires = true;
@@ -5080,14 +5086,19 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
             StringBuffer onedn;
             while((curdn = domains[i]) != NULL)
             {
-                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0))
+                if(*curdn != '\0' && (strncmp(curdn, "dc=", 3) == 0 || strncmp(curdn, "DC=", 3) == 0) && strstr(curdn,"DC=ForestDnsZones")==0 && strstr(curdn,"DC=DomainDnsZones")==0 )
                 {
                     if(domainDN.length() == 0)
                     {
                         StringBuffer curdomain;
                         LdapUtils::getName(curdn, curdomain);
                         if(onedn.length() == 0)
+                        {
+                            DBGLOG("Queried '%s', selected basedn '%s'",curdn, curdomain.str());
                             onedn.append(curdomain.str());
+                        }
+                        else
+                            DBGLOG("Ignoring %s", curdn);
                         if(!domainname || !*domainname || stricmp(curdomain.str(), domainname) == 0)
                             domainDN.append(curdn);
                     }

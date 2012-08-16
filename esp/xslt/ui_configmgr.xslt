@@ -29,7 +29,27 @@
       <xsl:otherwise>/esp/files_</xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
-  
+
+<xsl:template name="string-replace-all">
+  <xsl:param name="text" />
+  <xsl:param name="replace" />
+  <xsl:param name="by" />
+  <xsl:choose>
+    <xsl:when test="contains($text, $replace)">
+      <xsl:value-of select="substring-before($text,$replace)" />
+      <xsl:value-of select="$by" />
+      <xsl:call-template name="string-replace-all">
+        <xsl:with-param name="text" select="substring-after($text,$replace)" />
+        <xsl:with-param name="replace" select="$replace" />
+        <xsl:with-param name="by" select="$by" />
+      </xsl:call-template>
+    </xsl:when>
+    <xsl:otherwise>
+      <xsl:value-of select="$text" />
+    </xsl:otherwise>
+  </xsl:choose>
+</xsl:template>
+
   <xsl:template match="/*[1]/XmlArgs/*">
           <html>
             <head>
@@ -438,7 +458,14 @@
                       i.compType = '<xsl:value-of select="$Component"/>';
                       i.depth = <xsl:value-of select="count(ancestor::*) - 1"/>;
                       i.name = "<xsl:value-of select="name()"/>";
-                      i.value = "<xsl:value-of select="."/>";
+                      <xsl:variable name="value">
+                        <xsl:call-template name="string-replace-all">
+                          <xsl:with-param name="text" select="."/>
+                          <xsl:with-param name="replace" select="'\'" />
+                          <xsl:with-param name="by" select="'\\'" />
+                        </xsl:call-template>
+                      </xsl:variable>
+                      i.value = "<xsl:value-of select="$value" />";
                       i.parent = parentIds[parentIds.length-1];
                       i.params = "parentParams" + i.depth + "=" + rows[i.parent].params;
                       i.id = id++;

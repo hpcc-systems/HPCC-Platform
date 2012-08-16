@@ -2374,7 +2374,7 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
 
                     StringBuffer namebuf(resourceNameStr);
                     SecResourceType rtype = str2type(rtypestr);
-                    if(rtype == RT_MODULE && (stricmp(namebuf.str(), "codegenerator.cpp")) && stricmp(name, "repository") != 0 && Utils::strncasecmp(name, "repository.", 11) != 0)
+                    if(rtype == RT_MODULE && stricmp(namebuf.str(), "codegenerator.cpp") && stricmp(namebuf.str(), "repository") != 0 && Utils::strncasecmp(namebuf.str(), "repository.", 11) != 0)
                         namebuf.insert(0, "repository.");
                     if(prefix && *prefix)
                         namebuf.insert(0, prefix);
