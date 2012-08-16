@@ -55,6 +55,8 @@ include_directories (
          ./../../smc/SMCLib 
          ./../../bindings/SOAP/xpp 
          ./../../../system/security/LdapSecurity
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly 
