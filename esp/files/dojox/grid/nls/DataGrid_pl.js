@@ -1,13 +1,2 @@
-require({cache:{
-'dijit/nls/pl/loading':function(){
-define(
-"dijit/nls/pl/loading", //begin v1.x content
-({
-	loadingState: "Ładowanie...",
-	errorState: "Niestety, wystąpił błąd"
-})
-//end v1.x content
-);
-
-}}});
-define("dojox/grid/nls/DataGrid_pl", [], 1);
+//>>built
+define("dojox/grid/nls/DataGrid_pl",{"dijit/nls/loading":{"loadingState":"Ładowanie...","errorState":"Niestety, wystąpił błąd"}});

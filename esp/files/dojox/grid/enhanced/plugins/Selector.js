@@ -817,12 +817,8 @@ f.setFocusIndex(_db.row,_db.col);
 }
 },_blurPoint:function(_dc,_dd){
 var f=this.grid.focus;
-if(_dc=="col"){
-f._blurHeader();
-}else{
 if(_dc=="cell"){
 f._blurContent();
-}
 }
 },_addToSelected:function(_de){
 var _df=this._toSelect,_e0=this,_e1=[],_e2=[],_e3=this._startPoint[_de],end=this._currentPoint[_de];

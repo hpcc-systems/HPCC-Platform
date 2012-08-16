@@ -1,5 +1,5 @@
 //>>built
-define("dijit/BackgroundIframe",["require",".","dojo/_base/config","dojo/dom-construct","dojo/dom-style","dojo/_base/lang","dojo/on","dojo/_base/sniff","dojo/_base/window"],function(_1,_2,_3,_4,_5,_6,on,_7,_8){
+define("dijit/BackgroundIframe",["require","./main","dojo/_base/config","dojo/dom-construct","dojo/dom-style","dojo/_base/lang","dojo/on","dojo/sniff","dojo/_base/window"],function(_1,_2,_3,_4,_5,_6,on,_7,_8){
 var _9=new function(){
 var _a=[];
 this.pop=function(){

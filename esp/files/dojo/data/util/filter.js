@@ -5,8 +5,9 @@
 */
 
 //>>built
-define("dojo/data/util/filter",["dojo/_base/lang"],function(_1){
-var _2=_1.getObject("dojo.data.util.filter",true);
+define("dojo/data/util/filter",["../../_base/lang"],function(_1){
+var _2={};
+_1.setObject("dojo.data.util.filter",_2);
 _2.patternToRegExp=function(_3,_4){
 var _5="^";
 var c=null;

@@ -4,11 +4,12 @@ return _1("dijit.form._CheckBoxMixin",null,{type:"checkbox",value:"on",readOnly:
 this._set("readOnly",_4);
 _2.set(this.focusNode,"readOnly",_4);
 this.focusNode.setAttribute("aria-readonly",_4);
-},_setLabelAttr:undefined,postMixInProperties:function(){
-if(this.value==""){
-this.value="on";
-}
-this.inherited(arguments);
+},_setLabelAttr:undefined,_getSubmitValue:function(_5){
+return !_5&&_5!==0?"on":_5;
+},_setValueAttr:function(_6){
+_6=this._getSubmitValue(_6);
+this._set("value",_6);
+_2.set(this.focusNode,"value",_6);
 },reset:function(){
 this.inherited(arguments);
 this._set("value",this.params.value||"on");

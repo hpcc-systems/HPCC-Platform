@@ -1,5 +1,5 @@
 //>>built
-define("dijit/Editor",["dojo/_base/array","dojo/_base/declare","dojo/_base/Deferred","dojo/i18n","dojo/dom-attr","dojo/dom-class","dojo/dom-geometry","dojo/dom-style","dojo/_base/event","dojo/keys","dojo/_base/lang","dojo/_base/sniff","dojo/string","dojo/topic","dojo/_base/window","./_base/focus","./_Container","./Toolbar","./ToolbarSeparator","./layout/_LayoutWidget","./form/ToggleButton","./_editor/_Plugin","./_editor/plugins/EnterKeyHandling","./_editor/html","./_editor/range","./_editor/RichText",".","dojo/i18n!./_editor/nls/commands"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_1a,_1b){
+define("dijit/Editor",["dojo/_base/array","dojo/_base/declare","dojo/_base/Deferred","dojo/i18n","dojo/dom-attr","dojo/dom-class","dojo/dom-geometry","dojo/dom-style","dojo/_base/event","dojo/keys","dojo/_base/lang","dojo/sniff","dojo/string","dojo/topic","dojo/_base/window","./_base/focus","./_Container","./Toolbar","./ToolbarSeparator","./layout/_LayoutWidget","./form/ToggleButton","./_editor/_Plugin","./_editor/plugins/EnterKeyHandling","./_editor/html","./_editor/range","./_editor/RichText","./main","dojo/i18n!./_editor/nls/commands"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_1a,_1b){
 var _1c=_2("dijit.Editor",_1a,{plugins:null,extraPlugins:null,constructor:function(){
 if(!_b.isArray(this.plugins)){
 this.plugins=["undo","redo","|","cut","copy","paste","|","bold","italic","underline","strikethrough","|","insertOrderedList","insertUnorderedList","indent","outdent","|","justifyLeft","justifyRight","justifyCenter","justifyFull",_17];
@@ -22,11 +22,11 @@ this.plugins=this.plugins.concat(this.extraPlugins);
 this.inherited(arguments);
 this.commands=_4.getLocalization("dijit._editor","commands",this.lang);
 if(!this.toolbar){
-this.toolbar=new _12({dir:this.dir,lang:this.lang});
+this.toolbar=new _12({ownerDocument:this.ownerDocument,dir:this.dir,lang:this.lang});
 this.header.appendChild(this.toolbar.domNode);
 }
 _1.forEach(this.plugins,this.addPlugin,this);
-this.setValueDeferred.callback(true);
+this.setValueDeferred.resolve(true);
 _6.add(this.iframe.parentNode,"dijitEditorIFrameContainer");
 _6.add(this.iframe,"dijitEditorIFrame");
 _5.set(this.iframe,"allowTransparency",true);
@@ -57,14 +57,18 @@ _e.publish(_1b._scopeName+".Editor.getPlugin",o);
 }
 }
 if(!o.plugin){
-var pc=_1f.ctor||_b.getObject(_1f.name);
+try{
+var pc=_1f.ctor||_b.getObject(_1f.name)||require(_1f.name);
 if(pc){
 o.plugin=new pc(_1f);
 }
 }
+catch(e){
+throw new Error(this.id+": cannot find plugin ["+_1f.name+"]");
+}
+}
 if(!o.plugin){
-console.warn("Cannot find plugin",_1d);
-return;
+throw new Error(this.id+": cannot find plugin ["+_1f.name+"]");
 }
 _1d=o.plugin;
 }
@@ -115,7 +119,7 @@ if(!_22){
 delete this._cursorToStart;
 delete this._savedSelection;
 if(e.target.tagName=="BODY"){
-setTimeout(_b.hitch(this,"placeCursorAtEnd"),0);
+this.defer("placeCursorAtEnd");
 }
 this.inherited(arguments);
 }
@@ -135,9 +139,9 @@ this._beginEditing(cmd);
 }
 if(this.editActionInterval>0){
 if(this._editTimer){
-clearTimeout(this._editTimer);
+this._editTimer.remove();
 }
-this._editTimer=setTimeout(_b.hitch(this,this.endEditing),this._editInterval);
+this._editTimer=this.defer("endEditing",this._editInterval);
 }
 },_steps:[],_undoedSteps:[],execCommand:function(cmd){
 if(this.customUndo&&(cmd=="undo"||cmd=="redo")){
@@ -168,7 +172,7 @@ throw {code:1011};
 }
 }
 catch(e){
-if(e.code==1011){
+if(e.code==1011||(e.code==9&&_c("opera"))){
 var sub=_d.substitute,_29={cut:"X",copy:"C",paste:"V"};
 alert(sub(this.commands.systemShortcut,[this.commands[cmd],sub(this.commands[_c("mac")?"appleKey":"ctrlKey"],[_29[cmd]])]));
 }
@@ -193,7 +197,7 @@ _2a=[];
 _1.forEach(_2b,function(n){
 _2a.push(_19.getNode(n,this.editNode));
 },this);
-_f.withGlobal(this.window,"moveToBookmark",_1b,[{mark:_2a,isCollapsed:col}]);
+_f.withGlobal(this.window,"moveToBookmark",_10,[{mark:_2a,isCollapsed:col}]);
 }else{
 if(_2b.startContainer&&_2b.endContainer){
 sel=_19.getSelection(this.window);
@@ -267,7 +271,7 @@ delete this._undoRedoActive;
 return ret;
 },endEditing:function(_2f){
 if(this._editTimer){
-clearTimeout(this._editTimer);
+this._editTimer=this._editTimer.remove();
 }
 if(this._inEditing){
 this._endEditing(_2f);
@@ -353,11 +357,10 @@ if(e.ctrlKey&&!e.altKey&&!e.metaKey){
 this.endEditing();
 if(e.keyCode==88){
 this.beginEditing("cut");
-setTimeout(_b.hitch(this,this.endEditing),1);
 }else{
 this.beginEditing("paste");
-setTimeout(_b.hitch(this,this.endEditing),1);
 }
+this.defer("endEditing",1);
 break;
 }
 default:
@@ -395,7 +398,7 @@ catch(e){
 },_restoreSelection:function(){
 if(this._savedSelection){
 delete this._cursorToStart;
-if(_f.withGlobal(this.window,"isCollapsed",_1b)){
+if(_f.withGlobal(this.window,"isCollapsed",_10)){
 this._moveToBookmark(this._savedSelection);
 }
 delete this._savedSelection;
@@ -419,7 +422,7 @@ this.endEditing();
 }
 }
 },_setDisabledAttr:function(_33){
-var _34=_b.hitch(this,function(){
+this.setValueDeferred.then(_b.hitch(this,function(){
 if((!this.disabled&&_33)||(!this._buttonEnabledPlugins&&_33)){
 _1.forEach(this._plugins,function(p){
 p.set("disabled",true);
@@ -431,8 +434,7 @@ p.set("disabled",false);
 });
 }
 }
-});
-this.setValueDeferred.addCallback(_34);
+}));
 this.inherited(arguments);
 },_setStateClass:function(){
 try{
@@ -444,15 +446,16 @@ _8.set(this.document.body,"color",_8.get(this.iframe,"color"));
 catch(e){
 }
 }});
-function _35(_36){
-return new _16({command:_36.name});
+function _34(_35){
+return new _16({command:_35.name});
 };
-function _37(_38){
-return new _16({buttonClass:_15,command:_38.name});
+function _36(_37){
+return new _16({buttonClass:_15,command:_37.name});
 };
-_b.mixin(_16.registry,{"undo":_35,"redo":_35,"cut":_35,"copy":_35,"paste":_35,"insertOrderedList":_35,"insertUnorderedList":_35,"indent":_35,"outdent":_35,"justifyCenter":_35,"justifyFull":_35,"justifyLeft":_35,"justifyRight":_35,"delete":_35,"selectAll":_35,"removeFormat":_35,"unlink":_35,"insertHorizontalRule":_35,"bold":_37,"italic":_37,"underline":_37,"strikethrough":_37,"subscript":_37,"superscript":_37,"|":function(){
-return new _16({button:new _13(),setEditor:function(_39){
-this.editor=_39;
+_b.mixin(_16.registry,{"undo":_34,"redo":_34,"cut":_34,"copy":_34,"paste":_34,"insertOrderedList":_34,"insertUnorderedList":_34,"indent":_34,"outdent":_34,"justifyCenter":_34,"justifyFull":_34,"justifyLeft":_34,"justifyRight":_34,"delete":_34,"selectAll":_34,"removeFormat":_34,"unlink":_34,"insertHorizontalRule":_34,"bold":_36,"italic":_36,"underline":_36,"strikethrough":_36,"subscript":_36,"superscript":_36,"|":function(){
+return new _16({setEditor:function(_38){
+this.editor=_38;
+this.button=new _13({ownerDocument:_38.ownerDocument});
 }});
 }});
 return _1c;

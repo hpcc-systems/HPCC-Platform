@@ -21,8 +21,9 @@ return _c.promise;
 var _11=new _2(function(){
 _12.abort&&_12.abort();
 });
+_11.total=new _2();
 var _12=this.fetch(_4.mixin({query:_f,onBegin:function(_13){
-_11.total=_13;
+_11.total.resolve(_13);
 },onComplete:function(_14){
 _11.resolve(_14);
 },onError:function(_15){
@@ -33,23 +34,24 @@ return _5(_11);
 }
 this._set("store",_b);
 },postMixInProperties:function(){
-if(this.params.store){
-this._setStoreAttr(this.params.store);
+var _16=this.params.store||this.store;
+if(_16){
+this._setStoreAttr(_16);
 }
 this.inherited(arguments);
-if(!this.params.store){
-var _16=this.declaredClass;
-_4.mixin(this.store,{getValue:function(_17,_18){
-_3.deprecated(_16+".store.getValue(item, attr) is deprecated for builtin store.  Use item.attr directly","","2.0");
-return _17[_18];
-},getLabel:function(_19){
-_3.deprecated(_16+".store.getLabel(item) is deprecated for builtin store.  Use item.label directly","","2.0");
-return _19.name;
-},fetch:function(_1a){
-_3.deprecated(_16+".store.fetch() is deprecated for builtin store.","Use store.query()","2.0");
-var _1b=["dojo/data/ObjectStore"];
-require(_1b,_4.hitch(this,function(_1c){
-new _1c({objectStore:this}).fetch(_1a);
+if(!this.params.store&&!this.store._oldAPI){
+var _17=this.declaredClass;
+_4.mixin(this.store,{getValue:function(_18,_19){
+_3.deprecated(_17+".store.getValue(item, attr) is deprecated for builtin store.  Use item.attr directly","","2.0");
+return _18[_19];
+},getLabel:function(_1a){
+_3.deprecated(_17+".store.getLabel(item) is deprecated for builtin store.  Use item.label directly","","2.0");
+return _1a.name;
+},fetch:function(_1b){
+_3.deprecated(_17+".store.fetch() is deprecated for builtin store.","Use store.query()","2.0");
+var _1c=["dojo/data/ObjectStore"];
+require(_1c,_4.hitch(this,function(_1d){
+new _1d({objectStore:this}).fetch(_1b);
 }));
 }});
 }
