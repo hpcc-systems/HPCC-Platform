@@ -3528,11 +3528,11 @@ function onMenuItemClickResetToDefault(p_sType, p_aArgs, p_oValue)
   var column = dt.getColumn(oTarget);
   var compName = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name');
   var bldSet = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('BuildSet');
-  var newValue = dt.getDefault(oTarget, record);
   var meta = record.getData(column.key + '_extra');
   var menuItemName = this.cfg.getProperty("text");
   var flag = (menuItemName === 'Write to environment');
-  
+  var newValue = (flag ? oldValue : dt.getDefault(oTarget, record));
+
   if (flag || newValue !== oldValue) {
      var form = top.window.document.forms['treeForm'];
      top.document.startWait(document);

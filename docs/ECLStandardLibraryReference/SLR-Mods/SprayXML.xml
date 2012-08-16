@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="SprayXML">
-  <title><emphasis role="bold">SprayXML</emphasis></title>
+  <title>SprayXML</title>
 
   <para><emphasis role="bold">STD.File.SprayXML<indexterm>
       <primary>STD.File.SprayXML</primary>

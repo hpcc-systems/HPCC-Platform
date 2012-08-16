@@ -5350,7 +5350,7 @@ void rtlExtractTag(size32_t & outLen, char * & out, const char * text, const cha
 {
     if (!tag || !isStructuredMessage(text, rootTag))
     {
-        if (!tag || strcmp(tag, "text")==0)
+        if (text && (!tag || strcmp(tag, "text")==0))
            rtlStrToStrX(outLen, out, strlen(text), text);
         else
         {
