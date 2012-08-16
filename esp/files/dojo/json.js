@@ -79,6 +79,7 @@ return "["+res.join(",")+_13+_c+"]";
 var _14=[];
 for(_d in it){
 var _15;
+if(it.hasOwnProperty(_d)){
 if(typeof _d=="number"){
 _15="\""+_d+"\"";
 }else{
@@ -93,6 +94,7 @@ if(typeof _e!="string"){
 continue;
 }
 _14.push(_13+_12+_15+":"+sep+_e);
+}
 }
 return "{"+_14.join(",")+_13+_c+"}";
 };

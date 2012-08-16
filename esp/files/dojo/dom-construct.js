@@ -5,7 +5,7 @@
 */
 
 //>>built
-define("dojo/dom-construct",["exports","./_base/kernel","./_base/sniff","./_base/window","./dom","./dom-attr","./on"],function(_1,_2,_3,_4,_5,_6,on){
+define("dojo/dom-construct",["exports","./_base/kernel","./sniff","./_base/window","./dom","./dom-attr","./on"],function(_1,_2,_3,_4,_5,_6,on){
 var _7={option:["select"],tbody:["table"],thead:["table"],tfoot:["table"],tr:["table","tbody"],td:["table","tbody","tr"],th:["table","thead","tr"],legend:["fieldset"],caption:["table"],colgroup:["table"],col:["table","colgroup"],li:["ul"]},_8=/<\s*([\w\:]+)/,_9={},_a=0,_b="__"+_2._scopeName+"ToDomId";
 for(var _c in _7){
 if(_7.hasOwnProperty(_c)){

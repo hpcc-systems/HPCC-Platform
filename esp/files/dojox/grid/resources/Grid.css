@@ -168,7 +168,7 @@
 	height: 0;
 	overflow: hidden;
 }
-.dojoxGridCell {
+.dojoxGrid .dojoxGridCell {
 	border: 1px solid;
 	border-color: #EBEADB;
 	border-right-color: #D5CDB5;
@@ -223,6 +223,11 @@
 }
 .dijit_a11y .dojoxGridRowSelected {
 	border: 1px solid black !important;
+}
+.dojoxGridRowTable .dojoDndHorizontal th.dojoDndItem {
+	display: table-cell;
+	
+	margin: 0;
 }
 .dojoxGridDndAvatar {
 	font-size: 100%;

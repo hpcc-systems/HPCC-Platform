@@ -5,7 +5,7 @@
 */
 
 //>>built
-define("dojo/dom-style",["./_base/sniff","./dom"],function(_1,_2){
+define("dojo/dom-style",["./sniff","./dom"],function(_1,_2){
 var _3,_4={};
 if(_1("webkit")){
 _3=function(_5){
@@ -23,7 +23,7 @@ return s||{};
 }else{
 if(_1("ie")&&(_1("ie")<9||_1("quirks"))){
 _3=function(_6){
-return _6.nodeType==1?_6.currentStyle:{};
+return _6.nodeType==1&&_6.currentStyle?_6.currentStyle:{};
 };
 }else{
 _3=function(_7){

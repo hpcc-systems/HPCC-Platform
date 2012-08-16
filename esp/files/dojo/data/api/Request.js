@@ -5,9 +5,8 @@
 */
 
 //>>built
-define("dojo/data/api/Request",["../.."],function(_1){
-_1.declare("dojo.data.api.Request",null,{abort:function(){
+define("dojo/data/api/Request",["../../_base/declare"],function(_1){
+return _1("dojo.data.api.Request",null,{abort:function(){
 throw new Error("Unimplemented API: dojo.data.api.Request.abort");
 }});
-return _1.data.api.Request;
 });

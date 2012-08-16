@@ -6,7 +6,8 @@
 
 //>>built
 define("dojo/colors",["./_base/kernel","./_base/lang","./_base/Color","./_base/array"],function(_1,_2,_3,_4){
-var _5=_2.getObject("dojo.colors",true);
+var _5={};
+_2.setObject("dojo.colors",_5);
 var _6=function(m1,m2,h){
 if(h<0){
 ++h;

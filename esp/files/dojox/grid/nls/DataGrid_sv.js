@@ -1,13 +1,2 @@
-require({cache:{
-'dijit/nls/sv/loading':function(){
-define(
-"dijit/nls/sv/loading", //begin v1.x content
-({
-	loadingState: "Läser in...",
-	errorState: "Det uppstod ett fel."
-})
-//end v1.x content
-);
-
-}}});
-define("dojox/grid/nls/DataGrid_sv", [], 1);
+//>>built
+define("dojox/grid/nls/DataGrid_sv",{"dijit/nls/loading":{"loadingState":"Läser in...","errorState":"Det har inträffat ett fel."}});
