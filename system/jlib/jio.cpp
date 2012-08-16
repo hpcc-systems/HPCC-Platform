@@ -49,6 +49,7 @@ static unsigned ioRetryCount=0;
 void setIORetryCount(unsigned _ioRetryCount) // non atomic, expected to be called just once at process start up.
 {
     ioRetryCount = _ioRetryCount;
+    PROGLOG("setIORetryCount set to : %d", ioRetryCount);
 }
 
 extern jlib_decl offset_t checked_lseeki64( int handle, offset_t offset, int origin )
