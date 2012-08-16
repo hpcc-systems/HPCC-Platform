@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="EditDistance">
-  <title><emphasis role="bold">EditDistance</emphasis></title>
+  <title>EditDistance</title>
 
   <para><emphasis role="bold">STD.Str.EditDistance<indexterm>
       <primary>STD.Str.EditDistance</primary>
