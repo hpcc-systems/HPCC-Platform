@@ -18,6 +18,8 @@
 
 #pragma warning (disable : 4786)
 
+#include "build-config.h"
+
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
 #endif
@@ -1260,6 +1262,8 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
 
+        double version = context.getClientVersion();
+
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
         Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
 
@@ -1280,6 +1284,13 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (m_PortalURL.length() > 0)
             resp.setPortalURL(m_PortalURL.str());
+
+#ifndef USE_RESOURCE
+        if (version > 1.12)
+            resp.setUseResource(false);
+#else
+        if (version > 1.12)
+            resp.setUseResource(true);
 
         //Now, get a list of resources stored inside the ESP box
         IArrayOf<IEspHPCCResourceRepository> resourceRepositories;
@@ -1398,6 +1409,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (resourceRepositories.ordinality())
             resp.setHPCCResourceRepositories(resourceRepositories);
+#endif
     }
     catch(IException* e)
     {
