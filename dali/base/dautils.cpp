@@ -130,7 +130,7 @@ public:
         delete [] dlfns;
     }
 
-    static CMultiDLFN *create(const char *_mlfn)
+    static CMultiDLFN *create(const char *_mlfn, IUserDescriptor *_udesc)
     {
         StringBuffer mlfn(_mlfn);
         mlfn.trim();
@@ -167,7 +167,7 @@ public:
                     else
                         tmp.append(mlfn).append(suffix);
                     tmp.clip().toLowerCase();
-                    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),false,true);
+                    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),false,true,NULL,_udesc);
                     mlfn.setLength(start-s);
                     ForEach(*iter) {
                         IPropertyTree &attr = iter->query();
@@ -280,7 +280,7 @@ void CDfsLogicalFileName::set(const char *name)
         return;
     skipSp(name);
     try {
-        multi = CMultiDLFN::create(name);
+        multi = CMultiDLFN::create(name,udesc);
     }
     catch (IException *e) {
         StringBuffer err;
@@ -2698,6 +2698,7 @@ public:
 
     bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write)
     {
+        lfn.setUserDescriptor(user);
         fileExists = false;
         if (!onlydfs)
             lfn.allowOsPath(true);
