@@ -26,6 +26,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "mpbase.hpp"
+#include "dasess.hpp"
 
 #ifndef da_decl
 #define da_decl __declspec(dllimport)
@@ -58,6 +59,7 @@ class da_decl CDfsLogicalFileName
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
+    IUserDescriptor *udesc;
 public:
     CDfsLogicalFileName();
     ~CDfsLogicalFileName();
@@ -69,6 +71,7 @@ public:
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
     bool isSet() const;
+    void setUserDescriptor(IUserDescriptor *_udesc) { udesc = _udesc; }
     /*
      * Foreign files are distributed files whose meta data is stored on a foreign
      * Dali Server, so their names are resolved externally.
