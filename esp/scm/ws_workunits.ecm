@@ -631,6 +631,7 @@ ESPresponse [exceptions_inline] WULogFileResponse
     [min_ver("1.36")] string QueryName;
     [min_ver("1.36")] string QueryId;
     [min_ver("1.36")] string FileName;
+    [min_ver("1.38")] string DaliServer;
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -1060,8 +1061,6 @@ ESPrequest WUPublishWorkunitRequest
     string JobName;
     int Activate;
     bool NotifyCluster(false);
-    bool showFiles(0);
-    bool CopyLocal(0);
     int Wait(10000);
     bool NoReload(0);
 };
@@ -1247,7 +1246,10 @@ ESPrequest WUQuerySetCopyQueryRequest
     string Source;
     string Target;
     string Cluster;
+    string DaliServer;
     int Activate;
+    bool Overwrite(false);
+    bool DontCopyFiles(false);
     int Wait(10000);
     bool NoReload(0);
 };
