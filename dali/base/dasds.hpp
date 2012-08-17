@@ -201,6 +201,29 @@ interface ISDSException : extends IException { };
 
 extern da_decl ISDSManagerServer &querySDSServer();
 
+class da_decl CSDSServerLockBlock
+{
+    Linked<IPropertyTree> root;
+public:
+    CSDSServerLockBlock() { lock(); }
+    ~CSDSServerLockBlock() { unlock(); }
+    IPropertyTree *query() { return root; }
+    void lock()
+    {
+        root.set(querySDSServer().lockStoreRead());
+    }
+    void unlock()
+    {
+        if (root)
+        {
+            root.clear();
+            querySDSServer().unlockStoreRead();
+        }
+    }
+    inline IPropertyTree * operator -> () const         { return root; }
+    inline operator IPropertyTree *() const             { return root; }
+};
+
 interface IDaliServer;
 extern da_decl IDaliServer *createDaliSDSServer(IPropertyTree *store); // called for coven members
 
