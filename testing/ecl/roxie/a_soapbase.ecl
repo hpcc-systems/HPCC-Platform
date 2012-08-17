@@ -21,19 +21,19 @@ string10 unkname := 'Unknown' : stored ('UnkName');
 childRecord := record
 unsigned            id;
     end;
-    
-ServiceOutRecord := 
+
+ServiceOutRecord :=
     RECORD
         unsigned1 r;
         data pic;
         string15 name;
         dataset(childRecord) ids{maxcount(5)};
     END;
-    
 
-IF (unkname='FAIL', FAIL(1,'You asked me to fail'), 
+
+IF (unkname='FAIL', FAIL(1,'You asked me to fail'),
   output(dataset([
-            {1, x'0102', 'RICHARD', [{1}]}, 
-            {2, x'0102030405', 'LORRAINE', [{8},{7},{6}]}, 
+            {1, x'0102', 'RICHARD', [{1}]},
+            {2, x'0102030405', 'LORRAINE', [{8},{7},{6}]},
             { 3, x'5432', unkname, []}
             ], ServiceOutRecord)));

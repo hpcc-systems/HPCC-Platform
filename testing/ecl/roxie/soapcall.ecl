@@ -28,13 +28,13 @@ ServiceOutRecord :=
     END;
 
 // simple query->dataset form
-output(SORT(SOAPCALL('http://127.0.0.1:9876','soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple')),record));
+output(SORT(SOAPCALL('http://127.0.0.1:9876','a_soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord), LOG('simple')),record));
 
 // double query->dataset form
-output(SORT(SOAPCALL('http://127.0.0.1:9876|http://127.0.0.1:9876','soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord)),record));
+output(SORT(SOAPCALL('http://127.0.0.1:9876|http://127.0.0.1:9876','a_soapbase', { string unkname := 'FRED' }, dataset(ServiceOutRecord)),record));
 
 // simple dataset->dataset form
-output(sort(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { unkname }, DATASET(ServiceOutRecord)),record));
+output(sort(SOAPCALL(d, 'http://127.0.0.1:9876','a_soapbase', { unkname }, DATASET(ServiceOutRecord)),record));
 
 // double query->dataset form
 ServiceOutRecord doError(d l) := TRANSFORM
@@ -53,9 +53,9 @@ END;
 
 // Test some failure cases
 
-output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876|http://127.0.0.1:9875','soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname)), record));
-output(SORT(SOAPCALL('http://127.0.0.1:9876','soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN)),record));
-output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876','soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),MERGE(25),RETRY(0), LOG(MIN)), record));
+output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876|http://127.0.0.1:9875','a_soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname)), record));
+output(SORT(SOAPCALL('http://127.0.0.1:9876','a_soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN)),record));
+output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876','a_soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),MERGE(25),RETRY(0), LOG(MIN)), record));
 
 childRecord := record
 unsigned            id;
@@ -72,6 +72,6 @@ FullServiceOutRecord :=
 
 //leak children when linked counted rows are enabled, because not all records are read
 //Use a count so the results are consistent, and nofold to prevent the code generator removing the child dataset...
-output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord)),1))));
-output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), merge(3)),2))));
+output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','a_soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord)),1))));
+output(count(nofold(choosen(SOAPCALL(d, 'http://127.0.0.1:9876','a_soapbase', { string unkname := d.unkname+'1' }, dataset(FullServiceOutRecord), merge(3)),2))));
 
