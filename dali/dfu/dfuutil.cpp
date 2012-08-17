@@ -404,7 +404,7 @@ class CFileCloner
 
 
 
-    void cloneSubFile(IPropertyTree *ftree,const char *destfilename)                // name already has prefix added
+    void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali)   // name already has prefix added
     {
         Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree,&queryNamedGroupStore(),0);
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
@@ -457,11 +457,14 @@ class CFileCloner
             physicalReplicateFile(dstfdesc,destfilename);
         }
 
+        if (srcdali && !srcdali->endpoint().isNull())
+        {
+            StringBuffer s;
+            dstfdesc->queryProperties().setProp("@cloneFrom", srcdali->endpoint().getUrlStr(s).str());
+        }
+
         Owned<IDistributedFile> dstfile = fdir->createNew(dstfdesc);
         dstfile->attach(destfilename,userdesc);
-
-
-
     }
 
     void extendSubFile(IPropertyTree *ftree,const char *destfilename)
@@ -617,7 +620,7 @@ public:
             dfile.clear();
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
-            cloneSubFile(ftree,dlfn.get());
+            cloneSubFile(ftree,dlfn.get(), srcdali);
         }
         else if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
             StringArray subfiles;
@@ -692,7 +695,7 @@ public:
             }
             dfile.clear();
         }
-        cloneSubFile(ftree,dlfn.get());
+        cloneSubFile(ftree,dlfn.get(),srcdali);
         level--;
     }
 
@@ -959,7 +962,7 @@ public:
         cloner.cloneSuperFile(srcname,dlfn);
     }
 
-    void createSingleFileClone(const char *srcname,             // src LFN (can't be super)
+    void createSingleFileClone(const char *srcname,         // src LFN (can't be super)
                          const char *dstname,               // dst LFN
                          const char *cluster1,              // group name of roxie cluster
                          DFUclusterPartDiskMapping clustmap, // how the nodes are mapped
