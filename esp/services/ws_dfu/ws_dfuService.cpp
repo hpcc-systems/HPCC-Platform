@@ -1054,14 +1054,14 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
         filesInMsgBuf++;
         if (filesInMsgBuf > 9)
         {
-            PROGLOG(msgBuf.str());
+            PROGLOG("%s",msgBuf.str());
             msgBuf = msgHead;
             filesInMsgBuf = 0;
         }
     }
 
     if (filesInMsgBuf > 0)
-        PROGLOG(msgBuf.str());
+        PROGLOG("%s", msgBuf.str());
 
     Owned<IDFUhelper> dfuhelper = createIDFUhelper();
 
