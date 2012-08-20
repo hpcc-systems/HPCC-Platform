@@ -34,11 +34,14 @@ _ecl()
          queries)
              opts="list copy"
              ;;
+         package)
+             opts="add copyFiles delete activate deactivate list info"
+             ;;
          ecl)
-             opts="--version deploy publish unpublish run activate deactivate queries"
+             opts="--version deploy publish unpublish run activate deactivate queries package"
              ;;
          *)
-             opts="-cl --cluster=<host:ip> -n --name=<name> -v --verbose -s --server=<host:port> -u --username=<user> -pw --password==<pw> --main=<definition> --ecl-only --limit=N -A --activate --wait=<ms>"
+             opts="-t --target=<name> -n --name=<name> -v --verbose -s --server=<host:port> -u --username=<user> -pw --password==<pw> --main=<definition> --ecl-only --limit=N -A --activate --wait=<ms>"
              ;;
     esac
 
