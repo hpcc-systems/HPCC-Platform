@@ -24,6 +24,7 @@
 #####################################################
 
 add_subdirectory (queries)
+add_subdirectory (roxie)
 
 project( ecl )
 

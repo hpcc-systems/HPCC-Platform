@@ -259,15 +259,39 @@ BrowseResourcesResponse
     ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
 };
 
+ESPenum RoxieControlCmd : string
+{
+    ATTACH("Attach"),
+    DETACH("Detach"),
+    RELOAD("Reload")
+};
+
+ESPrequest RoxieControlCmdRequest
+{
+    string ProcessCluster;
+    ESPenum RoxieControlCmd Command("Attach");
+    int Wait;
+};
+
+ESPStruct RoxieControlEndpointInfo
+{
+    string Address;
+    bool Attached;
+    string StateHash;
+    string Status;
+};
+
+ESPresponse
+[
+    exceptions_inline, nil_remove
+]
+RoxieControlCmdResponse
+{
+    ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
+};
+
 ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
-    ESPuses ESPStruct Capability;
-    ESPuses ESPStruct Permission;
-    ESPuses ESPStruct ThorCluster;
-    ESPuses ESPStruct HThorCluster;
-    ESPuses ESPStruct ActiveWorkunit;
-    ESPuses ESPStruct DFUJob;
-
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
 
@@ -289,6 +313,8 @@ ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions
     ESPmethod NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
+
+    ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
 };
 
 SCMexportdef(WSSMC);
