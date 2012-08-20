@@ -1425,10 +1425,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (batchPart >= batchSplit)
                 batchPart = 0;
         }
-        else if (iter.matchOption(tempArg, "-target")) //deprecated name
-            return setTargetPlatformOption(tempArg.get(), optTargetClusterType);
-        else if (iter.matchOption(tempArg, "-platform"))
-            return setTargetPlatformOption(tempArg.get(), optTargetClusterType);
+        else if (iter.matchOption(tempArg, "-platform") || /*deprecated*/ iter.matchOption(tempArg, "-target"))
+        {
+            if (!setTargetPlatformOption(tempArg.get(), optTargetClusterType))
+                return false;
+        }
         else if (iter.matchFlag(logVerbose, "-v") || iter.matchFlag(logVerbose, "--verbose"))
         {
             Owned<ILogMsgFilter> filter = getDefaultLogMsgFilter();
