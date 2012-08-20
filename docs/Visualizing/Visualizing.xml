@@ -188,9 +188,9 @@
 
           <para>For example:</para>
 
-          <programlisting>ecl deploy myarchive.xml --server=192.168.219.8 --cluster=thor</programlisting>
+          <programlisting>ecl deploy myarchive.xml --server=192.168.219.8 --target=thor</programlisting>
 
-          <programlisting>ecl publish &lt;WUID&gt; --server=192.168.219.8 --cluster=thor --activate--name=pie</programlisting>
+          <programlisting>ecl publish &lt;WUID&gt; --server=192.168.219.8 --target=thor --activate--name=pie</programlisting>
 
           <para />
         </listitem>
@@ -402,13 +402,13 @@
       </listitem>
     </itemizedlist>
 
-    <programlisting>ecl deploy myarchive.xml --server=10.239.219.8 --cluster=thor</programlisting>
+    <programlisting>ecl deploy myarchive.xml --server=10.239.219.8 --target=thor</programlisting>
 
     <para>
       <emphasis>where --server= is the IP address of your ESP server
       and</emphasis>
 
-      <emphasis>--cluster= is the target cluster name.</emphasis>
+      <emphasis>--target= is the target cluster name.</emphasis>
     </para>
 
     <itemizedlist mark="bullet">
@@ -421,11 +421,11 @@
       </listitem>
     </itemizedlist>
 
-    <programlisting>ecl publish &lt;WUID&gt; --server=10.239.219.8 --cluster=thor --activate --name=pie</programlisting>
+    <programlisting>ecl publish &lt;WUID&gt; --server=10.239.219.8 --target=thor --activate --name=pie</programlisting>
 
     <para>
       <emphasis>where &lt;WUID&gt; is the workuint id number, --server= is the
-      IP address of your ESP server, and --cluster= is the target cluster
+      IP address of your ESP server, and --target= is the target cluster
       name.</emphasis>
     </para>
 

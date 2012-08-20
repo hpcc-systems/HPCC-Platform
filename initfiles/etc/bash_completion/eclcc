@@ -49,9 +49,9 @@ _eclcc()
             COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
             return 0
             ;;
-        -target)
-            local targets="roxie thor hthor"
-            COMPREPLY=( $(compgen -W "${targets}" -- ${cur}) )
+        -platform)
+            local platforms="roxie thor hthor"
+            COMPREPLY=( $(compgen -W "${platforms}" -- ${cur}) )
             return 0
             ;;
         *)

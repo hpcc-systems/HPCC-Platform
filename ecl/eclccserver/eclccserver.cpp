@@ -133,7 +133,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread
             }
         }
         eclccCmd.appendf(" -o%s", wuid);
-        eclccCmd.appendf(" -target=%s", target);
+        eclccCmd.appendf(" -platform=%s", target);
 
         Owned<IStringIterator> debugValues = &workunit->getDebugValues();
         ForEach (*debugValues)
