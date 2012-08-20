@@ -30,8 +30,11 @@
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
 
+#include "roxiecontrol.hpp"
+
 static const char* FEATURE_URL = "SmcAccess";
 const char* THORQUEUE_FEATURE = "ThorQueueAccess";
+static const char* ROXIE_CONTROL_URL = "RoxieControlAccess";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
 
@@ -1252,7 +1255,6 @@ bool CWsSMCEx::onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityE
    return true;
 }
 
-
 bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp)
 {
     try
@@ -1467,4 +1469,56 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);
+}
+
+inline const char *controlCmdMessage(int cmd)
+{
+    switch (cmd)
+    {
+    case CRoxieControlCmd_ATTACH:
+        return "<control:unlockDali/>";
+    case CRoxieControlCmd_DETACH:
+        return "<control:lockDali/>";
+    case CRoxieControlCmd_RELOAD:
+        return "<control:reload/>";
+    default:
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
+    }
+    return NULL;
+}
+
+bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp)
+{
+    if (!context.validateFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, false))
+       throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Cannot Access Roxie Control. Permission denied.");
+
+    const char *process = req.getProcessCluster();
+    if (!process || !*process)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Process cluster not specified.");
+    const char *controlReq = controlCmdMessage(req.getCommand());
+
+    SocketEndpointArray addrs;
+    getRoxieProcessServers(process, addrs);
+    if (!addrs.length())
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Process cluster not found.");
+    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(addrs.item(0), controlReq, true, req.getWait());
+    if (!controlResp)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get control response from roxie.");
+
+    IArrayOf<IEspRoxieControlEndpointInfo> respEndpoints;
+    Owned<IPropertyTreeIterator> roxieEndpoints = controlResp->getElements("Endpoint");
+    ForEach(*roxieEndpoints)
+    {
+        IPropertyTree &roxieEndpoint = roxieEndpoints->query();
+        Owned<IEspRoxieControlEndpointInfo> respEndpoint = createRoxieControlEndpointInfo();
+        respEndpoint->setAddress(roxieEndpoint.queryProp("@ep"));
+        respEndpoint->setStatus(roxieEndpoint.queryProp("Status"));
+        if (roxieEndpoint.hasProp("Dali/@connected"))
+            respEndpoint->setAttached(roxieEndpoint.getPropBool("Dali/@connected"));
+        if (roxieEndpoint.hasProp("State/@hash"))
+            respEndpoint->setStateHash(roxieEndpoint.queryProp("State/@hash"));
+        respEndpoints.append(*respEndpoint.getClear());
+    }
+    resp.setEndpoints(respEndpoints);
+    return true;
 }
