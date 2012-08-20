@@ -116,6 +116,7 @@ interface IJobQueue: extends IInterface
     virtual void stop()=0;      // sets stopped flags - all current and subsequent dequeues return NULL
     virtual bool stopped()=0;   // true if stopped
     virtual void resume()=0;    // removes paused or stopped flag
+    virtual bool active()=0;    // true if active
 
 // conversations:
     virtual IConversation *initiateConversation(IJobQueueItem *item)=0; // does enqueue - take ownership of item

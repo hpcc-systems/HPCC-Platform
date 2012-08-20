@@ -1784,7 +1784,6 @@ public:
         }
         return true;
     }
-
     void resume()
     {
         Cconnlockblock block(this,true);
@@ -1792,6 +1791,19 @@ public:
             if (qd->root)
                 qd->root->setProp("@state","active");
         }
+    }
+    bool active()
+    {
+        // true if any active
+        Cconnlockblock block(this,false);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"active")!=0))
+                    return true;
+            }
+        }
+        return false;
     }
 
     IConversation *initiateConversation(IJobQueueItem *item)
