@@ -27,22 +27,19 @@ define([
 ], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready, registry) {
     var initUi = function () {
         var wuid = "";
-        var target = "hthor";
+        var sequence = "";
 
         var urlWuid = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
         if (urlWuid) {
             wuid = urlWuid;
         }
-        var urlTarget = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Target"];
-        if (urlTarget) {
-            target = urlTarget;
+        var urlSequence = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Sequence"];
+        if (urlSequence) {
+            sequence = urlSequence;
         }
 
-        var eclPlayground = registry.byId("appLayout");
-        if (wuid) {
-            eclPlayground.hideTitle();
-        }
-        eclPlayground.init(wuid, target);
+        var results = registry.byId("appLayout");
+        results.init(wuid, sequence);
     },
 
 	startLoading = function (targetNode) {

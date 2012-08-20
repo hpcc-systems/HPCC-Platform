@@ -20,7 +20,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>HPCC: ECL Playground (Results)</title>
+    <title>HPCC: WU Graph</title>
     <link href="css/hpcc.css" media="screen" rel="stylesheet">
     <link href="dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
     <link href="dojox/grid/resources/Grid.css" rel="stylesheet">
@@ -50,7 +50,7 @@
     <script src="dojo/dojo.js"></script>
     <script>
         require([
-        "main/ECLPlaygroundResults", "hpcc/ResultsWidget",
+		"main/WUGraph", "hpcc/GraphPageWidget",
         "dojo/domReady!"], function (app) {
             app.init();
         });
@@ -64,7 +64,7 @@
         </div>
     </div>
     <!-- application -->
-    <div id="appLayout" class="hpccApp" data-dojo-props="design: 'headline'" data-dojo-type="ResultsWidget">
+    <div id="appLayout" class="hpccApp" data-dojo-props="design: 'headline'" data-dojo-type="GraphPageWidget">
     </div>
 </body>
 </html>

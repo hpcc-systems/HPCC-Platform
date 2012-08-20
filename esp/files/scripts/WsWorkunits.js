@@ -64,12 +64,12 @@ define([
 					return data.total;
 				})
 			});
-	
+
 			return QueryResults(parsedResults);
 		}
 	});
 
-	var WUResult =  declare(ESPBase, {
+	var WUResult = declare(ESPBase, {
 		idProperty: "myInjectedRowNum",
 		wuid: "",
 		sequence: 0,
@@ -97,7 +97,7 @@ define([
 					url: this.getBaseURL("WsWorkunits") + "/WUResult",
 					handleAs: "xml",
 					content: request,
-					load: function(domXml) {
+					load: function (domXml) {
 						var rows = context.getValues(domXml, "Row");
 						for (var i = 0; i < rows.length; ++i) {
 							rows[i].myInjectedRowNum = options.start + i + 1;
@@ -116,7 +116,7 @@ define([
 					}
 				});
 			} else {
-				setTimeout(function() {
+				setTimeout(function () {
 					context.queryWhenComplete(query, options, deferredResults);
 				}, 100);
 			}

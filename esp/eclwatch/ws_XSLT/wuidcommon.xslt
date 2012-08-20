@@ -525,6 +525,8 @@
                 <A href="javascript:void(0)" onclick="toggleElement('Graphs');" id="explinkgraphs" class="wusectionexpand">
                   Graphs: (<xsl:value-of select="GraphCount"/>)
                 </A>
+                &nbsp;-&nbsp;
+                <a href="/esp/iframe?esp_iframe_title=Graphs - {$wuid}&amp;inner=/esp/files/WUGraph.htm%3fWuid%3d{$wuid}" >Show</a>
               </div>
             </div>
           </div>
