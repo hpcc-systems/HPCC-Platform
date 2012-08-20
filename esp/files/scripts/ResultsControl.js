@@ -18,14 +18,18 @@ define([
 	"dojo/_base/declare",
 	"dojo/store/Memory",
 	"dojo/data/ObjectStore",
+
 	"dojox/grid/DataGrid",
 	"dojox/grid/EnhancedGrid",
 	"dojox/grid/enhanced/plugins/Pagination",
 	"dojox/grid/enhanced/plugins/Filter",
 	"dojox/grid/enhanced/plugins/NestedSorting",
+
 	"dijit/registry",
 	"dijit/layout/ContentPane"
-], function (declare, Memory, ObjectStore, DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting, registry, ContentPane) {
+], function (declare, Memory, ObjectStore,
+			DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting,
+			registry, ContentPane) {
 	return declare(null, {
 		workunit: null,
 		paneNum: 0,
@@ -166,7 +170,7 @@ define([
 						{ name: "Column", field: "Column" },
 						{ name: "Code", field: "Code" },
 						{ name: "Message", field: "Message", width: "auto" }
-						]
+					]
 				});
 				grid.placeAt(resultNode.containerNode, "last");
 				grid.startup();

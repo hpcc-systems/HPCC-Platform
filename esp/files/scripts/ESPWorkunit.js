@@ -52,30 +52,28 @@ define([
 		},
 		isComplete: function () {
 			switch (this.stateID) {
-				case '3':
-					//WUStateCompleted:
-				case '4':
-					//WUStateFailed:
-				case '5':
-					//WUStateArchived:
-				case '7':
-					//WUStateAborted:
+				case 3:	//WUStateCompleted:
+				case 4:	//WUStateFailed:
+				case 5:	//WUStateArchived:
+				case 7:	//WUStateAborted:
 					return true;
 			}
 			return false;
 		},
-		monitor: function (callback) {
+		monitor: function (callback, monitorDuration) {
+			if (!monitorDuration)
+				monitorDuration = 0;
 			var request = {};
 			request['Wuid'] = this.wuid;
 			request['rawxml_'] = "1";
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUQuery",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUQuery.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
-					var workunit = context.getValue(xmlDom, "ECLWorkunit");
+				load: function (response) {
+					var workunit = response.WUQueryResponse.Workunits.ECLWorkunit[0];
 					context.stateID = workunit.StateID;
 					context.state = workunit.State;
 					if (callback) {
@@ -83,9 +81,22 @@ define([
 					}
 
 					if (!context.isComplete()) {
+						var timeout = 30;	// Seconds
+
+						if (monitorDuration < 5) {
+							timeout = 1;
+						} else if (monitorDuration < 10) {
+							timeout = 2;
+						} else if (monitorDuration < 30) {
+							timeout = 5;
+						} else if (monitorDuration < 60) {
+							timeout = 10;
+						} else if (monitorDuration < 120) {
+							timeout = 20;
+						}
 						setTimeout(function () {
-							context.monitor(callback);
-						}, 200);
+							context.monitor(callback, monitorDuration + timeout);
+						}, timeout * 1000);
 					}
 				},
 				error: function () {
@@ -99,56 +110,76 @@ define([
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUCreate",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUCreate.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
-					context.wuid = context.getValue(xmlDom, "Wuid");
+				load: function (response) {
+					context.wuid = response.WUCreateResponse.Workunit.Wuid;
 					context.onCreate();
 				},
 				error: function () {
 				}
 			});
 		},
-		update: function (ecl) {
+		update: function (ecl, graphName, svg) {
 			var request = {};
 			request['Wuid'] = this.wuid;
-			request['QueryText'] = ecl;
+			if (ecl) {
+				request['QueryText'] = ecl;
+			}
+			if (graphName && svg) {
+				/*
+				request['ApplicationValues'] = {
+					ApplicationValue: {
+						itemcount: 1,
+						Application: "ESPWorkunit.js",
+						Name: graphName + "_SVG",
+						Value: svg
+					}
+				}
+				*/
+				request['ApplicationValues.ApplicationValue.itemcount'] = 1;
+				request['ApplicationValues.ApplicationValue.0.Application'] = "ESPWorkunit.js";
+				request['ApplicationValues.ApplicationValue.0.Name'] = graphName + "_SVG";
+				request['ApplicationValues.ApplicationValue.0.Value'] = svg;
+			}
 			request['rawxml_'] = "1";
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUUpdate",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUUpdate.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
+				load: function (response) {
 					context.onUpdate();
 				},
-				error: function () {
+				error: function (error) {
 				}
 			});
 		},
 		submit: function (target) {
-			var request = {};
-			request['Wuid'] = this.wuid;
-			request['Cluster'] = target;
+			var request = {
+				Wuid: this.wuid,
+				Cluster: target
+			};
 			request['rawxml_'] = "1";
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUSubmit",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUSubmit.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
+				load: function (response) {
 					context.onSubmit();
 				},
-				error: function () {
+				error: function (error) {
 				}
 			});
 		},
 		getInfo: function (args) {
 			var request = {
 				Wuid: this.wuid,
+				TruncateEclTo64k: args.onGetText ? false : true,
 				IncludeExceptions: args.onGetExceptions ? true : false,
 				IncludeGraphs: args.onGetGraphs ? true : false,
 				IncludeSourceFiles: false,
@@ -157,50 +188,95 @@ define([
 				IncludeVariables: false,
 				IncludeTimers: args.onGetTimers ? true : false,
 				IncludeDebugValues: false,
-				IncludeApplicationValues: false,
+				IncludeApplicationValues: args.onGetApplicationValues ? true : false,
 				IncludeWorkflows: false,
 				SuppressResultSchemas: args.onGetResults ? false : true,
-				rawxml_: true
 			};
+			request['rawxml_'] = "1";
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUInfo",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUInfo.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
-					var workunit = context.getValue(xmlDom, "Workunit", ["ECLException", "ECLResult", "ECLGraph", "ECLTimer", "ECLSchemaItem"]);
-					if (workunit.Query.Text && args.onGetText) {
+				load: function (response) {
+					//var workunit = context.getValue(xmlDom, "Workunit", ["ECLException", "ECLResult", "ECLGraph", "ECLTimer", "ECLSchemaItem", "ApplicationValue"]);
+					var workunit = response.WUInfoResponse.Workunit;
+					if (args.onGetText && workunit.Query.Text) {
 						context.text = workunit.Query.Text;
 						args.onGetText(context.text);
 					}
-					if (workunit.Exceptions && args.onGetExceptions) {
-						context.exceptions = workunit.Exceptions;
+					if (args.onGetExceptions && workunit.Exceptions && workunit.Exceptions.ECLException) {
+						context.exceptions = [];
+						for (var i = 0; i < workunit.Exceptions.ECLException.length; ++i) {
+							if (workunit.Exceptions.ECLException[i].Severity == "Error" || 
+								workunit.Exceptions.ECLException[i].Severity == "Warning")
+							context.exceptions.push(workunit.Exceptions.ECLException[i]);						
+						}
 						args.onGetExceptions(context.exceptions);
 					}
-					if (workunit.Results && args.onGetResults) {
+					if (args.onGetApplicationValues && workunit.ApplicationValues && workunit.ApplicationValues.ApplicationValue) {
+						context.applicationValues = workunit.ApplicationValues.ApplicationValue;
+						args.onGetApplicationValues(context.applicationValues)
+					}
+					if (args.onGetResults && workunit.Results && workunit.Results.ECLResult) {
 						context.results = [];
-						var results = workunit.Results;
+						var results = workunit.Results.ECLResult;
 						for (var i = 0; i < results.length; ++i) {
 							context.results.push(new ESPResult(lang.mixin({ wuid: context.wuid }, results[i])));
 						}
 						args.onGetResults(context.results);
 					}
-					if (workunit.Timers && args.onGetTimers) {
-						context.timers = workunit.Timers;
+					if (args.onGetTimers && workunit.Timers && workunit.Timers.ECLTimer) {
+						context.timers = workunit.Timers.ECLTimer;
 						args.onGetTimers(context.timers);
 					}
-					if (workunit.Graphs && args.onGetGraphs) {
-						context.graphs = workunit.Graphs;
+					if (args.onGetGraphs && workunit.Graphs && workunit.Graphs.ECLGraph) {
+						context.graphs = workunit.Graphs.ECLGraph;
+						if (context.timers || context.applicationValues) {
+							for (var i = 0; i < context.graphs.length; ++i) {
+								if (context.timers) {
+									context.graphs[i].Time = 0;
+									for (var j = 0; j < context.timers.length; ++j) {
+										if (context.timers[j].GraphName == context.graphs[i].Name) {
+											context.graphs[i].Time += parseFloat(context.timers[j].Value);
+										}
+										context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
+									}
+								}
+								if (context.applicationValues) {
+									var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
+									if (idx >= 0) {
+										context.graphs[i].svg = context.applicationValues[idx].Value;
+									}
+								}
+							}
+						}
 						args.onGetGraphs(context.graphs)
 					}
 					if (args.onGetAll) {
 						args.onGetAll(workunit);
 					}
 				},
-				error: function () {
+				error: function (e) {
 				}
 			});
+		},
+		getGraphIndex: function (name) {
+			for (var i = 0; i < this.graphs.length; ++i) {
+				if (this.graphs[i].Name == name) {
+					return i;
+				}
+			}
+			return -1;
+		},
+		getApplicationValueIndex: function (application, name) {
+			for (var i = 0; i < this.applicationValues.length; ++i) {
+				if (this.applicationValues[i].Application == application && this.applicationValues[i].Name == name) {
+					return i;
+				}
+			}
+			return -1;
 		},
 		fetchText: function (onFetchText) {
 			if (this.text) {
@@ -232,6 +308,12 @@ define([
 				onGetGraphs: onFetchGraphs
 			});
 		},
+		fetchGraphXgmmlByName: function (name, onFetchGraphXgmml) {
+			var idx = this.getGraphIndex(name);
+			if (idx >= 0) {
+				this.fetchGraphXgmml(idx, onFetchGraphXgmml);
+			}
+		},
 		fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
 			var request = {};
 			request['Wuid'] = this.wuid;
@@ -240,16 +322,23 @@ define([
 
 			var context = this;
 			xhr.post({
-				url: this.getBaseURL() + "/WUGetGraph",
-				handleAs: "xml",
+				url: this.getBaseURL() + "/WUGetGraph.json",
+				handleAs: "json",
 				content: request,
-				load: function (xmlDom) {
-					context.graphs[idx].xgmml = context.getValue(xmlDom, "Graph");
-					onFetchGraphXgmml(context.graphs[idx].xgmml);
+				load: function (response) {
+					context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
+					onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
 				},
 				error: function () {
 				}
 			});
+		},
+		setGraphSvg: function (graphName, svg) {
+			var idx = this.getGraphIndex(graphName);
+			if (idx >= 0) {
+				this.graphs[idx].svg = svg;
+				this.update(null, graphName, svg);
+			}
 		}
 	});
 });
