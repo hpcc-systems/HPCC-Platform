@@ -191,6 +191,9 @@ public:
             ForEachItemIn(i3,lfnout) {
                 lfns.append(lfnout.item(i3));
             }
+            // if wildcards, create object even if 0 matches,
+            // if 0 matches, the logical file will look like an empty temp. super "{}"
+            return new CMultiDLFN(mlfn.str(),lfns);
         }
         if (lfns.ordinality()==0)
             return NULL;
