@@ -72,9 +72,20 @@ private:
 
 class CWsSMCSoapBindingEx : public CWsSMCSoapBinding
 {
+    StringBuffer m_portalURL;
 public:
     CWsSMCSoapBindingEx(){}
-    CWsSMCSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL):CWsSMCSoapBinding(cfg, bindname, procname){}
+    CWsSMCSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL):CWsSMCSoapBinding(cfg, bindname, procname)
+    {
+        if (!procname || !*procname)
+            return;
+
+        StringBuffer xpath;
+        xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", procname);
+        const char* portalURL = cfg->queryProp(xpath.str());
+        if (portalURL && *portalURL)
+            m_portalURL.append(portalURL);
+    }
 
     virtual ~CWsSMCSoapBindingEx(){}
 
@@ -95,9 +106,16 @@ public:
         IPropertyTree *folder = ensureNavFolder(data, "Clusters", NULL, NULL, false, 1);
         ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "Display Activity on all target clusters in an environment", NULL, NULL, 1);
         ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Access the ECL Scheduler to view and manage scheduled workunits or events", NULL, NULL, 2);
-
+#ifndef USE_RESOURCE
+        if (m_portalURL.length() > 0)
+        {
+            IPropertyTree *folderTools = ensureNavFolder(data, "Resources", NULL, NULL, false, 8);
+            ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "Browse a list of resources available for download, such as the ECL IDE, documentation, examples, etc. These are only available if optional packages are installed on the ESP Server.", NULL, NULL, 1);
+        }
+#else
         IPropertyTree *folderTools = ensureNavFolder(data, "Resources", NULL, NULL, false, 8);
         ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "Browse a list of resources available for download, such as the ECL IDE, documentation, examples, etc. These are only available if optional packages are installed on the ESP Server.", NULL, NULL, 1);
+#endif
     }
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {

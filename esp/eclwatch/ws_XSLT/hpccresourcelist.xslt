@@ -58,12 +58,12 @@
                 <xsl:when test="UseResource = 0">
                     <xsl:choose>
                         <xsl:when test="string-length(PortalURL)">
-                            Visit <a href="{PortalURL}" target="_blank">
-                                <xsl:value-of select="PortalURL"/>
+                            Please visit <a href="{PortalURL}" target="_blank">
+                              <xsl:value-of select="PortalURL"/>
                             </a> for resources.
                         </xsl:when>
                         <xsl:otherwise>
-                            The resources are temporarily unavailable. Please try again later.
+                            No web link is configured for downloading resources.
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:when>
@@ -71,11 +71,16 @@
                     <xsl:choose>
                         <xsl:when test="not(HPCCResourceRepositories/HPCCResourceRepository[1])">
                             <br/><br/>No resource found from your installation.<br/><br/>
-                            <xsl:if test="string-length(PortalURL)">
+                            <xsl:choose>
+                                <xsl:when test="string-length(PortalURL)">
                                 <br/>You may visit <a href="{PortalURL}" target="_blank">
                                     <xsl:value-of select="PortalURL"/>
                                 </a> for resources.
-                            </xsl:if>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    No web link is configured for downloading resource.
+                                </xsl:otherwise>
+                            </xsl:choose>
                         </xsl:when>
                         <xsl:otherwise>
                             <br/>
