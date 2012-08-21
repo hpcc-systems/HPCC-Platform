@@ -12,7 +12,7 @@ WsEclWuInfo::WsEclWuInfo(const char *wuid_, const char *qset, const char *qname,
         if (!qstree)
             throw MakeStringException(-1, "QuerySet %s not found", qset);
 
-        IPropertyTree *query = resolveQueryAlias(qstree, qname);
+        Owned<IPropertyTree> query = resolveQueryAlias(qstree, qname);
         if (!query)
             throw MakeStringException(-1, "Query %s/%s not found", qset, qname);
         if (query->getPropBool("@suspended"))
