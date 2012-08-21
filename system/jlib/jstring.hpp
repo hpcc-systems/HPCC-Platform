@@ -382,6 +382,17 @@ inline StringBuffer &appendXMLTagName(StringBuffer &xml, const char *tag, const 
 
 extern jlib_decl StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix=NULL, bool complete=true, bool close=false, const char *uri=NULL);
 
+inline StringBuffer &appendXMLAttr(StringBuffer &xml, const char *name, const char *value, const char *prefix=NULL)
+{
+    if (!name || !*name || !value)
+        return xml;
+    xml.append(' ');
+    appendXMLTagName(xml, name, prefix);
+    encodeXML(value, xml.append("='"));
+    xml.append("'");
+    return xml;
+}
+
 inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag, const char *prefix=NULL)
 {
     if (!tag || !*tag)

@@ -263,6 +263,7 @@ ESPenum RoxieControlCmd : string
 {
     ATTACH("Attach"),
     DETACH("Detach"),
+    STATE("State"),
     RELOAD("Reload")
 };
 
@@ -273,7 +274,7 @@ ESPrequest RoxieControlCmdRequest
     int Wait;
 };
 
-ESPStruct RoxieControlEndpointInfo
+ESPStruct [nil_remove] RoxieControlEndpointInfo
 {
     string Address;
     bool Attached;

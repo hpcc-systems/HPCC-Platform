@@ -1481,6 +1481,8 @@ inline const char *controlCmdMessage(int cmd)
         return "<control:lockDali/>";
     case CRoxieControlCmd_RELOAD:
         return "<control:reload/>";
+    case CRoxieControlCmd_STATE:
+        return "<control:state/>";
     default:
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
     }
