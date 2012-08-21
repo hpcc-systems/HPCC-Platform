@@ -80,14 +80,20 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"
-#define ECLOPT_CLUSTER "--cluster"
-#define ECLOPT_CLUSTER_S "-cl"
+#define ECLOPT_CLUSTER_DEPRECATED "--cluster"
+#define ECLOPT_CLUSTER_DEPRECATED_S "-cl"
+#define ECLOPT_TARGET "--target"
+#define ECLOPT_TARGET_S "-t"
 #define ECLOPT_NAME "--name"
 #define ECLOPT_NAME_S "-n"
 #define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"
 #define ECLOPT_SHOW "--show"
+
+#define ECLOPT_DALIIP "--daliip"
+#define ECLOPT_PROCESS "--process"
+#define ECLOPT_PROCESS_S "-p"
 
 #define ECLOPT_LIB_PATH_S "-L"
 #define ECLOPT_IMP_PATH_S "-I"

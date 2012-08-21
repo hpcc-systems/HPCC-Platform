@@ -39,6 +39,7 @@
 #include "dadfs.hpp"
 #include "dfuwu.hpp"
 #include "thorplugin.hpp"
+#include "roxiecontrol.hpp"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"

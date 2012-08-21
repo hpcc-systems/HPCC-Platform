@@ -194,19 +194,19 @@
               </row>
 
               <row>
-                <entry>-target=hthor</entry>
+                <entry>-platform=hthor</entry>
 
                 <entry>Generate code for hthor executable (default)</entry>
               </row>
 
               <row>
-                <entry>-target=roxie</entry>
+                <entry>-platform=roxie</entry>
 
                 <entry>Generate code for roxie cluster</entry>
               </row>
 
               <row>
-                <entry>-target=thor</entry>
+                <entry>-platform=thor</entry>
 
                 <entry>Generate code for thor cluster</entry>
               </row>

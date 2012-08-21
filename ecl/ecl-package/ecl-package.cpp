@@ -18,11 +18,8 @@ Copyright (C) 2011 HPCC Systems.
 #define ECLOPT_PACKAGEMAP "--packagemap"
 #define ECLOPT_OVERWRITE "--overwrite"
 #define ECLOPT_PACKAGE "--packagename"
-#define ECLOPT_DALIIP "--daliip"
-#define ECLOPT_PROCESS "--process"
 #define ECLOPT_PACKAGESET "--packageset"
 #define ECLOPT_PACKAGESET_S "-ps"
-
 
 //=========================================================================================
 
@@ -221,8 +218,8 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                if (optCluster.isEmpty())
-                    optCluster.set(arg);
+                if (optProcess.isEmpty())
+                    optProcess.set(arg);
                 else
                 {
                     fprintf(stderr, "\nargument is already defined %s\n", arg);
@@ -230,7 +227,9 @@ public:
                 }
                 continue;
             }
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optProcess, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optProcess, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optProcess, ECLOPT_PROCESS)||iter.matchOption(optProcess, ECLOPT_PROCESS_S))
                 continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -241,9 +240,9 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
-        if (optCluster.isEmpty())
+        if (optProcess.isEmpty())
         {
-            fprintf(stderr, "\nCluster must be specified\n");
+            fprintf(stderr, "\nProcess cluster must be specified\n");
             usage();
             return false;
         }
@@ -254,7 +253,7 @@ public:
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
 
         Owned<IClientListPackageRequest> request = packageProcessClient->createListPackageRequest();
-        request->setCluster(optCluster);
+        request->setCluster(optProcess);
 
         Owned<IClientListPackageResponse> resp = packageProcessClient->ListPackage(request);
         if (resp->getExceptions().ordinality())
@@ -291,13 +290,13 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl package list [options] \n\n"
             "   Options:\n"
-            "      [--cluster<cluster>   name of cluster to retrieve package information.  Defaults to all package information stored in dali\n"
+            "      -p, --process=<process> name of process cluster for which to retrieve package information.  Defaults to all package information stored in dali\n"
         );
         EclCmdCommon::usage();
     }
 private:
 
-    StringAttr optCluster;
+    StringAttr optProcess;
 };
 
 class EclCmdPackageInfo: public EclCmdCommon
@@ -328,7 +327,9 @@ public:
                 }
                 continue;
             }
-            else if (iter.matchOption(optCluster, ECLOPT_CLUSTER))
+            if (iter.matchOption(optProcess, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optProcess, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optProcess, ECLOPT_PROCESS)||iter.matchOption(optProcess, ECLOPT_PROCESS_S))
                 continue;
             else if (iter.matchOption(optPkgName, ECLOPT_PACKAGE))
                 continue;
@@ -345,10 +346,10 @@ public:
             return false;
         }
         StringBuffer err;
-        if (!optPkgName.isEmpty() && !optCluster.isEmpty())
-            err.append("\n ... Specify either a cluster name of a package name, but NOT both\n\n");
-        else if (optPkgName.isEmpty() && optCluster.isEmpty())
-            err.append("\n ... Specify either a cluster name of a package name\n\n");
+        if (!optPkgName.isEmpty() && !optProcess.isEmpty())
+            err.append("\n ... Specify either a process cluster name or a package name, but NOT both\n\n");
+        else if (optPkgName.isEmpty() && optProcess.isEmpty())
+            err.append("\n ... Specify either a process cluster name or a package name\n\n");
 
         if (err.length())
         {
@@ -364,7 +365,7 @@ public:
 
         Owned<IClientGetPackageRequest> request = packageProcessClient->createGetPackageRequest();
         request->setPackageName(optPkgName);
-        request->setCluster(optCluster);
+        request->setCluster(optProcess);
 
         Owned<IClientGetPackageResponse> resp = packageProcessClient->GetPackage(request);
         if (resp->getExceptions().ordinality())
@@ -378,14 +379,14 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl package info [options] [<packageName>]\n\n"
             "   Options:\n"
-            "      [--cluster=<cluster> | --packageName=<packageName>]  specify either a cluster name or a pacakge name to retrieve information\n"
+            "      [-p,--process=<process> | --packageName=<packageName>]  specify either a process cluster name or a package name to retrieve information\n"
         );
         EclCmdCommon::usage();
     }
 private:
 
     StringAttr optPkgName;
-    StringAttr optCluster;
+    StringAttr optProcess;
 };
 
 class EclCmdPackageDelete : public EclCmdCommon
@@ -615,7 +616,7 @@ public:
                 }
                 continue;
             }
-            if (iter.matchOption(optProcess, ECLOPT_PROCESS))
+            if (iter.matchOption(optProcess, ECLOPT_PROCESS)||iter.matchOption(optProcess, ECLOPT_PROCESS_S))
                 continue;
             if (iter.matchOption(optDaliIp, ECLOPT_DALIIP))
                 continue;
@@ -675,8 +676,8 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl package copyFiles [options] [<filename>]\n\n"
             "   Options:\n"
-            "      --process=<processcluster>    name of the process cluster to copy files\n"
-            "      --overwrite=<true/false>      overwrite data file if it already exists on the target cluster. defaults to false\n"
+            "      -p, --process=<process>      name of the process cluster to copy files\n"
+            "      --overwrite=<true/false>     overwrite data file if it already exists on the process cluster. defaults to false\n"
             "      --daliip=<daliip>            ip of the source dali to use for file lookups\n"
         );
         EclCmdCommon::usage();
