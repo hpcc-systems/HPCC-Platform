@@ -1601,6 +1601,21 @@ void EclAgent::getEventExtra(size32_t & outLen, char * & outStr, const char * ta
     rtlExtractTag(outLen, outStr, text, tag, "Event");
 }
 
+char *EclAgent::getPlatform()
+{
+    if (!isStandAloneExe)
+    {
+        SCMStringBuffer cluster;
+        queryWorkUnit()->getClusterName(cluster);
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
+        if (!clusterInfo)
+            throw MakeStringException(-1, "Unknown Cluster '%s'", cluster.str());
+        return (char*)clusterTypeString(clusterInfo->getPlatform());
+    }
+    else
+        return (char *)"standalone";
+}
+
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 
 {
     const char *val = globals->queryProp(name);
