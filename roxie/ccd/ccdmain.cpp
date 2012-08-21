@@ -92,6 +92,7 @@ bool roxieMulticastEnabled = true;
 IPropertyTree* topology;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
+StringArray allQuerySetNames;
 
 bool crcResources;
 bool useRemoteResources;
@@ -834,7 +835,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #else
         topology->addPropBool("@linuxOS", true);
 #endif
-
+        CslToStringArray(topology->queryProp("@querySets"), allQuerySetNames, true);
         if (!numChannels)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels attribute must be specified");
 
