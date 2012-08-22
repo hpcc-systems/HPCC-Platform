@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><name>foo</name><age>10</age><good>true</good></Row>
+ <Row><name>bar</name><age>12</age><good>false</good></Row>
+ <Row><name>baz</name><age>32</age><good>true</good></Row>
+</Dataset>

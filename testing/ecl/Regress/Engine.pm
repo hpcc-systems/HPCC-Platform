@@ -465,10 +465,9 @@ sub _check_ini_file($)
     my $passwd = ''; # This will be asked during runtime
     my $parallel = '0'; # This can be set via command line
 
-    # Variables not present in xsl or xml. How to get them?
+    # Variables not present in xsl or xml
     my $purge = 'move';
-    my $fileloc = '';
-    my $eclPublish;
+    my $fileloc = getcwd();
 
     # Format to INI
     my $ini = new Config::Simple(syntax=>'ini');
