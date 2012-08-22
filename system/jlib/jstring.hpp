@@ -449,7 +449,7 @@ template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned long value)
 {
     appendJSONName(s, name);
-    s.appendulong(value);
+    return s.appendulong(value);
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
