@@ -209,6 +209,9 @@
                 function onChangeGroup()
                 {
                     var groups = document.getElementById("destGroup");
+                    if (groups == null) //destGroup does not exist for Despray.
+                        return;
+
                     var selected = groups.options[groups.selectedIndex];
                     if (selected.title.substring(0,1) == 'T')
                         setThorGroup();
