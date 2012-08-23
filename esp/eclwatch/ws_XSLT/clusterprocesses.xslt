@@ -115,9 +115,10 @@
                     var inputs = document.getElementById("listitems").getElementsByTagName("input");
                     for(var i=0, len=inputs.length; i<len; i++)
                     {
-                      if(inputs[i].name.match(/^TargetClusters_i\d+$/))
+                      if(inputs[i].name.match(/^TargetClusters.\d+$/))
                       {
-                          clusterChecked++;
+                          if (inputs[i].checked)
+                              clusterChecked++;
                       }
                     }
                     document.forms[0].submitBtn.disabled = clusterChecked == 0;
