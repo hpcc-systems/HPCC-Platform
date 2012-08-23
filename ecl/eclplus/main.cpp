@@ -54,6 +54,7 @@ void usage()
 {
     printf("eclplus action=[list|view|dump|delete|abort|query|graph]\n");
     printf("\t{owner=<userid>| wuid=<wuid>}\n");
+    printf("\tuser=<username>\n");
     printf("\tpassword=<password>\n");
     printf("\tcluster=<cluster>\n");
     printf("\tserver=<server | server:port | http://server:port | https://server:port>\n");
