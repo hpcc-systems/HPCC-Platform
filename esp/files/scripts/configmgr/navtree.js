@@ -2006,6 +2006,8 @@ function validateEnvironment() {
           var temp1 = temp[1].split(/<\/td>/g);
           promptValidationErrs(temp1[0]);
         }
+        else
+          alert("No issues detected.");
       }
       else {
         getWaitDlg().hide();
