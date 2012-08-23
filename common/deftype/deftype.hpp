@@ -173,7 +173,7 @@ public:
 };
 
 interface IValue;
-interface ITypeInfo : public serializable
+interface DEFTYPE_API ITypeInfo : public serializable
 {
 public:
     virtual type_t getTypeCode() const = 0;
@@ -193,6 +193,14 @@ public:
     virtual const char *queryTypeName() = 0;
     virtual unsigned getCardinality() = 0;
     virtual bool isInteger() = 0;
+    virtual bool isNumeric() = 0;
+    virtual bool isString() = 0;
+    virtual bool isSimpleString() = 0;
+    virtual bool isUnicode() = 0;
+    virtual bool isText() = 0;
+    virtual bool isDataset() = 0;
+    virtual bool isPattern() = 0;
+    virtual bool isSingleValued() = 0;
     virtual bool isReference() = 0;
     virtual bool isScalar() = 0;
     virtual bool isSigned() = 0;

@@ -2212,9 +2212,10 @@ MemoryBuffer & appendBufferFromMem(MemoryBuffer & mem, ITypeInfo * type, const v
 
 //============================================================================
 
-bool isNumericType(ITypeInfo * type)
+
+bool CTypeInfo::isNumeric()
 {
-    switch (type->getTypeCode())
+    switch (getTypeCode())
     {
     case type_bitfield:
     case type_real:
@@ -2227,9 +2228,9 @@ bool isNumericType(ITypeInfo * type)
     return false;
 }
 
-bool isStringType(ITypeInfo * type)
+bool CTypeInfo::isString()
 {
-    switch (type->getTypeCode())
+    switch (getTypeCode())
     {
     case type_data:
     case type_string:
@@ -2240,75 +2241,51 @@ bool isStringType(ITypeInfo * type)
     return false;
 }
 
-bool isSimpleStringType(ITypeInfo * type)
+bool CTypeInfo::isSimpleString()
 {
-    switch (type->getTypeCode())
-    {
-    case type_data:
-    case type_string:
-    case type_varstring:
+    if (isString() && getTypeCode() != type_qstring)
         return true;
-    }
     return false;
 }
 
-bool isIntegralType(ITypeInfo * type)
+bool CTypeInfo::isPattern()
 {
-    switch (type->getTypeCode())
-    {
-    case type_bitfield:
-    case type_int:
-    case type_swapint:
-    case type_packedint:
-        return true;
-    }
-    return false;
-}
-
-bool isPatternType(ITypeInfo * type)
-{
-    switch(type->getTypeCode())
+    switch(getTypeCode())
     {
     case type_pattern:
     case type_token:
     case type_rule:
         return true;
-    default:
-        return false;
     }
+    return false;
 }
 
-bool isUnicodeType(ITypeInfo * type)
+bool CTypeInfo::isUnicode()
 {
-    switch(type->getTypeCode())
+    switch(getTypeCode())
     {
     case type_unicode:
     case type_varunicode:
     case type_utf8:
         return true;
-    default:
-        return false;
     }
+    return false;
 }
 
-bool isDatasetType(ITypeInfo * type)
+bool CTypeInfo::isDataset()
 {
-    switch(type->getTypeCode())
+    switch(getTypeCode())
     {
     case type_table:
     case type_groupedtable:
         return true;
-    default:
-        return false;
     }
+    return false;
 }
 
-bool isSingleValuedType(ITypeInfo * type)
+bool CTypeInfo::isSingleValued()
 {
-    if (!type)
-        return false;
-
-    switch (type->getTypeCode())
+    switch (getTypeCode())
     {
     case type_boolean:
     case type_int:
@@ -2331,6 +2308,54 @@ bool isSingleValuedType(ITypeInfo * type)
         return true;
     }
     return false;
+}
+
+bool CTypeInfo::isText()
+{
+    return isString() || isUnicode();
+}
+
+// TODO - All below must go
+bool isIntegralType(ITypeInfo * type)
+{
+    return type->isInteger() && type->getTypeCode() != type_blob;
+}
+
+bool isNumericType(ITypeInfo * type)
+{
+    return type->isNumeric();
+}
+
+bool isStringType(ITypeInfo * type)
+{
+    return type->isString();
+}
+
+bool isSimpleStringType(ITypeInfo * type)
+{
+    return type->isSimpleString();
+}
+
+bool isPatternType(ITypeInfo * type)
+{
+    return type->isPattern();
+}
+
+bool isUnicodeType(ITypeInfo * type)
+{
+    return type->isUnicode();
+}
+
+bool isDatasetType(ITypeInfo * type)
+{
+    return type->isDataset();
+}
+
+bool isSingleValuedType(ITypeInfo * type)
+{
+    if (!type)
+        return false;
+    return type->isSingleValued();
 }
 
 

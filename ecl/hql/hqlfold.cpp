@@ -69,16 +69,6 @@ static bool areIndenticalMapResults(const HqlExprArray & values, IHqlExpression 
     return true;
 }
 
-static bool isOrderedType(ITypeInfo * type)
-{
-    switch (type->getTypeCode())
-    {
-    case type_boolean:
-        return false;
-    }
-    return true;
-}
-
 static IHqlExpression * createCompareResult(node_operator op, int compare)
 {
     switch (op)
@@ -128,7 +118,7 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         //This seems an arbitrary exception, but if the comparison is ordered, and value being cast doesn't really
         //have a sensible ordering (i.e. boolean) then the cast shouldn't be removed.
         //i.e. make sure "(real)boolval < 0.5" does not become "boolval <= true".
-        if (!isOrderedType(uncastType))
+        if (uncastType->getTypeCode() == type_boolean)
             return NULL;
     }
 
@@ -1415,23 +1405,7 @@ IHqlExpression * applyBinaryFold(IHqlExpression * expr, binaryFoldFunc folder)
     return LINK(expr);
 }
 
-
-static bool isStringOrUnicode(ITypeInfo * type)
-{
-    switch (type->getTypeCode())
-    {
-    case type_data:
-    case type_string:
-    case type_varstring:
-    case type_qstring:
-    case type_unicode:
-    case type_varunicode:
-    case type_utf8:
-        return true;
-    }
-    return false;
-}
-
+// MORE - This should be moved to deftype, but it relies on asciiAtom, which would pollute deftype's namespace
 static bool isNonAscii(ITypeInfo * type)
 {
     switch (type->getTypeCode())
@@ -2357,7 +2331,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         bool sameResults = false;
                         if (isNumericType(e_type))
                             sameResults = true;
-                        else if (isStringOrUnicode(e_type) && isStringOrUnicode(c_type) && isStringOrUnicode(g_type))
+                        else if (e_type->isText() && c_type->isText() && g_type->isText())
                             sameResults = true;         
                         
                         // Don't allow casts involving data and non-ascii datasets because it can cause ascii convertions to get lost

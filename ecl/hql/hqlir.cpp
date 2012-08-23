@@ -268,8 +268,20 @@ void IRExpressionDumper::appendOperation(IHqlExpression * expr)
 
 void IRExpressionDumper::appendType(IHqlExpression * expr)
 {
-    if (expr->queryType())
-        string.append(getTypeText(expr->queryType()->getTypeCode()));
+    ITypeInfo *type = expr->queryType();
+    if (type) {
+        if (type->isInteger() && !type->isSigned())
+            string.append("unsigned ");
+        string.append(getTypeText(type->getTypeCode()));
+        if (type->isString() && type->getStringLen() != UNKNOWN_LENGTH)
+            string.append(type->getStringLen());
+        else if (type->isNumeric())
+        {
+            string.append(type->getSize());
+            if (type->getPrecision())
+                string.append(".").append(type->getPrecision());
+        }
+    }
     else
         string.append("no_type");
 }

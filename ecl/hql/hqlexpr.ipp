@@ -1038,6 +1038,14 @@ public:
     virtual bool isInteger()                    { return false; }
     virtual bool isReference()                  { return false; }
     virtual bool isScalar()                     { return false; }
+    virtual bool isString()                     { return false; }
+    virtual bool isNumeric()                    { return false; }
+    virtual bool isSimpleString()               { return false; }
+    virtual bool isUnicode()                    { return false; }
+    virtual bool isText()                       { return false; }
+    virtual bool isDataset()                    { return false; }
+    virtual bool isPattern()                    { return false; }
+    virtual bool isSingleValued()               { return false; }
     virtual bool isSigned()                     { return false; }
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
@@ -1531,6 +1539,14 @@ public:
     virtual bool isInteger()                    { return false; }
     virtual bool isReference()                  { return false; }
     virtual bool isScalar()                     { return false; }
+    virtual bool isString()                     { return false; }
+    virtual bool isNumeric()                    { return false; }
+    virtual bool isSimpleString()               { return false; }
+    virtual bool isUnicode()                    { return false; }
+    virtual bool isText()                       { return false; }
+    virtual bool isDataset()                    { return false; }
+    virtual bool isPattern()                    { return false; }
+    virtual bool isSingleValued()               { return false; }
     virtual bool isSigned()                     { return false; }
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
@@ -1650,6 +1666,14 @@ public:
     virtual bool isInteger()                    { return logical->isInteger(); }
     virtual bool isReference()                  { return false; }
     virtual bool isScalar()                     { return true; }
+    virtual bool isString()                     { return logical->isString(); }
+    virtual bool isSimpleString()               { return logical->isSimpleString(); }
+    virtual bool isUnicode()                    { return logical->isUnicode(); }
+    virtual bool isText()                       { return logical->isText(); }
+    virtual bool isDataset()                    { return logical->isDataset(); }
+    virtual bool isPattern()                    { return logical->isPattern(); }
+    virtual bool isSingleValued()               { return logical->isSingleValued(); }
+    virtual bool isNumeric()                    { return logical->isNumeric(); }
     virtual bool isSigned()                     { return logical->isSigned(); }
     virtual bool isSwappedEndian()              { return logical->isSwappedEndian(); }
     virtual ICharsetInfo * queryCharset()       { return logical->queryCharset(); }
