@@ -4098,6 +4098,69 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   return true;
 }
 
+bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
+{
+  synchronized block(m_mutex);
+  const char* xmlArg = req.getXmlArgs();
+
+  if (!xmlArg || !*xmlArg)
+    return false;
+
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg);
+
+  Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Setting[@operation='delete']");
+
+  if (iter->first() == false)
+    return false;
+
+  IPropertyTree* pSetting = &iter->query();
+  Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
+  StringBuffer xpath2 =  pSetting->queryProp("@params");
+  IPropertyTree* pComp = pEnvRoot->queryPropTree(xpath2.str());
+
+  if (pComp == NULL)
+    throw MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
+
+  StringBuffer xml;
+  StringBuffer attrib;
+
+  int count = xpath2.length()-2;
+
+  if (count <= 0)
+    throw MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
+
+  while (xpath2[count] != '=' || xpath2[count+1] != '\'')
+    count--;
+  count--;
+
+  for (int i=count; i >= 0 && xpath2[i] != '['; i--)
+    attrib.insert(0,xpath2[i]);
+
+  int index = xpath2.length()-1;
+
+  while (index > 0)
+  {
+    if (xpath2[index] == '/')
+      break;
+    index--;
+  }
+
+  char rootXPath[index+2];
+  memset(rootXPath,0,sizeof(rootXPath));
+  xpath2.getChars(0,index+1,rootXPath);
+
+  if (req.getBLeaf() == true)
+    pComp->removeProp(attrib);
+  else if (strlen(rootXPath) >= 14 && strncmp(rootXPath,"./EnvSettings/",14) == 0)
+    pEnvRoot->queryPropTree("./EnvSettings")->removeTree(pComp);
+  else
+    pEnvRoot->queryPropTree(rootXPath)->removeTree(pComp);
+
+  resp.setStatus("true");
+  resp.setCompName(XML_TAG_SOFTWARE);
+
+  return true;
+}
 
 bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp)
 {
@@ -6722,6 +6785,12 @@ bool CWsDeployEx::onHandleComponent(IEspContext &context, IEspHandleComponentReq
   return fi->handleComponent(context, req, resp);
 }
 
+bool CWsDeployEx::onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
+{
+  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
+  return fi->handleAttributeDelete(context, req, resp);
+}
+
 bool CWsDeployEx::onHandleInstance(IEspContext &context, IEspHandleInstanceRequest &req, IEspHandleInstanceResponse &resp)
 {
   CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
@@ -6974,6 +7043,11 @@ bool CWsDeployExCE::onHandleThorTopology(IEspContext &context, IEspHandleThorTop
 }
 
 bool CWsDeployExCE::onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp)
+{
+  return supportedInEEOnly();
+}
+
+bool CWsDeployExCE::onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
 {
   return supportedInEEOnly();
 }

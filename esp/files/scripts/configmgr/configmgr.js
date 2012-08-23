@@ -1796,6 +1796,104 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         width: "100%"
       });
 
+      function onContextMenuBeforeShowDeleteContextMenu(p_sType, p_aArgs) {
+        var record = top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]);
+        var pp = parseParamsForXPath( record.getData('params'), top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('name'),
+                   top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('value'),
+                   record.getData('hasChildren') == undefined ? false : record.getData('hasChildren') );
+
+        var xmlStr = "<XmlArgs><Setting operation=\"delete\" params= \"" + pp + "\"/></XmlArgs>";
+
+        YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleAttributeDelete', {
+          success: function(o) {
+            top.document.forms['treeForm'].isChanged.value = "true";
+            top.document.choice = new Array();
+            top.document.choice[0] = top.document.rightDT.getRecordIndex(top.document.rightDT.getSelectedRows()[0]);
+            var recDepth =  top.document.rightDT.getRecord(top.document.choice[0])._oData.depth;
+
+            var index = 0;
+            for (counter = top.document.choice[0]; counter >= 0; counter--)
+            {
+              if (top.document.rightDT.getRecord(counter)._oData.depth < recDepth)
+              {
+                top.document.choice[index] = top.document.rightDT.getRecord(counter).getData('params');
+                recDepth = top.document.rightDT.getRecord(counter)._oData.depth;
+                index++;
+              }
+            }
+
+            top.document.doJumpToChoice = true;
+            doPageRefresh();
+
+             YAHOO.util.UserAction.click(top.document.rightDT.getFirstTrEl());
+           },
+          failure: function(o) {
+            alert("Failed to delete attribute.  (XPath maybe ambiguous. A manual edit of the XML configuration file maybe required to delete this attribute.) ");
+            },
+          scope: this
+        },
+          top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlStr + '&bLeaf=' + (record.getData('hasChildren') == undefined ? false : !record.getData('hasChildren') ));
+        }
+      function onContextMenuXBeforeShow(p_sType, p_aArgs)
+      {
+        if (top.document.getElementById('ReadWrite').checked == true)
+          oContextMenuX.cfg.setProperty('disabled',false);
+        else
+          oContextMenuX.cfg.setProperty('disabled',true);
+
+        top.document.ContextMenuCenter = this;
+      }
+
+      function onTriggerContextMenu(p_oEvent)
+      {
+        if (top.document.rightDT.getRecord(top.document.rightDT.getSelectedRows()[0])._oData.hasChildren == true)  // only allow attributes to be deleted
+          this.cancel();
+      }
+      var aMenuItemsX = [{text: "Delete", onclick: { fn: onContextMenuBeforeShowDeleteContextMenu}  }];
+      top.document.rightDT = dt;
+      top.document.rightDT.expandRecord = function(id) {
+      var recSet = top.document.rightDT.getRecordSet();
+
+      if (typeof (id) === 'undefined') {
+        var tdEl = top.document.rightDT.getFirstTdEl(recSet.getRecord(0));
+        var children = Dom.getChildren(tdEl);
+        if (Dom.hasClass(children[0].children[0].children[0], 'yui-button')) {
+          children[0].children[0].children[0].click();
+          return;
+        }
+      }
+
+      var recSetLen = recSet.getLength();
+      for (var i = 0; i < recSetLen; i++) {
+        var r = recSet.getRecord(i);
+        if (r.getData('id') === id) {
+          if (r.getData('parent') != -1)
+            top.document.rightDT.expandRecord(r.getData('parent'));
+          var tdEl = top.document.rightDT.getFirstTdEl(r);
+          var children = Dom.getChildren(tdEl);
+          if (Dom.hasClass(children[0].children[0].children[0], 'yui-button') &&
+                Dom.hasClass(children[0].children[0].children[0], 'buttoncollapsed')) {
+            children[0].children[0].children[0].click();
+            break;
+          }
+          else {
+            top.document.rightDT.unselectAllRows();
+            top.document.rightDT.selectRow(r);
+            break;
+          }
+        }
+        }
+      }
+
+      var oContextMenuX = new YAHOO.widget.ContextMenu( "EnvironmentTabCM2", { trigger: dt.getTbodyEl(), lazyload: true, itemdata: aMenuItemsX, container: tabNameTemp});
+      top.document.ContextMenuCenter = oContextMenuX;
+
+
+     oContextMenuX.subscribe("triggerContextMenu", onTriggerContextMenu);
+
+      oContextMenuX.dt = dt;
+      oContextMenuX.subscribe("beforeShow",onContextMenuXBeforeShow);
+
       tab.dt = dt;
       tab.dataSource = myDataSource;
       dt.subscribe("rowMouseoutEvent", dt.onEventUnhighlightRow);
@@ -1870,6 +1968,26 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         top.document.navDT.getWaitDlg().hide();
 
         top.document.stopWait(document);
+
+        var lastCounter2 = 0;
+        if (top.document.doJumpToChoice == true)
+        {
+          for (counter = top.document.choice.length-1; counter >= 0; counter--)
+          {
+            for (counter2 = lastCounter2; true; counter2++)
+            {
+              if (this.getRecord(counter2).getData('params') == top.document.choice[counter])
+              {
+                this.expandRecord(counter2);
+                lastCounter2 = counter2;
+                break;
+              }
+            }
+          }
+
+          Dom.getChildren(this.getFirstTdEl(this.getRecord(this.getRecordIndex(this.getSelectedRows()[0]))))[0].children[0].children[0].focus();
+          top.document.doJumpToChoice = false;
+        }
       });
 
       dt.subscribe("tableKeyEvent", function(oArgs) {
@@ -3418,6 +3536,61 @@ function setChildrenOf(parent, rec) {
     childrenOf[parent] = new Array();
  
   childrenOf[parent][childrenOf[parent].length] = rec;
+}
+
+function parseParamsForXPath(params, key, value, hasChildren)
+{
+  var splitParams = params.split(":");
+  var xpath = "";
+
+  for (idx = splitParams.length-1; idx >= 0; idx--)
+  {
+    var pcTypePos = splitParams[idx].indexOf("pcType");
+    var pcNamePos = splitParams[idx].indexOf("pcName");
+
+    if (pcTypePos != -1)
+    {
+      if ( splitParams[idx].substr(pcTypePos+7) === "Environment" )
+        xpath = "./";
+      else
+       xpath = xpath + splitParams[idx].substr(pcTypePos+7) + "/";
+    }
+    else if (pcNamePos != -1)
+    {
+      if (splitParams[idx].substr(pcNamePos+8) != "")
+      {
+        if (xpath[xpath.length-1] === ']')
+        {
+          xpath = xpath + "/";
+        }
+        xpath = xpath + splitParams[idx-1].substr(pcTypePos+8);
+        xpath = xpath + "[@name='" + splitParams[idx].substr(pcNamePos+7) + "']";
+        idx--;
+      }
+      else if (xpath[xpath.length-1] == ']')
+      {
+        xpath = xpath + "/";
+      }
+    }
+  }
+
+  if (hasChildren == true || xpath.substr(0,14) == "./EnvSettings/")
+    return xpath;
+
+  if (key === "name")
+  {
+    xpath = xpath + "]";
+  }
+  else
+  {
+    if (xpath[xpath.length-1] == '/')
+    {
+      xpath = xpath.substring(0,xpath.length-1);
+    }
+    xpath = xpath + "[@" + key + "='" + value + "']"
+  }
+
+  return xpath;
 }
 
 function initEnvXmlType(i) {
