@@ -891,6 +891,7 @@ private:
     StringBuffer         m_pwscheme;
     bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
     __int64              m_maxPwdAge;
+    time_t               lastPwdAgeCheck;
 
     class CLDAPMessage
     {
@@ -913,6 +914,7 @@ public:
         else
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
+        lastPwdAgeCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -964,12 +966,13 @@ public:
 
     virtual __int64 getMaxPwdAge()
     {
+        if ((msTick() - lastPwdAgeCheck) < (60*1000))
+            return m_maxPwdAge;
         char* attrs[] = {"maxPwdAge", NULL};
         CLDAPMessage searchResult;
         TIMEVAL timeOut = {LDAPTIMEOUT,0};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-
         int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
                                         attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
         if(result != LDAP_SUCCESS)
@@ -997,6 +1000,7 @@ public:
         else
             maxAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
+        lastPwdAgeCheck = msTick();
         return maxAge;
     }
 
