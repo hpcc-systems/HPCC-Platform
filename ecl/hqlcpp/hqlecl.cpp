@@ -75,7 +75,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void addLibrary(const char * name);
-    virtual bool processQuery(IHqlExpression * expr, EclGenerateTarget _generateTarget);
+    virtual bool processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget);
     virtual bool generateDll(ICppCompiler * compiler);
     virtual bool generateExe(ICppCompiler * compiler);
     virtual bool generatePackage(const char * packageName);
@@ -96,7 +96,7 @@ protected:
     void doExpand(HqlCppTranslator & translator);
     void expandCode(const char * templateName, const char * ext, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler);
     void flushResources();
-    bool generateCode(IHqlExpression * exprs);
+    bool generateCode(HqlQueryContext & query);
     void insertStandAloneCode();
     void setWuState(bool ok);
     inline bool abortRequested();
@@ -122,7 +122,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-static IHqlExpression * processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, IHqlExpression * expr, ICodegenContextCallback *ctxCallback);
+static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, HqlQueryContext & query, ICodegenContextCallback *ctxCallback);
 
 void HqlDllGenerator::addCppName(const char * filename)
 {
@@ -187,12 +187,15 @@ void HqlDllGenerator::expandCode(const char * templateName, const char * ext, IH
 
 //---------------------------------------------------------------------------
 
-bool HqlDllGenerator::processQuery(IHqlExpression * expr, EclGenerateTarget _generateTarget)
+bool HqlDllGenerator::processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget)
 {
     generateTarget = _generateTarget;
     assertex(wu->getHash());
     unsigned prevCount = errs->errCount();
-    bool ok = generateCode(expr);
+
+    HqlQueryContext query;
+    query.expr.setown(parsedQuery.getClear());
+    bool ok = generateCode(query);
     code->flushHints();
     wu->commit();
 
@@ -244,7 +247,7 @@ bool HqlDllGenerator::generatePackage(const char * packageName)
     return false;
 }
 
-bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
+bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 {
     wu->resetBeforeGeneration();
 
@@ -256,7 +259,7 @@ bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
         MTIME_SECTION (timer, "Generate_code");
         unsigned time = msTick();
         HqlCppTranslator translator(errs, wuname, code, targetClusterType, ctxCallback);
-        OwnedHqlExpr query = processMetaCommands(translator, wu, exprs, ctxCallback);
+        processMetaCommands(translator, wu, query, ctxCallback);
 
         bool ok = false;
         try
@@ -462,9 +465,12 @@ double HqlDllGenerator::getECLcomplexity(IHqlExpression * exprs)
     Owned<IHqlCppInstance> code = createCppInstance(wu, NULL);
 
     HqlCppTranslator translator(errs, "temp", code, targetClusterType, NULL);
-    OwnedHqlExpr query = processMetaCommands(translator, wu, exprs, ctxCallback);
 
-    return translator.getComplexity(*code, query);
+    HqlQueryContext query;
+    query.expr.set(exprs);
+    processMetaCommands(translator, wu, query, ctxCallback);
+
+    return translator.getComplexity(*code, query.expr);
 }
 
 
@@ -512,16 +518,15 @@ extern HQLCPP_API ClusterType queryClusterType(IConstWorkUnit * wu, ClusterType 
     return targetClusterType;
 }
 
-static IHqlExpression * processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, IHqlExpression * expr, ICodegenContextCallback *ctxCallback)
+static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, HqlQueryContext & query, ICodegenContextCallback *ctxCallback)
 {
     NewThorStoredReplacer transformer(translator, wu, ctxCallback);
 
-    translator.traceExpression("before process meta commands", expr);
+    translator.traceExpression("before process meta commands", query.expr);
 
-    transformer.analyse(expr);
-    if (!transformer.needToTransform())
-        return LINK(expr);
-    return transformer.transform(expr);
+    transformer.analyse(query.expr);
+    if (transformer.needToTransform())
+        query.expr.setown(transformer.transform(query.expr));
 }
 
 

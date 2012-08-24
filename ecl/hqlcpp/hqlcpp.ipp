@@ -444,7 +444,6 @@ class WorkflowItem : public CInterface
 public:
     WorkflowItem(unsigned _wfid) : wfid(_wfid) { }
     WorkflowItem(IHqlExpression * _function);
-    IMPLEMENT_IINTERFACE;
 
     bool isFunction() const { return function != NULL; }
     IHqlExpression * getFunction() const;
@@ -785,7 +784,7 @@ public:
     IMPLEMENT_IINTERFACE
 
 //interface IHqlCppTranslator
-    virtual bool buildCpp(IHqlCppInstance & _code, IHqlExpression * expr);
+    virtual bool buildCpp(IHqlCppInstance & _code, HqlQueryContext & query);
     virtual double getComplexity(IHqlCppInstance & _code, IHqlExpression * expr);
     virtual bool spanMultipleCppFiles()         { return options.spanMultipleCpp; }
     virtual unsigned getNumExtraCppFiles()      { return activitiesThisCpp ? curCppFile : 0; }
@@ -1024,7 +1023,7 @@ public:
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
 
     void updateClusterType();
-    bool buildCode(IHqlExpression * exprlist, const char * embeddedLibraryName, bool isEmbeddedLibrary);
+    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary);
 
     inline StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr)
     {
@@ -1783,7 +1782,7 @@ protected:
 
 
     void markThorBoundaries(WorkflowArray & array);
-    bool transformGraphForGeneration(IHqlExpression * exprlist, WorkflowArray & exprs);
+    bool transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & exprs);
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
     void pickBestEngine(HqlExprArray & exprs);
@@ -1805,7 +1804,7 @@ protected:
     double getComplexity(WorkflowArray & exprs);
     double getComplexity(HqlExprArray & exprs);
     double getComplexity(IHqlExpression * expr, ClusterType cluster);
-    bool prepareToGenerate(IHqlExpression * exprlist, WorkflowArray & exprs, bool isEmbeddedLibrary);
+    bool prepareToGenerate(HqlQueryContext & query, WorkflowArray & exprs, bool isEmbeddedLibrary);
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
     IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * graphIdExpr, unsigned numResults, node_operator graphKind);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);

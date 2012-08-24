@@ -51,12 +51,10 @@ public:
 //-------------------------------------------------------------------------------------------------------------------
 
 //MORE: Split this into a common base and a Source?
-class CEclSource : public CInterface, implements IEclSource
+class CEclSource : public CInterfaceOf<IEclSource>
 {
 public:
     CEclSource(_ATOM _eclName, EclSourceType _type) : eclName(_eclName), type(_type) { }
-
-    IMPLEMENT_IINTERFACE
 
 //interface IEclSource
     virtual IProperties * getProperties() { return NULL; }
@@ -68,8 +66,8 @@ public:
     virtual IEclSourceIterator * getContained() = 0;
 
 protected:
-    _ATOM eclName;
     EclSourceType type;
+    _ATOM eclName;
 };
 
 

@@ -12228,13 +12228,16 @@ IHqlExpression * HqlCppTranslator::separateLibraries(IHqlExpression * query, Hql
 }
 
 
-bool HqlCppTranslator::transformGraphForGeneration(IHqlExpression * query, WorkflowArray & workflow)
+bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & workflow)
 {
     HqlExprArray exprs;
-    if (isLibraryScope(query))
-        outputLibrary->mapLogicalToImplementation(exprs, query);
+    if (isLibraryScope(query.expr))
+        outputLibrary->mapLogicalToImplementation(exprs, query.expr);
     else
-        query->unwindList(exprs, no_comma);
+        query.expr->unwindList(exprs, no_comma);
+
+    //Ensure the incoming query will be freed up when no longer used
+    query.expr.clear();
 
     traceExpressions("before transform graph for generation", exprs);
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
