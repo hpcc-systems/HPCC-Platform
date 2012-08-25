@@ -146,7 +146,7 @@ public:
     void xsltTransform(const char* xml, unsigned int len, const char* xslFileName, IProperties *params, StringBuffer& ret);
 
     int getWsEcl2TabView(CHttpRequest* request, CHttpResponse* response, const char *thepath);
-    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
+    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool boxform);
     int getWsEcl2Form(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
     bool isValidServiceName(IEspContext &context, const char *name){return true;}
