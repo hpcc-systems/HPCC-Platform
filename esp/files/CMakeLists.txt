@@ -129,6 +129,7 @@ set ( TEMPLATES_FILES
     templates/ResultsWidget.html
     templates/SampleSelectWidget.html
     templates/TargetSelectWidget.html
+    templates/TimingTreeMapWidget.html
 )
 source_group(templates FILES ${TEMPLATES_FILES})
 
@@ -172,6 +173,7 @@ set ( SCRIPTS_FILES
     scripts/ResultsWidget.js
     scripts/SampleSelectWidget.js
     scripts/TargetSelectWidget.js
+    scripts/TimingTreeMapWidget.js
 )
 source_group(scripts FILES ${SCRIPTS_FILES})
 
@@ -217,6 +219,8 @@ set ( MAIN_FILES
     ECLPlaygroundResults.js
     WUGraph.htm
     WUGraph.js
+    WUTimings.htm
+    WUTimings.js
     )
 source_group("Source Files" FILES ${MAIN_FILES})
 

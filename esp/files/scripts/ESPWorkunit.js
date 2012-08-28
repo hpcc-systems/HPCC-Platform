@@ -298,6 +298,16 @@ define([
 				onGetResults: onFetchResults
 			});
 		},
+		fetchTimers: function (onFetchTimers) {
+			if (this.timers && this.timers.length) {
+				onFetchTimers(this.timers);
+				return;
+			}
+
+			this.getInfo({
+				onGetTimers: onFetchTimers
+			});
+		},
 		fetchGraphs: function (onFetchGraphs) {
 			if (this.graphs && this.graphs.length) {
 				onFetchGraphs(this.graphs);
