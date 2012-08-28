@@ -1605,11 +1605,10 @@ char *EclAgent::getPlatform()
 {
     if (!isStandAloneExe)
     {
-        SCMStringBuffer cluster;
-        queryWorkUnit()->getClusterName(cluster);
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster.str());
+        const char * cluster = clusterNames.tos();
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
         if (!clusterInfo)
-            throw MakeStringException(-1, "Unknown Cluster '%s'", cluster.str());
+            throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
         return (char*)clusterTypeString(clusterInfo->getPlatform());
     }
     else
