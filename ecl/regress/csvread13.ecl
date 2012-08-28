@@ -5,6 +5,7 @@
     All rights reserved. This program is NOT PRESENTLY free software: you can NOT redistribute it and/or modify
     you may not use this file except in compliance with the License.
     You may obtain a copy of the License at
+
        http://www.apache.org/licenses/LICENSE-2.0
 
     Unless required by applicable law or agreed to in writing, software
