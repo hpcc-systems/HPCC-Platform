@@ -1,9 +1,7 @@
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    This program is free software: you can redistribute it and/or All rights
-#    reserved. This program is NOT PRESENTLY free software: you can NOT
-#    redistribute
+#    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
 #
