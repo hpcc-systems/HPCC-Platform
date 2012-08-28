@@ -256,6 +256,7 @@ BrowseResourcesResponse
     string PortalURL;
     string NetAddress;
     int OS;
+    [min_ver("1.13")] bool UseResource;
     ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
 };
 
@@ -263,6 +264,7 @@ ESPenum RoxieControlCmd : string
 {
     ATTACH("Attach"),
     DETACH("Detach"),
+    STATE("State"),
     RELOAD("Reload")
 };
 
@@ -273,7 +275,7 @@ ESPrequest RoxieControlCmdRequest
     int Wait;
 };
 
-ESPStruct RoxieControlEndpointInfo
+ESPStruct [nil_remove] RoxieControlEndpointInfo
 {
     string Address;
     bool Attached;
@@ -290,7 +292,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.13"), default_client_version("1.13"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);

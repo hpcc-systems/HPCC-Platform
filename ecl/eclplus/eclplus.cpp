@@ -43,7 +43,9 @@ IClientWsWorkunits * createWorkunitsClient(IProperties * _globals)
         url.append("/");
     url.append("WsWorkUnits");
     wuclient->addServiceUrl(url.str());
-    const char* username = _globals->queryProp("owner");
+    const char* username = _globals->queryProp("user");
+    if (!username)
+        username = _globals->queryProp("owner");
     const char* password = _globals->queryProp("password");
     if(username != NULL)
         wuclient->setUsernameToken(username, password, NULL);
