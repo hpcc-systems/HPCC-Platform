@@ -891,6 +891,7 @@ private:
     StringBuffer         m_pwscheme;
     bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
     __int64              m_maxPwdAge;
+    time_t               m_lastPwdAgeCheck;
 
     class CLDAPMessage
     {
@@ -913,6 +914,7 @@ public:
         else
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
+        m_lastPwdAgeCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -964,12 +966,13 @@ public:
 
     virtual __int64 getMaxPwdAge()
     {
+        if ((msTick() - m_lastPwdAgeCheck) < (60*1000))
+            return m_maxPwdAge;
         char* attrs[] = {"maxPwdAge", NULL};
         CLDAPMessage searchResult;
         TIMEVAL timeOut = {LDAPTIMEOUT,0};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-
         int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
                                         attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
         if(result != LDAP_SUCCESS)
@@ -984,7 +987,7 @@ public:
             return 0;
         }
         char **values;
-        __int64 maxAge = 0;
+        m_maxPwdAge = 0;
         values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
         if (values && *values)
         {
@@ -992,12 +995,13 @@ public:
             if (*val == '-')
                 ++val;
             for (int x=0; val[x]; x++)
-                maxAge = maxAge * 10 + ( (int)val[x] - '0');
+                m_maxPwdAge = m_maxPwdAge * 10 + ( (int)val[x] - '0');
         }
         else
-            maxAge = PWD_NEVER_EXPIRES;
+            m_maxPwdAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
-        return maxAge;
+        m_lastPwdAgeCheck = msTick();
+        return m_maxPwdAge;
     }
 
     void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
@@ -1023,7 +1027,7 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            m_maxPwdAge = getMaxPwdAge();
+            getMaxPwdAge();//sets m_maxPwdAge
             if (m_maxPwdAge != PWD_NEVER_EXPIRES)
                 m_domainPwdsNeverExpire = false;
             else
