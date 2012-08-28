@@ -2248,6 +2248,17 @@ bool CTypeInfo::isSimpleString()
     return false;
 }
 
+bool CTypeInfo::isNonAscii()
+{
+    switch (getTypeCode())
+    {
+    case type_string:
+    case type_varstring:
+        return queryCharset()->queryName() != asciiAtom;
+    }
+    return false;
+}
+
 bool CTypeInfo::isPattern()
 {
     switch(getTypeCode())
@@ -2313,6 +2324,11 @@ bool CTypeInfo::isSingleValued()
 bool CTypeInfo::isText()
 {
     return isString() || isUnicode();
+}
+
+bool CTypeInfo::hasOrder()
+{
+    return getTypeCode() == type_boolean;
 }
 
 // TODO - All below must go

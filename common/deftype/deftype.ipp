@@ -83,9 +83,11 @@ public:
     virtual bool isSimpleString();
     virtual bool isUnicode();
     virtual bool isText();
+    virtual bool isNonAscii();
     virtual bool isDataset();
     virtual bool isPattern();
     virtual bool isSingleValued();
+    virtual bool hasOrder();
 };
 
 class CHashedTypeInfo : public CTypeInfo

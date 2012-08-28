@@ -118,7 +118,7 @@ static IHqlExpression * optimizeCast(node_operator compareOp, IHqlExpression * c
         //This seems an arbitrary exception, but if the comparison is ordered, and value being cast doesn't really
         //have a sensible ordering (i.e. boolean) then the cast shouldn't be removed.
         //i.e. make sure "(real)boolval < 0.5" does not become "boolval <= true".
-        if (uncastType->getTypeCode() == type_boolean)
+        if (uncastType->hasOrder())
             return NULL;
     }
 
@@ -1405,21 +1405,9 @@ IHqlExpression * applyBinaryFold(IHqlExpression * expr, binaryFoldFunc folder)
     return LINK(expr);
 }
 
-// MORE - This should be moved to deftype, but it relies on asciiAtom, which would pollute deftype's namespace
-static bool isNonAscii(ITypeInfo * type)
-{
-    switch (type->getTypeCode())
-    {
-    case type_string:
-    case type_varstring:
-        return type->queryCharset()->queryName() != asciiAtom;
-    }
-    return false;
-}
-
 static bool castHidesConversion(ITypeInfo * t1, ITypeInfo * t2, ITypeInfo * t3)
 {
-    return (t1->getTypeCode() == type_data) && (isNonAscii(t2) || isNonAscii(t3));
+    return (t1->getTypeCode() == type_data) && (t2->isNonAscii() || t3->isNonAscii());
 }
 
 

@@ -198,12 +198,14 @@ public:
     virtual bool isSimpleString() = 0;
     virtual bool isUnicode() = 0;
     virtual bool isText() = 0;
+    virtual bool isNonAscii() = 0;
     virtual bool isDataset() = 0;
     virtual bool isPattern() = 0;
     virtual bool isSingleValued() = 0;
     virtual bool isReference() = 0;
     virtual bool isScalar() = 0;
     virtual bool isSigned() = 0;
+    virtual bool hasOrder() = 0;
     virtual bool isSwappedEndian() = 0;
     virtual ITypeInfo * queryChildType() = 0;
     virtual ICharsetInfo * queryCharset() = 0;

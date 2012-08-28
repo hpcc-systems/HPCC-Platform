@@ -1043,10 +1043,12 @@ public:
     virtual bool isSimpleString()               { return false; }
     virtual bool isUnicode()                    { return false; }
     virtual bool isText()                       { return false; }
+    virtual bool isNonAscii()                   { return false; }
     virtual bool isDataset()                    { return false; }
     virtual bool isPattern()                    { return false; }
     virtual bool isSingleValued()               { return false; }
     virtual bool isSigned()                     { return false; }
+    virtual bool hasOrder()                     { return false; }
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
@@ -1544,10 +1546,12 @@ public:
     virtual bool isSimpleString()               { return false; }
     virtual bool isUnicode()                    { return false; }
     virtual bool isText()                       { return false; }
+    virtual bool isNonAscii()                   { return false; }
     virtual bool isDataset()                    { return false; }
     virtual bool isPattern()                    { return false; }
     virtual bool isSingleValued()               { return false; }
     virtual bool isSigned()                     { return false; }
+    virtual bool hasOrder()                     { return false; }
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
@@ -1670,11 +1674,13 @@ public:
     virtual bool isSimpleString()               { return logical->isSimpleString(); }
     virtual bool isUnicode()                    { return logical->isUnicode(); }
     virtual bool isText()                       { return logical->isText(); }
+    virtual bool isNonAscii()                   { return logical->isNonAscii(); }
     virtual bool isDataset()                    { return logical->isDataset(); }
     virtual bool isPattern()                    { return logical->isPattern(); }
     virtual bool isSingleValued()               { return logical->isSingleValued(); }
     virtual bool isNumeric()                    { return logical->isNumeric(); }
     virtual bool isSigned()                     { return logical->isSigned(); }
+    virtual bool hasOrder()                     { return logical->hasOrder(); }
     virtual bool isSwappedEndian()              { return logical->isSwappedEndian(); }
     virtual ICharsetInfo * queryCharset()       { return logical->queryCharset(); }
     virtual ICollationInfo * queryCollation()   { return logical->queryCollation(); }
