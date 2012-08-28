@@ -9,19 +9,15 @@
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xsd="http://www.w3.org/2001/XMLSchema" version="1.0" xml:space="default" exclude-result-prefixes="xsd">
     <xsl:strip-space elements="*"/>
-    <!-- TODO: change indent="no" for performance -->
     <xsl:output method="html" indent="yes" omit-xml-declaration="yes" version="4.01" doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN" doctype-system="http://www.w3.org/TR/html4/loose.dtd"/>
 
     <xsl:param name="queryParams" select="''"/>
     <xsl:variable name="QueryInput" select="/FormInfo/Request"/>
     <xsl:variable name="queryPath" select="/FormInfo/QuerySet"/>
     <xsl:variable name="methodName" select="/FormInfo/QueryName"/>
-    <xsl:variable name="wuid" select="/FormInfo/WUID"/>
     <xsl:variable name="methodHelp" select="/FormInfo/Help"/>
     <xsl:variable name="methodDesc" select="/FormInfo/Info"/>
     <xsl:variable name="serviceVersion" select="/FormInfo/Version"/>
-    <xsl:variable name="requestLabel" select="/FormInfo/RequestElement"/>
-    <xsl:variable name="requestElement" select="/FormInfo/RequestElement"/>
 
     <!-- ===============================================================================
   global settings
@@ -35,9 +31,6 @@
               <link rel="stylesheet" type="text/css" href="/esp/files/yui/build/fonts/fonts-min.css"/>
               <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css"/>
               <link rel="stylesheet" type="text/css" href="/esp/files/gen_form.css"/>
-              <script type="text/javascript" src="/esp/files/req_array.js"/>
-              <script type="text/javascript" src="/esp/files/hashtable.js"/>
-              <script type="text/javascript" src="/esp/files/gen_form.js"/>
               <script type="text/javascript">
 
       <xsl:text disable-output-escaping="yes">
@@ -53,12 +46,6 @@ function setESPFormAction()
     {
         if (actval.value=="esp_soap")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/soap/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="esp_json")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/json/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="roxie_soap")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/roxiesoap/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="roxie_xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/roxiexml/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="run_xslt")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
@@ -66,12 +53,8 @@ function setESPFormAction()
         else
             actionpath= "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
     }
-    //alert("actionpath = " + actionpath);
-    var dest = document.getElementById('esp_dest');
-    if (dest && dest.checked)
-         form.action = document.getElementById('dest_url').value;
-    else
-        form.action = actionpath;
+
+    form.action = actionpath;
     return true;
 }
 
@@ -185,10 +168,7 @@ function switchInputForm()
                   <td align="left">
                     <select id="submit_type" name="submit_type_">
                         <xsl:for-each select="/FormInfo/CustomViews/Result">
-                            <option>
-                              <xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
-                              <xsl:value-of select="."/>
-                            </option>
+                            <option value="{.}"><xsl:value-of select="."/></option>
                         </xsl:for-each>
                         <option value="run_xslt">Output Tables</option>
                         <option value="xml">Output XML</option>
