@@ -1124,7 +1124,7 @@ function createNavigationTree(navTreeData) {
         }
         var files = result.split(/;/g);
         for (var i = 0; i < files.length; i++) {
-          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration" || files[i] == "")
+          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration>" || files[i] == "")
             {
                continue;
             }
@@ -1157,7 +1157,7 @@ function createNavigationTree(navTreeData) {
                            id: "HWCopy",
                            lazyload: true,
                            itemdata: copyCompMenu,
-                           onclick: { fn: onMenuItemClick },
+                           onclick: { fn: onMenuItemClick }
                           } }
                           ],
     "Hardware": [
@@ -1205,7 +1205,7 @@ function createNavigationTree(navTreeData) {
                                   id: "SWCopy",
                                   lazyload: true,
                                   itemdata: copyCompMenu
-                                 },
+                                 }
                               }
                           ],
     "Columns": [
