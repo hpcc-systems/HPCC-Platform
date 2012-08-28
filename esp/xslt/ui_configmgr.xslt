@@ -444,7 +444,14 @@
                     i.compType = '<xsl:value-of select="@name"/>';
                     i.depth = <xsl:value-of select="count(ancestor::*) - 2"/>;
                     i.name = '<xsl:value-of select="name()"/>';
-                    i.value = "<xsl:value-of select="normalize-space(text())"/>";
+                    <xsl:variable name="value_quote">
+                      <xsl:call-template name="string-replace-all">
+                        <xsl:with-param name="text" select="normalize-space(text())"/>
+                        <xsl:with-param name="replace" select="'&quot;'" />
+                        <xsl:with-param name="by" select="'\&quot;'" />
+                      </xsl:call-template>
+                    </xsl:variable>
+                    i.value = "<xsl:value-of select="$value_quote"/>";
                     i.parent = parentIds[parentIds.length-1];
                     parent = id;
                     i.id = id++;
