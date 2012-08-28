@@ -1,19 +1,17 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 no_none
 A not-a-value for variables and return values. Occasionally used in a node in the 
@@ -22,7 +20,7 @@ recovery, but should not be encountered during code generation
 Operands: none
 
 no_scope
-Used for a symbol referring to a module name in HQL. Resolved at parse time – should 
+Used for a symbol referring to a module name in HQL. Resolved at parse time ï¿½ should 
 not be encountered during code generation.
 Operands: none
 
@@ -108,11 +106,11 @@ Logical XOR
 Operands: lhs, rhs
 
 no_notin
-Item not in list (SQL "x NOT IN (…)" operator)
+Item not in list (SQL "x NOT IN (ï¿½)" operator)
 Operands: lhs (value), rhs (set)
 
 no_in
-Item in list (SQL "x IN (…)" operator)
+Item in list (SQL "x IN (ï¿½)" operator)
 Operands: lhs (value), rhs (set)
 
 no_notbetween
@@ -153,7 +151,7 @@ Record is not found in recordset (HQL: ~WITHIN(recordset))
 Operands: dataset
 
 no_param
-Used for defining HQL functions – should not be encountered during code generation
+Used for defining HQL functions ï¿½ should not be encountered during code generation
 Operands: none
 
 no_constant
@@ -288,16 +286,16 @@ HQL evaluate (datarow, expression)
 Operands: datarow, expression
 
 no_choose
-HQL: CHOOSE(expression, value1, value2, …, valuen, defaultvalue)
+HQL: CHOOSE(expression, value1, value2, ï¿½, valuen, defaultvalue)
 Operands: expression, value1..valuen, defaultvalue
 
 no_which
-HQL: WHICH(expression1, expression2, …, expressionn)
-Operands: expression1, expression2,…, expressionn
+HQL: WHICH(expression1, expression2, ï¿½, expressionn)
+Operands: expression1, expression2,ï¿½, expressionn
 
 no_rejected
-HQL: REJECTED(expression1, expression2, …, expressionn)
-Operands: expression1, expression2,…, expressionn
+HQL: REJECTED(expression1, expression2, ï¿½, expressionn)
+Operands: expression1, expression2,ï¿½, expressionn
 
 no_mapto
 Used for the operands of a MAP expression for each expression=>value pair
@@ -438,7 +436,7 @@ Inner join between two datasets
 Operands: one of the following forms
 dataset1, dataset2, constExpr(no_natural)
 dataset1, dataset2, constExpr(no_on), bool expr
-dataset1, dataset2, constExpr(no_using), column1, column2, …, columnn
+dataset1, dataset2, constExpr(no_using), column1, column2, ï¿½, columnn
 
 no_left_outer_join, no_right_outer_join, no_full_outer_join, 
 no_left_join, no_right_join, no_full_join
@@ -449,8 +447,8 @@ Intersection of two datasets
 Operands: one of the following form
 dataset1, datatset2, 
 dataset1, datatset2, constExpr(no_all)
-dataset1, datatset2, constExpr(no_all), column1, …, columnn
-dataset1, datatset2, column1, …, columnn
+dataset1, datatset2, constExpr(no_all), column1, ï¿½, columnn
+dataset1, datatset2, column1, ï¿½, columnn
 
 no_union
 Union of two datasets
@@ -462,7 +460,7 @@ Operands: Same as above
 
 no_project
 Select a list of columns/expressions from a table
-Operands: dataset, scalar_expr1, …, scalar_exprn
+Operands: dataset, scalar_expr1, ï¿½, scalar_exprn
 
 no_horizontal_project
 Select a particular row from a dataset
@@ -473,11 +471,11 @@ dataset, constExpr(no_element), constExpr(element index)
 
 no_group
 Group the rows of a dataset on a list of columns
-Operands: dataset, column1, column2, …, columnn
+Operands: dataset, column1, column2, ï¿½, columnn
 
 no_sort
 Sort a dataset on a list of columns
-Operands: dataset, column1, constExpr(no_asc|no_desc), …, columnn, constExpr(no_asc|no_desc)
+Operands: dataset, column1, constExpr(no_asc|no_desc), ï¿½, columnn, constExpr(no_asc|no_desc)
 
 no_is_null
 Checks if a column is null
