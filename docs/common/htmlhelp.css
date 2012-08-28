@@ -1,4 +1,4 @@
-﻿body {
+body {
     font-family: serif;
     font-size: 10pt;
     color: black;
@@ -18,14 +18,14 @@ h6 {
 }
 
 h1 {
-    font-family: sans-serif;
-    font-size: 1.8em;
-    color: #A91919;
+       font-family: sans-serif;
+       font-size: 2.4em;
+       color: #A91919;
 }
 
 h2 {
     font-family: sans-serif;
-    font-size: 1.6em;
+    font-size: 2.0em;
     text-decoration: underline;
     color: #A91919;
 }
@@ -63,6 +63,7 @@ th,
 td {
     padding: 0 0.5ex;
     vertical-align: top; 
+
 }
 
 blockquote {
@@ -254,14 +255,6 @@ acronym {
     font-weight: bold;
 }
 
-span.code {
-    font-family: monospace;
-}
-span.codebold {
-    font-family: monospace;
-    font-weight: bold;
-}
-
 span.bluebold {
     font-weight: bold;
     color: #00008B;
@@ -307,6 +300,14 @@ span.whiteital {
 span.white {
     color: #FFFFFF;
 }
+span.code {
+    font-family: monospace;
+}
+span.codebold {
+    font-family: monospace;
+    font-weight: bold;
+}
+
 span.keycap,
 span.keycode,
 span.keysym,
@@ -326,7 +327,6 @@ span.interface,
 span.guilabel {
     font-weight: bold;
 }
-
 span.term
 {
       font-family: sans-serif;
@@ -342,9 +342,11 @@ pre.pl-tab {
     color: black;
     background-color: white;
 }
+/*
 img { 
   margin-left: 3.25em;
 } 
 img.noin { 
   margin-left: 0em;
-} 
+}
+*/ 
