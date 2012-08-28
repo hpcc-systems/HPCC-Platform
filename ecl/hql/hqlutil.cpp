@@ -7243,7 +7243,10 @@ extern HQL_API bool expandMissingDefaultsAsStoreds(HqlExprArray & args, IHqlExpr
                 OwnedHqlExpr nullValue = createNullExpr(formal->queryType());
                 OwnedHqlExpr storedName = createConstant(formal->queryName()->str());
                 OwnedHqlExpr stored = createValue(no_stored, makeVoidType(), storedName.getClear());
-                args.append(*createValue(no_colon, formal->getType(), LINK(nullValue), LINK(stored)));
+                HqlExprArray colonArgs;
+                colonArgs.append(*LINK(nullValue));
+                colonArgs.append(*LINK(stored));
+                args.append(*createWrapper(no_colon, formal->queryType(), colonArgs));
             }
         }
     }
