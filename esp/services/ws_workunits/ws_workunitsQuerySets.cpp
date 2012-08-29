@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "ws_workunitsService.hpp"
@@ -643,6 +642,42 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
     return true;
 }
 
+inline void verifyQueryActionAllowsWild(bool &allowWildChecked, CQuerySetQueryActionTypes action)
+{
+    if (allowWildChecked)
+        return;
+    switch (action)
+    {
+        case CQuerySetQueryActionTypes_ToggleSuspend:
+            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Wildcards not supported for toggling suspended state");
+        case CQuerySetQueryActionTypes_Activate:
+            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Wildcards not supported for Activating queries");
+    }
+    allowWildChecked=true;
+}
+
+void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset, IArrayOf<IConstQuerySetQueryActionItem> &items, CQuerySetQueryActionTypes action)
+{
+    bool allowWildChecked=false;
+    Owned<IPropertyTreeIterator> queries = queryset->getElements("Query");
+    ForEachItemIn(i, items)
+    {
+        const char *itemId = items.item(i).getQueryId();
+        if (!isWildString(itemId))
+            queryIds->setProp(itemId, (int) items.item(i).getClientState().getSuspended());
+        else
+        {
+            verifyQueryActionAllowsWild(allowWildChecked, action);
+            ForEach(*queries)
+            {
+                const char *queryId = queries->query().queryProp("@id");
+                if (queryId && WildMatch(queryId, itemId))
+                    queryIds->setProp(queryId, 0);
+            }
+        }
+    }
+}
+
 bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
@@ -654,41 +689,47 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
     if (!queryset)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySetName());
 
+    Owned<IProperties> queryIds = createProperties();
+    expandQueryActionTargetList(queryIds, queryset, req.getQueries(), req.getAction());
+
     IArrayOf<IEspQuerySetQueryActionResult> results;
-    ForEachItemIn(i, req.getQueries())
+    Owned<IPropertyIterator> it = queryIds->getIterator();
+    ForEach(*it)
     {
-        IConstQuerySetQueryActionItem& item=req.getQueries().item(i);
+        const char *id = it->getPropKey();
+        VStringBuffer xpath("Query[@id='%s']", id);
         Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
+        result->setQueryId(id);
         try
         {
-            VStringBuffer xpath("Query[@id='%s']", item.getQueryId());
-            IPropertyTree *query = queryset->queryPropTree(xpath.str());
-            if (!query)
-                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), item.getQueryId());
             switch (req.getAction())
             {
                 case CQuerySetQueryActionTypes_ToggleSuspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), !item.getClientState().getSuspended());
+                    setQuerySuspendedState(queryset, id, !queryIds->getPropBool(id));
                     break;
                 case CQuerySetQueryActionTypes_Suspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), true);
+                    setQuerySuspendedState(queryset, id, true);
                     break;
                 case CQuerySetQueryActionTypes_Unsuspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), false);
+                    setQuerySuspendedState(queryset, id, false);
                     break;
                 case CQuerySetQueryActionTypes_Activate:
-                    setQueryAlias(queryset, query->queryProp("@name"), item.getQueryId());
+                {
+                    IPropertyTree *query = queryset->queryPropTree(xpath);
+                    if (!query)
+                        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
+                    setQueryAlias(queryset, query->queryProp("@name"), id);
                     break;
+                }
                 case CQuerySetQueryActionTypes_Delete:
-                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
-                    removeNamedQuery(queryset, item.getQueryId());
+                    removeNamedQuery(queryset, id);
                     break;
                 case CQuerySetQueryActionTypes_RemoveAllAliases:
-                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
+                    removeAliasesFromNamedQuery(queryset, id);
                     break;
             }
             result->setSuccess(true);
-            query = queryset->queryPropTree(xpath.str()); // refresh
+            IPropertyTree *query = queryset->queryPropTree(xpath);
             if (query)
                 result->setSuspended(query->getPropBool("@suspended"));
         }

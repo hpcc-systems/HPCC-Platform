@@ -1,18 +1,17 @@
 /*##############################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ############################################################################## */
 
 /*global YAHOO*/
@@ -1124,7 +1123,7 @@ function createNavigationTree(navTreeData) {
         }
         var files = result.split(/;/g);
         for (var i = 0; i < files.length; i++) {
-          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration" || files[i] == "")
+          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration>" || files[i] == "")
             {
                continue;
             }
@@ -1157,7 +1156,7 @@ function createNavigationTree(navTreeData) {
                            id: "HWCopy",
                            lazyload: true,
                            itemdata: copyCompMenu,
-                           onclick: { fn: onMenuItemClick },
+                           onclick: { fn: onMenuItemClick }
                           } }
                           ],
     "Hardware": [
@@ -1205,7 +1204,7 @@ function createNavigationTree(navTreeData) {
                                   id: "SWCopy",
                                   lazyload: true,
                                   itemdata: copyCompMenu
-                                 },
+                                 }
                               }
                           ],
     "Columns": [
@@ -1408,7 +1407,7 @@ function createNavigationTree(navTreeData) {
 
 
   var handleWindowMouseDown = function(e) {
-    if (top.document.ContextMenuCenter != null)
+    if (top.document.ContextMenuCenter != null && (!YAHOO.env.ua.ie || top.document.ContextMenuCenter.itemData != undefined))
       top.document.ContextMenuCenter.clearContent();
     var tabView = top.document.RightTabView;
     if (tabView) {
@@ -2006,6 +2005,8 @@ function validateEnvironment() {
           var temp1 = temp[1].split(/<\/td>/g);
           promptValidationErrs(temp1[0]);
         }
+        else
+          alert("No issues detected.");
       }
       else {
         getWaitDlg().hide();

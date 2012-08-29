@@ -1,5 +1,5 @@
 /*##############################################################################
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
 EXPORT File := MODULE
@@ -171,7 +171,7 @@ EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring 
  * Removes a dataset of information about the logical files known to the the system.
  * 
  * @param namepattern   The mask of the files to list. Defaults to '*' (all files).
- * @param includenormal Whether to include “normal” files. Defaults to TRUE.
+ * @param includenormal Whether to include ï¿½normalï¿½ files. Defaults to TRUE.
  * @param includesuper  Whether to include SuperFiles. Defaults to FALSE.
  * @param unknownszero  Whether to set file sizes that are unknown to zero(0) instead of minus-one (-1). Defaults to FALSE.
  * @param foreigndali   The IP address of the foreign dali used to resolve the file.  If blank then the file is resolved
@@ -226,7 +226,7 @@ EXPORT varstring VerifyFile(varstring lfn, boolean usecrcs) :=
  *                      indicates the secondary is an INDEX that must use FETCH to access non-keyed fields.
  * @param secondaryfields The name of the foreign key field relating to the primary file.
  * @param relationship  The type of relationship between the primary and secondary files.
- *                      Containing either “link” or “view”.  Default is "link".
+ *                      Containing either ï¿½linkï¿½ or ï¿½viewï¿½.  Default is "link".
  * @param cardinality   The cardinality of the relationship.  The format is <primary>:<secondary>. Valid values are
  *                      "1" or "M".
  * @param payload       Indicates whether the primary or secondary are payload INDEXes.
@@ -244,7 +244,7 @@ EXPORT AddFileRelationship(varstring primary, varstring secondary, varstring pri
  * @param primaryfields The name of the primary key field for the primary file.
  * @param secondaryfields The name of the foreign key field relating to the primary file.
  * @param relationship  The type of relationship between the primary and secondary files.
- *                      Containing either “link” or “view”.  Default is "link".
+ *                      Containing either ï¿½linkï¿½ or ï¿½viewï¿½.  Default is "link".
  */
 
 EXPORT dataset(FsFileRelationshipRecord) FileRelationshipList(varstring primary, varstring secondary, varstring primflds='', varstring secondaryflds='',  varstring kind='link') :=
@@ -258,7 +258,7 @@ EXPORT dataset(FsFileRelationshipRecord) FileRelationshipList(varstring primary,
  * @param primaryfields The name of the primary key field for the primary file.
  * @param secondaryfields The name of the foreign key field relating to the primary file.
  * @param relationship  The type of relationship between the primary and secondary files.
- *                      Containing either “link” or “view”.  Default is "link".
+ *                      Containing either ï¿½linkï¿½ or ï¿½viewï¿½.  Default is "link".
  */
 
 EXPORT RemoveFileRelationship(varstring primary,  varstring secondary, varstring primaryflds='', varstring secondaryflds='',  varstring kind='link') :=

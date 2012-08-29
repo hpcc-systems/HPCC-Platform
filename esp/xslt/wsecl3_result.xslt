@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
 
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
     <xsl:output method="html"/>

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 // LDAP prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
@@ -891,6 +890,7 @@ private:
     StringBuffer         m_pwscheme;
     bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
     __int64              m_maxPwdAge;
+    time_t               m_lastPwdAgeCheck;
 
     class CLDAPMessage
     {
@@ -913,6 +913,7 @@ public:
         else
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
+        m_lastPwdAgeCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -964,12 +965,13 @@ public:
 
     virtual __int64 getMaxPwdAge()
     {
+        if ((msTick() - m_lastPwdAgeCheck) < (60*1000))
+            return m_maxPwdAge;
         char* attrs[] = {"maxPwdAge", NULL};
         CLDAPMessage searchResult;
         TIMEVAL timeOut = {LDAPTIMEOUT,0};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-
         int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
                                         attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
         if(result != LDAP_SUCCESS)
@@ -984,7 +986,7 @@ public:
             return 0;
         }
         char **values;
-        __int64 maxAge = 0;
+        m_maxPwdAge = 0;
         values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
         if (values && *values)
         {
@@ -992,12 +994,13 @@ public:
             if (*val == '-')
                 ++val;
             for (int x=0; val[x]; x++)
-                maxAge = maxAge * 10 + ( (int)val[x] - '0');
+                m_maxPwdAge = m_maxPwdAge * 10 + ( (int)val[x] - '0');
         }
         else
-            maxAge = PWD_NEVER_EXPIRES;
+            m_maxPwdAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
-        return maxAge;
+        m_lastPwdAgeCheck = msTick();
+        return m_maxPwdAge;
     }
 
     void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
@@ -1023,7 +1026,7 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            m_maxPwdAge = getMaxPwdAge();
+            getMaxPwdAge();//sets m_maxPwdAge
             if (m_maxPwdAge != PWD_NEVER_EXPIRES)
                 m_domainPwdsNeverExpire = false;
             else

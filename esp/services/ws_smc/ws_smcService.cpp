@@ -1,22 +1,23 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning (disable : 4786)
+
+#include "build-config.h"
 
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
@@ -1262,6 +1263,8 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
 
+        double version = context.getClientVersion();
+
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
         Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
 
@@ -1282,6 +1285,13 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (m_PortalURL.length() > 0)
             resp.setPortalURL(m_PortalURL.str());
+
+#ifndef USE_RESOURCE
+        if (version > 1.12)
+            resp.setUseResource(false);
+#else
+        if (version > 1.12)
+            resp.setUseResource(true);
 
         //Now, get a list of resources stored inside the ESP box
         IArrayOf<IEspHPCCResourceRepository> resourceRepositories;
@@ -1400,6 +1410,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (resourceRepositories.ordinality())
             resp.setHPCCResourceRepositories(resourceRepositories);
+#endif
     }
     catch(IException* e)
     {
@@ -1481,6 +1492,8 @@ inline const char *controlCmdMessage(int cmd)
         return "<control:lockDali/>";
     case CRoxieControlCmd_RELOAD:
         return "<control:reload/>";
+    case CRoxieControlCmd_STATE:
+        return "<control:state/>";
     default:
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
     }

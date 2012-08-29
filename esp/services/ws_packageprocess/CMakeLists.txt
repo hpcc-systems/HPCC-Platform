@@ -1,5 +1,5 @@
 ##############################################################################
-# Copyright (C) 2011 HPCC Systems.
+# HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 ##############################################################################
 
 # Component: ws_packageprocess

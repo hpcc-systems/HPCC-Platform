@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef _ESPWIZ_WsSMC_HPP__
@@ -73,9 +72,20 @@ private:
 
 class CWsSMCSoapBindingEx : public CWsSMCSoapBinding
 {
+    StringBuffer m_portalURL;
 public:
     CWsSMCSoapBindingEx(){}
-    CWsSMCSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL):CWsSMCSoapBinding(cfg, bindname, procname){}
+    CWsSMCSoapBindingEx(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL):CWsSMCSoapBinding(cfg, bindname, procname)
+    {
+        if (!procname || !*procname)
+            return;
+
+        StringBuffer xpath;
+        xpath.appendf("Software/EspProcess[@name='%s']/@portalurl", procname);
+        const char* portalURL = cfg->queryProp(xpath.str());
+        if (portalURL && *portalURL)
+            m_portalURL.append(portalURL);
+    }
 
     virtual ~CWsSMCSoapBindingEx(){}
 
@@ -96,9 +106,16 @@ public:
         IPropertyTree *folder = ensureNavFolder(data, "Clusters", NULL, NULL, false, 1);
         ensureNavLink(*folder, "Activity", "/WsSMC/Activity", "Display Activity on all target clusters in an environment", NULL, NULL, 1);
         ensureNavLink(*folder, "Scheduler", "/WsWorkunits/WUShowScheduled", "Access the ECL Scheduler to view and manage scheduled workunits or events", NULL, NULL, 2);
-
+#ifndef USE_RESOURCE
+        if (m_portalURL.length() > 0)
+        {
+            IPropertyTree *folderTools = ensureNavFolder(data, "Resources", NULL, NULL, false, 8);
+            ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "Browse a list of resources available for download, such as the ECL IDE, documentation, examples, etc. These are only available if optional packages are installed on the ESP Server.", NULL, NULL, 1);
+        }
+#else
         IPropertyTree *folderTools = ensureNavFolder(data, "Resources", NULL, NULL, false, 8);
         ensureNavLink(*folderTools, "Browse", "/WsSMC/BrowseResources", "Browse a list of resources available for download, such as the ECL IDE, documentation, examples, etc. These are only available if optional packages are installed on the ESP Server.", NULL, NULL, 1);
+#endif
     }
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll)
     {
