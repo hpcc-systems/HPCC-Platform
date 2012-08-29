@@ -1,5 +1,5 @@
 /*##############################################################################
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
 import lib_workunitservices;
@@ -41,7 +41,7 @@ EXPORT BOOLEAN WorkunitExists(varstring wuid, boolean online=true, boolean archi
  * @param fileread      the name of a file read by the workunit. This may contain wildcard ( * ? ) characters.
  * @param filewritten   the name of a file written by the workunit. This may contain wildcard ( * ? ) characters.
  * @param roxiecluster  the name of the Roxie cluster.
- * @param eclcontains   the text to search for in the workunit’s ECL code. This may contain wildcard ( * ? ) characters.
+ * @param eclcontains   the text to search for in the workunitï¿½s ECL code. This may contain wildcard ( * ? ) characters.
  * @param online        the flag specifying whether the search is performed online.
  * @param archived      the flag specifying whether the search is performed in the archives.
  */

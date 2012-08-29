@@ -1,5 +1,5 @@
 ﻿/* ******************************************************************************
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ******************************************************************************* */
 
 // Purpose: To find the number of hops between Kevin Bacon and a given actor

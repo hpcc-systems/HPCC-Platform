@@ -1,5 +1,5 @@
 /*##############################################################################
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
 IMPORT lib_unicodelib;
@@ -97,7 +97,7 @@ EXPORT UNSIGNED4 LocaleFind(unicode src, unicode sought, unsigned4 instance, var
                         2 ignores case but differentiates between accents.
                         3 differentiates between accents and case but ignores e.g. differences between Hiragana and Katakana
                         4 differentiates between accents and case and e.g. Hiragana/Katakana, but ignores e.g. Hebrew cantellation marks
-                        5 differentiates between all strings whose canonically decomposed forms (NFD—Normalization Form D) are non-identical
+                        5 differentiates between all strings whose canonically decomposed forms (NFDï¿½Normalization Form D) are non-identical
 */
  
 EXPORT UNSIGNED4 LocaleFindAtStrength(unicode src, unicode tofind, unsigned4 instance, varstring locale_name, integer1 strength) :=
@@ -192,7 +192,7 @@ EXPORT integer4 CompareIgnoreCase(unicode src1, unicode src2) :=
                         2 ignores case but differentiates between accents.
                         3 differentiates between accents and case but ignores e.g. differences between Hiragana and Katakana
                         4 differentiates between accents and case and e.g. Hiragana/Katakana, but ignores e.g. Hebrew cantellation marks
-                        5 differentiates between all strings whose canonically decomposed forms (NFD—Normalization Form D) are non-identical
+                        5 differentiates between all strings whose canonically decomposed forms (NFDï¿½Normalization Form D) are non-identical
  * @see                 Std.Uni.CompareAtStrength
 */
  
@@ -222,7 +222,7 @@ EXPORT integer4 LocaleCompareIgnoreCase(unicode src1, unicode src2, varstring lo
                         2 ignores case but differentiates between accents.
                         3 differentiates between accents and case but ignores e.g. differences between Hiragana and Katakana
                         4 differentiates between accents and case and e.g. Hiragana/Katakana, but ignores e.g. Hebrew cantellation marks
-                        5 differentiates between all strings whose canonically decomposed forms (NFD—Normalization Form D) are non-identical
+                        5 differentiates between all strings whose canonically decomposed forms (NFDï¿½Normalization Form D) are non-identical
 */
 
 EXPORT integer4 LocaleCompareAtStrength(unicode src1, unicode src2, varstring locale_name, integer1 strength) :=
