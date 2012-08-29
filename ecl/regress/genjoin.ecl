@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    Copyright (C) <2010>  <LexisNexis Risk Data Management Inc.>
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     This program is free software: you can redistribute it and/or modify
     you may not use this file except in compliance with the License.
