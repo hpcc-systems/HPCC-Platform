@@ -248,10 +248,12 @@ private:
     bool attach;
 };
 
-class EclCmdRoxieCheck : public EclCmdCommon
+//Reload and Check are almost identical for now but may diverge and
+//  need separating later
+class EclCmdRoxieCheckOrReload : public EclCmdCommon
 {
 public:
-    EclCmdRoxieCheck() : optMsToWait(10000)
+    EclCmdRoxieCheckOrReload(bool _reload) : optMsToWait(10000), reload(_reload)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -300,7 +302,7 @@ public:
         Owned<IClientRoxieControlCmdRequest> req = client->createRoxieControlCmdRequest();
         req->setWait(optMsToWait);
         req->setProcessCluster(optProcess);
-        req->setCommand(CRoxieControlCmd_STATE);
+        req->setCommand((reload) ? CRoxieControlCmd_RELOAD : CRoxieControlCmd_STATE);
 
         Owned<IClientRoxieControlCmdResponse> resp = client->RoxieControlCmd(req);
         if (resp->getExceptions().ordinality())
@@ -351,6 +353,7 @@ public:
 private:
     StringAttr optProcess;
     unsigned optMsToWait;
+    bool reload;
 };
 
 IEclCommand *createEclRoxieCommand(const char *cmdname)
@@ -362,7 +365,9 @@ IEclCommand *createEclRoxieCommand(const char *cmdname)
     if (strieq(cmdname, "detach"))
         return new EclCmdRoxieAttach(false);
     if (strieq(cmdname, "check"))
-        return new EclCmdRoxieCheck();
+        return new EclCmdRoxieCheckOrReload(false);
+    if (strieq(cmdname, "reload"))
+        return new EclCmdRoxieCheckOrReload(true);
     return NULL;
 }
 
@@ -384,6 +389,7 @@ public:
             "      attach         (re)attach a roxie cluster from dali\n"
             "      detach         detach a roxie cluster from dali\n"
             "      check          verify that roxie nodes have matching state\n"
+            "      reload         reload queries on roxie process cluster\n"
         );
     }
 };
