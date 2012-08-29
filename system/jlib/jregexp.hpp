@@ -88,6 +88,18 @@ protected:
 
 };
 
+inline bool isWildString(const char *s)
+{
+    if (s && *s) {
+        do {
+            if ('?'==*s || '*'==*s)
+                return true;
+        }
+        while (*++s);
+    }
+    return false;
+}
+
 bool jlib_decl WildMatch(const char *src, int srclen, const char *pat, int patlen,bool nocase);
 bool jlib_decl WildMatch(const char *src, const char *pat, bool nocase=false);
 bool jlib_decl WildMatchReplace(const char *src, const char *pat, const char *repl, bool nocase, StringBuffer &out);

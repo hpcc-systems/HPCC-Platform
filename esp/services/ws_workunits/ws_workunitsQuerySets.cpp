@@ -643,6 +643,42 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
     return true;
 }
 
+inline void verifyQueryActionAllowsWild(bool &allowWildChecked, CQuerySetQueryActionTypes action)
+{
+    if (allowWildChecked)
+        return;
+    switch (action)
+    {
+        case CQuerySetQueryActionTypes_ToggleSuspend:
+            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Wildcards not supported for toggling suspended state");
+        case CQuerySetQueryActionTypes_Activate:
+            throw MakeStringException(ECLWATCH_INVALID_ACTION, "Wildcards not supported for Activating queries");
+    }
+    allowWildChecked=true;
+}
+
+void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset, IArrayOf<IConstQuerySetQueryActionItem> &items, CQuerySetQueryActionTypes action)
+{
+    bool allowWildChecked=false;
+    Owned<IPropertyTreeIterator> queries = queryset->getElements("Query");
+    ForEachItemIn(i, items)
+    {
+        const char *itemId = items.item(i).getQueryId();
+        if (!isWildString(itemId))
+            queryIds->setProp(itemId, (int) items.item(i).getClientState().getSuspended());
+        else
+        {
+            verifyQueryActionAllowsWild(allowWildChecked, action);
+            ForEach(*queries)
+            {
+                const char *queryId = queries->query().queryProp("@id");
+                if (queryId && WildMatch(queryId, itemId))
+                    queryIds->setProp(queryId, 0);
+            }
+        }
+    }
+}
+
 bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
@@ -654,41 +690,47 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
     if (!queryset)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Queryset %s not found", req.getQuerySetName());
 
+    Owned<IProperties> queryIds = createProperties();
+    expandQueryActionTargetList(queryIds, queryset, req.getQueries(), req.getAction());
+
     IArrayOf<IEspQuerySetQueryActionResult> results;
-    ForEachItemIn(i, req.getQueries())
+    Owned<IPropertyIterator> it = queryIds->getIterator();
+    ForEach(*it)
     {
-        IConstQuerySetQueryActionItem& item=req.getQueries().item(i);
+        const char *id = it->getPropKey();
+        VStringBuffer xpath("Query[@id='%s']", id);
         Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
+        result->setQueryId(id);
         try
         {
-            VStringBuffer xpath("Query[@id='%s']", item.getQueryId());
-            IPropertyTree *query = queryset->queryPropTree(xpath.str());
-            if (!query)
-                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), item.getQueryId());
             switch (req.getAction())
             {
                 case CQuerySetQueryActionTypes_ToggleSuspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), !item.getClientState().getSuspended());
+                    setQuerySuspendedState(queryset, id, !queryIds->getPropBool(id));
                     break;
                 case CQuerySetQueryActionTypes_Suspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), true);
+                    setQuerySuspendedState(queryset, id, true);
                     break;
                 case CQuerySetQueryActionTypes_Unsuspend:
-                    setQuerySuspendedState(queryset, item.getQueryId(), false);
+                    setQuerySuspendedState(queryset, id, false);
                     break;
                 case CQuerySetQueryActionTypes_Activate:
-                    setQueryAlias(queryset, query->queryProp("@name"), item.getQueryId());
+                {
+                    IPropertyTree *query = queryset->queryPropTree(xpath);
+                    if (!query)
+                        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
+                    setQueryAlias(queryset, query->queryProp("@name"), id);
                     break;
+                }
                 case CQuerySetQueryActionTypes_Delete:
-                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
-                    removeNamedQuery(queryset, item.getQueryId());
+                    removeNamedQuery(queryset, id);
                     break;
                 case CQuerySetQueryActionTypes_RemoveAllAliases:
-                    removeAliasesFromNamedQuery(queryset, item.getQueryId());
+                    removeAliasesFromNamedQuery(queryset, id);
                     break;
             }
             result->setSuccess(true);
-            query = queryset->queryPropTree(xpath.str()); // refresh
+            IPropertyTree *query = queryset->queryPropTree(xpath);
             if (query)
                 result->setSuspended(query->getPropBool("@suspended"));
         }
