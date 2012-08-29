@@ -1600,6 +1600,20 @@ void EclAgent::getEventExtra(size32_t & outLen, char * & outStr, const char * ta
     rtlExtractTag(outLen, outStr, text, tag, "Event");
 }
 
+char *EclAgent::getPlatform()
+{
+    if (!isStandAloneExe)
+    {
+        const char * cluster = clusterNames.tos();
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        if (!clusterInfo)
+            throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
+        return (char*)clusterTypeString(clusterInfo->getPlatform());
+    }
+    else
+        return (char *)"standalone";
+}
+
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 
 {
     const char *val = globals->queryProp(name);

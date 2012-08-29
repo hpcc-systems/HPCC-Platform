@@ -583,7 +583,7 @@ public:
     virtual const char *queryWuid();
     virtual IDistributedFileTransaction *querySuperFileTransaction();
     virtual unsigned getPriority() const { return 0; }
-    virtual char *getPlatform() { return strdup(isStandAloneExe ? "standalone" : "hthor"); }
+    virtual char *getPlatform();
     virtual char *getEnv(const char *name, const char *defaultValue) const;
     virtual char *getOS()
     {
