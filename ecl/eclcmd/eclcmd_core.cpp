@@ -325,7 +325,7 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false), optNoReload(false), optMsToWait(10000)
+    EclCmdPublish() : optNoActivate(false), activateSet(false), optNoReload(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -349,13 +349,20 @@ public:
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
-            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+            if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
                 activateSet=true;
                 continue;
             }
             if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
                 continue;
+            bool activate; //also supports "-A-"
+            if (iter.matchFlag(activate, ECLOPT_ACTIVATE)||iter.matchFlag(activate, ECLOPT_ACTIVATE_S))
+            {
+                activateSet=true;
+                optNoActivate=!activate;
+                continue;
+            }
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -366,7 +373,11 @@ public:
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
         if (!activateSet)
-            extractEclCmdOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
+        {
+            bool activate;
+            if (extractEclCmdOption(activate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, true))
+                optNoActivate=!activate;
+        }
         if (optObj.value.isEmpty())
         {
             fprintf(stderr, "\nMust specify a WUID, ECL File, Archive, or shared object to publish\n");
@@ -407,7 +418,7 @@ public:
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
         req->setWuid(wuid.str());
-        req->setActivate(optActivate);
+        req->setActivate(!optNoActivate);
         if (optName.length())
             req->setJobName(optName.get());
         if (optTargetCluster.length())
@@ -453,7 +464,8 @@ public:
             "   -t, --target=<val>     target cluster to publish workunit to\n"
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
-            "   -A, --activate         activates query when published\n"
+            "   -A, --activate         Activate query when published (default)\n"
+            "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
@@ -463,7 +475,7 @@ private:
     StringAttr optTargetCluster;
     StringAttr optName;
     unsigned optMsToWait;
-    bool optActivate;
+    bool optNoActivate;
     bool activateSet;
     bool optNoReload;
 };
