@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
@@ -273,7 +273,7 @@
         </script>
       </head>
       <body onload="nof5();onLoad()" class="yui-skin-sam">
-        <h3><xsl:value-of select="QuerySetName"/> Queryset </h3>
+        <h3><xsl:value-of select="QuerySetName"/> Target </h3>
         <div id="QuerysetTab" class="yui-navset">
           <ul class="yui-nav">
             <li class="selected">
@@ -283,7 +283,7 @@
             </li>
             <li>
               <a href="#tab2">
-                <em>Aliases</em>
+                <em>Active</em>
               </a>
             </li>
           </ul>

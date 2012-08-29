@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!--
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
@@ -35,7 +35,7 @@
 
             </head>
             <body onload="nof5();" class="yui-skin-sam">
-                <h3>Querysets</h3>
+                <h3>Targets</h3>
         <xsl:apply-templates select="Querysets"/>
         <xsl:if test="count(Querysets)=0">
           <p>The are no Querysets available.</p>
@@ -49,7 +49,7 @@
     <table class="sort-table" id="resultsTable">
       <thead>
         <tr class="grey">
-          <th>QuerySet Name </th>
+          <th>Target Name </th>
         </tr>
       </thead>
       <tbody>
