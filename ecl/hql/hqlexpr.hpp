@@ -123,7 +123,7 @@ enum
     HEFunbound                  = 0x00000010,
     HEFinternalVirtual          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
-  HEF____unsued2____          = 0x00000080,
+  HEF____unused2____          = 0x00000080,
   HEF____unused3____          = 0x00000100,
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
