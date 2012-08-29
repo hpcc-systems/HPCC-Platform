@@ -1486,7 +1486,7 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     return true;
 }
 
-int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
+int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool box)
 {
     IProperties *parms = request->queryParameters();
 
@@ -1509,7 +1509,24 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     }
 
     context.addOptions(ESPCTX_ALL_ANNOTATION);
-    getSchema(formxml, context, request, wsinfo);
+    if (box)
+    {
+        StringBuffer xmlreq;
+        getWsEcl2XmlRequest(xmlreq, context, request, wsinfo, "xml", NULL, 0);
+        if (xmlreq.length())
+        {
+            Owned<IPropertyTree> pretty = createPTreeFromXMLString(xmlreq.str(), ipt_ordered);
+            if (pretty)
+            {
+                toXML(pretty, xmlreq.clear());
+                formxml.append("<Request>");
+                encodeUtf8XML(xmlreq, formxml);
+                formxml.append("</Request>");
+            }
+        }
+    }
+    else
+        getSchema(formxml, context, request, wsinfo);
 
     formxml.append("<CustomViews>");
     if (web)
@@ -1525,7 +1542,12 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     Owned<IXslTransform> xform = xslp->createXslTransform();
 
     StringBuffer xslfile(getCFD());
-    xform->loadXslFromFile(xslfile.append("./xslt/wsecl3_form.xsl").str());
+    if (box)
+        xslfile.append("./xslt/wsecl3_boxform.xsl");
+    else
+        xslfile.append("./xslt/wsecl3_form.xsl");
+
+    xform->loadXslFromFile(xslfile.str());
     xform->setXmlSource(formxml.str(), formxml.length()+1);
 
     // pass params to form (excluding form and __querystring)
@@ -1605,11 +1627,24 @@ void buildParametersXml(IPropertyTree *parmtree, IProperties *parms)
     DBGLOG("parmtree: %s", xml.str());
 }
 
+void appendValidInputBoxContent(StringBuffer &xml, const char *in)
+{
+    //more later
+    Owned<IPropertyTree> validAndFlat = createPTreeFromXMLString(in, ipt_ordered);
+    toXML(validAndFlat, xml, 0, 0);
+}
 
 void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
     Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
+
+    const char *boxInput = parms->queryProp("_boxFormInput");
+    if (boxInput)
+    {
+        appendValidInputBoxContent(soapmsg, boxInput);
+        return;
+    }
 
     buildParametersXml(parmtree, parms);
 
@@ -1932,6 +1967,36 @@ int CWsEclBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request,
     return getXmlTestForm(context, request, response, wsinfo, "soap");
 }
 
+bool checkWsEclFormType(StringBuffer &form, const char *value)
+{
+    if (value)
+    {
+        bool save = (strieq(value, "ecl")||strieq(value, "box"));
+        if (save || (strieq(value, "soap")||strieq(value, "json")))
+        {
+            form.set(value);
+            return save;
+        }
+    }
+    form.set("ecl");
+    return false;
+}
+
+void getWsEclFormType(CHttpRequest* request, CHttpResponse* response, StringBuffer &form)
+{
+    bool save=false;
+    if (strieq(form, "default"))
+    {
+        CEspCookie *cookie = request->queryCookie("defaultWsEclForm");
+        checkWsEclFormType(form, (cookie) ? cookie->getValue() : NULL);
+    }
+    else if (checkWsEclFormType(form, form.str()))
+    {
+        CEspCookie *cookie = request->queryCookie("defaultWsEclForm");
+        if (!cookie || !strieq(cookie->getValue(), form.str()))
+            response->addCookie(new CEspCookie("defaultWsEclForm", form));
+    }
+}
 
 int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response, const char *thepath)
 {
@@ -1946,8 +2011,11 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
     WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
+    getWsEclFormType(request, response, formtype);
     if (strieq(formtype.str(), "ecl"))
-        return getGenForm(*context, request, response, wsinfo);
+        return getGenForm(*context, request, response, wsinfo, false);
+    else if (strieq(formtype.str(), "box"))
+        return getGenForm(*context, request, response, wsinfo, true);
     else if (strieq(formtype.str(), "soap"))
         return getXmlTestForm(*context, request, response, "soap", wsinfo);
     else if (strieq(formtype.str(), "json"))
