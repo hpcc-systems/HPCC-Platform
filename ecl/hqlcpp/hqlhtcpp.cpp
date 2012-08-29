@@ -5346,32 +5346,31 @@ bool isLibraryScope(IHqlExpression * expr)
     return expr->isScope();
 }
 
-bool HqlCppTranslator::prepareToGenerate(IHqlExpression * exprlist, WorkflowArray & actions, bool isEmbeddedLibrary)
+bool HqlCppTranslator::prepareToGenerate(HqlQueryContext & query, WorkflowArray & actions, bool isEmbeddedLibrary)
 {
-    bool createLibrary = isLibraryScope(exprlist);
+    bool createLibrary = isLibraryScope(query.expr);
 
-    OwnedHqlExpr query = LINK(exprlist);
     if (createLibrary)
     {
-        if (query->getOperator() != no_funcdef)
+        if (query.expr->getOperator() != no_funcdef)
             throwError(HQLERR_LibraryMustBeFunctional);
 
         ::Release(outputLibrary);
         outputLibrary = NULL;
         outputLibraryId.setown(createAttribute(graphAtom, getSizetConstant(nextActivityId())));
-        outputLibrary = new HqlCppLibraryImplementation(*this, queryImplementationInterface(query), outputLibraryId, targetClusterType);
+        outputLibrary = new HqlCppLibraryImplementation(*this, queryImplementationInterface(query.expr), outputLibraryId, targetClusterType);
 
         if (!isEmbeddedLibrary)
         {
             SCMStringBuffer libraryName;
             wu()->getJobName(libraryName);
-            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query));
+            wu()->setLibraryInformation(libraryName.str(), outputLibrary->getInterfaceHash(), getLibraryCRC(query.expr));
         }
     }
     else
     {
         if (options.applyInstantEclTransformations)
-            query.setown(doInstantEclTransformations(query, options.applyInstantEclTransformationsLimit));
+            query.expr.setown(doInstantEclTransformations(query.expr, options.applyInstantEclTransformationsLimit));
     }
 
     if (!transformGraphForGeneration(query, actions))
@@ -5455,11 +5454,11 @@ void dumpActivityCounts()
 
 
 
-bool HqlCppTranslator::buildCode(IHqlExpression * exprlist, const char * embeddedLibraryName, bool isEmbeddedLibrary)
+bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary)
 {
     unsigned time = msTick();
     WorkflowArray workflow;
-    bool ok = prepareToGenerate(exprlist, workflow, isEmbeddedLibrary);
+    bool ok = prepareToGenerate(query, workflow, isEmbeddedLibrary);
     if (ok)
     {
         //This is done late so that pickBestEngine has decided which engine we are definitely targeting.
@@ -5525,7 +5524,7 @@ bool HqlCppTranslator::buildCode(IHqlExpression * exprlist, const char * embedde
     return ok;
 }
 
-bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, IHqlExpression * exprlist)
+bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query)
 {
     if (!internalScope)
         return false;
@@ -5541,7 +5540,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, IHqlExpression * exprli
         useInclude("eclrtl.hpp");
 
         HqlExprArray internalLibraries;
-        OwnedHqlExpr query = separateLibraries(exprlist, internalLibraries);
+        query.expr.setown(separateLibraries(query.expr, internalLibraries));
 
         //General internal libraries first, in dependency order
         ForEachItemIn(i, internalLibraries)
@@ -5555,11 +5554,13 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, IHqlExpression * exprli
             StringBuffer internalLibraryName;
             name->queryValue()->getStringValue(internalLibraryName);
             overrideOptionsForLibrary();
-            if (!buildCode(definition, internalLibraryName.str(), true))
+            HqlQueryContext libraryQuery;
+            libraryQuery.expr.set(definition);
+            if (!buildCode(libraryQuery, internalLibraryName.str(), true))
                 return false;
         }
 
-        if (isLibraryScope(exprlist))
+        if (isLibraryScope(query.expr))
             overrideOptionsForLibrary();
         else
             overrideOptionsForQuery();
@@ -5709,7 +5710,9 @@ double HqlCppTranslator::getComplexity(IHqlCppInstance & _code, IHqlExpression *
 {
     WorkflowArray workflow;
 
-    if (!prepareToGenerate(exprlist, workflow, false))
+    HqlQueryContext query;
+    query.expr.set(exprlist);
+    if (!prepareToGenerate(query, workflow, false))
         return 0;
 
     return getComplexity(workflow);

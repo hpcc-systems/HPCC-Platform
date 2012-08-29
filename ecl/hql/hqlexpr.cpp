@@ -2948,7 +2948,8 @@ extern HQL_API IHqlExpression * normalizeListCasts(IHqlExpression * expr)
     case no_cast:
     case no_implicitcast:
         {
-            OwnedHqlExpr normalized = normalizeListCasts(expr->queryChild(0));
+            IHqlExpression * arg = expr->queryChild(0);
+            OwnedHqlExpr normalized = normalizeListCasts(arg);
             OwnedHqlExpr ret = ensureExprType(normalized, expr->queryType());
             if (ret == expr->queryBody())
                 return LINK(expr);
@@ -3186,6 +3187,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         infoFlags |= HEFonFailDependent;
         break;
     case no_variable:
+    case no_quoted:
         infoFlags2 &= ~(HEF2constant);
         break;
     case no_xmltext:
@@ -4464,20 +4466,36 @@ CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeI
 
 CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeInfo *_type, ...)
 {
-    va_list args;
-    va_start(args, _type);
-    HqlExprArray operands;
+    unsigned numArgs = 0;
+    va_list argscount;
+    va_start(argscount, _type);
     for (;;)
     {
-        IHqlExpression *parm = va_arg(args, IHqlExpression *);
+        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
         if (!parm)
             break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
-        operands.append(*parm);
+        numArgs++;
     }
-    va_end(args);
+    va_end(argscount);
+
+    HqlExprArray operands;
+    if (numArgs)
+    {
+        va_list args;
+        va_start(args, _type);
+        operands.ensure(numArgs);
+        for (;;)
+        {
+            IHqlExpression *parm = va_arg(args, IHqlExpression *);
+            if (!parm)
+                break;
+#ifdef _DEBUG
+            assertex(QUERYINTERFACE(parm, IHqlExpression));
+#endif
+            operands.append(*parm);
+        }
+        va_end(args);
+    }
     return makeExpression(_op, _type, operands);
 }
 
@@ -7142,14 +7160,13 @@ IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath)
     return new CFileContents(file, sourcePath);
 }
 
-class CFileContentsSubset : public CInterface, implements IFileContents
+class CFileContentsSubset : public CInterfaceOf<IFileContents>
 {
 public:
     CFileContentsSubset(IFileContents * _contents, size32_t _offset, size32_t _len)
         : contents(_contents), offset(_offset), len(_len)
     {
     }
-    IMPLEMENT_IINTERFACE
 
     virtual IFile * queryFile() { return contents->queryFile(); }
     virtual ISourcePath * querySourcePath() { return contents->querySourcePath(); }
@@ -13649,14 +13666,6 @@ extern HQL_API void unlockTransformMutex()
 }
 
 //==============================================================================================================
-
-struct SavedValue : public CInterface, public IInterface
-{
-    SavedValue(unsigned _value) { value = _value; }
-    IMPLEMENT_IINTERFACE;
-
-    unsigned value;
-};
 
 unsigned getExpressionCRC(IHqlExpression * expr)
 {
