@@ -52,16 +52,17 @@ require([
 
         //  Implementation  ---
         _initControls: function () {
-            var first = true;
-            var context = this;
             this.selectControl = registry.byId(this.id + "SampleSelect");
             this.selectControl.maxHeight = 480;
+        },
+
+        load: function () {
+            var sampleStore = new dojo.data.ItemFileReadStore({
+                url: "ecl/ECLPlaygroundSamples.json"
+            });
+            this.selectControl.setStore(sampleStore);
+            var context = this;
             this.selectControl.onChange = function () {
-                if (first) {
-                    first = false;
-                    context.selectControl.set("value", "default.ecl");
-                    return;
-                }
                 var filename = this.getValue();
                 xhr.get({
                     url: "ecl/" + filename,
@@ -73,13 +74,7 @@ require([
                     }
                 });
             };
-        },
-
-        load: function () {
-            var sampleStore = new dojo.data.ItemFileReadStore({
-                url: "ecl/ECLPlaygroundSamples.json"
-            });
-            this.selectControl.setStore(sampleStore);
+            this.selectControl.set("value", "default.ecl");
         },
 
         onNewSelection: function (eclText) {
