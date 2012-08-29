@@ -396,6 +396,41 @@ function createNavigationTree(navTreeData) {
         );
 
     top.document.navDT = navDT;
+
+    top.document.navDT.expandRecord = function(id) {
+        var recSet = top.document.navDT.getRecordSet();
+
+      if (typeof (id) === 'undefined') {
+        var tdEl = top.document.navDT.getFirstTdEl(recSet.getRecord(0));
+        var children = Dom.getChildren(tdEl);
+        if (Dom.hasClass(children[0].children[0].children[0], 'yui-button')) {
+          children[0].children[0].children[0].click();
+          return;
+        }
+      }
+
+      var recSetLen = recSet.getLength();
+      for (var i = 0; i < recSetLen; i++) {
+        var r = recSet.getRecord(i);
+        if (r.getData('id') === id) {
+          if (r.getData('parent') != -1)
+            top.document.navDT.expandRecord(r.getData('parent'));
+          var tdEl = top.document.navDT.getFirstTdEl(r);
+          var children = Dom.getChildren(tdEl);
+          if (Dom.hasClass(children[0].children[0].children[0], 'yui-button') &&
+                Dom.hasClass(children[0].children[0].children[0], 'buttoncollapsed')) {
+            children[0].children[0].children[0].click();
+            break;
+          }
+          else {
+            top.document.navDT.unselectAllRows();
+            top.document.navDT.selectRow(r);
+            break;
+          }
+        }
+        }
+      }
+
     navDT.ds = navDS;
   navDT.navTreeData = navTreeData;
   navDT.subscribe("rowMouseoverEvent", navDT.onEventHighlightRow);
@@ -492,6 +527,28 @@ function createNavigationTree(navTreeData) {
     }
 
     top.document.stopWait();
+
+    var lastCounter2 = 0;
+
+    if (top.document.navDT.doJumpToChoice == true)
+    {
+      for (counter = top.document.navDT.choice.length-1; counter >= 0; counter--)
+      {
+        for (counter2 = lastCounter2; true; counter2++)
+        {
+          if (top.document.navDT.getRecord(counter2).getData('CompType') == top.document.navDT.choice[counter] ||
+              top.document.navDT.getRecord(counter2).getData('BuildSet') == top.document.navDT.choice[counter])
+          {
+             top.document.navDT.expandRecord(counter2);
+             lastCounter2 = counter2;
+             break;
+          }
+        }
+      }
+
+      window.scrollTo(0, document.body.scrollHeight);
+      top.document.navDT.doJumpToChoice = false;
+    }
   });
 
   var clickFn = function(oArgs) {
@@ -689,6 +746,24 @@ function createNavigationTree(navTreeData) {
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
         success: function(o) {
           if (o.status === 200) {
+            top.document.navDT.choice = new Array();
+            top.document.navDT.choice[0] = top.document.navDT.getRecordIndex(top.document.navDT.getSelectedRows()[0]);
+
+            var recDepth = top.document.navDT.getRecord(top.document.navDT.choice[0])._oData.depth;
+            var index = 0;
+
+            for (counter = top.document.navDT.choice[0]; counter >= 0; counter--)
+            {
+              if (top.document.navDT.getRecord(counter)._oData.depth < recDepth)
+              {
+                top.document.navDT.choice[index] = top.document.navDT.getRecord(counter).getData('CompType');
+                recDepth = top.document.navDT.getRecord(counter)._oData.depth;
+                index++;
+               }
+             }
+
+            top.document.navDT.doJumpToChoice = true;
+
             if (o.responseText.indexOf("<?xml") === 0) {
               var form = document.forms['treeForm'];
               var status = o.responseText.split(/<Status>/g);
@@ -738,10 +813,11 @@ function createNavigationTree(navTreeData) {
               form.isChanged.value = "true";
               var temp = o.responseText.split(/<CompName>/g);
               var temp1 = temp[1].split(/<\/CompName>/g);
-              top.document.lastSelectedRow = temp1[0];
+              top.document.lastSelectRow = top.document.navDT.getRecord(top.document.navDT.getRecordIndex(top.document.navDT.getSelectedRows()[0])).getData('CompType');
               getWaitDlg().hide();
               navDS.flushCache();
-              refreshNavTree(navDS, navDT)
+              refreshNavTree(navDS, navDT);
+
             }
             else if (o.responseText.indexOf("<html") === 0) {
               var temp = o.responseText.split(/td align=\"left\">/g);
@@ -776,7 +852,7 @@ function createNavigationTree(navTreeData) {
               top.document.lastSelectedRow = temp1[0];
               getWaitDlg().hide();
               navDS.flushCache();
-              refreshNavTree(navDS, navDT)
+              refreshNavTree(navDS, navDT);
             }
             else if (o.responseText.indexOf("<html") === 0) {
               var temp = o.responseText.split(/td align=\"left\">/g);
