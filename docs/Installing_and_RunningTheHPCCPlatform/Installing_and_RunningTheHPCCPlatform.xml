@@ -728,8 +728,8 @@
             HPCC (High Performance Computing Cluster) from other technologies
             in its ability to provide flexible data analysis on a massive
             scale.</para>
-          </footnote> code using either ECL IDE the command line ECL compiler,
-        or the ECLPlus tool.</para>
+          </footnote> code using either ECL IDE, the command line ECL
+        compiler, or the ECL Command line tool.</para>
 
         <sect3>
           <title>Install the ECL IDE and HPCC Client Tools</title>
@@ -814,9 +814,9 @@
           which may not be running the same operating system as the machine
           you are working on.</para>
 
-          <para>In this section we will use the <emphasis role="bold">command
-          line interface</emphasis> to the compiler to compile and run ECL
-          code locally.</para>
+          <para>In this section we will use the <emphasis role="bold">ECL
+          Command line interface</emphasis> to the compiler to compile and run
+          ECL code locally.</para>
 
           <para>The ECL compiler (eclcc) installs on to the eclcc server node
           when a package is installed. :This should be in your path, so you
@@ -866,22 +866,23 @@
         </sect3>
 
         <sect3>
-          <title>Running remotely using ECLPlus</title>
+          <title>Running remotely using ECL Command Line</title>
 
-          <para>The <emphasis role="bold">ECLPlus</emphasis> application
-          accepts command line parameters to send directly to an ECL execution
-          engine. You can use eclplus to control the creation and execution of
-          larger ECL jobs which target a remote system. To compile jobs on a
-          remote system, eclcc is used to create an archive of the ECL code to
-          be compiled, and eclplus is used to submit it to a queue for
-          compilation by the remote compiler server (eclccserver).</para>
+          <para>The <emphasis role="bold">ECL Command Line Interface (CLI)
+          </emphasis>application accepts command line parameters to send
+          directly to an ECL execution engine. You can use this utility to
+          control the creation and execution of larger ECL jobs which target a
+          remote system. To compile jobs on a remote system, eclcc is used to
+          create an archive of the ECL code to be compiled, and the ecl CLI is
+          used to submit it to a target cluster for compilation by the remote
+          compiler server (eclccserver).</para>
 
-          <para>To submit a job to the queue using ECL Plus, make sure the
-          HPCC has been started and use the following syntax: <programlisting>eclplus @hello.ecl cluster=hthor server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
+          <para>To submit a job using the ecl CLI, make sure the HPCC has been
+          started and use the following syntax: <programlisting>ecl run  @hello.ecl target=hthor server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
 
           <para>or</para>
 
-          <para><programlisting>eclplus @hello.ecl cluster=hthor server=.</programlisting></para>
+          <para><programlisting>ecl run @hello.ecl target=hthor server=.</programlisting></para>
 
           <para>Where "." indicates the IP of the current box.</para>
 
@@ -889,29 +890,28 @@
               <para>A Workunit is a record of a task submitted to an HPCC. It
               contains an identifier--workunit ID, the ECL code, results, and
               other information about the job.</para>
-            </footnote> ID, status, and result are shown at the command
+            </footnote> ID, status, and result are returned to the command
           line.</para>
 
           <para>View the full details of the workunit using the ECL Watch
           interface for your HPCC at this location
           http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is the IP of your
-          node. Either search for the workunit using the workunit ID or select
-          ECL Workunits/Browse and find your workunit in the list
+          ESP server node. Either search for the workunit using the workunit
+          ID or select ECL Workunits/Browse and find your workunit in the list
           provided.</para>
 
-          <para>Setting up an <emphasis role="bold">eclplus.ini</emphasis>
-          file makes running a workunit a little easier when you want to use
-          the same settings every time you submit a workunit in this way. See
-          the <emphasis>HPCC Client Tools </emphasis>manual for
-          details.</para>
+          <para>Setting up an <emphasis role="bold">ecl.ini</emphasis> file
+          makes running a workunit a little easier when you want to use the
+          same settings every time you submit a workunit in this way. See the
+          <emphasis>HPCC Client Tools </emphasis>manual for details.</para>
 
           <para>If your ECL is more complex than a single source file, you can
           use the eclcc compiler locally to create an archive to be sent to
           the eclccServer:</para>
 
-          <para><programlisting>eclcc hello.ecl -E | eclplus @ cluster=thor server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
+          <para><programlisting>eclcc hello.ecl -E | ecl run @ target=thor server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
 
-          <para>The cluster parameter must name a valid target cluster name as
+          <para>The target parameter must name a valid target cluster name as
           listed in your environment's topology section.</para>
         </sect3>
 
