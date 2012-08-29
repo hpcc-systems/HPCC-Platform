@@ -42,6 +42,11 @@ if (APPLE)
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
         endif ()
 
+        string(REPLACE ".110.0.dylib" ".dylib" dylib_110_path "${dylib_path}")
+        if (NOT "${dylib_110_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_110_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
         install(PROGRAMS "${dylib_path}" DESTINATION "${OSSDIR}/lib2")
         install(CODE "
             file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/bin/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib2/*.dylib\")
