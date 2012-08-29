@@ -34,9 +34,9 @@ define([
 		workunit: null,
 		paneNum: 0,
 		resultsSheetID: "",
-		resultSheet: {},
-		sequenceResultStoreMap: [],
-		sequenceResultGridMap: [],
+		dataGridSheet: {},
+		resultIdStoreMap: [],
+		resultIdGridMap: [],
 		delayLoad: [],
 
 		//  Callbacks
@@ -47,11 +47,11 @@ define([
 		constructor: function (args) {
 			declare.safeMixin(this, args);
 
-			this.resultSheet = registry.byId(this.resultsSheetID);
+			this.dataGridSheet = registry.byId(this.resultsSheetID);
 			var context = this;
-			this.resultSheet.watch("selectedChildWidget", function (name, oval, nval) {
+			this.dataGridSheet.watch("selectedChildWidget", function (name, oval, nval) {
 				if (nval.id in context.delayLoad) {
-					var result = context.workunit.results[context.delayLoad[nval.id].resultIndex];
+					var result = context.delayLoad[nval.id].result;
 					if (!result.isComplete()) {
 						context.delayLoad[nval.id].loadingMessage = context.getLoadingMessage();
 					}
@@ -65,11 +65,11 @@ define([
 
 		clear: function () {
 			this.delayLoad = [];
-			this.sequenceResultStoreMap = [];
-			this.sequenceResultGridMap = [];
-			var tabs = this.resultSheet.getChildren();
+			this.resultIdStoreMap = [];
+			this.resultIdGridMap = [];
+			var tabs = this.dataGridSheet.getChildren();
 			for (var i = 0; i < tabs.length; ++i) {
-				this.resultSheet.removeChild(tabs[i]);
+				this.dataGridSheet.removeChild(tabs[i]);
 			}
 		},
 
@@ -90,15 +90,14 @@ define([
 					padding: 0
 				}
 			});
-			this.resultSheet.addChild(pane);
+			this.dataGridSheet.addChild(pane);
 			return pane;
 		},
 
-		addResultTab: function (resultIndex) {
-			var result = this.workunit.results[resultIndex];
+		addResultTab: function (result) {
 			var paneID = this.getNextPaneID();
 			var grid = EnhancedGrid({
-				resultIndex: resultIndex,
+				result: result,
 				store: result.getObjectStore(),
 				query: { id: "*" },
 				structure: result.getStructure(),
@@ -106,7 +105,6 @@ define([
 					return false;
 				},
 				plugins: {
-					//					nestedSorting: true,
 					pagination: {
 						pageSizes: [25, 50, 100, "All"],
 						defaultPageSize: 50,
@@ -120,8 +118,8 @@ define([
 				}
 			});
 			this.delayLoad[paneID] = grid;
-			this.sequenceResultStoreMap[result.Sequence] = result.store;
-			this.sequenceResultGridMap[result.Sequence] = grid;
+			this.resultIdStoreMap[result.getID()] = result.store;
+			this.resultIdGridMap[result.getID()] = grid;
 			return this.addTab(result.getName(), paneID);
 		},
 
@@ -134,19 +132,29 @@ define([
 			this.addResultsTab(this.workunit.results);
 		},
 
+		refreshSourceFiles: function (wu) {
+			if (this.workunit != wu) {
+				this.clear();
+				this.workunit = wu;
+			}
+			this.addResultsTab(this.workunit.sourceFiles);
+		},
+
 		addResultsTab: function (results) {
 			for (var i = 0; i < results.length; ++i) {
 				var result = results[i];
-				if (result.Sequence in this.sequenceResultStoreMap) {
-					this.sequenceResultStoreMap[result.Sequence].isComplete = result.isComplete();
+				if (result.getID() in this.resultIdStoreMap) {
+					this.resultIdStoreMap[result.getID()].isComplete = result.isComplete();
 				} else {
-					pane = this.addResultTab(i);
-					if (this.sequence && this.sequence == result.Sequence) {
-						this.resultSheet.selectChild(pane);
-					}
+					pane = this.addResultTab(result);
+					if (this.sequence != null && this.sequence == result.getID()) {
+						this.dataGridSheet.selectChild(pane);
+					} else if (this.name != null && this.name == result.getID()) {
+						this.dataGridSheet.selectChild(pane);
+					} 
 				}
 				if (!result.isComplete()) {
-					this.sequenceResultGridMap[result.Sequence].showMessage(this.getLoadingMessage());
+					this.resultIdGridMap[result.getID()].showMessage(this.getLoadingMessage());
 				}
 			}
 		},

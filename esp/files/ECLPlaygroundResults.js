@@ -28,6 +28,7 @@ define([
     var initUi = function () {
         var wuid = "";
         var sequence = "";
+        var showSourceFiles = false;
 
         var urlWuid = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
         if (urlWuid) {
@@ -35,11 +36,16 @@ define([
         }
         var urlSequence = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Sequence"];
         if (urlSequence) {
-            sequence = urlSequence;
+                sequence = urlSequence;
+        }
+
+        var urlShowSourceFiles = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["SourceFiles"];
+        if (urlShowSourceFiles) {
+                showSourceFiles = urlShowSourceFiles;
         }
 
         var results = registry.byId("appLayout");
-        results.init(wuid, sequence);
+        results.init(wuid, sequence, showSourceFiles);
     },
 
 	startLoading = function (targetNode) {

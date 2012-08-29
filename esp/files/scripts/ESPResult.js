@@ -16,24 +16,40 @@
 ############################################################################## */
 define([
 	"dojo/_base/declare",
+	"dojo/_base/Deferred",
 	"dojo/data/ObjectStore",
 	"hpcc/WsWorkunits",
 	"hpcc/ESPBase"
-], function (declare, ObjectStore, WsWorkunits, ESPBase) {
+], function (declare, Deferred, ObjectStore, WsWorkunits, ESPBase) {
 	return declare(ESPBase, {
 		store: null,
 		Total: "-1",
 
 		constructor: function (args) {
 			declare.safeMixin(this, args);
-			this.store = new WsWorkunits.WUResult({
-				wuid: this.wuid,
-				sequence: this.Sequence,
-				isComplete: this.isComplete()
-			});
+			if (this.Sequence != null) {
+				this.store = new WsWorkunits.WUResult({
+					wuid: this.wuid,
+					sequence: this.Sequence,
+					isComplete: this.isComplete()
+				});
+			} else {
+				this.store = new WsWorkunits.WUResult({
+					wuid: this.wuid,
+					name: this.Name,
+					isComplete: true
+				});
+			}
 		},
 
 		getName: function () {
+			return this.Name;
+		},
+
+		getID: function () {
+			if (this.Sequence != null) {
+				return this.Sequence;
+			}
 			return this.Name;
 		},
 
@@ -48,11 +64,32 @@ define([
 				field: this.store.idProperty,
 				width: "40px"
 			});
-			for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
-				retVal.push({
-					name: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
-					field: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
-					width: this.extractWidth(this.ECLSchemas.ECLSchemaItem[i].ColumnType, this.ECLSchemas.ECLSchemaItem[i].ColumnName)
+			if (this.ECLSchemas) {
+				for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
+					retVal.push({
+						name: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
+						field: this.ECLSchemas.ECLSchemaItem[i].ColumnName,
+						width: this.extractWidth(this.ECLSchemas.ECLSchemaItem[i].ColumnType, this.ECLSchemas.ECLSchemaItem[i].ColumnName)
+					});
+				}
+			} else {
+				var context = this;
+				Deferred.when(this.store.query("*", {
+					start: 0,
+					count: 1,
+					sync: true
+				}), function (rows) {
+					if (rows.length) {
+						for (var key in rows[0]) {
+							if (key != "myInjectedRowNum") {
+								retVal.push({
+									name: key,
+									field: key,
+									width: context.extractWidth("string12", key)
+								});
+							}
+						}
+					}
 				});
 			}
 			return retVal;

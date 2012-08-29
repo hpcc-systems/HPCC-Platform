@@ -81,15 +81,7 @@ require([
             });
         },
 
-        clear: function () {
-            this.resultsControl.clear();
-        },
-
-        refresh: function (wu) {
-            this.resultsControl.refresh(wu);
-        },
-
-        init: function (wuid, sequence) {
+        init: function (wuid, sequence, showSourceFiles) {
             if (wuid) {
                 this.wu = new ESPWorkunit({
                     wuid: wuid
@@ -98,14 +90,34 @@ require([
                 var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
-                        context.wu.getInfo({
-                            onGetResults: function (results) {
-                                context.refresh(context.wu);
-                            }
-                        });
+                        if (showSourceFiles) {
+                            context.wu.getInfo({
+                                onGetSourceFiles: function (sourceFiles) {
+                                    context.refreshSourceFiles(context.wu);
+                                }
+                            });
+                        } else {
+                            context.wu.getInfo({
+                                onGetResults: function (results) {
+                                    context.refresh(context.wu);
+                                }
+                            });
+                        }
                     }
                 });
             }
+        },
+
+        clear: function () {
+            this.resultsControl.clear();
+        },
+
+        refresh: function (wu) {
+            this.resultsControl.refresh(wu);
+        },
+
+        refreshSourceFiles: function (wu) {
+            this.resultsControl.refreshSourceFiles(wu);
         }
     });
 });
