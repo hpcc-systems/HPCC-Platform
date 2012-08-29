@@ -104,7 +104,8 @@ public class HPCCResultSet implements ResultSet
             {
                 boolean avoidindex = false;
 
-                String queryfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName());
+                //Currently, query table is always 0th index.
+                String queryfilename = HPCCJDBCUtils.handleQuotedString(parser.getTableName(0));
                 if (!dbMetadata.tableExists("", queryfilename))
                     throw new Exception("Invalid table found: " + queryfilename);
 
@@ -163,17 +164,12 @@ public class HPCCResultSet implements ResultSet
                     }
                     if (indexToUseMap.get(queryfilename) == null && dfufile.hasRelatedIndexes() && !avoidindex)
                     {
-                        tmpindexname = findAppropriateIndex(dfufile.getRelatedIndexesList(), expectedretcolumns, /*
-                                                                                                                  * queryfilename
-                                                                                                                  * ,
-                                                                                                                  */
-                                parser);
+                        tmpindexname = findAppropriateIndex(dfufile.getRelatedIndexesList(), expectedretcolumns, parser);
                         indexToUseMap.put(queryfilename, tmpindexname);
                     }
                     // If an appropriate index was found, cache it.
                     if (tmpindexname != null)
                         ((HPCCPreparedStatement) statement).setIndexToUse(queryfilename, tmpindexname);
-
                 }
                 // columns are base 1 indexed
                 resultMetadata = new HPCCResultSetMetadata(expectedretcolumns, queryfilename);
@@ -256,21 +252,15 @@ public class HPCCResultSet implements ResultSet
         return findAppropriateIndex(indexhint, expectedretcolumns, parser);
     }
 
-    public String findAppropriateIndex(List<String> relindexes, List<HPCCColumnMetaData> expectedretcolumns,
-            SQLParser parser)
+    public String findAppropriateIndex(List<String> relindexes, List<HPCCColumnMetaData> expectedretcolumns, SQLParser parser)
     {
         String indextouse = null;
-        String[] sqlqueryparamnames = parser.getWhereClauseNames();
+        String[] sqlqueryparamnames = parser.getWhereClauseColumnNames();
+        if (sqlqueryparamnames.length <= 0)
+            return indextouse;
+
         int totalparamcount = parser.getWhereClauseExpressionsCount();
-        int indexscore[][] = new int[relindexes.size()][INDEXSCORECRITERIA/*
-                                                                           * [
-                                                                           * FieldsInIndexCount
-                                                                           * ][
-                                                                           * LeftMostKeyIndex
-                                                                           * ][
-                                                                           * ColsKeyedcount
-                                                                           * ]
-                                                                           */];
+        int indexscore[][] = new int[relindexes.size()][INDEXSCORECRITERIA /*[ FieldsInIndexCount ][LeftMostKeyIndex][ColsKeyedcount]*/];
         int highscore = Integer.MIN_VALUE;
         boolean payloadIdxWithAtLeast1KeyedFieldFound = false;
         for (int indexcounter = 0; indexcounter < relindexes.size(); indexcounter++)

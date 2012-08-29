@@ -4,6 +4,12 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 
+import com.hpccsystems.jdbcdriver.SQLExpression.ExpressionType;
+
+/**
+ * @author rpastrana
+ *
+ */
 public class SQLParser
 {
     public final static short        SQL_TYPE_UNKNOWN     = -1;
@@ -11,17 +17,18 @@ public class SQLParser
     public final static short        SQL_TYPE_SELECTCONST = 2;
     public final static short        SQL_TYPE_CALL        = 3;
 
-    private SQLTable                 queryTable;
+    private List<SQLTable>           sqlTables;
     private int                      sqlType;
-    private List<HPCCColumnMetaData> selectColumns;
+    private LinkedList<HPCCColumnMetaData> selectColumns;
     private SQLWhereClause           whereClause;
     private SQLJoinClause            joinClause;
-    private String[]                 columnGroupByNames;
-    private String[]                 columnOrderByNames;
+    private SQLFragment[]            groupByFragments;
+    private SQLFragment[]            orderByFragments;
     private String[]                 procInParamValues;
     private String                   storedProcName;
     private int                      limit;
     private boolean                  columnsVerified;
+    private boolean                  selectColsContainWildcard = false;
     private String                   indexHint;
 
     public void process(String insql) throws SQLException
@@ -29,8 +36,8 @@ public class SQLParser
         System.out.println("INCOMING SQL: " + insql);
         columnsVerified = false;
         limit = -1;
-        queryTable = null;
-        selectColumns = new ArrayList<HPCCColumnMetaData>();
+        sqlTables = new ArrayList<SQLTable>();
+        selectColumns = new LinkedList<HPCCColumnMetaData>();
         whereClause = new SQLWhereClause();
         joinClause = null;
         procInParamValues = new String[0];
@@ -171,7 +178,8 @@ public class SQLParser
             {
                 StringTokenizer tokenizer = new StringTokenizer(orderByToken, ",");
 
-                columnOrderByNames = new String[tokenizer.countTokens()];
+                orderByFragments = new SQLFragment[tokenizer.countTokens()];
+
                 int i = 0;
                 while (tokenizer.hasMoreTokens())
                 {
@@ -188,18 +196,25 @@ public class SQLParser
                         orderbyascending = orderbycolumn.contains("ASC");
                         orderbycolumn = orderbycolumn.substring(0, dirPos).trim();
                     }
-                    columnOrderByNames[i++] = (orderbyascending == true ? "" : "-") + orderbycolumn;
+
+                    SQLFragment frag = new SQLFragment(orderbycolumn);
+
+                    if (!orderbyascending)
+                        frag.setValue("-"+frag.getValue());
+
+                    orderByFragments[i++] = frag;
                 }
             }
 
             if (groupByToken.length() > 0)
             {
                 StringTokenizer tokenizer = new StringTokenizer(groupByToken, ",");
-                columnGroupByNames = new String[tokenizer.countTokens()];
+                groupByFragments = new SQLFragment[tokenizer.countTokens()];
                 int i = 0;
+
                 while (tokenizer.hasMoreTokens())
                 {
-                    columnGroupByNames[i++] = tokenizer.nextToken().trim();
+                    groupByFragments[i++] = new SQLFragment(tokenizer.nextToken().trim());;
                 }
             }
 
@@ -223,6 +238,7 @@ public class SQLParser
                 fullTableName = insql.substring(fromstrpos + 6);
             }
 
+            SQLTable queryTable;
             String splittablefromalias[] = fullTableName.trim().split("\\s+(?i)as(\\s+|$)");
             if (splittablefromalias.length == 1)
             {
@@ -241,6 +257,8 @@ public class SQLParser
             else
                 throw new SQLException("Invalid SQL: " + fullTableName);
 
+            sqlTables.add(queryTable);
+
             if (fromstrpos <= 7)
                 throw new SQLException("Invalid SQL: Missing select column(s).");
 
@@ -251,6 +269,9 @@ public class SQLParser
                 HPCCColumnMetaData colmetadata = null;
                 String colassplit[] = comatokens.nextToken().split("\\s+(?i)as\\s+");
                 String col = colassplit[0].trim();
+
+                if (!selectColsContainWildcard && col.contains("*"))
+                    selectColsContainWildcard = true;
 
                 if (col.contains("("))
                 {
@@ -321,87 +342,18 @@ public class SQLParser
             if (wherePos != -1)
             {
                 String strWhere = insql.substring(wherePos + 7);
-                String splitedwhereands[] = strWhere.split(" and | AND |,");
-
-                for (int i = 0; i < splitedwhereands.length; i++)
-                {
-                    String splitedwhereandors[] = splitedwhereands[i].split(" or | OR ");
-
-                    SQLExpressionFragment andoperator = new SQLExpressionFragment("AND");
-
-                    for (int y = 0; y < splitedwhereandors.length; y++)
-                    {
-                        SQLExpressionFragment exp = new SQLExpressionFragment(
-                                SQLExpressionFragment.LOGICAL_EXPRESSION_TYPE);
-                        SQLExpressionFragment orperator = new SQLExpressionFragment("OR");
-
-                        String trimmedExpression = splitedwhereandors[y].trim();
-                        String operator = null;
-
-                        // order matters here!
-                        if (trimmedExpression.indexOf(SQLOperator.gte) != -1)
-                            operator = SQLOperator.gte;
-                        else if (trimmedExpression.indexOf(SQLOperator.lte) != -1)
-                            operator = SQLOperator.lte;
-                        else if (trimmedExpression.indexOf(SQLOperator.neq) != -1)
-                            operator = SQLOperator.neq;
-                        else if (trimmedExpression.indexOf(SQLOperator.neq2) != -1)
-                            operator = SQLOperator.neq2;
-                        else if (trimmedExpression.indexOf(SQLOperator.eq) != -1)
-                            operator = SQLOperator.eq;
-                        else if (trimmedExpression.indexOf(SQLOperator.gt) != -1)
-                            operator = SQLOperator.gt;
-                        else if (trimmedExpression.indexOf(SQLOperator.lt) != -1)
-                            operator = SQLOperator.lt;
-                        else
-                            throw new SQLException("Invalid logical operator found: " + trimmedExpression);
-
-                        String splitedsqlexp[] = splitedwhereandors[y].trim().split(operator);
-
-                        if (splitedsqlexp.length <= 1) // something went wrong, only the operator was found?
-                            throw new SQLException("Invalid SQL Where clause found around: " + splitedwhereandors[y]);
-
-                        exp.setPrefix(splitedsqlexp[0]);
-                        if (exp.getPrefixParent().length() > 0
-                                && (!exp.getPrefixParent().equals(queryTable.getName()) && !exp.getPrefixParent()
-                                        .equals(queryTable.getAlias())))
-                            throw new SQLException("Invalid field found: " + splitedsqlexp[0]);
-
-                        exp.setOperator(operator);
-                        if (!exp.isOperatorValid())
-                            throw new SQLException("Error: Invalid operator found: ");
-
-                        if (splitedsqlexp.length > 1)
-                            exp.setPostfix(splitedsqlexp[1].trim());
-
-                        if (exp.getPostfixParent().length() > 0
-                                && (!exp.getPrefixParent().equals(queryTable.getName()) && !exp.getPrefixParent()
-                                        .equals(queryTable.getAlias())))
-                            throw new SQLException("Invalid field found: " + splitedsqlexp[1]);
-
-                        whereClause.addExpression(exp);
-
-                        if (y < splitedwhereandors.length - 1)
-                            whereClause.addExpression(orperator);
-                    }
-
-                    if (i < splitedwhereands.length - 1)
-                        whereClause.addExpression(andoperator);
-                }
+                whereClause.parseWhereClause(strWhere);
 
                 insqlupcase = insqlupcase.substring(0, wherePos);
             }
 
             if (joinPos != -1)
             {
-                joinClause = new SQLJoinClause();
-                joinClause.setSourceTable(queryTable);
-
                 int inJoinPos = insqlupcase.lastIndexOf(" INNER JOIN ");
 
                 if (inJoinPos != -1)
                 {
-                    joinClause.parseClause(insql.substring(inJoinPos, insqlupcase.length()));
+                    parseJoinClause(insql.substring(inJoinPos, insqlupcase.length()));
                 }
                 else
                 {
@@ -409,14 +361,22 @@ public class SQLParser
 
                     if (outJoinPos != -1)
                     {
-                        joinClause.parseClause(insql.substring(outJoinPos, insqlupcase.length()));
+                        parseJoinClause((insql.substring(outJoinPos, insqlupcase.length())));
                     }
                     else
                     {
-                        joinClause.parseClause(insql.substring(joinPos, insqlupcase.length()));
+                        parseJoinClause((insql.substring(joinPos, insqlupcase.length())));
                     }
                 }
-                System.out.println(joinClause.toString());
+            }
+
+            try
+            {
+                whereClause.updateFragmentColumnsParent(sqlTables);
+            }
+            catch (Exception e)
+            {
+                throw new SQLException(e.getMessage());
             }
         }
         else
@@ -475,62 +435,53 @@ public class SQLParser
 
             selectColumns.add(colmetadata);
         }
-
         return true;
     }
 
-    public boolean columnsHasWildcard()
+    public void parseJoinClause(String joinOnClause) throws SQLException
     {
-        Iterator<HPCCColumnMetaData> it = selectColumns.iterator();
-        while (it.hasNext())
+        if (joinOnClause.length() > 0)
         {
-            if (it.next().getColumnName().contains("*"))
-                return true;
+            joinClause = new SQLJoinClause();
+
+            joinClause.parse(joinOnClause);
+            sqlTables.add(joinClause.getJoinTable());
         }
-        return false;
+        else
+            throw new SQLException("Error: parsing 'Join' clause.");
+
+        try
+        {
+            joinClause.updateFragments(sqlTables);
+        }
+        catch (Exception e)
+        {
+            throw new SQLException("Invalid field found in Where clause.");
+        }
     }
 
     public int orderByCount()
     {
-        return columnOrderByNames == null ? 0 : columnOrderByNames.length;
+        return orderByFragments == null ? 0 : orderByFragments.length;
     }
 
     public boolean hasOrderByColumns()
     {
-        return columnOrderByNames != null && columnOrderByNames.length > 0 ? true : false;
-    }
-
-    public int groupByCount()
-    {
-        return columnGroupByNames == null ? 0 : columnGroupByNames.length;
-    }
-
-    public String getOrderByColumn(int index)
-    {
-
-        return (columnOrderByNames == null || index < 0 || index >= columnOrderByNames.length) ? ""
-                : columnOrderByNames[index];
+        return orderByFragments != null && orderByFragments.length > 0 ? true : false;
     }
 
     public String getOrderByString()
     {
-        StringBuilder tmp = new StringBuilder("");
-        for (int i = 0; i < columnOrderByNames.length; i++)
-        {
-            tmp.append(columnOrderByNames[i]);
-            if (i != columnOrderByNames.length - 1)
-                tmp.append(',');
-        }
-        return tmp.toString();
+        return getOrderByString(',');
     }
 
     public String getOrderByString(char delimiter)
     {
         StringBuilder tmp = new StringBuilder("");
-        for (int i = 0; i < columnOrderByNames.length; i++)
+        for (int i = 0; i < orderByFragments.length; i++)
         {
-            tmp.append(columnOrderByNames[i]);
-            if (i != columnOrderByNames.length - 1)
+            tmp.append(orderByFragments[i].getValue());
+            if (i != orderByFragments.length - 1)
                 tmp.append(delimiter);
         }
         return tmp.toString();
@@ -538,38 +489,24 @@ public class SQLParser
 
     public String getGroupByString()
     {
-        StringBuilder tmp = new StringBuilder("");
-        for (int i = 0; i < columnGroupByNames.length; i++)
-        {
-            tmp.append(columnGroupByNames[i]);
-            if (i != columnGroupByNames.length - 1)
-                tmp.append(',');
-        }
-        return tmp.toString();
+        return getGroupByString(',');
     }
 
     public String getGroupByString(char delimiter)
     {
         StringBuilder tmp = new StringBuilder("");
-        for (int i = 0; i < columnGroupByNames.length; i++)
+        for (int i = 0; i < groupByFragments.length; i++)
         {
-            tmp.append(columnGroupByNames[i]);
-            if (i != columnGroupByNames.length - 1)
+            tmp.append(groupByFragments[i].getValue());
+            if (i != groupByFragments.length - 1)
                 tmp.append(delimiter);
         }
         return tmp.toString();
     }
 
-    public String getGroupByColumn(int index)
-    {
-
-        return (columnGroupByNames == null || index < 0 || index >= columnGroupByNames.length) ? ""
-                : columnGroupByNames[index];
-    }
-
     public boolean hasGroupByColumns()
     {
-        return columnGroupByNames != null && columnGroupByNames.length > 0 ? true : false;
+        return groupByFragments != null && groupByFragments.length > 0 ? true : false;
     }
 
     public boolean hasLimitBy()
@@ -587,9 +524,9 @@ public class SQLParser
         return storedProcName;
     }
 
-    public String getTableAlias()
+    public String getTableAlias(int index)
     {
-        return queryTable.getAlias();
+        return sqlTables.get(index).getAlias();
     }
 
     public int getSqlType()
@@ -602,9 +539,9 @@ public class SQLParser
         return limit;
     }
 
-    public String getTableName()
+    public String getTableName(int index)
     {
-        return queryTable.getName();
+        return sqlTables.get(index).getName();
     }
 
     public String[] getColumnNames()
@@ -623,26 +560,38 @@ public class SQLParser
         {
             if (whereClause != null && whereClause.getExpressionsCount() > 0)
             {
-                Iterator<SQLExpressionFragment> expressionit = whereClause.getExpressions();
+                Iterator<SQLExpression> expressionit = whereClause.getExpressions();
                 int paramIndex = 0;
                 while (expressionit.hasNext())
                 {
-                    SQLExpressionFragment exp = expressionit.next();
-                    if (exp.isParametrized())
+                    SQLExpression exp = expressionit.next();
+                    if (exp.getExpressionType() == ExpressionType.LOGICAL_EXPRESSION_TYPE)
                     {
-                        String value = (String) inParameters.get(new Integer(++paramIndex));
-                        if (value == null)
-                            throw new SQLException("Could not bound parametrized expression(" + exp + ") to parameter");
-                        exp.setPostfix(value);
+                        if (exp.isPrefixParametrized())
+                        {
+                            String value = (String) inParameters.get(new Integer(++paramIndex));
+                            if (value == null)
+                                throw new SQLException("Could not bound parametrized expression(" + exp + ") to parameter");
+                            exp.setPrefix(value);
+                        }
+
+                        if (exp.isPostfixParametrized())
+                        {
+                            String value = (String) inParameters.get(new Integer(++paramIndex));
+                            if (value == null)
+                                throw new SQLException("Could not bound parametrized expression(" + exp + ") to parameter");
+                            exp.setPostfix(value);
+                        }
                     }
                 }
             }
-            else if (procInParamValues.length > 0)
+
+            if (procInParamValues.length > 0)
             {
                 int paramindex = 0;
                 for (int columindex = 0; columindex < procInParamValues.length; columindex++)
                 {
-                    if (isParametrized(procInParamValues[columindex]))
+                    if (HPCCJDBCUtils.isParameterizedStr(procInParamValues[columindex]))
                     {
                         String value = (String) inParameters.get(new Integer(++paramindex));
                         if (value == null)
@@ -654,34 +603,34 @@ public class SQLParser
         }
     }
 
-    boolean isParametrized(String param)
-    {
-        return (param.contains("${") || param.equals("?"));
-    }
-
     public int getWhereClauseExpressionsCount()
     {
         return whereClause.getExpressionsCount();
     }
 
-    public String[] getWhereClauseNames()
+    public String[] getWhereClauseColumnNames()
     {
-        return whereClause.getExpressionNames();
+        return whereClause.getExpressionColumnNames();
     }
 
-    public String[] getUniqueWhereClauseNames()
+    public String[] getUniqueWhereClauseColumnNames()
     {
-        return whereClause.getUniqueExpressionNames();
+        return whereClause.getUniqueExpressionColumnNames();
     }
 
-    public SQLExpressionFragment getExpressionFromName(String name)
+    public SQLExpression getExpressionFromColumnName(String name)
     {
-        return whereClause.getExpressionFromName(name);
+        return whereClause.getExpressionFromColumndName(name);
     }
 
     public boolean whereClauseContainsKey(String name)
     {
         return whereClause.containsKey(name);
+    }
+
+    public String getWhereClauseStringTranslateSource(HashMap<String, String> map)
+    {
+        return whereClause.toStringTranslateSource(map);
     }
 
     public String getWhereClauseString()
@@ -704,26 +653,46 @@ public class SQLParser
         return selectColumns;
     }
 
-    public void expandWildCardColumn(HashMap<String, HPCCColumnMetaData> allFields)
+    private void expandWildCardColumn(HashMap<String, HPCCColumnMetaData> allFields) throws Exception
     {
-        Iterator<HPCCColumnMetaData> it = selectColumns.iterator();
-
-        // for loop iterator b/c we need the index for each column.
-        for (int i = 0; it.hasNext(); i++)
+        for (int i = 0; i < selectColumns.size(); i++)
         {
-            if (it.next().getColumnName().equals("*"))
+            String curColName = selectColumns.get(i).getColumnName();
+            if (curColName.contains("*"))
             {
-                // fine for now, we do need to address at some point
-                System.out.println("Expanding wildcard, select columns order might be altered");
-                selectColumns.remove(i);
+                String nameSplit [] = curColName.split("\\.");
 
-                Iterator<Entry<String, HPCCColumnMetaData>> availablefields = allFields.entrySet().iterator();
-                while (availablefields.hasNext())
+                if (nameSplit.length <= 0 || nameSplit.length >= 3)
                 {
-                    HPCCColumnMetaData element = (HPCCColumnMetaData) availablefields.next().getValue();
-                    selectColumns.add(element);
+                    throw new Exception("Invalid column found: " + curColName);
                 }
-                break;
+                else
+                {
+                    String tableName = "";
+
+                    if (nameSplit.length == 2)
+                    {
+                        tableName = searchForPossibleTableName(nameSplit[0]);
+
+                        if (!nameSplit[1].equals("*"))
+                            throw new Exception("Invalid column found: " + curColName);
+                    }
+                    else if (!nameSplit[0].equals("*"))
+                            throw new Exception("Invalid column found: " + curColName);
+
+                    selectColumns.remove(i);
+
+                    Iterator<Entry<String, HPCCColumnMetaData>> availablefields = allFields.entrySet().iterator();
+                    while (availablefields.hasNext())
+                    {
+                        HPCCColumnMetaData element = (HPCCColumnMetaData) availablefields.next().getValue();
+                        if (tableName.equals("") || tableName.equals(element.getTableName()) )
+                        {
+                            selectColumns.add(i,element);
+                            availablefields.remove();
+                        }
+                    }
+                }
             }
         }
     }
@@ -743,26 +712,31 @@ public class SQLParser
             verifyAndProcessAllColumn(selectColumns.get(i), availableCols);
         }
 
-        if (columnsHasWildcard())
+        if (selectColsContainWildcard)
             expandWildCardColumn(availableCols);
 
         columnsVerified = true;
     }
 
-    public void verifyAndProcessAllColumn(HPCCColumnMetaData column, HashMap<String, HPCCColumnMetaData> availableCols)
-            throws Exception
+    public void verifyAndProcessAllColumn(HPCCColumnMetaData column, HashMap<String, HPCCColumnMetaData> availableCols)  throws Exception
     {
         String fieldName = column.getColumnName();
-        String tableName = queryTable.getName();
+        //Currently, query table is always 0th index.
+        //This will be the default table name.
+        String tableName = sqlTables.get(0).getName();
 
         String colsplit[] = fieldName.split("\\.");
 
         if (colsplit.length == 2)
         {
-            tableName = searchForPossibleTableName(colsplit[0]);
-
-            if (tableName.equals(""))
+            try
+            {
+                tableName = searchForPossibleTableName(colsplit[0]);
+            }
+            catch (Exception e)
+            {
                 throw new Exception("Invalid column found: " + fieldName);
+            }
 
             fieldName = colsplit[1];
         }
@@ -812,19 +786,20 @@ public class SQLParser
         }
     }
 
-    /*
-     * Returns table name if the tablename or alias match Otherwise return empty string
-     */
-    private String searchForPossibleTableName(String searchname)
+    /**
+    * Returns table name if the tablename or alias match Otherwise
+    * Throw Exception
+    */
+    private String searchForPossibleTableName(String searchname) throws Exception
     {
-        if (searchname.equals(queryTable.getAlias()) || searchname.equals(queryTable.getName()))
-            return queryTable.getName();
-        else if (hasJoinClause()
-                && (searchname.equals(joinClause.getJoinTableName()) || searchname.equals(joinClause
-                        .getJoinTableAlias())))
-            return joinClause.getJoinTableName();
-        else
-            return "";
+        for (int i = 0; i < sqlTables.size(); i++)
+        {
+            SQLTable currTable = sqlTables.get(i);
+            if (searchname.equals(currTable.getAlias()) || searchname.equals(currTable.getName()))
+                return currTable.getName();
+        }
+
+        throw new Exception("Invalid column found");
     }
 
     public String getIndexHint()
