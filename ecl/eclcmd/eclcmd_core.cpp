@@ -645,6 +645,22 @@ private:
     bool optNoRoot;
 };
 
+void outputQueryActionResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *act, const char *qs)
+{
+    ForEachItemIn(i, results)
+    {
+        IConstQuerySetQueryActionResult &item = results.item(i);
+        const char *id = item.getQueryId();
+        if (item.getSuccess())
+            fprintf(stdout, "\n%s %s/%s\n", act, qs, id ? id : "");
+        else if (item.getCode()|| item.getMessage())
+        {
+            const char *msg = item.getMessage();
+            fprintf(stderr, "Query %s Error (%d) %s\n", id ? id : "", item.getCode(), msg ? msg : "");
+        }
+    }
+}
+
 class EclCmdActivate : public EclCmdWithQueryTarget
 {
 public:
@@ -677,13 +693,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-        {
-            IConstQuerySetQueryActionResult &item = results.item(0);
-            if (item.getSuccess())
-                fprintf(stdout, "\nActivated %s/%s\n", optQuerySet.sget(), optQuery.sget());
-            else if (item.getCode()|| item.getMessage())
-                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
-        }
+            outputQueryActionResults(results, "Activated", optQuerySet.sget());
         return 0;
     }
     virtual void usage()
@@ -735,13 +745,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-        {
-            IConstQuerySetQueryActionResult &item = results.item(0);
-            if (item.getSuccess())
-                fprintf(stdout, "\nUnpublished %s/%s\n", optQuerySet.sget(), optQuery.sget());
-            else if (item.getCode()|| item.getMessage())
-                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
-        }
+            outputQueryActionResults(results, "Unpublished", optQuerySet.sget());
         return 0;
     }
     virtual void usage()
