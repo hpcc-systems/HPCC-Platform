@@ -11,18 +11,6 @@ public class SQLTable
         this.alias = name;
     }
 
-    public SQLTable(String name, String alias)
-    {
-        this.name = name;
-        this.alias = alias;
-    }
-
-    public SQLTable(String name, String alias, DFUFile dfufile)
-    {
-        this.name = name;
-        this.alias = alias;
-    }
-
     public String getName()
     {
         return name;
