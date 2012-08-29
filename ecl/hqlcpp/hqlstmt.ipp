@@ -37,12 +37,11 @@ typedef UnsignedShortArray DefinitionHashArray;
 class HqlStmts;
 class PeepHoleOptimizer;
 
-class HqlStmt : public IHqlStmt, public CInterface
+class HqlStmt : public CInterfaceOf<IHqlStmt>
 {
 public:
     HqlStmt(StmtKind _kind, HqlStmts * _container);
-    IMPLEMENT_IINTERFACE
-
+    
     virtual StmtKind                getStmt();
     virtual StringBuffer &          getTextExtra(StringBuffer & out);
     virtual bool                    isIncluded() const;
@@ -81,9 +80,9 @@ protected:
 #pragma warning( disable : 4275 ) // hope this warning not significant! (may get link errors I guess)
 #endif
 
-typedef CIArrayOf<HqlStmt> HqlStmtArray;
+typedef IArrayOf<HqlStmt> HqlStmtArray;
 
-class HQLCPP_API HqlStmts : public CIArrayOf<HqlStmt>
+class HQLCPP_API HqlStmts : public IArrayOf<HqlStmt>
 {
     friend class BuildCtx;
     friend class PeepHoleOptimizer;

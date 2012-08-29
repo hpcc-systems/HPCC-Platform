@@ -171,6 +171,8 @@ public:
     Linked<IPropertyTree> archive;
     Linked<IErrorReceiver> errs;
     Linked<IWorkUnit> wu;
+    Owned<IEclRepository> dataServer;  // A member which can be cleared after parsing the query
+    OwnedHqlExpr query;  // parsed query - cleared when generating to free memory
     StringAttr eclVersion;
     const char * outputFilename;
     FILE * errout;
@@ -224,11 +226,11 @@ protected:
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
     ICppCompiler * createCompiler(const char * coreName);
     void generateOutput(EclCompileInstance & instance);
-    void instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
+    void instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     bool isWithinPath(const char * sourcePathname, const char * searchPath);
     void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
     void outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml);
-    void processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
+    void processSingleQuery(EclCompileInstance & instance,
                                IFileContents * queryContents,
                                const char * queryAttributePath);
     void processXmlFile(EclCompileInstance & instance, const char *archiveXML);
@@ -555,11 +557,10 @@ void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
 
 //=========================================================================================
 
-void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpression * query, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
+void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
 {
-    OwnedHqlExpr qquery = LINK(query);
     StringBuffer processName(outputFile);
-    if (qquery && containsAnyActions(qquery))
+    if (instance.query && containsAnyActions(instance.query))
     {
         try
         {
@@ -570,17 +571,20 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, IHqlExpress
             {
                 Owned<IHqlExprDllGenerator> generator = createDllGenerator(errs, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, NULL, false);
 
-                setWorkunitHash(wu, qquery);
+                setWorkunitHash(wu, instance.query);
                 if (!optShared)
                     wu->setDebugValueInt("standAloneExe", 1, true);
                 EclGenerateTarget target = optWorkUnit ? EclGenerateNone : (optNoCompile ? EclGenerateCpp : optShared ? EclGenerateDll : EclGenerateExe);
                 if (optManifestFilename)
                     generator->addManifest(optManifestFilename);
                 if (instance.srcArchive)
+                {
                     generator->addManifestFromArchive(instance.srcArchive);
+                    instance.srcArchive.clear();
+                }
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
-                bool generateOk = generator->processQuery(qquery, target);
+                bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
                 if (generateOk && !optNoCompile)
                 {
                     Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
@@ -759,13 +763,12 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
 }
 
 
-void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * dataServer,
+void EclCC::processSingleQuery(EclCompileInstance & instance,
                                IFileContents * queryContents,
                                const char * queryAttributePath)
 {
     Owned<IErrorReceiver> wuErrs = new WorkUnitErrorReceiver(instance.wu, "eclcc");
     Owned<IErrorReceiver> errs = createCompoundErrorReceiver(instance.errs, wuErrs);
-    Linked<IEclRepository> repository = dataServer;
 
     //All dlls/exes are essentially cloneable because you may be running multiple instances at once
     //The only exception would be a dll created for a one-time query.  (Currently handled by eclserver.)
@@ -777,17 +780,15 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         instance.wu->setDebugValue("targetCompiler", compilerTypeText[optTargetCompiler], true);
 
     bool withinRepository = (queryAttributePath && *queryAttributePath);
-    Owned<IHqlScope> scope;
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
     size32_t prevErrs = errs->errCount();
     unsigned startTime = msTick();
-    OwnedHqlExpr qquery;
     const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
-        HqlParseContext parseCtx(repository, instance.archive);
+        HqlParseContext parseCtx(instance.dataServer, instance.archive);
         if (optGenerateMeta || optIncludeMeta)
         {
             HqlParseContext::MetaOptions options;
@@ -807,7 +808,6 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             instance.archive->setPropBool("@legacyMode", instance.legacyMode);
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
-        scope.setown(createPrivateScope());
 
         try
         {
@@ -821,8 +821,8 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                     instance.archive->setProp("Query/@attributePath", queryAttributePath);
                 }
 
-                qquery.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
-                if (!qquery && !syntaxChecking && (errs->errCount() == prevErrs))
+                instance.query.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
+                if (!instance.query && !syntaxChecking && (errs->errCount() == prevErrs))
                 {
                     StringBuffer msg;
                     msg.append("Could not resolve attribute ").append(queryAttributePath);
@@ -831,10 +831,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
             }
             else
             {
+                Owned<IHqlScope> scope = createPrivateScope();
                 if (instance.legacyMode)
                     importRootModulesToScope(scope, ctx);
 
-                qquery.setown(parseQuery(scope, queryContents, ctx, NULL, true));
+                instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, true));
 
                 if (instance.archive)
                 {
@@ -848,10 +849,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
                 }
             }
 
-            gatherWarnings(ctx.errs, qquery);
+            gatherWarnings(ctx.errs, instance.query);
 
-            if (qquery && !syntaxChecking && !optGenerateMeta)
-                qquery.setown(convertAttributeToQuery(qquery, ctx));
+            if (instance.query && !syntaxChecking && !optGenerateMeta)
+                instance.query.setown(convertAttributeToQuery(instance.query, ctx));
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
                 instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
@@ -868,7 +869,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
         }
     }
 
-    if (!syntaxChecking && (errs->errCount() == prevErrs) && (!qquery || !containsAnyActions(qquery)))
+    //Free up the repository (and any cached expressions) as soon as the expression has been parsed
+    instance.dataServer.clear();
+
+    if (!syntaxChecking && (errs->errCount() == prevErrs) && (!instance.query || !containsAnyActions(instance.query)))
     {
         errs->reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
         return;
@@ -901,7 +905,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
     }
 
     if (errs->errCount() == prevErrs)
-        instantECL(instance, instance.wu, qquery, scope->queryFullName(), errs, targetFilename);
+    {
+        const char * queryFullName = NULL;
+        instantECL(instance, instance.wu, queryFullName, errs, targetFilename);
+    }
     else 
     {
         if (stdIoHandle(targetFilename) == -1)
@@ -923,9 +930,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance, IEclRepository * d
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
 {
-    Owned<IPropertyTree> archiveTree = createPTreeFromXMLString(archiveXML, ipt_caseInsensitive);
+    instance.srcArchive.setown(createPTreeFromXMLString(archiveXML, ipt_caseInsensitive));
 
-    instance.srcArchive.set(archiveTree);
+    IPropertyTree * archiveTree = instance.srcArchive;
     Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Option");
     ForEach(*iter) 
     {
@@ -960,15 +967,17 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     else
         archiveCollection.setown(createArchiveEclCollection(archiveTree));
 
-    Owned<IEclRepository> archiveServer = createRepository(archiveCollection);
+    EclRepositoryArray repositories;
+    repositories.append(*LINK(pluginsRepository));
+
+    Owned<IFileContents> contents;
+    StringBuffer fullPath; // Here so it doesn't get freed when leaving the else block
+
     if (queryText || queryAttributePath)
     {
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
-        Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), archiveServer.get(), NULL);
-
         Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
-        Owned<IFileContents> contents = createFileContentsFromText(queryText, sourcePath);
-        processSingleQuery(instance, dataServer, contents, queryAttributePath);
+        contents.setown(createFileContentsFromText(queryText, sourcePath));
     }
     else
     {
@@ -980,15 +989,22 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
             throw MakeStringException(1, "No query found in xml");
 
         instance.wu->setDebugValueInt("syntaxCheck", true, true);
-        StringBuffer fullPath;
         fullPath.append(syntaxCheckModule).append('.').append(syntaxCheckAttribute);
+        queryAttributePath = fullPath.str();
 
         //Create a repository with just that attribute, and place it before the archive in the resolution order.
         Owned<IFileContents> contents = createFileContentsFromText(queryText, NULL);
-        Owned<IEclRepository> syntaxCheckRepository = createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents);
-        Owned<IEclRepository> dataServer = createCompoundRepositoryF(pluginsRepository.get(), syntaxCheckRepository.get(), archiveServer.get(), NULL);
-        processSingleQuery(instance, dataServer, NULL, fullPath.str());
+        repositories.append(*createSingleDefinitionEclRepository(syntaxCheckModule, syntaxCheckAttribute, contents));
     }
+
+    repositories.append(*createRepository(archiveCollection));
+    instance.dataServer.setown(createCompoundRepository(repositories));
+
+    //Ensure classes are not linked by anything else
+    archiveCollection.clear();
+    repositories.kill();
+
+    processSingleQuery(instance, contents, queryAttributePath);
 }
 
 
@@ -1068,8 +1084,9 @@ void EclCC::processFile(EclCompileInstance & instance)
 
         repositories.append(*LINK(includeRepository));
 
-        Owned<IEclRepository> searchRepository = createCompoundRepository(repositories);
-        processSingleQuery(instance, searchRepository, queryText, attributePath.str());
+        instance.dataServer.setown(createCompoundRepository(repositories));
+        repositories.kill();
+        processSingleQuery(instance, queryText, attributePath.str());
     }
 
     if (instance.reportErrorSummary() && !instance.archive)
@@ -1202,8 +1219,8 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
-    Owned<IEclRepository> searchRepository = createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL);
-    processSingleQuery(instance, searchRepository, NULL, queryAttributePath);
+    instance.dataServer.setown(createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL));
+    processSingleQuery(instance, NULL, queryAttributePath);
 
     if (instance.reportErrorSummary())
         return;
