@@ -55,6 +55,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_NORELOAD "--no-reload"
 
+#define ECLOPT_NO_ACTIVATE "--no-activate"
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
