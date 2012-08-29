@@ -54,27 +54,51 @@
       </head>
       <body class="yui-skin-sam" onload="nof5();onLoad()">
         <form id="HPCCResourceForm" name="HPCCResourceForm" >
-          <xsl:choose>
-            <xsl:when test="not(HPCCResourceRepositories/HPCCResourceRepository[1])">
-              <br/><br/>No resource found from your installation.<br/><br/>
-              <xsl:if test="string-length(PortalURL)">
-                <br/>You may visit <a href="{PortalURL}" target="_blank">
-                  <xsl:value-of select="PortalURL"/>
-                </a> for resources.
-              </xsl:if>
-            </xsl:when>
-            <xsl:otherwise>
-              <br/>
-              <b>Click a link below to download a version from your installation.
-              <xsl:if test="string-length(PortalURL)">
-                <br/>You may visit <a href="{PortalURL}" target="_blank">
-                <xsl:value-of select="PortalURL"/>
-                </a> for other versions.
-              </xsl:if>
-              </b><br/><br/>
-              <xsl:apply-templates/>
-            </xsl:otherwise>
-          </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="UseResource = 0">
+                    <xsl:choose>
+                        <xsl:when test="string-length(PortalURL)">
+                            Please visit <a href="{PortalURL}" target="_blank">
+                              <xsl:value-of select="PortalURL"/>
+                            </a> for resources.
+                        </xsl:when>
+                        <xsl:otherwise>
+                            No web link is configured for downloading resources.
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:choose>
+                        <xsl:when test="not(HPCCResourceRepositories/HPCCResourceRepository[1])">
+                            <br/><br/>No resource found from your installation.<br/><br/>
+                            <xsl:choose>
+                                <xsl:when test="string-length(PortalURL)">
+                                <br/>You may visit <a href="{PortalURL}" target="_blank">
+                                    <xsl:value-of select="PortalURL"/>
+                                </a> for resources.
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    No web link is configured for downloading resource.
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <br/>
+                            <b>
+                                Click a link below to download a version from your installation.
+                                <xsl:if test="string-length(PortalURL)">
+                                    <br/>You may visit <a href="{PortalURL}" target="_blank">
+                                        <xsl:value-of select="PortalURL"/>
+                                    </a> for other versions.
+                                </xsl:if>
+                            </b>
+                            <br/>
+                            <br/>
+                            <xsl:apply-templates/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:otherwise>
+            </xsl:choose>
         </form>
       </body>
     </html>

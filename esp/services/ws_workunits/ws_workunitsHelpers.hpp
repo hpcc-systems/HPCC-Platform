@@ -144,20 +144,20 @@ public:
     void getCommon(IEspECLWorkunit &info, unsigned flags);
     void getInfo(IEspECLWorkunit &info, unsigned flags);
 
-    bool getResults(IEspECLWorkunit &info, unsigned flags);
-    bool getVariables(IEspECLWorkunit &info, unsigned flags);
-    bool getDebugValues(IEspECLWorkunit &info, unsigned flags);
+    void getResults(IEspECLWorkunit &info, unsigned flags);
+    void getVariables(IEspECLWorkunit &info, unsigned flags);
+    void getDebugValues(IEspECLWorkunit &info, unsigned flags);
     bool getClusterInfo(IEspECLWorkunit &info, unsigned flags);
-    bool getApplicationValues(IEspECLWorkunit &info, unsigned flags);
+    void getApplicationValues(IEspECLWorkunit &info, unsigned flags);
     void getExceptions(IEspECLWorkunit &info, unsigned flags);
-    bool getSourceFiles(IEspECLWorkunit &info, unsigned flags);
-    bool getTimers(IEspECLWorkunit &info, unsigned flags);
-    bool getHelpers(IEspECLWorkunit &info, unsigned flags);
-    bool getGraphInfo(IEspECLWorkunit &info, unsigned flags);
+    void getSourceFiles(IEspECLWorkunit &info, unsigned flags);
+    void getTimers(IEspECLWorkunit &info, unsigned flags);
+    void getHelpers(IEspECLWorkunit &info, unsigned flags);
+    void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
 
     void getRoxieCluster(IEspECLWorkunit &info, unsigned flags);
-    bool getWorkflow(IEspECLWorkunit &info, unsigned flags);
+    void getWorkflow(IEspECLWorkunit &info, unsigned flags);
 
     void getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers);
     void getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuperFile, StringArray& fileNames);

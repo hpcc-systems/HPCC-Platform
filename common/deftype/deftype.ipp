@@ -77,6 +77,17 @@ public:
     virtual type_t getHashKind() const          { return getTypeCode(); };
     virtual unsigned getHash() const;
     virtual bool equals(const CTypeInfo & other) const;
+
+    virtual bool isNumeric();
+    virtual bool isString();
+    virtual bool isSimpleString();
+    virtual bool isUnicode();
+    virtual bool isText();
+    virtual bool isNonAscii();
+    virtual bool isDataset();
+    virtual bool isPattern();
+    virtual bool isSingleValued();
+    virtual bool hasOrder();
 };
 
 class CHashedTypeInfo : public CTypeInfo

@@ -1124,7 +1124,7 @@ function createNavigationTree(navTreeData) {
         }
         var files = result.split(/;/g);
         for (var i = 0; i < files.length; i++) {
-          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration" || files[i] == "")
+          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration>" || files[i] == "")
             {
                continue;
             }
@@ -1157,7 +1157,7 @@ function createNavigationTree(navTreeData) {
                            id: "HWCopy",
                            lazyload: true,
                            itemdata: copyCompMenu,
-                           onclick: { fn: onMenuItemClick },
+                           onclick: { fn: onMenuItemClick }
                           } }
                           ],
     "Hardware": [
@@ -1205,7 +1205,7 @@ function createNavigationTree(navTreeData) {
                                   id: "SWCopy",
                                   lazyload: true,
                                   itemdata: copyCompMenu
-                                 },
+                                 }
                               }
                           ],
     "Columns": [
@@ -1408,7 +1408,7 @@ function createNavigationTree(navTreeData) {
 
 
   var handleWindowMouseDown = function(e) {
-    if (top.document.ContextMenuCenter != null)
+    if (top.document.ContextMenuCenter != null && (!YAHOO.env.ua.ie || top.document.ContextMenuCenter.itemData != undefined))
       top.document.ContextMenuCenter.clearContent();
     var tabView = top.document.RightTabView;
     if (tabView) {
@@ -2006,6 +2006,8 @@ function validateEnvironment() {
           var temp1 = temp[1].split(/<\/td>/g);
           promptValidationErrs(temp1[0]);
         }
+        else
+          alert("No issues detected.");
       }
       else {
         getWaitDlg().hide();
