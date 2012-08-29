@@ -909,7 +909,7 @@
           use the eclcc compiler locally to create an archive to be sent to
           the eclccServer:</para>
 
-          <para><programlisting>eclcc hello.ecl -E | ecl run @ target=thor server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
+          <para><programlisting>eclcc hello.ecl -E | ecl run target=thor server=&lt;IP Address of the ESP&gt;:8010</programlisting></para>
 
           <para>The target parameter must name a valid target cluster name as
           listed in your environment's topology section.</para>
