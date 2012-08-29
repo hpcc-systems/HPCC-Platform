@@ -878,11 +878,11 @@
           compiler server (eclccserver).</para>
 
           <para>To submit a job using the ecl CLI, make sure the HPCC has been
-          started and use the following syntax: <programlisting>ecl run  @hello.ecl target=hthor server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
+          started and use the following syntax: <programlisting>ecl run  hello.ecl target=hthor server=&lt;IP Address of the ESP node&gt;:8010</programlisting></para>
 
           <para>or</para>
 
-          <para><programlisting>ecl run @hello.ecl target=hthor server=.</programlisting></para>
+          <para><programlisting>ecl run hello.ecl target=hthor server=.</programlisting></para>
 
           <para>Where "." indicates the IP of the current box.</para>
 
