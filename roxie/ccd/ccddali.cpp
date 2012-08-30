@@ -310,19 +310,12 @@ public:
         return ret.getClear();
     }
 
-    static const char *getPackageSetPath(StringBuffer &buf, const char *id)
+    virtual IPropertyTree *getPackageSets()
     {
-        buf.appendf("PackageSets/PackageSet[@id='%s']", id);
-        return buf.str();
-    }
-
-    virtual IPropertyTree *getPackageSet(const char *id)
-    {
-        Owned<IPropertyTree> ret = loadDaliTree("PackageSets/PackageSet", id);
+        Owned<IPropertyTree> ret = loadDaliTree("PackageSets", NULL);
         if (!ret)
         {
-            ret.setown(createPTree("PackageSet"));
-            ret->setProp("@id", id);
+            ret.setown(createPTree("PackageSets"));
         }
         return ret.getClear();
     }
@@ -514,10 +507,10 @@ public:
         return getSubscription(id, getQuerySetPath(xpath, id), notifier);
     }
 
-    virtual IDaliPackageWatcher *getPackageSetSubscription(const char *id, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getPackageSetsSubscription(ISDSSubscription *notifier)
     {
         StringBuffer xpath;
-        return getSubscription(id, getPackageSetPath(xpath, id), notifier);
+        return getSubscription("PackageSets", "PackageSets", notifier);
     }
 
     virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier)

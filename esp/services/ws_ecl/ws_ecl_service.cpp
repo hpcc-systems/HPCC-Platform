@@ -272,7 +272,7 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
-    ensureNavDynFolder(data, "QuerySets", "QuerySets", "root=true", NULL);
+    ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
 
 IPropertyTree * getQueryRegistries()
@@ -293,15 +293,13 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
-    Owned<IPropertyTree> qstree = getQueryRegistries();
-    Owned<IPropertyTreeIterator> querysets = qstree->getElements("QuerySet");
+    Owned<IStringIterator> targets = getTargetClusters(NULL, NULL);
 
-    ForEach(*querysets)
+    SCMStringBuffer target;
+    ForEach(*targets)
     {
-        IPropertyTree &qs = querysets->query();
-        const char *name=qs.queryProp("@id");
-        VStringBuffer parms("queryset=%s", name);
-        ensureNavDynFolder(data, name, name, parms.str(), NULL);
+        VStringBuffer parms("queryset=%s", targets->str(target).str());
+        ensureNavDynFolder(data, target.str(), target.str(), parms.str(), NULL);
     }
 }
 
@@ -2249,14 +2247,17 @@ bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag)
     return false;
 }
 
-void CWsEclBinding::sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status)
+void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status)
 {
-    if (!process || !*process)
-        throw MakeStringException(-1, "process cluster matching query set not found");
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(-1, "target cluster not found");
 
-    ISmartSocketFactory *conn = wsecl->connMap.getValue(process);
+    SCMStringBuffer process;
+    clusterInfo->getRoxieProcess(process);
+    ISmartSocketFactory *conn = wsecl->connMap.getValue(process.str());
     if (!conn)
-        throw MakeStringException(-1, "process cluster matching query set not found: %s", process);
+        throw MakeStringException(-1, "process cluster not found: %s", process.str());
 
     SocketEndpoint &ep = conn->nextEndpoint();
 

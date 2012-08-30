@@ -3888,12 +3888,11 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringArray thorProcesses;
     StringAttr prefix;
     ClusterType platform;
-    StringAttr querySetName;
     unsigned clusterWidth;
 public:
     IMPLEMENT_IINTERFACE;
-    CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_querySetName, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), querySetName(_querySetName)
+    CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
+        : name(_name), prefix(_prefix)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -3975,11 +3974,6 @@ public:
     virtual ClusterType getPlatform() const
     {
         return platform;
-    }
-    IStringVal & getQuerySetName(IStringVal & str) const
-    {
-        str.set(querySetName.get());
-        return str;
     }
     IStringVal & getRoxieProcess(IStringVal & str) const
     {
@@ -4153,18 +4147,8 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
             thors.append(*environment->getPropTree(xpath.str()));
         }
     }
-    IPropertyTree *roxie = NULL;
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
-    if (roxieName) 
-    {
-        roxie = queryRoxieProcessTree(environment, roxieName);
-        querySetName.clear().append(roxieName);
-    }
-
-    if (querySetName.length() == 0)
-        querySetName.append(clustname);
-
-    return new CEnvironmentClusterInfo(clustname, prefix, querySetName, agent, thors, roxie);
+    return new CEnvironmentClusterInfo(clustname, prefix, agent, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
 IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *clustname)
@@ -9062,33 +9046,6 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool 
     }
 
     return conn->getRoot();
-}
-
-extern WORKUNIT_API StringArray &getQuerySetTargetClusters(const char *queryset, StringArray &clusters)
-{
-    //this should change as soon as there is a better way of determining this relationship
-    //currently follows the common assumption that queryset = roxie process or target cluster name
-    if (!queryset || !*queryset)
-        return clusters;
-
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return clusters;
-    StringBuffer xpath;
-    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", queryset);
-    Owned<IPropertyTree> targetCluster = conn->queryRoot()->getPropTree(xpath.str());
-    if (targetCluster && !targetCluster->hasProp("RoxieCluster"))
-        clusters.append(queryset);
-    else
-    {
-        Owned<IStringIterator> it = getTargetClusters("RoxieCluster", queryset);
-        ForEach(*it)
-        {
-            SCMStringBuffer s;
-            clusters.append(it->str(s).str());
-        }
-    }
-    return clusters;
 }
 
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)

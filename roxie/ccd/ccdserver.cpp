@@ -27816,7 +27816,8 @@ public:
         }
         else
         {
-            Owned<IQueryFactory> libraryQuery = globalPackageSetManager->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
+            Owned<IQueryFactory> libraryQuery = factory->lookupLibrary(extra.libraryName, extra.interfaceHash, *this);
+            assertex(libraryQuery);
             return libraryQuery->lookupGraph("graph1", probeManager, *this, parentActivity);
         }
     }
@@ -28233,8 +28234,7 @@ public:
     virtual void debugInitialize(const char *id, const char *_queryName, bool _breakAtStart)
     {
         CBaseServerDebugContext::debugInitialize(id, _queryName, _breakAtStart);
-        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
-        QM->registerDebugId(id, this);
+        queryRoxieDebugSessionManager().registerDebugId(id, this);
     }
 
     virtual void debugTerminate()
@@ -28243,8 +28243,7 @@ public:
         assertex(running);
         currentState = DebugStateUnloaded;
         running = false;
-        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
-        QM->deregisterDebugId(debugId);
+        queryRoxieDebugSessionManager().deregisterDebugId(debugId);
         if (debuggerActive)
         {
             debuggerSem.signal(debuggerActive);
@@ -30641,7 +30640,7 @@ public:
 
         public:
             casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedStats, 
-                      StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx) 
+                      StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx)
                 : queryText(_queryText), parent(_parent), mergedStats(_mergedStats), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
             {
             }
@@ -31290,7 +31289,14 @@ public:
         daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wuid.get());
+        // Ensure that any library lookup is done in the correct QuerySet...
+        // MORE - Not 100% sure if this is right
+        // - there's no package file resolution in play for WUs read from a queue (should there be?),
+        // but as this stands we will resolve libraries using those packages defined as loading for this QuerySet.
+        SCMStringBuffer target;
+        wu->getClusterName(target);
+        Owned<IRoxieLibraryLookupContext> libraryContext = globalPackageSetManager->getLibraryLookupContext(target.str());
+        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu, libraryContext);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
@@ -31721,8 +31727,7 @@ readAnother:
 #else
                             throw MakeStringException(ROXIE_DEBUG_ERROR, "Debug id not specified");
 #endif
-                        Owned<IRoxieDebugSessionManager> QM = globalPackageSetManager->getRoxieDebugSessionManager();
-                        debuggerContext.setown(QM->lookupDebuggerContext(uid));
+                        debuggerContext.setown(queryRoxieDebugSessionManager().lookupDebuggerContext(uid));
                         if (!debuggerContext)
                             throw MakeStringException(ROXIE_DEBUG_ERROR, "No active query matching context %s found", uid);
                         if (!debugCmdHandler.get())
@@ -32330,7 +32335,7 @@ protected:
         package.setown(createPackage(NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, NULL));
         timer->reset();
     }
 

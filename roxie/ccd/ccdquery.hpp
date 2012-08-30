@@ -110,6 +110,8 @@ interface IQueryFactory : extends IInterface
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;
+
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
 };
 
 class ActivityArray : public CInterface
@@ -215,13 +217,16 @@ interface IQueryDll : public IInterface
 
 extern const IQueryDll *createQueryDll(const char *dllName);
 extern const IQueryDll *createExeQueryDll(const char *exeName);
+extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
+
+interface IRoxieLibraryLookupContext;
 
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext);
+extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
-extern IQueryFactory *createServerQueryFactoryFromWu(const char *wuid);
-extern IQueryFactory *createSlaveQueryFactoryFromWu(const char *wuid, unsigned channelNo);
+extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, IRoxieLibraryLookupContext *libraryContext);
+extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo, IRoxieLibraryLookupContext *libraryContext);
 
 inline unsigned findParentId(IPropertyTree &node)
 {

@@ -87,6 +87,11 @@
                     <xsl:with-param name="daliservers" select="@daliServers"/>
                 </xsl:call-template>
             </xsl:attribute>
+            <xsl:attribute name="querySets">
+                <xsl:call-template name="GetQueueNames">
+                    <xsl:with-param name="roxie" select="@name"/>
+                </xsl:call-template>
+            </xsl:attribute>
             <xsl:attribute name="pluginDirectory">
                 <xsl:variable name="path" select="translate(@pluginsPath, '/$', '\:')"/>
                 <xsl:variable name="path2">
@@ -305,6 +310,14 @@
       <xsl:with-param name="path" select="substring-after($path, '\')"/>
     </xsl:call-template>
   </xsl:if>
+</xsl:template>
+
+<xsl:template name="GetQueueNames">
+  <xsl:param name="roxie"/>
+  <xsl:for-each select="/Environment/Software/Topology/Cluster/RoxieCluster[@process=$roxie]">
+   <xsl:value-of select="../@name"/>
+   <xsl:if test="position() != last()">,</xsl:if>
+  </xsl:for-each>
 </xsl:template>
 
 </xsl:stylesheet>
