@@ -445,6 +445,8 @@
                 <A href="javascript:void(0)" onclick="toggleElement('SourceFiles');" id="explinksourcefiles" class="wusectionexpand">
                   Files: (<xsl:value-of select="SourceFileCount"/>)
                 </A>
+                &nbsp;-&nbsp;
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}%26SourceFiles%3dtrue" >Show</a>
               </div>
             </div>
 
