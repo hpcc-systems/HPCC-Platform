@@ -87,7 +87,11 @@ define([
 			if (this.isComplete == true) {
 				var request = {};
 				request['Wuid'] = this.wuid;
-				request['Sequence'] = this.sequence;
+				if (this.sequence != null) {
+					request['Sequence'] = this.sequence;
+				} else {
+					request['LogicalName'] = this.name;
+				}
 				request['Start'] = options.start;
 				request['Count'] = options.count;
 				request['rawxml_'] = "1";
@@ -96,6 +100,7 @@ define([
 					url: this.getBaseURL("WsWorkunits") + "/WUResult",
 					handleAs: "xml",
 					content: request,
+					sync: options.sync != null ? options.sync : false,
 					load: function (domXml) {
 						var rows = context.getValues(domXml, "Row");
 						for (var i = 0; i < rows.length; ++i) {

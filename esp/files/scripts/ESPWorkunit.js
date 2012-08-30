@@ -181,7 +181,7 @@ define([
 				TruncateEclTo64k: args.onGetText ? false : true,
 				IncludeExceptions: args.onGetExceptions ? true : false,
 				IncludeGraphs: args.onGetGraphs ? true : false,
-				IncludeSourceFiles: false,
+				IncludeSourceFiles: args.onGetSourceFiles ? true : false,
 				IncludeResults: args.onGetResults ? true : false,
 				IncludeResultsViewNames: false,
 				IncludeVariables: false,
@@ -225,6 +225,14 @@ define([
 							context.results.push(new ESPResult(lang.mixin({ wuid: context.wuid }, results[i])));
 						}
 						args.onGetResults(context.results);
+					}
+					if (args.onGetSourceFiles && workunit.SourceFiles && workunit.SourceFiles.ECLSourceFile) {
+						context.sourceFiles = [];
+						var sourceFiles = workunit.SourceFiles.ECLSourceFile;
+						for (var i = 0; i < sourceFiles.length; ++i) {
+							context.sourceFiles.push(new ESPResult(lang.mixin({ wuid: context.wuid }, sourceFiles[i])));
+						}
+						args.onGetSourceFiles(context.sourceFiles);
 					}
 					if (args.onGetTimers && workunit.Timers && workunit.Timers.ECLTimer) {
 						context.timers = workunit.Timers.ECLTimer;
