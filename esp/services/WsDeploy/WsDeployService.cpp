@@ -4102,12 +4102,15 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
 {
   synchronized block(m_mutex);
   const char* xmlArg = req.getXmlArgs();
-  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
+
+  if (!xmlArg || !*xmlArg)
+    return false;
+
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg);
 
   Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Setting[@operation='delete']");
-  iter->first();
 
-  if (iter->isValid() == false)
+  if (iter->first() == false)
     return false;
 
   IPropertyTree* pSetting = &iter->query();
@@ -4115,13 +4118,16 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
   StringBuffer xpath2 =  pSetting->queryProp("@params");
   IPropertyTree* pComp = pEnvRoot->queryPropTree(xpath2.str());
 
+  if (pComp == NULL)
+    throw MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
+
   StringBuffer xml;
   StringBuffer attrib;
 
   int count = xpath2.length()-2;
 
   if (count <= 0)
-    MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
+    throw MakeStringException(-1,"Bad XPath %s (Try refreshing the browser?)", xpath2.str());
 
   while (xpath2[count] != '=' || xpath2[count+1] != '\'')
     count--;
@@ -4146,7 +4152,20 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
   if (req.getBLeaf() == true)
     pComp->removeProp(attrib);
   else
-    pEnvRoot->queryPropTree(temp)->removeTree(pComp);
+  {
+    char temp2[15];
+    memset(temp2, 0, sizeof(temp2));
+
+    if (xpath2.length() >= 14)
+    {
+      xpath2.getChars(0,14,temp2);
+    }
+
+    if (strncmp(temp,"./EnvSettings/",14) == 0)
+      pEnvRoot->queryPropTree("./EnvSettings")->removeTree(pComp);
+    else
+      pEnvRoot->queryPropTree(temp)->removeTree(pComp);
+  }
 
   resp.setStatus("true");
   resp.setCompName(XML_TAG_SOFTWARE);

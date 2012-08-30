@@ -1799,15 +1799,16 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
       function onContextMenuBeforeShowDeleteContextMenu(p_sType, p_aArgs) {
         var record = top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]);
         var pp = parseParamsForXPath( record.getData('params'), top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('name'),
-                   top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('value'), record._oData.hasChildren);
-        var xmlStr = "<XmlArgs><Setting operation=\"delete\" params= \"" + pp + "\"/></XmlArgs>";
+                   top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('value'),
+                   record.getData('hasChildren') == undefined ? false : record.getData('hasChildren') );
 
+        var xmlStr = "<XmlArgs><Setting operation=\"delete\" params= \"" + pp + "\"/></XmlArgs>";
 
         YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleAttributeDelete', {
           success: function(o) {
             top.document.forms['treeForm'].isChanged.value = "true";
             top.document.choice = new Array();
-            top.document.choice[0] = top.document.rightDT.getRecordIndex(top.document.rightDT.getSelectedRows()[0])-1;
+            top.document.choice[0] = top.document.rightDT.getRecordIndex(top.document.rightDT.getSelectedRows()[0]);
             var recDepth =  top.document.rightDT.getRecord(top.document.choice[0])._oData.depth;
 
             var index = 0;
@@ -1824,10 +1825,6 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
             top.document.doJumpToChoice = true;
             doPageRefresh();
 
-          window.onload= function () {
-            top.document.rightDT.expandRecord(choice-1);
-
-          }
              YAHOO.util.UserAction.click(top.document.rightDT.getFirstTrEl());
            },
           failure: function(o) {
@@ -1835,7 +1832,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
             },
           scope: this
         },
-          top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlStr + '&bLeaf=' + !record._oData.hasChildren );
+          top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlStr + '&bLeaf=' + (record.getData('hasChildren') == undefined ? false : !record.getData('hasChildren') ));
         }
       function onContextMenuXBeforeShow(p_sType, p_aArgs)
       {
@@ -1979,16 +1976,16 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
           {
             for (counter2 = lastCounter2; true; counter2++)
             {
-              if (top.document.rightDT.getRecord(counter2).getId() == top.document.choice[counter])
+              if (this.getRecord(counter2).getId() == top.document.choice[counter])
               {
-                top.document.rightDT.expandRecord(counter2);
+                this.expandRecord(counter2);
                 lastCounter2 = counter2;
                 break;
               }
             }
           }
 
-          window.scrollTo(0, document.body.scrollHeight);
+          Dom.getChildren(this.getFirstTdEl(this.getRecord(this.getRecordIndex(this.getSelectedRows()[0]))))[0].children[0].children[0].focus();
           top.document.doJumpToChoice = false;
         }
       });
@@ -3577,7 +3574,7 @@ function parseParamsForXPath(params, key, value, hasChildren)
     }
   }
 
-  if (hasChildren == true)
+  if (hasChildren == true || xpath.substr(0,14) == "./EnvSettings/")
     return xpath;
 
   if (key === "name")
