@@ -127,6 +127,7 @@ set ( TEMPLATES_FILES
     templates/SampleSelectWidget.html
     templates/TargetSelectWidget.html
     templates/TimingTreeMapWidget.html
+    templates/ECLSourceWidget.html
 )
 source_group(templates FILES ${TEMPLATES_FILES})
 
@@ -159,7 +160,6 @@ set ( SCRIPTS_FILES
     scripts/ESPBase.js
     scripts/ESPWorkunit.js
     scripts/ESPResult.js
-    scripts/EclEditorControl.js
     scripts/WsWorkunits.js
 
     scripts/ResultsControl.js
@@ -171,6 +171,7 @@ set ( SCRIPTS_FILES
     scripts/SampleSelectWidget.js
     scripts/TargetSelectWidget.js
     scripts/TimingTreeMapWidget.js
+    scripts/ECLSourceWidget.js
 )
 source_group(scripts FILES ${SCRIPTS_FILES})
 
@@ -218,6 +219,8 @@ set ( MAIN_FILES
     WUGraph.js
     WUTimings.htm
     WUTimings.js
+    WUSource.htm
+    WUSource.js
     )
 source_group("Source Files" FILES ${MAIN_FILES})
 

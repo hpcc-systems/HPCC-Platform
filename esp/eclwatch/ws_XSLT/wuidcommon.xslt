@@ -608,6 +608,8 @@
           <div class="wugroup">
               <div class="WuGroupHdrLeft">
                 <A href="javascript:void(0)" onclick="toggleElement('querysection');" id="explinkquerysection" class="wusectionexpand">Query: (1)</A>
+                &nbsp;-&nbsp;
+                <a href="/esp/iframe?esp_iframe_title=Query - {$wuid}&amp;inner=/esp/files/WUSource.htm%3fWuid%3d{$wuid}" >Show</a>							
               </div>
           </div>
           <div id="querysection" class="wusectioncontent">
