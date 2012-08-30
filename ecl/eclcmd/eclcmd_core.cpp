@@ -464,6 +464,7 @@ public:
             "   -t, --target=<val>     target cluster to publish workunit to\n"
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
+            "   -A, --activate         Activate query when published (default)\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
