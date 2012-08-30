@@ -387,6 +387,7 @@ private:
     IPropertyTree *config;
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
+    StringBuffer platform;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
