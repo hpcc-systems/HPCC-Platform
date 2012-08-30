@@ -1629,13 +1629,100 @@ IDFUengine *createDFUengine()
     return new CDFUengine;
 }
 
-void stopDFUserver(const char *qname)
+static void reportDFUActionError(DFUQueueAction action, const char *queueName)
 {
-    Owned<IJobQueue> queue = createJobQueue(qname);
-    if (!queue.get()) {
-        throw MakeStringException(-1, "Cound not create queue");
+    StringBuffer buf;
+    switch(action)
+    {
+    case DFUQueueAction_pause:
+        buf.append("Error while trying to pause ");
+        break;
+    case DFUQueueAction_resume:
+        buf.append("Error while trying to resume ");
+        break;
+    case DFUQueueAction_stop:
+        buf.append("Error while trying to stop ");
+        break;
+    default:
+        buf.append("Error in ");
+        break;
     }
-    IJobQueueItem *item = createJobQueueItem("!STOP");
-    item->setEndpoint(queryMyNode()->endpoint());
-    queue->enqueue(item);
+    buf.append("the DFU server, queue ").append(queueName);
+    // NB - I don't like this
+    throw buf.str();
+}
+
+// NB - Old code would wait 2 seconds to stop, so maybe the timeout is not necessary for all actions
+static bool ensureDFUActionExecuted(IJobQueue *queue, DFUQueueAction action, unsigned timeout)
+{
+    unsigned tick = 500; // 1/2 s
+    loop
+    {
+        switch(action)
+        {
+        case DFUQueueAction_pause:
+            if (queue->paused())
+                return true;
+            break;
+        case DFUQueueAction_resume:
+            if (queue->active())
+                return true;
+            break;
+        case DFUQueueAction_stop:
+            if (queue->stopped())
+                return true;
+            break;
+        default:
+            return false;
+        }
+        WARNLOG("Waiting for state to change");
+        Sleep(tick);
+        if (timeout <= tick)
+            break;
+        timeout -= tick;
+    }
+    WARNLOG("Timed out while waiting for state to change");
+    return false;
+}
+
+// Execute action and make sure the result is what's expected or throw
+void applyDFUAction(const char *qname, DFUQueueAction action, unsigned timeout)
+{
+    if ((action == DFUQueueAction_none) || (!qname||!*qname))
+        return;
+
+    Owned<IJobQueue> queue = createJobQueue(qname);
+    if (!queue.get())
+        throw MakeStringException(-1, "Could not create queue %s", qname);
+//    queue->connect();
+
+    switch(action)
+    {
+    case DFUQueueAction_pause:
+        if (queue->paused()) {
+            WARNLOG("%s already paused", qname);
+            return;
+        }
+        WARNLOG("Pausing %s", qname);
+        queue->pause();
+        break;
+    case DFUQueueAction_resume:
+        if (queue->active()) {
+            WARNLOG("%s already running", qname);
+            return;
+        }
+        WARNLOG("Resuming %s", qname);
+        queue->resume();
+        break;
+    case DFUQueueAction_stop:
+        if (queue->stopped()) {
+            WARNLOG("%s already stopped", qname);
+            return;
+        }
+        WARNLOG("Stopping %s", qname);
+        queue->stop();
+        break;
+    }
+    if (!ensureDFUActionExecuted(queue, action, timeout))
+        reportDFUActionError(action, qname);
 }

@@ -50,6 +50,7 @@ ILogMsgHandler * fileMsgHandler;
 Owned<IDFUengine> engine;
 
 #define DEFAULT_PERF_REPORT_DELAY 60
+#define ACTION_WAIT_TIMEOUT (1000*30) // 30 seconds
 
 //============================================================================
 
@@ -96,7 +97,6 @@ IPropertyTree *readOldIni()
     return ret;
 }
 
-
 int main(int argc, const char *argv[])
 {
     InitModuleObjects();
@@ -135,9 +135,19 @@ int main(int argc, const char *argv[])
         releaseAtoms();
         return 1;
     }
+    // Default is no action, aka Listening Server Mode
+    DFUQueueAction queueAction = DFUQueueAction_none;
+    // IF there is any action, execute and quite, aka Admin Tool Mode
+    // MORE - We should separate this code into an admin tool
+    if (globals->getPropInt("@STOP",0) != 0)
+        queueAction = DFUQueueAction_stop;
+    else if (globals->getPropInt("@PAUSE",0) != 0)
+        queueAction = DFUQueueAction_pause;
+    else if (globals->getPropInt("@RESUME",0) != 0)
+        queueAction = DFUQueueAction_resume;
+
     Owned<IFile> sentinelFile;
-    bool stop = globals->getPropInt("@STOP",0)!=0;
-    if (!stop) {
+    if (!queueAction) {
         sentinelFile.setown(createSentinelTarget());
         removeSentinelFile(sentinelFile);
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "dfuserver");
@@ -159,16 +169,17 @@ int main(int argc, const char *argv[])
     Owned<IReplicateServer> replserver;
     try {
         Owned<IGroup> serverGroup = createIGroup(daliServer.str(),DALI_SERVER_PORT);
-        initClientProcess(serverGroup, DCR_DfuServer, 0, NULL, NULL, stop?(1000*30):MP_WAIT_FOREVER);
+        initClientProcess(serverGroup, DCR_DfuServer, 0, NULL, NULL, queueAction?ACTION_WAIT_TIMEOUT:MP_WAIT_FOREVER);
         setPasswordsFromSDS();
 
-        if(!stop)
+        // Startup server mode
+        if(!queueAction)
         {
             if (globals->getPropBool("@enableSysLog",true))
                 UseSysLogForOperatorMessages();
 
             serverstatus = new CSDSServerStatus("DFUserver");
-            setDaliServixSocketCaching(true); // speeds up lixux operations
+            setDaliServixSocketCaching(true); // speeds up Linux operations
 
             startLogMsgParentReceiver();    // for auditing
             connectLogMsgManagerToDali();
@@ -176,6 +187,8 @@ int main(int argc, const char *argv[])
             engine.setown(createDFUengine());
             addAbortHandler(exitDFUserver);
         }
+
+        // Perform action on (or initialise) queues
         const char *q = queue.str();
         loop {
             StringBuffer subq;
@@ -184,10 +197,13 @@ int main(int argc, const char *argv[])
                 subq.append(comma-q,q);
             else
                 subq.append(q);
-            if (stop) {
-                stopDFUserver(subq.str());
+
+            if (queueAction)
+            {
+                applyDFUAction(subq.str(), queueAction, ACTION_WAIT_TIMEOUT);
             }
-            else {
+            else
+            {
                 StringBuffer mask;
                 mask.appendf("Queue[@name=\"%s\"][1]",subq.str());
                 IPropertyTree *t=serverstatus->queryProperties()->queryPropTree(mask.str());
@@ -203,34 +219,36 @@ int main(int argc, const char *argv[])
                 engine->setDefaultTransferBufferSize((size32_t)globals->getPropInt("@transferBufferSize"));
                 engine->startListener(subq.str(),serverstatus);
             }
+
             if (!comma)
                 break;
             q = comma+1;
             if (!*q)
                 break;
         }
+
+        // If there's also a monitor queue, start it (or apply action to it, too)
         q = globals->queryProp("@MONITORQUEUE");
         if (q&&*q) {
-            if (stop) {
-                stopDFUserver(q);
+            if (queueAction)
+            {
+                applyDFUAction(q, queueAction, ACTION_WAIT_TIMEOUT);
             }
-            else {
+            else
+            {
                 IPropertyTree *t=serverstatus->queryProperties()->addPropTree("MonitorQueue",createPTree());
                 t->setProp("@name",q);
                 engine->startMonitor(q,serverstatus,globals->getPropInt("@MONITORINTERVAL",60)*1000);
             }
         }
-        q = globals->queryProp("@REPLICATEQUEUE");
-        if (q&&*q) {
-            if (stop) {
-                // TBD?
-            }
-            else {
+
+        // If no queue action (aka server mode), start listener
+        if (!queueAction) {
+            q = globals->queryProp("@REPLICATEQUEUE");
+            if (q&&*q) {
                 replserver.setown(createReplicateServer(q));
                 replserver->runServer();
             }
-        }
-        if (!stop) {
             serverstatus->commitProperties();
 
             writeSentinelFile(sentinelFile);
@@ -247,12 +265,10 @@ int main(int argc, const char *argv[])
         e->Release();
     }
     catch (const char *s) {
-        WARNLOG("DFU: %s",s);
+        WARNLOG("DFU exception: %s",s);
     }
 
     delete serverstatus;
-    if (stop)
-        Sleep(2000);    // give time to stop
     engine.clear();
     globals.clear();
     closeEnvironment();

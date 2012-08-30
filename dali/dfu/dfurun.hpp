@@ -33,8 +33,15 @@ interface IDFUengine: extends IInterface
     virtual void setDefaultTransferBufferSize(size32_t size) = 0;
 };
 
+enum DFUQueueAction {
+    DFUQueueAction_none = 0,
+    DFUQueueAction_stop,
+    DFUQueueAction_pause,
+    DFUQueueAction_resume,
+};
+
 IDFUengine *createDFUengine();
-void stopDFUserver(const char *qname);
+void applyDFUAction(const char *qname, DFUQueueAction action, unsigned timeout=MP_WAIT_FOREVER);
 
 #endif
 
