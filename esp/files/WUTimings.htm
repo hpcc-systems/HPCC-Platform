@@ -1,0 +1,69 @@
+﻿<!DOCTYPE html>
+<!--
+##############################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##############################################################################
+-->
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>HPCC: WU Timings</title>
+    <link href="css/hpcc.css" media="screen" rel="stylesheet">
+	<link href="dojo/resources/dojo.css" rel="stylesheet">
+    <link href="dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
+    <!-- load dojo and provide config via dojoConfig global -->
+    <script>
+        var dojoConfig = (function () {
+            var base = location.href.split("/");
+            base.pop();
+            base = base.join("/");
+
+            return {
+                async: true,
+                parseOnLoad: true,
+                urlBase: base,
+                isDebug: true,
+                packages: [{
+                    name: "main",
+                    location: base + "/"
+                }, {
+                    name: "hpcc",
+                    location: base + "/scripts/"
+                }]
+            };
+        })();
+    </script>
+    <script src="dojo/dojo.js"></script>
+    <script>
+        require([
+		"main/WUTimings", "hpcc/TimingTreeMapWidget",
+        "dojo/domReady!"], function (app) {
+            app.init();
+        });
+    </script>
+</head>
+<body class="claro">
+    <!-- overlay -->
+    <div id="loadingOverlay" class="pageOverlay">
+        <div class="loadingMessage">
+            Loading...
+        </div>
+    </div>
+    <!-- application -->
+    <div id="appLayout" class="hpccApp" data-dojo-props="design: 'headline'" data-dojo-type="TimingTreeMapWidget">
+    </div>
+</body>
+</html>
