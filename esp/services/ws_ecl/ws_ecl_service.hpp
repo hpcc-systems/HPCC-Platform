@@ -145,7 +145,7 @@ public:
     void xsltTransform(const char* xml, unsigned int len, const char* xslFileName, IProperties *params, StringBuffer& ret);
 
     int getWsEcl2TabView(CHttpRequest* request, CHttpResponse* response, const char *thepath);
-    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
+    int getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool boxform);
     int getWsEcl2Form(CHttpRequest* request, CHttpResponse* response, const char *thepath);
 
     bool isValidServiceName(IEspContext &context, const char *name){return true;}
@@ -193,7 +193,7 @@ public:
     void getWsEclJsonRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
     void getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo);
     
-    void sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status);
+    void sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query);
 };
 
 #endif //_WS_ECL_SERVICE_HPP__

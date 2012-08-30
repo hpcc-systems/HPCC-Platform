@@ -272,7 +272,7 @@ void CWsEclBinding::getNavigationData(IEspContext &context, IPropertyTree & data
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
-    ensureNavDynFolder(data, "QuerySets", "QuerySets", "root=true", NULL);
+    ensureNavDynFolder(data, "Targets", "Targets", "root=true", NULL);
 }
 
 IPropertyTree * getQueryRegistries()
@@ -293,15 +293,13 @@ void CWsEclBinding::getRootNavigationFolders(IEspContext &context, IPropertyTree
     data.addProp("@action", "NavMenuEvent");
     data.addProp("@appName", "WsECL 3.0");
 
-    Owned<IPropertyTree> qstree = getQueryRegistries();
-    Owned<IPropertyTreeIterator> querysets = qstree->getElements("QuerySet");
+    Owned<IStringIterator> targets = getTargetClusters(NULL, NULL);
 
-    ForEach(*querysets)
+    SCMStringBuffer target;
+    ForEach(*targets)
     {
-        IPropertyTree &qs = querysets->query();
-        const char *name=qs.queryProp("@id");
-        VStringBuffer parms("queryset=%s", name);
-        ensureNavDynFolder(data, name, name, parms.str(), NULL);
+        VStringBuffer parms("queryset=%s", targets->str(target).str());
+        ensureNavDynFolder(data, target.str(), target.str(), parms.str(), NULL);
     }
 }
 
@@ -1486,7 +1484,7 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
     return true;
 }
 
-int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
+int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool box)
 {
     IProperties *parms = request->queryParameters();
 
@@ -1509,7 +1507,24 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     }
 
     context.addOptions(ESPCTX_ALL_ANNOTATION);
-    getSchema(formxml, context, request, wsinfo);
+    if (box)
+    {
+        StringBuffer xmlreq;
+        getWsEcl2XmlRequest(xmlreq, context, request, wsinfo, "xml", NULL, 0);
+        if (xmlreq.length())
+        {
+            Owned<IPropertyTree> pretty = createPTreeFromXMLString(xmlreq.str(), ipt_ordered);
+            if (pretty)
+            {
+                toXML(pretty, xmlreq.clear());
+                formxml.append("<Request>");
+                encodeUtf8XML(xmlreq, formxml);
+                formxml.append("</Request>");
+            }
+        }
+    }
+    else
+        getSchema(formxml, context, request, wsinfo);
 
     formxml.append("<CustomViews>");
     if (web)
@@ -1525,7 +1540,12 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
     Owned<IXslTransform> xform = xslp->createXslTransform();
 
     StringBuffer xslfile(getCFD());
-    xform->loadXslFromFile(xslfile.append("./xslt/wsecl3_form.xsl").str());
+    if (box)
+        xslfile.append("./xslt/wsecl3_boxform.xsl");
+    else
+        xslfile.append("./xslt/wsecl3_form.xsl");
+
+    xform->loadXslFromFile(xslfile.str());
     xform->setXmlSource(formxml.str(), formxml.length()+1);
 
     // pass params to form (excluding form and __querystring)
@@ -1605,11 +1625,24 @@ void buildParametersXml(IPropertyTree *parmtree, IProperties *parms)
     DBGLOG("parmtree: %s", xml.str());
 }
 
+void appendValidInputBoxContent(StringBuffer &xml, const char *in)
+{
+    //more later
+    Owned<IPropertyTree> validAndFlat = createPTreeFromXMLString(in, ipt_ordered);
+    toXML(validAndFlat, xml, 0, 0);
+}
 
 void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
 {
     Owned<IPropertyTree> parmtree = createPTree();
     IProperties *parms = context.queryRequestParameters();
+
+    const char *boxInput = parms->queryProp("_boxFormInput");
+    if (boxInput)
+    {
+        appendValidInputBoxContent(soapmsg, boxInput);
+        return;
+    }
 
     buildParametersXml(parmtree, parms);
 
@@ -1718,7 +1751,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
         element.append(wsinfo.queryname.sget());
         element.append("Response");
 
-        VStringBuffer xpath("Body/%s/Result/Exception", element.str());
+        VStringBuffer xpath("Body/%s/Results/Result/Exception", element.str());
         Owned<IPropertyTreeIterator> exceptions = parmtree->getElements(xpath.str());
 
         jsonmsg.appendf("{\n  \"%s\": {\n    \"Results\": {\n", element.str());
@@ -1932,6 +1965,36 @@ int CWsEclBinding::onGetSoapBuilder(IEspContext &context, CHttpRequest* request,
     return getXmlTestForm(context, request, response, wsinfo, "soap");
 }
 
+bool checkWsEclFormType(StringBuffer &form, const char *value)
+{
+    if (value)
+    {
+        bool save = (strieq(value, "ecl")||strieq(value, "box"));
+        if (save || (strieq(value, "soap")||strieq(value, "json")))
+        {
+            form.set(value);
+            return save;
+        }
+    }
+    form.set("ecl");
+    return false;
+}
+
+void getWsEclFormType(CHttpRequest* request, CHttpResponse* response, StringBuffer &form)
+{
+    bool save=false;
+    if (strieq(form, "default"))
+    {
+        CEspCookie *cookie = request->queryCookie("defaultWsEclForm");
+        checkWsEclFormType(form, (cookie) ? cookie->getValue() : NULL);
+    }
+    else if (checkWsEclFormType(form, form.str()))
+    {
+        CEspCookie *cookie = request->queryCookie("defaultWsEclForm");
+        if (!cookie || !strieq(cookie->getValue(), form.str()))
+            response->addCookie(new CEspCookie("defaultWsEclForm", form));
+    }
+}
 
 int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response, const char *thepath)
 {
@@ -1946,8 +2009,11 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
     WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
 
+    getWsEclFormType(request, response, formtype);
     if (strieq(formtype.str(), "ecl"))
-        return getGenForm(*context, request, response, wsinfo);
+        return getGenForm(*context, request, response, wsinfo, false);
+    else if (strieq(formtype.str(), "box"))
+        return getGenForm(*context, request, response, wsinfo, true);
     else if (strieq(formtype.str(), "soap"))
         return getXmlTestForm(*context, request, response, "soap", wsinfo);
     else if (strieq(formtype.str(), "json"))
@@ -2181,30 +2247,48 @@ bool xppGotoTag(XmlPullParser &xppx, const char *tagname, StartTag &stag)
     return false;
 }
 
-void CWsEclBinding::sendRoxieRequest(const char *process, StringBuffer &req, StringBuffer &resp, StringBuffer &status)
+void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, StringBuffer &resp, StringBuffer &status, const char *query)
 {
-    if (!process || !*process)
-        throw MakeStringException(-1, "process cluster matching query set not found");
-
-    ISmartSocketFactory *conn = wsecl->connMap.getValue(process);
-    if (!conn)
-        throw MakeStringException(-1, "process cluster matching query set not found: %s", process);
-
-    SocketEndpoint &ep = conn->nextEndpoint();
-
-    Owned<IHttpClientContext> httpctx = getHttpClientContext();
-    StringBuffer url("http://");
-    ep.getIpText(url).append(':').append(ep.port);
-
+    ISmartSocketFactory *conn = NULL;
+    SocketEndpoint ep;
     try
     {
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        if (!clusterInfo)
+            throw MakeStringException(-1, "target cluster not found");
+
+        SCMStringBuffer process;
+        clusterInfo->getRoxieProcess(process);
+        ISmartSocketFactory *conn = wsecl->connMap.getValue(process.str());
+        if (!conn)
+            throw MakeStringException(-1, "process cluster not found: %s", process.str());
+
+        ep = conn->nextEndpoint();
+
+        Owned<IHttpClientContext> httpctx = getHttpClientContext();
+        StringBuffer url("http://");
+        ep.getIpText(url).append(':').append(ep.port);
+
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
-        httpclient->sendRequest("POST", "text/xml", req, resp, status);
+        if (0 > httpclient->sendRequest("POST", "text/xml", req, resp, status))
+            throw MakeStringException(-1, "Process cluster communication error: %s", process.str());
     }
     catch (IException *e)
     {
-        conn->setStatus(ep, false);
-        throw e;
+        if (conn && !ep.isNull())
+            conn->setStatus(ep, false);
+
+        StringBuffer s;
+        VStringBuffer uri("urn:hpccsystems:ecl:%s", query);
+        resp.set("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        resp.append("<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body>");
+        resp.append('<').append(query).append("Response xmlns='").append(uri).append("'>");
+        resp.append("<Results><Result><Exception><Source>WsEcl</Source>");
+        resp.append("<Code>").append(e->errorCode()).append("</Code>");
+        resp.append("<Message>").append(e->errorMessage(s)).append("</Message>");
+        resp.append("</Exception></Result></Results>");
+        resp.append("</").append(query).append("Response></soap:Body></soap:Envelope>");
+        e->Release();
     }
 }
 
@@ -2231,7 +2315,7 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
     if (strieq(clustertype.str(), "roxie"))
     {
         StringBuffer roxieresp;
-        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, roxieresp, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, roxieresp, status, wsinfo.queryname);
 
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (web.get())
@@ -2271,7 +2355,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     const char *view = context.queryRequestParameters()->queryProp("view");
     if (strieq(clustertype.str(), "roxie"))
     {
-        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
@@ -2706,7 +2790,7 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
         if (strieq(clustertype.str(), "roxie"))
         {
             StringBuffer output;
-            sendRoxieRequest(wsinfo.qsetname.get(), soapfromjson, output, status);
+            sendRoxieRequest(wsinfo.qsetname.get(), soapfromjson, output, status, wsinfo.queryname);
             Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, NULL, getCFD(), true);
             if (web.get())
                 web->expandResults(output.str(), soapresp, xmlflags);
@@ -2810,7 +2894,7 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
     {
         StringBuffer content(request->queryContent());
         StringBuffer output;
-        sendRoxieRequest(wsinfo.qsetname.get(), content, output, status);
+        sendRoxieRequest(wsinfo.qsetname.get(), content, output, status, wsinfo.queryname);
         Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
         if (web.get())
             web->expandResults(output.str(), soapresp, xmlflags);

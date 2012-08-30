@@ -125,10 +125,18 @@ public:
     virtual void flushResources(const char *filename, ICodegenContextCallback * ctxCallback) = 0;
 };
 
+// A class used to hold the context about the expression being processed at this point in time.
+// Note: expr is updated as the query is processed to ensure that the parsed tree etc. get freed up early.
+class HQLCPP_API HqlQueryContext
+{
+public:
+    OwnedHqlExpr expr;  // Modified as the query is processed.
+};
+
 interface HQLCPP_API IHqlCppTranslator : public IInterface
 {
 public:
-    virtual bool buildCpp(IHqlCppInstance & _code, IHqlExpression * expr) = 0;
+    virtual bool buildCpp(IHqlCppInstance & _code, HqlQueryContext & query) = 0;
 };
 
 extern HQLCPP_API IHqlCppInstance * createCppInstance(IWorkUnit * wu, const char * wupathname);

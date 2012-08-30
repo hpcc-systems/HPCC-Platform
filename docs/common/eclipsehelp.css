@@ -1,4 +1,4 @@
-﻿body {
+body {
     font-family: serif;
     font-size: 10pt;
     color: black;
@@ -68,7 +68,6 @@ td {
 blockquote {
     margin-top: 1.33ex 4ex;
     margin-left: 4em;
-
 }
 
 p,
@@ -254,14 +253,6 @@ acronym {
     font-weight: bold;
 }
 
-span.code {
-    font-family: monospace;
-}
-span.codebold {
-    font-family: monospace;
-    font-weight: bold;
-}
-
 span.bluebold {
     font-weight: bold;
     color: #00008B;
@@ -307,6 +298,13 @@ span.whiteital {
 span.white {
     color: #FFFFFF;
 }
+span.code {
+    font-family: monospace;
+}
+span.codebold {
+    font-family: monospace;
+    font-weight: bold;
+}
 span.keycap,
 span.keycode,
 span.keysym,
@@ -326,7 +324,6 @@ span.interface,
 span.guilabel {
     font-weight: bold;
 }
-
 span.term
 {
       font-family: sans-serif;
