@@ -413,20 +413,17 @@ function createNavigationTree(navTreeData) {
       for (var i = 0; i < recSetLen; i++) {
         var r = recSet.getRecord(i);
         if (r.getData('id') === id) {
-          if (r.getData('parent') != -1)
-            top.document.navDT.expandRecord(r.getData('parent'));
           var tdEl = top.document.navDT.getFirstTdEl(r);
           var children = Dom.getChildren(tdEl);
           if (Dom.hasClass(children[0].children[0].children[0], 'yui-button') &&
                 Dom.hasClass(children[0].children[0].children[0], 'buttoncollapsed')) {
             children[0].children[0].children[0].click();
-            break;
           }
           else {
             top.document.navDT.unselectAllRows();
             top.document.navDT.selectRow(r);
-            break;
           }
+          break;
         }
         }
       }
