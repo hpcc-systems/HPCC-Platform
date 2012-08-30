@@ -548,7 +548,6 @@ interface IConstWUClusterInfo : extends IInterface
     virtual ClusterType getPlatform() const = 0;
     virtual IStringVal & getAgentQueue(IStringVal & str) const = 0;
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
-    virtual IStringVal & getQuerySetName(IStringVal & str) const = 0;
     virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
     virtual const StringArray & getThorProcesses() const = 0;
     virtual const SocketEndpointArray & getRoxieServers() const = 0;
@@ -1218,7 +1217,6 @@ extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegis
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot();
 extern WORKUNIT_API void setQueryCommentForNamedQuery(IPropertyTree * queryRegistry, const char *id, const char *queryComment);
-extern WORKUNIT_API StringArray &getQuerySetTargetClusters(const char *queryset, StringArray &clusters);
 
 extern WORKUNIT_API void setQuerySuspendedState(IPropertyTree * queryRegistry, const char * name, bool suspend);
 
