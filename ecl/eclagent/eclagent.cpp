@@ -1602,20 +1602,16 @@ void EclAgent::getEventExtra(size32_t & outLen, char * & outStr, const char * ta
 
 char *EclAgent::getPlatform()
 {
-    if (0==platform.length())
+    if (!isStandAloneExe)
     {
-        if (!isStandAloneExe)
-        {
-            const char * cluster = clusterNames.tos();
-            Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
-            if (!clusterInfo)
-                throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
-            platform.append((char*)clusterTypeString(clusterInfo->getPlatform()));
-        }
-        else
-            platform.append("standalone");
+        const char * cluster = clusterNames.tos();
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        if (!clusterInfo)
+            throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
+        return strdup(clusterTypeString(clusterInfo->getPlatform()));
     }
-    return strdup(platform.str());
+    else
+        return strdup("standalone");
 }
 
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 
