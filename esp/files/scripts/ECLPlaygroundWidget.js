@@ -26,7 +26,7 @@ require([
 	"dijit/layout/ContentPane",
 	"dijit/registry",
 
-	"hpcc/EclEditorControl",
+	"hpcc/ECLSourceWidget",
 	"hpcc/TargetSelectWidget",
 	"hpcc/SampleSelectWidget",
 	"hpcc/GraphWidget",
@@ -36,7 +36,7 @@ require([
 	"dojo/text!./templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, dom,
 				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
-				EclEditor, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
+				EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
 				template) {
     return declare("ECLPlaygroundWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -126,9 +126,7 @@ require([
         },
 
         initEditor: function () {
-            this.editorControl = new EclEditor({
-                domId: this.id + "EclCode"
-            });
+                this.editorControl = registry.byId(this.id + "Source");
         },
 
         initGraph: function () {
