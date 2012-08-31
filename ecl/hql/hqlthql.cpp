@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "hqlthql.hpp"
 #include <limits.h>
@@ -676,6 +675,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             s.append('N');
         if (containsWorkflow(expr))
             s.append('W');
+        if (containsSelf(expr))
+            s.append('S');
         if (isContextDependent(expr))
         {
             s.append('X');
@@ -686,7 +687,6 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             if (flags & HEFcontainsNlpText) s.append('N');
             if (flags & HEFcontainsXmlText) s.append('X');
             if (flags & HEFcontainsSkip) s.append('S');
-            if (flags & HEFtransformSkips) s.append('K');
             if (flags & HEFcontainsCounter) s.append('C');
             if (flags & HEFtransformDependent) s.append('D');
             if (flags & HEFtranslated) s.append('R');
@@ -862,7 +862,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
     }
     else
     {
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
         {
             if (!isNamedSymbol && expandProcessed && no != no_field && no != no_rows && !isTargetSelector(expr))
             {
@@ -873,7 +873,10 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     
                     StringBuffer temp;
                     scope.append(NULL);
-                    temp.appendf("dataset%p ", expr);
+                    if (expr->isDataset())
+                        temp.appendf("dataset%p ", expr);
+                    else
+                        temp.appendf("dictionary%p ", expr);
 #ifdef SHOW_NORMALIZED
                     if (expandProcessed)
                         temp.appendf("[N%p] ", expr->queryNormalizedSelector());
@@ -888,7 +891,10 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                     insideNewTransform = wasInsideNewTransform;
                     expr->setTransformExtra(expr);
                 }   
-                s.appendf("dataset%p", expr);
+                if (expr->isDataset())
+                    s.appendf("dataset%p", expr);
+                else
+                    s.appendf("dictionary%p", expr);
                 if (paren)
                     s.append(')');
                 return;
@@ -1201,6 +1207,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         }
         case no_index:
         case no_selectnth:
+        case no_selectmap:
         case no_pat_index:
         {
             toECL(child0, s, child0->getPrecedence() < 0, inType);
@@ -1235,6 +1242,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         case no_order:
         case no_notin:
         case no_in:
+        case no_indict:
         case no_colon:
         case no_pat_select:
         case no_lshift:
@@ -2678,8 +2686,9 @@ StringBuffer &HqltHql::getFieldTypeString(IHqlExpression * e, StringBuffer &s)
         type = type->queryChildType();
         //fall through
     case type_table:
+    case type_dictionary:
         {
-            s.append("DATASET(");
+            s.append(type->getTypeCode()==type_dictionary ? "DICTIONARY(" : "DATASET(");
             getTypeString(type->queryChildType()->queryChildType(), s);
             ForEachChild(i, e)
             {
@@ -2871,6 +2880,7 @@ static bool addExplicitType(IHqlExpression * expr)
     {
     case type_transform:
         return true;
+    case type_dictionary:
     case type_row:
     case type_table:
     case type_groupedtable:

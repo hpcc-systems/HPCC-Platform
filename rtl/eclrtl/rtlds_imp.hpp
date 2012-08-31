@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef rtlds_imp_hpp
@@ -363,7 +362,6 @@ public:
     void appendRows(size32_t num, byte * * rows);
     inline void appendEOG() { appendOwn(NULL); }
     byte * createRow();
-    void cancelRow();
     void cloneRow(size32_t len, const void * ptr);
     void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
@@ -382,9 +380,6 @@ public:
     inline byte * row() const { return builder.row(); }
 
 protected:
-    void flush();
-
-protected:
     IEngineRowAllocator * rowAllocator;
     RtlDynamicRowBuilder builder;
     byte * * rowset;
@@ -392,6 +387,57 @@ protected:
     size32_t max;
     size32_t choosenLimit;
 };
+
+class ECLRTL_API RtlLinkedDictionaryBuilder
+{
+public:
+    RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialTableSize);
+    RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo);
+    ~RtlLinkedDictionaryBuilder();
+
+    void append(const void * source);
+    void appendOwn(const void * source);
+    void appendRows(size32_t num, byte * * rows);
+
+    inline size32_t getcount() { return tableSize; }
+    inline byte * * linkrows() { return rtlLinkRowset(table); }
+
+    byte * createRow()         { return builder.getSelf(); }
+    void finalizeRow(size32_t len);
+    inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
+    void cloneRow(size32_t len, const void * ptr);
+    /*
+        Not clear which if any of these we will want...
+    void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
+    void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
+    void expand(size32_t required);
+    void resize(size32_t required);
+    void finalizeRows();
+
+    inline void ensure(size32_t required) { if (required > max) expand(required); }
+    */
+    inline byte * * queryrows() { return table; }
+    inline byte * row() const { return builder.row(); }
+
+protected:
+    void checkSpace();
+    void init(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialTableSize);
+
+protected:
+    IEngineRowAllocator *rowAllocator;
+    IHash *hash;
+    ICompare *compare;
+    RtlDynamicRowBuilder builder;
+    byte * * table;
+    size32_t usedCount;
+    size32_t usedLimit;
+    size32_t initialSize;
+    size32_t tableSize;
+};
+
+extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
+extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
+extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);
 
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 

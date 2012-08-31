@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
 
@@ -258,9 +257,6 @@ extern HQL_API bool isTransformTracing() { return tracing; }
 //if it does return the number of arguments that aren't hidden
 unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpression * selector)
 {
-#ifdef ENSURE_SELSEQ_UID
-    return 0;
-#endif
     if (!selector)
         return 0;
     node_operator op = selector->getOperator();
@@ -292,6 +288,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         return 0;
     case childdataset_datasetleft:
     case childdataset_left:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if ((op == no_left) && recordTypesMatch(selector, expr->queryChild(0)))
         {
             switch (expr->getOperator())
@@ -303,6 +301,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
         }
         return 0;
     case childdataset_leftright:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (op == no_left)
         {
             if (recordTypesMatch(selector, expr->queryChild(0)))
@@ -321,6 +321,8 @@ unsigned activityHidesSelectorGetNumNonHidden(IHqlExpression * expr, IHqlExpress
     case childdataset_same_left_right:
     case childdataset_top_left_right:
     case childdataset_nway_left_right:
+        if (querySelSeq(expr) != selector->queryChild(1))
+            return 0;
         if (recordTypesMatch(selector, expr->queryChild(0)))
             return 1;
         return 0;
@@ -1102,9 +1104,8 @@ NewHqlTransformer::NewHqlTransformer(HqlTransformerInfo & _info) : ANewHqlTransf
 }
 
 
-bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
+bool NewHqlTransformer::alreadyVisited(ANewTransformInfo * extra)
 {
-    ANewTransformInfo * extra = queryTransformExtra(expr);
     if (extra->lastPass == pass)
         return true;
 
@@ -1114,6 +1115,12 @@ bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
 
     extra->lastPass = pass;
     return false;
+}
+
+
+bool NewHqlTransformer::alreadyVisited(IHqlExpression * expr)
+{
+    return alreadyVisited(queryTransformExtra(expr));
 }
 
 
@@ -1979,23 +1986,25 @@ IHqlExpression * replaceDataset(IHqlExpression * expr, IHqlExpression * original
 
 //---------------------------------------------------------------------------
 
-HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newDataset)
+HqlMapSelectorTransformer::HqlMapSelectorTransformer(IHqlExpression * oldDataset, IHqlExpression * newValue)
 {
     oldSelector.set(oldDataset);
-    IHqlExpression * newSelector = newDataset;
+    LinkedHqlExpr newSelector = newValue;
+    LinkedHqlExpr newDataset = newValue;
     if (newDataset->getOperator() == no_newrow)
-        newDataset = newDataset->queryChild(0);
+        newDataset.set(newDataset->queryChild(0));
+    else if (newDataset->isDataset())
+        newDataset.setown(ensureActiveRow(newDataset));
 
     node_operator op = oldDataset->getOperator();
-#ifndef ENSURE_SELSEQ_UID
     assertex(op != no_left && op != no_right);
-#endif
-    if (oldDataset->isDatarow() || op == no_activetable || op == no_self || op == no_selfref)
+    if (oldDataset->isDatarow() || (op == no_activetable) || (op == no_selfref))
     {
         setMappingOnly(oldDataset, newDataset);
     }
     else
     {
+        assertex(op != no_self);
         setMappingOnly(oldDataset, oldDataset);         // Don't change any new references to the dataset
     }
     setSelectorMapping(oldDataset, newSelector);
@@ -2093,12 +2102,146 @@ NestedHqlMapTransformer::NestedHqlMapTransformer() : NestedHqlTransformer(nested
 
 //---------------------------------------------------------------------------
 
-HoistingHqlTransformer::HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : NewHqlTransformer(_info)
+ConditionalHqlTransformer::ConditionalHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : NewHqlTransformer(_info)
 { 
     flags = _flags; 
-    target = NULL; 
     conditionDepth = 0; 
     containsUnknownIndependentContents = false;
+}
+
+
+ANewTransformInfo * ConditionalHqlTransformer::createTransformInfo(IHqlExpression * expr)
+{
+    return CREATE_NEWTRANSFORMINFO(ConditionalTransformInfo, expr);
+}
+
+bool ConditionalHqlTransformer::analyseThis(IHqlExpression * expr)
+{
+    if (pass == 0)
+    {
+        ConditionalTransformInfo * extra = queryBodyExtra(expr);
+        if (alreadyVisited(extra))
+        {
+            if (extra->isUnconditional() || (conditionDepth > 0))
+                return false;
+            extra->setUnconditional();
+        }
+        else
+        {
+            if (conditionDepth == 0)
+                extra->setFirstUnconditional();
+        }
+        return true;
+    }
+    return !alreadyVisited(expr);
+}
+
+
+void ConditionalHqlTransformer::analyseExpr(IHqlExpression * expr)
+{
+    if (!analyseThis(expr))
+        return;
+
+    doAnalyseExpr(expr);
+}
+
+
+void ConditionalHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
+{
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_colon:
+        //Hoisting transforms need to happen after the workflow separation - otherwise
+        //you can end up with an exponential expansion of persist points.
+        throwUnexpected();              
+    case no_cluster:
+    case no_sequential:
+        containsUnknownIndependentContents = true;
+        return;
+    case no_allnodes:
+    case no_thisnode:
+        if (!(flags & CTFtraverseallnodes))
+            return;
+        break;
+    case no_globalscope:
+        if (!expr->hasProperty(localAtom))
+        {
+            unsigned savedDepth = conditionDepth;
+            conditionDepth = 0;
+            analyseExpr(expr->queryChild(0));
+            conditionDepth = savedDepth;
+            return;
+        }
+        break;
+    case no_if:
+    case no_and:
+    case no_or:
+    case no_mapto:
+    case no_map:
+    case no_which:
+    case no_rejected:
+    case no_choose:
+        if (treatAsConditional(expr))
+        {
+            analyseExpr(expr->queryChild(0));
+            conditionDepth++;
+            ForEachChildFrom(idx, expr, 1)
+                analyseExpr(expr->queryChild(idx));
+            conditionDepth--;
+            return;
+        }
+        break;
+    case no_case:
+        if (treatAsConditional(expr))
+        {
+            analyseExpr(expr->queryChild(0));
+            analyseExpr(expr->queryChild(1));
+            conditionDepth++;
+            ForEachChildFrom(idx, expr, 2)
+                analyseExpr(expr->queryChild(idx));
+            conditionDepth--;
+            return;
+        }
+        break;
+    case no_attr_expr:
+        analyseChildren(expr);
+        return;
+    }
+    NewHqlTransformer::analyseExpr(expr);
+}
+
+bool ConditionalHqlTransformer::treatAsConditional(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_if:
+        return ((flags & CTFnoteifall) ||
+            ((flags & CTFnoteifactions) && expr->isAction()) ||
+            ((flags & CTFnoteifdatasets) && expr->isDataset()) ||
+            ((flags & CTFnoteifdatarows) && expr->isDatarow()));
+    case no_or:
+        return (flags & CTFnoteor) != 0;
+    case no_and:
+        return (flags & CTFnoteor) != 0;
+    case no_case:
+    case no_map:
+    case no_mapto:
+        return (flags & CTFnotemap) != 0;
+    case no_which:
+    case no_rejected:
+    case no_choose:
+        return (flags & CTFnotewhich) != 0;
+    }
+    return false;
+}
+
+
+//---------------------------------------------------------------------------
+
+HoistingHqlTransformer::HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags) : ConditionalHqlTransformer(_info, _flags)
+{
+    target = NULL;
 }
 
 void HoistingHqlTransformer::setParent(const HoistingHqlTransformer * parent)
@@ -2106,8 +2249,6 @@ void HoistingHqlTransformer::setParent(const HoistingHqlTransformer * parent)
     assertex(parent->independentCache);
     independentCache.set(parent->independentCache);
 }
-
-
 
 void HoistingHqlTransformer::transformRoot(const HqlExprArray & in, HqlExprArray & out)
 {
@@ -2129,11 +2270,6 @@ void HoistingHqlTransformer::appendToTarget(IHqlExpression & cur)
     target->append(cur);
 }
 
-ANewTransformInfo * HoistingHqlTransformer::createTransformInfo(IHqlExpression * expr)
-{
-    return CREATE_NEWTRANSFORMINFO(HoistingTransformInfo, expr);
-}
-
 void HoistingHqlTransformer::transformArray(const HqlExprArray & in, HqlExprArray & out)
 {
     HqlExprArray * savedTarget = target;
@@ -2152,76 +2288,6 @@ IHqlExpression * HoistingHqlTransformer::transformRoot(IHqlExpression * expr)
 }
 
 
-bool HoistingHqlTransformer::analyseThis(IHqlExpression * expr)
-{
-    HoistingTransformInfo * extra = queryBodyExtra(expr);
-    if (alreadyVisited(expr->queryBody()))
-    {
-        if ((pass != 0) || extra->isUnconditional() || (conditionDepth > 0))
-            return false;
-    }
-    if (conditionDepth == 0)
-        extra->setUnconditional();
-    return true;
-}
-
-
-void HoistingHqlTransformer::analyseExpr(IHqlExpression * expr)
-{
-    if (!analyseThis(expr))
-        return;
-
-    doAnalyseExpr(expr);
-}
-
-
-void HoistingHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
-{
-    node_operator op = expr->getOperator();
-    switch (op)
-    {
-    case no_colon:
-        //Hoisting transforms need to happen after the workflow separation - otherwise
-        //you can end up with an exponential expansion of persist points.
-        throwUnexpected();              
-    case no_cluster:
-    case no_sequential:
-        containsUnknownIndependentContents = true;
-        return;
-    case no_allnodes:
-    case no_thisnode:
-        if (!(flags & HTFtraverseallnodes))
-            return;
-        break;
-    case no_globalscope:
-        if (!expr->hasProperty(localAtom))
-        {
-            unsigned savedDepth = conditionDepth;
-            conditionDepth = 0;
-            analyseExpr(expr->queryChild(0));
-            conditionDepth = savedDepth;
-            return;
-        }
-        break;
-    case no_if:
-        if (checkConditional(expr))
-        {
-            analyseExpr(expr->queryChild(0));
-            conditionDepth++;
-            analyseExpr(expr->queryChild(1));
-            if (expr->queryChild(2))
-                analyseExpr(expr->queryChild(2));
-            conditionDepth--;
-            return;
-        }
-        break;
-    case no_attr_expr:
-        analyseChildren(expr);
-        return;
-    }
-    NewHqlTransformer::analyseExpr(expr);
-}
-
 //A good idea, but I need to get my head around roxie/thor differences and see if we can execute graphs more dynamically.
 IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr)
 {
@@ -2235,7 +2301,7 @@ IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr
     case no_allnodes:               // MORE: This needs really needs to recurse, and substitute within no_thisnode - not quite sure how that would happen
     case no_thisnode:
         //I'm not sure this is a good solution - really contents of no_thisnode should be hoisted in common, would require dependence on insideAllNodes
-        if (!(flags & HTFtraverseallnodes))
+        if (!(flags & CTFtraverseallnodes))
             return LINK(expr);
         break;
     case no_cluster:
@@ -2276,7 +2342,7 @@ IHqlExpression * HoistingHqlTransformer::createTransformed(IHqlExpression * expr
             return completeTransform(expr, transformedArgs);
         }
     case no_if:
-        if (checkConditional(expr))
+        if (treatAsConditional(expr))
         {
             HqlExprArray args;
             args.append(*transform(expr->queryChild(0)));
@@ -2417,10 +2483,6 @@ bool onlyTransformOnce(IHqlExpression * expr)
     case no_sequence:
     case no_self:
     case no_selfref:
-#ifdef ENSURE_SELSEQ_UID
-    case no_left:
-    case no_right:
-#endif
     case no_flat:
     case no_any:
     case no_existsgroup:
@@ -3195,9 +3257,9 @@ IHqlExpression * updateChildSelectors(IHqlExpression * expr, IHqlExpression * ol
 }
 
 
-IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldRecord, IHqlExpression * newSelector, unsigned firstChild)
+IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector, unsigned firstChild)
 {
-    if (oldRecord == newSelector->queryRecord())
+    if (oldSelector->queryRecord() == newSelector->queryRecord())
         return LINK(expr);
 
     unsigned max = expr->numChildren();
@@ -3208,7 +3270,9 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldR
         args.append(*LINK(expr->queryChild(i)));
 
     NewSelectorReplacingTransformer transformer;
-    transformer.setRootMapping(newSelector, newSelector, oldRecord);
+    if (oldSelector != newSelector)
+        transformer.initSelectorMapping(oldSelector, newSelector);
+    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord());
     bool same = true;
     for (; i < max; i++)
     {
@@ -3310,6 +3374,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
     case no_setgraphresult:
     case no_setgraphloopresult:
     case no_extractresult:
+    case no_newuserdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
             pushScope();
@@ -3687,6 +3752,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_setgraphresult:
     case no_setgraphloopresult:
     case no_extractresult:
+    case no_newuserdictionary:
         {
             IHqlExpression * dataset = expr->queryChild(0);
             pushScope();
@@ -4581,51 +4647,6 @@ IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr)
     return expander.createTransformed(expr);
 }
 
-HQL_API bool containsSelector(IHqlExpression * expr, IHqlExpression * selector)
-{
-    return exprReferencesDataset(expr, selector);
-}
-
-//---------------------------------------------------------------------------
-
-static HqlTransformerInfo hqlSelectorAnywhereLocatorInfo("HqlSelectorAnywhereLocator");
-HqlSelectorAnywhereLocator::HqlSelectorAnywhereLocator(IHqlExpression * _selector) : NewHqlTransformer(hqlSelectorAnywhereLocatorInfo)
-{ 
-    selector.set(_selector); 
-    foundSelector = false; 
-}
-
-
-void HqlSelectorAnywhereLocator::analyseExpr(IHqlExpression * expr)
-{
-    if (foundSelector || alreadyVisited(expr))
-        return;
-    NewHqlTransformer::analyseExpr(expr);
-}
-
-void HqlSelectorAnywhereLocator::analyseSelector(IHqlExpression * expr)
-{
-    if (expr == selector)
-    {
-        foundSelector = true;
-        return;
-    }
-    NewHqlTransformer::analyseSelector(expr);
-}
-
-bool HqlSelectorAnywhereLocator::containsSelector(IHqlExpression * expr)
-{
-    foundSelector = false;
-    analyse(expr, 0);
-    return foundSelector;
-}
-
-HQL_API bool containsSelectorAnywhere(IHqlExpression * expr, IHqlExpression * selector)
-{
-    HqlSelectorAnywhereLocator locator(selector);
-    return locator.containsSelector(expr);
-}
-
 //---------------------------------------------------------------------------
 
 /*
@@ -4692,242 +4713,6 @@ void * transformerAlloc(size32_t size)
     return transformerHeap->alloc(size);
 }
 #endif
-
-class ExpressionStatsInfo
-{
-public:
-    enum { MaxOperands = 17 };
-public:
-    ExpressionStatsInfo() { count = 0; _clear(numOperands); countMax = 0; sumMax = 0; }
-
-    void trace()
-    {
-        DBGLOG("numUnique %u", count);
-        for (unsigned i=0; i < MaxOperands; i++)
-            DBGLOG("  %u operands: %u", i, numOperands[i]);
-        DBGLOG("  %u experessions total %u operands", countMax, sumMax);
-    }
-
-    unsigned count;
-    unsigned numOperands[MaxOperands];
-    unsigned countMax;
-    unsigned sumMax;
-};
-
-static void calcNumUniqueExpressions(IHqlExpression * expr, ExpressionStatsInfo & info)
-{
-    if (expr->queryTransformExtra())
-        return;
-    expr->setTransformExtraUnlinked(expr);
-
-    //use head recursion
-    loop
-    {
-        info.count++;
-        unsigned max = expr->numChildren();
-        if (max >= ExpressionStatsInfo::MaxOperands)
-        {
-            info.countMax++;
-            info.sumMax += max;
-        }
-        else
-            info.numOperands[max]++;
-
-        if (max == 0)
-            return;
-
-        for (unsigned idx=1; idx < max; idx++)
-            calcNumUniqueExpressions(expr->queryChild(idx), info);
-        expr = expr->queryChild(0);
-    }
-}
-
-unsigned getNumUniqueExpressions(IHqlExpression * expr)
-{
-    TransformMutexBlock block;
-    ExpressionStatsInfo info;
-    calcNumUniqueExpressions(expr, info);
-    return info.count;
-}
-
-
-unsigned getNumUniqueExpressions(const HqlExprArray & exprs)
-{
-    TransformMutexBlock block;
-    ExpressionStatsInfo info;
-    ForEachItemIn(i, exprs)
-        calcNumUniqueExpressions(&exprs.item(i),info);
-    return info.count;
-}
-
-//------------------------------------------------------------------------------------------------
-
-static HqlTransformerInfo quickExpressionCounterInfo("QuickExpressionCounter");
-class HQL_API QuickExpressionCounter : public QuickHqlTransformer
-{
-public:
-    QuickExpressionCounter(IHqlExpression * _search, unsigned _limit) 
-    : QuickHqlTransformer(quickExpressionCounterInfo, NULL), search(_search), limit(_limit)
-    {
-        matches = 0;
-    }
-
-    void analyse(IHqlExpression * expr)
-    {
-        if (expr == search)
-            matches++;
-        if (matches >= limit)
-            return;
-        QuickHqlTransformer::analyse(expr);
-    }
-
-    bool limitReached() const { return matches >= limit; }
-    unsigned numMatches() const { return matches; }
-
-protected:
-    HqlExprAttr search;
-    unsigned matches;
-    unsigned limit;
-};
-
-
-
-extern HQL_API unsigned getNumOccurences(HqlExprArray & exprs, IHqlExpression * search, unsigned limit)
-{
-    QuickExpressionCounter counter(search, limit);
-    ForEachItemIn(i, exprs)
-        counter.analyse(&exprs.item(i));
-    return counter.numMatches();
-}
-
-
-extern HQL_API void logTreeStats(IHqlExpression * expr)
-{
-    TransformMutexBlock block;
-    ExpressionStatsInfo info;
-    calcNumUniqueExpressions(expr,info);
-    info.trace();
-}
-
-extern HQL_API void logTreeStats(const HqlExprArray & exprs)
-{
-    TransformMutexBlock block;
-    ExpressionStatsInfo info;
-    ForEachItemIn(i, exprs)
-        calcNumUniqueExpressions(&exprs.item(i),info);
-    info.trace();
-}
-
-//------------------------------------------------------------------------------------------------
-
-static HqlTransformerInfo selectCollectingTransformerInfo("SelectCollectingTransformer");
-class SelectCollectingTransformer : public NewHqlTransformer
-{
-public:
-    SelectCollectingTransformer(HqlExprArray & _found)
-    : NewHqlTransformer(selectCollectingTransformerInfo), found(_found)
-    {
-    }
-
-    virtual void analyseExpr(IHqlExpression * expr)
-    {
-        if (alreadyVisited(expr))
-            return;
-        if (expr->getOperator() == no_select)
-        {
-            if (!found.contains(*expr))
-                found.append(*LINK(expr));
-            return;
-        }
-        NewHqlTransformer::analyseExpr(expr);
-    }
-
-protected:
-    HqlExprArray & found;
-};
-
-
-void gatherSelectExprs(HqlExprArray & target, IHqlExpression * expr)
-{
-    SelectCollectingTransformer collector(target);
-    collector.analyse(expr, 0);
-}
-
-//------------------------------------------------------------------------------------------------
-
-static HqlTransformerInfo fieldAccessAnalyserInfo("FieldAccessAnalyser");
-FieldAccessAnalyser::FieldAccessAnalyser(IHqlExpression * _selector) : NewHqlTransformer(fieldAccessAnalyserInfo), selector(_selector)
-{
-    unwindFields(fields, selector->queryRecord());
-    numAccessed = 0;
-    accessed.setown(createBitSet());
-}
-
-IHqlExpression * FieldAccessAnalyser::queryLastFieldAccessed() const
-{
-    if (numAccessed == 0)
-        return NULL;
-    if (accessedAll())
-        return &fields.tos();
-    ForEachItemInRev(i, fields)
-    {
-        if (accessed->test(i))
-            return &fields.item(i);
-    }
-    throwUnexpected();
-}
-
-void FieldAccessAnalyser::analyseExpr(IHqlExpression * expr)
-{
-    if (accessedAll() || alreadyVisited(expr))
-        return;
-    if (expr == selector)
-    {
-        setAccessedAll();
-        return;
-    }
-    if (expr->getOperator() == no_select)
-    {
-        if (expr->queryChild(0) == selector)
-        {
-            unsigned match = fields.find(*expr->queryChild(1));
-            assertex(match != NotFound);
-            if (!accessed->test(match))
-            {
-                accessed->set(match);
-                numAccessed++;
-            }
-            return;
-        }
-    }
-    NewHqlTransformer::analyseExpr(expr);
-}
-
-
-void FieldAccessAnalyser::analyseSelector(IHqlExpression * expr)
-{
-    if (expr == selector)
-    {
-        setAccessedAll();
-        return;
-    }
-    if (expr->getOperator() == no_select)
-    {
-        if (expr->queryChild(0) == selector)
-        {
-            unsigned match = fields.find(*expr->queryChild(1));
-            assertex(match != NotFound);
-            if (!accessed->test(match))
-            {
-                accessed->set(match);
-                numAccessed++;
-            }
-            return;
-        }
-    }
-    NewHqlTransformer::analyseSelector(expr);
-}
-
 
 //------------------------------------------------------------------------------------------------
 

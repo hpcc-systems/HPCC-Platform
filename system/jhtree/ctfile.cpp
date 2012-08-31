@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "platform.h"
@@ -345,9 +344,18 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         }
 
         int bytes = sizeof(pos) + size;
+        if (isVariable)
+            bytes += sizeof(KEYRECSIZE_T);
         if (hdr.keyBytes + bytes >= maxBytes)    // probably could be '>' (loses byte)
             return false;
 
+        if (isVariable && isLeaf())
+        {
+            KEYRECSIZE_T _insize = insize;
+            _WINREV(_insize);
+            memcpy(keyPtr, &_insize, sizeof(_insize));
+            keyPtr += sizeof(_insize);
+        }
         _WINREV(pos);
         memcpy(keyPtr, &pos, sizeof(pos));
         keyPtr += sizeof(pos);
@@ -613,56 +621,97 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
         if (keyType & COL_PREFIX)
         {
             MTIME_SECTION(timer, "COL_PREFIX expand");
-            expandedSize = hdr.numKeys * keyRecLen;
             
-            keyBuf = (char *) allocMem(expandedSize);
-            unsigned workRecLen = keyRecLen - sizeof(offset_t);
-            const char *s = keys;
-            char *t = keyBuf;
-
-            if (expandedSize) {
+            if (hdr.numKeys) {
+                bool handleVariable = isVariable && isLeaf();
+                KEYRECSIZE_T workRecLen;
+                MemoryBuffer keyBufMb;
+                const char *source = keys;
+                char *target;
                 // do first row
-                *(offset_t *)t = *(const offset_t *)s;
-                t += sizeof( offset_t );
-                s += sizeof( offset_t );
-                const char *prev = t;           // this is where next row gets data from
-                // first time fill pack with 0
-                unsigned char pack1 = *s++;
+                if (handleVariable) {
+                    memcpy(&workRecLen, source, sizeof(workRecLen));
+                    _WINREV(workRecLen);
+                    size32_t tmpSz = sizeof(workRecLen) + sizeof(offset_t);
+                    target = (char *)keyBufMb.reserve(tmpSz+workRecLen);
+                    memcpy(target, source, tmpSz);
+                    source += tmpSz;
+                    target += tmpSz;
+                }
+                else {
+                    target = (char *)keyBufMb.reserveTruncate(hdr.numKeys * keyRecLen);
+                    workRecLen = keyRecLen - sizeof(offset_t);
+                    memcpy(target, source, sizeof(offset_t));
+                    source += sizeof(offset_t);
+                    target += sizeof(offset_t);
+                }
+
+                // this is where next row gets data from
+                const char *prev, *next;
+                unsigned prevOffset;
+                if (handleVariable)
+                    prevOffset = target-((char *)keyBufMb.bufferBase());
+                else
+                    next = target;
+
+                unsigned char pack1 = *source++;
 #ifdef _DEBUG
-                assertex(pack1<=workRecLen);            
+                assertex(0==pack1); // 1st time will be always be 0
 #endif
-                memset(t,0,pack1);
-                t += pack1;
-                size32_t left = workRecLen - pack1;
+                KEYRECSIZE_T left = workRecLen;
                 while (left--) {
-                    *t = *s;
-                    s++;
-                    t++;
+                    *target = *source;
+                    source++;
+                    target++;
                 }
                 // do subsequent rows
-                for (i = 1; i < hdr.numKeys; i++)
-                {
-                    *(offset_t *)t = *(const offset_t *)s;
-                    t += sizeof( offset_t );
-                    s += sizeof( offset_t );
-                    const char * next = t;
-                    pack1 = *s++;
+                for (i = 1; i < hdr.numKeys; i++) {
+                    if (handleVariable) {
+                        memcpy(&workRecLen, source, sizeof(workRecLen));
+                        _WINREV(workRecLen);
+                        target = (char *)keyBufMb.reserve(sizeof(workRecLen)+sizeof(offset_t)+workRecLen);
+                        size32_t tmpSz = sizeof(workRecLen)+sizeof(offset_t);
+                        memcpy(target, source, tmpSz);
+                        target += tmpSz;
+                        source += tmpSz;
+                    }
+                    else
+                    {
+                        memcpy(target, source, sizeof(offset_t));
+                        source += sizeof(offset_t);
+                        target += sizeof(offset_t);
+                    }
+                    pack1 = *source++;
 #ifdef _DEBUG
                     assertex(pack1<=workRecLen);            
 #endif
+                    if (handleVariable) {
+                        prev = ((char *)keyBufMb.bufferBase())+prevOffset;
+                        // for next
+                        prevOffset = target-((char *)keyBufMb.bufferBase());
+                    }
+                    else {
+                        prev = next;
+                        next = target;
+                    }
                     left = workRecLen - pack1;
                     while (pack1--) {
-                        *t = *prev;
+                        *target = *prev;
                         prev++;
-                        t++;
+                        target++;
                     }
                     while (left--) {
-                        *t = *s;
-                        s++;
-                        t++;
+                        *target = *source;
+                        source++;
+                        target++;
                     }
-                    prev = next;
                 }
+                expandedSize = keyBufMb.length();
+                keyBuf = (char *)keyBufMb.detach();
+            }
+            else {
+                keyBuf = NULL;
+                expandedSize = 0;
             }
         }
         else

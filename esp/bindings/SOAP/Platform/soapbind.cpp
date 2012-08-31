@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning( disable : 4786 )
@@ -264,6 +263,100 @@ void CSoapRequestBinding::post(const char *proxy, const char* url, IRpcResponseB
     {
         response.setRpcState(RPC_MESSAGE_ERROR);
     }
+}
+
+void CSoapComplexType::appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype)
+{
+    StringBuffer content;
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        content.append('{');
+        serializeStruct(ctx, content, (const char *)NULL);
+        content.append('}');
+        mimetype.set("application/json; charset=UTF-8");
+    }
+    else
+    {
+        buffer.append(38, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+        serializeStruct(ctx, content, (const char *)NULL);
+        mimetype.set("text/xml; charset=UTF-8");
+    }
+
+    buffer.append(content.length(), content.str());
+}
+
+inline void open_element(IEspContext *ctx, StringBuffer &xml, const char *name, const char *uri, const char *prefix)
+{
+    if (!name || !*name)
+        return;
+    xml.append("<");
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(name);
+    if (uri && *uri)
+    {
+        xml.append("xmlns");
+        if (prefix && *prefix)
+            xml.append(':').append(prefix);
+        xml.append("=\"").append(uri).append('\"');
+    }
+}
+
+inline void start_child_attributes(IEspContext *ctx, StringBuffer &xml, const char *name)
+{
+}
+
+inline void start_child_elements(IEspContext *ctx, StringBuffer &xml, const char *name)
+{
+    if (!name || !*name)
+        return;
+    xml.append('>');
+}
+
+inline void close_element(IEspContext *ctx, StringBuffer &xml, const char *name, const char *prefix)
+{
+    if (!name || !*name)
+        return;
+    xml.append("</");
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(name).append('>');
+}
+
+void CSoapComplexType::serializeJSONStruct(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+    {
+        if (s.length() && !strchr("[{:", s.charAt(s.length()-1)))
+            s.append(", ");
+        if (name && *name)
+            s.append('\"').append(name).append("\": ");
+        s.append("{");
+        serializeContent(ctx, s);
+        s.append("}");
+        return;
+    }
+}
+
+void CSoapComplexType::serializeStruct(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    const char *tag = (name && *name) ? name : getRootName();
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+        return serializeJSONStruct(ctx, s, tag);
+
+    open_element(ctx, s, tag, getNsURI(), getNsPrefix());
+    start_child_attributes(ctx, s, name);
+    serializeAttributes(ctx, s);
+    start_child_elements(ctx, s, tag);
+    serializeContent(ctx, s);
+    close_element(ctx, s, tag, getNsPrefix());
+}
+
+void CSoapComplexType::serializeItem(IEspContext* ctx, StringBuffer& s, const char *name)
+{
+    if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
+        return serializeJSONStruct(ctx, s, NULL);
+    serializeStruct(ctx, s, name);
 }
 
 void CSoapResponseBinding::handleExceptions(IMultiException *me, const char *serv, const char *meth)

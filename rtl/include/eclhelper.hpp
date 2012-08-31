@@ -1,18 +1,17 @@
 /*##############################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ##############################################################################
  */
 
@@ -31,7 +30,7 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      139
+#define ACTIVITY_INTERFACE_VERSION      140
 #define MIN_ACTIVITY_INTERFACE_VERSION  138             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
@@ -958,6 +957,8 @@ enum ActivityInterfaceEnum
     TAIpipewritearg_2,
     TAIinlinetablearg_1,
     TAIshuffleextra_1,
+    TAIhashdeduparg_2,
+    TAIsoapcallextra_2,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -1793,6 +1794,11 @@ struct IHThorHashDistributeArg : public IHThorArg
     virtual ICompare * queryMergeCompare()=0;       // iff TAKhasdistributemerge
 };
 
+enum
+{
+    HFDwholerecord  = 0x0001,
+};
+
 struct IHThorHashDedupArg : public IHThorArg
 {
     virtual ICompare * queryCompare()=0;
@@ -1800,6 +1806,10 @@ struct IHThorHashDedupArg : public IHThorArg
     virtual IOutputMetaData * queryKeySize() = 0;
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record) = 0;
     virtual ICompare * queryKeyCompare()=0;
+    //the following are only valid if selectInterface(TAIhashdeduparg_2) returns non-null
+    virtual unsigned getFlags() = 0;
+    virtual IHash    * queryKeyHash()=0;
+    virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
 };
 
 struct IHThorHashMinusArg : public IHThorArg
@@ -1906,7 +1916,7 @@ struct ICsvParameters
     virtual bool         queryEBCDIC() = 0;
     virtual const char * queryHeader()              { return NULL; }
     virtual unsigned     queryHeaderLen() = 0;
-    virtual size32_t         queryMaxSize() = 0;
+    virtual size32_t     queryMaxSize() = 0;
     virtual const char * queryQuote(unsigned idx) = 0;
     virtual const char * querySeparator(unsigned idx) = 0;
     virtual const char * queryTerminator(unsigned idx) = 0;
@@ -2096,8 +2106,14 @@ struct IHThorWebServiceCallExtra : public IInterface
 };
 typedef IHThorWebServiceCallExtra IHThorSoapCallExtra;
 
+struct IHThorWebServiceCallExtra2 : public IInterface
+{
+    virtual double getTimeoutMS()   { return (double)-1.0; }//not specified, use default
+    virtual double getTimeLimitMS() { return (double)-1.0; }//not specified, use default
+};
+typedef IHThorWebServiceCallExtra2 IHThorSoapCallExtra2;
 
-struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra
+struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra, public IHThorWebServiceCallExtra2
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
@@ -2664,6 +2680,14 @@ interface IThorExternalRowProcessor : public IInterface
 struct IHThorExternalArg : public IHThorArg
 {
     virtual IThorExternalRowProcessor * createProcessor() = 0;
+};
+
+//------------------------- Dictionary stuff -------------------------
+
+interface IHThorHashLookupInfo
+{
+    virtual IHash * queryHash() = 0;
+    virtual ICompare * queryCompare() = 0;
 };
 
 

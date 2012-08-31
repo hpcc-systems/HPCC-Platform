@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 -->
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -54,27 +53,51 @@
       </head>
       <body class="yui-skin-sam" onload="nof5();onLoad()">
         <form id="HPCCResourceForm" name="HPCCResourceForm" >
-          <xsl:choose>
-            <xsl:when test="not(HPCCResourceRepositories/HPCCResourceRepository[1])">
-              <br/><br/>No resource found from your installation.<br/><br/>
-              <xsl:if test="string-length(PortalURL)">
-                <br/>You may visit <a href="{PortalURL}" target="_blank">
-                  <xsl:value-of select="PortalURL"/>
-                </a> for resources.
-              </xsl:if>
-            </xsl:when>
-            <xsl:otherwise>
-              <br/>
-              <b>Click a link below to download a version from your installation.
-              <xsl:if test="string-length(PortalURL)">
-                <br/>You may visit <a href="{PortalURL}" target="_blank">
-                <xsl:value-of select="PortalURL"/>
-                </a> for other versions.
-              </xsl:if>
-              </b><br/><br/>
-              <xsl:apply-templates/>
-            </xsl:otherwise>
-          </xsl:choose>
+            <xsl:choose>
+                <xsl:when test="UseResource = 0">
+                    <xsl:choose>
+                        <xsl:when test="string-length(PortalURL)">
+                            Please visit <a href="{PortalURL}" target="_blank">
+                              <xsl:value-of select="PortalURL"/>
+                            </a> for resources.
+                        </xsl:when>
+                        <xsl:otherwise>
+                            No web link is configured for downloading resources.
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:choose>
+                        <xsl:when test="not(HPCCResourceRepositories/HPCCResourceRepository[1])">
+                            <br/><br/>No resource found from your installation.<br/><br/>
+                            <xsl:choose>
+                                <xsl:when test="string-length(PortalURL)">
+                                <br/>You may visit <a href="{PortalURL}" target="_blank">
+                                    <xsl:value-of select="PortalURL"/>
+                                </a> for resources.
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    No web link is configured for downloading resource.
+                                </xsl:otherwise>
+                            </xsl:choose>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <br/>
+                            <b>
+                                Click a link below to download a version from your installation.
+                                <xsl:if test="string-length(PortalURL)">
+                                    <br/>You may visit <a href="{PortalURL}" target="_blank">
+                                        <xsl:value-of select="PortalURL"/>
+                                    </a> for other versions.
+                                </xsl:if>
+                            </b>
+                            <br/>
+                            <br/>
+                            <xsl:apply-templates/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </xsl:otherwise>
+            </xsl:choose>
         </form>
       </body>
     </html>

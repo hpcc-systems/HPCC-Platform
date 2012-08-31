@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-## Copyright (c) 2011 HPCC Systems.  All rights reserved.
+## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 -->
 
 <!DOCTYPE xsl:stylesheet [
@@ -93,7 +93,8 @@
                 <script type="text/javascript" src="/esp/files/req_array.js"/>
                 <script type="text/javascript" src="/esp/files/hashtable.js"/>
                 <script type="text/javascript" src="/esp/files/gen_form.js"/>
-                <script type="text/javascript"><xsl:text disable-output-escaping="yes"><![CDATA[
+                <script type="text/javascript"><xsl:text disable-output-escaping="yes">
+                <![CDATA[
   var isIE = (navigator.appName == "Microsoft Internet Explorer");
 
   function getRequestFormHtml()
@@ -175,7 +176,17 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
 
     return true;
 }
-]]></xsl:text>
+function switchInputForm()
+{
+    var inputform = document.getElementById('SelectForm');
+    if (inputform.value!="InputBox")
+       return false;
+    document.location.href = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/box/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+    return true;
+}
+
+]]>
+</xsl:text>
 <xsl:call-template name="GetHtmlHeadAddon"/>
 </script>
 
@@ -226,7 +237,11 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
                             </a>&nbsp;<a>
                                 <xsl:attribute name="href"><xsl:call-template name="build_link"><xsl:with-param name="type" select="'respxml'"/></xsl:call-template></xsl:attribute>
                                 <img src="/esp/files/img/respxml.gif" title="Sample Response XML" border="0" align="bottom"/>
-                            </a>
+                            </a>&nbsp;&nbsp;
+                            <select id="SelectForm" name="select_form" onChange="switchInputForm()">
+                               <option value="DynamicForm" selected="selected">Dynamic Form</option>
+                              <option value="InputBox">Input Box</option>
+                            </select>&nbsp;<br/>
                         </td>
                     </tr>
                     <xsl:if test="$methodDesc and $methodDesc!=''">

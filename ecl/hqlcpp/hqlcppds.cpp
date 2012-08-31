@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
 #include "hql.hpp"
@@ -48,9 +47,18 @@
 #include "hqlccommon.hpp"
 #include "hqliter.ipp"
 #include "hqlinline.hpp"
+#include "hqlusage.hpp"
+#include "hqlcppds.hpp"
 
 #define MAX_FIXED_SIZE_RAW 1024
 #define INLINE_TABLE_EXPAND_LIMIT 4
+
+void addGraphIdAttribute(ActivityInstance * instance, BuildCtx & ctx, IHqlExpression * graphId)
+{
+    SubGraphInfo * match = matchActiveGraph(ctx, graphId);
+    assertex(match);
+    instance->addAttributeInt("_graphId", match->graphId);
+}
 
 //===========================================================================
 
@@ -382,6 +390,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_index:
     case no_selectnth:
         return buildDatasetIndex(ctx, expr);
+    case no_selectmap:
+        return buildDatasetSelectMap(ctx, expr);
     case no_left:
     case no_right:
     case no_self:
@@ -548,7 +558,7 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
     case no_activerow:
         return buildActiveRow(ctx, expr->queryChild(0));
     default:
-        if (!expr->isDataset())
+        if (!expr->isDataset() && !expr->isDictionary())
             return buildNewRow(ctx, expr);
         break;
     }
@@ -1144,54 +1154,102 @@ bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph)
     return checker.isIndependent();
 }
 
+///--------------------------------------------------------------------------------------------------------------------
+
+IHqlExpression * createCounterAsGraphResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
+{
+    OwnedHqlExpr value = createScalarFromGraphResult(counter->queryType(), unsignedType, represents, seq);
+    OwnedHqlExpr internalAttr = createAttribute(internalAtom);
+    return createAlias(value, internalAttr);
+}
+
+ChildGraphExprBuilder::ChildGraphExprBuilder(unsigned _numInputs)
+: numInputs(_numInputs)
+{
+    numOutputs=0;
+    represents.setown(createAttribute(graphAtom, createUniqueId()));
+    resultsExpr.setown(createAttribute(resultsAtom, LINK(represents)));
+}
+
+IHqlExpression * ChildGraphExprBuilder::addDataset(IHqlExpression * expr)
+{
+    OwnedHqlExpr resultNumExpr;
+    ForEachItemIn(i, results)
+    {
+        IHqlExpression & curSetResult = results.item(i);
+        if (expr->queryBody() == curSetResult.queryChild(0)->queryBody())
+        {
+            resultNumExpr.set(curSetResult.queryChild(2));
+            break;
+        }
+    }
+
+    if (!resultNumExpr)
+    {
+        resultNumExpr.setown(getSizetConstant(numResults()));
+        results.append(*createValue(no_setgraphresult, makeVoidType(), LINK(expr), LINK(represents), LINK(resultNumExpr)));
+        numOutputs++;
+    }
+
+    HqlExprArray args;
+    args.append(*LINK(expr->queryRecord()));
+    args.append(*LINK(represents));
+    args.append(*LINK(resultNumExpr));
+    if (isGrouped(expr))
+        args.append(*createAttribute(groupedAtom));
+    if (!expr->isDataset())
+        args.append(*createAttribute(rowAtom));
+    args.append(*createAttribute(externalAtom, LINK(resultsExpr)));
+    args.append(*createAttribute(_original_Atom, LINK(expr)));
+    IHqlExpression * recordCountAttr = queryRecordCountInfo(expr);
+    if (recordCountAttr)
+        args.append(*LINK(recordCountAttr));
+    OwnedHqlExpr ret = createDataset(no_getgraphresult, args);
+    if (expr->isDatarow())
+        ret.setown(createRow(no_selectnth, LINK(ret), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom))));
+    return ret.getClear();
+}
+
+void ChildGraphExprBuilder::addAction(IHqlExpression * expr)
+{
+    results.append(*LINK(expr));
+}
+
+unsigned ChildGraphExprBuilder::addInput()
+{
+    unsigned id = numResults();
+    numInputs++;
+    return id;
+}
+
+IHqlExpression * ChildGraphExprBuilder::getGraph()
+{
+    HqlExprArray args;
+    args.append(*LINK(represents));
+    args.append(*getSizetConstant(numResults()));
+    args.append(*createActionList(results));
+    return createValue(no_childquery, makeVoidType(), args);
+}
+
 //---------------------------------------------------------------------------
 // Child dataset processing
 
-static IHqlExpression * convertScalarToResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
-{
-    OwnedHqlExpr row = convertScalarToRow(value, fieldType);
-    OwnedHqlExpr ds = createDatasetFromRow(LINK(row));
-    HqlExprArray args;
-    args.append(*LINK(ds));
-    args.append(*LINK(represents));
-    args.append(*getSizetConstant(seq));
-    args.append(*createAttribute(rowAtom));
-    return createValue(no_setgraphresult, makeVoidType(), args);
-}
-
-static IHqlExpression * createScalarFromResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
-{
-    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
-    OwnedHqlExpr counterRecord = createRecord(counterField);
-    HqlExprArray args;
-    args.append(*LINK(counterRecord));
-    args.append(*LINK(represents));
-    args.append(*getSizetConstant(seq));
-    args.append(*createAttribute(rowAtom));
-    OwnedHqlExpr counterResult = createDataset(no_getgraphresult, args);
-    OwnedHqlExpr select = createNewSelectExpr(createRow(no_selectnth, LINK(counterResult), getSizetConstant(1)), LINK(counterField));
-    OwnedHqlExpr cast = ensureExprType(select, scalarType);
-    return createAlias(cast, internalAttrExpr);
-}
-
-static IHqlExpression * createCounterAsResult(IHqlExpression * counter, IHqlExpression * represents, unsigned seq)
-{
-    return createScalarFromResult(counter->queryType(), unsignedType, represents, seq);
-}
-
-ChildGraphBuilder::ChildGraphBuilder(HqlCppTranslator & _translator) 
+ChildGraphBuilder::ChildGraphBuilder(HqlCppTranslator & _translator, IHqlExpression * subgraph)
 : translator(_translator)
 {
+    represents.set(subgraph->queryChild(0));
     id = translator.nextActivityId();
-    idExpr.setown(createConstant((__int64)id));
+
     appendUniqueId(instanceName.append("child"), id);
     instanceExpr.setown(createQuoted(instanceName, makeBoolType()));
-    represents.setown(createAttribute(graphAtom, LINK(idExpr)));
-    numResults = 0;
-    loopAgainResult = 0;
+    resultsExpr.setown(createAttribute(resultsAtom, LINK(represents)));
 
     StringBuffer s;
     resultInstanceExpr.setown(createQuoted(appendUniqueId(s.append("res"), id), makeBoolType()));
+    numResults = (unsigned)getIntValue(subgraph->queryChild(1));
+
+    IHqlExpression * actions = subgraph->queryChild(2);
+    actions->unwindList(results, no_actionlist);
 }
 
 void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
@@ -1240,10 +1298,10 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     graphctx.addQuoted(s);
 
     translator.endExtract(graphctx, extractBuilder);
-    ctx.associateExpr(resultInstanceExpr, resultInstanceExpr);
+    ctx.associateExpr(resultsExpr, resultInstanceExpr);
 }
 
-void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr, OwnedHqlExpr * retResultsExpr)
+void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr)
 {
     BuildCtx ctx(_ctx);
     ctx.addGroup();
@@ -1267,59 +1325,6 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     assertex(retInstanceExpr == instanceExpr);
 
     retGraphExpr->setown(retInstanceExpr.getClear());
-    retResultsExpr->set(resultInstanceExpr);
-}
-
-void ChildGraphBuilder::buildStmt(BuildCtx & ctx, IHqlExpression * expr)
-{
-    results.append(*LINK(expr));
-}
-
-bool ChildGraphBuilder::isDatasetPresent(IHqlExpression * expr)
-{
-    ForEachItemIn(i, results)
-    {
-        IHqlExpression & curSetResult = results.item(i);
-        if (expr->queryBody() == curSetResult.queryChild(0)->queryBody())
-            return true;
-    }
-    return false;
-}
-
-
-IHqlExpression * ChildGraphBuilder::addDataset(IHqlExpression * expr)
-{
-    OwnedHqlExpr resultNumExpr;
-    ForEachItemIn(i, results)
-    {
-        IHqlExpression & curSetResult = results.item(i);
-        if (expr->queryBody() == curSetResult.queryChild(0)->queryBody())
-        {
-            resultNumExpr.set(curSetResult.queryChild(2));
-            break;
-        }
-    }
-
-    if (!resultNumExpr)
-    {
-        resultNumExpr.setown(getSizetConstant(numResults++));
-        results.append(*createValue(no_setgraphresult, makeVoidType(), LINK(expr), LINK(represents), LINK(resultNumExpr)));
-    }
-
-    HqlExprArray args;
-    args.append(*LINK(expr->queryRecord()));
-    args.append(*LINK(represents));
-    args.append(*LINK(resultNumExpr));
-    if (isGrouped(expr))
-        args.append(*createAttribute(groupedAtom));
-    if (!expr->isDataset())
-        args.append(*createAttribute(rowAtom));
-    args.append(*createAttribute(externalAtom, LINK(resultInstanceExpr)));
-    args.append(*createAttribute(_original_Atom, LINK(expr)));          
-    OwnedHqlExpr ret = createDataset(no_getgraphresult, args);
-    if (expr->isDatarow())
-        ret.setown(createRow(no_selectnth, LINK(ret), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom))));
-    return ret.getClear();
 }
 
 void ChildGraphBuilder::createBuilderAlias(BuildCtx & ctx, ParentExtract * extractBuilder)
@@ -1331,70 +1336,13 @@ void ChildGraphBuilder::createBuilderAlias(BuildCtx & ctx, ParentExtract * extra
     ctx.addQuoted(s);
 }
 
-unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
+unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance)
 {
-    LinkedHqlExpr transformedBody = body;
-    LinkedHqlExpr transformedAgain = again;
-    numResults = 2;
-
-    //Result 1 is the input dataset.
-    HqlExprArray args;
-    args.append(*LINK(dataset->queryRecord()));
-    args.append(*LINK(represents));
-    args.append(*getSizetConstant(1));
-    if (isGrouped(dataset))
-        args.append(*createAttribute(groupedAtom));
-    args.append(*createAttribute(_loop_Atom));
-    if (multiInstance)
-        args.append(*createAttribute(_streaming_Atom));
-    if (translator.targetThor())    // MORE: && !isChildQuery(ctx)..
-        args.append(*createAttribute(_distributed_Atom));
-    OwnedHqlExpr inputResult= createDataset(no_getgraphresult, args);
-
-    //Result 2 is the counter - if present
-    OwnedHqlExpr counterResult;
-    if (counter)
-    {
-        OwnedHqlExpr select = createCounterAsResult(counter, represents, 2);
-        transformedBody.setown(replaceExpression(transformedBody, counter, select));
-        if (transformedAgain)
-        {
-            //The COUNTER for the global termination condition is whether to execute iteration COUNTER, 1=1st iter
-            //Since we're evaluating the condition in the previous iteration it needs to be increased by 1.
-            OwnedHqlExpr nextCounter = adjustValue(select, 1);
-            transformedAgain.setown(replaceExpression(transformedAgain, counter, nextCounter));
-        }
-        numResults = 3;
-    }
-
-    //first create the result...
-    //Need to replace ROWS(LEFT) with the result1
-    OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
-    OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
-    transformedBody.setown(replaceExpression(transformedBody, rowsExpr, inputResult));
-
-    OwnedHqlExpr result = createValue(no_setgraphresult, makeVoidType(), LINK(transformedBody), LINK(represents), getSizetConstant(0), createAttribute(_loop_Atom));
-
-    if (transformedAgain)
-    {
-        LinkedHqlExpr nextLoopDataset = transformedBody;
-        if (filter)
-        {
-            //If there is a loop filter then the global condition is applied to dataset filtered by that.
-            OwnedHqlExpr mappedFilter = replaceSelector(filter, left, nextLoopDataset);
-            nextLoopDataset.setown(createDataset(no_filter, nextLoopDataset.getClear(), LINK(mappedFilter)));
-        }
-        transformedAgain.setown(replaceExpression(transformedAgain, rowsExpr, nextLoopDataset));
-        OwnedHqlExpr againResult = convertScalarToResult(transformedAgain, queryBoolType(), represents, 3);
-        result.setown(createCompound(result.getClear(), againResult.getClear()));
-        loopAgainResult = 3;
-        numResults = 4;
-    }
-
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, result, represents, numResults, no_loop);
+    OwnedHqlExpr query = createActionList(results);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_loop);
     //Add a flag to indicate multi instance
     if (multiInstance)
         resourced.setown(appendOwnedOperand(resourced, createAttribute(multiInstanceAtom)));
@@ -1445,7 +1393,7 @@ public:
                 }
                 else
                 {
-                    counterResult.setown(createCounterAsResult(counter, represents, 0));
+                    counterResult.setown(createCounterAsGraphResult(counter, represents, 0));
                     return LINK(counterResult);
                 }
             }
@@ -1490,27 +1438,14 @@ protected:
 
 
 
-unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool isParallel)
+unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParallel)
 {
-    OwnedHqlExpr transformedBody;
-    OwnedHqlExpr counterResult;
-    {
-        GraphLoopReplacer replacer(rowsid, represents, counter, isParallel);
-        transformedBody.setown(replacer.transformRoot(body));
-        counterResult.set(replacer.queryCounterResult());
-    }
-
-    numResults = 0;
-    if (counterResult)
-        numResults++;
-
-    OwnedHqlExpr result = createValue(no_setgraphloopresult, makeVoidType(), LINK(transformedBody), LINK(represents));
-
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    translator.traceExpression("Before Loop resource", result);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, result, represents, numResults, no_loop);
+    OwnedHqlExpr query = createActionList(results);
+    translator.traceExpression("Before Loop resource", query);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_loop);
     translator.traceExpression("After Loop resource", resourced);
 
     //Add a flag to indicate multi instance
@@ -1536,19 +1471,12 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, IHqlExpression
     return id;
 }
 
-unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx, IHqlExpression * ds, unique_id_t containerId)
+unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx)
 {
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    OwnedHqlExpr query;
-    if (!ds->isAction())
-    {
-        OwnedHqlExpr result = addDataset(ds);
-        query.setown(createActionList(results));
-    }
-    else
-        query.set(ds);
+    OwnedHqlExpr query = createActionList(results);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_allnodes);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, represents, GraphRemote, false);
@@ -1562,6 +1490,18 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx, IHqlExpression *
     return id;
 }
 
+
+void HqlCppTranslator::buildChildGraph(BuildCtx & ctx, IHqlExpression * expr)
+{
+    IHqlExpression * represents= expr->queryChild(0);
+    OwnedHqlExpr resultsExpr = createAttribute(resultsAtom, LINK(represents));
+    //Shouldn't really happen, but if this graph has already benn called just use the results
+    if (ctx.queryMatchExpr(resultsExpr))
+        return;
+
+    ChildGraphBuilder graphBuilder(*this, expr);
+    graphBuilder.generateGraph(ctx);
+}
 
 void HqlCppTranslator::beginExtract(BuildCtx & ctx, ParentExtract * extractBuilder)
 {
@@ -1587,9 +1527,11 @@ void HqlCppTranslator::buildAssignChildDataset(BuildCtx & ctx, const CHqlBoundTa
 
     OwnedHqlExpr call;
     {
-        ChildGraphBuilder builder(*this);
+        ChildGraphExprBuilder builder(0);
         call.setown(builder.addDataset(expr));
-        builder.generateGraph(ctx);
+
+        OwnedHqlExpr subquery = builder.getGraph();
+        buildStmt(ctx, subquery);
     }
 
     buildExprAssign(ctx, target, call);
@@ -1678,6 +1620,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     HqlExprArray children;
     resourced->unwindList(children, no_actionlist);
     children.append(*createAttribute(numResultsAtom, getSizetConstant(numResults)));
+    children.append(*LINK(graphIdExpr));
     resourced.setown(createValue(no_subgraph, makeVoidType(), children));
 
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)
@@ -1708,16 +1651,46 @@ void HqlCppTranslator::buildChildDataset(BuildCtx & ctx, IHqlExpression * expr, 
 }
 
 
-unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance)
+unique_id_t HqlCppTranslator::buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance)
 {
-    ChildGraphBuilder builder(*this);
-    return builder.buildGraphLoopBody(ctx, dataset, selSeq, rowsid, body, counter, containerId, multiInstance);
+    ChildGraphExprBuilder graphBuilder(0);
+
+    OwnedHqlExpr transformedBody;
+    OwnedHqlExpr counterResult;
+    IHqlExpression * graphid = graphBuilder.queryRepresents();
+    {
+        const bool isParallel = multiInstance;
+        GraphLoopReplacer replacer(rowsid, graphid, counter, isParallel);
+        transformedBody.setown(replacer.transformRoot(body));
+        counterResult.set(replacer.queryCounterResult());
+    }
+
+    if (counterResult)
+        graphBuilder.addInput();
+
+    OwnedHqlExpr result = createValue(no_setgraphloopresult, makeVoidType(), LINK(transformedBody), LINK(graphid));
+    graphBuilder.addAction(result);
+    OwnedHqlExpr subquery = graphBuilder.getGraph();
+
+    ChildGraphBuilder builder(*this, subquery);
+    return builder.buildGraphLoopBody(ctx, multiInstance);
 }
 
-unique_id_t HqlCppTranslator::buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset, unique_id_t containerId)
+unique_id_t HqlCppTranslator::buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset)
 {
-    ChildGraphBuilder builder(*this);
-    return builder.buildRemoteGraph(ctx, dataset, containerId);
+    ChildGraphExprBuilder graphBuilder(0);
+    if (dataset->isAction())
+    {
+        graphBuilder.addAction(dataset);
+    }
+    else
+    {
+        OwnedHqlExpr ignoredResult = graphBuilder.addDataset(dataset);
+    }
+
+    OwnedHqlExpr subquery = graphBuilder.getGraph();
+    ChildGraphBuilder builder(*this, subquery);
+    return builder.buildRemoteGraph(ctx);
 }
 
 //---------------------------------------------------------------------------
@@ -1755,7 +1728,7 @@ bool HqlCppTranslator::isInlineOk()
 {
     if (!activeGraphCtx)
         return true;
-    return (options.maxInlineDepth != 0);
+    return true;
 }
 
 IHqlExpression * HqlCppTranslator::buildSpillChildDataset(BuildCtx & ctx, IHqlExpression * expr)
@@ -1767,14 +1740,25 @@ IHqlExpression * HqlCppTranslator::buildSpillChildDataset(BuildCtx & ctx, IHqlEx
 
 IHqlExpression * HqlCppTranslator::forceInlineAssignDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
-    CHqlBoundExpr bound;
-    if (expr->isPure() && ctx.getMatchExpr(expr, bound))
-        return bound.getTranslatedExpr();
+    loop
+    {
+        CHqlBoundExpr bound;
+        if (expr->isPure() && ctx.getMatchExpr(expr, bound))
+            return bound.getTranslatedExpr();
 
-    if (canProcessInline(&ctx, expr) || (expr->getOperator() == no_translated))
-        return LINK(expr);
+        if (canProcessInline(&ctx, expr) || (expr->getOperator() == no_translated))
+            return LINK(expr);
 
-    return buildSpillChildDataset(ctx, expr);
+        switch (expr->getOperator())
+        {
+        case no_compound:
+            buildStmt(ctx, expr->queryChild(0));
+            expr = expr->queryChild(1);
+            break;
+        default:
+            return buildSpillChildDataset(ctx, expr);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -2048,6 +2032,12 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         if (doBuildDatasetInlineTable(ctx, expr, tgt, format))
             return;
         break;
+    case no_compound:
+        {
+            buildStmt(ctx, expr->queryChild(0));
+            buildDataset(ctx, expr->queryChild(1), tgt, format);
+            return;
+        }
     }
 
     bool singleRow = hasSingleRow(expr);
@@ -2111,15 +2101,22 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
-                IHqlExpression * choosenLimit = NULL;
-                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                if (expr->isDictionary())
                 {
-                    choosenLimit = expr->queryChild(1);
-                    expr = expr->queryChild(0);
+                    builder.setown(createLinkedDictionaryBuilder(record));
                 }
+                else
+                {
+                    IHqlExpression * choosenLimit = NULL;
+                    if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+                    {
+                        choosenLimit = expr->queryChild(1);
+                        expr = expr->queryChild(0);
+                    }
 
-                //MORE: Extract limit and choosen and pass as parameters
-                builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                    //MORE: Extract limit and choosen and pass as parameters
+                    builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+                }
             }
             else if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
             {
@@ -2182,6 +2179,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
             ctx.addAssign(target.expr, bound.expr);
             return;
         }
+    case no_inlinedictionary:
     case no_inlinetable:
         {
             //This will typically generate a loop.  If few items then it is more efficient to expand the assigns/clones out.
@@ -2217,6 +2215,12 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
                 return;
             }
             break;
+        }
+    case no_compound:
+        {
+            buildStmt(ctx, expr->queryChild(0));
+            buildDatasetAssign(ctx, target, expr->queryChild(1));
+            return;
         }
     case no_compound_childread:
     case no_compound_childnormalize:
@@ -2406,14 +2410,20 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     Owned<IHqlCppDatasetBuilder> builder;
     if (targetOutOfLine)
     {
-        IHqlExpression * choosenLimit = NULL;
-        if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+        if (target.queryType()->getTypeCode() == type_dictionary)
         {
-            choosenLimit = expr->queryChild(1);
-            expr = expr->queryChild(0);
+            builder.setown(createLinkedDictionaryBuilder(record));
         }
-
-        builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+        else
+        {
+            IHqlExpression * choosenLimit = NULL;
+            if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
+            {
+                choosenLimit = expr->queryChild(1);
+                expr = expr->queryChild(0);
+            }
+            builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
+        }
     }
     else
         builder.setown(createBlockedDatasetBuilder(record));
@@ -2654,6 +2664,11 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
 
     if (sourceCursor)
     {
+        if (isNullProject(expr, false))
+        {
+            if (target->buildLinkRow(iterctx, sourceCursor))
+                return;
+        }
         BoundRow * targetRow = target->buildCreateRow(iterctx);
         HqlExprAssociation * skipAssociation = NULL;
         if (containsSkip)
@@ -2668,6 +2683,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         case no_hqlproject:
             doBuildRowAssignProject(iterctx, targetRef, expr);
             break;
+        case no_newuserdictionary:
         case no_newusertable:
             doBuildRowAssignUserTable(iterctx, targetRef, expr);
             break;
@@ -2761,6 +2777,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         buildDatasetAssignTempTable(subctx, target, expr);
         //MORE: Create rows and assign each one in turn.  Could possibly be done with a different dataset selector
         return;
+    case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
         return;
@@ -2802,6 +2819,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         return;
     case no_hqlproject:
     case no_newusertable:
+    case no_newuserdictionary:
         buildDatasetAssignProject(subctx, target, expr);
         return;
     case no_compound_childread:
@@ -2935,6 +2953,13 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
                     break;
                 }
             }
+        }
+
+        if (!done)
+        {
+            BoundRow * match = static_cast<BoundRow *>(ctx.queryAssociation(expr, AssocRow, NULL));
+            if (match && target->buildLinkRow(subctx, match))
+                done = true;
         }
 
         if (!done)
@@ -3728,6 +3753,7 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
                 return;
             }
         }
+        break;
         /*
     case no_externalcall:
         //MORE: Should assign directly to the target, but may not be very easy....
@@ -3740,6 +3766,11 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
         }
         break;
         */
+    case no_comma:
+    case no_compound:
+        buildStmt(ctx, expr->queryChild(0));
+        buildRowAssign(ctx, target, expr->queryChild(1));
+        return;
     }
 
     Owned<IReferenceSelector> src = buildNewRow(ctx, expr);
@@ -4035,7 +4066,8 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndexViaIterator(BuildCtx & c
     {
     case no_hqlproject:
         //optimize selectnth(project(rows, t), n) to projectrow(selectnth(rows, n), t)
-        if (dataset->queryChild(1)->isPure() && !expr->hasProperty(_countProject_Atom))
+        IHqlExpression * transform = dataset->queryChild(1);
+        if (!containsSkip(transform) && !expr->hasProperty(_countProject_Atom))
             childDataset = dataset->queryChild(0);
         break;
     }
@@ -4171,6 +4203,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
             specialCase = !isMultiLevelDatasetSelector(expr, false);
             break;
         case no_if:
+        case no_inlinedictionary:
         case no_inlinetable:
         case no_join:
             //Always creates a temporary, so don't use an iterator
@@ -4201,7 +4234,33 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
     if (!row)
     {
         Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
-        row = cursor->buildSelect(ctx, expr);
+        row = cursor->buildSelectNth(ctx, expr);
+
+        if (!row)
+        {
+            CHqlBoundExpr boundCleared;
+            buildDefaultRow(ctx, dataset, boundCleared);
+            OwnedHqlExpr defaultRowPtr = getPointer(boundCleared.expr);
+            row = bindRow(ctx, expr, defaultRowPtr);
+        }
+    }
+    return createReferenceSelector(row);
+}
+
+IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHqlExpression * expr)
+{
+    HqlExprAssociation * match = ctx.queryAssociation(expr, AssocRow, NULL);
+    if (match)
+        return createReferenceSelector(static_cast<BoundRow *>(match));
+
+    OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
+    BoundRow * row = NULL;
+    assertex(canProcessInline(&ctx, expr));
+
+    if (!row)
+    {
+        Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
+        row = cursor->buildSelectMap(ctx, expr);
 
         if (!row)
         {
@@ -4227,10 +4286,19 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
     if (expr->hasProperty(externalAtom))
     {
         IHqlExpression * resultInstance = queryPropertyChild(expr, externalAtom, 0);
-        assertex(ctx.queryMatchExpr(resultInstance));
+        HqlExprAssociation * matchedResults = ctx.queryMatchExpr(resultInstance);
+        if (!matchedResults)
+        {
+            //Very unusual - a result is required from a child query, but that child query is actually in
+            //the parent/grandparent.  We need to evaluate in the parent instead.
+            CHqlBoundExpr match;
+            if (!buildExprInCorrectContext(ctx, expr, match, false))
+                throwUnexpected();
+            return match.getTranslatedExpr();
+        }
 
         HqlExprArray args;
-        args.append(*LINK(resultInstance));
+        args.append(*LINK(matchedResults->queryExpr()));
         args.append(*LINK(resultNum));
         if (preferLinkedRows)
             return bindFunctionCall(getChildQueryLinkedResultAtom, args, exprType);
@@ -4239,7 +4307,10 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
 
     assertex(activeActivities.ordinality());
     queryAddResultDependancy(activeActivities.tos(), graphId, resultNum);
-    unique_id_t id = getIntValue(graphId->queryChild(0), -1);
+
+    SubGraphInfo * activeSubgraph = queryActiveSubGraph(ctx);
+    assertex(activeSubgraph && graphId == activeSubgraph->graphTag);
+    unique_id_t id = activeSubgraph->graphId;
 
     EvalContext * instance = queryEvalContext(ctx);
     OwnedHqlExpr retInstanceExpr;
@@ -4306,6 +4377,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
     {
     case type_row:
         throwUnexpected();
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         buildTempExpr(ctx, call, tgt);
@@ -4342,7 +4414,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     else
         instance->addConstructorParameter(resultNum);
 
-    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    addGraphIdAttribute(instance, ctx, graphId);
     buildInstanceSuffix(instance);
 
     queryAddResultDependancy(*instance->queryBoundActivity(), graphId, resultNum);
@@ -4407,7 +4479,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
 
     instance->addAttributeBool("_isSpill", isSpill);
     if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+        addGraphIdAttribute(instance, ctx, graphId);
 
     buildInstanceSuffix(instance);
 
@@ -4482,7 +4554,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphLoopResult(BuildCtx & 
 
     buildInstancePrefix(instance);
     doBuildUnsignedFunction(instance->startctx, "querySequence", resultNum);
-    instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+    addGraphIdAttribute(instance, ctx, graphId);
     buildInstanceSuffix(instance);
 
     return instance->getBoundActivity();
@@ -4509,7 +4581,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphLoopResult(BuildCtx & 
     if (parentActivity && !insideRemoteGraph(ctx) && !isSpill)
         addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, "Body");
     if (targetRoxie())
-        instance->addAttributeInt("_graphId", getIntValue(graphId->queryChild(0)));
+        addGraphIdAttribute(instance, ctx, graphId);
 
     buildInstanceSuffix(instance);
 
@@ -4592,4 +4664,3 @@ void HqlCppTranslator::doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr)
     if (end)
         buildStmt(ctx, end->queryChild(0));
 }
-

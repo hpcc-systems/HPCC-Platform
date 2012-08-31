@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 
@@ -104,7 +103,7 @@ public:
 
     inline bool isAlive() const         { return atomic_read(&xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
 
-    bool Release(void) const
+    inline bool Release(void) const
     {
         if (atomic_dec_and_test(&xxcount))
         {
@@ -120,6 +119,69 @@ public:
         return false;
     }
 };
+
+//- Template variants -------------------------------------------------------------------------------------------------
+
+template <class INTERFACE>
+class CInterfaceOf;
+
+template <class INTERFACE>
+class CSimpleInterfaceOf : public INTERFACE
+{
+    friend class CInterfaceOf<INTERFACE>;    // want to keep xxcount private outside this pair of classes
+public:
+    inline virtual ~CSimpleInterfaceOf() {}
+
+    inline CSimpleInterfaceOf()           { atomic_set(&xxcount, 1); }
+    inline bool IsShared(void) const    { return atomic_read(&xxcount) > 1; }
+    inline int getLinkCount(void) const { return atomic_read(&xxcount); }
+
+    inline void Link() const            { atomic_inc(&xxcount); }
+
+    inline bool Release(void) const
+    {
+        if (atomic_dec_and_test(&xxcount))
+        {
+            delete this;
+            return true;
+        }
+        return false;
+    }
+
+private:
+    mutable atomic_t xxcount;
+};
+
+// A more general implementation of IInterface that includes a virtual function beforeDispose().
+// beforeDispose() allows an a fully constructed object to be cleaned up (which means that virtual
+// function calls still work (unlike a virtual destructor).
+// It makes it possible to implement a cache which doesn't link count the object, but is cleared when
+// the object is disposed without a critical section in Release().  (See pattern details below).
+template <class INTERFACE>
+class CInterfaceOf : public CSimpleInterfaceOf<INTERFACE>
+{
+public:
+    virtual void beforeDispose() {}
+
+    inline bool isAlive() const         { return atomic_read(&this->xxcount) < DEAD_PSEUDO_COUNT; }       //only safe if Link() is called first
+
+    inline bool Release(void) const
+    {
+        if (atomic_dec_and_test(&this->xxcount))
+        {
+            //Because beforeDispose could cause this object to be linked/released or call isAlive(), xxcount is set
+            //to a a high mid-point positive number to avoid poss. of releasing again.
+            if (atomic_cas(&this->xxcount, DEAD_PSEUDO_COUNT, 0))
+            {
+                const_cast<CInterfaceOf<INTERFACE> *>(this)->beforeDispose();
+                delete this;
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 
 /***
 A pattern for implementing a non-linking cached to a shared object.  Hash table variants are a slightly more complex variant.

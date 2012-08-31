@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #option ('countIndex', true); // workaround to bug #13110
@@ -24,7 +23,7 @@ import std.system.thorlib;
 
 trec := RECORD
  unsigned1 key;
- string1  v;
+ string v;
  unsigned2 node := 0;
 END;
 
@@ -58,11 +57,14 @@ iRec := RECORD
  d.filepos;
 END;
 
+
 // NB: avoid reusing same key file (see bug #13112)
 idx := INDEX(d, iRec, '~regress::key::test.idx');
 idx2 := INDEX(d, iRec, '~regress::key::test2.idx');
 idx3 := INDEX(d, iRec, '~regress::key::test3.idx');
 idx4 := INDEX(d, iRec, '~regress::key::test4.idx');
+idx5 := INDEX(d, iRec, {d}, '~regress::key::test5.idx');
+idx6 := INDEX(d, iRec, '~regress::key::test6.idx');
 
 thornodes := MAX(CHOOSEN(tmp, 1), thorlib.nodes()) : global;  // Force it to calculate nodes() on thor not hthor
 
@@ -75,5 +77,9 @@ OUTPUT((unsigned)(COUNT(idx2(key<3))/thornodes)),
 BUILDINDEX(idx3, OVERWRITE),
 OUTPUT((unsigned)(COUNT(idx3(key=5))/thornodes)),
 BUILDINDEX(idx4, OVERWRITE, FEW),
-OUTPUT((unsigned)(COUNT(idx4(key<>2))/thornodes))
+OUTPUT((unsigned)(COUNT(idx4(key<>2))/thornodes)),
+BUILDINDEX(idx5, COMPRESSED(FIRST), OVERWRITE),
+OUTPUT((unsigned)(COUNT(idx5(key<>2))/thornodes)),
+BUILDINDEX(idx6, COMPRESSED(ROW), OVERWRITE),
+OUTPUT((unsigned)(COUNT(idx6(key<>2))/thornodes))
 );

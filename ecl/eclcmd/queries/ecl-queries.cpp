@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include <stdio.h>
 #include "jlog.hpp"
@@ -102,7 +101,9 @@ public:
                 optQuerySet.set(arg);
                 continue;
             }
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER) || iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             StringAttr temp;
             if (iter.matchOption(temp, ECLOPT_SHOW))
@@ -214,7 +215,7 @@ public:
 
         Owned<IClientWUMultiQuerySetDetailsRequest> req = client->createWUMultiQuerysetDetailsRequest();
         req->setQuerySetName(optQuerySet.get());
-        req->setClusterName(optCluster.get());
+        req->setClusterName(optTargetCluster.get());
         req->setFilterType("All");
 
         Owned<IClientWUMultiQuerySetDetailsResponse> resp = client->WUMultiQuerysetDetails(req);
@@ -237,10 +238,10 @@ public:
             "cluster will be shown. If no queryset or cluster is specified all querysets\n"
             "are shown.\n"
             "\n"
-            "ecl queries list [<queryset>][--cluster=<cluster>][--show=<flags>]\n\n"
+            "ecl queries list [<queryset>][--target=<val>][--show=<flags>]\n\n"
             " Options:\n"
             "   <queryset>             name of queryset to get list of queries for\n"
-            "   -cl, --cluster=<name>  name of cluster to get list of published queries for\n"
+            "   -t, --target=<val>     target cluster to get list of published queries for\n"
             "   --show=<flags>         show only queries with matching flags\n"
             " Flags:\n"
             "   A                      query is active\n"
@@ -252,7 +253,7 @@ public:
         EclCmdCommon::usage();
     }
 private:
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     StringAttr optQuerySet;
     unsigned flags;
 };
@@ -260,7 +261,7 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optMsToWait(10000)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -283,7 +284,11 @@ public:
             }
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -301,7 +306,7 @@ public:
             fputs("source and target must both be specified.\n\n", stderr);
             return false;
         }
-        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optCluster.isEmpty())
+        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optTargetCluster.isEmpty())
         {
             fputs("cluster must be specified for remote copies.\n\n", stderr);
             return false;
@@ -320,9 +325,10 @@ public:
         Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetQuerySet.get());
-        req->setCluster(optCluster.get());
+        req->setCluster(optTargetCluster.get());
         req->setActivate(optActivate);
         req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
@@ -351,8 +357,9 @@ public:
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
             "   <target_queryset>      name of queryset to copy the query into\n"
-            "   -cl, --cluster=<name>  Local cluster to associate with remote workunit\n"
+            "   -t, --target=<val>     Local target cluster to associate with remote workunit\n"
             "   -A, --activate         Activate the new query\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             " Common Options:\n",
             stdout);
@@ -361,9 +368,10 @@ public:
 private:
     StringAttr optSourceQueryPath;
     StringAttr optTargetQuerySet;
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     unsigned optMsToWait;
     bool optActivate;
+    bool optNoReload;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)

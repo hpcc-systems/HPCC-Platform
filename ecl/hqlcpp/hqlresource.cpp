@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include "jlib.hpp"
@@ -543,17 +542,6 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
 }
 
 //---------------------------------------------------------------------------
-
-static bool isIndex(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_keyindex:
-    case no_newkeyindex:
-        return true;
-    }
-    return false;
-}
 
 IHqlExpression * appendUniqueAttr(IHqlExpression * expr)
 {
@@ -2223,6 +2211,7 @@ protected:
         case no_sizeof:
         case no_allnodes:
         case no_nohoist:
+        case no_forcegraph:
             return;
         case no_globalscope:
         case no_evalonce:
@@ -2345,7 +2334,6 @@ protected:
 
     void gatherAmbiguousSelectors(IHqlExpression * expr)
     {
-#ifndef ENSURE_SELSEQ_UID
         //Horrible code to try and cope with ambiguous left selectors.
         //o Tree is ambiguous so same child expression can occur in different contexts - so can't depend on the context it is found in to work out if can hoist
         //o If any selector that is hidden within child expressions matches one in scope then can't hoist it.
@@ -2411,8 +2399,6 @@ protected:
                 break;
             }
         }
-
-#endif
     }
 
     bool isEvaluateable(IHqlExpression * ds, bool ignoreInline = false)
@@ -2701,6 +2687,8 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
                 locator.analyseChild(expr->queryChild(0), true);
                 break;
             }
+        case no_childquery:
+            throwUnexpected();
         default:
             {
                 for (unsigned idx=first; idx < last; idx++)

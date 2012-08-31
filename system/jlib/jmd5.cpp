@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 
@@ -78,6 +77,8 @@
 #endif
 
 #include "jmd5.hpp"
+#include "jfile.hpp"
+#include "jlog.hpp"
 #include <string.h>
 
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
@@ -413,9 +414,9 @@ void md5_string(const char* inpstring, int inplen, StringBuffer& outstring)
     unsigned char digeststr[33];
     unsigned char digitstr[3];
 
-    md5_init (&context);
-    md5_append (&context, (const unsigned char *)inpstring, inplen);
-    md5_finish (&context,digest);
+    md5_init(&context);
+    md5_append(&context, (const unsigned char *)inpstring, inplen);
+    md5_finish(&context,digest);
     
     for (int i = 0; i < 16; i++)
     {
@@ -438,3 +439,49 @@ void md5_string(StringBuffer& inpstring, StringBuffer& outstring)
     md5_string(inpstring, inpstring.length(), outstring);
 }
 
+/* define chunk size to use with IFileIO read. */
+#define CHUNKSIZE 0x100000
+
+void md5_filesum(const char* filename, StringBuffer& outstring)
+{
+    md5_state_t context;
+    unsigned char digest[16];
+    unsigned char digeststr[33];
+    unsigned char digitstr[3];
+
+    md5_init(&context);
+
+    MemoryBuffer mb;
+    void * contents = mb.reserveTruncate(CHUNKSIZE);
+
+    Owned<IFile> file = createIFile(filename);
+    Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+
+    if (!io)
+        throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
+
+    offset_t size = io->size();
+    offset_t readPos = 0;
+
+    while (readPos < size)
+    {
+        offset_t sizeRead = io->read(readPos, CHUNKSIZE, contents);
+
+        if (0 == sizeRead)
+            throw MakeStringException(1, "File %s only read %llu of %llu bytes", file->queryFilename(), size-readPos, size);
+
+        readPos += sizeRead;
+        md5_append(&context, (const unsigned char *)contents, sizeRead);
+    }
+    md5_finish(&context,digest);
+
+    for (int i = 0; i < 16; i++)
+    {
+        sprintf((char *)digitstr,"%02x", digest[i]);
+        digeststr[i*2]=digitstr[0];
+        digeststr[i*2+1]=digitstr[1];
+    }
+    digeststr[32]='\0';
+
+    outstring.append(digeststr);
+}

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 ////////////////////////////////////////////////////////////
@@ -256,18 +255,44 @@ BrowseResourcesResponse
     string PortalURL;
     string NetAddress;
     int OS;
+    [min_ver("1.13")] bool UseResource;
     ESParray<ESPstruct HPCCResourceRepository> HPCCResourceRepositories;
 };
 
-ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPenum RoxieControlCmd : string
 {
-    ESPuses ESPStruct Capability;
-    ESPuses ESPStruct Permission;
-    ESPuses ESPStruct ThorCluster;
-    ESPuses ESPStruct HThorCluster;
-    ESPuses ESPStruct ActiveWorkunit;
-    ESPuses ESPStruct DFUJob;
+    ATTACH("Attach"),
+    DETACH("Detach"),
+    STATE("State"),
+    RELOAD("Reload")
+};
 
+ESPrequest RoxieControlCmdRequest
+{
+    string ProcessCluster;
+    ESPenum RoxieControlCmd Command("Attach");
+    int Wait;
+};
+
+ESPStruct [nil_remove] RoxieControlEndpointInfo
+{
+    string Address;
+    bool Attached;
+    string StateHash;
+    string Status;
+};
+
+ESPresponse
+[
+    exceptions_inline, nil_remove
+]
+RoxieControlCmdResponse
+{
+    ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
+};
+
+ESPservice [noforms, version("1.13"), default_client_version("1.13"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+{
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
 
@@ -289,6 +314,8 @@ ESPservice [noforms, version("1.12"), default_client_version("1.12"), exceptions
     ESPmethod NotInCommunityEdition(NotInCommunityEditionRequest, NotInCommunityEditionResponse);
 
     ESPmethod [resp_xsl_default("/esp/xslt/hpccresourcelist.xslt")] BrowseResources(BrowseResourcesRequest, BrowseResourcesResponse);
+
+    ESPmethod RoxieControlCmd(RoxieControlCmdRequest, RoxieControlCmdResponse);
 };
 
 SCMexportdef(WSSMC);

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "jlib.hpp"
@@ -557,6 +556,67 @@ unsigned doCountWords(RuleBasedBreakIterator& bi, UnicodeString const & source)
     return count; 
 }
 
+static RuleBasedCollator * createRBCollator(const char * localename)
+{
+    UErrorCode status = U_ZERO_ERROR;
+    Locale locale(localename);
+    RuleBasedCollator * rbc = (RuleBasedCollator *)RuleBasedCollator::createInstance(locale, status);
+    rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
+    if (U_FAILURE(status))
+    {
+        delete rbc;
+        return NULL;
+    }
+    return rbc;
+}
+
+class RBCLocale
+{
+public:
+    RBCLocale(char const * _locale) : locale(_locale)
+    {
+        rbc = createRBCollator(locale);
+    }
+    ~RBCLocale()
+    {
+        delete rbc;
+    }
+    RuleBasedCollator * queryCollator() const { return rbc; }
+private:
+    StringAttr locale;
+    RuleBasedCollator * rbc;
+};
+
+typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
+static MapStrToRBC * localeMap;
+static CriticalSection localeCrit;
+
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    return true;
+}
+MODULE_EXIT()
+{
+    delete localeMap;
+    localeMap = NULL;
+}
+
+static RuleBasedCollator * queryRBCollator(const char * localename)
+{
+    if (!localename) localename = "";
+    CriticalBlock b(localeCrit);
+    if (!localeMap)
+        localeMap = new MapStrToRBC;
+    RBCLocale * loc = localeMap->getValue(localename);
+    if(!loc)
+    {
+        //MORE: ECLRTL calls rtlGetNormalizedUnicodeLocaleName().  Should this be happening here?
+        const char * normalizedlocale = localename;
+        localeMap->setValue(localename, normalizedlocale);
+        loc = localeMap->getValue(localename);
+    }
+    return loc->queryCollator();
+}
 
 }//namespace
 
@@ -1019,68 +1079,6 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeCleanAccents(unsigned & tgtLen, UCh
     source.extract(0, tgtLen, tgt);
 }
 
-
-
-static RuleBasedCollator * createRBCollator(const char * localename)
-{
-    UErrorCode status = U_ZERO_ERROR;
-    Locale locale(localename);
-    RuleBasedCollator * rbc = (RuleBasedCollator *)RuleBasedCollator::createInstance(locale, status);
-    rbc->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
-    if (U_FAILURE(status))
-    {
-        delete rbc;
-        return NULL;
-    }
-    return rbc;
-}
-
-class RBCLocale
-{
-public:
-    RBCLocale(char const * _locale) : locale(_locale)
-    {
-        rbc = createRBCollator(locale);
-    }
-    ~RBCLocale()
-    {
-        delete rbc;
-    }
-    RuleBasedCollator * queryCollator() const { return rbc; }
-private:
-    StringAttr locale;
-    RuleBasedCollator * rbc;
-};
-
-typedef MapStringTo<RBCLocale, char const *> MapStrToRBC;
-static MapStrToRBC * localeMap;
-static CriticalSection localeCrit;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
-{
-    return true;
-}
-MODULE_EXIT()
-{
-    delete localeMap;
-    localeMap = NULL;
-}
-
-static RuleBasedCollator * queryRBCollator(const char * localename)
-{
-    if (!localename) localename = "";
-    CriticalBlock b(localeCrit);
-    if (!localeMap)
-        localeMap = new MapStrToRBC;
-    RBCLocale * loc = localeMap->getValue(localename);
-    if(!loc)
-    {
-        //MORE: ECLRTL calls rtlGetNormalizedUnicodeLocaleName().  Should this be happening here?
-        const char * normalizedlocale = localename;
-        localeMap->setValue(localename, normalizedlocale);
-        loc = localeMap->getValue(localename);
-    }
-    return loc->queryCollator();
-}
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleEditDistance(unsigned leftLen, UChar const * left, unsigned rightLen, UChar const * right, char const * localename)
 {

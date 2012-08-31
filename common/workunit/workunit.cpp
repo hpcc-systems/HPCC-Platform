@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "jlib.hpp"
@@ -1573,6 +1572,7 @@ public:
     virtual void        setResultIsAll(bool value);
     virtual void        setResultFormat(WUResultFormat format);
     virtual void        setResultXML(const char *val);
+    virtual void        setResultRow(unsigned len, const void * data);
 };
 
 class CLocalWUPlugin : public CInterface, implements IWUPlugin
@@ -3844,6 +3844,39 @@ const char *clusterTypeString(ClusterType clusterType)
     throwUnexpected();
 }
 
+IPropertyTree *queryRoxieProcessTree(IPropertyTree *environment, const char *process)
+{
+    if (!process || !*process)
+        return NULL;
+    VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", process);
+    return environment->queryPropTree(xpath.str());
+}
+
+void getRoxieProcessServers(IPropertyTree *roxie, SocketEndpointArray &endpoints)
+{
+    if (!roxie)
+        return;
+    Owned<IPropertyTreeIterator> servers = roxie->getElements("RoxieServerProcess");
+    ForEach(*servers)
+    {
+        IPropertyTree &server = servers->query();
+        const char *netAddress = server.queryProp("@netAddress");
+        if (netAddress && *netAddress)
+        {
+            SocketEndpoint ep(netAddress, server.getPropInt("@port", 9876));
+            endpoints.append(ep);
+        }
+    }
+}
+
+void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return;
+    getRoxieProcessServers(queryRoxieProcessTree(conn->queryRoot(), process), servers);
+}
+
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
 {
     StringAttr name;
@@ -3855,12 +3888,11 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringArray thorProcesses;
     StringAttr prefix;
     ClusterType platform;
-    StringAttr querySetName;
     unsigned clusterWidth;
 public:
     IMPLEMENT_IINTERFACE;
-    CEnvironmentClusterInfo(const char *_name, const char *_prefix, const char *_querySetName, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
-        : name(_name), prefix(_prefix), querySetName(_querySetName)
+    CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
+        : name(_name), prefix(_prefix)
     {
         StringBuffer queue;
         if (thors.ordinality())
@@ -3892,17 +3924,7 @@ public:
             roxieProcess.set(roxie->queryProp("@name"));
             clusterWidth = roxie->getPropInt("@numChannels", 1);
             platform = RoxieCluster;
-            Owned<IPropertyTreeIterator> servers = roxie->getElements("RoxieServerProcess");
-            ForEach(*servers)
-            {
-                IPropertyTree &server = servers->query();
-                const char *netAddress = server.queryProp("@netAddress");
-                if (netAddress && *netAddress)
-                {
-                    SocketEndpoint ep(netAddress, server.getPropInt("@port", 9876));
-                    roxieServers.append(ep);
-                }
-            }
+            getRoxieProcessServers(roxie, roxieServers);
         }
         else 
         {
@@ -3952,11 +3974,6 @@ public:
     virtual ClusterType getPlatform() const
     {
         return platform;
-    }
-    IStringVal & getQuerySetName(IStringVal & str) const
-    {
-        str.set(querySetName.get());
-        return str;
     }
     IStringVal & getRoxieProcess(IStringVal & str) const
     {
@@ -4130,19 +4147,8 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
             thors.append(*environment->getPropTree(xpath.str()));
         }
     }
-    IPropertyTree *roxie = NULL;
     const char *roxieName = cluster->queryProp("RoxieCluster/@process");
-    if (roxieName) 
-    {
-        xpath.clear().appendf("Software/RoxieCluster[@name=\"%s\"]", roxieName);
-        roxie = environment->queryPropTree(xpath.str());
-        querySetName.clear().append(roxieName);
-    }
-
-    if (querySetName.length() == 0)
-        querySetName.append(clustname);
-
-    return new CEnvironmentClusterInfo(clustname, prefix, querySetName, agent, thors, roxie);
+    return new CEnvironmentClusterInfo(clustname, prefix, agent, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
 IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *clustname)
@@ -6221,6 +6227,7 @@ mapEnums queryFileTypes[] = {
    { FileTypeDll, "dll" },
    { FileTypeResText, "res" },
    { FileTypeHintXml, "hint" },
+   { FileTypeXml, "xml" },
    { FileTypeSize,  NULL },
 };
 
@@ -7206,7 +7213,7 @@ void CLocalWUResult::getResultDecimal(void * val, unsigned len, unsigned precisi
         const char *xmlVal = p->queryProp("xmlValue");
         if (xmlVal)
         {
-            TempDecimal d;
+            Decimal d;
             d.setString(strlen(xmlVal), xmlVal);
             if (isSigned)
                 d.getDecimal(len, precision, val);
@@ -7452,6 +7459,13 @@ void CLocalWUResult::setResultDecimal(const void *val, unsigned len)
     setResultTotalRowCount(1);
 }
 
+void CLocalWUResult::setResultRow(unsigned len, const void * data)
+{
+    p->setPropBin("Value", len, data);
+    setResultRowCount(1);
+    setResultTotalRowCount(1);
+    setResultFormat(ResultFormatRaw);
+}
 void CLocalWUResult::setResultIsAll(bool value)
 {
     p->setPropBool("@isAll", value);
@@ -9032,33 +9046,6 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool 
     }
 
     return conn->getRoot();
-}
-
-extern WORKUNIT_API StringArray &getQuerySetTargetClusters(const char *queryset, StringArray &clusters)
-{
-    //this should change as soon as there is a better way of determining this relationship
-    //currently follows the common assumption that queryset = roxie process or target cluster name
-    if (!queryset || !*queryset)
-        return clusters;
-
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return clusters;
-    StringBuffer xpath;
-    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", queryset);
-    Owned<IPropertyTree> targetCluster = conn->queryRoot()->getPropTree(xpath.str());
-    if (targetCluster && !targetCluster->hasProp("RoxieCluster"))
-        clusters.append(queryset);
-    else
-    {
-        Owned<IStringIterator> it = getTargetClusters("RoxieCluster", queryset);
-        ForEach(*it)
-        {
-            SCMStringBuffer s;
-            clusters.append(it->str(s).str());
-        }
-    }
-    return clusters;
 }
 
 IPropertyTree * addNamedPackageSet(IPropertyTree * packageRegistry, const char * name, IPropertyTree *packageInfo, bool overWrite)

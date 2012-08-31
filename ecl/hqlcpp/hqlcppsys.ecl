@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef HQLCPPSYS_HPP
 #define HQLCPPSYS_HPP
@@ -530,15 +529,15 @@ const char * cppSystemText[]  = {
 
     "   regexNewSetStrPattern(const varstring _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
     "   regexNewStrFind(boolean _compiled, const string _search, boolean _cloneSearch) : omethod,entrypoint='find';"
-    "   boolean regexNewStrFound() : method,entrypoint='found';"
-    "   string regexNewStrFoundX(unsigned4 idx) : method,entrypoint='getMatchX';"
-    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,entrypoint='replace';"
+    "   boolean regexNewStrFound() : method,pure,entrypoint='found';"
+    "   string regexNewStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
+    "   string regexNewStrReplaceX(const string _search, const string _replace) : method,pure,entrypoint='replace';"
 
     "   regexNewSetUStrPattern(const varunicode _pattern, boolean isCaseSensitive) : omethod,entrypoint='setPattern';"
     "   regexNewUStrFind(boolean _compiled, const unicode _search) : omethod,entrypoint='find';"
-    "   boolean regexNewUStrFound() : method,entrypoint='found';"
-    "   unicode regexNewUStrFoundX(unsigned4 idx) : method,entrypoint='getMatchX';"
-    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,entrypoint='replace';"
+    "   boolean regexNewUStrFound() : method,pure,entrypoint='found';"
+    "   unicode regexNewUStrFoundX(unsigned4 idx) : method,pure,entrypoint='getMatchX';"
+    "   unicode regexNewUStrReplaceX(const unicode _search, const unicode _replace) : method,pure,entrypoint='replace';"
     
     //clibrary functions that are called from the code generation
     "   free(data1 src) : eclrtl,library='eclrtl',entrypoint='rtlFree';",
@@ -683,15 +682,15 @@ const char * cppSystemText[]  = {
     
     "   utf8 ctxGetRowXml(boolean _meta, const row _row, unsigned4 flags) : ctxmethod,entrypoint='getRowXML';",
 
-    "   boolean getMatched(unsigned4 idx) : method,include,entrypoint='getMatched';",
-    "   unsigned4 getMatchLength(unsigned4 idx) : method,include,entrypoint='getMatchLength';",
-    "   unsigned4 getMatchPosition(unsigned4 idx) : method,include,entrypoint='getMatchPosition';",
-    "   string getMatchText(unsigned4 idx) : method,include,entrypoint='getMatchText';",
-    "   unicode getMatchUnicode(unsigned4 idx) : method,include,entrypoint='getMatchUnicode';",
-    "   utf8 getMatchUtf8(unsigned4 idx) : method,include,entrypoint='getMatchUtf8';",
-    "   row(dummyRecord) getMatchRow(unsigned4 idx) : method,include,entrypoint='queryMatchRow';",
+    "   boolean getMatched(unsigned4 idx) : method,pure,include,entrypoint='getMatched';",
+    "   unsigned4 getMatchLength(unsigned4 idx) : method,pure,include,entrypoint='getMatchLength';",
+    "   unsigned4 getMatchPosition(unsigned4 idx) : method,pure,include,entrypoint='getMatchPosition';",
+    "   string getMatchText(unsigned4 idx) : method,pure,include,entrypoint='getMatchText';",
+    "   unicode getMatchUnicode(unsigned4 idx) : method,pure,include,entrypoint='getMatchUnicode';",
+    "   utf8 getMatchUtf8(unsigned4 idx) : method,pure,include,entrypoint='getMatchUtf8';",
+    "   row(dummyRecord) getMatchRow(unsigned4 idx) : method,pure,include,entrypoint='queryMatchRow';",
 
-    "   row(dummyRecord) getRootResult() : method,include,entrypoint='queryRootResult';",
+    "   row(dummyRecord) getRootResult() : method,pure,include,entrypoint='queryRootResult';",
 
     "   string getProductionText(unsigned4 idx) : method,entrypoint='getText';",
     "   unicode getProductionUnicode(unsigned4 idx) : method,entrypoint='getUnicode';",
@@ -795,6 +794,11 @@ const char * cppSystemText[]  = {
     "   serializerPut(const data _target) : omethod,entrypoint='put';",
     "   unsigned4 serializerBeginNested() : omethod,entrypoint='beginNested';",
     "   serializerEndNested(unsigned4 pos) : omethod,entrypoint='endNested';",
+
+    // Dictionary support
+    "    integer8 dictionaryCount(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryCount';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookup(boolean meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
+    "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
 
     "   END;",
     NULL };

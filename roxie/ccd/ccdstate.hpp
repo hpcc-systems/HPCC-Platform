@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef _CCDSTATE_INCL
@@ -50,7 +49,6 @@ interface IPackageMap : public IInterface
     virtual const IRoxiePackage *queryPackage(const char *name) const = 0;
     // Lookup package using fuzzy id
     virtual const IRoxiePackage *matchPackage(const char *name) const = 0;
-    virtual const char *queryQuerySetId() const = 0;
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
 };
@@ -101,12 +99,17 @@ interface IFileIOArray : extends IInterface
     virtual StringBuffer &getId(StringBuffer &) const = 0;
 };
 
-interface IRoxieQuerySetManager : extends IInterface
+interface IRoxieLibraryLookupContext : extends IInterface
+{
+    virtual IQueryFactory *lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
+    virtual const char *queryId() const = 0;
+};
+
+interface IRoxieQuerySetManager : extends IRoxieLibraryLookupContext
 {
     virtual bool isActive() const = 0;
-    virtual IQueryFactory *lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
-    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash) = 0;
+    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext) = 0;
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
@@ -123,19 +126,20 @@ interface IRoxieDebugSessionManager : extends IInterface
 
 interface IRoxieQuerySetManagerSet : extends IInterface
 {
-    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash) = 0;
+    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext) = 0;
 };
 
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IRoxieDebugSessionManager* getRoxieDebugSessionManager() const = 0;
-    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
+    virtual IRoxieLibraryLookupContext *getLibraryLookupContext(const char *querySet) const = 0;
 };
 
-extern IRoxieQuerySetManager *createServerManager();
+extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager();
+
+extern IRoxieQuerySetManager *createServerManager(const char *querySet);
 extern IRoxieQuerySetManager *createSlaveManager();
 extern IRoxieQueryPackageManagerSet *createRoxiePackageSetManager(const IQueryDll *standAloneDll);
 extern IRoxieQueryPackageManagerSet *globalPackageSetManager;

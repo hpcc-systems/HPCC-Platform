@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="FindAtStrengthReplace">
-  <title><emphasis role="bold">FindAtStrengthReplace</emphasis></title>
+  <title>FindAtStrengthReplace</title>
 
   <para><emphasis role="bold">STD.Uni.LocaleFindAtStrengthReplace<indexterm>
       <primary>STD.Uni.LocaleFindAtStrengthReplace</primary>

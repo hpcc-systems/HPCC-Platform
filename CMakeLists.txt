@@ -1,18 +1,17 @@
 ###############################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################    
 
 #
@@ -102,28 +101,27 @@ include(${HPCC_SOURCE_DIR}/cmake_modules/optionDefaults.cmake)
 include(${HPCC_SOURCE_DIR}/cmake_modules/commonSetup.cmake)
 
 if ( NOT MAKE_DOCS_ONLY )
-    if ( CMAKE_SYSTEM MATCHES Linux )
-        HPCC_ADD_SUBDIRECTORY (initfiles)
-    endif ()
+    HPCC_ADD_SUBDIRECTORY (initfiles)
     HPCC_ADD_SUBDIRECTORY (tools)
     HPCC_ADD_SUBDIRECTORY (common)
     HPCC_ADD_SUBDIRECTORY (dali)
-    HPCC_ADD_SUBDIRECTORY (deploy "PLATFORM")
+    HPCC_ADD_SUBDIRECTORY (deploy)
     HPCC_ADD_SUBDIRECTORY (deployment)
     HPCC_ADD_SUBDIRECTORY (ecl)
     HPCC_ADD_SUBDIRECTORY (ecllibrary)
     HPCC_ADD_SUBDIRECTORY (esp)
     HPCC_ADD_SUBDIRECTORY (plugins)
-    HPCC_ADD_SUBDIRECTORY (roxie "PLATFORM")
+    HPCC_ADD_SUBDIRECTORY (roxie)
     HPCC_ADD_SUBDIRECTORY (rtl)
     HPCC_ADD_SUBDIRECTORY (services "PLATFORM")
     HPCC_ADD_SUBDIRECTORY (system)
     HPCC_ADD_SUBDIRECTORY (thorlcr "PLATFORM")
+    HPCC_ADD_SUBDIRECTORY (testing)
 endif()
 HPCC_ADD_SUBDIRECTORY (docs "PLATFORM")
-if (APPLE)
+if (APPLE OR WIN32)
   HPCC_ADD_SUBDIRECTORY (lib2)
-endif (APPLE)
+endif (APPLE OR WIN32)
 
 ###
 ## CPack install and packaging setup.
@@ -150,7 +148,8 @@ set(CPACK_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}-${CPACK_RPM_PACKAGE_ARCHITECTURE}")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     set(CPACK_STRIP_FILES TRUE)
 endif()
-if ( CMAKE_SYSTEM MATCHES Linux )
+if ( APPLE )
+elseif ( UNIX )
     EXECUTE_PROCESS (
                 COMMAND ${HPCC_SOURCE_DIR}/cmake_modules/distrocheck.sh
                     OUTPUT_VARIABLE packageManagement
@@ -166,18 +165,18 @@ if ( CMAKE_SYSTEM MATCHES Linux )
                     OUTPUT_VARIABLE packageRevision
                         ERROR_VARIABLE  packageRevision
                 )
-		
+
     message ( "-- Auto Detecting Packaging type")
     message ( "-- distro uses ${packageManagement}, revision is ${packageRevisionArch}" )
 
     if ( ${packageManagement} STREQUAL "DEB" )
-        set(CPACK_PACKAGE_FILE_NAME	"${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}${packageRevisionArch}")
     elseif ( ${packageManagement} STREQUAL "RPM" )
-        set(CPACK_PACKAGE_FILE_NAME	"${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
+        set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}.${packageRevisionArch}")
         else()
         set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}${CPACK_SYSTEM_NAME}")
     endif ()
-endif ( CMAKE_SYSTEM MATCHES Linux )
+endif ()
 MESSAGE ("-- Current release version is ${CPACK_PACKAGE_FILE_NAME}")
 set ( CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}" )
 set( CPACK_SOURCE_GENERATOR TGZ )
@@ -212,7 +211,7 @@ set(CPACK_SOURCE_IGNORE_FILES
 ###
 set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}")
 if (USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
-    FETCH_GIT_TAG (${CMAKE_SOURCE_DIR} ${CPACK_RPM_PACKAGE_VERSION} GIT_BUILD_TAG)
+    FETCH_GIT_TAG (${CMAKE_SOURCE_DIR} ${CPACK_RPM_PACKAGE_VERSION}_${version} GIT_BUILD_TAG)
     message ("-- Git tag is '${GIT_BUILD_TAG}'")
     if (NOT "${GIT_BUILD_TAG}" STREQUAL "${BUILD_TAG}")
         if (CHECK_GIT_TAG)
@@ -242,8 +241,8 @@ configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h" )
 ###
 
 if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
-    if ( CMAKE_SYSTEM MATCHES Linux )
-        if ( ${packageManagement} STREQUAL "DEB" )
+    if ( UNIX )
+        if ( "${packageManagement}" STREQUAL "DEB" )
             if ("${CMAKE_VERSION}" VERSION_EQUAL "2.8.2")
                 message("WARNING: CMAKE 2.8.2  would not build DEB package")
             else ()
@@ -256,7 +255,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
                 set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
             endif ()
 
-        elseif ( ${packageManagement} STREQUAL "RPM" )
+        elseif ( "${packageManagement}" STREQUAL "RPM" )
             set ( CPACK_GENERATOR "${packageManagement}" )
             ###
             ## CPack instruction required for RPM 
@@ -271,7 +270,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()
 
-    endif ( CMAKE_SYSTEM MATCHES Linux )
+    endif ( UNIX )
     if ( EXISTS ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
         include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
     else()
@@ -282,7 +281,9 @@ else()
     message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
 endif()
 
-if (APPLE)
+if ( PLATFORM )
+    set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}" )
+else ( PLATFORM )
     set ( CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_RPM_PACKAGE_VERSION}-${version}-${stagever}-${CPACK_SYSTEM_NAME}")
     set ( CPACK_MONOLITHIC_INSTALL TRUE )
     set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
@@ -293,12 +294,21 @@ if (APPLE)
     set ( CPACK_RESOURCE_FILE_README "${PROJECT_BINARY_DIR}/welcome.txt" )
     set ( CPACK_RESOURCE_FILE_LICENSE "${HPCC_SOURCE_DIR}/${LICENSE_FILE}" )
     set ( CPACK_PACKAGE_DESCRIPTION_SUMMARY "HPCC Systems Client Tools." )
-endif()
+    if (WIN32)
+      set ( CPACK_NSIS_DISPLAY_NAME "Client Tools" )
+      set ( CPACK_PACKAGE_INSTALL_DIRECTORY "${DIR_NAME}\\\\${version}\\\\clienttools")
+      set ( CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${DIR_NAME}\\\\${version}\\\\clienttools")
+      set ( CPACK_NSIS_DEFINES "
+        !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+        !define MUI_FINISHPAGE_NOAUTOCLOSE
+      ")
+    endif()
+endif( PLATFORM )
 
 ###
 ## Below are the non-compile based install scripts required for
 ## the hpcc platform.
 ###
 
-Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION ${OSSDIR} COMPONENT Runtime )
+Install ( FILES ${HPCC_SOURCE_DIR}/${LICENSE_FILE} DESTINATION "." COMPONENT Runtime )
 include (CPack)

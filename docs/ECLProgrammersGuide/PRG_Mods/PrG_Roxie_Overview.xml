@@ -160,7 +160,7 @@ END;</programlisting>
 
     <para>Now you're ready to publish this query to hThor.</para>
 
-    <para>2. Select "hthor" on the Target droplist</para>
+    <para>2. Select "hthor" on the Target drop list</para>
 
     <para>3. Click the down arrow on the Submit button and select
     Compile</para>
@@ -239,7 +239,7 @@ END;</programlisting>
     you can inform the users that the query is available for their use.</para>
 
     <para>The Roxie deployment process is done the same way we just did for
-    hThor, except the Target droplist has to be set to Roxie.</para>
+    hThor, except the Target drop list has to be set to Roxie.</para>
 
     <para>Once you've deployed the query, you can test it the same way you
     tested it on hThor, except the new service will appear under your Roxie in

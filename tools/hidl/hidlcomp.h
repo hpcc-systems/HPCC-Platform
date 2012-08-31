@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef __HIDLCOMP_H__
@@ -443,7 +442,7 @@ public:
     void write_esp_declaration();
     void write_esp_ng_declaration(int pos);
     void write_esp_init(bool &isFirst, bool removeNil);
-    void write_esp_marshall(bool isRpc, const char *var, bool encodeXml, bool checkVer=false, int indent=1);
+    void write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer=false, int indent=1);
     void write_esp_unmarshall(const char *rpcvar, bool useBasePath=false, int indents=1);
     void write_esp_unmarshall_properties(const char *propvar, const char *attachvar, int indents=1);
     void write_esp_unmarshall_soapval(const char *var, int indents=1);
@@ -485,8 +484,8 @@ public:
         return kind;
     }
 
+    const char* getArrayItemTag();
     const char* getArrayItemXsdType();
-
     const char* getArrayImplType();
 
     bool hasNameTag(){return (typname && !stricmp(typname, "EspTextFile"));}

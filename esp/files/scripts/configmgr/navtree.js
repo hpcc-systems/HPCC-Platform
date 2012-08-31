@@ -1,18 +1,17 @@
 /*##############################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ############################################################################## */
 
 /*global YAHOO*/
@@ -32,6 +31,7 @@
         function fnce() {
           var oPushButton3 = new YAHOO.widget.Button("validatebutton", { onclick: { fn: validateEnvironment} });
           var oPushButton2 = new YAHOO.widget.Button("savebutton", { onclick: { fn: saveEnvironment} });
+          var oPushButton6 = new YAHOO.widget.Button("saveasbutton", { onclick: { fn: saveEnvironmentAs} });
           var oPushButton4 = new YAHOO.widget.Button("openbutton", { onclick: { fn: displayOpenEnvDialog} });
           var oPushButton5 = new YAHOO.widget.Button("wizardbutton", { onclick: { fn: invokeWizard} });
 
@@ -230,6 +230,7 @@ function invokeWizard() {
   }
   else {
     updateWizCtrls();
+    loadAndCheckFileNames('4');
     top.document.displayModeDialog1.show();
   }
 }
@@ -369,7 +370,7 @@ function createNavigationTree(navTreeData) {
   var navDS = new YAHOO.util.DataSource(navTreeData);
   navDS.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
   navDS.responseSchema = { fields: ["Name", "DisplayName", "Build", "BuildSet", "parent", "id", "depth", "menu", "Params", "CompType"] };
-  var navDT = new YAHOO.widget.DataTable(
+  var navDT = new YAHOO.widget.ScrollingDataTable(
             'pageBody',
             [
                 { key: "DisplayName", label: "Name", width: 275, maxAutoWidth: 275, formatter: function(el, oRecord, oColumn, oData) {
@@ -390,7 +391,7 @@ function createNavigationTree(navTreeData) {
                   hasChildren = {};
                 hasChildren[prnt] = true;
                 return true;
-              }, width: "100%", selectionMode:"single"
+              }, width: "100%"
             }
         );
 
@@ -474,6 +475,12 @@ function createNavigationTree(navTreeData) {
 
     expandRecord(this, "Name", "Environment");
     expandRecord(this, "Name", "Software");
+
+    if (top.document.ResetFocus == true)
+    {
+      top.document.ResetFocus = false;
+      top.document.navDT.clickCurrentSelOrNameAndCompType(top.document.navDT,top.document.ResetFocusValueName, top.document.ResetFocusCompType);
+    }
 
     top.document.activeTab = prevTab;
     if (typeof (prevSelRec) !== "undefined")
@@ -699,13 +706,6 @@ function createNavigationTree(navTreeData) {
                 top.document.lastSelectedRow = temp1[0];
                 getWaitDlg().hide();
                 navDS.flushCache();
-                //                  var tid= YAHOO.util.Get.script('/esp/files/scripts/navtreedata.js',{ 
-                //                    onSuccess: function(obj) {
-                //                      var parsedResults = navDS.parseArrayData(o, navTreeData);
-                //                      navDS.handleResponse("", parsedResults.results, {   success:navDT.onDataReturnInitializeTable,
-                //                                                 scope:navDT}, this, 999);
-                //                      clickCurrentSelOrName(navDT, temp1[0]);
-                //                    }});
                 refreshNavTree(navDS, navDT, temp1[0])
               }
             }
@@ -725,6 +725,44 @@ function createNavigationTree(navTreeData) {
       },
         getFileName(true) + 'Operation=Delete&XmlArgs=' + xmlStr);
     }
+    else if (menuItemName ==="Duplicate Component/Service")
+    {
+      var targetRec;
+      xmlStr = navDT.selectionToXML(targetRec, navDT.getSelectedRows(), targetRec, "Components");
+
+      YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
+        success: function(o) {
+          if (o.status === 200) {
+            if (o.responseText.indexOf("<?xml") === 0) {
+              var form = document.forms['treeForm'];
+              form.isChanged.value = "true";
+              var temp = o.responseText.split(/<CompName>/g);
+              var temp1 = temp[1].split(/<\/CompName>/g);
+              top.document.lastSelectedRow = temp1[0];
+              getWaitDlg().hide();
+              navDS.flushCache();
+              refreshNavTree(navDS, navDT)
+            }
+            else if (o.responseText.indexOf("<html") === 0) {
+              var temp = o.responseText.split(/td align=\"left\">/g);
+              var temp1 = temp[1].split(/<\/td>/g);
+              getWaitDlg().hide();
+              alert(temp1[0]);
+            }
+          }
+        },
+        failure: function(o) {
+          getWaitDlg().hide();
+          alert(o.statusText);
+        },
+        scope: this
+      },
+        getFileName(true) + 'Operation=Duplicate&XmlArgs=' + xmlStr);
+    }
+    else if (p_oValue.parent.id ==="HWCopy" || p_oValue.parent.id === "SWCopy")
+    {
+      copyHWSWTo(menuItemName, (p_oValue.parent.id === "HWCopy" ? true : false) );
+    }
     else {
       var xmlStr = "<Components><Component buildSet='" + menuItemName + "'/></Components>";
       YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
@@ -738,14 +776,6 @@ function createNavigationTree(navTreeData) {
               top.document.lastSelectedRow = temp1[0];
               getWaitDlg().hide();
               navDS.flushCache();
-
-              //                 var tid= YAHOO.util.Get.script('/esp/files/scripts/navtreedata.js',{ 
-              //                   onSuccess: function(obj) {
-              //                     var parsedResults = navDS.parseArrayData(o, navTreeData);
-              //                     navDS.handleResponse("", parsedResults.results, {   success:navDT.onDataReturnInitializeTable,
-              //                                                 scope:navDT}, this, 999);
-              //                   }
-              //                  });
               refreshNavTree(navDS, navDT)
             }
             else if (o.responseText.indexOf("<html") === 0) {
@@ -775,9 +805,11 @@ function createNavigationTree(navTreeData) {
       saveAndUnlockEnv();
     else if (menuItemName === 'Save Environment')
       saveEnvironment();
-    else if (menuItemName === 'Save Environment As...') {
+    else if (menuItemName === 'Save Environment As') {
       saveEnvironmentAs();
     }
+    else if (menuItemName == 'Copy Hardware To')
+      copyHWSWTo(menuItemName, true);
     else if (menuItemName === 'Validate Environment')
       validateEnvironment();
     else if (menuItemName === 'Deploy...') {
@@ -1073,6 +1105,40 @@ function createNavigationTree(navTreeData) {
     }
   }
 
+  var copyCompMenu = new Array();
+  var fnDeleteComps = function(){
+  var params = "queryType=sourceEnvironments";
+
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetValue', {
+    success: function(o) {
+        if (o.responseText.indexOf("<?xml") === 0) {
+      var tmp = o.responseText.split(/<ReqValue>/g);
+      var tmp1;
+      if (tmp.length > 1) {
+        tmp1 = tmp[1].split(/<\/ReqValue>/g);
+        if (tmp1.length > 1)
+          result = tmp1[0];
+        else
+          result = '';
+        }
+        var files = result.split(/;/g);
+        for (var i = 0; i < files.length; i++) {
+          if( files[i]  ==  "<StagedConfiguration>" || files[i] == "</StagedConfiguration>" || files[i] == "")
+            {
+               continue;
+            }
+           copyCompMenu[i] = { text: files[i], onclick: { fn: onMenuSWClick} };
+          }
+        }
+      },
+      failure: function(o) {
+      },
+      scope: this
+    },
+  getFileName(true) + 'Params=' + params);
+  }
+  fnDeleteComps();
+
   var compMenu = new Array();
   for (i = 0; i < navDT.navTreeData[0]["menuComps"].length; i++)
     compMenu[i] = { text: navDT.navTreeData[0]["menuComps"][i], onclick: { fn: onMenuSWClick} };
@@ -1083,8 +1149,15 @@ function createNavigationTree(navTreeData) {
 
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
-                    { text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
-                    {text: "Validate Environment", onclick: { fn: onMenuItemClick } }
+                    {text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
+                    {text: "Validate Environment", onclick: { fn: onMenuItemClick } },
+                    {text: "Copy Hardware To",
+                      submenu: {
+                           id: "HWCopy",
+                           lazyload: true,
+                           itemdata: copyCompMenu,
+                           onclick: { fn: onMenuItemClick }
+                          } }
                           ],
     "Hardware": [
                               "New",
@@ -1124,7 +1197,15 @@ function createNavigationTree(navTreeData) {
                                 },
                                 onclick: { fn: onMenuSWClick }
                               },
-                              { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} }
+                              { text: "Delete Component/Service", onclick: { fn: onMenuSWClick} },
+                              { text: "Duplicate Component/Service", onclick: { fn: onMenuSWClick} },
+                              { text: "Copy Component/Service To",
+                                submenu: {
+                                  id: "SWCopy",
+                                  lazyload: true,
+                                  itemdata: copyCompMenu
+                                 }
+                              }
                           ],
     "Columns": [
                               {
@@ -1194,6 +1275,7 @@ function createNavigationTree(navTreeData) {
 
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
         this.getItem(2).cfg.setProperty("disabled", true);
+        this.getItem(3).cfg.setProperty("disabled", true);
       }
 
       if (record.getData('id') === 0) {
@@ -1213,7 +1295,8 @@ function createNavigationTree(navTreeData) {
         for (iGroup = 0; iGroup < groups.length; iGroup++) {
           if (typeof (groups[iGroup]) !== 'undefined')
             for (i = 0; i < groups[iGroup].length; i++)
-            groups[iGroup][i].cfg.setProperty("disabled", true);
+            if (groups[iGroup][i].element.innerText != "Save Environment As")
+              groups[iGroup][i].cfg.setProperty("disabled", true);
         }
       }
 
@@ -1236,6 +1319,7 @@ function createNavigationTree(navTreeData) {
   navDT.displayRoxieClusterReplaceServer = displayReplaceServerDlg;
   navDT.doPageRefresh = refresh;
   navDT.clickCurrentSelOrName = clickCurrentSelOrName;
+  navDT.clickCurrentSelOrNameAndCompType = clickCurrentSelOrNameAndCompType;
   navDT.displayAddInstance = displayAddInstanceDlg;
   navDT.promptVerifyPwd = promptVerifyPwd;
   navDT.promptNewRange = promptNewRange;
@@ -1323,7 +1407,7 @@ function createNavigationTree(navTreeData) {
 
 
   var handleWindowMouseDown = function(e) {
-    if (top.document.ContextMenuCenter != null)
+    if (top.document.ContextMenuCenter != null && (!YAHOO.env.ua.ie || top.document.ContextMenuCenter.itemData != undefined))
       top.document.ContextMenuCenter.clearContent();
     var tabView = top.document.RightTabView;
     if (tabView) {
@@ -1779,7 +1863,7 @@ function saveEnvironment(saveas) {
           if (xmlargs.length > 0) {
             var xmlargs1 = xmlargs[1].split(/<\/XmlArgs>/g);
             if (xmlargs1.length > 0 && xmlargs1[0].length > 0 && xmlargs1[0].charAt(0) != '<') {
-              promptValidationErrs(xmlargs1[0]);
+              alert(xmlargs1[0]);
             }
           }
 
@@ -1806,13 +1890,66 @@ function saveEnvironment(saveas) {
   getFileName(true) + args);
 }
 
+copyHWSWTo = function (menuItemName, IsHW)
+{
+  var targetRec;
+  var xmlStr = "";
+  var xmlStr2 = "";
+  var idx;
+
+  if (IsHW === true)
+  {
+    xmlStr2 = "<Components> <Component name=\"Hardware\" target=\"" + menuItemName + "\"/> " + "</Components>";
+  }
+  else // software
+  {
+    xmlStr = top.document.navDT.selectionToXML(targetRec, top.document.navDT.getSelectedRows(), targetRec, "Components");
+    idx = xmlStr.indexOf("build");
+    xmlStr2 = xmlStr.substr(0,idx-1) + " target=\"" + menuItemName + "\" " + xmlStr.substr(idx,xmlStr.length);
+  }
+
+  YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleComponent', {
+    success: function(o)
+    {
+      if (o.status === 200)
+      {
+        if (o.responseText.indexOf("<?xml") === 0)
+        {
+          var form = document.forms['treeForm'];
+          form.isChanged.value = "true";
+          var temp = o.responseText.split(/<CompName>/g);
+          var temp1 = temp[1].split(/<\/CompName>/g);
+          top.document.lastSelectedRow = temp1[0];
+          getWaitDlg().hide();
+        }
+        else if (o.responseText.indexOf("<html") === 0)
+        {
+          var temp = o.responseText.split(/td align=\"left\">/g);
+          var temp1 = temp[1].split(/<\/td>/g);
+          getWaitDlg().hide();
+          alert(temp1[0]);
+        }
+      }
+    },
+    failure: function(o) {
+      getWaitDlg().hide();
+      alert(o.statusText);
+    },
+    scope: this
+  },
+  getFileName(true) + 'Operation=Copy' + (IsHW ? 'HW' : 'SW') + '&XmlArgs='  + xmlStr2);
+}
+
 function saveEnvironmentAs() {
+  getWaitDlg().show();
+
   var handleCancel = function() {
     getWaitDlg().hide();
     top.document.envSaveAsDialog.hide();
   }
 
   var handleOk = function() {
+    getWaitDlg().hide();
     loadAndCheckFileNames('3');
   };
 
@@ -1868,6 +2005,8 @@ function validateEnvironment() {
           var temp1 = temp[1].split(/<\/td>/g);
           promptValidationErrs(temp1[0]);
         }
+        else
+          alert("No issues detected.");
       }
       else {
         getWaitDlg().hide();
@@ -1947,35 +2086,66 @@ function populateOpenEnvTable() {
 
           var files = result.split(/;/g);
           var objs = new Array();
-          for (var i = 0; i < files.length; i++) {
-            objs[i] = {};
-            objs[i].name = files[i];
-          }
-
-          if (!openEnvTableDiv.openEnvDS) {
-            var openEnvColumnDefs = [{ key: "name", label: "Name", width: 280}];
-            var openEnvDataSource = new YAHOO.util.DataSource(objs);
-            openEnvDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-            var openEnvDataTable = new YAHOO.widget.DataTable("openEnvTableDiv", openEnvColumnDefs,
-                                                              openEnvDataSource,
-                                                              { initialLoad: false, resize: true, selectionMode: "single" });
-
-            openEnvDataTable.subscribe("rowClickEvent", openEnvDataTable.onEventSelectRow);
-            openEnvDataTable.subscribe("cellClickEvent", function() { openEnvDataTable.clearTextSelection() });
-            openEnvDataTable.subscribe("cellDblclickEvent", function(oArgs) {
-              var tmpdt = top.document;
-              var btns = tmpdt.openEnvPanel.cfg.getProperty("buttons");
-              for (var bIdx = 0; bIdx < btns.length; bIdx++) {
-                if (btns[bIdx].text === 'Ok') {
-                  YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
-                  return false;
-                }
+          var staged_configuration = new Array();
+          for (var i = 0, j = 0, k = 0; i < files.length; i++) {
+            if (files[i] == "<StagedConfiguration>")
+            {
+              i++;
+              staged_configuration[k] = files[i];
+              k++;
+            }
+            else if (files[i] == "</StagedConfiguration>")
+            {
+              if (i+1 >= files.length)
+              {
+                break;
               }
-            });
-            openEnvTableDiv.openEnvTable = openEnvDataTable;
-            openEnvTableDiv.openEnvDS = openEnvDataSource;
+              else
+              {
+                continue;
+              }
+            }
+            objs[j] = {};
+            objs[j].name = files[i];
+            j++;
           }
 
+          if (!Array.prototype.indexof) {
+            Array.prototype.indexOf = function(obj, start) {
+              for (var i = (start || 0), j = this.length; i < j; i++) {
+                if (this[i] === obj) { return i; }
+              }
+              return -1;
+            }
+          }
+
+          YAHOO.widget.DataTable.formatName = function(elLiner, oRecord, oColumn, oData) {
+          if (staged_configuration.indexOf(oData) != -1)
+           elLiner.innerHTML = "<font style=\"background-color:#004ADE;color:white\" title=\"Staged Configuration\">" + oData + "</font>";
+          else
+           elLiner.innerHTML = oData; };
+
+          var openEnvColumnDefs = [{ key: "name", label: "Name", width: 280, formatter:YAHOO.widget.DataTable.formatName}];
+          var openEnvDataSource = new YAHOO.util.DataSource(objs);
+          openEnvDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
+          var openEnvDataTable = new YAHOO.widget.DataTable("openEnvTableDiv", openEnvColumnDefs,
+                                                            openEnvDataSource,
+                                                            { initialLoad: false, resize: true, selectionMode: "single" });
+
+          openEnvDataTable.subscribe("rowClickEvent", openEnvDataTable.onEventSelectRow);
+          openEnvDataTable.subscribe("cellClickEvent", function() { openEnvDataTable.clearTextSelection() });
+          openEnvDataTable.subscribe("cellDblclickEvent", function(oArgs) {
+            var tmpdt = top.document;
+            var btns = tmpdt.openEnvPanel.cfg.getProperty("buttons");
+            for (var bIdx = 0; bIdx < btns.length; bIdx++) {
+              if (btns[bIdx].text === 'Ok') {
+                YAHOO.util.UserAction.click(btns[bIdx].htmlButton);
+                return false;
+              }
+            }
+          });
+          openEnvTableDiv.openEnvTable = openEnvDataTable;
+          openEnvTableDiv.openEnvDS = openEnvDataSource;
           openEnvTableDiv.openEnvDS.handleResponse("", objs, { success: openEnvTableDiv.openEnvTable.onDataReturnInitializeTable,
             scope: openEnvTableDiv.openEnvTable
           }, this, 999);
@@ -3351,8 +3521,6 @@ function updateEnvCtrls(flag) {
   if (flag) {
     Dom.removeClass(sbtn, "yui-button-disabled");
     Dom.removeClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = false;
-    document.getElementById('validatebutton-button').disabled = false;
     document.getElementById('savebutton').disabled = false;
     document.getElementById('validatebutton').disabled = false;
     document.getElementById('ReadWrite').checked = true;
@@ -3360,8 +3528,6 @@ function updateEnvCtrls(flag) {
   else {
     Dom.addClass(sbtn, "yui-button-disabled");
     Dom.addClass(vbtn, "yui-button-disabled");
-    document.getElementById('savebutton-button').disabled = true;
-    document.getElementById('validatebutton-button').disabled = true;
     document.getElementById('savebutton').disabled = true;
     document.getElementById('validatebutton').disabled = true;
     document.getElementById('ReadWrite').checked = false;
@@ -4564,9 +4730,25 @@ function loadAndCheckFileNames(value)
             for (var i = 0; i < files.length; i++) {
               if (files[i] !== '') {
                 var optn = document.createElement("OPTION");
-                optn.text = files[i];
-                optn.value = files[i];
-                element.options.add(optn);
+                if (files[i] == "<StagedConfiguration>")
+                {
+                  i++;
+                  optn.style.backgroundColor = "#004ADE";
+                  optn.style.color = "white";
+                  optn.title = "Currently Staged";
+
+                  optn.text = files[i];
+                  optn.value = files[i];
+                  element.options.add(optn);
+
+                  i++;
+                }
+                else
+                {
+                  optn.text = files[i];
+                  optn.value = files[i];
+                  element.options.add(optn);
+                }
               }
             }
           }
@@ -4741,6 +4923,7 @@ function callHtmlSummaryPage()
   {
     document.getElementById('ReadWrite').disabled = true;
     document.getElementById('savebutton').disabled = true;
+    document.getElementById('saveasbutton').disabled = false;
     document.getElementById('validatebutton').disabled = true;
   }
   

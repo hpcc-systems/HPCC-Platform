@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "seclib.hpp"
@@ -48,60 +47,12 @@ SCMinterface IHttpMessage (IInterface)
     StringBuffer& getContent(StringBuffer& buf);
 };
 
-/*
-XSCMinterface IEspContext(IInterface)
+typedef enum ESPSerializationFormat_
 {
-    void setUserID(const char* userid);
-    StringBuffer& getUserID(StringBuffer& userid);
-    const char *queryUserId();
-
-    void setPassword(const char* password);
-    StringBuffer& getPassword(StringBuffer& password);
-    const char *queryPassword();
-
-    void setRealm(const char* realm);
-    StringBuffer& getRealm(StringBuffer& realm);
-    const char *queryRealm();
-
-    void setUser(ISecUser* user);
-    ISecUser* queryUser();
-
-    void setResources(ISecResourceList* rlist);
-    ISecResourceList* queryResources();
-
-    void setSecManger(ISecManager* mgr);
-    ISecManager* querySecManager();
-
-    void setContextPath(const char *path);
-    const char * getContextPath();
-
-    void setBindingValue(void *value);
-    void * getBindingValue();
-
-    void setServiceValue(void *value);
-    void * getServiceValue();
-
-    void setToBeAuthenticated(bool val);
-    bool toBeAuthenticated();
-
-    void setPeer(const char* peer);
-    StringBuffer& getPeer(StringBuffer& peer);
-    void setFeatureAuthMap(IAuthMap* map);
-
-
-    IAuthMap* queryAuthMap();
-
-    bool authorizeFeature(const char* pszFeatureUrl, SecAccessFlags& access);
-    bool authorizeFeatures(StringArray& features, IEspStringIntMap& pmap);
-    
-
-    bool validateFeatureAccess(const char* pszFeatureUrl, unsigned required, bool throwExcpt);
-    void setServAddress(const char *host, short port);
-    void getServAddress(StringBuffer& host, short &port);
-    void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms);
-
-};
-*/
+    ESPSerializationANY,
+    ESPSerializationXML,
+    ESPSerializationJSON
+} ESPSerializationFormat;
 
 #define ESPCTX_NO_NAMESPACES    0x00000001
 #define ESPCTX_WSDL             0x00000010
@@ -196,6 +147,9 @@ interface IEspContext : extends IInterface
     virtual void addTraceSummaryValue(const char *name, int value)=0;
     virtual void addTraceSummaryTimeStamp(const char *name)=0;
     virtual void flushTraceSummary()=0;
+
+    virtual ESPSerializationFormat getResponseFormat()=0;
+    virtual void setResponseFormat(ESPSerializationFormat fmt)=0;
 };
 
 

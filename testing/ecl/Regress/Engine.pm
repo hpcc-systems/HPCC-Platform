@@ -1,18 +1,17 @@
 ################################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
 #    This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################
 
 package Regress::Engine;
@@ -465,10 +464,9 @@ sub _check_ini_file($)
     my $passwd = ''; # This will be asked during runtime
     my $parallel = '0'; # This can be set via command line
 
-    # Variables not present in xsl or xml. How to get them?
+    # Variables not present in xsl or xml
     my $purge = 'move';
-    my $fileloc = '';
-    my $eclPublish;
+    my $fileloc = getcwd();
 
     # Format to INI
     my $ini = new Config::Simple(syntax=>'ini');
@@ -477,13 +475,19 @@ sub _check_ini_file($)
     my $clusters = '';
     my $xml_cl = $xml_sw->{Topology}->{Cluster};
     foreach my $name (keys %$xml_cl) {
-        # Name and type are always present
         my $type = '';
-        if ($name eq 'thor' and defined $xml_sw->{$name.'Cluster'}->{lcr}) {
-            $type = 'thorlcr';
-        } else {
-            $type = $name;
+        # Investigate processes, get name and legacy mode
+        foreach my $process (keys %{$xml_cl->{$name}}) {
+            if ($process =~ /(\w+)Cluster/) {
+                $type = lc($1);
+                if ($name eq 'thor' and not defined $xml_cl->{$name}->{$process}->{Legacy}) {
+                    $type .= "lcr";
+                }
+                last;
+            }
         }
+        # Hthor has no HThorCluster process, this is as good a gamble as hard-coded
+        $type = $name unless ($type);
         my %config = (
             'cluster' => $name,
             'type' => $type,
@@ -558,7 +562,7 @@ sub _get_configuration_info($$$$)
         next if($cfgname eq '*');
         my $cfg = $cfgreader->get_block($cfgname);
         push(@{$self->{configinfo}->{$cfgname}->{configfiles}}, $filename);
-        foreach my $key qw(type cluster roxieserver setup_generate)
+        foreach my $key ('type', 'cluster', 'roxieserver', 'setup_generate')
         {
             next if(defined($self->{configinfo}->{$cfgname}->{$key}));
             $self->{configinfo}->{$cfgname}->{$key} = $cfg->{$key} if($cfg->{$key});
@@ -625,9 +629,9 @@ sub _set_defaults($)
 sub _regularize_values($)
 {
     my ($self) = @_;
-    $self->{type} = lc($self->{type});
-    $self->{os} = lc($self->{os});
-    $self->{class} = lc($self->{class});
+    $self->{type} = (defined $self->{type}) ? lc($self->{type}) : "";
+    $self->{os} = (defined $self->{os}) ? lc($self->{os}) : "";
+    $self->{class} = (defined $self->{class}) ? lc($self->{class}) : "";
     $self->{setup_generate} = 'on' if($self->{setup_generate});
     $self->{norun} = 'on' if($self->{norun});
     $self->{deploy_roxie_queries} = 'no' unless(($self->{deploy_roxie_queries} eq 'yes') || ($self->{deploy_roxie_queries} eq 'run'));

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef __HQLTTCPP_IPP_
 #define __HQLTTCPP_IPP_
@@ -648,7 +647,6 @@ protected:
     IHqlExpression * hoist(IHqlExpression * expr, IHqlExpression * hoisted);
     IHqlExpression * transformCond(IHqlExpression * expr);
 
-    inline unsigned extraIndex() { return activityDepth != 0 ? 0 : 1; }
     inline ScopeMigrateInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ScopeMigrateInfo *>(queryTransformExtra(expr->queryBody())); }
 
 private:
@@ -855,6 +853,8 @@ public:
 public:
     CIArrayOf<SharedTableInfo> sharedTables;
     Owned<SharedTableInfo> shared;
+    OwnedHqlExpr        rawLeft;
+    OwnedHqlExpr        rawRight;
     bool                containsAmbiguity;
 };
 
@@ -879,6 +879,55 @@ protected:
 protected:
     CIArrayOf<SharedTableInfo> ambiguousTables;
     bool seenAmbiguity;
+    bool seenShared;
+};
+
+//---------------------------------------------------------------------------
+
+class LeftRightTransformInfo : public NewTransformInfo
+{
+public:
+    LeftRightTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { containsAmbiguity = false; }
+
+    void add(SharedTableInfo * table);
+    void addAmbiguity(SharedTableInfo * table);
+    void inherit(const LeftRightTransformInfo * other);
+    void merge(SharedTableInfo * table);
+    bool noteUsed(IHqlExpression * seq);
+    SharedTableInfo * uses(IHqlExpression * tableBody) const;
+
+public:
+    CIArrayOf<SharedTableInfo> sharedTables;
+    Owned<SharedTableInfo> shared;
+    HqlExprCopyArray    seqs;
+    OwnedHqlExpr        rawLeft;
+    OwnedHqlExpr        rawRight;
+    bool                containsAmbiguity;
+};
+
+
+/*
+This transformer is responsible for reducing the number of selseq used as sequence numbers - so that they only remain
+when nesting makes the selectors ambiguous.  That allows expressions to be commoned up that wouldn't otherwise.
+*/
+class LeftRightTransformer : public NewHqlTransformer
+{
+public:
+    LeftRightTransformer();
+
+    void process(HqlExprArray & exprs);
+
+protected:
+    virtual void analyseExpr(IHqlExpression * expr);
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+    inline LeftRightTransformInfo * queryExtra(IHqlExpression * expr)  { return (LeftRightTransformInfo *)queryTransformExtra(expr); }
+    SharedTableInfo * createAmbiguityInfo(IHqlExpression * dataset, unsigned depth);
+    void incUsage(IHqlExpression * expr, IHqlExpression * seq);
+
+protected:
+    CIArrayOf<SharedTableInfo> ambiguousTables;
     bool seenShared;
 };
 
@@ -960,8 +1009,6 @@ public:
     void reportWarnings();
 
 protected:
-    void beginTableScope();
-    void endTableScope(HqlExprArray & attrs, IHqlExpression * ds, IHqlExpression * newExpr);
     void checkActiveRow(IHqlExpression * expr);
     IHqlExpression * transformSelect(IHqlExpression * expr);
 

@@ -1,18 +1,17 @@
 ################################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################
 
 # File  : commonSetup.cmake
@@ -58,6 +57,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   else()
     option(USE_LIBARCHIVE "Configure use of libarchive" ON)
   endif()
+  option(USE_URIPARSER "Configure use of uriparser" OFF)
   option(USE_NATIVE_LIBRARIES "Search standard OS locations for thirdparty libraries" ON)
   option(USE_GIT_DESCRIBE "Use git describe to generate build tag" ON)
   option(CHECK_GIT_TAG "Require git tag to match the generated build tag" OFF)
@@ -68,6 +68,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(DOCS_DRUPAL "Create Drupal HTML Docs" OFF)
   option(DOCS_EPUB "Create EPUB Docs" OFF)
   option(DOCS_MOBI "Create Mobi Docs" OFF)
+  option(USE_RESOURCE "Use resource download in ECLWatch" OFF)
   
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_XALAN OFF)
@@ -154,11 +155,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
      set (CMAKE_COMPILER_IS_CLANGXX 1)
     endif()
+    if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+     set (CMAKE_COMPILER_IS_CLANG 1)
+    endif()
     if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
       message ("${CMAKE_CXX_COMPILER_ID}")
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frtti -fPIC -fmessage-length=0 -Wformat -Wformat-security -Wformat-nonliteral -pthread")
       SET (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
-      SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-default-inline -fno-inline-functions")
+      SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-inline-functions")
+      if (CMAKE_COMPILER_IS_GNUCXX)
+        SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -fno-default-inline")
+      endif ()
     endif ()
     if (CMAKE_COMPILER_IS_CLANGXX)
       SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=logical-op-parentheses -Werror=bool-conversions -Werror=return-type -Werror=comment")
@@ -169,6 +176,14 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     if ("${GIT_COMMAND}" STREQUAL "")
         set ( GIT_COMMAND "git" )
     endif ()
+  endif ()
+
+  if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_CLANG)
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_C_COMPILER_VERSION)
+  endif ()
+
+  if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
+    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CMAKE_CXX_COMPILER_VERSION)
   endif ()
 
   macro(HPCC_ADD_EXECUTABLE target)
@@ -442,6 +457,15 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         endif()
       endif(USE_LIBARCHIVE)
 
+      if(USE_URIPARSER)
+        find_package(Uriparser)
+        if (URIPARSER_FOUND)
+          add_definitions (-D_USE_URIPARSER)
+        else()
+          message(FATAL_ERROR "URIPARSER requested but package not found")
+        endif()
+      endif(USE_URIPARSER)
+
       if(USE_BOOST_REGEX)
         find_package(BOOST_REGEX)
         if (BOOST_REGEX_FOUND)
@@ -478,22 +502,18 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ## The following sets the install directories and names.
   ###
   if ( PLATFORM )
-    set ( OSSDIR "${DIR_NAME}" )
-  else()
-    set ( OSSDIR "${DIR_NAME}/${version}/clienttools" )
-  endif()
-  set ( CPACK_INSTALL_PREFIX "${PREFIX}" )
-  set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}" )
-  set ( CMAKE_INSTALL_PREFIX "${PREFIX}" )
-  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
-  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}" )
+  else ( PLATFORM )
+    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}/${version}/clienttools" )
+  endif ( PLATFORM )
+  set (CMAKE_SKIP_BUILD_RPATH  FALSE)
+  set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
+  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
+  set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   if (APPLE)
-    set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
-    set(CMAKE_INSTALL_NAME_DIR "@loader_path/../lib") 
+    set(CMAKE_INSTALL_RPATH "@loader_path/../${LIB_DIR}")
+    set(CMAKE_INSTALL_NAME_DIR "@loader_path/../${LIB_DIR}") 
   endif()
-
   MACRO (FETCH_GIT_TAG workdir edition result)
       execute_process(COMMAND "${GIT_COMMAND}" describe --tags --dirty --abbrev=6 --match ${edition}*
         WORKING_DIRECTORY "${workdir}"

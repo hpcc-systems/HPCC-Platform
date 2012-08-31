@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "jliball.hpp"
 #include "hql.hpp"
@@ -75,7 +74,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     //But it would be really good if the code could be made context independent - then it could go in hqlattr and be cached.
     if (ctx)
     {
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
         {
             if (ctx->queryMatchExpr(expr))
                 return RETevaluate;
@@ -151,6 +150,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return RETiterate;
             return RETiterate|HEFspillinline;
         }
+    case no_selectmap:
     case no_selectnth:
         {
             IHqlExpression * ds = expr->queryChild(0);
@@ -215,6 +215,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return 0;       // for the moment always do this out of line 
     case no_table:
         return 0;
+    case no_newuserdictionary:
+    case no_userdictionary:
+        return RETassign;
+    case no_inlinedictionary:
+        return RETassign;
     case no_owned_ds:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
@@ -342,6 +347,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return 0;
             return RETassign|((childLFlags|childRFlags) & HEFspillinline);
         }
+    case no_compound:
+        return getInlineFlags(ctx, expr->queryChild(1));
     default:
         return 0;
     }
@@ -1095,6 +1102,9 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             default:
                 if (cur.isResultAlias())
                     ok = false;
+
+                //MORE: This should only be done if the child query etc. actually references the datarow.
+                //ideally from a colocal activity.
 #if 0
             //Theoretically the following is true.  However it can mean that for the cost of serializing an extra 4 bytes here and
             //there you end up serializing several hundred in some other situations.

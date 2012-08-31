@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include <stdio.h>
@@ -180,6 +179,11 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     req->setFileName(cmd.optObj.value.sget());
     if ((int)cmd.optResultLimit > 0)
         req->setResultLimit(cmd.optResultLimit);
+    if (cmd.debugValues.length())
+    {
+        req->setDebugValues(cmd.debugValues);
+        cmd.debugValues.kill();
+    }
 
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
@@ -245,7 +249,9 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
@@ -274,7 +280,7 @@ public:
             fprintf(stderr, "\nWUID (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
             return false;
         }
-        if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optCluster.isEmpty())
+        if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())
         {
             fprintf(stderr, "\nCluster must be specified when deploying from ECL Source or Archive\n");
             return false;
@@ -288,7 +294,7 @@ public:
         client->addServiceUrl(url.str());
         if (optUsername.length())
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-        return doDeploy(*this, client, optCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
+        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -298,28 +304,28 @@ public:
             "text, file, archive, shared object, or dll.  The workunit will be created in\n"
             "the 'compiled' state.\n"
             "\n"
-            "ecl deploy --cluster=<val> --name=<val> <ecl_file|->\n"
-            "ecl deploy --cluster=<val> --name=<val> <archive|->\n"
-            "ecl deploy [--cluster=<val>] [--name=<val>] <so|dll|->\n\n"
+            "ecl deploy --target=<val> --name=<val> <ecl_file|->\n"
+            "ecl deploy --target=<val> --name=<val> <archive|->\n"
+            "ecl deploy [--target=<val>] [--name=<val>] <so|dll|->\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <ecl_file|->           ecl text file to deploy\n"
             "   <archive|->            ecl archive to deploy\n"
             "   <so|dll|->             workunit dll or shared object to deploy\n"
             " Options:\n"
-            "   -cl, --cluster=<val>   cluster to associate workunit with\n"
+            "   -t, --target=<val>     target cluster to associate workunit with\n"
             "   -n, --name=<val>       workunit job name\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     StringAttr optName;
 };
 
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optActivate(false), activateSet(false), optMsToWait(10000)
+    EclCmdPublish() : optNoActivate(false), activateSet(false), optNoReload(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
     }
@@ -337,13 +343,24 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_WAIT))
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
-            if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
                 activateSet=true;
+                continue;
+            }
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
+                continue;
+            bool activate; //also supports "-A-"
+            if (iter.matchFlag(activate, ECLOPT_ACTIVATE)||iter.matchFlag(activate, ECLOPT_ACTIVATE_S))
+            {
+                activateSet=true;
+                optNoActivate=!activate;
                 continue;
             }
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
@@ -356,7 +373,11 @@ public:
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
         if (!activateSet)
-            extractEclCmdOption(optActivate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, false);
+        {
+            bool activate;
+            if (extractEclCmdOption(activate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, true))
+                optNoActivate=!activate;
+        }
         if (optObj.value.isEmpty())
         {
             fprintf(stderr, "\nMust specify a WUID, ECL File, Archive, or shared object to publish\n");
@@ -369,7 +390,7 @@ public:
         }
         if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
         {
-            if (optCluster.isEmpty())
+            if (optTargetCluster.isEmpty())
             {
                 fprintf(stderr, "\nCluster must be specified when publishing ECL Text or Archive\n");
                 return false;
@@ -388,7 +409,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive))
+        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -397,12 +418,13 @@ public:
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
         req->setWuid(wuid.str());
-        req->setActivate(optActivate);
+        req->setActivate(!optNoActivate);
         if (optName.length())
             req->setJobName(optName.get());
-        if (optCluster.length())
-            req->setCluster(optCluster.get());
+        if (optTargetCluster.length())
+            req->setCluster(optTargetCluster.get());
         req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
@@ -429,30 +451,33 @@ public:
             "If the query is being created from an ECL file, archive, shared object, dll,\n"
             "or text, a workunit is first created and then published to the queryset.\n"
             "\n"
-            "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <wuid>\n"
-            "ecl publish [--cluster=<val>] [--name=<val>] [--activate] <so|dll|->\n"
-            "ecl publish --cluster=<val> --name=<val> [--activate] <archive|->\n"
-            "ecl publish --cluster=<val> --name=<val> [--activate] <ecl_file|->\n\n"
+            "ecl publish [--target=<val>] [--name=<val>] [--activate] <wuid>\n"
+            "ecl publish [--target=<val>] [--name=<val>] [--activate] <so|dll|->\n"
+            "ecl publish --target=<val> --name=<val> [--activate] <archive|->\n"
+            "ecl publish --target=<val> --name=<val> [--activate] <ecl_file|->\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
             "   <archive|->            archive to publish\n"
             "   <ecl_file|->           ECL text file to publish\n"
             "   <so|dll|->             workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -cl, --cluster=<val>   cluster to publish workunit to\n"
+            "   -t, --target=<val>     target cluster to publish workunit to\n"
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
-            "   -A, --activate         activates query when published\n"
-            "   --wait=<ms>            maximum time to wait for cluster to finish updating\n",
+            "   -A, --activate         Activate query when published (default)\n"
+            "   -A-, --no-activate     Do not activate query when published\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     StringAttr optName;
-    int optMsToWait;
-    bool optActivate;
+    unsigned optMsToWait;
+    bool optNoActivate;
     bool activateSet;
+    bool optNoReload;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget
@@ -472,11 +497,15 @@ public:
 
         for (; !iter.done(); iter.next())
         {
+            if (matchVariableOption(iter, 'X', variables))
+                continue;
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (iter.matchOption(optCluster, ECLOPT_CLUSTER)||iter.matchOption(optCluster, ECLOPT_CLUSTER_S))
+            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+                continue;
+            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
@@ -505,7 +534,7 @@ public:
         }
         if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
         {
-            if (optCluster.isEmpty())
+            if (optTargetCluster.isEmpty())
             {
                 fprintf(stderr, "\nCluster must be specified when running ECL Text or Archive\n");
                 return false;
@@ -556,18 +585,23 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
+            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)
                 fprintf(stdout, "Running deployed workunit %s\n", wuid.str());
         }
 
-        if (optCluster.length())
-            req->setCluster(optCluster.get());
+        if (optTargetCluster.length())
+            req->setCluster(optTargetCluster.get());
         req->setWait((int)optWaitTime);
         if (optInput.length())
             req->setInput(optInput.get());
+
+        if (debugValues.length())
+            req->setDebugValues(debugValues);
+        if (variables.length())
+            req->setVariables(variables);
 
         Owned<IClientWURunResponse> resp = client->WURun(req);
         if (resp->getExceptions().ordinality())
@@ -593,32 +627,50 @@ public:
             "Query input can be provided in xml form via the --input parameter.  Input\n"
             "xml can be provided directly or by refrencing a file\n"
             "\n"
-            "ecl run [--cluster=<val>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
-            "ecl run [--cluster=<c>][--input=<file|xml>][--wait=<ms>] <queryset> <query>\n"
-            "ecl run [--cluster=<c>][--name=<nm>][--input=<file|xml>][--wait=<i>] <dll|->\n"
-            "ecl run --cluster=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <archive|->\n"
-            "ecl run --cluster=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <eclfile|->\n\n"
+            "ecl run [--target=<val>][--input=<file|xml>][--wait=<ms>] <wuid>\n"
+            "ecl run [--target=<c>][--input=<file|xml>][--wait=<ms>] <queryset> <query>\n"
+            "ecl run [--target=<c>][--name=<nm>][--input=<file|xml>][--wait=<i>] <dll|->\n"
+            "ecl run --target=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <archive|->\n"
+            "ecl run --target=<c> --name=<nm> [--input=<file|xml>][--wait=<i>] <eclfile|->\n\n"
             "   -                      specifies object should be read from stdin\n"
             "   <wuid>                 workunit to publish\n"
             "   <archive|->            archive to publish\n"
             "   <ecl_file|->           ECL text file to publish\n"
             "   <so|dll|->             workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -cl, --cluster=<val>   cluster to run job on\n"
+            "   -t, --target=<val>     target cluster to run job on\n"
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       job name\n"
             "   -in,--input=<file|xml> file or xml content to use as query input\n"
+            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
             "   --wait=<ms>            time to wait for completion\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optCluster;
+    StringAttr optTargetCluster;
     StringAttr optName;
     StringAttr optInput;
+    IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;
 };
+
+void outputQueryActionResults(const IArrayOf<IConstQuerySetQueryActionResult> &results, const char *act, const char *qs)
+{
+    ForEachItemIn(i, results)
+    {
+        IConstQuerySetQueryActionResult &item = results.item(i);
+        const char *id = item.getQueryId();
+        if (item.getSuccess())
+            fprintf(stdout, "\n%s %s/%s\n", act, qs, id ? id : "");
+        else if (item.getCode()|| item.getMessage())
+        {
+            const char *msg = item.getMessage();
+            fprintf(stderr, "Query %s Error (%d) %s\n", id ? id : "", item.getCode(), msg ? msg : "");
+        }
+    }
+}
 
 class EclCmdActivate : public EclCmdWithQueryTarget
 {
@@ -652,13 +704,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-        {
-            IConstQuerySetQueryActionResult &item = results.item(0);
-            if (item.getSuccess())
-                fprintf(stdout, "\nActivated %s/%s\n", optQuerySet.sget(), optQuery.sget());
-            else if (item.getCode()|| item.getMessage())
-                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
-        }
+            outputQueryActionResults(results, "Activated", optQuerySet.sget());
         return 0;
     }
     virtual void usage()
@@ -710,13 +756,7 @@ public:
         else if (results.empty())
             fprintf(stderr, "\nError Empty Result!\n");
         else
-        {
-            IConstQuerySetQueryActionResult &item = results.item(0);
-            if (item.getSuccess())
-                fprintf(stdout, "\nUnpublished %s/%s\n", optQuerySet.sget(), optQuery.sget());
-            else if (item.getCode()|| item.getMessage())
-                fprintf(stderr, "Error (%d) %s\n", item.getCode(), item.getMessage());
-        }
+            outputQueryActionResults(results, "Unpublished", optQuerySet.sget());
         return 0;
     }
     virtual void usage()

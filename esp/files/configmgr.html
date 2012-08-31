@@ -1,19 +1,18 @@
 <!--
 ################################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    All rights reserved. This program is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################
 -->
 
@@ -213,7 +212,18 @@ body {
       .yui-skin-sam .yui-dt tr.outoffocus td {
       background-color: #D0D0D0;
       }
-      
+
+      .yui-button#saveasbutton button {
+      background: url(/esp/files/img/saveasimg.gif) center center no-repeat;
+      width: 2em;
+      text-indent: -4em;
+      text-align:justify;
+      overflow: hidden;
+      padding: 0 .75em;
+      *margin-left: 4em;   /* IE only */
+      *padding: 0 1.75em;  /* IE only */
+      }
+
       .yui-button#savebutton button {
       background: url(/esp/files/img/save.gif) center center no-repeat;
       width: 2em;
@@ -662,6 +672,7 @@ You need to have Javascript enabled in order to use ConfigMgr. Please enable Jav
       <div id="envctrls">
         <input id="ReadWrite" type="checkbox" name="ReadWrite" value="false" onclick="setReadWrite(this.checked)"/>Write Access&nbsp;
         <input type="button" id='savebutton' class='yui-button savebutton' name="savebutton" title="Save Environment" />
+        <input type="button" id='saveasbutton' class='yui-button saveasbutton' name="saveasbutton" title="Save Environment As" />
         <input type="button" id='validatebutton' class='yui-button validatebutton' name="validatebutton" title="Validate Environment" />
         <input type="button" id='openbutton' class='yui-button openbutton' name="openbutton" title="Open Environment" />
         <input type="button" id='wizardbutton' class='yui-button wizardbutton' name="wizardbutton" title="Wizard" />

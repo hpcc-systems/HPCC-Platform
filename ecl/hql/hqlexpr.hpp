@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef HQLEXPR_INCL
@@ -27,8 +26,11 @@
 //  #define USE_TBB
 #endif
 
-//#define USE_SELSEQ_UID
-//#define ENSURE_SELSEQ_UID
+#define USE_SELSEQ_UID
+//It is impossible to ensure that LEFT/RIGHT are unique, and cannot be nested.  For instance
+//x := PROJECT(ds, t(LEFT));
+//y := x(field not in SET(x, field2));
+//Once filters are moved in child queries then it can occur even when the common project cannot be hoisted.
 
 //Currently nearly all functional attributes are expanded when the call is parsed.
 //This is potentially inefficient, and makes it hard to dynamically control whether functions are expanded in line or generated out of line.
@@ -109,7 +111,7 @@ const unsigned UnadornedParameterIndex = (unsigned)-1;
 enum
 {
 // House keeping information on a per node basis
-    HEF____unused0____          = 0x00000001,
+  HEF____unused0____          = 0x00000001,
     HEFobserved                 = 0x00000002,
     HEFgatheredNew              = 0x00000004,
     HEFhasunadorned             = 0x00000008,
@@ -120,12 +122,12 @@ enum
     HEFunbound                  = 0x00000010,
     HEFinternalVirtual          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
-    HEF____unused2____          = 0x00000080,
-    HEF____unused3____          = 0x00000100,
+  HEF____unused2____          = 0x00000080,
+  HEF____unused3____          = 0x00000100,
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
     HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-    HEFtransformSkips           = 0x00001000,
+  HEF____unused4____          = 0x00000100,
     HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
     HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
     HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
@@ -161,7 +163,7 @@ enum
     HEFretainedByActiveSelect   = (HEFhousekeeping|HEFalwaysInherit),
 
     HEFintersectionFlags        = (0),
-    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|//HEFtransformSkips|
+    HEFunionFlags               = (HEFunbound|HEFfunctionOfGroupAggregate|HEFvolatile|HEFaction|HEFthrowscalar|HEFthrowds|HEFoldthrows|
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
@@ -169,7 +171,7 @@ enum
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
-    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip|HEFtransformSkips),
+    HEFimpure                   = (HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip),
 };
 
 //NB: increase the member variable if it grows 
@@ -179,7 +181,7 @@ enum
     HEF2mustHoist               = 0x00000002,
     HEF2assertstepped           = 0x00000004,
     HEF2containsNonGlobalAlias  = 0x00000008,
-    //no longer used            = 0x00000010,
+    HEF2containsSelf            = 0x00000010,
     HEF2containsNewDataset      = 0x00000020,
     HEF2constant                = 0x00000040,
     HEF2____unused1____         = 0x00000080,
@@ -190,7 +192,7 @@ enum
     //NB: infoFlags2 is currently 2 bytes
     HEF2alwaysInherit           = (HEF2workflow|HEF2containsCall|HEF2containsDelayedCall),
     HEF2intersectionFlags       = (HEF2constant),
-    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction),
+    HEF2unionFlags              = (HEF2alwaysInherit)|(HEF2mustHoist|HEF2assertstepped|HEF2containsNonGlobalAlias|HEF2containsNewDataset|HEF2globalAction|HEF2containsSelf),
     HEF2assigninheritFlags      = ~(HEF2alwaysInherit),         // An assign inherits all but this list from the rhs value 
 };
 
@@ -224,7 +226,7 @@ enum _node_operator {
         no_comma,
         no_count,
         no_countgroup,
-    no_unused82,
+        no_selectmap,
         no_exists,
         no_within,
         no_notwithin,
@@ -353,14 +355,14 @@ enum _node_operator {
     no_unused23,
     no_unused24,
         no_dataset_from_transform,
-    no_unused2,
+        no_childquery,
         no_unknown,
-    no_unused3,
-    no_unused4,
-    no_unused5,
+        no_inlinedictionary,
+        no_indict,
+        no_countdict,
         no_any,
-    no_unused27,
-    no_unused26,
+        no_userdictionary,
+        no_newuserdictionary,
     no_unused25,
     no_unused28,  
     no_unused29,
@@ -1055,6 +1057,7 @@ extern HQL_API int getPrecedence(node_operator op);
 
 struct BindParameterContext;
 interface IHqlAnnotation;
+class HQL_API CUsedTablesBuilder;
 interface IHqlExpression : public IInterface
 {
     virtual _ATOM queryName() const = 0;
@@ -1062,6 +1065,7 @@ interface IHqlExpression : public IInterface
     virtual bool isBoolean() = 0;
     virtual bool isDataset() = 0;
     virtual bool isDatarow() = 0;
+    virtual bool isDictionary() = 0;
     virtual bool isScope() = 0;
     virtual bool isType() = 0;
     virtual bool isAction() = 0;
@@ -1095,6 +1099,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryBody(bool singleLevel = false) = 0;
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
+    virtual bool usesSelector(IHqlExpression * selector) = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
@@ -1134,7 +1139,6 @@ interface IHqlExpression : public IInterface
     virtual unsigned getSymbolFlags() const = 0;              // only valid for a named symbol
     virtual bool isExported() const = 0;
 
-    virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
     virtual IHqlExpression * queryAnnotationParameter(unsigned i) const = 0;
 
 // The following are added to allow efficient storage/retreival in a hashtable.
@@ -1142,6 +1146,10 @@ interface IHqlExpression : public IInterface
     virtual void                removeObserver(IObserver & observer) = 0;
     virtual unsigned            getHash() const = 0;
     virtual bool                equals(const IHqlExpression & other) const = 0;
+
+//purely used for internal processing.  Should not be called directly
+    virtual void gatherTablesUsed(CUsedTablesBuilder & used) = 0;
+    virtual unsigned            getCachedEclCRC() = 0;          // do not call directly - use getExpressionCRC()
 
 // The following inline functions are purely derived from the functions in this interface
     inline int getPrecedence() const { return ::getPrecedence(getOperator()); }
@@ -1209,7 +1217,6 @@ extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, u
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, HqlExprArray & args);        //NB: This deletes the array that is passed
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args);
 extern HQL_API IHqlExpression *createValueSafe(node_operator op, ITypeInfo * type, const HqlExprArray & args, unsigned from, unsigned max);
-extern HQL_API IHqlExpression *createValueFromList(node_operator op, ITypeInfo * type, ...);
 extern HQL_API IHqlExpression *createValueFromCommaList(node_operator op, ITypeInfo * type, IHqlExpression * argsExpr);
 
 //These all consume their arguments
@@ -1246,6 +1253,9 @@ extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *d
 extern HQL_API IHqlExpression *createDataset(node_operator op, IHqlExpression *dataset, IHqlExpression *elist);
 extern HQL_API IHqlExpression *createDataset(node_operator op, HqlExprArray & parms);       // inScope should only be set internally.
 extern HQL_API IHqlExpression *createDatasetF(node_operator op, ...);
+extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *initializer, IHqlExpression *recordDef);
+extern HQL_API IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary);
+extern HQL_API IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms);
 extern HQL_API IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, IHqlExpression *Dataset, IHqlExpression *element = NULL);
 extern HQL_API IHqlExpression *createRow(node_operator op, HqlExprArray & args);
@@ -1488,6 +1498,7 @@ extern HQL_API IHqlExpression * createCounter();
 extern HQL_API IHqlExpression * createSelectorSequence();
 extern HQL_API IHqlExpression * createSequenceExpr();
 extern HQL_API IHqlExpression * createUniqueSelectorSequence();
+extern HQL_API IHqlExpression * createSelectorSequence(unsigned __int64 seq);
 extern HQL_API IHqlExpression * createDummySelectorSequence();
 extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);
@@ -1534,6 +1545,7 @@ extern HQL_API bool isSimpleCountAggregate(IHqlExpression * aggregateExpr, bool 
 extern HQL_API bool isSimpleCountExistsAggregate(IHqlExpression * aggregateExpr, bool canFilterArg, bool canCast);
 extern HQL_API bool isKeyedCountAggregate(IHqlExpression * aggregate);
 extern HQL_API IHqlExpression * createNullDataset();
+extern HQL_API IHqlExpression * createNullDictionary();
 extern HQL_API IHqlExpression * queryNullRecord();
 extern HQL_API IHqlExpression * queryNullRowRecord();
 extern HQL_API IHqlExpression * queryExpression(ITypeInfo * t);
@@ -1551,6 +1563,7 @@ extern HQL_API IHqlExpression * extractChildren(IHqlExpression * value);
 extern HQL_API IHqlExpression * queryOnlyField(IHqlExpression * record);
 extern HQL_API bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
 extern HQL_API bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
+extern HQL_API bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right);
 extern HQL_API IHqlExpression * queryOriginalRecord(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryOriginalRecord(ITypeInfo * type);
 extern HQL_API IHqlExpression * queryOriginalTypeExpression(ITypeInfo * type);
@@ -1644,7 +1657,8 @@ inline bool containsAssertKeyed(IHqlExpression * expr)  { return (expr->getInfoF
 inline bool containsAssertStepped(IHqlExpression * expr){ return (expr->getInfoFlags2() & HEF2assertstepped) != 0; }
 inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoFlags() & HEFcontainsCounter) != 0; }
 inline bool isCountProject(IHqlExpression * expr)       { return expr->hasProperty(_countProject_Atom); }
-inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips)) != 0; }
+inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
+inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
                                                         { return (expr->getInfoFlags() & (HEFcontextDependent & ~HEFgraphDependent)) != 0; }
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }

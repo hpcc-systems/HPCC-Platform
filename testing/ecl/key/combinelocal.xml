@@ -1,0 +1,8 @@
+<Dataset name='Result 1'>
+ <Row><did>1</did><name>Gavin               </name><ssn>          </ssn><dob>19700117</dob></Row>
+ <Row><did>2</did><name>Richard             </name><ssn>          </ssn><dob>0</dob></Row>
+ <Row><did>3</did><name>                    </name><ssn>123462    </ssn><dob>0</dob></Row>
+ <Row><did>4</did><name>                    </name><ssn>          </ssn><dob>19831212</dob></Row>
+ <Row><did>5</did><name>Nigel               </name><ssn>1287234   </ssn><dob>0</dob></Row>
+ <Row><did>6</did><name>                    </name><ssn>007001002 </ssn><dob>20000101</dob></Row>
+</Dataset>

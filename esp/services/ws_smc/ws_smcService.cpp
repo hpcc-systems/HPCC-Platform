@@ -1,22 +1,23 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning (disable : 4786)
+
+#include "build-config.h"
 
 #ifdef _USE_OPENLDAP
 #include "ldapsecurity.ipp"
@@ -30,8 +31,11 @@
 #include "dfuwu.hpp"
 #include "exception_util.hpp"
 
+#include "roxiecontrol.hpp"
+
 static const char* FEATURE_URL = "SmcAccess";
 const char* THORQUEUE_FEATURE = "ThorQueueAccess";
+static const char* ROXIE_CONTROL_URL = "RoxieControlAccess";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
 
@@ -1252,13 +1256,14 @@ bool CWsSMCEx::onNotInCommunityEdition(IEspContext &context, IEspNotInCommunityE
    return true;
 }
 
-
 bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesRequest & req, IEspBrowseResourcesResponse & resp)
 {
     try
     {
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Failed to Browse Resources. Permission denied.");
+
+        double version = context.getClientVersion();
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
         Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
@@ -1280,6 +1285,13 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (m_PortalURL.length() > 0)
             resp.setPortalURL(m_PortalURL.str());
+
+#ifndef USE_RESOURCE
+        if (version > 1.12)
+            resp.setUseResource(false);
+#else
+        if (version > 1.12)
+            resp.setUseResource(true);
 
         //Now, get a list of resources stored inside the ESP box
         IArrayOf<IEspHPCCResourceRepository> resourceRepositories;
@@ -1398,6 +1410,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
 
         if (resourceRepositories.ordinality())
             resp.setHPCCResourceRepositories(resourceRepositories);
+#endif
     }
     catch(IException* e)
     {
@@ -1467,4 +1480,58 @@ int CWsSMCSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* request, 
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return onGetForm(context, request, response, service, method);
+}
+
+inline const char *controlCmdMessage(int cmd)
+{
+    switch (cmd)
+    {
+    case CRoxieControlCmd_ATTACH:
+        return "<control:unlockDali/>";
+    case CRoxieControlCmd_DETACH:
+        return "<control:lockDali/>";
+    case CRoxieControlCmd_RELOAD:
+        return "<control:reload/>";
+    case CRoxieControlCmd_STATE:
+        return "<control:state/>";
+    default:
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Unknown Roxie Control Command.");
+    }
+    return NULL;
+}
+
+bool CWsSMCEx::onRoxieControlCmd(IEspContext &context, IEspRoxieControlCmdRequest &req, IEspRoxieControlCmdResponse &resp)
+{
+    if (!context.validateFeatureAccess(ROXIE_CONTROL_URL, SecAccess_Full, false))
+       throw MakeStringException(ECLWATCH_SMC_ACCESS_DENIED, "Cannot Access Roxie Control. Permission denied.");
+
+    const char *process = req.getProcessCluster();
+    if (!process || !*process)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Process cluster not specified.");
+    const char *controlReq = controlCmdMessage(req.getCommand());
+
+    SocketEndpointArray addrs;
+    getRoxieProcessServers(process, addrs);
+    if (!addrs.length())
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Process cluster not found.");
+    Owned<IPropertyTree> controlResp = sendRoxieControlAllNodes(addrs.item(0), controlReq, true, req.getWait());
+    if (!controlResp)
+        throw MakeStringException(ECLWATCH_INTERNAL_ERROR, "Failed to get control response from roxie.");
+
+    IArrayOf<IEspRoxieControlEndpointInfo> respEndpoints;
+    Owned<IPropertyTreeIterator> roxieEndpoints = controlResp->getElements("Endpoint");
+    ForEach(*roxieEndpoints)
+    {
+        IPropertyTree &roxieEndpoint = roxieEndpoints->query();
+        Owned<IEspRoxieControlEndpointInfo> respEndpoint = createRoxieControlEndpointInfo();
+        respEndpoint->setAddress(roxieEndpoint.queryProp("@ep"));
+        respEndpoint->setStatus(roxieEndpoint.queryProp("Status"));
+        if (roxieEndpoint.hasProp("Dali/@connected"))
+            respEndpoint->setAttached(roxieEndpoint.getPropBool("Dali/@connected"));
+        if (roxieEndpoint.hasProp("State/@hash"))
+            respEndpoint->setStateHash(roxieEndpoint.queryProp("State/@hash"));
+        respEndpoints.append(*respEndpoint.getClear());
+    }
+    resp.setEndpoints(respEndpoints);
+    return true;
 }

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include <limits.h>
@@ -21,6 +20,7 @@
 #include "jprop.hpp"
 #include "jexcept.hpp"
 #include "jiter.ipp"
+#include "jlzw.hpp"
 #include "jsocket.hpp"
 #include "jset.hpp"
 #include "jsort.hpp"
@@ -1373,23 +1373,24 @@ void CJobMaster::sendQuery()
 {
     CriticalBlock b(sendQueryCrit);
     if (querySent) return;
-    CMessageBuffer msg;
-    msg.append(QueryInit);
-    msg.append(mpJobTag);
-    msg.append(slavemptag);
-    msg.append(queryWuid());
-    msg.append(graphName);
+    CMessageBuffer tmp;
+    tmp.append(mpJobTag);
+    tmp.append(slavemptag);
+    tmp.append(queryWuid());
+    tmp.append(graphName);
     const char *soName = queryDllEntry().queryName();
     PROGLOG("Query dll: %s", soName);
-    msg.append(soName);
-    msg.append(sendSo);
+    tmp.append(soName);
+    tmp.append(sendSo);
     if (sendSo)
     {
+        CTimeMon atimer;
         OwnedIFile iFile = createIFile(soName);
         OwnedIFileIO iFileIO = iFile->open(IFOread);
         size32_t sz = (size32_t)iFileIO->size();
-        msg.append(sz);
-        read(iFileIO, 0, sz, msg);
+        tmp.append(sz);
+        read(iFileIO, 0, sz, tmp);
+        PROGLOG("Loading query for serialization to slaves took %d ms", atimer.elapsed());
     }
     Owned<IPropertyTree> deps = createPTree(queryXGMML()->queryName());
     Owned<IPropertyTreeIterator> edgeIter = queryXGMML()->getElements("edge"); // JCSMORE trim to those actually needed
@@ -1399,9 +1400,16 @@ void CJobMaster::sendQuery()
         deps->addPropTree("edge", LINK(&edge));
     }
     Owned<IPropertyTree> workUnitInfo = prepareWorkUnitInfo();
-    workUnitInfo->serialize(msg);
-    deps->serialize(msg);
+    workUnitInfo->serialize(tmp);
+    deps->serialize(tmp);
+
+    CMessageBuffer msg;
+    msg.append(QueryInit);
+    compressToBuffer(msg, tmp.length(), tmp.toByteArray());
+
+    CTimeMon queryToSlavesTimer;
     broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "sendQuery");
+    PROGLOG("Serialization of query init info (%d bytes) to slaves took %d ms", msg.length(), queryToSlavesTimer.elapsed());
     queryJobManager().addCachedSo(soName);
     querySent = true;
 }
@@ -2023,8 +2031,7 @@ void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
 bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, IThorActivityIterator &iter)
 {
     CriticalBlock b(createdCrit);
-    unsigned pos=mb.length();
-    mb.append((unsigned)0);
+    DelayedSizeMarker sizeMark1(mb);
     ForEach (iter)
     {
         CMasterGraphElement &element = (CMasterGraphElement &)iter.query();
@@ -2034,19 +2041,16 @@ bool CMasterGraph::serializeActivityInitData(unsigned slave, MemoryBuffer &mb, I
             if (activity)
             {
                 mb.append(element.queryId());
-                unsigned pos = mb.length();
-                mb.append((size32_t)0);
+                DelayedSizeMarker sizeMark2(mb);
                 activity->serializeSlaveData(mb, slave);
-                size32_t sz = (mb.length()-pos)-sizeof(size32_t);
-                mb.writeDirect(pos, sizeof(sz), &sz);
+                sizeMark2.write();
             }
         }
     }
-    if (pos == (mb.length()-sizeof(unsigned)))
+    if (0 == sizeMark1.size())
         return false;
     mb.append((activity_id)0); // terminator
-    unsigned len=mb.length()-pos-sizeof(unsigned);
-    mb.writeDirect(pos, sizeof(len), &len);
+    sizeMark1.write();
     return true;
 }
 

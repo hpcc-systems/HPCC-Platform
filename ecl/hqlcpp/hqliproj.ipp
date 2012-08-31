@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef __HQLIPROJ_IPP_
 #define __HQLIPROJ_IPP_
@@ -228,7 +227,7 @@ struct ImplicitProjectOptions
 class ImplicitProjectInfo;
 
 class ComplexImplicitProjectInfo;
-class ImplicitProjectInfo : public MergingTransformInfo
+class ImplicitProjectInfo : public NewTransformInfo
 {
 public:
     ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind);
@@ -293,7 +292,6 @@ class ComplexImplicitProjectInfo : public ImplicitProjectInfo
 {
 public:
     ComplexImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind);
-    IMPLEMENT_IINTERFACE
 
     virtual ComplexImplicitProjectInfo * queryComplexInfo() { return this; }
 
@@ -339,11 +337,9 @@ public:
 public:
 };
 
-//MORE: Could remove dependency on insideCompound if it was ok to have compound operators scattered through the
-//      contents of a compound item.  Probably would cause few problems, and would make life simpler
-class ImplicitProjectTransformer : public MergingHqlTransformer
+class ImplicitProjectTransformer : public NewHqlTransformer
 {
-    typedef MergingHqlTransformer Parent;
+    typedef NewHqlTransformer Parent;
 
 public:
     ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills);
@@ -365,6 +361,7 @@ protected:
 
     void calculateFieldsUsed(IHqlExpression * expr);
     void connect(IHqlExpression * source, IHqlExpression * sink);
+    IHqlExpression * createParentTransformed(IHqlExpression * expr);
     void finalizeFields();
     void finalizeFields(IHqlExpression * expr);
     void gatherFieldsUsed(IHqlExpression * expr, ImplicitProjectInfo * extra);

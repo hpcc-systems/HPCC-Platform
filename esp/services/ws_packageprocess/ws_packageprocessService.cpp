@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning (disable : 4786)
@@ -165,6 +164,18 @@ bool addFileInfoToDali(const char *logicalname, const char *lookupDaliIp, const 
 
     return retval;
 }
+
+void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree, const char *setName)
+{
+    VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", setName);
+    Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
+    ForEach(*iter)
+    {
+        iter->query().setPropBool("@active", false);
+    }
+    pkgSetTree->setPropBool("@active", true);
+}
+
 //////////////////////////////////////////////////////////
 
 void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *setName, const char *packageSetName, IPropertyTree *packageInfo, bool active, bool overWrite)
@@ -177,7 +188,6 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *setName, const
     xpath.append("PackageMap[@id='").append(lcName).append("']");
 
     IPropertyTree *pkgRegTree = pkgSetRegistry->queryPropTree(xpath.str());
-
     IPropertyTree *root = globalLock->queryRoot();
     IPropertyTree *mapTree = root->queryPropTree(xpath);
 
@@ -235,7 +245,10 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *setName, const
     IPropertyTree *pkgSetTree = pkgSetRegistry->addPropTree("PackageMap", createPTree("PackageMap"));
     pkgSetTree->setProp("@id", lcName);
     pkgSetTree->setProp("@querySet", setName);
-    pkgSetTree->setPropBool("@active", active);
+    if (active)
+        makePackageActive(pkgSetRegistry, pkgSetTree, setName);
+    else
+        pkgSetTree->setPropBool("@active", false);
 }
 
 void copyPackageSubFiles(IPropertyTree *packageInfo, const char *process, const char *defaultLookupDaliIp, bool overwrite, IUserDescriptor* userdesc, StringBuffer &host, short port)
@@ -454,16 +467,10 @@ void activatePackageMapInfo(const char *packageSetName, const char *packageMap, 
             lcMapName.toLowerCase();
             VStringBuffer xpath_map("PackageMap[@id=\"%s\"]", lcMapName.str());
             IPropertyTree *mapTree = pkgSetTree->queryPropTree(xpath_map);
-            mapTree->setPropBool("@active", activate);
-        }
-        else
-        {
-            Owned<IPropertyTreeIterator> iter = pkgSetTree->getElements("PackageMap");
-            ForEach(*iter)
-            {
-                IPropertyTree &item = iter->query();
-                item.setPropBool("@active", activate);
-            }
+            if (activate)
+                makePackageActive(pkgSetTree, mapTree, lcName.str());
+            else
+                pkgSetTree->setPropBool("@active", false);
         }
     }
 }

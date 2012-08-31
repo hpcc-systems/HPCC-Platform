@@ -1,5 +1,5 @@
 /*##############################################################################
-Copyright (C) 2011 HPCC Systems.
+HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 ############################################################################## */
 
 ESPrequest EchoRequest
@@ -25,6 +25,7 @@ ESPrequest AddPackageRequest
     boolean Activate;
     boolean OverWrite;
     string QuerySet;
+    strint PackageSet;
     string PackageName;
 };
 

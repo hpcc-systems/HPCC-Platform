@@ -1,23 +1,24 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef ECLCMD_COMMON_HPP
 #define ECLCMD_COMMON_HPP
+
+#include "ws_workunits.hpp"
 
 //=========================================================================================
 
@@ -52,6 +53,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PASSWORD_INI "eclPassword"
 #define ECLOPT_PASSWORD_ENV "ECL_PASSWORD"
 
+#define ECLOPT_NORELOAD "--no-reload"
+
+#define ECLOPT_NO_ACTIVATE "--no-activate"
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
@@ -76,14 +80,20 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"
-#define ECLOPT_CLUSTER "--cluster"
-#define ECLOPT_CLUSTER_S "-cl"
+#define ECLOPT_CLUSTER_DEPRECATED "--cluster"
+#define ECLOPT_CLUSTER_DEPRECATED_S "-cl"
+#define ECLOPT_TARGET "--target"
+#define ECLOPT_TARGET_S "-t"
 #define ECLOPT_NAME "--name"
 #define ECLOPT_NAME_S "-n"
 #define ECLOPT_QUERYSET "--queryset"
 #define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"
 #define ECLOPT_SHOW "--show"
+
+#define ECLOPT_DALIIP "--daliip"
+#define ECLOPT_PROCESS "--process"
+#define ECLOPT_PROCESS_S "-p"
 
 #define ECLOPT_LIB_PATH_S "-L"
 #define ECLOPT_IMP_PATH_S "-I"
@@ -97,6 +107,8 @@ bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const cha
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(bool & option, IProperties * globals, const char * envName, const char * propertyName, bool defval);
 bool extractEclCmdOption(unsigned & option, IProperties * globals, const char * envName, const char * propertyName, unsigned defval);
+
+bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values);
 
 enum eclObjParameterType
 {
@@ -186,6 +198,7 @@ public:
             "   --main=<definition>    definition to use from legacy ECL repository\n"
             "   --ecl-only             send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
+            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
@@ -198,6 +211,7 @@ public:
     StringBuffer optImpPath;
     StringAttr optManifest;
     StringAttr optAttributePath;
+    IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;
 };

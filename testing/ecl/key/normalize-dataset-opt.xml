@@ -1,0 +1,313 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>Dataset count transform</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>Single row from transform</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>Single row from dynamic transform</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 12 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>Transform</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>113</id><name>Charlie 13 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>Transform dynamic</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>14</id><name>Charlie 14 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>113</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>114</id><name>Charlie 14 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>Single value dataset</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>14</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>15</id><name>Charlie 15 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>113</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>114</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>115</id><name>Charlie 15 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>Multiple rows</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>14</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>15</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>16</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>17</id><name>Charlie 17 Bravo</name></Row>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>14</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>15</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>16</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>17</id><name>Charlie 17 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><id>101</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>113</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>114</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>115</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>116</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>117</id><name>Charlie 17 Bravo</name></Row>
+ <Row><id>102</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>103</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>104</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>105</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>106</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>107</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>108</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>109</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>110</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>111</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>112</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>113</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>114</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>115</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>116</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>117</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>118</id><name>Charlie 17 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>Single independent row</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>11</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>12</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>13</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>14</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>15</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>16</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>17</id><name>Charlie 17 Bravo</name></Row>
+ <Row><id>18</id><name>Charlie 18 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><id>1001</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>1002</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>1003</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>1004</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>1005</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>1006</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>1007</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>1008</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>1009</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>1010</id><name>Charlie 10 Bravo</name></Row>
+ <Row><id>1011</id><name>Charlie 11 Bravo</name></Row>
+ <Row><id>1012</id><name>Charlie 12 Bravo</name></Row>
+ <Row><id>1013</id><name>Charlie 13 Bravo</name></Row>
+ <Row><id>1014</id><name>Charlie 14 Bravo</name></Row>
+ <Row><id>1015</id><name>Charlie 15 Bravo</name></Row>
+ <Row><id>1016</id><name>Charlie 16 Bravo</name></Row>
+ <Row><id>1017</id><name>Charlie 17 Bravo</name></Row>
+ <Row><id>1018</id><name>Charlie 18 Bravo</name></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>LEFT referenced children</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><id>1</id><name>Charlie 1 Bravo</name></Row>
+ <Row><id>2</id><name>Charlie 2 Bravo</name></Row>
+ <Row><id>3</id><name>Charlie 3 Bravo</name></Row>
+ <Row><id>4</id><name>Charlie 4 Bravo</name></Row>
+ <Row><id>5</id><name>Charlie 5 Bravo</name></Row>
+ <Row><id>6</id><name>Charlie 6 Bravo</name></Row>
+ <Row><id>7</id><name>Charlie 7 Bravo</name></Row>
+ <Row><id>8</id><name>Charlie 8 Bravo</name></Row>
+ <Row><id>9</id><name>Charlie 9 Bravo</name></Row>
+ <Row><id>10</id><name>Charlie 10 Bravo</name></Row>
+</Dataset>

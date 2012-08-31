@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef __HQLCPP_IPP_
 #define __HQLCPP_IPP_
@@ -28,6 +27,7 @@
 #include "hqlutil.hpp"
 #include "hqlwcpp.hpp"
 #include "hqltrans.ipp"
+#include "hqlusage.hpp"
 
 #define DEBUG_TIMER(name, time)                     if (options.addTimingToWorkunit) { timeReporter->addTiming(name, time); }
 #define DEBUG_TIMERX(timeReporter, name, time)      if (timeReporter) { timeReporter->addTiming(name, time); }
@@ -172,8 +172,11 @@ interface IHqlCppDatasetCursor : public IInterface
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) = 0;
     virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row) = 0;
-    virtual BoundRow * buildSelect(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
+    virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
+    virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt) = 0;
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx) = 0;
+    virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
 };
 
 interface IHqlCppSetCursor : public IInterface
@@ -440,7 +443,6 @@ class WorkflowItem : public CInterface
 public:
     WorkflowItem(unsigned _wfid) : wfid(_wfid) { }
     WorkflowItem(IHqlExpression * _function);
-    IMPLEMENT_IINTERFACE;
 
     bool isFunction() const { return function != NULL; }
     IHqlExpression * getFunction() const;
@@ -484,13 +486,14 @@ enum SubGraphType { SubGraphRoot, SubGraphRemote, SubGraphChild };
 struct SubGraphInfo : public HqlExprAssociation
 {
 public:
-    SubGraphInfo(IPropertyTree * _tree, unsigned _id, IHqlExpression * graphTag, SubGraphType _type);
+    SubGraphInfo(IPropertyTree * _tree, unsigned _id, unsigned _graphId, IHqlExpression * graphTag, SubGraphType _type);
 
     virtual AssocKind getKind() { return AssocSubGraph; }
 
 public:
     Linked<IPropertyTree> tree;
     unsigned id;
+    unsigned graphId;
     LinkedHqlExpr graphTag;
     SubGraphType type;
 };
@@ -523,7 +526,6 @@ struct HqlCppOptions
     unsigned            optimizeDiskFlag;
     unsigned            activitiesPerCpp;
     unsigned            maxRecordSize;
-    unsigned            maxInlineDepth;
     unsigned            inlineStringThreshold;
     unsigned            maxRootMaybeThorActions;
     unsigned            maxStaticRowSize;
@@ -708,8 +710,11 @@ struct HqlCppOptions
     bool                implicitGroupShuffle;  // use shuffle if some sort conditions match when grouping
     bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
+    bool                reportFieldUsage;
     bool                shuffleLocalJoinConditions;
     bool                projectNestedTables;
+    bool                showSeqInGraph;
+    bool                normalizeSelectorSequence;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -778,7 +783,7 @@ public:
     IMPLEMENT_IINTERFACE
 
 //interface IHqlCppTranslator
-    virtual bool buildCpp(IHqlCppInstance & _code, IHqlExpression * expr);
+    virtual bool buildCpp(IHqlCppInstance & _code, HqlQueryContext & query);
     virtual double getComplexity(IHqlCppInstance & _code, IHqlExpression * expr);
     virtual bool spanMultipleCppFiles()         { return options.spanMultipleCpp; }
     virtual unsigned getNumExtraCppFiles()      { return activitiesThisCpp ? curCppFile : 0; }
@@ -833,6 +838,8 @@ public:
     IReferenceSelector * buildDatasetIndexViaIterator(BuildCtx & ctx, IHqlExpression * expr);
     IHqlExpression * ensureIteratedRowIsLive(BuildCtx & initctx, BuildCtx & searchctx, BuildCtx & iterctx, BoundRow * row, IHqlExpression * dataset, IHqlExpression * rowExpr);
     BoundRow * buildOptimizeSelectFirstRow(BuildCtx & ctx, IHqlExpression * expr);
+
+    IReferenceSelector * buildDatasetSelectMap(BuildCtx & ctx, IHqlExpression * expr);
 
 // Helper functions
 
@@ -893,6 +900,7 @@ public:
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();
+    void generateStatistics(const char * targetDir);
 
             unsigned getHints()                             { return hints; }
     inline  bool checkForRowOverflow() const                { return options.checkRowOverflow; }
@@ -1014,7 +1022,7 @@ public:
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
 
     void updateClusterType();
-    bool buildCode(IHqlExpression * exprlist, const char * embeddedLibraryName, bool isEmbeddedLibrary);
+    bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary);
 
     inline StringBuffer & generateExprCpp(StringBuffer & out, IHqlExpression * expr)
     {
@@ -1084,6 +1092,7 @@ public:
     IHqlCppDatasetBuilder * createChoosenDatasetBuilder(IHqlExpression * record, IHqlExpression * maxCount);
     IHqlCppDatasetBuilder * createLimitedDatasetBuilder(IHqlExpression * record, IHqlExpression * maxCount);
     IHqlCppDatasetBuilder * createLinkedDatasetBuilder(IHqlExpression * record, IHqlExpression * choosenLimit = NULL);
+    IHqlCppDatasetBuilder * createLinkedDictionaryBuilder(IHqlExpression * record);
     IReferenceSelector * createSelfSelect(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr, IHqlExpression * rootSelector);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor, IHqlExpression * path);
     IReferenceSelector * createReferenceSelector(BoundRow * cursor);
@@ -1213,8 +1222,9 @@ public:
     void doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality);
     void buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
 
-    unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
-    unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset, unique_id_t containerId);
+    IHqlExpression * createLoopSubquery(IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, bool multiInstance, unsigned & loopAgainResult);
+    unique_id_t buildGraphLoopSubgraph(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, bool multiInstance);
+    unique_id_t buildRemoteSubgraph(BuildCtx & ctx, IHqlExpression * dataset);
         
     void doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, IHqlExpression * expr, CHqlBoundExpr * result);
     IHqlExpression * doBuildInternalFunction(IHqlExpression * funcdef);
@@ -1242,6 +1252,7 @@ public:
     void doBuildExprCast(BuildCtx & ctx, ITypeInfo * type, CHqlBoundExpr & pure, CHqlBoundExpr & tgt);
     void doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCompareElement(BuildCtx & ctx, node_operator comp_op, IHqlExpression * lhs, IHqlExpression * rhs, CHqlBoundExpr & tgt);
+    void doBuildExprCountDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCounter(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
@@ -1258,6 +1269,7 @@ public:
     void doBuildExprIdToBlob(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprIf(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprIndex(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
+    void doBuildExprInDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprIsValid(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprConstList(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
@@ -1315,6 +1327,8 @@ public:
     void doBuildStmtSkip(BuildCtx & ctx, IHqlExpression * expr, bool * canReachFollowing);
     void doBuildStmtUpdate(BuildCtx & ctx, IHqlExpression * expr);
     void doBuildStmtWait(BuildCtx & ctx, IHqlExpression * expr);
+
+    void optimizeBuildActionList(BuildCtx & ctx, IHqlExpression * exprs);
 
     bool buildNWayInputs(CIArrayOf<ABoundActivity> & inputs, BuildCtx & ctx, IHqlExpression * input);
 
@@ -1553,6 +1567,7 @@ public:
     void buildConnectOrders(BuildCtx & ctx, ABoundActivity * slaveActivity, ABoundActivity * masterActivity);
     void buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & equalities, HqlExprArray & conds, IHqlExpression * dataset, IHqlExpression * selSeq);
     void buildDedupSerializeFunction(BuildCtx & ctx, const char * funcName, IHqlExpression * srcDataset, IHqlExpression * tgtDataset, HqlExprArray & srcValues, HqlExprArray & tgtValues, IHqlExpression * selSeq);
+    void buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName);
     void buildHashClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, const DatasetReference & dataset);
     void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf);
     void buildInstancePrefix(ActivityInstance * instance);
@@ -1630,6 +1645,7 @@ public:
     bool insideChildQuery(BuildCtx & ctx);
     bool insideRemoteGraph(BuildCtx & ctx);
     bool isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
+    void buildChildGraph(BuildCtx & ctx, IHqlExpression * expr);
 
     void buildXmlReadChildrenIterator(BuildCtx & subctx, const char * iterTag, IHqlExpression * rowName, SharedHqlExpr & subRowExpr);
     void buildXmlReadTransform(IHqlExpression * dataset, StringBuffer & className, bool & usesContents);
@@ -1656,6 +1672,7 @@ public:
     void doBuildVarStringFunction(BuildCtx & ctx, const char * name, IHqlExpression * value);
     void doBuildDataFunction(BuildCtx & ctx, const char * name, IHqlExpression * value);
     void doBuildStringFunction(BuildCtx & ctx, const char * name, IHqlExpression * value);
+    void doBuildDoubleFunction(BuildCtx & ctx, const char * name, IHqlExpression * value);
     void doBuildFunction(BuildCtx & ctx, ITypeInfo * type, const char * name, IHqlExpression * value);
     void doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
     void doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * value);
@@ -1764,7 +1781,7 @@ protected:
 
 
     void markThorBoundaries(WorkflowArray & array);
-    bool transformGraphForGeneration(IHqlExpression * exprlist, WorkflowArray & exprs);
+    bool transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & exprs);
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
     void pickBestEngine(HqlExprArray & exprs);
@@ -1779,14 +1796,14 @@ protected:
 
     void logGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned sourceIndex, unsigned targetIndex, const char * label, bool nWay);
 
-    void beginGraph(BuildCtx & ctx, const char * graphName = NULL);
+    void beginGraph(const char * graphName = NULL);
     void clearGraph();
     void endGraph();
 
     double getComplexity(WorkflowArray & exprs);
     double getComplexity(HqlExprArray & exprs);
     double getComplexity(IHqlExpression * expr, ClusterType cluster);
-    bool prepareToGenerate(IHqlExpression * exprlist, WorkflowArray & exprs, bool isEmbeddedLibrary);
+    bool prepareToGenerate(HqlQueryContext & query, WorkflowArray & exprs, bool isEmbeddedLibrary);
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
     IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * graphIdExpr, unsigned numResults, node_operator graphKind);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);
@@ -1800,6 +1817,9 @@ protected:
     bool getDebugFlag(const char * name, bool defValue);
     void initOptions();
     void postProcessOptions();
+    SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
+    void reportFieldUsage(const char * filename);
+    void noteAllFieldsUsed(IHqlExpression * expr);
 
 public:
     IHqlExpression * convertToPhysicalIndex(IHqlExpression * tableExpr);
@@ -1883,6 +1903,7 @@ protected:
     PointerArray recordIndexCache;
     Owned<ITimeReporter> timeReporter;
     WarningProcessor warningProcessor;
+    CIArrayOf<SourceFieldUsage> trackedSources;
 };
 
 
@@ -1900,40 +1921,7 @@ protected:
     unique_id_t         instance;
 };
 
-
-//===========================================================================
-
-class ChildGraphBuilder : public CInterface
-{
-public:
-    ChildGraphBuilder(HqlCppTranslator & _translator);
-
-    IHqlExpression * addDataset(IHqlExpression * expr);
-    void buildStmt(BuildCtx & ctx, IHqlExpression * expr);
-    unique_id_t buildGraphLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
-    unique_id_t buildLoopBody(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, unique_id_t containerId, bool multiInstance);
-    unique_id_t buildRemoteGraph(BuildCtx & ctx, IHqlExpression * ds, unique_id_t containerId);
-    void generateGraph(BuildCtx & ctx);
-    void generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * retGraphExpr, OwnedHqlExpr * retResultsExpr);
-    bool isDatasetPresent(IHqlExpression * expr);
-    unsigned queryLoopConditionResult() const { return loopAgainResult; }
-protected:
-    void createBuilderAlias(BuildCtx & ctx, ParentExtract * extractBuilder);
-
-protected:
-    HqlCppTranslator & translator;
-    unsigned id;
-    OwnedHqlExpr idExpr;
-    StringBuffer instanceName;
-    OwnedHqlExpr instanceExpr;
-    OwnedHqlExpr resultInstanceExpr;
-    OwnedHqlExpr represents;
-    unsigned loopAgainResult;
-    HqlExprArray results;
-    unsigned numResults;
-};
-
-//===========================================================================
+//---------------------------------------------------------------------------------------------------------------------
 
 class CompoundBuilder
 {
@@ -2012,6 +2000,8 @@ extern bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph);
 extern IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract);
 extern bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr);
 
+SubGraphInfo * matchActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
+bool isActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
 inline SubGraphInfo * queryActiveSubGraph(BuildCtx & ctx) 
 { 
     return static_cast<SubGraphInfo *>(ctx.queryFirstAssociation(AssocSubGraph));

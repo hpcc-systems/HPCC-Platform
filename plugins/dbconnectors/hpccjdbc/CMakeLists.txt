@@ -22,6 +22,6 @@ if ( USE_HPCCJDBC )
                                         ${JAVA_INCLUDE_PATH2}
                                         )
 
-        set ( INSTALLDIR "${OSSDIR}/bin")
+        set ( INSTALLDIR "${EXEC_DIR}")
 
 endif( USE_HPCCJDBC)

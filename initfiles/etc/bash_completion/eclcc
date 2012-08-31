@@ -1,0 +1,65 @@
+###############################################################################
+#
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+###############################################################################
+
+# Bash completion file for eclcc
+#
+# To test, run ". ./eclcc" and then test completion on eclcc
+# File must be copied/linked from /etc/bash_completion.d/ to work seamlessly
+# You must have ". /etc/bash_completion" on your bashrc file (you probably have it)
+
+_eclcc()
+{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="--help --verbose --version -v -S -E -q -g -wu -Wc, -I -L -o -target -main -syntax -manifest -shared -specs -logfile -factivitiesPerCpp=N -fapplyInstantEclTransformations -fapplyInstantEclTransformationsLimit -fcheckAsserts -fmaxCompileThreads=N -fnoteRecordSizeInGraph -fpickBestEngine -fshowActivitySizeInGraph -fshowMetaInGraph -fshowRecordCountInGraph -fspanMultipleCpp"
+
+
+    # Dash options
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+        return 0
+    fi
+
+    # Options with parameters
+    case "${prev}" in
+        -I|-L)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
+            COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
+            return 0
+            ;;
+        -o|-logfile|-specs)
+            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
+            COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
+            return 0
+            ;;
+        -platform)
+            local platforms="roxie thor hthor"
+            COMPREPLY=( $(compgen -W "${platforms}" -- ${cur}) )
+            return 0
+            ;;
+        *)
+        ;;
+    esac
+
+    # ECL source filename
+    local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
+    COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
+    return 0
+}
+complete -F _eclcc eclcc

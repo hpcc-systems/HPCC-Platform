@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 
@@ -247,7 +246,7 @@ public:
     inline char * detach()                      { char * ret = text; text = NULL; return ret; }
     inline const char * get(void) const         { return text; }
     inline size32_t     length() const          { return text ? (size32_t)strlen(text) : 0; }
-    inline bool isEmpty()                       { return !text||!*text; } // faster than (length==0)
+    inline bool isEmpty() const                 { return !text||!*text; } // faster than (length==0)
     inline const char * sget(void) const        { return text ? text : ""; } // safe form of get (doesn't return NULL)
 
     void         set(const char * _text);
@@ -346,6 +345,7 @@ public:
 #define ENCODE_SPACES 1
 #define ENCODE_NEWLINES 2
 #define ENCODE_WHITESPACE 3
+#define ENCODE_NONE 4
 
 interface IEntityHelper
 {
@@ -360,7 +360,7 @@ extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned l
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
 
-extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
+jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
 extern jlib_decl const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl const char *decodeXML(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL, IEntityHelper *entityHelper=NULL);
 extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
@@ -371,26 +371,95 @@ inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flag
     return encodeXML(x, ret, flags, len, true);
 }
 
-inline StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag)
+inline StringBuffer &appendXMLTagName(StringBuffer &xml, const char *tag, const char *prefix=NULL)
 {
-    if (tag && *tag)
-        xml.append('<').append(tag).append('>');
+    if (prefix && *prefix)
+        xml.append(prefix).append(':');
+    xml.append(tag);
     return xml;
 }
 
-inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag)
+extern jlib_decl StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix=NULL, bool complete=true, bool close=false, const char *uri=NULL);
+
+inline StringBuffer &appendXMLAttr(StringBuffer &xml, const char *name, const char *value, const char *prefix=NULL)
 {
-    if (tag && *tag)
-        xml.append("</").append(tag).append('>');
+    if (!name || !*name || !value)
+        return xml;
+    xml.append(' ');
+    appendXMLTagName(xml, name, prefix);
+    encodeXML(value, xml.append("='"));
+    xml.append("'");
     return xml;
 }
 
-inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
+inline StringBuffer & appendXMLCloseTag(StringBuffer &xml, const char *tag, const char *prefix=NULL)
 {
-    appendXMLOpenTag(xml, tag);
+    if (!tag || !*tag)
+        return xml;
+
+    xml.append("</");
+    return appendXMLTagName(xml, tag, prefix).append('>');
+}
+
+inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char *value, const char *prefix=NULL, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=true)
+{
+    appendXMLOpenTag(xml, tag, prefix);
     if (value && *value)
-        encodeXML(value, xml, flags, len, utf8);
-    return appendXMLCloseTag(xml, tag);
+    {
+        if (flags != ENCODE_NONE)
+            encodeXML(value, xml, flags, len, utf8);
+        else
+            xml.append(value);
+    }
+    return appendXMLCloseTag(xml, tag, prefix);
+}
+
+inline StringBuffer &delimitJSON(StringBuffer &s)
+{
+    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
+        s.append(", ");
+    return s;
+}
+
+jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
+jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
+
+template <typename type>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, type value)
+{
+    appendJSONName(s, name);
+    return s.append(value);
+}
+
+//specialization
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, bool value)
+{
+    appendJSONName(s, name);
+    return s.append((value) ? "true" : "false");
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const char *value)
+{
+    appendJSONName(s, name);
+    if (!value)
+        return s.append("null");
+    return encodeJSON(s.append('"'), value).append('"');
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, long value)
+{
+    appendJSONName(s, name);
+    return s.appendlong(value);
+}
+
+template <>
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned long value)
+{
+    appendJSONName(s, name);
+    return s.appendulong(value);
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);

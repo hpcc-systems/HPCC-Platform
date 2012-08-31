@@ -1,24 +1,24 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef __HQLUTIL_HPP_
 #define __HQLUTIL_HPP_
 
 #include "hqlexpr.hpp"
+#include "hqlir.hpp"
 
 extern HQL_API bool containsAggregate(IHqlExpression * expr);
 extern HQL_API bool containsComplexAggregate(IHqlExpression * expr);
@@ -51,7 +51,8 @@ extern HQL_API IHqlExpression * swapDatasets(IHqlExpression * parent);
 extern HQL_API IHqlExpression * createCompare(node_operator op, IHqlExpression * l, IHqlExpression * r);    // handles cast insertion...
 extern HQL_API IHqlExpression * createRecord(IHqlExpression * field);
 extern HQL_API IHqlExpression * queryLastField(IHqlExpression * record);
-extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * record, unsigned & idx);
+extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API int compareSymbolsByName(IInterface * * pleft, IInterface * * pright);
 extern HQL_API int compareAtoms(IInterface * * pleft, IInterface * * pright);
 extern HQL_API IHqlExpression * getSizetConstant(unsigned size);
@@ -128,6 +129,10 @@ extern HQL_API void unwindFields(HqlExprCopyArray & fields, IHqlExpression * rec
 extern HQL_API unsigned numAttributes(const HqlExprArray & args);
 extern HQL_API unsigned numAttributes(const IHqlExpression * expr);
 extern HQL_API IHqlExpression * createGetResultFromSetResult(IHqlExpression * setExpr, ITypeInfo * type=NULL);
+
+extern HQL_API IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
+extern HQL_API IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq);
+
 extern HQL_API IHqlExpression * createTrimExpr(IHqlExpression * value, IHqlExpression * flags);
 extern HQL_API bool isLengthPreservingCast(IHqlExpression * expr);
 
@@ -150,6 +155,8 @@ extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlEx
 extern HQL_API IHqlExpression * replaceOwnedProperty(IHqlExpression * expr, IHqlExpression * ownedProeprty);
 extern HQL_API IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...);
 extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name);
+extern HQL_API bool hasOperand(IHqlExpression * expr, IHqlExpression * child);
+
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp);
@@ -439,8 +446,14 @@ extern HQL_API IHqlExpression * extractCppBodyAttrs(unsigned len, const char * v
 extern HQL_API unsigned cleanupEmbeddedCpp(unsigned len, char * buffer);
 extern HQL_API bool isNullList(IHqlExpression * expr);
 
+extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
+extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
+extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
 extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
 extern HQL_API IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API void setPayloadAttribute(HqlExprArray &args);
+
 extern HQL_API bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType);
 extern HQL_API bool arraysMatch(const HqlExprArray & left, const HqlExprArray & right);
 extern HQL_API IHqlExpression * ensureTransformType(IHqlExpression * transform, node_operator op);
@@ -598,6 +611,7 @@ extern HQL_API void encryptEclAttribute(IStringVal & out, size32_t len, const vo
 extern void decryptEclAttribute(MemoryBuffer & out, const char * in);
 
 extern HQL_API bool debugFindFirstDifference(IHqlExpression * left, IHqlExpression * right);
+extern HQL_API void debugTrackDifference(IHqlExpression * expr);
 
 extern HQL_API StringBuffer & convertToValidLabel(StringBuffer &out, const char * in, unsigned inlen);
 extern HQL_API bool arraysSame(CIArray & left, CIArray & right);

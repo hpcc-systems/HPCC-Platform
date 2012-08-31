@@ -1,6 +1,18 @@
-##############################################################################
-# Copyright (C) 2011 HPCC Systems.
-##############################################################################
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
 
 
 # Component: ecl-package
@@ -16,6 +28,7 @@ project( ecl-package )
 include(${HPCC_SOURCE_DIR}/esp/scm/espscm.cmake)
 
 set (    SRCS
+         ${ESPSCM_GENERATED_DIR}/common_esp.cpp
          ${ESPSCM_GENERATED_DIR}/ws_packageprocess_esp.cpp
          ecl-package.cpp
          ${HPCC_SOURCE_DIR}/ecl/eclcmd/eclcmd_shell.cpp
@@ -43,12 +56,14 @@ ADD_DEFINITIONS( -D_CONSOLE )
 
 HPCC_ADD_EXECUTABLE ( ecl-package ${SRCS} )
 add_dependencies ( ecl-package espscm ws_packageprocess )
-install ( TARGETS ecl-package DESTINATION ${OSSDIR}/bin )
+install ( TARGETS ecl-package RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries ( ecl-package
         jlib
         esphttp
         workunit
     )
 
-install ( PROGRAMS ecl-package.install DESTINATION ${OSSDIR}/etc/init.d/install COMPONENT Runtime )
+if ( UNIX )
+install ( PROGRAMS ecl-package.install DESTINATION etc/init.d/install COMPONENT Runtime )
+endif ( UNIX )
 

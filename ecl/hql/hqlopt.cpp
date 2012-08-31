@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "hqlopt.ipp"
 #include "hqlpmap.hpp"
@@ -612,7 +611,7 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             }
             break;
         case no_fetch:
-            if (isSimpleCount && ds->queryChild(3)->isPure())
+            if (isSimpleCount && !containsSkip(ds->queryChild(3)))
                 next = ds->queryChild(1);
             break;
         case no_group:
@@ -1259,77 +1258,6 @@ IHqlExpression * mapJoinConditionToFilter(IHqlExpression * expr, IHqlExpression 
         return NULL;
     return LINK(expr);
 }
-
-
-/*
-Convert join(inline-dataset, x, condition, transform, ...) to
-project(x(condition'), t')
-*/
-
-IHqlExpression * CTreeOptimizer::optimizeInlineJoin(IHqlExpression * expr)
-{
-    //This doesn't really work because the input dataset could contain duplicates, which would generate duplicate
-    //values for the keyed join, but not for the index read.
-    //I could spot a dedup(ds, all) and then allow it, but it's a bit messy.
-    return NULL;
-
-    if (!isSimpleInnerJoin(expr) || expr->hasProperty(keyedAtom))
-        return NULL;
-
-    //Probably probably keep the following...
-    if (expr->hasProperty(allAtom) || expr->hasProperty(_lightweight_Atom) || expr->hasProperty(lookupAtom) || 
-        expr->hasProperty(hashAtom))
-        return NULL;
-
-    if (expr->hasProperty(localAtom) || expr->hasProperty(atmostAtom) || expr->hasProperty(onFailAtom))
-        return NULL;
-
-    IHqlExpression * key = expr->queryChild(1);
-    switch (key->getOperator())
-    {
-    case no_newkeyindex:
-        //more - e.g., inline child query stuff
-        break;
-    default:
-        //probably always more efficient.
-        break;
-        return false;
-    }
-
-    IHqlExpression * tempTable = expr->queryChild(0);
-    if (tempTable->getOperator() != no_temptable)
-        return NULL;
-
-    OwnedHqlExpr field, values;
-    if (!extractSingleFieldTempTable(tempTable, field, values))
-        return NULL;
-
-    IHqlExpression * joinSeq = querySelSeq(expr);
-    OwnedHqlExpr newSeq = createSelectorSequence();
-    OwnedHqlExpr left = createSelector(no_left, tempTable, joinSeq);
-    OwnedHqlExpr right = createSelector(no_right, key, joinSeq);
-    OwnedHqlExpr rightAsLeft = createSelector(no_left, key, newSeq);
-    OwnedHqlExpr selectLeft = createSelectExpr(LINK(left), LINK(field));
-    OwnedHqlExpr activeDs = ensureActiveRow(key);
-
-    //Transform can't refer to left hand side.
-    IHqlExpression * transform = expr->queryChild(3);
-    OwnedHqlExpr mapped = replaceExpression(transform, left, right);
-    if (mapped != transform)
-        return NULL;
-
-    OwnedHqlExpr cond = replaceSelector(expr->queryChild(2), right, activeDs);
-    OwnedHqlExpr mappedCond = mapJoinConditionToFilter(cond, selectLeft, values);
-    if (!mappedCond)
-        return NULL;
-
-    OwnedHqlExpr replacement = createDataset(no_filter, LINK(key), mappedCond.getClear());
-
-    OwnedHqlExpr newTransform = replaceExpression(transform, right, rightAsLeft);
-    replacement.setown(createDataset(no_hqlproject, replacement.getClear(), createComma(newTransform.getClear(), LINK(newSeq))));
-    return replacement.getClear();
-}
-
     
 IHqlExpression * splitJoinFilter(IHqlExpression * expr, HqlExprArray * leftOnly, HqlExprArray * rightOnly)
 {
@@ -2230,9 +2158,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             if (ret)
                 return ret.getClear();
 #endif
-            IHqlExpression * ret2 = optimizeInlineJoin(transformed);
-            if (ret2)
-                return ret2;
+            //Unfortunately you cannot convert a keyed join to an index read because the input dataset could contain duplicates
+            //That would generate duplicates in the output which would be missing from a index read.
 
             //MORE:
             //If left outer join, and transform doesn't reference RIGHT, and only one rhs record  could match each lhs record (e.g., it was rolled
@@ -2672,7 +2599,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
             case no_fetch:              //NB: Not filtered fetch
                 {
-                    if (isPureActivity(child))
+                    if (!containsSkip(child->queryChild(3)))
                         return swapNodeWithChild(transformed, 1);
                     break;
                 }
@@ -2831,7 +2758,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_compound_childnormalize:
             case no_compound_selectnew:
             case no_compound_inline:
-                if (!isLimitedDataset(child))// && child->isPure())
+                if (!isLimitedDataset(child))
                     return swapNodeWithChild(transformed);
                 break;
             case no_sorted:

@@ -1,21 +1,21 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
+#ifdef _USE_CPPUNIT
 #include "platform.h"
 #include "jlib.hpp"
 #include "jlog.hpp"
@@ -27,21 +27,59 @@
 
 #define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 
-void loadDll(const char *name)
-{
-    SharedObject *so = new SharedObject;
-    so->load(name, true);
-}
+/*
+ * This is the main unittest driver for HPCC. From here,
+ * all unit tests, be they internal or external (API),
+ * will run.
+ *
+ * All internal unit tests, written on the same source
+ * files as the implementation they're testing, can be
+ * dynamically linked via the helper class below.
+ *
+ * All external unit tests (API tests, test-driven
+ * development, interface documentation and general
+ * usability tests) should be implemented as source
+ * files within the same directory as this file, and
+ * statically linked together.
+ *
+ * CPPUnit will automatically recognise and run them all.
+ */
 
-void loadDlls()
-{
-    loadDll("jhtree");
-}
+/*
+ * Helper class to unload libraries at the end
+ * and make sure the SharedObject gets deleted
+ * correctly.
+ *
+ * This is important to run valgrind tests and not
+ * having to care about which memory leaks are "good"
+ * and which are not.
+ */
+class LoadedObject : public IInterface, CInterface {
+    SharedObject *so;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    LoadedObject(const char * name)
+    {
+        so = new SharedObject;
+        so->load(name, true);
+    }
+    ~LoadedObject()
+    {
+        so->unload();
+        delete so;
+    }
+};
 
 int main(int argc, char* argv[])
 {
-    loadDlls();
     InitModuleObjects();
+    // These are the internal unit tests covered by other modules and libraries
+    Array objects;
+    objects.append(*(new LoadedObject ("jhtree")));
+    objects.append(*(new LoadedObject ("roxiemem")));
+    objects.append(*(new LoadedObject ("thorhelper")));
+
     queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time);
     CppUnit::TextUi::TestRunner runner;
     if (argc==1)
@@ -63,3 +101,4 @@ int main(int argc, char* argv[])
     return wasSucessful;
 }
 
+#endif // _USE_CPPUNIT

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef HQLGRAM_HPP_INCL
 #define HQLGRAM_HPP_INCL
@@ -165,6 +164,10 @@ public:
     inline bool isDatarow() const
     {
         return queryExpr()->isDatarow();
+    }
+    inline bool isDictionary() const
+    {
+        return queryExpr()->isDictionary();
     }
 
     /* setters */
@@ -318,7 +321,6 @@ class TransformSaveInfo : public CInterface
 public:
     Owned<IHqlScope> transformScope;
     Owned<IHqlExpression> curTransform;
-    bool selfUsedOnRhs;
 };
 
 class FunctionCallInfo : public CInterface
@@ -367,6 +369,16 @@ struct TokenMap;
 
 class HqlGram;
 
+class LeftRightScope : public CInterface
+{
+public:
+    OwnedHqlExpr left;
+    OwnedHqlExpr right;
+    OwnedHqlExpr selSeq;
+    OwnedHqlExpr rowsScope;
+    OwnedHqlExpr rowsId;
+};
+
 extern int eclyyparse(HqlGram * parser);
 class HqlGram : public CInterface, implements IErrorReceiver
 {
@@ -407,6 +419,7 @@ public:
     void checkBooleanOrNumeric(attribute &atr);
     void checkDatarow(attribute &atr);
     void checkDataset(attribute &atr);
+    void checkDictionary(attribute &atr);
     void checkFieldnameValid(const attribute &errpos, _ATOM name);
     void checkList(attribute &atr);
     void checkScalar(attribute &atr);
@@ -619,12 +632,15 @@ public:
     IHqlExpression * attachMetaAttributes(IHqlExpression * ownedExpr, HqlExprArray & meta);
 
     void addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
+    void addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
     void addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
     void addFields(const attribute &errpos, IHqlExpression *record, IHqlExpression * dataset, bool clone);
     void addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock);
     void addToActiveRecord(IHqlExpression * newField);
     void beginIfBlock();
     IHqlExpression * endIfBlock();
+    void beginPayload();
+    IHqlExpression * endPayload();
 
     IHqlExpression * expandedSortListByReference(attribute * module, attribute & list);
     IHqlExpression *bindParameters(const attribute & errpos, IHqlExpression * function, HqlExprArray & ownedActuals);
@@ -641,11 +657,12 @@ public:
     int checkRecordTypes(IHqlExpression *left, IHqlExpression *right, attribute &atr, unsigned maxFields = (unsigned)-1);
     bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, attribute &atr);
     IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, attribute & errpos, bool rightIsRow);
-    void checkRecordIsValid(attribute &atr, IHqlExpression *record);
+    void checkRecordIsValid(const attribute &atr, IHqlExpression *record);
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
     void checkValidCsvRecord(const attribute & errpos, IHqlExpression * record);
     void checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr);
 
+    void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
     void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
@@ -663,7 +680,6 @@ public:
 
 
     IHqlExpression * createUniqueId();  
-    IHqlExpression * doCreateUniqueSelectorSequence();
 
     void onOpenBra();
     void onCloseBra();
@@ -709,7 +725,6 @@ protected:
     void expandWholeAndExcept(IHqlExpression * dataset, attribute & a);
     void cleanCurTransform();
     void unwindSelect(IHqlExpression* expr, HqlExprArray& r);
-    void setSelfUsedOnRhs();
     void setDefaultString(attribute &a);
 
     void canNotAssignTypeError(ITypeInfo* expected, ITypeInfo* given, const attribute& errpos);
@@ -831,10 +846,7 @@ protected:
     IHqlScope* globalScope;
     ITypeInfo *current_type;
     HqlExprArray topScopes;
-    HqlExprArray leftScopes;
-    HqlExprArray rightScopes;
-    HqlExprArray rowsScopes;
-    HqlExprArray rowsIds;
+    CIArrayOf<LeftRightScope> leftRightScopes;
     HqlExprArray selfScopes;
     HqlExprArray localeStack;
     HqlExprArray localFunctionCache;
@@ -862,7 +874,6 @@ protected:
     HqlExprAttr curFeatureParams;
     HqlExprCopyArray implicitFeatureNames;
     HqlExprCopyArray implicitFeatureValues;
-    HqlExprArray activeSelectorSequences;
     Owned<IHqlScope> parseScope;
     HqlExprAttr lastEnumValue;
     Owned<ITypeInfo> curEnumType;
@@ -875,7 +886,6 @@ protected:
     ConstPointerArray validAttributesStack;
     unsigned minimumScopeIndex;
     const TokenMap * pendingAttributes;
-    bool selfUsedOnRhs;
     bool aborting;
 
     void setIdUnknown(bool expected) { expectedUnknownId = expected; }
@@ -887,25 +897,25 @@ protected:
     IHqlExpression * addDatasetSelector(IHqlExpression * lhs, IHqlExpression * rhs);
 
     void pushTopScope(IHqlExpression *);
-    void pushLeftScope(IHqlExpression *);
-    void pushRightScope(IHqlExpression *);
-    void pushRowsScope(IHqlExpression *);
+    void pushLeftRightScope(IHqlExpression * left, IHqlExpression * right);
+    void pushPendingLeftRightScope(IHqlExpression * left, IHqlExpression * right);
+    void setRightScope(IHqlExpression *);
+    void beginRowsScope(node_operator side);
+
     void pushSelfScope(IHqlExpression *);
     void pushSelfScope(ITypeInfo * selfType);
-    void pushSelectorSequence(IHqlExpression * left, IHqlExpression * right);
-    void pushUniqueSelectorSequence();
-    IHqlExpression * popSelectorSequence();
+
+    IHqlExpression * getSelector(const attribute & errpos, node_operator side);
+
     IHqlExpression * createActiveSelectorSequence(IHqlExpression * left, IHqlExpression * right);
 
     IHqlExpression * getSelectorSequence();
     IHqlExpression * forceEnsureExprType(IHqlExpression * expr, ITypeInfo * type);
 
     void popTopScope();
-    void popLeftScope();
-    void popRightScope();
-    IHqlExpression * popRowsScope();
+    IHqlExpression * endRowsScope();
+    IHqlExpression * popLeftRightScope();
     void popSelfScope();
-    void swapTopScopeForLeftScope();
 
     void beginList();
     void addListElement(IHqlExpression * expr);
@@ -917,15 +927,13 @@ protected:
 
     IHqlExpression * getActiveCounter(attribute & errpos);
     void pushRecord(IHqlExpression *);
+    IHqlExpression *endRecordDef();
     IHqlExpression *popRecord();
     IHqlExpression *queryTopScope();
     ITypeInfo * getPromotedECLType(HqlExprArray & args, ITypeInfo * otherType, bool allowVariableLength);
     IHqlExpression *getTopScope();
     IHqlExpression *queryLeftScope();
     IHqlExpression *queryRightScope();
-    IHqlExpression *queryRowsScope();
-    IHqlExpression *getLeftScope();
-    IHqlExpression *getRightScope();
     IHqlExpression *getSelfScope();
     IHqlExpression *getSelfDotExpr(const attribute & errpos);
     IHqlExpression *resolveRows(const attribute & errpos, IHqlExpression * ds);
@@ -950,11 +958,11 @@ protected:
     IHqlExpression *queryCurrentTransformRecord();
     IHqlExpression* queryFieldMap(IHqlExpression* expr);
     IHqlExpression* bindFieldMap(IHqlExpression*, IHqlExpression*);
-    void applyPayloadAttribute(const attribute & errpos, IHqlExpression * record, SharedHqlExpr & extra);
     void extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra);
     void transferOptions(attribute & filenameAttr, attribute & optionsAttr);
     IHqlExpression * extractTransformFromExtra(SharedHqlExpr & extra);
     void expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos);
+    void mergeDictionaryPayload(SharedHqlExpr & record, SharedHqlExpr & payload, const attribute & errpos);
     void modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos);
 
     bool haveAssignedToChildren(IHqlExpression * select);
@@ -1060,6 +1068,7 @@ class HqlLex
             ++yyLineNo;
         }
 
+        StringBuffer& doGetDataType(StringBuffer & type, const char * text, int lineno, int column);
         void pushText(const char *);
 
     protected:
@@ -1099,7 +1108,7 @@ class HqlLex
         void pushText(const char *s, int startLineNo, int startColumn);
         bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
         IValue *parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
-        IHqlExpression * parseECL(StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol);
+        IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
         static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);

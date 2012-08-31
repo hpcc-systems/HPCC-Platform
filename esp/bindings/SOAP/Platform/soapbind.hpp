@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #ifndef _SOAPBIND_HPP__
@@ -41,8 +40,8 @@
 #include "http/platform/httpbinding.hpp"
 
 
-class CSoapComplexType : public CInterface ,
-        implements IRpcSerializable
+class esp_http_decl CSoapComplexType : public CInterface,
+    implements IRpcSerializable
 {
 protected:
     unsigned clvalue_;
@@ -62,23 +61,28 @@ public:
     void setThunkHandle(void * val){thunk_=val;}
     void * getThunkHandle(){return thunk_;}
 
-    virtual void serialize(StringBuffer& buffer, const char *rootname)
-    { throw MakeStringException(-1,"serialize() unimplemented: needs to be overridden"); }
+    virtual void appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype);
+    virtual void serializeJSONStruct(IEspContext* ctx, StringBuffer& s, const char *name);
+    virtual void serializeStruct(IEspContext * ctx, StringBuffer & buffer, const char * rootname=NULL);
+    virtual void serializeItem(IEspContext* ctx, StringBuffer& s, const char *name);
+    virtual void serializeAttributes(IEspContext* ctx, StringBuffer& s)=0;
+    virtual void serializeContent(IEspContext* ctx, StringBuffer& buffer, IProperties **pprops=NULL) = 0;
+    virtual void serialize(IEspContext * ctx, StringBuffer & buffer, const char * rootname=NULL)
+    {
+        serializeStruct(ctx, buffer, rootname);
+    }
 
-    virtual bool unserialize(IRpcMessage & rpc, const char * tagname, const char * basepath)
-    { throw MakeStringException(-1,"unserialize() unimplemented: needs to be overridden"); }
+    virtual const char *getNsURI()=0;
+    virtual const char *getNsPrefix()=0;
+    virtual const char *getRootName()=0;
 };
 
-class esp_http_decl CSoapResponseBinding : public CInterface,
+class esp_http_decl CSoapResponseBinding : public CSoapComplexType,
     implements IRpcResponseBinding,
-    implements IEspResponse,
-    implements IRpcSerializable
+    implements IEspResponse
 {
 private:
     RpcMessageState state_;
-    unsigned clvalue_;
-    unsigned msg_id_;
-    void *thunk_;
     StringBuffer redirectUrl_;
     Owned<IMultiException> exceptions_;
 
@@ -88,9 +92,6 @@ public:
     CSoapResponseBinding()
     {
         state_=RPC_MESSAGE_OK;
-        clvalue_=0;
-        msg_id_=0;
-        thunk_=NULL;
         exceptions_.setown(MakeMultiException("CSoapResponseBinding"));
     }
 
@@ -118,19 +119,13 @@ public:
     const char *getRedirectUrl()                   { return redirectUrl_.str();    }
     const IMultiException& getExceptions() { return *exceptions_;          }
     void  noteException(IException& e)     { exceptions_->append(e);          }
-
     void handleExceptions(IMultiException *me, const char *serv, const char *meth);
-    virtual void serialize(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer& mimetype) 
-    {
-        throw MakeStringException(-1,"Method unimplemented");
-    }
 };
 
 
-class esp_http_decl CSoapRequestBinding : public CInterface,
+class esp_http_decl CSoapRequestBinding : public CSoapComplexType,
     implements IRpcRequestBinding,
-    implements IEspRequest ,
-    implements IRpcSerializable
+    implements IEspRequest
 {
 private:
     StringBuffer url_;
@@ -138,19 +133,20 @@ private:
     StringBuffer userid_;
     StringBuffer password_;
     StringBuffer realm_;
-    unsigned clvalue_;
-    unsigned msg_id_;
-    void *thunk_;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CSoapRequestBinding()
-    {
-        clvalue_=0;
-        msg_id_=0;
-        thunk_=NULL;
-    }
+    CSoapRequestBinding(){}
+
+    void setClientValue(unsigned val){clvalue_=val;}
+    unsigned getClientValue(){return clvalue_;}
+
+    void setMessageId(unsigned val){msg_id_=val;}
+    unsigned getMessageId(){return msg_id_;}
+
+    void setThunkHandle(void * val){thunk_=val;}
+    void * getThunkHandle(){return thunk_;}
 
     void setUrl(const char *url){url_.clear().append(url);} 
     const char * getUrl(){return url_.str();}
@@ -167,31 +163,17 @@ public:
     void setRealm(const char *realm){realm_.clear().append(realm);} 
     const char * getRealm(){return realm_.str();}
 
-    void setClientValue(unsigned val){clvalue_=val;}
-    unsigned getClientValue(){return clvalue_;}
-
-    void setThunkHandle(void * val){thunk_=val;}
-    void * getThunkHandle(){return thunk_;}
-
-    void setMessageId(unsigned val){msg_id_=val;}
-    unsigned getMessageId(){return msg_id_;}
-
     void post(const char *proxy, const char* url, IRpcResponseBinding& response, const char *action=NULL);
 
     void post(IRpcResponseBinding& response)
     {
         post(getProxyAddress(), getUrl(), response);
     }
-    
-    //virtual void serializeContent(StringBuffer& buffer) { }
-    virtual void serializeContent(IEspContext* ctx, StringBuffer& buffer, IProperties **pprops=NULL) = 0;
 
     virtual void serialize(IRpcMessage& rpc)
     {
         throw MakeStringException(-1,"Internal error: umimplmented function called: CSoapRequestBinding::serialize()");
     }
-    
-    //virtual void serialize(StringBuffer& buffer, const char *rootname){}  
 };
 
 

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 // LDAP prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
@@ -889,7 +888,10 @@ private:
     //int                  m_defaultWorkunitScopePermission;
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
-    bool                 m_passwordNeverExpires;
+    bool                 m_domainPwdsNeverExpire;//no domain policy for password expiration
+    __int64              m_maxPwdAge;
+    time_t               m_lastPwdAgeCheck;
+
     class CLDAPMessage
     {
     public:
@@ -911,6 +913,7 @@ public:
         else
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
+        m_lastPwdAgeCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -962,12 +965,13 @@ public:
 
     virtual __int64 getMaxPwdAge()
     {
+        if ((msTick() - m_lastPwdAgeCheck) < (60*1000))
+            return m_maxPwdAge;
         char* attrs[] = {"maxPwdAge", NULL};
         CLDAPMessage searchResult;
         TIMEVAL timeOut = {LDAPTIMEOUT,0};
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* sys_ld = ((CLdapConnection*)lconn.get())->getLd();
-
         int result = ldap_search_ext_s(sys_ld, (char*)m_ldapconfig->getBasedn(), LDAP_SCOPE_BASE, NULL,
                                         attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT, &searchResult.msg);
         if(result != LDAP_SUCCESS)
@@ -982,7 +986,7 @@ public:
             return 0;
         }
         char **values;
-        __int64 maxAge = 0;
+        m_maxPwdAge = 0;
         values = ldap_get_values(sys_ld, searchResult.msg, "maxPwdAge");
         if (values && *values)
         {
@@ -990,12 +994,23 @@ public:
             if (*val == '-')
                 ++val;
             for (int x=0; val[x]; x++)
-                maxAge = maxAge * 10 + ( (int)val[x] - '0');
+                m_maxPwdAge = m_maxPwdAge * 10 + ( (int)val[x] - '0');
         }
         else
-            maxAge = PWD_NEVER_EXPIRES;
+            m_maxPwdAge = PWD_NEVER_EXPIRES;
         ldap_value_free(values);
-        return maxAge;
+        m_lastPwdAgeCheck = msTick();
+        return m_maxPwdAge;
+    }
+
+    void calcPWExpiry(CDateTime &dt, unsigned len, char * val)
+    {
+        __int64 time = 0;
+        for (unsigned x=0; x < len; x++)
+            time = time * 10 + ( (int)val[x] - '0');
+        time += m_maxPwdAge;
+        dt.setFromFILETIME(time);
+        dt.adjustTime(dt.queryUtcToLocalDelta());
     }
 
     virtual bool authenticate(ISecUser& user)
@@ -1011,11 +1026,11 @@ public:
             if(!username || !*username || !password || !*password)
                 return false;
 
-            __int64 maxPWAge = getMaxPwdAge();
-            if (maxPWAge != PWD_NEVER_EXPIRES)
-                m_passwordNeverExpires = false;
+            getMaxPwdAge();//sets m_maxPwdAge
+            if (m_maxPwdAge != PWD_NEVER_EXPIRES)
+                m_domainPwdsNeverExpire = false;
             else
-                m_passwordNeverExpires = true;
+                m_domainPwdsNeverExpire = true;
 
             const char* sysuser = m_ldapconfig->getSysUser();
             if(sysuser && *sysuser && (strcmp(username, sysuser) == 0))
@@ -1093,7 +1108,7 @@ public:
                 DBGLOG("LDAP: Can't find entry for user %s", username);
                 return false;
             }
-
+            bool accountPwdNeverExpires = false;
             for ( attribute = ldap_first_attribute(sys_ld, searchResult, &ber ); attribute != NULL; attribute = ldap_next_attribute(sys_ld, searchResult, ber))
             {
                 if((stricmp(attribute, "cn") == 0) && (values = ldap_get_values(sys_ld, entry, attribute)) != NULL )
@@ -1118,7 +1133,7 @@ public:
                 {
                     //UF_DONT_EXPIRE_PASSWD 0x10000
                     if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
-                        m_passwordNeverExpires = true;
+                        accountPwdNeverExpires = true;
                     ldap_value_free( values );
                 }
                 else if((stricmp(attribute, "pwdLastSet") == 0) && (bvalues = ldap_get_values_len(sys_ld, entry, attribute)) != NULL )
@@ -1129,36 +1144,19 @@ public:
                       to 0 and the User-Account-Control attribute does not contain the UF_DONT_EXPIRE_PASSWD
                       flag, then the user must set the password at the next logon.
                       */
-                    if (!m_passwordNeverExpires)
+                    CDateTime expiry;
+                    if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
                     {
-                        CDateTime expiry;
                         struct berval* val = bvalues[0];
-                        if(val != NULL)
-                        {
-                            __int64 time = 0;
-                            for (int x=0; x < (int)val->bv_len; x++)
-                                time = time * 10 + ( (int)val->bv_val[x] - '0');
-                            ldap_value_free_len(bvalues);
-
-                            time += maxPWAge;
-                            expiry.setFromFILETIME(time);
-                            expiry.adjustTime(expiry.queryUtcToLocalDelta());
-                            user.setPasswordExpiration(expiry);
-                        }
-                        else
-                        {
-                            DBGLOG("LDAP: Can't find entry for %s pwdLastSet", username);
-                            return false;
-                        }
+                        calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                        ldap_value_free_len(bvalues);
                     }
                     else
                     {
-                        CDateTime never;
-                        never.clear();
-                        assertex(never.isNull());
-                        user.setPasswordExpiration(never);
+                        expiry.clear();
                         DBGLOG("LDAP: Password never expires for user %s", username);
                     }
+                    user.setPasswordExpiration(expiry);
                 }
             }
             ber_free(ber, 0);
@@ -1989,10 +1987,9 @@ public:
             filter.appendf(")(|(%s=*%s*)(%s=*%s*)(%s=*%s*)))", act_fieldname, searchstr, "givenName", searchstr, "sn", searchstr);
         }
 
-        char        *attrs[] = {act_fieldname, sid_fieldname, "cn", NULL};
+        char *attrs[] = {act_fieldname, sid_fieldname, "cn", "userAccountControl", "pwdLastSet", NULL};
         CLDAPMessage searchResult;
         int rc = ldap_search_ext_s(ld, (char*)m_ldapconfig->getUserBasedn(), LDAP_SCOPE_SUBTREE, (char*)filter.str(), attrs, 0, NULL, NULL, &timeOut, LDAP_NO_LIMIT,    &searchResult.msg );
-
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
@@ -2003,6 +2000,7 @@ public:
         // Go through the search results by checking message types
         for(message = LdapFirstEntry( ld, searchResult); message != NULL; message = ldap_next_entry(ld, message))
         {
+            bool accountPwdNeverExpires = false;
             Owned<ISecUser> user = new CLdapSecUser("", "");
             for ( attribute = ldap_first_attribute( ld,searchResult,&ber );
                 attribute != NULL; 
@@ -2018,6 +2016,34 @@ public:
                             user->setFullName(values[0]);
                         ldap_value_free( values );
                     }
+                }
+                else if (stricmp(attribute, "userAccountControl") == 0)
+                {
+                    if ((values = ldap_get_values( ld, message, attribute))
+                        != NULL )
+                    {
+                        //UF_DONT_EXPIRE_PASSWD 0x10000
+                        if (atoi((char*)values[0]) & 0x10000)//this can be true at the account level, even if domain policy requires password
+                            accountPwdNeverExpires = true;
+                        ldap_value_free( values );
+                    }
+                }
+                else if(stricmp(attribute, "pwdLastSet") == 0)
+                {
+                    CDateTime expiry;
+                    if (!m_domainPwdsNeverExpire && !accountPwdNeverExpires)
+                    {
+                        if ((bvalues = ldap_get_values_len(ld, message, attribute))
+                            != NULL )
+                        {
+                            struct berval* val = bvalues[0];
+                            calcPWExpiry(expiry, (unsigned)val->bv_len, val->bv_val);
+                            ldap_value_free_len(bvalues);
+                        }
+                    }
+                    else
+                        expiry.clear();
+                    user->setPasswordExpiration(expiry);
                 }
                 else if(stricmp(attribute, act_fieldname) == 0)
                 {
@@ -4828,7 +4854,7 @@ private:
         act_ctrl_val &= 0xFFFFFFFD;
 #ifdef _DONT_EXPIRE_PASSWORD
         // UF_DONT_EXPIRE_PASSWD 0x10000
-        if (m_passwordNeverExpires)
+        if (m_domainPwdsNeverExpire)
             act_ctrl_val |= 0x10000;
 #endif
 

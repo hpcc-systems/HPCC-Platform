@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning(disable:4786)
@@ -28,7 +27,6 @@
 #include <string>
 
 //-------------------------------------------------------------------------------------------------------------
-#define NEW_INSTANT_QUERY
 inline bool strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
 
 //-------------------------------------------------------------------------------------------------------------
@@ -956,6 +954,18 @@ const char* ParamInfo::getArrayItemXsdType()
     }
 }
 
+const char* ParamInfo::getArrayItemTag()
+{
+    const char *item_tag = getMetaString("item_tag", NULL);
+    if (item_tag)
+        return item_tag;
+    if (!(flags & PF_TEMPLATE) || !streq(templ, "ESParray"))
+        return NULL;
+    if (isEspStringArray())
+        return "Item";
+    return typname;
+}
+
 void ParamInfo::write_esp_declaration()
 {
     char metatype[256];
@@ -1880,7 +1890,7 @@ bool ParamInfo::write_mapinfo_check(int indents, const char* ctxvar)
     return hasOutput;
 }
 
-void ParamInfo::write_esp_marshall(bool isRpc, const char * var, bool encodeXml, bool checkVer, int indents)
+void ParamInfo::write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer, int indents)
 {
     const char *soap_path=getMetaString("soap_path", NULL);
     char *path = (soap_path!=NULL) ? strdup(soap_path) : NULL;
@@ -1890,7 +1900,7 @@ void ParamInfo::write_esp_marshall(bool isRpc, const char * var, bool encodeXml,
     {
         path[strlen(path)-1]=0;
         path++;
-        tagname=strrchr((char *)path, '/');
+        tagname=strrchr(path, '/');
         if (tagname)
         {
             *tagname=0;
@@ -1909,50 +1919,48 @@ void ParamInfo::write_esp_marshall(bool isRpc, const char * var, bool encodeXml,
             indents++;
     }
 
+    if (!isEspArrayOf() && getMetaInt("encode_newlines", -1)!=-1)
+    {
+        indent(indents);
+        outf("m_%s.setEncodeNewlines(true);\n", name);
+    }
+
     indent(indents);
+    if (isRpc)
+        outf("m_%s.marshall(rpc_resp, ", name);
+    else
+        outf("m_%s.toStr(ctx, buffer, ", name);
+
     if (isEspArrayOf())
     {
-        const char *item_tag = getMetaString("item_tag", (isEspStringArray()) ? "Item" : "");
         if (path)
-            outf("m_%s.marshall(%s%s, \"%s\", \"%s\", \"%s\");\n", name, isRpc?"":"ctx, ", var, tagname, item_tag, path);
+            outf("\"%s\", \"%s\", \"%s\");\n", tagname, getArrayItemTag(), path);
         else
-            outf("m_%s.marshall(%s%s, \"%s\", \"%s\");\n", name, isRpc?"":"ctx, ", var, getXmlTag(), item_tag);
+            outf("\"%s\", \"%s\");\n", getXmlTag(), getArrayItemTag());
     }
     else
     {
-        if(getMetaInt("encode_newlines", -1) != -1)
-        {
-            outf("m_%s.setEncodeNewlines(true);\n", name);
-            indent(indents);
-        }
-
-        const char *tail = (encodeXml)? "" : ",false";
+        const char *prefix = getMetaString("ns_var", "\"\"");
+        const char *encode = encodeXml ? "true" : "false";
         if (path)
         {
+            outf("\"%s\", \"%s\"", tagname, path);
             if (isRpc)
-                outf("m_%s.marshall(%s, \"%s\", \"%s\", \"\", %s);\n", name, var, tagname, path, getMetaString("ns_var", "\"\""));
-            else
-            {
-                if (kind==TK_ESPSTRUCT)
-                    outf("m_%s.marshall(ctx, %s, \"%s\", \"%s\");\n", name, var, tagname, path);
-                else
-                    outf("m_%s.marshall(ctx, %s, \"%s\", \"%s\", %s);\n", name, var, tagname, path, encodeXml ? "true":"false");
-            }
+                outf(", \"\", %s", prefix);
+            else if (kind!=TK_ESPSTRUCT)
+                outf(", %s", encode);
+            outs(");\n");
         }
-        else
+        else if (!getMetaInt("attribute"))
         {
-            if (!getMetaInt("attribute"))
-            {
-                if (isRpc)
-                    outf("m_%s.marshall(%s, \"%s\",\"\", \"\", %s);\n", name, var, getXmlTag(), getMetaString("ns_var", "\"\""));
-                else
-                {
-                    if (kind==TK_ESPSTRUCT)
-                        outf("m_%s.marshall(ctx, %s, \"%s\", \"\", \"\", false, %s);\n", name, var, getXmlTag(), getMetaString("ns_var", "\"\""));
-                    else
-                        outf("m_%s.marshall(ctx, %s, \"%s\",\"\", %s, \"\", %s);\n", name, var, getXmlTag(), encodeXml ? "true" : "false", getMetaString("ns_var", "\"\""));
-                }
-            }
+            outf("\"%s\", \"\", ", getXmlTag());
+            if (isRpc)
+                outf("\"\", ");
+            else if (kind==TK_ESPSTRUCT)
+                outf("false, \"\", ");
+            else
+                outf("%s, \"\", ", encode);
+            outf("%s);\n", prefix);
         }
     }
 }
@@ -3127,7 +3135,10 @@ void EspMessageInfo::write_esp_ipp()
         //IProperties constructor
         outf("\n\tC%s(IEspContext* ctx, const char *serviceName, IProperties *params, MapStrToBuf *attachments);", name_);
     }   
-    
+
+    outf("\n\tvirtual const char *getNsURI(){return %s;}\n", getMetaString("ns_uri", "NULL"));
+    outf("\n\tvirtual const char *getNsPrefix(){return %s;}\n", getMetaString("ns_var", "NULL"));
+    outs("\n\tvirtual const char *getRootName(){return m_msgName.str();}\n");
 
     outs("\n\tvoid setMsgName(const char *msgname)\n");
     outs("\t{\n");
@@ -3178,15 +3189,15 @@ void EspMessageInfo::write_esp_ipp()
     
     //method ==> serializeContent (StringBuffer&)
     outs("\n\tvoid serializeContent(IEspContext* ctx, StringBuffer& buffer, IProperties **pprops=NULL);\n");
+    outs("\n\tvoid serializeAttributes(IEspContext* ctx, StringBuffer& s);\n");
+    outs("\n\tvoid getAttributes(IProperties &attributes);\n");
 
-    //method ==> serialize (StringBuffer&)
-    outs("\n\tvoid serialize(IEspContext* ctx, StringBuffer& buffer, const char *name=NULL);\n");
-    
     //method ==> serialize (StringBuffer&)
     outf("\n\tstatic void serializer(IEspContext* ctx, IConst%s &ifrom, StringBuffer& buffer, bool keepRootTag=true);\n", name_);
     
     //method ==> serialize (MemoryBuffer&, StringBuffer &)
-    outs("\n\tvoid serialize(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer &mimetype);\n");
+    if (contentVar)
+        outs("\n\tvoid appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer &mimetype);\n");
     
     outs("\tvoid setEventSink(void * val){m_eventSink=val;}\n");
     outs("\tvoid * getEventSink(){return m_eventSink;}\n");
@@ -4229,7 +4240,7 @@ void EspMessageInfo::write_esp()
 
     for (pi=getParams();pi!=NULL;pi=pi->next)
     {
-        pi->write_esp_marshall(true,"rpc_resp", true, true, (espm_type_==espm_response)?2:1);
+        pi->write_esp_marshall(true, true, true, (espm_type_==espm_response)?2:1);
     }
     
     if (espm_type_==espm_response)
@@ -4263,7 +4274,15 @@ void EspMessageInfo::write_esp()
         outf("\tset_tag_value(ifrom.get_tag_value());\n");
     outs("}\n\n");
     
-    
+    //method ==> getAttributes (IProperties &attributes)
+    outf("\nvoid C%s::getAttributes(IProperties &attributes)\n{\n", name_);
+    for (pi=getParams(); pi!=NULL; pi=pi->next)
+    {
+        if (pi->getMetaInt("attribute"))
+            outf(2, "attributes.setProp(\"%s\", m_%s.getValue());\n", pi->getXmlTag(), pi->name);
+    }
+    outs("}\n\n");
+
     //method ==> serializeContent (StringBuffer&)
     outf("\nvoid C%s::serializeContent(IEspContext* ctx, StringBuffer& buffer, IProperties **pprops)\n{\n", name_);
     int http_encode = getMetaInt("http_encode", -1);
@@ -4286,7 +4305,7 @@ void EspMessageInfo::write_esp()
         for (pi=getParams();pi!=NULL;pi=pi->next)
         {
             if (!pi->getMetaInt("attribute"))
-                pi->write_esp_marshall(false,"buffer", encodeXML,true,2);
+                pi->write_esp_marshall(false, encodeXML, true, 2);
         }
         outs("\t}\n");
     }
@@ -4324,7 +4343,7 @@ void EspMessageInfo::write_esp()
         for (pi=getParams();pi!=NULL;pi=pi->next)
         {
             if (!pi->getMetaInt("attribute"))
-                pi->write_esp_marshall(false,"buffer", encodeXML, true);
+                pi->write_esp_marshall(false, encodeXML, true);
         }
 
         if (getMetaInt("element")!=0) 
@@ -4338,50 +4357,23 @@ void EspMessageInfo::write_esp()
     }
         
     outs("}\n\n");
-    
+
     //method ==> serialize (StringBuffer&)
-    outf("\nvoid C%s::serialize(IEspContext* ctx, StringBuffer& buffer, const char *name)\n{\n", name_);
-
-    outs(1, "const char *tname = (name && *name) ? name : m_msgName.str();\n");
-
-    StrBuffer nsvar;
-    getMetaStringValue(nsvar, "ns_var");
-    const char *nuri=getMetaString("ns_uri", NULL);
-
-    outs(1, "buffer.append(\"<\");\n");
-    if (nsvar.length())
-        outf(1, "buffer.append(\"%s\").append(':');\n", nsvar.str());
-    outs(1, "buffer.appendf(\"%s\", tname);\n");
-
-    if (nuri)
-    {
-        outs(1, "buffer.append(\" xmlns\");\n");
-        if (nsvar.length())
-            outf(1, "buffer.append(':').append(\"%s\");\n", nsvar.str());
-        outf(1, "buffer.append(\"=\\\"\").append(%s).append('\\\"');\n", nuri);
-    }
+    outf("\nvoid C%s::serializeAttributes(IEspContext* ctx, StringBuffer& s)\n{\n", name_);
 
     for (pi=getParams();pi!=NULL;pi=pi->next)
     {
         if (pi->getMetaInt("attribute"))
         {
             outf(1, "if (!m_%s.is_nil()) {\n", pi->name);
-            outf(2, "StringBuffer encoded;\n");
-            outf(2, "encodeXML(m_%s.getValue(), encoded);\n", pi->name);
-            outf(2, "buffer.appendf(\" %s=\\\"%%s\\\"\", encoded.str());\n", pi->getXmlTag());
+            outf(2, "StringBuffer enc;\n");
+            outf(2, "encodeXML(m_%s.getValue(), enc);\n", pi->name);
+            outf(2, "s.appendf(\" %s=\\\"%%s\\\"\", enc.str());\n", pi->getXmlTag());
             outf(1, "}\n");
         }
     }
-    outs(1, "buffer.append(\">\");\n");
-
-    
-    outs(1, "serializeContent(ctx,buffer);\n");
-    outs(1, "buffer.append(\"</\");\n");
-    if (nsvar.length())
-        outf(1, "buffer.append(\"%s\").append(':');\n", nsvar.str());
-    outs(1, "buffer.appendf(\"%s>\", tname);\n");
     outs("}\n");
-    
+
     //method ==> serializer(IEspContext* ctx, ..., StringBuffer&, ...)
     outf("\nvoid C%s::serializer(IEspContext* ctx, IConst%s &src, StringBuffer& buffer, bool keepRootTag)\n{\n", name_, name_);
 
@@ -4863,9 +4855,9 @@ void EspMessageInfo::write_esp()
 
     //=============================================================================================================
     //method ==> serialize (MemoryBuffer&, StringBuffer &)
-    outf("\nvoid C%s::serialize(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer &mimetype)\n{\n", name_);
     if (contentVar)
     {
+        outf("\nvoid C%s::appendContent(IEspContext* ctx, MemoryBuffer& buffer, StringBuffer &mimetype)\n{\n", name_);
         esp_xlate_info *xinfo = esp_xlat(contentVar);
         
         if (strcmp(xinfo->store_type, "StringBuffer")!=0)
@@ -4874,17 +4866,9 @@ void EspMessageInfo::write_esp()
             outf("\tbuffer.clear().append(m_%s.getValue().length(), m_%s.getValue().str());\n", contentVar->name, contentVar->name);
         
         outf("\tmimetype.set(m_%s_mimetype.str());\n", contentVar->name);
+        outs("}\n");
     }
-    else
-    {
-        outs("\tStringBuffer strbuffer;\n");
-        outf("\tstrbuffer.append(\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>\");\n");
-        outf("\tserialize(ctx,strbuffer);\n");
-        outs("\tbuffer.append(strbuffer.length(), strbuffer.str());\n");
-        outs("\tmimetype.set(\"text/xml; charset=UTF-8\");\n");
-    }
-    outs("}\n");
-    
+
     //=============================================================================================================
     //method: unserialize(IRcpMessage...)
     outf("\nbool C%s::unserialize(IRpcMessage& rpc_request, const char *tagname, const char *basepath)\n{\n", name_);
@@ -5945,12 +5929,10 @@ void EspServInfo::write_esp_binding()
     outs("\telse\n");
     outs("\t{\n");
 
-#ifdef NEW_INSTANT_QUERY
     outf("\t\tOwned<CSoapResponseBinding> esp_response;\n");
     outf("\t\tStringBuffer source;\n");
     outf("\t\tIEspContext& context = *request->queryContext();\n");
-#endif
-                
+
     for (mthi=methods;mthi!=NULL;mthi=mthi->next)
     {
         bool bClientXslt=false;
@@ -5969,8 +5951,6 @@ void EspServInfo::write_esp_binding()
         
         if (respXsl==NULL)
         {
-#ifdef NEW_INSTANT_QUERY
-            //  reduce the code size significantly
             outf("\t\tif(!stricmp(method, \"%s\")||!stricmp(method, \"%s\"))\n", mthi->getName(), mthi->getReq());
             outs("\t\t{\n");
             
@@ -5998,54 +5978,6 @@ void EspServInfo::write_esp_binding()
                 outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *resp);\n", mthi->getName());
             
             outs("\t\t}\n");
-#else
-            outf("\t\tif(!stricmp(method, \"%s\")||!stricmp(method, \"%s\"))\n", mthi->getName(), mthi->getReq());
-            outs("\t\t{\n");
-            
-            outs("\t\t\tMemoryBuffer content;\n");
-            outs("\t\t\tStringBuffer mimetype;\n");
-            
-            outf("\t\t\tOwned<C%s> esp_request = new C%s(&context, \"%s\", request->queryParameters(), request->queryAttachments());\n", mthi->getReq(), mthi->getReq(), name_);
-            outf("\t\t\tOwned<C%s> esp_response = new C%s(&context, \"%s\");\n", mthi->getResp(), mthi->getResp(), name_);
-            
-            if (bHandleExceptions)
-            {
-                outs("\t\t\tStringBuffer source;\n");
-                outf("\t\t\tsource.appendf(\"%s::%%s()\", method);\n", name_);
-                outf("\t\t\tOwned<IMultiException> me = MakeMultiException(source.str());\n");
-                
-                //begin try block
-                outs("\t\t\ttry\n");
-                outs("\t\t\t{\n");
-                outf("\t\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
-                outs("\t\t\t}\n");
-                
-                write_catch_blocks(mthi, ct_httpresp, 3);
-            }
-            else
-                outf("\t\t\tiserv->on%s(*request->queryContext(), *esp_request.get(), *esp_response.get());\n", mthi->getName());
-            
-            outs("\t\t\tif (esp_response->getRedirectUrl() && *esp_response->getRedirectUrl())\n");
-            outs("\t\t\t{\n");
-            outs("\t\t\t\tresponse->redirect(*request, esp_response->getRedirectUrl());\n");
-            outs("\t\t\t}\n");
-            outs("\t\t\telse\n");
-            outs("\t\t\t{\n");
-            
-            outs("\t\t\t\tStringBuffer resultsHtml;\n");
-            outs("\t\t\t\tStringBuffer htmlPage;\n");
-            
-            outs("\t\t\t\tIProperties *props=request->queryParameters();\n");
-            outs("\t\t\t\tesp_response->serialize(context, content, mimetype);\n");
-            outs("\t\t\t\onBeforeSendResponse(context,request,content,service,method);\n");
-            outs("\t\t\t\tresponse->setContent(content.length(), content.toByteArray());\n");
-            outs("\t\t\t\tresponse->setContentType(mimetype.str());\n");
-            
-            outs("\t\t\t\tresponse->send();\n");
-            outs("\t\t\t}\n");
-            outs("\t\t\treturn 0;\n");
-            outs("\t\t}\n");
-#endif
         }
         else
         {
@@ -6084,11 +6016,11 @@ void EspServInfo::write_esp_binding()
             outs("\t\t\t{\n");
             
             outs("\t\t\t\tIProperties *props=request->queryParameters();\n");
-            outs("\t\t\t\tif (props && props->queryProp(\"rawxml_\")!=NULL)\n");
+            outs("\t\t\t\tif (skipXslt(context))\n");
             outs("\t\t\t\t{\n");
             outs("\t\t\t\t\tMemoryBuffer content;\n");
             outs("\t\t\t\t\tStringBuffer mimetype;\n");
-            outs("\t\t\t\t\tesp_response->serialize(&context,content, mimetype);\n");
+            outs("\t\t\t\t\tesp_response->appendContent(&context,content, mimetype);\n");
             outs("\t\t\t\t\tonBeforeSendResponse(context,request,content,service,method);\n");
             outs("\t\t\t\t\tresponse->setContent(content.length(), content.toByteArray());\n");
             outs("\t\t\t\t\tresponse->setContentType(mimetype.str());\n");
@@ -6103,7 +6035,7 @@ void EspServInfo::write_esp_binding()
                 outs("\t\t\t\t\tif (request->supportClientXslt())\n");
                 outf("\t\t\t\t\t\txml.appendf(\"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?><?xml-stylesheet type=\\\"text/xsl\\\" href=\\\"%%s\\\"?>\", %s);\n", respXsl);
             }
-            outs("\t\t\t\t\tesp_response->serialize(&context,xml);\n\n");
+            outs("\t\t\t\t\tesp_response->serializeStruct(&context, xml, NULL);\n\n");
             if (bClientXslt)
             {
                 
@@ -6138,7 +6070,6 @@ void EspServInfo::write_esp_binding()
         }
     }
 
-#ifdef NEW_INSTANT_QUERY
     outs("\n");
     indentReset(2);
     indentOuts("if (esp_response.get())\n");
@@ -6150,7 +6081,7 @@ void EspServInfo::write_esp_binding()
     
     indentOuts(1,"MemoryBuffer content;\n");
     indentOuts("StringBuffer mimetype;\n");
-    indentOuts("esp_response->serialize(&context,content, mimetype);\n");
+    indentOuts("esp_response->appendContent(&context,content, mimetype);\n");
     indentOuts("onBeforeSendResponse(context,request,content,service,method);\n");
     indentOuts("response->setContent(content.length(), content.toByteArray());\n");
     indentOuts("response->setContentType(mimetype.str());\n");
@@ -6159,8 +6090,6 @@ void EspServInfo::write_esp_binding()
     indentOuts(-1,"}\n");
     indentOuts("return 0;\n");
     indentOuts(-1,"}\n");
-#endif
-    
     outs("\t}\n");
     
     outs("\treturn onGetNotFound(context, request,  response, service);\n");

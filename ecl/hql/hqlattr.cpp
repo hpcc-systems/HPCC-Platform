@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "jmisc.hpp"
 #include "jfile.hpp"
@@ -151,6 +150,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_hash32:
     case no_hash64:
     case no_wuid:
+    case no_countdict:
     case no_existslist:
     case no_countlist:
     case no_maxlist:
@@ -210,6 +210,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_notbetween:
     case no_between:
     case no_is_valid:
+    case no_indict:
 
 //Lists/Sets etc.
     case no_list:
@@ -264,6 +265,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_newtransform:
 
 //Rows
+    case no_selectmap:
     case no_selectnth:
     case no_matchrow:
     case no_matchattr:      // and scalar
@@ -271,6 +273,11 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_createrow:
     case no_newrow:
     case no_temprow:
+
+//Dictionaries
+    case no_userdictionary:
+    case no_newuserdictionary:
+    case no_inlinedictionary:
 
 //Datasets [see also selection operators]
     case no_rollup:
@@ -435,6 +442,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_reference:
     case no_assign_addfiles:
     case no_nullptr:
+    case no_childquery:
 
 //Workflow
     case no_stored:
@@ -606,13 +614,13 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_persist_check:
     case no_dataset_from_transform:
 
-    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
-    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
+    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
-    case no_unused80: case no_unused82: case no_unused83:
+    case no_unused80: case no_unused83:
     case no_is_null:
     case no_position:
     case no_current_time:
@@ -760,11 +768,7 @@ static IHqlExpression * querySerializedForm(IHqlExpression * expr)
     {
         IHqlExpression * attr = expr->queryAttribute(_attrSerializedForm_Atom);
         if (attr)
-        {
-            IHqlExpression * child = attr->queryChild(0);
-            if (child)
-                return child;
-        }
+            return attr;
     }
     return expr;
 }
@@ -805,13 +809,12 @@ static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr)
 class CHqlExprMeta
 {
 public:
-    static IHqlExpression * addAttributeOwn(IHqlExpression * expr, IHqlExpression * ownAttr)
+    static inline IHqlExpression * addAttribute(IHqlExpression * expr, _ATOM name, IHqlExpression * value)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
-        cexpr->addAttributeOwn(ownAttr);
-        return ownAttr;
+        cexpr->addAttribute(name, value);
+        return value;
     }
-    static inline IHqlExpression * addAttribute(IHqlExpression * expr, IHqlExpression * attr) { return addAttributeOwn(expr, LINK(attr)); }
     static inline IHqlExpression * queryExistingAttribute(IHqlExpression * expr, _ATOM name)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
@@ -826,12 +829,12 @@ static IHqlExpression * evaluateAttrSerializedForm(IHqlExpression * expr)
     if (expr->getOperator() == no_record || expr->getOperator() == no_field)
     {
         OwnedHqlExpr serialized = evaluateSerializedRecord(expr);
-        if (serialized == expr)
-            return meta.addAttribute(expr, querySerializedFormAttr());
-        
-        //Tag serialized form so don't re-evaluated
-        meta.addAttribute(serialized, querySerializedFormAttr());
-        return meta.addAttributeOwn(expr, createExprAttribute(_attrSerializedForm_Atom, serialized.getClear()));
+        if (serialized != expr)
+        {
+            //Tag serialized form so don't re-evaluated
+            meta.addAttribute(serialized, _attrSerializedForm_Atom, serialized);
+        }
+        return meta.addAttribute(expr, _attrSerializedForm_Atom, serialized);
     }
     return NULL;
 }
@@ -868,10 +871,11 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
                 else
                 {
                     IHqlExpression * ret = expr->queryRecord()->queryAttribute(_attrSize_Atom);
-                    return meta.addAttributeOwn(expr, LINK(ret));
+                    return meta.addAttribute(expr, _attrSize_Atom, ret);
                 }
                 break;
             }
+        case type_dictionary:
         case type_groupedtable:
         case type_table:
             {
@@ -1049,11 +1053,15 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
             maxSize = thisSize;
     }
     if ((thisSize == minSize) && (minSize == maxSize))
-        return meta.addAttributeOwn(expr, getFixedSizeAttr(thisSize));
+    {
+        OwnedHqlExpr attr = getFixedSizeAttr(thisSize);
+        return meta.addAttribute(expr, _attrSize_Atom, attr);
+    }
 
     if (!thisMaxSizeExpr)
         thisMaxSizeExpr.setown((maxSize == UNKNOWN_LENGTH) ? createAttribute(unknownSizeFieldAtom) : getSizetConstant(maxSize));
-    return meta.addAttributeOwn(expr, createExprAttribute(_attrSize_Atom, getSizetConstant(thisSize), getSizetConstant(minSize), thisMaxSizeExpr.getClear()));
+    OwnedHqlExpr attr = createExprAttribute(_attrSize_Atom, getSizetConstant(thisSize), getSizetConstant(minSize), thisMaxSizeExpr.getClear());
+    return meta.addAttribute(expr, _attrSize_Atom, attr);
 }
 
 //no_ifblock
@@ -1061,7 +1069,8 @@ static IHqlExpression * evaluateIfBlockAttrSize(IHqlExpression * expr)
 { 
     IHqlExpression * size = expr->queryChild(1)->queryAttribute(_attrSize_Atom);
     unsigned averageSize = (unsigned)getIntValue(size->queryChild(0), 0)/2;
-    return meta.addAttributeOwn(expr, createExprAttribute(_attrSize_Atom, getSizetConstant(averageSize), getSizetConstant(0), LINK(size->queryChild(2))));
+    OwnedHqlExpr attr = createExprAttribute(_attrSize_Atom, getSizetConstant(averageSize), getSizetConstant(0), LINK(size->queryChild(2)));
+    return meta.addAttribute(expr, _attrSize_Atom, attr);
 }
 
 //no_record
@@ -1181,7 +1190,7 @@ static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr)
         args.append(*LINK(derivedSizeExpr));
 
     OwnedHqlExpr sizeAttr = createExprAttribute(_attrSize_Atom, args);
-    return meta.addAttributeOwn(expr, sizeAttr.getClear());
+    return meta.addAttribute(expr, _attrSize_Atom, sizeAttr);
 }
 
 
@@ -1201,7 +1210,7 @@ static IHqlExpression * evaluateAttrSize(IHqlExpression * expr)
             //MORE: This could calculate a better estimate for the size of the record by taking into account any constant values or datasets that are assigned.
             IHqlExpression * record = expr->queryRecord();
             IHqlExpression * recordSize = record->queryAttribute(_attrSize_Atom);
-            return meta.addAttribute(expr, recordSize);
+            return meta.addAttribute(expr, _attrSize_Atom, recordSize);
         }
     }
     IHqlExpression * record = expr->queryRecord();
@@ -1252,44 +1261,35 @@ ITypeInfo * getSerializedForm(ITypeInfo * type)
 class HqlCachedAttributeTransformer : public QuickHqlTransformer
 {
 public:
-    HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName, IHqlExpression * _exactMatchAttr);
+    HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName);
 
     virtual IHqlExpression * transform(IHqlExpression * expr);
 
 protected:
     _ATOM attrName;
-    IHqlExpression * exactMatchAttr;
 };
 
-HqlCachedAttributeTransformer::HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName, IHqlExpression * _exactMatchAttr) 
-: QuickHqlTransformer(_transformInfo, NULL), attrName(_attrName), exactMatchAttr(_exactMatchAttr)
+HqlCachedAttributeTransformer::HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName)
+: QuickHqlTransformer(_transformInfo, NULL), attrName(_attrName)
 {
-    assertex(exactMatchAttr->queryName() == attrName);
 }
 
 IHqlExpression * HqlCachedAttributeTransformer::transform(IHqlExpression * expr)
 {
     IHqlExpression * match = meta.queryExistingAttribute(expr, attrName);
     if (match)
-    {
-        IHqlExpression * result = match->queryChild(0);
-        if (result)
-            return LINK(result);
-        return LINK(expr);
-    }
+        return LINK(match);
 
     OwnedHqlExpr transformed = QuickHqlTransformer::transform(expr);
 
-    if (transformed == expr)
+    if (transformed != expr)
     {
-        meta.addAttribute(expr, exactMatchAttr);
+        //Tag serialized form so don't re-evaluate
+        meta.addAttribute(transformed, attrName, transformed);
     }
-    else
-    {
-        //Tag serialized form so don't re-evaluated
-        meta.addAttribute(transformed, exactMatchAttr);
-        meta.addAttributeOwn(expr, createExprAttribute(attrName, LINK(transformed)));
-    }
+
+    meta.addAttribute(expr, attrName, transformed);
+
     return transformed.getClear();
 }
 
@@ -1304,7 +1304,7 @@ public:
 };
 
 static HqlTransformerInfo hqlUnadornedInfo("HqlUnadornedNormalizer");
-HqlUnadornedNormalizer::HqlUnadornedNormalizer() : HqlCachedAttributeTransformer(hqlUnadornedInfo, _attrUnadorned_Atom, queryUnadornedAttr())
+HqlUnadornedNormalizer::HqlUnadornedNormalizer() : HqlCachedAttributeTransformer(hqlUnadornedInfo, _attrUnadorned_Atom)
 {
 }
 
@@ -1533,11 +1533,11 @@ static IHqlExpression * evaluateAttrAligned(IHqlExpression * expr)
         same = false;
     OwnedHqlExpr newRecord = same ? LINK(expr) : expr->clone(result);
     if (expr == newRecord)
-        return meta.addAttribute(expr, queryAlignedAttr());
-    meta.addAttribute(newRecord, queryAlignedAttr());
+        return meta.addAttribute(expr, _attrAligned_Atom, queryAlignedAttr());
+    meta.addAttribute(newRecord, _attrAligned_Atom, queryAlignedAttr());
     
     OwnedHqlExpr alignAttr = createExprAttribute(_attrAligned_Atom, newRecord.getClear());
-    return meta.addAttributeOwn(expr, alignAttr.getClear());
+    return meta.addAttribute(expr, _attrAligned_Atom, alignAttr);
 }
 
 //---------------------------------------------------------------------------------
@@ -2894,8 +2894,8 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
 
 static IHqlExpression * evaluateAttrRecordCount(IHqlExpression * expr) 
 {
-    IHqlExpression * info = calcRowInformation(expr);
-    return meta.addAttributeOwn(expr, info);
+    OwnedHqlExpr info = calcRowInformation(expr);
+    return meta.addAttribute(expr, _attrRecordCount_Atom, info);
 }
 
 
@@ -3076,53 +3076,6 @@ IHqlExpression * extractAttrsFromExpr(IHqlExpression * value)
 }
 
 
-IHqlExpression * CHqlExpression::queryExistingAttribute(_ATOM propName) const
-{
-    CriticalBlock block(*attributeCS);
-    ForEachItemIn(i, attributes)
-    {
-        IHqlExpression & cur = attributes.item(i);
-        if (cur.queryName() == propName)
-            return &cur;
-    }
-    return NULL;
-}
-
-void CHqlExpression::addAttributeOwn(IHqlExpression * attr) 
-{ 
-    CriticalBlock block(*attributeCS);
-    //theoretically we should test if the attribute has already been added by another thread, but in practice there is no
-    //problem if the attribute is present twice.
-    attributes.append(*attr); 
-}
-
-
-IHqlExpression * CHqlExpression::queryAttribute(_ATOM propName)
-{
-#ifdef _DEBUG
-    assertex(isInternalAttributeName(propName));
-#endif
-
-    IHqlExpression * match = queryExistingAttribute(propName);
-    if (match)
-        return match;
-
-    switch (getAttributeId(propName))
-    {
-    case EArecordCount:
-        return evaluateAttrRecordCount(this);
-    case EAserializedForm:
-        return evaluateAttrSerializedForm(this);
-    case EAsize:
-        return evaluateAttrSize(this);
-    case EAaligned:
-        return evaluateAttrAligned(this);
-    case EAunadorned:
-        return evaluateAttrUnadorned(this);
-    }
-    return NULL;
-}
-
 // Type processing
 ITypeInfo * getPromotedECLType(ITypeInfo * lType, ITypeInfo * rType)
 {
@@ -3237,7 +3190,7 @@ bool recordRequiresDestructor(IHqlExpression * expr)
 
     //true if the serialized form is different
     IHqlExpression * serialized = expr->queryAttribute(_attrSerializedForm_Atom);
-    return (serialized && serialized->queryChild(0));
+    return serialized && (serialized != expr->queryBody());
 }
 
 
@@ -3272,12 +3225,24 @@ IHqlExpression * getUnadornedExpr(IHqlExpression * expr)
     if (!expr)
         return NULL;
     IHqlExpression * attr = expr->queryAttribute(_attrUnadorned_Atom);
-    IHqlExpression * unadorned = attr->queryChild(0);
-    if (!unadorned) unadorned = expr;
-    return LINK(unadorned);
+    return LINK(attr);
 }
 
 //---------------------------------------------------------------------------------
+
+inline bool isAlwaysLocationIndependent(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_constant:
+    case no_param:
+    case no_quoted:
+    case no_variable:
+    case no_attr:
+        return true;
+    }
+    return false;
+}
 
 class HqlLocationIndependentNormalizer : public QuickHqlTransformer
 {
@@ -3286,7 +3251,9 @@ public:
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ITypeInfo * transformType(ITypeInfo * type);
-    virtual IHqlExpression * transform(IHqlExpression * expr);
+
+protected:
+    IHqlExpression * doCreateTransformed(IHqlExpression * expr);
 };
 
 static HqlTransformerInfo hqlLocationIndependentInfo("HqlLocationIndependentNormalizer");
@@ -3319,26 +3286,8 @@ ITypeInfo * HqlLocationIndependentNormalizer::transformType(ITypeInfo * type)
     }
 }
 
-IHqlExpression * HqlLocationIndependentNormalizer::transform(IHqlExpression * expr)
+IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpression * expr)
 {
-    CHqlExpression * cast = static_cast<CHqlExpression *>(expr);
-    IHqlExpression * match = cast->queryLocationIndependent();
-    if (match)
-        return LINK(match);
-
-    OwnedHqlExpr transformed = QuickHqlTransformer::transform(expr);
-    cast->setLocationIndependent(transformed);
-    return transformed.getClear();
-}
-
-
-IHqlExpression * HqlLocationIndependentNormalizer::createTransformed(IHqlExpression * expr)
-{
-    //Remove all annotations.  It is vaguely possible there are some annotations we would want to retain, but I don't know of any
-    IHqlExpression * body = expr->queryBody(false);
-    if (expr != body)
-        return transform(body);
-
     node_operator op = expr->getOperator();
     switch (op)
     {
@@ -3372,12 +3321,32 @@ IHqlExpression * HqlLocationIndependentNormalizer::createTransformed(IHqlExpress
     return QuickHqlTransformer::createTransformed(expr);
 }
 
-IHqlExpression * queryLocationIndependent(IHqlExpression * expr)
+
+IHqlExpression * HqlLocationIndependentNormalizer::createTransformed(IHqlExpression * expr)
 {
-    CHqlExpression * cast = static_cast<CHqlExpression *>(expr);
-    IHqlExpression * independent = cast->queryLocationIndependent();
-    if (independent)
-        return independent;
+    //Remove all annotations.  It is vaguely possible there are some annotations we would want to retain, but I don't know of any
+    IHqlExpression * body = expr->queryBody(false);
+    if (expr != body)
+        return transform(body);
+
+    if (isAlwaysLocationIndependent(expr))
+        return LINK(expr);
+
+    IHqlExpression * match = meta.queryExistingAttribute(expr, _attrLocationIndependent_Atom);
+    if (match)
+        return LINK(match);
+
+    OwnedHqlExpr transformed = doCreateTransformed(expr);
+
+    meta.addAttribute(expr, _attrLocationIndependent_Atom, transformed);
+
+    return transformed.getClear();
+}
+
+IHqlExpression * evaluateAttrLocationIndependent(IHqlExpression * expr)
+{
+    if (isAlwaysLocationIndependent(expr))
+        return expr->queryBody();
 
     //Because the transformers contain all the logic for how scopes etc. are transformed it is much better to
     //use a transformer which caches the result in the expression tree instead of trying to replicate
@@ -3385,6 +3354,14 @@ IHqlExpression * queryLocationIndependent(IHqlExpression * expr)
     HqlLocationIndependentNormalizer normalizer;
     OwnedHqlExpr transformed = normalizer.transform(expr);
     return transformed;         // NB: no getClear().  Because it is cached it is guaranteed to exist even when this link is released.
+}
+
+IHqlExpression * queryLocationIndependent(IHqlExpression * expr)
+{
+    IHqlExpression * match = expr->queryAttribute(_attrLocationIndependent_Atom);
+    if (match)
+        return match;
+    return expr;
 }
 
 
@@ -3460,6 +3437,7 @@ bool isLinkedRowset(ITypeInfo * t)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         return hasLinkCountedModifier(t);
     }
     return false;
@@ -3472,6 +3450,7 @@ bool isArrayRowset(ITypeInfo * t)
     case type_table:
     case type_groupedtable:
     case type_array:
+    case type_dictionary:
         {
             if (hasLinkCountedModifier(t))
                 assertex(hasLinkCountedModifier(t->queryChildType()));
@@ -3494,6 +3473,7 @@ bool hasLinkedRow(ITypeInfo * t)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         return hasLinkedRow(t->queryChildType());
     case type_row:
         return hasLinkCountedModifier(t);
@@ -3510,6 +3490,7 @@ ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue)
     {
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         {
             ITypeInfo * rowType = type->queryChildType();
             Owned<ITypeInfo> newRowType = setLinkCountedAttr(rowType, setValue);
@@ -3569,4 +3550,67 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
             return makeAttributeModifier(LINK(type), getStreamedAttr());
         return LINK(type);
     }
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+IHqlExpression * CHqlExpression::queryExistingAttribute(_ATOM propName) const
+{
+    CriticalBlock block(*attributeCS);
+    CHqlDynamicAttribute * cur = attributes;
+    while (cur)
+    {
+        if (cur->name == propName)
+        {
+            IHqlExpression * value = cur->value;
+            if (value)
+                return value;
+            return const_cast<CHqlExpression *>(this);
+        }
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+void CHqlExpression::addAttribute(_ATOM name, IHqlExpression * value)
+{
+    if (value == this)
+        value = NULL;
+
+    CriticalBlock block(*attributeCS);
+    //theoretically we should test if the attribute has already been added by another thread, but in practice there is no
+    //problem if the attribute is present twice.
+    CHqlDynamicAttribute * attr = new CHqlDynamicAttribute(name, value);
+    attr->next = attributes;
+    attributes = attr;
+}
+
+
+IHqlExpression * CHqlExpression::queryAttribute(_ATOM propName)
+{
+#ifdef _DEBUG
+    assertex(isInternalAttributeName(propName));
+#endif
+
+    IHqlExpression * match = queryExistingAttribute(propName);
+    if (match)
+        return match;
+
+    switch (getAttributeId(propName))
+    {
+    case EArecordCount:
+        return evaluateAttrRecordCount(this);
+    case EAserializedForm:
+        return evaluateAttrSerializedForm(this);
+    case EAsize:
+        return evaluateAttrSize(this);
+    case EAaligned:
+        return evaluateAttrAligned(this);
+    case EAunadorned:
+        return evaluateAttrUnadorned(this);
+    case EAlocationIndependent:
+        return evaluateAttrLocationIndependent(this);
+    }
+    return NULL;
 }

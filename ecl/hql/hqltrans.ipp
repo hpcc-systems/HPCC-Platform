@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #ifndef __HQLTRANS_IPP_
 #define __HQLTRANS_IPP_
@@ -301,11 +300,10 @@ enum
     NTFselectorOriginal     = 0x0002,
 };
 
-class HQL_API ANewTransformInfo : implements IInterface, public CInterface
+class HQL_API ANewTransformInfo : implements CInterfaceOf<IInterface> 
 {
 public:
     ANewTransformInfo(IHqlExpression * _original);
-    IMPLEMENT_IINTERFACE
 
     virtual IHqlExpression * queryTransformed() = 0;
     virtual IHqlExpression * queryTransformedSelector() = 0;
@@ -425,7 +423,7 @@ protected:
 //---------------------------------------------------------------------------
 
 //This class is used for applying transformations to trees that have already been normalized, or
-//that need to assocaite extra information with the the expressions being transformed
+//that need to associate extra information with the the expressions being transformed
 //If the transformer inserts,swaps or hoists expressions then it should ensure that createTransformed()
 //processes the annotations and the body at the same time - otherwise they can become separated.
 class HQL_API NewHqlTransformer : public ANewHqlTransformer
@@ -444,6 +442,7 @@ public:
     IHqlExpression * transformRoot(IHqlExpression * expr) { return doTransformRootExpr(expr); }
 
 protected:
+            bool alreadyVisited(ANewTransformInfo * extra);
             bool alreadyVisited(IHqlExpression * pass);
     virtual void analyseExpr(IHqlExpression * expr);
     virtual void analyseSelector(IHqlExpression * expr);
@@ -585,13 +584,19 @@ This provides a mechanism for handling the code correctly, but also allowing the
 Flags provided to the constructor indicate which options for transforming are used.
 */
 
-class HoistingTransformInfo : public NewTransformInfo
+//---------------------------------------------------------------------------------------------------------------------
+
+class ConditionalTransformInfo : public NewTransformInfo
 {
+    enum { CTFunconditional = 1, CTFfirstunconditional = 2 };
 public:
-    HoistingTransformInfo(IHqlExpression * _original) : NewTransformInfo(_original) { spareByte1 = false; }
+    ConditionalTransformInfo(IHqlExpression * _original) : NewTransformInfo(_original) { spareByte1 = 0; }
     
-    inline bool isUnconditional() { return spareByte1 != 0; }
-    inline void setUnconditional() { spareByte1 = true; }
+    inline bool isUnconditional() const { return (spareByte1 & CTFunconditional) != 0; }
+    inline bool isFirstUseUnconditional() const { return (spareByte1 & CTFfirstunconditional) != 0; }
+
+    inline void setUnconditional() { spareByte1 |= CTFunconditional; }
+    inline void setFirstUnconditional() { spareByte1 |= (CTFfirstunconditional|CTFunconditional); }
 
 private:
     using NewTransformInfo::spareByte1;             //prevent derived classes from also using this spare byte
@@ -600,7 +605,51 @@ private:
 //This allows expressions to be evaluated in a nested context, so that once that nested context is finished
 //all the mapped expressions relating to that nested context are removed, and not commoned up.
 //Useful for processing 
-class HQL_API HoistingHqlTransformer : public NewHqlTransformer
+class HQL_API ConditionalHqlTransformer : public NewHqlTransformer
+{
+public:
+    enum { CTFnoteifactions     = 0x0001,
+           CTFnoteifdatasets    = 0x0002,
+           CTFnoteifdatarows    = 0x0004,
+           CTFnoteifall         = 0x0008,
+           CTFnoteor            = 0x0010,
+           CTFnoteand           = 0x0020,
+           CTFnotemap           = 0x0040,
+           CTFnotewhich         = 0x0080,
+           CTFnoteall           = 0xFFFF,
+           CTFtraverseallnodes  = 0x10000,
+    };
+    ConditionalHqlTransformer(HqlTransformerInfo & _info, unsigned _flags);
+
+    void setFlags(unsigned _flags) { flags = _flags; }
+
+protected:
+    bool analyseThis(IHqlExpression * expr);
+
+    virtual void doAnalyseExpr(IHqlExpression * expr);
+
+    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
+    inline ConditionalTransformInfo * queryBodyExtra(IHqlExpression * expr)     { return static_cast<ConditionalTransformInfo *>(queryTransformExtra(expr->queryBody())); }
+    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryBodyExtra(expr)->isUnconditional(); }
+
+    virtual void analyseExpr(IHqlExpression * expr);
+
+    inline bool treatAsConditional(IHqlExpression * expr);
+
+protected:
+    unsigned conditionDepth;
+    unsigned flags;
+    bool containsUnknownIndependentContents;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+typedef ConditionalTransformInfo HoistingTransformInfo;
+
+//This allows expressions to be evaluated in a nested context, so that once that nested context is finished
+//all the mapped expressions relating to that nested context are removed, and not commoned up.
+class HQL_API HoistingHqlTransformer : public ConditionalHqlTransformer
 {
     class IndependentTransformMap : public CInterface
     {
@@ -611,30 +660,13 @@ class HQL_API HoistingHqlTransformer : public NewHqlTransformer
         HqlExprArray cache;
     };
 public:
-    enum { HTFnoteconditionalactions = 0x01, 
-           HTFnoteconditionaldatasets= 0x02,
-           HTFnoteconditionaldatarows= 0x04,
-           HTFtraverseallnodes = 0x08,
-           HTFnoteallconditionals = 0x10,
-    };
     HoistingHqlTransformer(HqlTransformerInfo & _info, unsigned _flags);
 
     void appendToTarget(IHqlExpression & curOwned);
-    void setFlags(unsigned _flags) { flags = _flags; }
-    void setParent(const HoistingHqlTransformer * parent);
     void transformRoot(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformRoot(IHqlExpression * expr);
 
 protected:
-    bool analyseThis(IHqlExpression * expr);
-
-    virtual void doAnalyseExpr(IHqlExpression * expr);
-
-    virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
-    inline HoistingTransformInfo * queryBodyExtra(IHqlExpression * expr)        { return static_cast<HoistingTransformInfo *>(queryTransformExtra(expr->queryBody())); }
-    inline bool isUsedUnconditionally(IHqlExpression * expr)                { return queryBodyExtra(expr)->isUnconditional(); }
-
-    virtual void analyseExpr(IHqlExpression * expr);
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     IHqlExpression * transformIndependent(IHqlExpression * expr);
     virtual IHqlExpression * doTransformIndependent(IHqlExpression * expr) = 0;
@@ -642,22 +674,11 @@ protected:
     void transformArray(const HqlExprArray & in, HqlExprArray & out);
     IHqlExpression * transformEnsureResult(IHqlExpression * expr);
 
-    inline bool checkConditional(IHqlExpression * expr)
-    {
-        return ((flags & HTFnoteallconditionals) ||
-            ((flags & HTFnoteconditionalactions) && expr->isAction()) ||
-            ((flags & HTFnoteconditionaldatasets) && expr->isDataset()) ||
-            ((flags & HTFnoteconditionaldatarows) && expr->isDatarow()));
-    }
+    void setParent(const HoistingHqlTransformer * parent);
 
 private:
     HqlExprArray *      target;
-    unsigned flags;
     Owned<IndependentTransformMap> independentCache;
-
-protected:
-    unsigned conditionDepth;
-    bool containsUnknownIndependentContents;
 };
 
 
@@ -923,34 +944,6 @@ public:
 };
 
 
-#if 0
-class HQL_API SelectorReplacingTransformer : public MergingHqlTransformer
-{
-public:
-    SelectorReplacingTransformer();
-
-    void initSelectorMapping(IHqlExpression * oldValue, IHqlExpression * newValue);
-
-    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
-
-    inline bool foundAmbiguity() const { return introducesAmbiguity; }
-
-protected:
-    void updateMapping();
-    virtual void pushChildContext(IHqlExpression * expr, IHqlExpression * transformed);
-
-protected:
-    OwnedHqlExpr oldSelector;
-    OwnedHqlExpr newSelector;
-    OwnedHqlExpr oldDataset;
-    OwnedHqlExpr newDataset;
-    bool isHidden;
-    bool introducesAmbiguity;
-    IHqlExpression * savedNewDataset;
-};
-#endif
-
-
 class HQL_API NewSelectorReplacingInfo : public NewTransformInfo
 {
 public:
@@ -1174,22 +1167,6 @@ inline bool activityHidesSelector(IHqlExpression * expr, IHqlExpression * select
     return activityHidesSelectorGetNumNonHidden(expr, selector) != 0;
 }
 
-
-class HQL_API HqlSelectorAnywhereLocator : public NewHqlTransformer
-{
-public:
-    HqlSelectorAnywhereLocator(IHqlExpression * _selector);
-
-    virtual void analyseExpr(IHqlExpression * expr);
-    virtual void analyseSelector(IHqlExpression * expr);
-
-    bool containsSelector(IHqlExpression * expr);
-
-protected:
-    bool foundSelector;
-    OwnedHqlExpr selector;
-};
-
 class SplitterVerifierInfo : public NewTransformInfo
 {
 public:
@@ -1210,29 +1187,6 @@ protected:
     inline SplitterVerifierInfo * queryExtra(IHqlExpression * expr)     { return static_cast<SplitterVerifierInfo *>(queryTransformExtra(expr)); }
 };
 
-extern HQL_API bool containsSelector(IHqlExpression * expr, IHqlExpression * selector);
-extern HQL_API bool containsSelectorAnywhere(IHqlExpression * expr, IHqlExpression * selector);         // searches through nested "hidden" definitions
-
-class HQL_API FieldAccessAnalyser : public NewHqlTransformer
-{
-public:
-    FieldAccessAnalyser(IHqlExpression * selector);
-
-    inline bool accessedAll() const { return numAccessed == fields.ordinality(); }
-    IHqlExpression * queryLastFieldAccessed() const;
-
-protected:
-    virtual void analyseExpr(IHqlExpression * expr);
-    virtual void analyseSelector(IHqlExpression * expr);
-
-    inline void setAccessedAll() { numAccessed = fields.ordinality(); }
-
-protected:
-    LinkedHqlExpr selector;
-    HqlExprCopyArray fields;
-    Owned<IBitSet> accessed;
-    unsigned numAccessed;
-};
 /*
 
 If something can be transformed more than one way depending on the context then must either
@@ -1252,14 +1206,8 @@ extern HQL_API IHqlExpression * queryNewReplaceSelector(IHqlExpression * expr, I
 extern HQL_API IHqlExpression * expandCreateRowSelectors(IHqlExpression * expr);
 extern HQL_API void verifySplitConsistency(IHqlExpression * expr);
 extern HQL_API IHqlExpression * convertWorkflowToImplicitParmeters(HqlExprArray & parameters, HqlExprArray & defaults, IHqlExpression * expr);
-extern HQL_API unsigned getNumUniqueExpressions(IHqlExpression * expr);
-extern HQL_API unsigned getNumUniqueExpressions(const HqlExprArray & exprs);
-extern HQL_API unsigned getNumOccurences(HqlExprArray & exprs, IHqlExpression * search, unsigned limit);
-extern HQL_API void logTreeStats(IHqlExpression * expr);
-extern HQL_API void logTreeStats(const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * quickFullReplaceExpression(IHqlExpression * expr, IHqlExpression * oldValue, IHqlExpression * newValue);
 extern HQL_API IHqlExpression * quickFullReplaceExpressions(IHqlExpression * expr, const HqlExprArray & oldValues, const HqlExprArray & newValues);
-extern HQL_API void gatherSelectExprs(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API void dbglogTransformStats(bool reset);
 
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR

@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 %option 8bit never-interactive
 /*%option c++ yyclass="HqlLex"*/
@@ -141,6 +140,9 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         break;
     case type_transform:
         token = isFunction ? TRANSFORM_FUNCTION : TRANSFORM_ID;
+        break;
+    case type_dictionary:
+        token = isFunction ? DICTIONARY_FUNCTION : DICTIONARY_ID;
         break;
     case type_groupedtable:
     case type_table:
@@ -659,11 +661,7 @@ DENORMALIZE         { RETURNSYM(DENORMALIZE); }
 DEPRECATED          { RETURNSYM(DEPRECATED); }
 DESC                { RETURNSYM(DESC); }
 DESCEND             { RETURNSYM(DESC); }
-DICTIONARY          {
-                        lexer->reportWarning(returnToken, WRN_RESERVED_FUTURE, "%s", "DICTIONARY will be a reserved word from release 3.10");
-                        setupdatepos;
-                        return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
-                    }
+DICTIONARY          { RETURNSYM(DICTIONARY); }
 DISTRIBUTE          { RETURNSYM(DISTRIBUTE); }
 DISTRIBUTED         { RETURNSYM(DISTRIBUTED); }
 DISTRIBUTION        { RETURNSYM(DISTRIBUTION); }
@@ -826,7 +824,6 @@ PARALLEL            { RETURNSYM(PARALLEL); }
 PARSE               { RETURNSYM(PARSE); }
 PARTITION           { RETURNSYM(PARTITION); }
 PATTERN             { RETURNSYM(TOK_PATTERN); }
-PAYLOAD             { RETURNSYM(PAYLOAD); }
 PENALTY             { RETURNSYM(PENALTY); }
 PERSIST             { RETURNSYM(PERSIST); }
 PHYSICALFILENAME    { RETURNSYM(PHYSICALFILENAME); }

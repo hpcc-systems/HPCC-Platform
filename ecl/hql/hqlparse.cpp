@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "hqlgram.hpp"
 #include "hqlfold.hpp"
@@ -37,7 +36,6 @@
 // =========================== local helper functions ===================================
 
 static bool isInModule(HqlLookupContext & ctx, const char* module_name, const char* attr_name);
-static StringBuffer& getDataType(HqlLookupContext & ctx, const char* field, StringBuffer& tgt);
 static StringBuffer& mangle(IErrorReceiver* errReceiver,const char* src, StringBuffer& mangled,bool demangle);
 
 // =========================== CDummyScopeIterator ======================================
@@ -80,6 +78,7 @@ public:
 
 class CTemplateContext : implements ITemplateContext, public CInterface
 {
+    HqlLex * lexer;
     IXmlScope* m_xmlScope;
     int m_startLine,m_startCol;
     HqlLookupContext & m_lookupContext;
@@ -87,8 +86,8 @@ class CTemplateContext : implements ITemplateContext, public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CTemplateContext(HqlLookupContext & lookupContext, IXmlScope* xmlScope, int startLine,int startCol)
-     : m_xmlScope(xmlScope), m_lookupContext(lookupContext),
+    CTemplateContext(HqlLex * _lexer, HqlLookupContext & lookupContext, IXmlScope* xmlScope, int startLine,int startCol)
+     : lexer(_lexer), m_xmlScope(xmlScope), m_lookupContext(lookupContext),
        m_startLine(startLine), m_startCol(startCol) {}
     
     virtual IXmlScope* queryXmlScope()  { return m_xmlScope; }
@@ -96,7 +95,7 @@ public:
     
     // convenient functions
     virtual bool isInModule(const char* moduleName, const char* attrName) { return ::isInModule(m_lookupContext, moduleName,attrName); }
-    virtual StringBuffer& getDataType(const char* field, StringBuffer& tgt) { return ::getDataType(m_lookupContext, field, tgt); }
+    virtual StringBuffer& getDataType(const char* field, StringBuffer& tgt) { return lexer->doGetDataType(tgt, field, m_startLine, m_startCol); }
     
     virtual StringBuffer& mangle(const char* src, StringBuffer& mangled) { return ::mangle(m_lookupContext.errs,src,mangled,false); }
     virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) { return ::mangle(m_lookupContext.errs,mangled,demangled,true); }
@@ -1216,8 +1215,23 @@ void HqlLex::doGetDataType(YYSTYPE & returnToken)
     curParam.append(')');
 
     StringBuffer type;
-    getDataType(yyParser->lookupCtx, curParam.str(),type);
+    doGetDataType(type, curParam.str(), returnToken.pos.lineno, returnToken.pos.column);
     pushText(type.str());
+}
+
+StringBuffer& HqlLex::doGetDataType(StringBuffer & type, const char * text, int lineno, int column)
+{
+    OwnedHqlExpr expr = parseECL(text, queryTopXmlScope(), lineno, column);
+    if(expr)
+    {
+        type.append('\'');
+        if (expr->queryType())
+            expr->queryType()->getECLType(type);
+        type.append('\'');
+    }
+    else
+        type.append("'unknown_type'");
+    return type;
 }
 
 int HqlLex::doHashText(YYSTYPE & returnToken)
@@ -1252,31 +1266,6 @@ int HqlLex::doHashText(YYSTYPE & returnToken)
     return (STRING_CONST);
 }
 
-static StringBuffer& getDataType(HqlLookupContext & ctx, const char* field, StringBuffer& tgt)
-{
-    try
-    {
-        Owned<IHqlScope> scope = createScope();
-        Owned<IFileContents> contents = createFileContentsFromText(field, NULL);
-        OwnedHqlExpr expr = parseQuery(scope, contents, ctx, NULL, true);
-
-        if(expr)
-        {   
-            tgt.append('\'');
-            if (expr->queryType())
-                expr->queryType()->getECLType(tgt);
-            tgt.append('\'');       
-        }
-        else
-            tgt.append("'unknown_type'");
-    }
-    catch (...)
-    {
-        tgt.append("'unknown_type'"); 
-    }
-
-    return tgt;
-}
 
 void HqlLex::doInModule(YYSTYPE & returnToken)
 {
@@ -1699,7 +1688,7 @@ void HqlLex::doDefined(YYSTYPE & returnToken)
         pushText(param2Text);
 }
 
-IHqlExpression *HqlLex::parseECL(StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
@@ -1709,7 +1698,7 @@ IHqlExpression *HqlLex::parseECL(StringBuffer &curParam, IXmlScope *xmlScope, in
 
     HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);
-    Owned<IFileContents> contents = createFileContentsFromText(curParam, querySourcePath());
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
     HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
     parser.getLexer()->set_yyColumn(startCol);
@@ -1727,8 +1716,8 @@ IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curPa
     {
         try 
         {
-            Owned<ITemplateContext> context = new CTemplateContext(yyParser->lookupCtx, xmlScope,startLine,startCol);
-            OwnedHqlExpr folded = foldHqlExpression(expr, context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+            CTemplateContext context(this, yyParser->lookupCtx, xmlScope, startLine, startCol);
+            OwnedHqlExpr folded = foldHqlExpression(expr, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
             if (folded)
             {
                 if (folded->queryValue())
@@ -1777,8 +1766,8 @@ void HqlLex::doApply(YYSTYPE & returnToken)
     OwnedHqlExpr actions = parseECL(curParam, queryTopXmlScope(), line, col);
     if (actions)
     {
-        Owned<ITemplateContext> context = new CTemplateContext(yyParser->lookupCtx, xmlScope,line,col);
-        OwnedHqlExpr folded = foldHqlExpression(actions, context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+        CTemplateContext context(this, yyParser->lookupCtx, xmlScope,line,col);
+        OwnedHqlExpr folded = foldHqlExpression(actions, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
     }
     else
         reportError(returnToken, ERR_EXPECTED_CONST, "Constant expression expected");
@@ -2048,9 +2037,12 @@ void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * chil
 
     if (!xmlScope)
     {
-        StringBuffer msg;
-        msg.appendf("Load XML(\'%s\') failed",name);
-        reportError(errpos, ERR_TMPLT_LOADXMLFAILED, "%s", msg.str());
+        if (name && strlen(name))
+        {
+            StringBuffer msg;
+            msg.appendf("Load XML(\'%s\') failed",name);
+            reportError(errpos, ERR_TMPLT_LOADXMLFAILED, "%s", msg.str());
+        }
 
         // recovery: create a default XML scope
         xmlScope = ::loadXML("<xml></xml>");

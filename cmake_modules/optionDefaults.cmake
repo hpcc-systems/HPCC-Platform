@@ -1,6 +1,15 @@
 
 if ( NOT PREFIX )
+if ( WIN32 )
+    if ("$ENV{ProgramFiles(x86)}" STREQUAL "")
+        set( PREFIX "$ENV{ProgramFiles}" )
+    else()
+        set( PREFIX "$ENV{ProgramFiles(x86)}" )
+    endif()
+    string(REGEX REPLACE "\\\\" "/" PREFIX ${PREFIX})    
+else (WIN32)
     set( PREFIX "/opt" )
+endif (WIN32)    
 endif()
 
 if ( NOT EXEC_PREFIX )
@@ -13,6 +22,10 @@ endif()
 
 if ( NOT DIR_NAME )
     set( DIR_NAME "HPCCSystems" )
+endif()
+
+if ( NOT ARCHIVE_DIR )
+    set( ARCHIVE_DIR "lib" )
 endif()
 
 if ( NOT LIB_DIR )

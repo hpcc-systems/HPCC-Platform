@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "platform.h"
@@ -332,7 +331,6 @@ RtlLinkedDatasetBuilder::~RtlLinkedDatasetBuilder()
 
 void RtlLinkedDatasetBuilder::append(const void * source)
 {
-    flush();
     if (count < choosenLimit)
     {
         ensure(count+1);
@@ -343,20 +341,28 @@ void RtlLinkedDatasetBuilder::append(const void * source)
 
 void RtlLinkedDatasetBuilder::appendRows(size32_t num, byte * * rows)
 {
-    flush();
     if (num && (count < choosenLimit))
     {
-        unsigned numToAdd = (count + num < choosenLimit) ? num : choosenLimit - count;
-        ensure(count+numToAdd);
-        for (unsigned i=0; i < numToAdd; i++)
-            rowset[count+i] = (byte *)rowAllocator->linkRow(rows[i]);
-        count += numToAdd;
+        unsigned maxNumToAdd = (count + num < choosenLimit) ? num : choosenLimit - count;
+        unsigned numAdded = 0;
+        ensure(count+maxNumToAdd);
+        for (unsigned i=0; i < num; i++)
+        {
+            byte *row = rows[i];
+            if (row)
+            {
+                rowset[count+numAdded] = (byte *)rowAllocator->linkRow(row);
+                numAdded++;
+                if (numAdded == maxNumToAdd)
+                    break;
+            }
+        }
+        count += numAdded;
     }
 }
 
 void RtlLinkedDatasetBuilder::appendOwn(const void * row)
 {
-    //flush() must have been called before this... otherwise the order will be messed up
     assertex(!builder.exists());
     if (count < choosenLimit)
     {
@@ -371,7 +377,6 @@ void RtlLinkedDatasetBuilder::appendOwn(const void * row)
 
 byte * RtlLinkedDatasetBuilder::createRow()
 {
-    flush();
     if (count >= choosenLimit)
         return NULL;
     return builder.getSelf();
@@ -395,7 +400,6 @@ public:
 
 void RtlLinkedDatasetBuilder::cloneRow(size32_t len, const void * row)
 {
-    flush();
     if (count >= choosenLimit)
         return;
 
@@ -415,7 +419,6 @@ void RtlLinkedDatasetBuilder::cloneRow(size32_t len, const void * row)
 
 void RtlLinkedDatasetBuilder::deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in)
 {
-    flush();
     builder.ensureRow();
     size32_t rowSize = deserializer.deserialize(builder, in);
     finalizeRow(rowSize);
@@ -439,11 +442,15 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
 {
     for (unsigned i=0; i < count; i++)
     {
-        serializer->serialize(out, rows[i]);
-        if (isGrouped)
+        byte *row = rows[i];
+        if (row)   // When serializing a dictionary, there may be nulls in the rowset. These can be skipped (we rehash on deserialize)
         {
-            byte eogPending = (i+1 < count) && (rows[i+1] == NULL);
-            out.put(1, &eogPending);
+            serializer->serialize(out, rows[i]);
+            if (isGrouped)
+            {
+                byte eogPending = (i+1 < count) && (rows[i+1] == NULL);
+                out.put(1, &eogPending);
+            }
         }
     }
 }
@@ -451,8 +458,6 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
 
 void RtlLinkedDatasetBuilder::deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped)
 {
-    flush();
-
     offset_t marker = in.beginNested();
     doDeserializeRowset(*this, deserializer, in, marker, isGrouped);
 }
@@ -460,16 +465,10 @@ void RtlLinkedDatasetBuilder::deserialize(IOutputRowDeserializer & deserializer,
 
 void RtlLinkedDatasetBuilder::finalizeRows()
 {
-    flush();
     if (count != max)
         resize(count);
 }
 
-
-void RtlLinkedDatasetBuilder::flush()
-{
-//  builder.clear();
-}
 
 void RtlLinkedDatasetBuilder::finalizeRow(size32_t rowSize)
 {
@@ -511,9 +510,17 @@ void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngine
     {
         size32_t prevCount = targetCount;
         byte * * expandedRowset = rowAllocator->reallocRows(targetRowset, prevCount, prevCount+extraCount);
+        unsigned numAdded = 0;
         for (unsigned i=0; i < extraCount; i++)
-            expandedRowset[prevCount+i] = (byte *)rowAllocator->linkRow(extraRows[i]);
-        targetCount = prevCount + extraCount;
+        {
+            byte *extraRow = extraRows[i];
+            if (extraRow)
+            {
+                expandedRowset[prevCount+numAdded] = (byte *)rowAllocator->linkRow(extraRow);
+                numAdded++;
+            }
+        }
+        targetCount = prevCount + numAdded;
         targetRowset = expandedRowset;
     }
 }
@@ -554,6 +561,185 @@ void rtlSerializeGroupedRowset(IRowSerializerTarget & out, IOutputRowSerializer 
     size32_t marker = out.beginNested();
     doSerializeRowset(out, serializer, count, rows, true);
     out.endNested(marker);
+}
+
+//---------------------------------------------------------------------------
+
+RtlLinkedDictionaryBuilder::RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialSize)
+  : builder(_rowAllocator, false)
+{
+    init(_rowAllocator, _hashInfo, _initialSize);
+}
+
+RtlLinkedDictionaryBuilder::RtlLinkedDictionaryBuilder(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo)
+  : builder(_rowAllocator, false)
+{
+    init(_rowAllocator, _hashInfo, 8);
+}
+
+void RtlLinkedDictionaryBuilder::init(IEngineRowAllocator * _rowAllocator, IHThorHashLookupInfo *_hashInfo, unsigned _initialSize)
+{
+    hash  = _hashInfo->queryHash();
+    compare  = _hashInfo->queryCompare();
+    initialSize = _initialSize;
+    rowAllocator = LINK(_rowAllocator);
+    table = NULL;
+    usedCount = 0;
+    usedLimit = 0;
+    tableSize = 0;
+}
+
+RtlLinkedDictionaryBuilder::~RtlLinkedDictionaryBuilder()
+{
+//    builder.clear();
+    if (table)
+        rowAllocator->releaseRowset(tableSize, table);
+    ::Release(rowAllocator);
+}
+
+void RtlLinkedDictionaryBuilder::append(const void * source)
+{
+    if (source)
+    {
+        appendOwn(rowAllocator->linkRow(source));
+    }
+}
+
+void RtlLinkedDictionaryBuilder::appendOwn(const void * source)
+{
+    if (source)
+    {
+        checkSpace();
+        unsigned rowidx = hash->hash(source) % tableSize;
+        loop
+        {
+            const void *entry = table[rowidx];
+            if (entry && compare->docompare(source, entry)==0)
+            {
+                rowAllocator->releaseRow(entry);
+                usedCount--;
+                entry = NULL;
+            }
+            if (!entry)
+            {
+                table[rowidx] = (byte *) source;
+                usedCount++;
+                break;
+            }
+            rowidx++;
+            if (rowidx==tableSize)
+                rowidx = 0;
+        }
+    }
+}
+
+void RtlLinkedDictionaryBuilder::checkSpace()
+{
+    if (!table)
+    {
+        table = rowAllocator->createRowset(initialSize);
+        tableSize = initialSize;
+        memset(table, 0, tableSize*sizeof(byte *));
+        usedLimit = (tableSize * 3) / 4;
+        usedCount = 0;
+    }
+    else if (usedCount > usedLimit)
+    {
+        // Rehash
+        byte * * oldTable = table;
+        unsigned oldSize = tableSize;
+        table = rowAllocator->createRowset(tableSize*2);
+        tableSize = tableSize*2; // Don't update until we have successfully allocated, so that we remain consistent if createRowset throws an exception.
+        memset(table, 0, tableSize * sizeof(byte *));
+        usedLimit = (tableSize * 3) / 4;
+        usedCount = 0;
+        unsigned i;
+        for (i = 0; i < oldSize; i++)
+        {
+            append(oldTable[i]);  // we link the rows here...
+        }
+        rowAllocator->releaseRowset(oldSize, oldTable);   // ... because this will release them
+    }
+}
+
+void RtlLinkedDictionaryBuilder::appendRows(size32_t num, byte * * rows)
+{
+    // MORE - if we know that the source is already a hashtable, we can optimize the add to an empty table...
+    for (unsigned i=0; i < num; i++)
+        append(rows[i]);
+}
+
+void RtlLinkedDictionaryBuilder::finalizeRow(size32_t rowSize)
+{
+    assertex(builder.exists());
+    const void * next = builder.finalizeRowClear(rowSize);
+    appendOwn(next);
+}
+
+void RtlLinkedDictionaryBuilder::cloneRow(size32_t len, const void * row)
+{
+    byte * self = builder.ensureCapacity(len, NULL);
+    memcpy(self, row, len);
+
+    IOutputMetaData * meta = rowAllocator->queryOutputMeta();
+    if (meta->getMetaFlags() & MDFneedserialize)
+    {
+        RtlChildRowLinkerWalker walker;
+        meta->walkIndirectMembers(self, walker);
+    }
+
+    finalizeRow(len);
+}
+
+extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table)
+{
+    unsigned __int64 ret = 0;
+    for (size32_t i = 0; i < tableSize; i++)
+        if (table[i])
+            ret++;
+    return ret;
+}
+
+extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+
+    IHash *hash  = hashInfo.queryHash();
+    ICompare *compare  = hashInfo.queryCompare();
+    unsigned rowidx = hash->hash(source) % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (compare->docompare(source, entry)==0)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source)
+{
+    if (!tableSize)
+        return false;
+
+    IHash *hash  = hashInfo.queryHash();
+    ICompare *compare  = hashInfo.queryCompare();
+    unsigned rowidx = hash->hash(source) % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (compare->docompare(source, entry)==0)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
 }
 
 //---------------------------------------------------------------------------

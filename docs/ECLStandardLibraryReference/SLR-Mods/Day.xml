@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Day">
-  <title><emphasis role="bold">Day</emphasis></title>
+  <title>Day</title>
 
   <para><emphasis role="bold">STD.Date.Day<indexterm>
       <primary>STD.Date.Day</primary>

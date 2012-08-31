@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "hql.hpp"
 #include "hqlatoms.hpp"
@@ -40,6 +39,7 @@ _ATOM assertConstAtom;
 _ATOM atAtom;
 _ATOM atmostAtom;
 _ATOM _attrAligned_Atom;
+_ATOM _attrLocationIndependent_Atom;
 _ATOM _attrRecordCount_Atom;
 _ATOM _attrSerializedForm_Atom;
 _ATOM _attrSize_Atom;
@@ -253,7 +253,6 @@ _ATOM _parameterScopeType_Atom;
 _ATOM partitionAtom;
 _ATOM partitionLeftAtom;
 _ATOM partitionRightAtom;
-_ATOM payloadAtom;
 _ATOM _payload_Atom;
 _ATOM persistAtom;
 _ATOM physicalFilenameAtom;
@@ -275,7 +274,6 @@ _ATOM recordAtom;
 _ATOM recursiveAtom;
 _ATOM referenceAtom;
 _ATOM refreshAtom;
-_ATOM relatedTableAtom;
 _ATOM _remote_Atom;
 _ATOM renameAtom;
 _ATOM repeatAtom;
@@ -289,6 +287,7 @@ _ATOM rightAtom;
 _ATOM rightonlyAtom;
 _ATOM rightouterAtom;
 _ATOM rollbackAtom;
+_ATOM _root_Atom;
 _ATOM rowAtom;
 _ATOM _rowsid_Atom;
 _ATOM rowLimitAtom;
@@ -419,6 +418,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(at);
     MAKEATOM(atmost);
     MAKESYSATOM(attrAligned)->setAttrId(EAaligned);
+    MAKESYSATOM(attrLocationIndependent)->setAttrId(EAlocationIndependent);
     MAKESYSATOM(attrRecordCount)->setAttrId(EArecordCount);
     MAKESYSATOM(attrSerializedForm)->setAttrId(EAserializedForm);
     MAKESYSATOM(attrSize)->setAttrId(EAsize);
@@ -633,7 +633,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(partition);
     partitionLeftAtom = createLowerCaseAtom("partition left");
     partitionRightAtom = createLowerCaseAtom("partition right");
-    MAKEATOM(payload);
     MAKESYSATOM(payload);
     MAKEATOM(persist);
     MAKEATOM(physicalFilename);
@@ -656,7 +655,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(recursive);
     MAKEATOM(reference);
     MAKEATOM(refresh);
-    MAKEATOM(relatedTable);
     MAKESYSATOM(remote);
     MAKEATOM(rename);
     MAKEATOM(repeat);
@@ -670,6 +668,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     rightonlyAtom = createLowerCaseAtom("right only");
     rightouterAtom = createLowerCaseAtom("right outer");
     MAKEATOM(rollback);
+    MAKESYSATOM(root);
     MAKEATOM(row);
     MAKESYSATOM(rowsid);
     MAKEATOM(rowLimit);

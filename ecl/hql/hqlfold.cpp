@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include "jlib.hpp"
@@ -2996,6 +2995,19 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 return createConstant(value->castTo(expr->queryType()));
         }
         break;
+    case no_countdict:
+        {
+            IHqlExpression * child = expr->queryChild(0);
+            node_operator childOp = child->getOperator();
+            switch (childOp)
+            {
+            case no_inlinedictionary:
+                if (isPureInlineDataset(child))
+                    return createConstant(expr->queryType()->castFrom(false, (__int64)child->queryChild(0)->numChildren()));
+                break;
+            }
+            break;
+        }
     case no_countlist:
         {
             IHqlExpression * child = expr->queryChild(0);
@@ -3827,28 +3839,29 @@ IHqlExpression * getLowerCaseConstant(IHqlExpression * expr)
     }
 
     IValue * value = expr->queryValue();
+    assertex(value);
     const void * data = value->queryValue();
     unsigned size = type->getSize();
     unsigned stringLen = type->getStringLen();
-    void * lower = malloc(size);
-    memcpy(lower, data, size);
+
+    MemoryAttr lower(size);
+    memcpy(lower.bufferBase(), data, size);
     if (type->getTypeCode() == type_utf8)
-        rtlUtf8ToLower(stringLen, (char *)lower, type->queryLocale()->str());
+        rtlUtf8ToLower(stringLen, (char *)lower.get(), type->queryLocale()->str());
     else if (isUnicodeType(type))
-        rtlUnicodeToLower(stringLen, (UChar *)lower, type->queryLocale()->str());
+        rtlUnicodeToLower(stringLen, (UChar *)lower.get(), type->queryLocale()->str());
     else
     {
-        assert(type->queryCharset()->queryName() != ebcdicAtom);
-        rtlStringToLower(stringLen, (char *)lower);
+        if (type->queryCharset()->queryName() == ebcdicAtom)
+            rtlEStrToStr(stringLen, (char*)lower.get(), stringLen, (char*)lower.get()); // Yes it does work in place.
+        rtlStringToLower(stringLen, (char *)lower.get());
+        if (type->queryCharset()->queryName() == ebcdicAtom)
+            rtlStrToEStr(stringLen, (char*)lower.get(), stringLen, (char*)lower.get()); // Yes it does work in place.
     }
-    if (memcmp(lower, data, size) == 0)
-    {
-        free(lower);
+    if (memcmp(lower.get(), data, size) == 0)
         return LINK(expr);
-    }
-    IHqlExpression * ret = createConstant(createValueFromMem(LINK(type), lower));
-    free(lower);
-    return ret;
+
+    return createConstant(createValueFromMem(LINK(type), lower.get()));
 }
 
 //---------------------------------------------------------------------------
@@ -3897,9 +3910,18 @@ public:
         if (numNonHidden == 0)
             return NewHqlTransformer::createTransformed(expr);
 
+        bool same = true;
         HqlExprArray children;
         for (unsigned i=0; i < numNonHidden; i++)
-            children.append(*transform(expr->queryChild(i)));
+        {
+            IHqlExpression * cur = expr->queryChild(i);
+            IHqlExpression * mapped = transform(cur);
+            children.append(*mapped);
+            if (cur != mapped)
+                same = false;
+        }
+        if (same)
+            return LINK(expr);
 
         unwindChildren(children, expr, numNonHidden);
         return expr->clone(children);
@@ -3956,6 +3978,16 @@ bool expressionsEquivalent(IHqlExpression * left, IHqlExpression * right)
     return false;
 }
 
+bool exprsReferencesDataset(const HqlExprArray & source, IHqlExpression * exprSelector)
+{
+    ForEachItemIn(i, source)
+    {
+        if (exprReferencesDataset(&source.item(i), exprSelector))
+            return true;
+    }
+    return false;
+}
+
 class HqlConstantPercolator : public CInterface
 {
 public:
@@ -3976,6 +4008,8 @@ public:
     {
         if (!isWorthPercolating(expr))
             return LINK(expr);
+        if (!exprReferencesDataset(expr, exprSelector))
+            return LINK(expr);
         ConstantReplacingTransformer transformer(exprSelector);
         initTransformer(exprSelector, transformer);
         return transformer.transformRoot(expr);
@@ -3993,9 +4027,18 @@ public:
     {
         if (!isWorthPercolating(source))
             return false;
+        if (!exprsReferencesDataset(source, exprSelector))
+            return false;
         ConstantReplacingTransformer transformer(exprSelector);
         initTransformer(exprSelector, transformer);
-        transformer.transformRoot(source, target);
+        ForEachItemIn(i, source)
+        {
+            IHqlExpression & cur = source.item(i);
+            if (exprReferencesDataset(&cur, exprSelector))
+                target.append(*transformer.transformRoot(&cur));
+            else
+                target.append(*LINK(&cur));
+        }
         return true;
     }
     void inheritMapping(const HqlConstantPercolator * other)
@@ -4214,6 +4257,52 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
     case no_and:
         return foldAndExpr(expr, (foldOptions & HFOx_op_not_x) != 0);
     //Operations that involve constant folding on datasets.
+    case no_normalize:
+        {
+            // Identify expressions
+            IHqlExpression * ds = expr->queryChild(0);
+            IHqlExpression * count = expr->queryChild(1);
+            IHqlExpression * transform = expr->queryChild(2);
+            OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
+            if (!hasSingleRow(ds) || exprReferencesDataset(count, left)) // Complicate things more
+                break;
+
+            // Replace LEFT from normalize transform (if used) by ROW's contents
+            OwnedHqlExpr newTransform;
+            if (exprReferencesDataset(transform, left)) {
+                OwnedHqlExpr newRow;
+                // Make sure it's one of the recognised formats
+                switch (ds->getOperator())
+                {
+                case no_datasetfromrow: // DATASET(ROW(transform))
+                    {
+                        IHqlExpression * row = ds->queryChild(0);
+                        if (row->getOperator() == no_createrow)
+                            newRow.set(row);
+                        break;
+                    }
+                case no_inlinetable:    // DATASET([transform()]) or DATASET([value],{ myfield })
+                    {
+                        IHqlExpression * transformList = ds->queryChild(0);
+                        assertex(transformList->getOperator() == no_transformlist);
+                        newRow.setown(createRow(no_createrow, LINK(transformList->queryChild(0))));
+                        break;
+                    }
+                }
+                if (!newRow || !newRow->isPure())
+                    break;
+
+                OwnedHqlExpr replacementRow = createRow(no_newrow, LINK(newRow));
+                newTransform.setown(replaceSelector(transform, left, replacementRow));
+            }
+            HqlExprArray args;
+            unwindChildren(args, expr, 1); // (count, trans)
+            if (newTransform)
+                args.replace(*newTransform.getClear(), 1);
+            removeProperty(args, _selectorSequence_Atom);
+
+            return createDataset(no_dataset_from_transform, args);
+        }
     case no_filter:
         {
             IHqlExpression * child = expr->queryChild(0);
@@ -4462,7 +4551,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                         ForEachChild(i, transforms)
                         {
                             IHqlExpression * cur = transforms->queryChild(i);
-                            if (!cur->isPure())
+                            if (!cur->isPure() || containsSkip(cur))
                             {
                                 ok = false;
                                 break;
@@ -5492,6 +5581,13 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_catchds:
     case no_catch:
         //all bets are off.
+        break;
+
+    case no_newuserdictionary:
+    case no_userdictionary:
+    case no_inlinedictionary:
+    case no_selectmap:
+        // MORE - maybe should be something here?
         break;
 
     case no_selectnth:

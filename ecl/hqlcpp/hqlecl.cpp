@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "build-config.h"
@@ -75,7 +74,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void addLibrary(const char * name);
-    virtual bool processQuery(IHqlExpression * expr, EclGenerateTarget _generateTarget);
+    virtual bool processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget);
     virtual bool generateDll(ICppCompiler * compiler);
     virtual bool generateExe(ICppCompiler * compiler);
     virtual bool generatePackage(const char * packageName);
@@ -96,7 +95,7 @@ protected:
     void doExpand(HqlCppTranslator & translator);
     void expandCode(const char * templateName, const char * ext, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler);
     void flushResources();
-    bool generateCode(IHqlExpression * exprs);
+    bool generateCode(HqlQueryContext & query);
     void insertStandAloneCode();
     void setWuState(bool ok);
     inline bool abortRequested();
@@ -122,7 +121,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-static IHqlExpression * processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, IHqlExpression * expr, ICodegenContextCallback *ctxCallback);
+static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, HqlQueryContext & query, ICodegenContextCallback *ctxCallback);
 
 void HqlDllGenerator::addCppName(const char * filename)
 {
@@ -187,12 +186,15 @@ void HqlDllGenerator::expandCode(const char * templateName, const char * ext, IH
 
 //---------------------------------------------------------------------------
 
-bool HqlDllGenerator::processQuery(IHqlExpression * expr, EclGenerateTarget _generateTarget)
+bool HqlDllGenerator::processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget _generateTarget)
 {
     generateTarget = _generateTarget;
     assertex(wu->getHash());
     unsigned prevCount = errs->errCount();
-    bool ok = generateCode(expr);
+
+    HqlQueryContext query;
+    query.expr.setown(parsedQuery.getClear());
+    bool ok = generateCode(query);
     code->flushHints();
     wu->commit();
 
@@ -244,7 +246,7 @@ bool HqlDllGenerator::generatePackage(const char * packageName)
     return false;
 }
 
-bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
+bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 {
     wu->resetBeforeGeneration();
 
@@ -256,7 +258,7 @@ bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
         MTIME_SECTION (timer, "Generate_code");
         unsigned time = msTick();
         HqlCppTranslator translator(errs, wuname, code, targetClusterType, ctxCallback);
-        OwnedHqlExpr query = processMetaCommands(translator, wu, exprs, ctxCallback);
+        processMetaCommands(translator, wu, query, ctxCallback);
 
         bool ok = false;
         try
@@ -266,6 +268,7 @@ bool HqlDllGenerator::generateCode(IHqlExpression * exprs)
                 wu->setState(WUStateCompleted);
                 return true;
             }
+            translator.generateStatistics(targetDir);
             translator.finalizeResources();
             translator.expandFunctions(true);
         }
@@ -461,9 +464,12 @@ double HqlDllGenerator::getECLcomplexity(IHqlExpression * exprs)
     Owned<IHqlCppInstance> code = createCppInstance(wu, NULL);
 
     HqlCppTranslator translator(errs, "temp", code, targetClusterType, NULL);
-    OwnedHqlExpr query = processMetaCommands(translator, wu, exprs, ctxCallback);
 
-    return translator.getComplexity(*code, query);
+    HqlQueryContext query;
+    query.expr.set(exprs);
+    processMetaCommands(translator, wu, query, ctxCallback);
+
+    return translator.getComplexity(*code, query.expr);
 }
 
 
@@ -511,16 +517,15 @@ extern HQLCPP_API ClusterType queryClusterType(IConstWorkUnit * wu, ClusterType 
     return targetClusterType;
 }
 
-static IHqlExpression * processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, IHqlExpression * expr, ICodegenContextCallback *ctxCallback)
+static void processMetaCommands(HqlCppTranslator & translator, IWorkUnit * wu, HqlQueryContext & query, ICodegenContextCallback *ctxCallback)
 {
     NewThorStoredReplacer transformer(translator, wu, ctxCallback);
 
-    translator.traceExpression("before process meta commands", expr);
+    translator.traceExpression("before process meta commands", query.expr);
 
-    transformer.analyse(expr);
-    if (!transformer.needToTransform())
-        return LINK(expr);
-    return transformer.transform(expr);
+    transformer.analyse(query.expr);
+    if (transformer.needToTransform())
+        query.expr.setown(transformer.transform(query.expr));
 }
 
 

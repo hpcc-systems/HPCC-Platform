@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 
@@ -1225,7 +1224,7 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
     unsigned char c = (unsigned char) *src;
     if (c == ' ')
       dest->append('+');
-    else if (c & 0x80 || !isalnum(*src))
+    else if ((c & 0x80) || !isalnum(*src))
     {
       dest->append('%');
       dest->appendhex(c, lower);
@@ -1791,6 +1790,73 @@ const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char
         throw;
     }
     return x;
+}
+
+StringBuffer & appendXMLOpenTag(StringBuffer &xml, const char *tag, const char *prefix, bool complete, bool close, const char *uri)
+{
+    if (!tag || !*tag)
+        return xml;
+
+    xml.append('<');
+    appendXMLTagName(xml, tag, prefix);
+
+    if (uri && *uri)
+    {
+        xml.append(" xmlns");
+        if (prefix && *prefix)
+            xml.append(':').append(prefix);
+        xml.append("=\"").append(uri).append('\"');
+    }
+
+    if (complete)
+    {
+        if (close)
+            xml.append('/');
+        xml.append('>');
+    }
+    return xml;
+}
+
+jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name)
+{
+    if (!name || !*name)
+        return s;
+    delimitJSON(s);
+    return encodeJSON(s.append('"'), name).append("\": ");
+}
+
+StringBuffer &encodeJSON(StringBuffer &s, const char *value)
+{
+    if (!value)
+        return s;
+    for (; *value; value++)
+    {
+        switch (*value)
+        {
+            case '\b':
+                s.append("\\b");
+                break;
+            case '\f':
+                s.append("\\f");
+                break;
+            case '\n':
+                s.append("\\n");
+                break;
+            case '\r':
+                s.append("\\r");
+                break;
+            case '\t':
+                s.append("\\t");
+                break;
+            case '\"':
+            case '\\':
+            case '/':
+                s.append('\\'); //fall through
+            default:
+                s.append(*value);
+        }
+    }
+    return s;
 }
 
 void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid)

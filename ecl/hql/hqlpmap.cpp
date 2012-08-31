@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include "jmisc.hpp"
@@ -115,6 +114,8 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
 }
 
 
+//oldDataset is either an active selector (e.g., no_left) or a dataset.
+//newDataset is either an active selector (e.g., no_left) or a dataset (implying activerow(dataset) or newrow(dataset).
 IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset)
 {
     if (!expr) return NULL;
@@ -125,12 +126,9 @@ IHqlExpression * replaceSelector(IHqlExpression * expr, IHqlExpression * oldData
     if (ret)
         return ret;
 
-
-#ifndef ENSURE_SELSEQ_UID
     node_operator op = oldDataset->getOperator();
     if (op == no_left || op == no_right)
         return newReplaceSelector(expr, oldDataset, newDataset);
-#endif
 
     HqlMapSelectorTransformer transformer(oldDataset, newDataset);
     return transformer.transformRoot(expr);
@@ -152,12 +150,57 @@ void replaceSelectors(HqlExprArray & out, IHqlExpression * expr, unsigned first,
     if (iChild == max)
         return;
 
-    HqlMapSelectorTransformer transformer(oldDataset, newDataset);
-    for (; iChild < max; iChild++)
-        out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            out.append(*transformer.transformRoot(expr->queryChild(iChild)));
+    }
 }
 
 //---------------------------------------------------------------------------------------------------------------------
+
+void replaceSelectors(HqlExprArray & exprs, unsigned first, IHqlExpression * oldDataset, IHqlExpression * newDataset)
+{
+    unsigned max = exprs.ordinality();
+    unsigned iChild;
+    for (iChild = first; iChild < max; iChild++)
+    {
+        IHqlExpression *ret = optimizedReplaceSelector(&exprs.item(iChild), oldDataset->queryNormalizedSelector(), newDataset);
+        if (!ret)
+            break;
+        exprs.replace(*ret, iChild);
+    }
+
+    if (iChild == max)
+        return;
+
+    node_operator op = oldDataset->getOperator();
+    if (op == no_left || op == no_right)
+    {
+        NewSelectorReplacingTransformer transformer;
+        transformer.initSelectorMapping(oldDataset, newDataset);
+
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
+    else
+    {
+        HqlMapSelectorTransformer transformer(oldDataset, newDataset);
+        for (; iChild < max; iChild++)
+            exprs.replace(*transformer.transformRoot(&exprs.item(iChild)), iChild);
+    }
+}
+
 
 //NB: This can not be derived from NewHqlTransformer since it is called before the tree is normalised, and it creates
 //inconsistent expression trees.
@@ -929,11 +972,10 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector)
     return true;
 }
 
-
 bool isNullProject(IHqlExpression * expr, bool canLoseFieldsFromEnd)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    if (!recordTypesMatch(expr, ds))
+    if (!recordTypesMatchIgnorePayload(expr, ds))
     {
         if (canLoseFieldsFromEnd)
         {
@@ -957,6 +999,7 @@ bool isSimpleProject(IHqlExpression * expr)
     case no_projectrow:
         selector.setown(createSelector(no_left, ds, querySelSeq(expr)));
         break;
+    case no_newuserdictionary:
     case no_newusertable:
          if (isAggregateDataset(expr))
              return false;
@@ -980,7 +1023,7 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
 
 IHqlExpression * getExtractSelect(IHqlExpression * expr, IHqlExpression * field)
 {
-    if (expr->getInfoFlags() & (HEFcontainsSkip|HEFtransformSkips))
+    if (expr->getInfoFlags() & (HEFcontainsSkip))
         return NULL;
 
     ForEachChild(i, expr)
@@ -1043,7 +1086,7 @@ IHqlExpression * transformTrivialSelectProject(IHqlExpression * select)
 
     IHqlExpression * expr = row->queryChild(0);
     IHqlExpression * transform = queryNewColumnProvider(expr);
-    if (!transform) // || !transform->isPure())
+    if (!transform)
         return NULL;
     if (!transform->isPure() && transformHasSkipAttr(transform))
         return NULL;

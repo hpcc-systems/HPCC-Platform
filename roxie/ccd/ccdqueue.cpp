@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include <platform.h>
@@ -596,6 +595,7 @@ void decIbytiDelay(unsigned channel, unsigned factor = 2)
 
 static SpinLock onDemandQueriesCrit;
 static MapXToMyClass<hash64_t, hash64_t, IQueryFactory> onDemandQueryCache;
+static MapXToMyClass<hash64_t, hash64_t, IRoxieLibraryLookupContext> onDemandLibraryLookupCache;
 
 void sendUnloadMessage(hash64_t hash, const char *id, const IRoxieContextLogger &logctx)
 {
@@ -623,12 +623,14 @@ void doUnload(IRoxieQueryPacket *packet, const IRoxieContextLogger &logctx)
     hash64_t hashValue = header.queryHash;
     SpinBlock b(onDemandQueriesCrit);
     onDemandQueryCache.remove(hashValue+channelNo);
+    onDemandLibraryLookupCache.remove(hashValue+channelNo);
 }
 
-void cacheOnDemandQuery(hash64_t hashValue, unsigned channelNo, IQueryFactory *query)
+void cacheOnDemandQuery(hash64_t hashValue, unsigned channelNo, IQueryFactory *query, IRoxieLibraryLookupContext *libraryContext)
 {
     SpinBlock b(onDemandQueriesCrit);
     onDemandQueryCache.setValue(hashValue+channelNo, query);
+    onDemandLibraryLookupCache.setValue(hashValue+channelNo, libraryContext);
 }
 
 //=================================================================================
@@ -995,11 +997,18 @@ public:
         hash64_t queryHash = packet->queryHeader().queryHash;
         unsigned activityId = packet->queryHeader().activityId & ~ROXIE_PRIORITY_MASK;
         Owned<IQueryFactory> queryFactory = getQueryFactory(queryHash, channel);
+        Owned<IRoxieLibraryLookupContext> libraryContext;
         if (!queryFactory && logctx.queryWuid())
         {
-            queryFactory.setown(createSlaveQueryFactoryFromWu(logctx.queryWuid(), channel));
+            // Ensure that any library lookup is done in the correct QuerySet...
+            Owned <IRoxieDaliHelper> daliHelper = connectToDali();
+            Owned<IConstWorkUnit> wu = daliHelper->attachWorkunit(logctx.queryWuid(), NULL);
+            SCMStringBuffer target;
+            wu->getClusterName(target);
+            libraryContext.setown(globalPackageSetManager->getLibraryLookupContext(target.str()));
+            queryFactory.setown(createSlaveQueryFactoryFromWu(wu, channel, libraryContext));
             if (queryFactory)
-                cacheOnDemandQuery(queryHash, channel, queryFactory);
+                cacheOnDemandQuery(queryHash, channel, queryFactory, libraryContext);
         }
         if (!queryFactory)
         {

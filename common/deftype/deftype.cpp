@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include "platform.h"
@@ -1332,6 +1331,37 @@ bool CRowTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //===========================================================================
 
+bool CDictionaryTypeInfo::assignableFrom(ITypeInfo *t2)
+{
+    if (getTypeCode()==t2->getTypeCode())
+    {
+        ITypeInfo *c1 = queryChildType();
+        ITypeInfo *c2 = t2->queryChildType();
+        if (c1==NULL || c2==NULL || c1->assignableFrom(c2))
+            return true;
+    }
+    return false;
+}
+
+StringBuffer & CDictionaryTypeInfo::getECLType(StringBuffer & out)
+{
+    ITypeInfo * recordType = ::queryRecordType(this);
+    out.append(queryTypeName());
+    if (recordType)
+    {
+        out.append(" of ");
+        recordType->getECLType(out);
+    }
+    return out;
+}
+
+void CDictionaryTypeInfo::serialize(MemoryBuffer &tgt)
+{
+    CBasedTypeInfo::serializeSkipChild(tgt);
+}
+
+//===========================================================================
+
 bool CTableTypeInfo::assignableFrom(ITypeInfo *t2)
 {
     if (getTypeCode()==t2->getTypeCode())
@@ -1983,6 +2013,12 @@ extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * di
 {
     assertex(!basetype || basetype->getTypeCode() == type_row);
     return commonUpType(new CTableTypeInfo(basetype, distributeinfo, globalsortinfo, localsortinfo));
+}
+
+extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
+{
+    assertex(!basetype || basetype->getTypeCode() == type_row);
+    return commonUpType(new CDictionaryTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo)
@@ -3213,6 +3249,7 @@ inline ITypeInfo * queryChildType(ITypeInfo * t, type_t search)
         switch (code)
         {
         case type_set:
+        case type_dictionary:
         case type_groupedtable:
         case type_row:
         case type_table:
@@ -3341,6 +3378,9 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
     OwnedITypeInfo newType;
     switch (type->getTypeCode())
     {
+    case type_dictionary:
+        newType.setown(makeDictionaryType(LINK(newChild)));
+        break;
     case type_table:
         newType.setown(makeTableType(LINK(newChild), LINK(type->queryDistributeInfo()), LINK(type->queryGlobalSortInfo()), LINK(type->queryLocalUngroupedSortInfo())));
         break;

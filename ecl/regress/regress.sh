@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 ###############################################################################
-#  Copyright (C) 2011 HPCC Systems.
+#  HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#  All rights reserved. This program is free software: you can redistribute it and/or modify
-#  it under the terms of the GNU Affero General Public License as
-#  published by the Free Software Foundation, either version 3 of the
-#  License, or (at your option) any later version.
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
 #
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU Affero General Public License for more details.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-#  You should have received a copy of the GNU Affero General Public License
-#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 ##############################################################################
 # Instructions:
 #
@@ -27,32 +26,37 @@
 # in your build directory. (option: -e $BUILDDIR/Debug/bin/eclcc)
 ##############################################################################
 
-syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-i include_dir] [-e eclcc binary] -n [parallel processes] [-r (no run, just compare)]"
-
-## Create Makefile (git doesn't like tabs)
-echo "FILES=\$(shell echo *.ecl*)" > Makefile
-echo "LOGS_=\$(FILES:%.ecl=\$(target_dir)/%.log)" >> Makefile
-echo "LOGS=\$(LOGS_:%.eclxml=\$(target_dir)/%.log)" >> Makefile
-echo >> Makefile
-echo "all: \$(LOGS)" >> Makefile
-echo >> Makefile
-echo "\$(target_dir)/%.log: %.ecl" >> Makefile
-echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
-echo >> Makefile
-echo "\$(target_dir)/%.log: %.eclxml" >> Makefile
-echo -e "\t\$(eclcc) \$(flags) $^" >> Makefile
+syntax="syntax: $0 [-t target_dir] [-c compare_dir] [-I include_dir ...] [-e eclcc] [-d diff_program] [-q query.ecl] [-l log_file] "
 
 ## Default arguments
 target_dir=run_$$
 compare_dir=
 include_dir=
 compare_only=0
-eclcc=`which eclcc`
+userflags=
+eclcc=
+diff=
+query=
 np=`grep -c processor /proc/cpuinfo`
+export ECLCC_ECLINCLUDE_PATH=
 
 ## Get cmd line options (overrite default args)
+if [[ $1 = '' ]]; then
+    echo
+    echo $syntax
+    echo " * target_dir automatically created with run_pid"
+    echo " * compare_dir necessary for comparisons"
+    echo " * include dir for special ECL headers (allows multiple paths)"
+    echo " * eclcc necessary for compilation, otherwise, only comparison will be made"
+    echo " * diff_program must be able to handle directories"
+    echo
+    echo " * -q can be used to run/rerun a single query"
+    echo " * -l is used to generate a detailed log for debugging"
+    echo
+    exit -1
+fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:i:e:n:r" opt; do
+    while getopts "t:c:I:e:d:f:q:l:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -60,39 +64,74 @@ if [[ $* != '' ]]; then
             c)
                 compare_dir=$OPTARG
                 ;;
-            i)
-                include_dir=$OPTARG
+            I)
+                include_dir="$include_dir -I$OPTARG"
                 ;;
             e)
                 eclcc=$OPTARG
                 ;;
-            n)
-                np=$OPTARG
+            d)
+                diff=$OPTARG
                 ;;
-            r)
-                compare_only=1
+            f)
+                userflags="$userflags -f$OPTARG"
+                ;;
+            q)
+                query="$OPTARG"
+                ;;
+            l)
+                userflags="$userflags --logdetail 999 --logfile $OPTARG"
                 ;;
             :)
-                die $syntax
+                echo $syntax
+                exit -1
                 ;;
         esac
     done
 fi
 
-if [[ $compare_only = 0 ]]; then
+if [[ $eclcc != '' ]]; then
     ## Set flags
-    default_flags="-P$target_dir -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph"
-    flags="$default_flags $include_dir -fshowMetaInGraph"
+    default_flags="-P$target_dir -legacy -platform=thorlcr -fforceGenerate -fregressionTest -faddTimingToWorkunit=0 -b -S -shared"
+    flags="$default_flags $include_dir -fshowMetaInGraph $userflags"
 
     ## Prepare target directory
-    rm -rf $target_dir
+    if [[ $query == '' ]]; then
+        rm -rf $target_dir
+    fi
     mkdir -p $target_dir
 
-    ## Compile all regressions
-    echo "* Compiling all regression tests"
-    echo
-    export eclcc flags include_dir target_dir
-    time make -j $np > /dev/null
+    ## Create Makefile (git doesn't like tabs)
+    echo "#Auto generated make file" > Makefile
+    echo "FLAGS=$flags" >> Makefile
+    echo "ECLCC=$eclcc" >> Makefile
+    echo "TARGET=$target_dir" >> Makefile
+    echo "FILES=\$(shell echo *.ecl*)" >> Makefile
+    echo "LOGS_=\$(FILES:%.ecl=\$(TARGET)/%.ecl.log)" >> Makefile
+    echo "LOGS=\$(LOGS_:%.eclxml=\$(TARGET)/%.eclxml.log)" >> Makefile
+    echo >> Makefile
+    echo "all: \$(LOGS)" >> Makefile
+    echo >> Makefile
+    echo "%.run: \$(TARGET)/%.log" >> Makefile
+    echo -e "\t#do nothing" >> Makefile
+    echo >> Makefile
+    echo "\$(TARGET)/%.ecl.log: %.ecl" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+    echo >> Makefile
+    echo "\$(TARGET)/%.eclxml.log: %.eclxml" >> Makefile
+    echo -e "\t\$(ECLCC) \$(FLAGS) $^" >> Makefile
+
+    if [[ $query != '' ]]; then
+        ## Compile all regressions
+        echo "Compiling $query regression test"
+        echo
+        time make $query.run -B > /dev/null
+    else
+        ## Compile all regressions
+        echo "* Compiling all regression tests"
+        echo
+        time make -j $np > /dev/null
+    fi
 fi
 
 ## Compare to golden standard (ignore obvious differences)
@@ -103,16 +142,16 @@ if [[ $compare_dir ]]; then
     fi
     echo "* Comparing to $compare_dir"
     echo
-    if [[ $compare_only = 0 ]]; then
-        quick=-q
+    if [[ $diff != '' ]]; then
+        $diff $compare_dir $target_dir 2> /dev/null
+    else
+        diff -I $compare_dir -I $target_dir \
+             -I '\d* ms' \
+             -I 'at \/.*\(\d*\)$' \
+             -I '\d*s total time' \
+             -I 'hash=\"[0-9a-f]*' \
+             -q $compare_dir $target_dir
     fi
-    diff -I $compare_dir \
-         -I $target_dir \
-         -I '\d* ms' \
-         -I 'at \/.*\(\d*\)$' \
-         -I '\d*s total time' \
-         -I 'hash=\"[0-9a-f]*"' \
-         $quick $compare_dir $target_dir
 fi
 
 # Confirmation

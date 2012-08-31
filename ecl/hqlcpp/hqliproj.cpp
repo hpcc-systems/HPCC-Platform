@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include "jlib.hpp"
@@ -935,7 +934,7 @@ static int compareHqlExprPtr(IInterface * * left, IInterface * * right)
 
 //------------------------------------------------------------------------
 
-ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : MergingTransformInfo(_original), kind(_kind)
+ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : NewTransformInfo(_original), kind(_kind)
 {
     visited = false;
     gatheredSelectsUsed = false;
@@ -1050,6 +1049,8 @@ IHqlExpression * ComplexImplicitProjectInfo::createOutputProject(IHqlExpression 
     IHqlExpression * transform = createMappingTransform(self, left);
     if (ds->isDataset())
         return createDataset(no_hqlproject, LINK(ds), createComma(transform, LINK(seq)));
+    else
+        assertex(!ds->isDictionary());
     return createRow(no_projectrow, LINK(ds), createComma(transform, LINK(seq)));
 }
 
@@ -1227,8 +1228,8 @@ void ComplexImplicitProjectInfo::setMatchingOutput(ComplexImplicitProjectInfo * 
 //-----------------------------------------------------------------------------------------------
 
 static HqlTransformerInfo implicitProjectTransformerInfo("ImplicitProjectTransformer");
-ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills) 
-: MergingHqlTransformer(implicitProjectTransformerInfo), translator(_translator)
+ImplicitProjectTransformer::ImplicitProjectTransformer(HqlCppTranslator & _translator, bool _optimizeSpills)
+: NewHqlTransformer(implicitProjectTransformerInfo), translator(_translator)
 {
     const HqlCppOptions & transOptions = translator.queryOptions();
     targetClusterType = translator.getTargetClusterType();
@@ -1596,7 +1597,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
             break;
         case FixedInputActivity:
-            assertex(child && (child->isDataset() || child->isDatarow()));
+            assertex(child && (child->isDataset() || child->isDatarow() || child->isDictionary()));
             setOriginal(complexExtra->leftFieldsRequired, child);
             if (getNumChildTables(expr) >= 2)
                 setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
@@ -1620,7 +1621,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
     }
 
     IHqlExpression * record = expr->queryRecord();
-    if (record && !isPatternType(type) && !expr->isTransform())
+    if (record && !isPatternType(type) && !expr->isTransform() && !expr->isDictionary())
     {
         assertex(complexExtra);
         complexExtra->setOriginalRecord(queryBodyComplexExtra(record));
@@ -1970,7 +1971,13 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_projectrow:
         return CreateRecordActivity;
     case no_inlinetable:
+    case no_dataset_from_transform:
         return CreateRecordSourceActivity;
+    case no_inlinedictionary:
+        return NonActivity;
+    case no_indict:
+    case no_selectmap:
+        return FixedInputActivity;
     case no_extractresult:
     case no_apply:
         return SinkActivity;
@@ -2151,6 +2158,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case type_table:
     case type_groupedtable:
         break;
+    case type_dictionary:
     case type_transform:
         return NonActivity;
     default:
@@ -2238,7 +2246,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
     if (!extra->okToOptimize())
     {
-        if (expr->queryRecord())
+        if (expr->queryRecord() && !expr->isDictionary())
             extra->addAllOutputs();
     }
     else
@@ -2653,26 +2661,14 @@ void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression 
 
 void ImplicitProjectTransformer::getTransformedChildren(IHqlExpression * expr, HqlExprArray & children)
 {
-    switch (getChildDatasetType(expr))
-    {
-    case childdataset_dataset: 
-    case childdataset_datasetleft: 
-    case childdataset_top_left_right:
-        {
-            IHqlExpression * arg0 = expr->queryChild(0);
-            OwnedHqlExpr child = transform(arg0);
-            children.append(*LINK(child));
-            pushChildContext(arg0, child);
-            transformChildren(expr, children);
-            popChildContext();
-            break;
-        }
-    case childdataset_evaluate:
-        throwUnexpected();
-    default:
-        transformChildren(expr, children);
-        break;
-    }
+    transformChildren(expr, children);
+}
+
+IHqlExpression * ImplicitProjectTransformer::createParentTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = Parent::createTransformed(expr);
+    updateOrphanedSelectors(transformed, expr);
+    return transformed.getClear();
 }
 
 IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * expr)
@@ -2693,7 +2689,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     ImplicitProjectInfo * extra = queryBodyExtra(expr);
     ComplexImplicitProjectInfo * complexExtra = extra->queryComplexInfo();
     if (!complexExtra)
-        return Parent::createTransformed(expr);
+        return createParentTransformed(expr);
 
     OwnedHqlExpr transformed;
     switch (extra->activityKind())
@@ -2727,7 +2723,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 OwnedHqlExpr transformedDs = transform(ds);
                 assertex(recordTypesMatch(ds, transformedDs));
 #endif
-                transformed.setown(Parent::createTransformed(expr));
+                transformed.setown(createParentTransformed(expr));
                 //MORE: Need to replace left/right with their transformed varieties because the record may have changed format
                 transformed.setown(updateSelectors(transformed, expr));
             }
@@ -2772,7 +2768,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             }
             else
             {
-                transformed.setown(Parent::createTransformed(expr));
+                transformed.setown(createParentTransformed(expr));
                 //MORE: Need to replace left/right with their transformed varieties because the record may have changed format
                 transformed.setown(updateSelectors(transformed, expr));
             }
@@ -2780,28 +2776,42 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CreateRecordSourceActivity:
         {
-            assertex(expr->getOperator() == no_inlinetable);
+            assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_dataset_from_transform);
             //Always reduce things that create a new record so they only project the fields they need to
             if (complexExtra->outputChanged())
             {
-                IHqlExpression * transforms = expr->queryChild(0);
-                HqlExprArray newTransforms;
-                ForEachChild(i, transforms)
-                {
-                    IHqlExpression * transform = transforms->queryChild(i);
-                    newTransforms.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
-                }
-
                 HqlExprArray args;
-                args.append(*transforms->clone(newTransforms));
+                switch (expr->getOperator())
+                {
+                case no_inlinetable:
+                    {
+                        IHqlExpression * transforms = expr->queryChild(0);
+                        HqlExprArray newTransforms;
+                        ForEachChild(i, transforms)
+                        {
+                            IHqlExpression * transform = transforms->queryChild(i);
+                            newTransforms.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
+                        }
+                        args.append(*transforms->clone(newTransforms));
+                        break;
+                    }
+                case no_dataset_from_transform:
+                    {
+                        IHqlExpression * transform = expr->queryChild(1);
+                        args.append(*LINK(expr->queryChild(0)));
+                        args.append(*complexExtra->outputFields.createFilteredTransform(transform, NULL));
+                        break;
+                    }
+                }
                 args.append(*LINK(complexExtra->queryOutputRecord()));
                 unwindChildren(args, expr, 2);
                 transformed.setown(expr->clone(args));
+
                 logChange("Minimize", expr, complexExtra->outputFields);
             }
             else
             {
-                transformed.setown(Parent::createTransformed(expr));
+                transformed.setown(createParentTransformed(expr));
                 //MORE: Need to replace left/right with their transformed varieties because the record may have changed format
                 transformed.setown(updateSelectors(transformed, expr));
             }
@@ -2809,7 +2819,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CompoundActivity:
         {
-            transformed.setown(Parent::createTransformed(expr));
+            transformed.setown(createParentTransformed(expr));
             if (complexExtra->outputChanged())
             {
                 HqlExprArray args;
@@ -2821,7 +2831,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case CompoundableActivity:
         {
-            transformed.setown(Parent::createTransformed(expr));
+            transformed.setown(createParentTransformed(expr));
             //insert a project after the record.
             if (complexExtra->outputChanged())
             {
@@ -2833,7 +2843,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
         }
     case AnyTypeActivity:
         {
-            transformed.setown(Parent::createTransformed(expr));
+            transformed.setown(createParentTransformed(expr));
             //insert a project after the record.
             if (complexExtra->outputChanged())
             {
@@ -2850,7 +2860,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     case NonActivity:
     case ScalarSelectActivity:
     case SinkActivity:
-        transformed.setown(Parent::createTransformed(expr));
+        transformed.setown(createParentTransformed(expr));
         //can't change...
         break;
     case PassThroughActivity:
@@ -2873,11 +2883,11 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             logChange("Passthrough modified", expr, complexExtra->outputFields);
         }
         else
-            transformed.setown(Parent::createTransformed(expr));
+            transformed.setown(createParentTransformed(expr));
         break;
     case SimpleActivity:
         {
-            transformed.setown(Parent::createTransformed(expr));
+            transformed.setown(createParentTransformed(expr));
             IHqlExpression * onFail = transformed->queryProperty(onFailAtom);
             if (onFail)
             {
@@ -3152,11 +3162,11 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
         break;
     case childdataset_dataset:
         {
-            return updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+            return updateMappedFields(newExpr, oldDs->queryNormalizedSelector(), newDs->queryNormalizedSelector(), 1);
         }
     case childdataset_datasetleft:
         {
-            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryNormalizedSelector(), newDs->queryNormalizedSelector(), 1);
             IHqlExpression * selSeq = querySelSeq(newExpr);
             assertex(selSeq == querySelSeq(oldExpr));
             OwnedHqlExpr newLeft = createSelector(no_left, newDs, selSeq);
@@ -3176,7 +3186,7 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
     case childdataset_top_left_right:
     case childdataset_nway_left_right:
         {
-            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryRecord(), newDs->queryNormalizedSelector(), 1);
+            OwnedHqlExpr mapped = updateMappedFields(newExpr, oldDs->queryNormalizedSelector(), newDs->queryNormalizedSelector(), 1);
 
             IHqlExpression * selSeq = querySelSeq(newExpr);
             assertex(selSeq == querySelSeq(oldExpr));

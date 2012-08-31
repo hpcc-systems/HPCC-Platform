@@ -1,33 +1,30 @@
 ################################################################################
-#    Copyright (C) 2011 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#    This program is free software: you can redistribute it and/or All rights
-#    reserved. This program is NOT PRESENTLY free software: you can NOT
-#    redistribute
-#    it under the terms of the GNU Affero General Public License as
-#    published by the Free Software Foundation, either version 3 of the
-#    License, or (at your option) any later version.
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU Affero General Public License for more details.
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ################################################################################
 HPCC_ADD_SUBDIRECTORY (base)
-HPCC_ADD_SUBDIRECTORY (dafilesrv)
+HPCC_ADD_SUBDIRECTORY (dafilesrv  "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dalidiag "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dalistop "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (datest "PLATFORM")
 if (USE_CPPUNIT)
     HPCC_ADD_SUBDIRECTORY (daunittest "PLATFORM")
 endif()
-HPCC_ADD_SUBDIRECTORY (dfu)
+HPCC_ADD_SUBDIRECTORY (dfu "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (dfuplus "CLIENTTOOLS")
 HPCC_ADD_SUBDIRECTORY (dfuxref "PLATFORM")
-HPCC_ADD_SUBDIRECTORY (dfuXRefLib)
+HPCC_ADD_SUBDIRECTORY (dfuXRefLib "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (ft)
 HPCC_ADD_SUBDIRECTORY (regress "PLATFORM")
 HPCC_ADD_SUBDIRECTORY (daliadmin "PLATFORM")

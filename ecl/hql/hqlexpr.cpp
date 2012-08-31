@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include "build-config.h"
@@ -64,13 +63,15 @@
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
 
+// To debug a symbol in the C++ generated code, use SEARCH_NAME*
+// and set a breakpoint on debugMatchedName() below
 #ifdef _DEBUG
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSITENCY
 //#define PARANOID
 //#define SEARCH_NAME1   "vL6R"
 //#define SEARCH_NAME2   "v19"
-//#define SEARCH_IEXPR 0x03289048
+//#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
 #define VERIFY_EXPR_INTEGRITY
@@ -110,6 +111,7 @@ static CriticalSection * nullIntCS;
 static CriticalSection * unadornedCS;
 static CriticalSection * sourcePathCS;
 
+static ITypeInfo * nullType;
 static IValue * blank;
 static IHqlExpression * cachedActiveTableExpr;
 static IHqlExpression * cachedSelfExpr;
@@ -135,6 +137,8 @@ static KeptAtomTable * sourcePaths;
 #ifdef GATHER_COMMON_STATS
 static unsigned commonUpCount[no_last_pseudoop];
 static unsigned commonUpClash[no_last_pseudoop];
+static unsigned commonUpAnnCount[annotate_max];
+static unsigned commonUpAnnClash[annotate_max];
 #endif
 
 #ifdef GATHER_LINK_STATS
@@ -166,6 +170,7 @@ MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
     unadornedCS = new CriticalSection;
     sourcePathCS = new CriticalSection;
 
+    nullType = makeNullType();
     sourcePaths = new KeptAtomTable;
     blank = createStringValue("",(unsigned)0);
     cachedActiveTableExpr = createValue(no_activetable);
@@ -211,6 +216,7 @@ MODULE_EXIT()
     cachedSelfExpr->Release();
     cachedNullRowRecord->Release();
     cachedNullRecord->Release();
+    nullType->Release();
 
     ClearTypeCache();
 
@@ -240,6 +246,12 @@ MODULE_EXIT()
         if (commonUpCount[i])
             printf("%s,%d,%d\n", getOpString((node_operator)i), commonUpCount[i], commonUpClash[i]);
     }
+    for (unsigned j=0; j < annotate_max; j++)
+    {
+        if (commonUpAnnCount[j])
+            printf("%d,%d,%d\n", j, commonUpAnnCount[j], commonUpAnnClash[j]);
+    }
+    fflush(stdout);
 }
 #endif
 
@@ -267,6 +279,8 @@ extern HQL_API void clearCacheCounts()
 #ifdef GATHER_COMMON_STATS
     _clear(commonUpCount);
     _clear(commonUpClash);
+    _clear(commonUpAnnCount);
+    _clear(commonUpAnnClash);
 #endif
 }
 
@@ -958,11 +972,12 @@ const char *getOpString(node_operator op)
     case no_xor: return " XOR ";
     case no_notin: return " NOT IN ";
     case no_in: return " IN ";
+    case no_indict: return " IN ";
     case no_notbetween: return " NOT BETWEEN ";
     case no_between: return " BETWEEN ";
     case no_comma: return ",";
     case no_compound: return ",";
-    case no_count: case no_countlist: return "COUNT";
+    case no_count: case no_countlist: case no_countdict: return "COUNT";
     case no_counter: return "COUNTER";
     case no_countgroup: return "COUNT";
     case no_distribution: return "DISTRIBUTION";
@@ -989,6 +1004,7 @@ const char *getOpString(node_operator op)
     case no_mergedscope: return "<scope>";
     case no_privatescope: return "<private_scope>";
     case no_list: return "<list>";
+    case no_selectmap: return "SELECT_MAP";
     case no_selectnth: return "SELECT_NTH";
     case no_filter: return "FILTER";
     case no_param: return "<parameter>";
@@ -1429,13 +1445,18 @@ const char *getOpString(node_operator op)
     case no_assign_addfiles: return "+=";
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
+    case no_childquery: return "no_childquery";
+    case no_inlinedictionary: case no_userdictionary: case no_newuserdictionary: return "DICTIONARY";
 
-    case no_unused2: case no_unused3: case no_unused4: case no_unused5: case no_unused6:
+    case no_unused6:
     case no_unused13: case no_unused14: case no_unused15: case no_unused18: case no_unused19:
-    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused26: case no_unused27: case no_unused28: case no_unused29:
+    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
+    case no_unused80:
+    case no_unused81:
+    case no_unused83:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
     default: assertex(false); return "???";
@@ -1632,6 +1653,7 @@ int getPrecedence(node_operator op)
     case no_notbetween:
     case no_in:
     case no_notin:
+    case no_indict:
     case no_comma:
     case no_compound:
     case no_eq:
@@ -1793,6 +1815,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_transformascii:
     case no_selectfields:
     case no_newaggregate:
+    case no_userdictionary:
+    case no_newuserdictionary:
     case no_newusertable:
     case no_usertable:
     case no_alias_project:
@@ -1945,6 +1969,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_graphloop:
     case no_filtergroup:
     case no_normalizegroup:
+    case no_rollupgroup:
         return childdataset_left;
     case no_denormalize:
     case no_denormalizegroup:
@@ -1964,7 +1989,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
         return childdataset_same_left_right;
     case no_dedup:
     case no_rollup:
-    case no_rollupgroup:
         return childdataset_top_left_right;
     case no_iterate:
         return childdataset_same_left_right;
@@ -2079,6 +2103,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_compound_inline:
     case no_transformascii:
     case no_transformebcdic:
+    case no_newuserdictionary:
     case no_newusertable:
     case no_aggregate:
     case no_usertable:
@@ -2496,7 +2521,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_field:
         {
             type_t tc = dataset->queryType()->getTypeCode();
-            assertex(tc == type_table || tc == type_groupedtable);
+            assertex(tc == type_table || tc == type_groupedtable || tc == type_dictionary);
             return true;
         }
     case no_comma:
@@ -2583,6 +2608,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_createrow:
     case no_typetransfer:
         return expr->queryChild(0);
+    case no_userdictionary:
     case no_usertable:
     case no_selectfields:
     case no_transformebcdic:
@@ -2600,6 +2626,7 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_newkeyindex:
     case no_aggregate:
     case no_newaggregate:
+    case no_newuserdictionary:
     case no_newusertable:
     case no_normalize:
     case no_xmlparse:
@@ -2862,6 +2889,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
                 break;
             }
         }
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         if (recordTypesMatch(type, exprType))
@@ -2920,7 +2948,8 @@ extern HQL_API IHqlExpression * normalizeListCasts(IHqlExpression * expr)
     case no_cast:
     case no_implicitcast:
         {
-            OwnedHqlExpr normalized = normalizeListCasts(expr->queryChild(0));
+            IHqlExpression * arg = expr->queryChild(0);
+            OwnedHqlExpr normalized = normalizeListCasts(arg);
             OwnedHqlExpr ret = ensureExprType(normalized, expr->queryType());
             if (ret == expr->queryBody())
                 return LINK(expr);
@@ -2982,10 +3011,9 @@ extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr)
 //==============================================================================================================
 
 /* All parms: linked */
-CHqlExpression::CHqlExpression(node_operator _op, ITypeInfo *_type, ...)
+CHqlExpression::CHqlExpression(node_operator _op)
 {
     op = _op;
-    type = _type;
     for (unsigned i=0; i < NUM_PARALLEL_TRANSFORMS; i++)
     {
         transformExtra[i] = NULL;
@@ -2993,53 +3021,47 @@ CHqlExpression::CHqlExpression(node_operator _op, ITypeInfo *_type, ...)
     }
     hashcode = 0;
     cachedCRC = 0;
-    initFlagsBeforeOperands();
+    attributes = NULL;
 
-    unsigned numArgs = 0 ;
+    initFlagsBeforeOperands();
+}
+
+void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
+{
+    if (!arg0)
+        return;
+
+    unsigned numArgs = 1;
+    va_list argscount;
+    va_start(argscount, arg0);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
+        if (!parm)
+            break;
+        numArgs++;
+    }
+    va_end(argscount);
+
+    operands.ensure(numArgs);
+    doAppendOperand(*arg0);
     va_list args;
-    va_start(args, _type);
+    va_start(args, arg0);
     for (;;)
     {
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
         if (!parm)
             break;
-        numArgs++;
+#ifdef _DEBUG
+        assertex(QUERYINTERFACE(parm, IHqlExpression));
+#endif
+        doAppendOperand(*parm);
     }
     va_end(args);
-
-    if (numArgs)
-    {
-        operands.ensure(numArgs);
-        va_list args;
-        va_start(args, _type);
-        for (;;)
-        {
-            IHqlExpression *parm = va_arg(args, IHqlExpression *);
-            if (!parm)
-                break;
-    #ifdef _DEBUG
-            assertex(QUERYINTERFACE(parm, IHqlExpression));
-    #endif
-            doAppendOperand(*parm);
-        }
-        va_end(args);
-    }
 }
 
-/* _type: linked.  _operands: unlinked */
-CHqlExpression::CHqlExpression(node_operator _op, ITypeInfo *_type, HqlExprArray & _ownedOperands)
+void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
 {
-    op = _op;
-    type = _type;
-    for (unsigned i=0; i < NUM_PARALLEL_TRANSFORMS; i++)
-    {
-        transformExtra[i] = NULL;
-        transformDepth[i] = 0;
-    }
-    hashcode = 0;
-    cachedCRC = 0;
-
-    initFlagsBeforeOperands();
     unsigned max = _ownedOperands.ordinality();
     if (max)
     {
@@ -3053,11 +3075,12 @@ void CHqlExpression::initFlagsBeforeOperands()
 {
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("initFlags");
 #endif
 #endif
 
+    //NB: The following code is not allowed to access queryType()!
     infoFlags = 0;
     infoFlags2 = 0;
     if (::checkConstant(op))    infoFlags2 |= HEF2constant;
@@ -3094,16 +3117,6 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_assert:
     case no_assert_ds:
         infoFlags2 &= ~(HEF2constant);
-        switch (type->getTypeCode())
-        {
-        case type_table:
-        case type_groupedtable:
-            infoFlags |= HEFthrowds;
-            break;
-        default:
-            infoFlags |= HEFthrowscalar;
-        }
-        infoFlags |= HEFoldthrows;
         break;
     case no_purevirtual:
         infoFlags |= HEFcontextDependentException;
@@ -3135,11 +3148,6 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_top:
         infoFlags2 &= ~(HEF2constant);
         infoFlags |= HEFcontainsActiveDataset;
-        break;
-    case no_self:
-    case no_selfref:            // not sure about what flags
-        if (!type || !isPatternType(type))
-            infoFlags |= (HEFtransformDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);
         break;
     case no_nohoist:
         infoFlags |= HEFcontextDependent;
@@ -3179,6 +3187,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         infoFlags |= HEFonFailDependent;
         break;
     case no_variable:
+    case no_quoted:
         infoFlags2 &= ~(HEF2constant);
         break;
     case no_xmltext:
@@ -3221,7 +3230,7 @@ void CHqlExpression::updateFlagsAfterOperands()
     switch (op)
     {
     case no_pure:
-        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip|HEFtransformSkips);
+        infoFlags &= ~(HEFvolatile|HEFaction|HEFthrowds|HEFthrowscalar|HEFcontainsSkip);
         break;
     case no_record:
         {
@@ -3243,6 +3252,38 @@ void CHqlExpression::updateFlagsAfterOperands()
             }
             infoFlags &= ~(HEFcontextDependentException|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);
         }
+        break;
+    case no_self:
+        {
+            ITypeInfo * thisType = queryType();
+            if (!thisType || !isPatternType(thisType))
+            {
+                infoFlags |= (HEFtransformDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);
+                infoFlags2 |= HEF2containsSelf;
+            }
+            break;
+        }
+    case no_selfref:            // not sure about what flags
+        {
+            ITypeInfo * thisType = queryType();
+            if (!thisType || !isPatternType(thisType))
+                infoFlags |= (HEFtransformDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector);
+            break;
+        }
+    case no_fail:
+    case no_assert:
+    case no_assert_ds:
+        switch (queryType()->getTypeCode())
+        {
+        case type_dictionary:
+        case type_table:
+        case type_groupedtable:
+            infoFlags |= HEFthrowds;
+            break;
+        default:
+            infoFlags |= HEFthrowscalar;
+        }
+        infoFlags |= HEFoldthrows;
         break;
 #if 0
     //A good idea, but once temptables are marked as constant, I really should start constant folding them,
@@ -3324,9 +3365,6 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_transform:
     case no_newtransform:
         {
-            if (infoFlags & HEFcontainsSkip)
-                infoFlags |= HEFtransformSkips;
-            infoFlags &= ~(HEFcontainsSkip|HEFtransformDependent);          // don't leak information outside the transform..
             IHqlExpression * record = queryRecord();
             if (record)
             {
@@ -3462,13 +3500,13 @@ switch (op)
 #endif
         break;
     case no_translated:
-        assertex(queryUnqualifiedType(type) == queryUnqualifiedType(queryChild(0)->queryType()));
+        assertex(queryUnqualifiedType(queryType()) == queryUnqualifiedType(queryChild(0)->queryType()));
         break;
     case no_transform:
     case no_newtransform:
         {
 //          assertex(op != no_newtransform || !queryChildOperator(no_assignall, this));
-            assertex(type && type->getTypeCode() == type_transform);
+            assertex(queryType() && queryType()->getTypeCode() == type_transform);
         }
         break;
     case no_assign:
@@ -3492,7 +3530,7 @@ switch (op)
         break;
 #endif
     case no_self:
-        assertex(type);
+        assertex(queryType());
         break;
     case no_getresult:
         {
@@ -3517,11 +3555,11 @@ switch (op)
     case no_gt:
     case no_le:
     case no_lt:
-        assertex(type->getTypeCode() == type_boolean);
+        assertex(queryType()->getTypeCode() == type_boolean);
         break;
     case no_funcdef:
         {
-            assertex(type->getTypeCode() == type_function && queryChild(1) && queryChild(1)->getOperator() == no_sortlist);
+            assertex(queryType()->getTypeCode() == type_function && queryChild(1) && queryChild(1)->getOperator() == no_sortlist);
             assertex(queryType()->queryChildType() == queryChild(0)->queryType());
             break;
         }
@@ -3534,7 +3572,7 @@ switch (op)
             break;
         }
     case no_implicitcast:
-        assertex(type->getTypeCode() != type_function);
+        assertex(queryType()->getTypeCode() != type_function);
         assertex(queryChild(0)->queryType()->getTypeCode() != type_function);
         break;
     case no_newsoapcall:
@@ -3581,14 +3619,16 @@ switch (op)
 #endif
 #endif      // _DEBUG
 
-    if (type)
+    ITypeInfo * thisType = queryType();
+    if (thisType)
     {
-        switch (type->getTypeCode())
+        type_t tc = thisType->getTypeCode();
+        switch (tc)
         {
         case type_alien:
         case type_scope:
             {
-                IHqlExpression * typeExpr = queryExpression(type);
+                IHqlExpression * typeExpr = queryExpression(thisType);
                 if (typeExpr)
                 {
                     infoFlags |= (typeExpr->getInfoFlags() & HEFalwaysInherit);
@@ -3596,6 +3636,7 @@ switch (op)
                 }
                 break;
             }
+        case type_dictionary:
         case type_groupedtable:
         case type_table:
             {
@@ -3624,10 +3665,16 @@ switch (op)
                 default:
                     infoFlags &= ~HEFthrowscalar;
                     infoFlags &= ~HEFoldthrows;
+                    if (tc == type_row)
+                        infoFlags &= ~HEFthrowds;
                     break;
                 }
-
+                break;
             }
+        case type_void:
+            if (op != no_assign)
+                infoFlags &= ~HEFthrowds;
+            break;
         }
     }
 
@@ -3676,6 +3723,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     bool updateFlags = true;
     unsigned childFlags = child.getInfoFlags();
     unsigned childFlags2 = child.getInfoFlags2();
+    node_operator childOp = child.getOperator();
     switch (op)
     {
     case no_keyindex:
@@ -3693,10 +3741,14 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     case no_nameof:
         updateFlags = false;
         break;
+    case no_limit:
+    case no_keyedlimit:
+        if (whichOperand > 1)
+            childFlags &= ~(HEFthrowscalar|HEFthrowds);
+        break;
 #ifdef _DEBUG
     case no_transform:
         {
-            node_operator childOp = child.getOperator();
             switch (childOp)
             {
             case no_assign:
@@ -3715,7 +3767,6 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
         }
     case no_record:
         {
-            node_operator childOp = child.getOperator();
             switch (childOp)
             {
             case no_field: 
@@ -3731,6 +3782,14 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
             break;
         }
 #endif
+    }
+
+    switch (childOp)
+    {
+    case no_transform:
+    case no_newtransform:
+        childFlags &= ~(HEFtransformDependent|HEFcontainsSkip|HEFthrowscalar|HEFthrowds);
+        break;
     }
 
     if (updateFlags)
@@ -3752,7 +3811,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
     }
 #ifdef _DEBUG
     //This should never occur on legal code, but can occur on illegal, so only check in debug mode.
-    if (child.getOperator() == no_field)
+    if (childOp == no_field)
         assertex(op == no_record || op == no_select || op == no_comma || op == no_attr || op == no_attr_expr || op == no_indirect);
 #endif
 }
@@ -3760,28 +3819,7 @@ void CHqlExpression::onAppendOperand(IHqlExpression & child, unsigned whichOpera
 CHqlExpression::~CHqlExpression()
 {
 //  DBGLOG("%lx: Destroy", (unsigned)(IHqlExpression *)this);
-    ::Release(type);
-//  RELEASE_TRANSFORM_EXTRA(transformDepth, transformExtra);
-#ifdef _DEBUG       // Not strictly correct, but good enough for me in debug mode...
-    if (!hashcode)
-    {
-
-        switch(op)
-        {
-        case no_mergedscope:
-        case no_remotescope:
-        case no_privatescope:
-        case no_service:
-        case no_none:
-            break;
-        default:
-
-            PrintLog("%s did not hash", getOpString(op));
-            // assertex(false);
-            break;
-        }
-    }
-#endif
+    delete attributes;
 }
 
 IHqlScope * CHqlExpression::queryScope() 
@@ -3811,7 +3849,7 @@ void CHqlExpression::setInitialHash(unsigned typeHash)
 void CHqlExpression::sethash()
 {
     // In 64-bit, just use bottom 32-bits of the ptr for the hash
-    setInitialHash((unsigned) (memsize_t) type);
+    setInitialHash((unsigned) (memsize_t) queryType());
 }
 
 unsigned CHqlExpression::getCachedEclCRC()
@@ -3838,24 +3876,27 @@ unsigned CHqlExpression::getCachedEclCRC()
         //backward compatibility
         break;
     default:
-        if (type && this != queryExpression(type))
         {
-            ITypeInfo * hashType = type;
-            switch (hashType->getTypeCode())
+            ITypeInfo * thisType = queryType();
+            if (thisType && this != queryExpression(thisType))
             {
-            case type_transform:
-                hashType = hashType->queryChildType();
-                break;
-            case type_row:
-                //Backward compatibility
-                if (op == no_field)
+                ITypeInfo * hashType = thisType;
+                switch (hashType->getTypeCode())
+                {
+                case type_transform:
                     hashType = hashType->queryChildType();
-                break;
+                    break;
+                case type_row:
+                    //Backward compatibility
+                    if (op == no_field)
+                        hashType = hashType->queryChildType();
+                    break;
+                }
+                unsigned typeCRC = hashType->getCrc();
+                crc = hashc((const byte *)&typeCRC, sizeof(typeCRC), crc);
             }
-            unsigned typeCRC = hashType->getCrc();
-            crc = hashc((const byte *)&typeCRC, sizeof(typeCRC), crc);
+            break;
         }
-        break;
     }
 
     unsigned numChildrenToHash = numChildren();
@@ -3955,7 +3996,7 @@ bool CHqlExpression::equals(const IHqlExpression & other) const
     case no_libraryscopeinstance:
         break;
     default:
-        if (type != other.queryType())
+        if (queryType() != other.queryType())
             return false;
         break;
     }
@@ -3968,31 +4009,6 @@ bool CHqlExpression::equals(const IHqlExpression & other) const
             return false;
     }
     return true;
-}
-
-CHqlExpression *CHqlExpression::makeExpression(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands)
-{
-    CHqlExpression *e = new CHqlExpression(_op, _type, _ownedOperands);
-    return (CHqlExpression *)e->closeExpr();
-}
-
-CHqlExpression *CHqlExpression::makeExpression(node_operator _op, ITypeInfo *_type, ...)
-{
-    va_list args;
-    va_start(args, _type);
-    HqlExprArray operands;
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(args, IHqlExpression *);
-        if (!parm)
-            break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
-        operands.append(*parm);
-    }
-    va_end(args);
-    return makeExpression(_op, _type, operands);
 }
 
 IHqlExpression *CHqlExpression::closeExpr()
@@ -4053,44 +4069,6 @@ unsigned CHqlExpression::numChildren() const
     return operands.length();
 }
 
-IHqlExpression *CHqlExpression::clone(HqlExprArray &newkids)
-{
-    if ((newkids.ordinality() == 0) && (operands.ordinality() == 0))
-        return LINK(this);
-
-    ITypeInfo * newType = NULL;
-    switch (op)
-    {
-    case no_outofline:
-        return createWrapper(op, newkids);
-    case no_cppbody:
-        {
-            if (type->getTypeCode() == type_transform)
-            {
-                IHqlExpression & newRecord = newkids.item(1);
-                if (&newRecord != queryChild(1))
-                    newType = makeTransformType(LINK(newRecord.queryType()));
-            }
-            break;
-        }
-    }
-
-    if (!newType)
-        newType = LINK(type);
-    return makeExpression(op, newType, newkids);
-}
-
-ITypeInfo *CHqlExpression::queryType() const
-{
-    return type;
-}
-
-ITypeInfo *CHqlExpression::getType()
-{
-    ::Link(type);
-    return type;
-}
-
 IHqlExpression *CHqlExpression::addOperand(IHqlExpression * child)
 {
     //Forward scopes are never commoned up, and are shared as a side-effect of keeping references to their owner
@@ -4119,7 +4097,7 @@ inline bool matchesTypeCode(ITypeInfo * type, type_t search)
 
 bool CHqlExpression::isBoolean() 
 {
-    return matchesTypeCode(type, type_boolean);
+    return matchesTypeCode(queryType(), type_boolean);
 }
 
 bool CHqlExpression::isConstant() 
@@ -4129,7 +4107,7 @@ bool CHqlExpression::isConstant()
 
 bool CHqlExpression::isDataset() 
 {
-    ITypeInfo * cur = type;
+    ITypeInfo * cur = queryType();
     loop
     {
         if (!cur)
@@ -4149,14 +4127,20 @@ bool CHqlExpression::isDataset()
     }
 }
 
+bool CHqlExpression::isDictionary()
+{
+    return matchesTypeCode(queryType(), type_dictionary);
+}
+
 bool CHqlExpression::isDatarow() 
 {
-    return matchesTypeCode(type, type_row);
+    return matchesTypeCode(queryType(), type_row);
 }
 
 bool CHqlExpression:: isFunction() 
 { 
-    return type && type->getTypeCode() == type_function;
+    ITypeInfo * thisType = queryType();
+    return thisType && thisType->getTypeCode() == type_function;
 } 
 
 bool CHqlExpression::isMacro() 
@@ -4173,22 +4157,22 @@ bool CHqlExpression::isMacro()
 
 bool CHqlExpression::isRecord() 
 {
-    return matchesTypeCode(type, type_record);
+    return matchesTypeCode(queryType(), type_record);
 }
  
 bool CHqlExpression::isAction() 
 {
-    return matchesTypeCode(type, type_void);
+    return matchesTypeCode(queryType(), type_void);
 }
 
 bool CHqlExpression::isTransform() 
 {
-    return matchesTypeCode(type, type_transform);
+    return matchesTypeCode(queryType(), type_transform);
 }
 
 bool CHqlExpression::isScope() 
 {
-    return matchesTypeCode(type, type_scope);
+    return matchesTypeCode(queryType(), type_scope);
 }
 
 bool CHqlExpression::isField() 
@@ -4211,7 +4195,7 @@ bool CHqlExpression::isType()
 
 bool CHqlExpression::isList() 
 {
-    return matchesTypeCode(type, type_set);
+    return matchesTypeCode(queryType(), type_set);
 }
 
 bool CHqlExpression::isAggregate()
@@ -4260,7 +4244,7 @@ void CHqlExpression::unwindList(HqlExprArray &dst, node_operator u_op)
 
 ITypeInfo *CHqlExpression::queryRecordType()
 {
-    return ::queryRecordType(type);
+    return ::queryRecordType(queryType());
 }
 
 IHqlExpression *CHqlExpression::queryRecord()
@@ -4281,11 +4265,11 @@ void CHqlExpression::Link(void) const
 #endif
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("Link");
 #endif
 #endif
-    CInterface::Link(); 
+    Parent::Link();
 }
 
 bool CHqlExpression::Release(void) const
@@ -4297,11 +4281,11 @@ bool CHqlExpression::Release(void) const
 #endif
 #ifdef _DEBUG
 #ifdef SEARCH_IEXPR
-    if ((unsigned)(IHqlExpression *)this == SEARCH_IEXPR)
-        op = op;
+    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
+        DBGLOG("Release");
 #endif
 #endif
-    return CInterface::Release(); 
+    return Parent::Release();
 }
 
 
@@ -4388,21 +4372,39 @@ IHqlExpression * CHqlExpression::commonUpExpression()
     }
 
 #ifdef GATHER_COMMON_STATS
-#if 1
     node_operator statOp = op;
-#else
-    node_operator statOp = no_none;
-    if (op == no_select)
-        statOp = queryChild(0)->getOperator();
-#endif
 
-    commonUpCount[statOp]++;
-    if (match != this && !isAnnotation())
-        commonUpClash[statOp]++;
-
+    if (isAnnotation())
+    {
+        annotate_kind  kind = getAnnotationKind();
+        commonUpAnnCount[kind]++;
+        if (match != this)
+            commonUpAnnClash[kind]++;
+    }
+    else
+    {
+        commonUpCount[statOp]++;
+        if (match != this)
+            commonUpClash[statOp]++;
+    }
 #endif
     Release();
     return match;
+}
+
+IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+{
+    IHqlExpression * left = &operands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
+    {
+        HqlExprArray args;
+        appendArray(args, operands);
+        args.replace(*LINK(normalizedLeft), 0);
+        removeProperty(args, newAtom);
+        return doCreateSelectExpr(args);
+    }
+    return NULL;
 }
 
 void displayHqlCacheStats()
@@ -4430,10 +4432,103 @@ void displayHqlCacheStats()
     }
 #endif
 }
+//--------------------------------------------------------------------------------------------------------------
+
+CHqlExpressionWithType::CHqlExpressionWithType(node_operator _op, ITypeInfo * _type, HqlExprArray & _ownedOperands)
+: CHqlExpressionWithTables(_op)
+{
+    type = _type;
+    setOperands(_ownedOperands); // after type is initialized
+}
+
+CHqlExpressionWithType::~CHqlExpressionWithType()
+{
+    ::Release(type);
+}
+
+
+ITypeInfo *CHqlExpressionWithType::queryType() const
+{
+    return type;
+}
+
+ITypeInfo *CHqlExpressionWithType::getType()
+{
+    ::Link(type);
+    return type;
+}
+
+CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands)
+{
+    CHqlExpression *e = new CHqlExpressionWithType(_op, _type, _ownedOperands);
+    return (CHqlExpression *)e->closeExpr();
+}
+
+CHqlExpression *CHqlExpressionWithType::makeExpression(node_operator _op, ITypeInfo *_type, ...)
+{
+    unsigned numArgs = 0;
+    va_list argscount;
+    va_start(argscount, _type);
+    for (;;)
+    {
+        IHqlExpression *parm = va_arg(argscount, IHqlExpression *);
+        if (!parm)
+            break;
+        numArgs++;
+    }
+    va_end(argscount);
+
+    HqlExprArray operands;
+    if (numArgs)
+    {
+        va_list args;
+        va_start(args, _type);
+        operands.ensure(numArgs);
+        for (;;)
+        {
+            IHqlExpression *parm = va_arg(args, IHqlExpression *);
+            if (!parm)
+                break;
+#ifdef _DEBUG
+            assertex(QUERYINTERFACE(parm, IHqlExpression));
+#endif
+            operands.append(*parm);
+        }
+        va_end(args);
+    }
+    return makeExpression(_op, _type, operands);
+}
+
+IHqlExpression *CHqlExpressionWithType::clone(HqlExprArray &newkids)
+{
+    if ((newkids.ordinality() == 0) && (operands.ordinality() == 0))
+        return LINK(this);
+
+    ITypeInfo * newType = NULL;
+    switch (op)
+    {
+    case no_outofline:
+        return createWrapper(op, newkids);
+    case no_cppbody:
+        {
+            if (queryType()->getTypeCode() == type_transform)
+            {
+                IHqlExpression & newRecord = newkids.item(1);
+                if (&newRecord != queryChild(1))
+                    newType = makeTransformType(LINK(newRecord.queryType()));
+            }
+            break;
+        }
+    }
+
+    if (!newType)
+        newType = LINK(type);
+    return CHqlExpressionWithType::makeExpression(op, newType, newkids);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, ...) : CHqlExpression(_op, _type, NULL)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, ...) : CHqlExpressionWithType(_op, _type)
 {
     name = _name;
 
@@ -4452,7 +4547,7 @@ CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _A
     va_end(args);
 }
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, HqlExprArray &_ownedOperands) : CHqlExpression(_op, _type, _ownedOperands)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(_op, _type, _ownedOperands)
 {
     name = _name;
 }
@@ -4462,7 +4557,7 @@ IHqlExpression *CHqlNamedExpression::clone(HqlExprArray &newkids)
 {
     if (op == no_funcdef)
         return createFunctionDefinition(name, newkids);
-    return (new CHqlNamedExpression(op, LINK(type), name, newkids))->closeExpr();
+    return (new CHqlNamedExpression(op, getType(), name, newkids))->closeExpr();
 }
 
 bool CHqlNamedExpression::equals(const IHqlExpression & r) const
@@ -4498,7 +4593,7 @@ inline void addUniqueTable(HqlExprCopyArray & array, IHqlExpression * ds)
 
 inline void addHiddenTable(HqlExprCopyArray & array, IHqlExpression * ds, IHqlExpression * selSeq)
 {
-#if defined(GATHER_HIDDEN_SELECTORS) && !defined(ENSURE_SELSEQ_UID)
+#if defined(GATHER_HIDDEN_SELECTORS)
     if (array.find(*ds) == NotFound)
         array.append(*ds);
 #endif
@@ -4516,62 +4611,152 @@ inline void addActiveTable(HqlExprCopyArray & array, IHqlExpression * ds)
         addUniqueTable(array, ds->queryNormalizedSelector());
 }
 
-//Don't need to check if already visited, because the information is cached in the expression itself.
-void CHqlExpression::cacheChildrenTablesUsed(unsigned from, unsigned to)
+
+//---------------------------------------------------------------------------------------------------------------------
+
+CUsedTables::CUsedTables()
 {
-    for (unsigned i=from; i < to; i++)
-        queryChild(i)->gatherTablesUsed(&newScopeTables, &inScopeTables);
+    tables.single = NULL;
+    numTables = 0;
+    numActiveTables = 0;
+}
+
+CUsedTables::~CUsedTables()
+{
+    if (numTables > 1)
+        delete [] tables.multi;
 }
 
 
-void CHqlExpression::cacheInheritChildTablesUsed(IHqlExpression * ds, HqlExprCopyArray & childInScopeTables)
+bool CUsedTables::usesSelector(IHqlExpression * selector) const
 {
-    //The argument to the operator is a new table, don't inherit grandchildren
-    addUniqueTable(newScopeTables, ds);
-
-    //Any datasets in that are referenced by the child are included, but not including
-    //the dataset itself.
-    IHqlExpression * normalizedDs = ds->queryNormalizedSelector();
-    ForEachItemIn(idx, childInScopeTables)
+    if (numTables > 1)
     {
-        IHqlExpression & cur = childInScopeTables.item(idx);
-        if (&cur != normalizedDs)
-            addActiveTable(inScopeTables, &cur);
+        for (unsigned i=0; i < numActiveTables; i++)
+        {
+            if (tables.multi[i] == selector)
+                return true;
+        }
+        return false;
     }
+
+    //Following works if numTables == 0
+    return (selector == tables.single);
 }
 
-void CHqlExpression::cacheTableUseage(IHqlExpression * expr)
+void CUsedTables::gatherTablesUsed(CUsedTablesBuilder & used) const
 {
-#ifdef GATHER_HIDDEN_SELECTORS
-    expr->gatherTablesUsed(&newScopeTables, &inScopeTables);
-#else
-    if (expr->getOperator() == no_activerow)
-        addActiveTable(inScopeTables, expr->queryChild(0));
+    if (numTables == 0)
+        return;
+    if (numTables == 1)
+    {
+        if (numActiveTables == 1)
+            used.addActiveTable(tables.single);
+        else
+            used.addNewTable(tables.single);
+    }
     else
     {
-        HqlExprCopyArray childInScopeTables;
-        expr->gatherTablesUsed(NULL, &childInScopeTables);
-
-        //The argument to the operator is a new table, don't inherit grandchildren
-        cacheInheritChildTablesUsed(expr, childInScopeTables);
+        for (unsigned i1=0; i1 < numActiveTables; i1++)
+            used.addActiveTable(tables.multi[i1]);
+        for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+            used.addNewTable(tables.multi[i2]);
     }
-#endif
 }
 
-void CHqlExpression::cachePotentialTablesUsed()
+void CUsedTables::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) const
 {
-    ForEachChild(i, this)
+    if (numTables == 0)
+        return;
+    if (numTables == 1)
     {
-        IHqlExpression * cur = queryChild(i);
-        if (cur->isDataset())
-            cacheTableUseage(cur);
+        if (numActiveTables == 1)
+        {
+            if (inScope)
+                addUniqueTable(*inScope, tables.single);
+        }
         else
-            cur->gatherTablesUsed(&newScopeTables, &inScopeTables);
+        {
+            if (newScope)
+                addUniqueTable(*newScope, tables.single);
+        }
+    }
+    else
+    {
+        if (inScope)
+        {
+            for (unsigned i1=0; i1 < numActiveTables; i1++)
+                addUniqueTable(*inScope, tables.multi[i1]);
+        }
+        if (newScope)
+        {
+            for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+                addUniqueTable(*newScope, tables.multi[i2]);
+        }
     }
 }
 
 
-void queryRemoveRows(HqlExprCopyArray & tables, IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right)
+void CUsedTables::set(HqlExprCopyArray & activeTables, HqlExprCopyArray & newTables)
+{
+    numActiveTables = activeTables.ordinality();
+    numTables = numActiveTables + newTables.ordinality();
+    if (numTables == 1)
+    {
+        if (numActiveTables == 1)
+        {
+            tables.single = &activeTables.item(0);
+        }
+        else
+        {
+            tables.single = &newTables.item(0);
+        }
+    }
+    else if (numTables != 0)
+    {
+        IHqlExpression * * multi = new IHqlExpression * [numTables];
+        for (unsigned i1=0; i1 < numActiveTables; i1++)
+            multi[i1] = &activeTables.item(i1);
+        for (unsigned i2=numActiveTables; i2 < numTables; i2++)
+            multi[i2] = &newTables.item(i2-numActiveTables);
+        tables.multi = multi;
+    }
+}
+
+void CUsedTables::setActiveTable(IHqlExpression * expr)
+{
+    tables.single = expr;
+    numTables = 1;
+    numActiveTables = 1;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+void CUsedTablesBuilder::addNewTable(IHqlExpression * expr)
+{
+    addUniqueTable(newScopeTables, expr);
+}
+
+void CUsedTablesBuilder::addHiddenTable(IHqlExpression * expr, IHqlExpression * selSeq)
+{
+    ::addHiddenTable(newScopeTables, expr, selSeq);
+}
+
+void CUsedTablesBuilder::addActiveTable(IHqlExpression * expr)
+{
+    ::addActiveTable(inScopeTables, expr);
+}
+
+void CUsedTablesBuilder::cleanupProduction()
+{
+    ForEachItemInRev(i, inScopeTables)
+    {
+        if (inScopeTables.item(i).getOperator() == no_matchattr)
+            inScopeTables.remove(i);
+    }
+}
+
+void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right)
 {
     node_operator rowsSide = queryHasRows(expr);
     if (rowsSide == no_none)
@@ -4583,13 +4768,13 @@ void queryRemoveRows(HqlExprCopyArray & tables, IHqlExpression * expr, IHqlExpre
     case no_left:
         {
             OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
-            tables.zap(*rowsExpr);
+            inScopeTables.zap(*rowsExpr);
             break;
         }
     case no_right:
         {
             OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(right), LINK(rowsid));
-            tables.zap(*rowsExpr);
+            inScopeTables.zap(*rowsExpr);
             break;
         }
     default:
@@ -4597,9 +4782,64 @@ void queryRemoveRows(HqlExprCopyArray & tables, IHqlExpression * expr, IHqlExpre
     }
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+
+//Don't need to check if already visited, because the information is cached in the expression itself.
+void CHqlExpressionWithTables::cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to)
+{
+    for (unsigned i=from; i < to; i++)
+        queryChild(i)->gatherTablesUsed(used);
+}
 
 
-void CHqlExpression::cacheTablesProcessChildScope()
+void CHqlExpressionWithTables::cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables)
+{
+    //The argument to the operator is a new table, don't inherit grandchildren
+    used.addNewTable(ds);
+
+    //Any datasets in that are referenced by the child are included, but not including
+    //the dataset itself.
+    IHqlExpression * normalizedDs = ds->queryNormalizedSelector();
+    ForEachItemIn(idx, childInScopeTables)
+    {
+        IHqlExpression & cur = childInScopeTables.item(idx);
+        if (&cur != normalizedDs)
+            used.addActiveTable(&cur);
+    }
+}
+
+void CHqlExpressionWithTables::cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr)
+{
+#ifdef GATHER_HIDDEN_SELECTORS
+    expr->gatherTablesUsed(used);
+#else
+    if (expr->getOperator() == no_activerow)
+        used.addActiveTable(expr->queryChild(0));
+    else
+    {
+        HqlExprCopyArray childInScopeTables;
+        expr->gatherTablesUsed(NULL, &childInScopeTables);
+
+        //The argument to the operator is a new table, don't inherit grandchildren
+        cacheInheritChildTablesUsed(expr, used, childInScopeTables);
+    }
+#endif
+}
+
+void CHqlExpressionWithTables::cachePotentialTablesUsed(CUsedTablesBuilder & used)
+{
+    ForEachChild(i, this)
+    {
+        IHqlExpression * cur = queryChild(i);
+        if (cur->isDataset())
+            cacheTableUseage(used, cur);
+        else
+            cur->gatherTablesUsed(used);
+    }
+}
+
+
+void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
 {
     unsigned max = numChildren();
     switch (getChildDatasetType(this))
@@ -4610,24 +4850,24 @@ void CHqlExpression::cacheTablesProcessChildScope()
     case childdataset_case:
     case childdataset_map:
     case childdataset_dataset_noscope: 
-        cacheChildrenTablesUsed(0, max);
+        cacheChildrenTablesUsed(used, 0, max);
         //None of these have any scoped arguments, so no need to remove them
         break;
     case childdataset_many:
         {
             //can now have sorted() attribute which is dependent on the no_activetable element.
             unsigned firstAttr = getNumChildTables(this);
-            cacheChildrenTablesUsed(firstAttr, max);
-            inScopeTables.zap(*queryActiveTableSelector());
-            cacheChildrenTablesUsed(0, firstAttr);
+            cacheChildrenTablesUsed(used, firstAttr, max);
+            used.removeActive(queryActiveTableSelector());
+            cacheChildrenTablesUsed(used, 0, firstAttr);
             break;
         }
     case childdataset_dataset:
         {
             IHqlExpression * ds = queryChild(0);
-            cacheChildrenTablesUsed(1, max);
-            inScopeTables.zap(*ds->queryNormalizedSelector());
-            cacheChildrenTablesUsed(0, 1);
+            cacheChildrenTablesUsed(used, 1, max);
+            used.removeActive(ds->queryNormalizedSelector());
+            cacheChildrenTablesUsed(used, 0, 1);
         }
         break;
     case childdataset_datasetleft:
@@ -4635,13 +4875,13 @@ void CHqlExpression::cacheTablesProcessChildScope()
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(1, max);
-            inScopeTables.zap(*left);
-            inScopeTables.zap(*ds->queryNormalizedSelector());
-            queryRemoveRows(inScopeTables, this, left, NULL);
-            cacheChildrenTablesUsed(0, 1);
+            cacheChildrenTablesUsed(used, 1, max);
+            used.removeActive(left);
+            used.removeActive(ds->queryNormalizedSelector());
+            used.removeRows(this, left, NULL);
+            cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
-            addHiddenTable(newScopeTables, left, selSeq);
+            used.addHiddenTable(left, selSeq);
 #endif
             break;
         }
@@ -4650,12 +4890,12 @@ void CHqlExpression::cacheTablesProcessChildScope()
             IHqlExpression * ds = queryChild(0);
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-            cacheChildrenTablesUsed(1, max);
-            inScopeTables.zap(*left);
-            queryRemoveRows(inScopeTables, this, left, NULL);
-            cacheChildrenTablesUsed(0, 1);
+            cacheChildrenTablesUsed(used, 1, max);
+            used.removeActive(left);
+            used.removeRows(this, left, NULL);
+            cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
-            addHiddenTable(newScopeTables, left, selSeq);
+            used.addHiddenTable(left, selSeq);
 #endif
             break;
         }
@@ -4666,14 +4906,14 @@ void CHqlExpression::cacheTablesProcessChildScope()
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(1, max);
-            inScopeTables.zap(*left);
-            inScopeTables.zap(*right);
-            queryRemoveRows(inScopeTables, this, left, right);
-            cacheChildrenTablesUsed(0, 1);
+            cacheChildrenTablesUsed(used, 1, max);
+            used.removeActive(left);
+            used.removeActive(right);
+            used.removeRows(this, left, right);
+            cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
-            addHiddenTable(newScopeTables, left, selSeq);
-            addHiddenTable(newScopeTables, right, selSeq);
+            used.addHiddenTable(left, selSeq);
+            used.addHiddenTable(right, selSeq);
 #endif
             break;
         }
@@ -4683,15 +4923,15 @@ void CHqlExpression::cacheTablesProcessChildScope()
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
-            cacheChildrenTablesUsed(1, max);
-            inScopeTables.zap(*ds->queryNormalizedSelector());
-            inScopeTables.zap(*left);
-            inScopeTables.zap(*right);
-            queryRemoveRows(inScopeTables, this, left, right);
-            cacheChildrenTablesUsed(0, 1);
+            cacheChildrenTablesUsed(used, 1, max);
+            used.removeActive(ds->queryNormalizedSelector());
+            used.removeActive(left);
+            used.removeActive(right);
+            used.removeRows(this, left, right);
+            cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
-            addHiddenTable(newScopeTables, left, selSeq);
-            addHiddenTable(newScopeTables, right, selSeq);
+            used.addHiddenTable(left, selSeq);
+            used.addHiddenTable(right, selSeq);
 #endif
             break;
         }
@@ -4702,23 +4942,24 @@ void CHqlExpression::cacheTablesProcessChildScope()
             IHqlExpression * selSeq = querySelSeq(this);
             OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
             OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
-            cacheChildrenTablesUsed(2, max);
-            inScopeTables.zap(*right);
+            cacheChildrenTablesUsed(used, 2, max);
+            used.removeActive(right);
+            used.removeRows(this, left, right);
             if (op == no_normalize)
             {
                 //two datasets form of normalize is weird because right dataset is based on left
-                cacheChildrenTablesUsed(1, 2);
-                inScopeTables.zap(*left);
-                cacheChildrenTablesUsed(0, 1);
+                cacheChildrenTablesUsed(used, 1, 2);
+                used.removeActive(left);
+                cacheChildrenTablesUsed(used, 0, 1);
             }
             else
             {
-                inScopeTables.zap(*left);
-                cacheChildrenTablesUsed(0, 2);
+                used.removeActive(left);
+                cacheChildrenTablesUsed(used, 0, 2);
             }
 #ifdef GATHER_HIDDEN_SELECTORS
-            addHiddenTable(newScopeTables, left, selSeq);
-            addHiddenTable(newScopeTables, right, selSeq);
+            used.addHiddenTable(left, selSeq);
+            used.addHiddenTable(right, selSeq);
 #endif
             break;
         }
@@ -4731,241 +4972,372 @@ void CHqlExpression::cacheTablesProcessChildScope()
 }
 
 
-void CHqlExpression::cacheTablesUsed()
+void CHqlExpressionWithTables::cacheTablesUsed()
 {
     if (!(infoFlags & HEFgatheredNew))
     {
         //NB: This is not thread safe!  Should be protected with a cs 
         //but actually want it to be more efficient than that - don't want to call a cs at each level.
         //So need an ensureCached() function surrounding it that is cs protected.
-        if (numChildren())
-        {
-            switch (op)
-            {
-            case no_attr:
-            case no_attr_link:
-            case no_keyed:
-            case no_colon:
-            case no_cluster:
-            case no_nameof:
-            case no_translated:
-                break;
-            case no_select:
-                {
-                    IHqlExpression * ds = queryChild(0);
-                    if (hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
-                        ds->gatherTablesUsed(&newScopeTables, &inScopeTables);
-                    else
-                        addActiveTable(inScopeTables, ds);
-                    break;
-                }
-            case no_activerow:
-                {
-                    IHqlExpression * ds = queryChild(0);
-                    addActiveTable(inScopeTables, ds);
-                    break;
-                }
-            case no_rows:
-            case no_rowset:
-                //MORE: This is a bit strange!
-                addActiveTable(inScopeTables, queryChild(0));
-                break;
-            case no_left:
-            case no_right:
-                addActiveTable(inScopeTables, this);
-                break;
-            case NO_AGGREGATE:
-            case no_createset:
-                {
-#ifdef GATHER_HIDDEN_SELECTORS
-                    cachePotentialTablesUsed();
-                    inScopeTables.zap(*queryChild(0)->queryNormalizedSelector());
-#else
-                    HqlExprCopyArray childInScopeTables;
-                    ForEachChild(idx, this)
-                        queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
 
-                    //The argument to the operator is a new table, don't inherit grandchildren
-                    IHqlExpression * ds = queryChild(0);
-                    cacheInheritChildTablesUsed(ds, childInScopeTables);
-#endif
-                }
-                break;
-            case no_externalcall:
-            case no_rowvalue:
-            case no_sizeof:
-            case no_offsetof:
-            case no_eq:
-            case no_ne:
-            case no_lt:
-            case no_le:
-            case no_gt:
-            case no_ge:
-            case no_order:
-            case no_assign:
-            case no_call:
-            case no_libraryscopeinstance:
-                //MORE: Should check this doesn't make the comparison invalid.
-                cachePotentialTablesUsed();
-                break;
-            case no_keyindex:
-            case no_newkeyindex:
-                cacheChildrenTablesUsed(1, numChildren());
-                inScopeTables.zap(*queryChild(0)->queryNormalizedSelector());
-                break;
-            case no_evaluate:
-                cacheTableUseage(queryChild(0));
-                queryChild(1)->gatherTablesUsed(&newScopeTables, &inScopeTables);
-                break;
-            case no_table:
-                {
-                    cacheChildrenTablesUsed(0, numChildren());
-                    IHqlExpression * parent = queryChild(3);
-                    if (parent)
-                        inScopeTables.zap(*parent->queryNormalizedSelector());
-                    break;
-                }
-            case no_filepos:
-            case no_file_logicalname:
-                addActiveTable(inScopeTables, queryChild(0));
-                break;
-            case no_pat_production:
-                {
-                    cacheChildrenTablesUsed(0, numChildren());
-                    ForEachItemInRev(i, inScopeTables)
-                    {
-                        if (inScopeTables.item(i).getOperator() == no_matchattr)
-                            inScopeTables.remove(i);
-                    }
-                    break;
-                }
-            case no_parse:
-            case no_newparse:
-                {
-                    cacheTablesProcessChildScope();
-                    ForEachItemInRev(i, inScopeTables)
-                    {
-                        if (inScopeTables.item(i).getOperator() == no_matchattr)
-                            inScopeTables.remove(i);
-                    }
-                    //Not strictly true - need to inherit from arg(0) if present.
-                    inScopeTables.zap(*queryMatchxxxPseudoFile());
-                    break;
-                }
-            case no_counter:
-                //NB: Counter is added as a pseudo table, because it is too hard to keep track of nested counters otherwise
-                inScopeTables.append(*this);
-                break;
-            default:
-                {
-                    if (type)
-                    {
-                        switch (type->getTypeCode())
-                        {
-                        case type_void:
-                        case type_table:
-                        case type_groupedtable:
-                        case type_row:
-                        case type_transform:
-                            {
-                                cacheTablesProcessChildScope();
-                                IHqlExpression * counter = queryProperty(_countProject_Atom);
-                                if (counter)
-                                    inScopeTables.zap(*counter->queryChild(0));
-                                break;
-                            }
-                        default:
-                            cacheChildrenTablesUsed(0, numChildren());
-                        }
-                    }
-                    else
-                        cacheChildrenTablesUsed(0, numChildren());
-                    break;
-                }
-            }
-        }
+        //Special case some common operators that can avoid going through the general code
+        bool specialCased = true;
         switch (op)
         {
-        case no_matched:
-        case no_matchtext:
-        case no_matchunicode:
-        case no_matchlength:
-        case no_matchposition:
-        case no_matchrow:
-        case no_matchutf8:
-            inScopeTables.append(*queryMatchxxxPseudoFile());
+        case no_attr:
+        case no_attr_link:
+        case no_keyed:
+        case no_colon:
+        case no_cluster:
+        case no_nameof:
+        case no_translated:
+        case no_constant:
+            break;
+        case no_select:
+            {
+                IHqlExpression * ds = queryChild(0);
+                if (isSelectRootAndActive())
+                {
+                    usedTables.setActiveTable(ds);
+                }
+                else
+                {
+                    //MORE: ds->gatherTablesUsed(usedTables);
+                    //which could ideally clone
+                    specialCased = false;
+                }
+                break;
+            }
+        case no_activerow:
+            usedTables.setActiveTable(queryChild(0));
+            break;
+        case no_rows:
+        case no_rowset:
+            //MORE: This is a bit strange!
+            usedTables.setActiveTable(queryChild(0));
+            break;
+        case no_left:
+        case no_right:
+            usedTables.setActiveTable(this);
             break;
         case no_counter:
             //NB: Counter is added as a pseudo table, because it is too hard to keep track of nested counters otherwise
-            inScopeTables.append(*this);
+            usedTables.setActiveTable(this);
             break;
+        case no_filepos:
+        case no_file_logicalname:
+            usedTables.setActiveTable(queryChild(0));
+            break;
+        default:
+            specialCased = false;
+            break;
+        }
+
+        if (!specialCased)
+        {
+            CUsedTablesBuilder used;
+            if (numChildren())
+            {
+                switch (op)
+                {
+                case no_select:
+                    {
+                        IHqlExpression * ds = queryChild(0);
+                        dbgassertex(!isSelectRootAndActive());
+                        ds->gatherTablesUsed(used);
+                        break;
+                    }
+                case NO_AGGREGATE:
+                case no_createset:
+                    {
+    #ifdef GATHER_HIDDEN_SELECTORS
+                        cachePotentialTablesUsed(used);
+                        used.removeActive(queryChild(0)->queryNormalizedSelector());
+    #else
+                        HqlExprCopyArray childInScopeTables;
+                        ForEachChild(idx, this)
+                            queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
+
+                        //The argument to the operator is a new table, don't inherit grandchildren
+                        IHqlExpression * ds = queryChild(0);
+                        cacheInheritChildTablesUsed(ds, used, childInScopeTables);
+    #endif
+                    }
+                    break;
+                case no_externalcall:
+                case no_rowvalue:
+                case no_sizeof:
+                case no_offsetof:
+                case no_eq:
+                case no_ne:
+                case no_lt:
+                case no_le:
+                case no_gt:
+                case no_ge:
+                case no_order:
+                case no_assign:
+                case no_call:
+                case no_libraryscopeinstance:
+                    //MORE: Should check this doesn't make the comparison invalid.
+                    cachePotentialTablesUsed(used);
+                    break;
+                case no_keyindex:
+                case no_newkeyindex:
+                    cacheChildrenTablesUsed(used, 1, numChildren());
+                    used.removeActive(queryChild(0)->queryNormalizedSelector());
+                    break;
+                case no_evaluate:
+                    cacheTableUseage(used, queryChild(0));
+                    queryChild(1)->gatherTablesUsed(used);
+                    break;
+                case no_table:
+                    {
+                        cacheChildrenTablesUsed(used, 0, numChildren());
+                        IHqlExpression * parent = queryChild(3);
+                        if (parent)
+                            used.removeActive(parent->queryNormalizedSelector());
+                        break;
+                    }
+                case no_pat_production:
+                    {
+                        cacheChildrenTablesUsed(used, 0, numChildren());
+                        used.cleanupProduction();
+                        break;
+                    }
+                case no_parse:
+                case no_newparse:
+                    {
+                        cacheTablesProcessChildScope(used);
+                        used.cleanupProduction();
+                        //Not strictly true - need to inherit from arg(0) if present.
+                        used.removeActive(queryMatchxxxPseudoFile());
+                        break;
+                    }
+                default:
+                    {
+                        ITypeInfo * thisType = queryType();
+                        if (thisType)
+                        {
+                            switch (thisType->getTypeCode())
+                            {
+                            case type_void:
+                            case type_dictionary:
+                            case type_table:
+                            case type_groupedtable:
+                            case type_row:
+                            case type_transform:
+                                {
+                                    cacheTablesProcessChildScope(used);
+                                    IHqlExpression * counter = queryProperty(_countProject_Atom);
+                                    if (counter)
+                                        used.removeActive(counter->queryChild(0));
+                                    break;
+                                }
+                            default:
+                                cacheChildrenTablesUsed(used, 0, numChildren());
+                            }
+                        }
+                        else
+                            cacheChildrenTablesUsed(used, 0, numChildren());
+                        break;
+                    }
+                }
+            }
+            switch (op)
+            {
+            case no_matched:
+            case no_matchtext:
+            case no_matchunicode:
+            case no_matchlength:
+            case no_matchposition:
+            case no_matchrow:
+            case no_matchutf8:
+                used.addActiveTable(queryMatchxxxPseudoFile());
+                break;
+            }
+            used.set(usedTables);
         }
         infoFlags |= HEFgatheredNew;
     }
 }
 
-bool CHqlExpression::isIndependentOfScope()
+bool CHqlExpressionWithTables::isIndependentOfScope()
 {
     cacheTablesUsed();
-    return (inScopeTables.ordinality() == 0);
+    return usedTables.isIndependentOfScope();
 }
 
-void CHqlExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
+bool CHqlExpressionWithTables::usesSelector(IHqlExpression * selector)
 {
     cacheTablesUsed();
-    if (newScope)
-    {
-        ForEachItemIn(i1, newScopeTables)
-            addUniqueTable(*newScope, &newScopeTables.item(i1));
-    }
-    if (inScope)
-    {
-        ForEachItemIn(i2, inScopeTables)
-            addUniqueTable(*inScope, &inScopeTables.item(i2));
-    }
+    return usedTables.usesSelector(selector);
 }
 
-IHqlExpression * CHqlExpression::calcNormalizedSelector() const
+void CHqlExpressionWithTables::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
 {
-    IHqlExpression * left = &operands.item(0);
-    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
-    {
-        HqlExprArray args;
-        appendArray(args, operands);
-        args.replace(*LINK(normalizedLeft), 0);
-        removeProperty(args, newAtom);
-        return doCreateSelectExpr(args);
-    }
-    return NULL;
+    cacheTablesUsed();
+    usedTables.gatherTablesUsed(newScope, inScope);
+}
+
+void CHqlExpressionWithTables::gatherTablesUsed(CUsedTablesBuilder & used)
+{
+    cacheTablesUsed();
+    usedTables.gatherTablesUsed(used);
 }
 
 //==============================================================================================================
 
-CHqlSelectExpression::CHqlSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
-: CHqlExpression(no_select, right->getType(), left, right, attr, NULL)
+CHqlSelectBaseExpression::CHqlSelectBaseExpression()
+: CHqlExpression(no_select)
 {
-#ifdef _DEBUG
-    assertex(!isDataset());
-    assertex(left->getOperator() != no_activerow);
-#endif
-    normalized.setown(calcNormalizedSelector());
 }
 
-CHqlSelectExpression::CHqlSelectExpression(HqlExprArray & _ownedOperands)
-: CHqlExpression(no_select, _ownedOperands.item(1).getType(), _ownedOperands)
+ITypeInfo *CHqlSelectBaseExpression::queryType() const
 {
-    IHqlExpression * left = &operands.item(0);
-#ifdef _DEBUG
-    assertex(!isDataset());
-    assertex(left->getOperator() != no_activerow);
-#endif
-    normalized.setown(calcNormalizedSelector());
+    dbgassertex(operands.ordinality()>=2);
+    return operands.item(1).queryType();
 }
 
-IHqlExpression * CHqlSelectExpression::clone(HqlExprArray &newkids)
+ITypeInfo *CHqlSelectBaseExpression::getType()
+{
+    dbgassertex(operands.ordinality()>=2);
+    return operands.item(1).getType();
+}
+
+
+void CHqlSelectBaseExpression::setOperands(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
+{
+    //Need to be very careful about the order that this is done in, since queryType() depends on operand2
+    unsigned max = attr ? 3 : 2;
+    operands.ensure(max);
+    operands.append(*left);
+    operands.append(*right);
+    if (attr)
+        operands.append(*attr);
+    //Now the operands are added we can call the functions to update the flags
+    for (unsigned i=0; i < max; i++)
+        onAppendOperand(operands.item(i), i);
+
+}
+
+void CHqlSelectBaseExpression::setOperands(HqlExprArray & _ownedOperands)
+{
+    //base setOperands() already processes things in the correct order
+    CHqlExpression::setOperands(_ownedOperands);
+}
+
+IHqlExpression * CHqlSelectBaseExpression::clone(HqlExprArray &newkids)
 {
     return createSelectExpr(newkids);
+}
+
+IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(IHqlExpression * left, IHqlExpression * right, IHqlExpression * attr)
+{
+#ifdef _DEBUG
+    assertex(!right->isDataset());
+    assertex(left->getOperator() != no_activerow);
+#endif
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    bool needNormalize = (normalizedLeft != left) || (attr && attr->queryName() == newAtom);
+
+    CHqlSelectBaseExpression * select;
+    if (needNormalize)
+        select = new CHqlSelectExpression;
+    else
+        select = new CHqlNormalizedSelectExpression;
+    select->setOperands(left, right, attr);
+    select->calcNormalized();
+    return select->closeExpr();
+}
+
+IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & ownedOperands)
+{
+#ifdef _DEBUG
+    assertex(!ownedOperands.item(1).isDataset());
+    assertex(ownedOperands.item(0).getOperator() != no_activerow);
+#endif
+    IHqlExpression * left = &ownedOperands.item(0);
+    IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
+    bool needNormalize = (normalizedLeft != left) || ((ownedOperands.ordinality() > 2) && ::hasProperty(newAtom, ownedOperands));
+
+    CHqlSelectBaseExpression * select;
+    if (needNormalize)
+        select = new CHqlSelectExpression;
+    else
+        select = new CHqlNormalizedSelectExpression;
+    select->setOperands(ownedOperands);
+    select->calcNormalized();
+    return select->closeExpr();
+}
+
+
+bool CHqlSelectBaseExpression::isIndependentOfScope()
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        return false;
+    }
+    else
+    {
+        return ds->isIndependentOfScope();
+    }
+}
+
+bool CHqlSelectBaseExpression::usesSelector(IHqlExpression * selector)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        return (selector == ds);
+    }
+    else
+    {
+        return ds->usesSelector(selector);
+    }
+}
+
+void CHqlSelectBaseExpression::gatherTablesUsed(CUsedTablesBuilder & used)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        used.addActiveTable(ds);
+    }
+    else
+    {
+        ds->gatherTablesUsed(used);
+    }
+}
+
+void CHqlSelectBaseExpression::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
+{
+    IHqlExpression * ds = queryChild(0);
+    if (isSelectRootAndActive())
+    {
+        if (inScope)
+            ::addActiveTable(*inScope, ds);
+    }
+    else
+    {
+        ds->gatherTablesUsed(newScope, inScope);
+    }
+}
+
+
+//==============================================================================================================
+
+IHqlExpression * CHqlNormalizedSelectExpression::queryNormalizedSelector(bool skipIndex)
+{
+    return this;
+}
+
+void CHqlNormalizedSelectExpression::calcNormalized()
+{
+#ifdef VERIFY_EXPR_INTEGRITY
+    OwnedHqlExpr normalized = calcNormalizedSelector();
+    assertex(!normalized);
+#endif
 }
 
 IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
@@ -4975,9 +5347,15 @@ IHqlExpression * CHqlSelectExpression::queryNormalizedSelector(bool skipIndex)
     return this;
 }
 
+void CHqlSelectExpression::calcNormalized()
+{
+    normalized.setown(calcNormalizedSelector());
+    assertex(normalized);
+}
+
 //==============================================================================================================
 
-CHqlConstant::CHqlConstant(IValue *_val) : CHqlExpression(no_constant, _val->getType(), NULL)
+CHqlConstant::CHqlConstant(IValue *_val) : CHqlExpression(no_constant)
 {
     val = _val;
     infoFlags |= (HEFhasunadorned|HEFgatheredNew);
@@ -5024,18 +5402,30 @@ StringBuffer &CHqlConstant::toString(StringBuffer &ret)
     return ret;
 }
 
+ITypeInfo *CHqlConstant::queryType() const
+{
+    return val->queryType();
+}
+
+ITypeInfo *CHqlConstant::getType()
+{
+    return LINK(val->queryType());
+}
+
+
 //==============================================================================================================
 
 CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, IHqlExpression *defvalue)
- : CHqlExpression(no_field, _type, defvalue, NULL)
+ : CHqlExpressionWithType(no_field, _type)
 {
+    appendOperands(defvalue, NULL);
     assertex(_name);
     name = _name;
     onCreateField();
 }
 
 CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
-: CHqlExpression(no_field, _type, _ownedOperands)
+: CHqlExpressionWithType(no_field, _type, _ownedOperands)
 {
     assertex(_name);
     name = _name;
@@ -5071,6 +5461,7 @@ void CHqlField::onCreateField()
         break;
     case type_row:
         break;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         typeExpr = queryRecord();
@@ -5122,7 +5513,7 @@ void CHqlField::sethash()
 //==============================================================================================================
 
 CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperands) 
-: CHqlExpression(op, type, _ownedOperands)
+: CHqlExpressionWithType(op, type, _ownedOperands)
 {
     switch (op)
     {
@@ -5284,6 +5675,29 @@ bool isInImplictScope(IHqlExpression * scope, IHqlExpression * dataset)
     return false;
 }
 
+//===========================================================================
+
+CHqlDictionary *CHqlDictionary::makeDictionary(node_operator _op, ITypeInfo *type, HqlExprArray &_ownedOperands)
+{
+    CHqlDictionary *e = new CHqlDictionary(_op, type, _ownedOperands);
+    return (CHqlDictionary *) e->closeExpr();
+}
+
+CHqlDictionary::CHqlDictionary(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands)
+: CHqlExpressionWithType(_op, _type, _ownedOperands)
+{
+}
+
+CHqlDictionary::~CHqlDictionary()
+{
+}
+
+IHqlExpression *CHqlDictionary::clone(HqlExprArray &newkids)
+{
+    return createDictionary(op, newkids);
+}
+
+//===========================================================================
 
 CHqlDataset *CHqlDataset::makeDataset(node_operator _op, ITypeInfo *type, HqlExprArray &_ownedOperands)
 {
@@ -5328,7 +5742,7 @@ void CHqlDataset::sethash()
 //==============================================================================================================
 
 CHqlDataset::CHqlDataset(node_operator _op, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
-: CHqlExpression(_op, _type, _ownedOperands)
+: CHqlExpressionWithType(_op, _type, _ownedOperands)
 {
     infoFlags &= ~(HEFfunctionOfGroupAggregate|HEFassertkeyed); // parent dataset should never have keyed attribute
     infoFlags &= ~(HEF2assertstepped);
@@ -5599,15 +6013,14 @@ node_operator queryTableMode(IHqlExpression * expr)
 
 //==============================================================================================================
 
-CHqlRecord::CHqlRecord() : CHqlExpression (no_record, NULL, NULL)
+CHqlRecord::CHqlRecord() : CHqlExpressionWithTables(no_record)
 {
-    type = this;
     thisAlignment = 0;
 }
 
-CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpression (no_record, NULL, operands)
+CHqlRecord::CHqlRecord(HqlExprArray &operands) : CHqlExpressionWithTables(no_record)
 {
-    type = this;
+    setOperands(operands);
     thisAlignment = 0;
     insertSymbols(this);
 }
@@ -5697,9 +6110,19 @@ void CHqlRecord::insertSymbols(IHqlExpression * expr)
     }
 }
 
+ITypeInfo * CHqlRecord::queryType() const
+{
+    return const_cast<CHqlRecord *>(this);
+}
+
+ITypeInfo * CHqlRecord::getType()
+{
+    CHqlRecord::Link();
+    return this;
+}
+
 CHqlRecord::~CHqlRecord()
 {
-    type = NULL; // make sure not released twice
 }
 
 /* return: linked */
@@ -5716,6 +6139,7 @@ bool CHqlRecord::assignableFrom(ITypeInfo * source)
     switch(source->getTypeCode())
     {
     case type_groupedtable:
+    case type_dictionary:
     case type_table:
     case type_row:
     case type_transform:
@@ -5723,7 +6147,7 @@ bool CHqlRecord::assignableFrom(ITypeInfo * source)
 
     case type_record:
         {
-            if (recordTypesMatch(source, this))
+            if  (numChildren() == 0 || recordTypesMatch(source, this))
                 return true;
 
             //Record inheritance.  If the first entry in the source record is also a record, then check if compatible.
@@ -5755,7 +6179,7 @@ StringBuffer &CHqlRecord::getECLType(StringBuffer & out)
 
 //==============================================================================================================
 CHqlAnnotation::CHqlAnnotation(IHqlExpression * _body)
-: CHqlExpression(_body ? _body->getOperator() : no_nobody, _body ? _body->getType() : cachedNoBody->getType(), NULL)
+: CHqlExpression(_body ? _body->getOperator() : no_nobody)
 {
     body = _body;
     if (!body)
@@ -5837,6 +6261,16 @@ IHqlExpression * CHqlAnnotation::cloneAllAnnotations(IHqlExpression * newbody)
 bool CHqlAnnotation::isIndependentOfScope()
 {
     return body->isIndependentOfScope();
+}
+
+bool CHqlAnnotation::usesSelector(IHqlExpression * selector)
+{
+    return body->usesSelector(selector);
+}
+
+void CHqlAnnotation::gatherTablesUsed(CUsedTablesBuilder & used)
+{
+    body->gatherTablesUsed(used);
 }
 
 void CHqlAnnotation::gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope)
@@ -6001,16 +6435,43 @@ IAtom * CHqlAnnotation::queryName() const
     return body->queryName();
 }
 
+ITypeInfo * CHqlAnnotation::queryType() const
+{
+    return body->queryType();
+}
+
+ITypeInfo * CHqlAnnotation::getType()
+{
+    return body->getType();
+}
+
+
 
 //==============================================================================================================
 
 CHqlCachedBoundFunction::CHqlCachedBoundFunction(IHqlExpression *func, bool _forceOutOfLineExpansion)
-: CHqlExpression(no_bound_func, NULL, LINK(func), NULL) 
+: CHqlExpressionWithTables(no_bound_func)
 {
+    appendOperands(LINK(func), NULL);
     if (_forceOutOfLineExpansion)
         addOperand(createConstant(true));
 }
 
+ITypeInfo * CHqlCachedBoundFunction::queryType() const
+{
+    return nullType;
+}
+
+ITypeInfo * CHqlCachedBoundFunction::getType()
+{
+    return LINK(nullType);
+}
+
+IHqlExpression * CHqlCachedBoundFunction::clone(HqlExprArray &)
+{
+    throwUnexpected();
+    return LINK(this);
+}
 
 #ifdef NEW_VIRTUAL_DATASETS
 //Skeleton code to implement template functions using the standard binding mechanism (to behave more like c++ templates)
@@ -6196,23 +6657,15 @@ IHqlExpression *CHqlSimpleSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExp
 
 IHqlExpression * CHqlSimpleSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
 {
+    assertex(!optargs || optargs->ordinality() == 0);
     _ATOM newname = optname ? optname : name;
     IHqlExpression * newbody = optnewbody ? optnewbody : body;
     IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
-    HqlExprArray * newoperands = optargs ? optargs : &operands;
 
     if (newname == name && newbody==body && newfuncdef==funcdef)
-    {
-        if (newoperands == &operands || arraysSame(*newoperands, operands))
-            return LINK(this);
-    }
+        return LINK(this);
 
-    CHqlSimpleSymbol * e = new CHqlSimpleSymbol(newname, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
-    //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
-    e->operands.ensure(newoperands->ordinality());
-    ForEachItemIn(idx, *newoperands)
-        e->operands.append(OLINK(newoperands->item(idx)));
-    return e->closeExpr();
+    return makeSymbol(newname, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
 }
 
 
@@ -6349,7 +6802,7 @@ bool CHqlAnnotationWithOperands::equals(const IHqlExpression & other) const
 {
     if (!CHqlAnnotation::equals(other))
         return false;
-    const CHqlMetaAnnotation * cast = static_cast<const CHqlMetaAnnotation *>(&other);
+    const CHqlAnnotationWithOperands * cast = static_cast<const CHqlAnnotationWithOperands *>(&other);
     if (operands.ordinality() != cast->operands.ordinality())
         return false;
     ForEachItemIn(i, operands)
@@ -6502,6 +6955,7 @@ extern HQL_API bool okToAddLocation(IHqlExpression * expr)
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_void:
@@ -6706,14 +7160,13 @@ IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath)
     return new CFileContents(file, sourcePath);
 }
 
-class CFileContentsSubset : public CInterface, implements IFileContents
+class CFileContentsSubset : public CInterfaceOf<IFileContents>
 {
 public:
     CFileContentsSubset(IFileContents * _contents, size32_t _offset, size32_t _len)
         : contents(_contents), offset(_offset), len(_len)
     {
     }
-    IMPLEMENT_IINTERFACE
 
     virtual IFile * queryFile() { return contents->queryFile(); }
     virtual ISourcePath * querySourcePath() { return contents->querySourcePath(); }
@@ -6738,13 +7191,13 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 //==============================================================================================================
 
 CHqlScope::CHqlScope(node_operator _op, _ATOM _name, const char * _fullName)
-: CHqlExpression(_op, NULL, NULL), name(_name), fullName(_fullName)
+: CHqlExpressionWithType(_op, NULL), name(_name), fullName(_fullName)
 {
     type = this;
 }
 
 CHqlScope::CHqlScope(IHqlScope* scope)
-: CHqlExpression(no_scope, NULL, NULL)
+: CHqlExpressionWithType(no_scope, NULL)
 {
     name = scope->queryName();
     fullName.set(scope->queryFullName());
@@ -6755,7 +7208,7 @@ CHqlScope::CHqlScope(IHqlScope* scope)
 }
 
 CHqlScope::CHqlScope(node_operator _op) 
-: CHqlExpression(_op, NULL, NULL)
+: CHqlExpressionWithType(_op, NULL)
 {
     name = NULL;
     type = this;
@@ -8329,7 +8782,7 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
 
 static UniqueSequenceCounter parameterSequence;
 CHqlParameter::CHqlParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type)
- : CHqlExpression(no_param, _type, NULL)
+ : CHqlExpressionWithType(no_param, _type)
 {
     name = _name;
     idx = _idx;
@@ -8359,6 +8812,9 @@ IHqlExpression * CHqlParameter::makeParameter(_ATOM _name, unsigned _idx, ITypeI
     type_t tc = _type->getTypeCode();
     switch (tc)
     {
+    case type_dictionary:
+        e = new CHqlDictionaryParameter(_name, _idx, _type);
+        break;
     case type_table:
     case type_groupedtable:
         e = new CHqlDatasetParameter(_name, _idx, _type);
@@ -8475,7 +8931,7 @@ IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned loo
 }
 
 //==============================================================================================================
-CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpression(_op, _type, NULL)
+CHqlVariable::CHqlVariable(node_operator _op, const char * _name, ITypeInfo * _type) : CHqlExpressionWithType(_op, _type)
 {
 #ifdef SEARCH_NAME1
     if (strcmp(_name, SEARCH_NAME1) == 0)
@@ -8527,7 +8983,7 @@ StringBuffer &CHqlVariable::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpression(_op, makeNullType(), NULL)
+CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpressionWithTables(_op)
 {
     name = _name;
 }
@@ -8576,9 +9032,19 @@ StringBuffer &CHqlAttribute::toString(StringBuffer &ret)
     return ret;
 }
 
+ITypeInfo * CHqlAttribute::queryType() const
+{
+    return nullType;
+}
+
+ITypeInfo * CHqlAttribute::getType()
+{
+    return LINK(nullType);
+}
+
 //==============================================================================================================
 
-CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) : CHqlExpression(_op, _type, NULL)
+CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) : CHqlExpressionWithType(_op, _type)
 {
     name = _name;
     extra.setown(_extra);
@@ -8627,7 +9093,7 @@ StringBuffer &CHqlUnknown::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) : CHqlExpression(_op, _type, NULL)
+CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) : CHqlExpressionWithType(_op, _type)
 {
     infoFlags |= HEFhasunadorned;
     name = _name;
@@ -8671,7 +9137,7 @@ StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlExternal::CHqlExternal(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpression(no_external, _type, _ownedOperands)
+CHqlExternal::CHqlExternal(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_external, _type, _ownedOperands)
 {
     name = _name;
 }
@@ -8688,7 +9154,7 @@ CHqlExternal *CHqlExternal::makeExternalReference(_ATOM _name, ITypeInfo *_type,
 
 //==============================================================================================================
 
-CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpression(no_externalcall, _type, _ownedOperands), funcdef(_funcdef)
+CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_externalcall, _type, _ownedOperands), funcdef(_funcdef)
 {
     IHqlExpression * def = funcdef->queryChild(0);
     //Once aren't really pure, but are as far as the code generator is concerned.  Split into more flags if it becomes an issue.
@@ -8764,7 +9230,7 @@ IHqlExpression *CHqlExternalDatasetCall::clone(HqlExprArray &newkids)
 
 //==============================================================================================================
 
-CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpression(no_call, _type, _ownedOperands), param(_param)
+CHqlDelayedCall::CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * _type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_call, _type, _ownedOperands), param(_param)
 {
     infoFlags |= (param->getInfoFlags() & HEFalwaysInherit);
     infoFlags2 |= (param->getInfoFlags2() & HEF2alwaysInherit);
@@ -8855,7 +9321,7 @@ bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
 #pragma warning( disable : 4355 )
 #endif
 /* In parm: scope is linked */
-CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpression(no_type, NULL, NULL)
+CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
 {
     name = _name;
     scope = _scope;
@@ -8876,7 +9342,6 @@ CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _f
     logical= load->queryType()->queryChildType();
     physical = loadParam->queryType();
     
-    type = this;
 }
 #ifdef _MSC_VER
 #pragma warning( pop )
@@ -8884,11 +9349,20 @@ CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _f
 
 CHqlAlienType::~CHqlAlienType()
 {
-    // type points to myself - prevent re-entrant destroy
-    type = NULL;
     ::Release(scope);
     if (funcdef != this)
         ::Release(funcdef);
+}
+
+ITypeInfo * CHqlAlienType::queryType() const
+{
+    return const_cast<CHqlAlienType *>(this);
+}
+
+ITypeInfo * CHqlAlienType::getType()
+{
+    CHqlAlienType::Link();
+    return this;
 }
 
 bool CHqlAlienType::equals(const IHqlExpression &r) const
@@ -9022,7 +9496,7 @@ extern IHqlExpression *createAlienType(_ATOM name, IHqlScope * scope, HqlExprArr
 //==============================================================================================================
 
 /* In parm: scope is linked */
-CHqlEnumType::CHqlEnumType(ITypeInfo * _type, IHqlScope *_scope) : CHqlExpression(no_enum, _type, NULL)
+CHqlEnumType::CHqlEnumType(ITypeInfo * _type, IHqlScope *_scope) : CHqlExpressionWithType(no_enum, _type)
 {
     scope = _scope;
     IHqlExpression * scopeExpr = queryExpression(scope);
@@ -9087,11 +9561,11 @@ extern IHqlExpression *createParameter(_ATOM name, unsigned idx, ITypeInfo *type
 
 extern IHqlExpression *createValue(node_operator op)
 {
-    return CHqlExpression::makeExpression(op, NULL, NULL);
+    return CHqlExpressionWithType::makeExpression(op, NULL, NULL);
 }
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type)
 {
-    return CHqlExpression::makeExpression(op, type, NULL);
+    return CHqlExpressionWithType::makeExpression(op, type, NULL);
 }
 extern IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type)
 {
@@ -9115,7 +9589,7 @@ extern IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type)
         }
     }
 #endif
-    return new CHqlExpression(op, type, NULL);
+    return new CHqlExpressionWithType(op, type);
 }
 
 extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name)
@@ -9145,25 +9619,25 @@ extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _
 
 extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2)
 {
-    return CHqlExpression::makeExpression(op, p1->getType(), p1, p2, NULL);
+    return CHqlExpressionWithType::makeExpression(op, p1->getType(), p1, p2, NULL);
 }
 
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type, IHqlExpression *p1)
 {
-    return CHqlExpression::makeExpression(op, type, p1, NULL);
+    return CHqlExpressionWithType::makeExpression(op, type, p1, NULL);
 }
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type, IHqlExpression *p1, IHqlExpression *p2)
 {
-    return CHqlExpression::makeExpression(op, type, p1, p2, NULL);
+    return CHqlExpressionWithType::makeExpression(op, type, p1, p2, NULL);
 }
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3)
 {
-    return CHqlExpression::makeExpression(op, type, p1, p2, p3, NULL);
+    return CHqlExpressionWithType::makeExpression(op, type, p1, p2, p3, NULL);
 }
 
 extern IHqlExpression *createValue(node_operator op, ITypeInfo *type, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3, IHqlExpression *p4)
 {
-    return CHqlExpression::makeExpression(op, type, p1, p2, p3, p4, NULL);
+    return CHqlExpressionWithType::makeExpression(op, type, p1, p2, p3, p4, NULL);
 }
 
 extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
@@ -9188,7 +9662,7 @@ extern IHqlExpression *createValueF(node_operator op, ITypeInfo *type, ...)
             children.append(*parm);
     }
     va_end(args);
-    return CHqlExpression::makeExpression(op, type, children);
+    return CHqlExpressionWithType::makeExpression(op, type, children);
 }
 
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, unsigned num, IHqlExpression * * args)
@@ -9230,39 +9704,19 @@ extern HQL_API IHqlExpression * createValueSafe(node_operator op, ITypeInfo * ty
     return createValue(op, type, max-from, exprList + from);
 }
 
-extern HQL_API IHqlExpression *createValueFromList(node_operator op, ITypeInfo * type, ...)
-{
-    IHqlExpression * expr = createOpenValue(op, type);
-    va_list args;
-    va_start(args, type);
-    for (;;)
-    {
-        IHqlExpression *parm = va_arg(args, IHqlExpression *);
-        if (!parm)
-            break;
-#ifdef _DEBUG
-        assertex(QUERYINTERFACE(parm, IHqlExpression));
-#endif
-        expr->addOperand(parm);
-    }
-    va_end(args);
-    return expr->closeExpr();
-}
-
-
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1)
 {
-    return CHqlExpression::makeExpression(op, makeBoolType(), p1, NULL);
+    return CHqlExpressionWithType::makeExpression(op, makeBoolType(), p1, NULL);
 }
 
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHqlExpression *p2)
 {
-    return CHqlExpression::makeExpression(op, makeBoolType(), p1, p2, NULL);
+    return CHqlExpressionWithType::makeExpression(op, makeBoolType(), p1, p2, NULL);
 }
 
 extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHqlExpression *p2, IHqlExpression *p3)
 {
-    return CHqlExpression::makeExpression(op, makeBoolType(), p1, p2, p3, NULL);
+    return CHqlExpressionWithType::makeExpression(op, makeBoolType(), p1, p2, p3, NULL);
 }
 
 extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, HqlExprArray & _ownedOperands)
@@ -9426,6 +9880,97 @@ extern IHqlExpression *createDatasetF(node_operator op, ...)
     return createDataset(op, children);
 }
 
+IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
+{
+#ifdef GATHER_LINK_STATS
+    insideCreate++;
+#endif
+    Owned<ITypeInfo> type = NULL;
+
+    switch (op)
+    {
+    case no_newuserdictionary:
+    case no_userdictionary:
+    case no_inlinedictionary:
+        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(1)))));
+        break;
+    case no_select:
+        type.set(parms.item(1).queryType());
+        break;
+    case no_addfiles:
+        type.set(parms.item(0).queryType());  // It's an error if they don't all match, caught elsewhere (?)
+        break;
+    case no_if:
+        type.set(parms.item(1).queryType());  // It's an error if they don't match, caught elsewhere
+        break;
+    case no_case:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(1).queryType());
+        break;
+    case no_map:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(0).queryType());
+        break;
+    case no_null:
+    case no_fail:
+    case no_anon:
+    {
+        IHqlExpression * record = &parms.item(0);
+        IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
+        bool linkCounted = (queryProperty(_linkCounted_Atom, parms) || recordRequiresSerialization(record));
+        if (!metadata)
+        {
+            ITypeInfo * recordType = createRecordType(record);
+            assertex(recordType->getTypeCode() == type_record);
+            ITypeInfo * rowType = makeRowType(recordType);
+            type.setown(makeDictionaryType(rowType));
+        }
+        else
+            UNIMPLEMENTED_XY("Type calculation for dictionary operator", getOpString(op));
+
+        if (linkCounted)
+            type.setown(setLinkCountedAttr(type, true));
+        break;
+    }
+    case no_nofold:
+    case no_nohoist:
+    case no_thor:
+    case no_nothor:
+    case no_alias:
+    case no_translated:
+    case no_catch:
+        type.set(parms.item(0).queryType());
+        break;
+    default:
+        UNIMPLEMENTED_XY("Type calculation for dictionary operator", getOpString(op));
+        break;
+    }
+
+    IHqlExpression * ret = CHqlDictionary::makeDictionary(op, type.getClear(), parms);
+#ifdef GATHER_LINK_STATS
+    insideCreate--;
+#endif
+    return ret;
+}
+
+IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary, IHqlExpression *list)
+{
+    HqlExprArray parms;
+    parms.append(*dictionary);
+    if (list)
+    {
+        list->unwindList(parms, no_comma);
+        list->Release();
+    }
+    return createDictionary(op, parms);
+}
+
+IHqlExpression *createDictionary(node_operator op, IHqlExpression *dictionary)
+{
+    HqlExprArray parms;
+    parms.append(*dictionary);
+    return createDictionary(op, parms);
+}
 
 IHqlExpression * createAliasOwn(IHqlExpression * expr, IHqlExpression * attr)
 {
@@ -9446,6 +9991,8 @@ IHqlExpression * createTypedValue(node_operator op, ITypeInfo * type, HqlExprArr
     case type_groupedtable:
     case type_table:
         return createDataset(op, args);
+    case type_dictionary:
+        return createDictionary(op, args);
     case type_row:
         return createRow(op, args);
     default:
@@ -9959,6 +10506,10 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
                         actual.setown(createDataset(no_hqlproject, actual.getClear(), createComma(transform.getClear(), LINK(seqAttr))));
                     }
                 }
+                break;
+            case type_dictionary:
+                // MORE - needs some code
+                // For now, never cast
                 break;
             case type_row:
             case type_transform:
@@ -11153,23 +11704,6 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     return ret;
 }
 
-void CHqlExpression::setLocationIndependent(IHqlExpression * value)
-{
-    CriticalBlock cs(*unadornedCS);
-    if (!(infoFlags & HEFhasunadorned))
-    {
-        infoFlags |= HEFhasunadorned;
-        if (value != this)
-        {
-            //Ugly...  
-            //A location independent version of an alien datatype may retain a link back to the original (via funcdef)
-            //so this may create a circular reference.  Needs a bit more thought!  Possibly no need for the alien funcdef
-            if (op != no_type)
-                locationIndependent.set(value); 
-        }
-    }
-}
-
 extern IHqlExpression *createNewDataset(IHqlExpression *name, IHqlExpression *recorddef, IHqlExpression *mode, IHqlExpression *parent, IHqlExpression *joinCondition, IHqlExpression * options)
 {
     HqlExprArray args;
@@ -11350,7 +11884,7 @@ extern IHqlExpression *createList(node_operator op, ITypeInfo *type, IHqlExpress
         list->unwindList(parms, no_comma);
         list->Release();
     }
-    return CHqlExpression::makeExpression(op, type, parms);
+    return CHqlExpressionWithType::makeExpression(op, type, parms);
 }
 
 extern IHqlExpression *createBinaryList(node_operator op, HqlExprArray & args)
@@ -11510,15 +12044,15 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
 }
 
 extern IHqlExpression* createValue(node_operator op, HqlExprArray& operands) {
-    return CHqlExpression::makeExpression(op, NULL, operands);
+    return CHqlExpressionWithType::makeExpression(op, NULL, operands);
 }
 
 extern IHqlExpression* createValue(node_operator op, ITypeInfo *_type, HqlExprArray& operands) {
-    return CHqlExpression::makeExpression(op, _type, operands);
+    return CHqlExpressionWithType::makeExpression(op, _type, operands);
 }
 
 extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1) {
-    return CHqlExpression::makeExpression(op, NULL, p1, NULL);
+    return CHqlExpressionWithType::makeExpression(op, NULL, p1, NULL);
 }
 
 extern IHqlExpression* createConstant(int ival) {
@@ -11526,7 +12060,7 @@ extern IHqlExpression* createConstant(int ival) {
 }
 
 extern IHqlExpression* createBoolExpr(node_operator op, HqlExprArray& operands) {
-    return CHqlExpression::makeExpression(op, makeBoolType(), operands);
+    return CHqlExpressionWithType::makeExpression(op, makeBoolType(), operands);
 }
 
 extern IHqlExpression *createWrapper(node_operator op, IHqlExpression * e)
@@ -11541,6 +12075,8 @@ extern IHqlExpression *createWrapper(node_operator op, IHqlExpression * e)
         case type_table:
         case type_groupedtable:
             return createDataset(op, e, NULL);
+        case type_dictionary:
+            return createDictionary(op, e, NULL);
         }
     }
     return createValue(op, LINK(type), e);
@@ -11555,6 +12091,8 @@ IHqlExpression *createWrapper(node_operator op, ITypeInfo * type, HqlExprArray &
         {
         case type_row:
             return createRow(op, args);
+        case type_dictionary:
+            return createDictionary(op, args);
         case type_table:
         case type_groupedtable:
             return createDataset(op, args);
@@ -11668,11 +12206,12 @@ extern IHqlExpression * createSelectExpr(IHqlExpression * _lhs, IHqlExpression *
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
         return createDataset(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
+    if (t == type_dictionary)
+        return createDictionary(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
     if (t == type_row)
         return createRow(no_select, LINK(normalLhs), createComma(rhs, LINK(newAttr)));
 
-    IHqlExpression * ret = new CHqlSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
-    return ret->closeExpr();
+    return CHqlSelectBaseExpression::makeSelectExpression(LINK(normalLhs), rhs, LINK(newAttr));
 }
 
 static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
@@ -11683,11 +12222,12 @@ static IHqlExpression * doCreateSelectExpr(HqlExprArray & args)
     type_t t = rhs->queryType()->getTypeCode();
     if (t == type_table || t == type_groupedtable)
         return createDataset(no_select, args);
+    if (t == type_dictionary)
+        return createDictionary(no_select, args);
     if (t == type_row)
         return createRow(no_select, args);
 
-    IHqlExpression * ret = new CHqlSelectExpression(args);
-    return ret->closeExpr();
+    return CHqlSelectBaseExpression::makeSelectExpression(args);
 }
 
 extern IHqlExpression * createSelectExpr(HqlExprArray & args)
@@ -11836,9 +12376,7 @@ bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, IHqlExpression * 
 
 bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset)
 {
-    HqlExprCopyArray scopeUsed;
-    expr->gatherTablesUsed(NULL, &scopeUsed);
-    return scopeUsed.contains(*dataset->queryNormalizedSelector());
+    return expr->usesSelector(dataset->queryNormalizedSelector());
 }
 
 void gatherChildTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope, IHqlExpression * expr, unsigned firstChild)
@@ -12176,6 +12714,13 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
             IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
             return createDataset(no_null, LINK(record), LINK(attr));
         }
+    case type_dictionary:
+        {
+            ITypeInfo * recordType = queryRecordType(type);
+            IHqlExpression * record = queryExpression(recordType);
+            IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
+            return createDictionary(no_null, LINK(record), LINK(attr));
+        }
     case type_row:
 #if 0
         {
@@ -12228,6 +12773,8 @@ extern HQL_API IHqlExpression * createPureVirtual(ITypeInfo * type)
             return createDataset(no_purevirtual, LINK(queryOriginalRecord(type)));
         case type_groupedtable:
             return createDataset(no_purevirtual, LINK(queryOriginalRecord(type)), createAttribute(groupedAtom));
+        case type_dictionary:
+            return createDictionary(no_purevirtual, LINK(queryOriginalRecord(type)), createAttribute(groupedAtom));
         case type_row:
         case type_record:
             return createRow(no_purevirtual, LINK(queryOriginalRecord(type)));
@@ -13120,14 +13667,6 @@ extern HQL_API void unlockTransformMutex()
 
 //==============================================================================================================
 
-struct SavedValue : public CInterface, public IInterface
-{
-    SavedValue(unsigned _value) { value = _value; }
-    IMPLEMENT_IINTERFACE;
-
-    unsigned value;
-};
-
 unsigned getExpressionCRC(IHqlExpression * expr)
 {
     CriticalBlock procedure(*crcCS);
@@ -13361,7 +13900,7 @@ IHqlExpression * extractChildren(IHqlExpression * value)
 
 IHqlExpression * queryDatasetCursor(IHqlExpression * ds)
 {
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
         ds = ds->queryChild(0);
     return ds;
 }
@@ -13371,7 +13910,7 @@ IHqlExpression * querySelectorDataset(IHqlExpression * expr, bool & isNew)
     assertex(expr->getOperator() == no_select);
     isNew = expr->hasProperty(newAtom);
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         if (ds->hasProperty(newAtom))
             isNew = true;
@@ -13387,7 +13926,7 @@ bool isNewSelector(IHqlExpression * expr)
     if (expr->hasProperty(newAtom))
         return true;
     IHqlExpression * ds = expr->queryChild(0);
-    while ((ds->getOperator() == no_select) && !ds->isDataset())
+    while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         if (ds->hasProperty(newAtom))
             return true;
@@ -13409,7 +13948,7 @@ IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * 
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
-    if ((ds->getOperator() == no_select) && !ds->isDataset())
+    if ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
         OwnedHqlExpr newSelector = replaceSelectorDataset(ds, newDataset);
         return replaceChild(expr, 0, newSelector);
@@ -13469,6 +14008,7 @@ static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, boo
     case type_alien:
         return getSimplifiedType(promoted, isConditional, isSerialized);
     case type_row:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_transform:
@@ -13938,8 +14478,11 @@ bool isKeyedJoin(IHqlExpression * expr)
     {
         if (expr->hasProperty(allAtom) || expr->hasProperty(lookupAtom))
             return false;
-        if (expr->hasProperty(keyedAtom))
+        if (expr->hasProperty(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
             return true;
+        //Keyed joins only support INNER/LEFT.  Default to a normal join for other join types.
+        if (!isInnerJoin(expr) && !isLeftJoin(expr))
+            return false;
         if (isKey(expr->queryChild(1)))
             return true;
     }
@@ -14212,17 +14755,21 @@ bool isPureActivity(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
     for (unsigned i = getNumChildTables(expr); i < max; i++)
-        if (!expr->queryChild(i)->isPure())
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (!cur->isPure() || containsSkip(cur))
             return false;
+    }
     return true;
 }
 
 bool isPureActivityIgnoringSkip(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
+    const unsigned mask = HEFimpure & ~(HEFcontainsSkip);
     for (unsigned i = getNumChildTables(expr); i < max; i++)
     {
-        if (expr->queryChild(i)->getInfoFlags() & (HEFimpure &~HEFtransformSkips))
+        if (expr->queryChild(i)->getInfoFlags() & mask)
             return false;
     }
     return true;
@@ -14250,6 +14797,7 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
         if (expr->hasProperty(mergeTransformAtom))
             return true;
         break;
+    case no_inlinedictionary:
     case no_inlinetable:
         {
             IHqlExpression * transforms = expr->queryChild(0);
@@ -14314,11 +14862,14 @@ bool transformHasSkipAttr(IHqlExpression * transform)
 
 bool isPureInlineDataset(IHqlExpression * expr)
 {
-    assertex(expr->getOperator() == no_inlinetable);
+    assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_inlinedictionary);
     IHqlExpression * values = expr->queryChild(0);
     ForEachChild(i, values)
-        if (!values->queryChild(i)->isPure())
+    {
+        IHqlExpression * transform = values->queryChild(i);
+        if (!transform->isPure() || containsSkip(transform))
             return false;
+    }
     return true;
 }
 
@@ -14356,6 +14907,11 @@ IHqlExpression * queryNullRowRecord()
 IHqlExpression * createNullDataset()
 {
     return createDataset(no_null, LINK(queryNullRecord()));
+}
+
+IHqlExpression * createNullDictionary()
+{
+    return createDictionary(no_null, LINK(queryNullRecord()));
 }
 
 bool removeProperty(HqlExprArray & args, _ATOM name)
@@ -14469,7 +15025,6 @@ IHqlExpression * createUniqueId()
 static UniqueSequenceCounter counterSequence;
 IHqlExpression * createCounter()
 {
-//  return createValue(no_counter, makeIntType(8, false), createUniqueId());
     return createSequence(no_counter, makeIntType(8, false), NULL, counterSequence.next());
 }
 
@@ -14477,6 +15032,12 @@ static UniqueSequenceCounter selectorSequence;
 IHqlExpression * createUniqueSelectorSequence()
 {
     unsigned __int64 seq = selectorSequence.next();
+    return createSequence(no_attr, NULL, _selectorSequence_Atom, seq);
+}
+
+
+IHqlExpression * createSelectorSequence(unsigned __int64 seq)
+{
     return createSequence(no_attr, NULL, _selectorSequence_Atom, seq);
 }
 
@@ -14665,6 +15226,14 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
 bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right)
 {
     return recordTypesMatch(left->queryRecordType(), right->queryRecordType());
+}
+
+
+bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right)
+{
+    OwnedHqlExpr simpleLeft = removeProperty(left->queryRecord(), _payload_Atom);
+    OwnedHqlExpr simpleRight = removeProperty(right->queryRecord(), _payload_Atom);
+    return recordTypesMatch(simpleLeft->queryType(), simpleRight->queryType());
 }
 
 
@@ -15229,7 +15798,8 @@ IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
     case type_table:
     case type_groupedtable:
         return createDataset(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
-        break;
+    case type_dictionary:
+        return createDictionary(no_typetransfer, LINK(queryOriginalRecord(newType)), expr);
     default:
         return createValue(no_typetransfer, newType.getClear(), expr);
     }

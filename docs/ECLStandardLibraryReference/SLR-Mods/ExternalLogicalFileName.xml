@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ExternalLogicalFileName">
-  <title><emphasis role="bold">ExternalLogicalFileName</emphasis></title>
+  <title>ExternalLogicalFileName</title>
 
   <para><emphasis role="bold">STD.File.ExternalLogicalFileName<indexterm>
       <primary>STD.File.ExternalLogicalFileName</primary>

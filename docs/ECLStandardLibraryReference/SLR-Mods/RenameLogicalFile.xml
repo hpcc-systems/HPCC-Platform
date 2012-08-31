@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="RenameLogicalFile">
-  <title><emphasis role="bold">RenameLogicalFile</emphasis></title>
+  <title>RenameLogicalFile</title>
 
   <para><emphasis role="bold">STD.File.RenameLogicalFile<indexterm>
       <primary>STD.File.RenameLogicalFile</primary>

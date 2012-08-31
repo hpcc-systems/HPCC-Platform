@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #pragma warning (disable : 4786)
@@ -160,7 +159,7 @@ void ParsePath(const char * fullPath, StringBuffer &ip, StringBuffer &filePath, 
 const char * const NODATETIME="1970-01-01T00:00:00Z";
 
 // Assign from a dfuwu workunit structure to an esp request workunit structure. 
-static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
+static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
 {
     if(src == NULL)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Source DFU workunit' doesn't exist.");
@@ -173,6 +172,7 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
     if (!root)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
+    double version = context.getClientVersion();
     StringBuffer tmp, encoded;
     dest.setID(src->queryId());
     if (src->getClusterName(tmp.clear()).length()!=0)
@@ -345,6 +345,18 @@ static void DeepAssign(IConstDFUWorkUnit *src, IEspDFUWorkunit &dest)
         file->getRowTag(rowtag);
         if(rowtag.length() > 0)
             dest.setRowTag(rowtag.str());
+
+        if (version > 1.03 && (file->getFormat() == DFUff_csv))
+        {
+            StringBuffer separate, terminate, quote;
+            file->getCsvOptions(separate,terminate,quote);
+            if(separate.length() > 0)
+                dest.setSourceCsvSeparate(separate.str());
+            if(terminate.length() > 0)
+                dest.setSourceCsvTerminate(terminate.str());
+            if(quote.length() > 0)
+                dest.setSourceCsvQuote(quote.str());
+        }
     }
 
     file = src->queryDestination();
@@ -1224,7 +1236,7 @@ bool CFileSprayEx::onGetDFUWorkunit(IEspContext &context, IEspGetDFUWorkunit &re
         {
             IEspDFUWorkunit &result = resp.updateResult();
             
-            DeepAssign(wu, result);
+            DeepAssign(context, wu, result);
             int n = resp.getResult().getState();
             if (n == DFUstate_scheduled || n == DFUstate_queued || n == DFUstate_started)
             {
@@ -1314,7 +1326,7 @@ bool CFileSprayEx::onCreateDFUWorkunit(IEspContext &context, IEspCreateDFUWorkun
         wu->commit();
         const char * d = wu->queryId();
         IEspDFUWorkunit &result = resp.updateResult();
-        DeepAssign(wu, result);
+        DeepAssign(context, wu, result);
         result.setOverwrite(false);
         result.setReplicate(true);
     }

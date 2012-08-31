@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 #include "platform.h"
 #include <algorithm>
@@ -53,6 +52,7 @@
 #include "hqlcse.ipp"
 #include "thorplugin.hpp"
 #include "hqlinline.hpp"
+#include "hqlusage.hpp"
 
 #ifdef _DEBUG
 //#define ADD_ASSIGNMENT_COMMENTS
@@ -397,6 +397,7 @@ IHqlExpression * getPointer(IHqlExpression * source)
             return createValue(no_typetransfer, LINK(newType), LINK(cast));
         }
         break;
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_row:
@@ -764,6 +765,8 @@ IHqlExpression * createTranslated(IHqlExpression * expr, IHqlExpression * length
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
+    case type_dictionary:
+        return createDictionary(no_translated, LINK(expr), LINK(length));
     case type_table:
     case type_groupedtable:
         return createDataset(no_translated, LINK(expr), LINK(length));
@@ -853,6 +856,7 @@ bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr)
         case type_string:
         case type_qstring:
             return exprType->getSize() == 0;
+        case type_dictionary:
         case type_table:
             return expr->getOperator() == no_null;
         }
@@ -872,10 +876,11 @@ ExpressionFormat queryNaturalFormat(ITypeInfo * type)
 
 //===========================================================================
 
-SubGraphInfo::SubGraphInfo(IPropertyTree * _tree, unsigned _id, IHqlExpression * _graphTag, SubGraphType _type) 
-    : HqlExprAssociation(subGraphMarker), tree(_tree) 
+SubGraphInfo::SubGraphInfo(IPropertyTree * _tree, unsigned _id, unsigned _graphId, IHqlExpression * _graphTag, SubGraphType _type)
+    : HqlExprAssociation(subGraphMarker), tree(_tree)
 { 
-    id = _id; 
+    id = _id;
+    graphId = _graphId;
     type = _type; 
     graphTag.set(_graphTag);
 }
@@ -893,6 +898,8 @@ IHqlExpression * CHqlBoundExpr::getTranslatedExpr() const
     ITypeInfo * type = expr->queryType();
     switch (type->getTypeCode())
     {
+    case type_dictionary:
+        return createDictionary(no_translated, args);
     case type_table:
     case type_groupedtable:
         return createDataset(no_translated, args);
@@ -1485,7 +1492,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.checkRowOverflow,"checkRowOverflow", true),
         DebugOption(options.freezePersists,"freezePersists", false),
         DebugOption(options.maxRecordSize, "defaultMaxLengthRecord", MAX_RECORD_SIZE),
-        DebugOption(options.maxInlineDepth, "maxInlineDepth", 999),         // a debugging setting...
 
         DebugOption(options.checkRoxieRestrictions,"checkRoxieRestrictions", true),     // a debug aid for running regression suite
         DebugOption(options.checkThorRestrictions,"checkThorRestrictions", true),       // a debug aid for running regression suite
@@ -1679,8 +1685,11 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.implicitGroupShuffle,"implicitGroupShuffle",false),
         DebugOption(options.implicitGroupHashAggregate,"implicitGroupHashAggregate",false),
         DebugOption(options.implicitGroupHashDedup,"implicitGroupHashDedup",false),
+        DebugOption(options.reportFieldUsage,"reportFieldUsage",false),
         DebugOption(options.shuffleLocalJoinConditions,"shuffleLocalJoinConditions",false),
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
+        DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
+        DebugOption(options.normalizeSelectorSequence,"normalizeSelectorSequence",false),  // For tracking down why projects are not commoned up
     };
 
     //get options values from workunit
@@ -2719,6 +2728,13 @@ void HqlCppTranslator::buildFilter(BuildCtx & ctx, IHqlExpression * expr)
             buildFilter(ctx, expr->queryChild(0));
             return;
         }
+    case no_compound:
+        {
+            buildStmt(ctx, expr->queryChild(0));
+            buildFilter(ctx, expr->queryChild(1));
+            break;
+        }
+
     }
     buildFilterViaExpr(ctx, expr);
 }
@@ -2801,6 +2817,10 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_exists:
         if (!(expr->isPure() && ctx.getMatchExpr(expr, tgt)))
             doBuildExprExists(ctx, expr, tgt);
+        return;
+    case no_countdict:
+        if (!(expr->isPure() && ctx.getMatchExpr(expr, tgt)))
+            doBuildExprCountDict(ctx, expr, tgt);
         return;
     case no_existslist:
         doBuildAggregateList(ctx, NULL, expr, &tgt);
@@ -3039,6 +3059,9 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             }
             return;
         }
+    case no_indict:
+        doBuildExprInDict(ctx, expr, tgt);
+        return;
     case no_case:
     case no_choose:
     case no_concat:
@@ -3293,6 +3316,8 @@ bool HqlCppTranslator::specialCaseBoolReturn(BuildCtx & ctx, IHqlExpression * ex
         return false;
     if (expr->getOperator() == no_alias_scope)
         expr = expr->queryChild(0);
+    if (expr->getOperator() == no_compound)
+        expr = expr->queryChild(1);
     if ((expr->getOperator() == no_and) || (expr->getOperator() == no_or))
         return true;
     return false;
@@ -3573,11 +3598,14 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_persist_check:
         buildWorkflowPersistCheck(ctx, expr);
         return;
+    case no_childquery:
+        buildChildGraph(ctx, expr);
+        return;
     case no_evaluate_stmt:
         expr = expr->queryChild(0);
         if (expr->queryValue())
             return;
-        // fall through to default behaviour.
+        break; // evaluate default behaviour.
     }
     CHqlBoundExpr tgt;
     buildAnyExpr(ctx, expr, tgt);
@@ -4041,6 +4069,7 @@ IHqlExpression * HqlCppTranslator::createWrapperTemp(BuildCtx & ctx, ITypeInfo *
     case type_set:  //needed if we have sets with link counted elements
     case type_row:
     case type_array:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         //Ensure row and dataset temporaries are active throughout a function, so pointers to the row
@@ -4065,6 +4094,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     switch (tc)
     {
     case type_array:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         {
@@ -4120,6 +4150,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
         case type_array:
         case type_table:
         case type_groupedtable:
+        case type_dictionary:
             break;
         default:
             {
@@ -4158,6 +4189,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     case type_array:
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         {
             OwnedITypeInfo lenType = makeModifier(LINK(sizetType), modifier);
             target.expr.setown(createWrapperTemp(ctx, exprType, modifier));
@@ -4227,6 +4259,7 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
         break;
     case type_table:
     case type_groupedtable:
+    case type_dictionary:
         {
             createTempFor(declareCtx, type, tempTarget, modifier, format);
             IHqlStmt * stmt = subctx.addGroup();
@@ -4369,7 +4402,8 @@ void HqlCppTranslator::doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, C
 {
     //MORE These will be declared in a different context later.
     IHqlExpression * value = expr->queryChild(0);
-    assertex(value->getOperator() != no_alias);
+    while (value->getOperator() == no_alias)
+        value = value->queryChild(0);
 
     //The second half of this test could cause aliases to be duplicated, but has the significant effect of reducing the amount of data that is serialised.
     //so far on my examples it does the latter, but doesn't seem to cause the former
@@ -4704,6 +4738,7 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                     return;
                 //fallthrough....
             }
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
         case type_row:
@@ -5096,6 +5131,23 @@ void HqlCppTranslator::doBuildAssignIn(BuildCtx & ctx, const CHqlBoundTarget & t
 
 //---------------------------------------------------------------------------
 
+void HqlCppTranslator::doBuildExprInDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *dict = expr->queryChild(1);
+    Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dict);
+    cursor->buildInDataset(ctx, expr, tgt);
+}
+
+void HqlCppTranslator::doBuildExprCountDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *dict = expr->queryChild(0);
+    Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dict);
+    cursor->buildCountDict(ctx, tgt); // not the same as buildCount - that is the size of the table, we want the number of populated entries
+}
+
+
+//---------------------------------------------------------------------------
+
 void HqlCppTranslator::doBuildExprArith(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
     ITypeInfo * type = expr->queryType();
@@ -5354,6 +5406,7 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
                 ((ptc == type_varstring) && (argType->queryCharset() == paramType->queryCharset())))
                 return LINK(curParam);
             break;
+        case type_dictionary:
         case type_row:
         case type_table:
         case type_groupedtable:
@@ -5413,6 +5466,7 @@ IHqlExpression * getCastParameter(IHqlExpression * curParam, ITypeInfo * argType
             if (childType)
                 return ensureExprType(curParam, argType);
             break;
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
         case type_row:
@@ -5640,6 +5694,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             returnByReference = true;
             break;
         }
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         {
@@ -5762,6 +5817,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         type_t atc = argType->getTypeCode();
         switch (atc)
         {
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             {
@@ -5771,8 +5827,16 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             }
         case type_row:
             {
-                Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
-                selector->buildAddress(ctx, bound);
+                if (hasLinkCountedModifier(argType))
+                {
+                    doBuildAliasValue(ctx, castParam, bound);
+//                    buildTempExpr(ctx, castParam, bound, FormatLinkedDataset);
+                }
+                else
+                {
+                    Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
+                    selector->buildAddress(ctx, bound);
+                }
     //          buildExpr(ctx, castParam, bound);       // more this needs more work I think
                 break;
             }
@@ -5841,6 +5905,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 }
                 break;
             }
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             {
@@ -7067,13 +7132,13 @@ void HqlCppTranslator::doBuildStmtIf(BuildCtx & ctx, IHqlExpression * expr)
     buildCachedExpr(subctx, expr->queryChild(0), cond);
 
     IHqlStmt * test = subctx.addFilter(cond.expr);
-    buildStmt(subctx, expr->queryChild(1));
+    optimizeBuildActionList(subctx, expr->queryChild(1));
 
     IHqlExpression * elseExpr = queryRealChild(expr, 2);
     if (elseExpr && elseExpr->getOperator() != no_null)
     {
         subctx.selectElse(test);
-        buildStmt(subctx, elseExpr);
+        optimizeBuildActionList(subctx, elseExpr);
     }
 }
 
@@ -7974,6 +8039,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
     bool useMemCmp = false;
     switch (tc)
     {
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         doBuildAssignCompareTable(ctx, info, left, right);
@@ -8719,6 +8785,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
         case type_row:
             throwUnexpected();
             break;
+        case type_dictionary:
         case type_groupedtable:
         case type_table:
             //MORE: Should be handle this differently, with an iterator for the link counted rows case?
@@ -10963,6 +11030,7 @@ void HqlCppTranslator::assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTa
             }
             break;
 
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             {
@@ -11188,6 +11256,7 @@ static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlEx
         case type_data:
         case type_unicode:
         case type_utf8:
+        case type_dictionary:
         case type_table:
         case type_groupedtable:
             if (paramType->getSize() == UNKNOWN_LENGTH)
@@ -11376,6 +11445,7 @@ IHqlExpression * HqlCppTranslator::getBoundCount(const CHqlBoundExpr & bound)
                 return getSizetConstant(size / type->queryChildType()->getSize());
             UNIMPLEMENTED;
         }
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
     case type_set:
@@ -11412,6 +11482,7 @@ IHqlExpression * HqlCppTranslator::getBoundLength(const CHqlBoundExpr & bound)
         }
     case type_set:
     case type_array:
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         assertex(!isArrayRowset(type));

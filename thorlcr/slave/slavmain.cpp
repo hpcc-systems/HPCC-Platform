@@ -1,19 +1,18 @@
 /*##############################################################################
 
-    Copyright (C) 2011 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
-    All rights reserved. This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
+       http://www.apache.org/licenses/LICENSE-2.0
 
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
 ############################################################################## */
 
 #include <platform.h>
@@ -23,6 +22,7 @@
 #include "jthread.hpp"
 #include "jprop.hpp"
 #include "jiter.ipp"
+#include "jlzw.hpp"
 
 #include "jhtree.hpp"
 #include "mpcomm.hpp"
@@ -153,30 +153,25 @@ public:
                 {
                     case QueryInit:
                     {
+                        MemoryBuffer mb;
+                        decompressToBuffer(mb, msg);
+                        msg.swapWith(mb);
                         mptag_t mptag, slaveMsgTag;
                         deserializeMPtag(msg, mptag);
                         queryClusterComm().flush(mptag);
                         deserializeMPtag(msg, slaveMsgTag);
                         queryClusterComm().flush(slaveMsgTag);
-                        StringBuffer soPath;
-                        StringAttr wuid, graphName, remoteSoPath;
+                        StringAttr wuid, graphName, soPath;
                         msg.read(wuid);
                         msg.read(graphName);
-                        msg.read(remoteSoPath);
+                        msg.read(soPath);
                         bool sendSo;
                         msg.read(sendSo);
-                        const SocketEndpoint &masterEp = queryClusterGroup().queryNode(0).endpoint();
                         if (sendSo)
                         {
                             size32_t size;
                             msg.read(size);
-                            globals->getProp("@query_so_dir", soPath);
-                            if (soPath.length())
-                                addPathSepChar(soPath);
-                            RemoteFilename rfn;
-                            rfn.setPath(masterEp, remoteSoPath);
-                            rfn.getTail(soPath);
-                            Owned<IFile> iFile = createIFile(soPath.str());
+                            Owned<IFile> iFile = createIFile(soPath);
                             try
                             {
                                 const void *soPtr = msg.readDirect(size);
@@ -199,36 +194,38 @@ public:
                                     ERRLOG("CJobListener::main: Current directory path too big, setting it to null");
                                     buf[0] = 0;
                                 }
-                                msg.append(buf).append(", path = ").append(soPath.str());
+                                msg.append(buf).append(", path = ").append(soPath);
                                 EXCLOG(e, msg.str());
                                 e->Release();
                             }
                             assertex(globals->getPropBool("Debug/@dllsToSlaves", true));
-                            querySoCache.add(soPath.str());
-                        }
-                        else if (globals->getPropBool("Debug/@dllsToSlaves", true))
-                        {
-                            // i.e. should have previously been sent.
-                            globals->getProp("@query_so_dir", soPath);
-                            if (soPath.length())
-                                addPathSepChar(soPath);
-                            RemoteFilename rfn;
-                            rfn.setPath(masterEp, remoteSoPath);
-                            rfn.getTail(soPath);
-                            OwnedIFile iFile = createIFile(soPath.str());
-                            if (!iFile->exists())
-                            {
-                                WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
-                                StringBuffer rpath;
-                                rfn.getRemotePath(rpath);
-                                if (rfn.isLocal())
-                                    rfn.getLocalPath(rpath.clear());
-                                copyFile(soPath.str(), rpath.str());
-                            }
-                            querySoCache.add(soPath.str());
+                            querySoCache.add(soPath);
                         }
                         else
-                            soPath.append(remoteSoPath);
+                        {
+                            RemoteFilename rfn;
+                            SocketEndpoint masterEp = queryClusterGroup().queryNode(0).endpoint();
+                            masterEp.port = 0;
+                            rfn.setPath(masterEp, soPath);
+                            StringBuffer rpath;
+                            if (rfn.isLocal())
+                                rfn.getLocalPath(rpath);
+                            else
+                                rfn.getRemotePath(rpath);
+                            if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                            {
+                                // i.e. should have previously been sent.
+                                OwnedIFile iFile = createIFile(soPath);
+                                if (!iFile->exists())
+                                {
+                                    WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.get());
+                                    copyFile(soPath, rpath.str());
+                                }
+                                querySoCache.add(soPath);
+                            }
+                            else
+                                soPath.set(rpath.str());
+                        }
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
@@ -236,8 +233,8 @@ public:
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
 
-                        PROGLOG("Using query: %s", soPath.str());
-                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
+                        PROGLOG("Using query: %s", soPath.get());
+                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath, mptag, slaveMsgTag);
                         jobs.replace(*LINK(job));
 
                         Owned<IPropertyTree> deps = createPTree(msg);
@@ -276,7 +273,7 @@ public:
                         subGraph->createFromXGMML(graphNode, NULL, NULL, NULL);
                         PROGLOG("GraphInit: %s, graphId=%"GIDPF"d", jobKey.get(), subGraph->queryGraphId());
                         subGraph->setExecuteReplyTag(subGraph->queryJob().deserializeMPTag(msg));
-                        unsigned len;
+                        size32_t len;
                         msg.read(len);
                         MemoryBuffer initData;
                         initData.append(len, msg.readDirect(len));
