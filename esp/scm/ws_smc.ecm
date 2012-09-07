@@ -84,6 +84,14 @@ ESPStruct DFUJob
     string Command;
 };
 
+ESPStruct ServerJobQueue
+{
+    string QueueName;
+    string ServerName;
+    string ServerType;
+    string QueueStatus;
+};
+
 ESPrequest [nil_remove] ActivityRequest
 {
     string ChatURL;
@@ -117,6 +125,7 @@ ESPresponse [exceptions_inline] ActivityResponse
     [min_ver("1.11")] bool Descending(false);
     [min_ver("1.12")] bool SuperUser(false);
     [min_ver("1.12")] string AccessRight;
+    [min_ver("1.14")] ESParray<ESPstruct ServerJobQueue> ServerJobQueues;
 };
 
 ESPrequest SMCIndexRequest
@@ -291,7 +300,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.13"), default_client_version("1.13"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.14"), default_client_version("1.14"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
