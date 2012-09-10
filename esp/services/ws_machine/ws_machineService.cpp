@@ -192,7 +192,7 @@ bool Cws_machineEx::onGetMachineInfo(IEspContext &context, IEspGetMachineInfoReq
             throw MakeStringException(ECLWATCH_INVALID_IP_OR_COMPONENT, "No network address specified.");
 
         CGetMachineInfoData machineInfoData;
-        readMachineInfoRequest(context, req.getGetProcessorInfo(), req.getGetStorageInfo(), req.getGetSoftwareInfo(),
+        readMachineInfoRequest(context, req.getGetProcessorInfo(), req.getGetStorageInfo(), req.getLocalFileSystemsOnly(), req.getGetSoftwareInfo(),
             req.getApplyProcessFilter(), addresses, req.getAddProcessesToFilter(), machineInfoData);
         getMachineInfo(context, machineInfoData);
         setMachineInfoResponse(context, req, machineInfoData, resp);
@@ -217,7 +217,7 @@ bool Cws_machineEx::onGetMachineInfoEx(IEspContext &context, IEspGetMachineInfoR
             throw MakeStringException(ECLWATCH_INVALID_IP_OR_COMPONENT, "No network address specified.");
 
         CGetMachineInfoData machineInfoData;
-        readMachineInfoRequest(context, true, true, true, true, addresses, NULL, machineInfoData);
+        readMachineInfoRequest(context, true, true, true, true, true, addresses, NULL, machineInfoData);
         getMachineInfo(context, machineInfoData);
         if (machineInfoData.getMachineInfoTable().ordinality())
             resp.setMachines(machineInfoData.getMachineInfoTable());
@@ -243,7 +243,7 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
 
         CGetMachineInfoData machineInfoData;
         Owned<IPropertyTree> targetClustersOut = createPTreeFromXMLString("<Root/>");
-        readMachineInfoRequest(context, req.getGetProcessorInfo(), req.getGetStorageInfo(), req.getGetSoftwareInfo(),
+        readMachineInfoRequest(context, req.getGetProcessorInfo(), req.getGetStorageInfo(), req.getLocalFileSystemsOnly(), req.getGetSoftwareInfo(),
             req.getApplyProcessFilter(), req.getAddProcessesToFilter(), targetClusters, machineInfoData, targetClustersOut);
         getMachineInfo(context, machineInfoData);
         setTargetClusterInfoResponse(context, req, machineInfoData, targetClustersOut, resp);
@@ -259,7 +259,7 @@ bool Cws_machineEx::onGetTargetClusterInfo(IEspContext &context, IEspGetTargetCl
 // Read Machine Infomation request and collect related settings from environment.xml  //
 ////////////////////////////////////////////////////////////////////////////////////////
 
-void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSoftwareInfo, bool applyProcessFilter,
+void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSoftwareInfo, bool applyProcessFilter,
                                            StringArray& processes, const char* addProcessesToFilters, CGetMachineInfoData& machineInfoData)
 {
     StringBuffer userID, password;
@@ -270,6 +270,7 @@ void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcess
 
     machineInfoData.getOptions().setGetProcessorInfo(getProcessorInfo);
     machineInfoData.getOptions().setGetStorageInfo(getStorageInfo);
+    machineInfoData.getOptions().setLocalFileSystemsOnly(localFileSystemsOnly);
     machineInfoData.getOptions().setGetSoftwareInfo(getSoftwareInfo);
     machineInfoData.getOptions().setApplyProcessFilter(applyProcessFilter);
 
@@ -300,7 +301,7 @@ void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcess
 }
 
 
-void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSoftwareInfo, bool applyProcessFilter,
+void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSoftwareInfo, bool applyProcessFilter,
                                            const char* addProcessesToFilters, StringArray& targetClustersIn, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClusterTreeOut)
 {
     StringBuffer userID, password;
@@ -311,6 +312,7 @@ void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcess
 
     machineInfoData.getOptions().setGetProcessorInfo(getProcessorInfo);
     machineInfoData.getOptions().setGetStorageInfo(getStorageInfo);
+    machineInfoData.getOptions().setLocalFileSystemsOnly(localFileSystemsOnly);
     machineInfoData.getOptions().setGetSoftwareInfo(getSoftwareInfo);
     machineInfoData.getOptions().setApplyProcessFilter(applyProcessFilter);
 
@@ -913,6 +915,8 @@ void Cws_machineEx::buildPreflightCommand(IEspContext& context, CMachineInfoThre
 
     if (checkDependency || !pParam->m_options.getApplyProcessFilter())
         preflightCommand.append(" -d=ALL");
+    if (pParam->m_options.getGetStorageInfo() && !pParam->m_options.getLocalFileSystemsOnly())
+        preflightCommand.append(" -m=YES");
 }
 
 int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const char* sConfigAddress, EnvMachineOS os,
@@ -1824,6 +1828,9 @@ void Cws_machineEx::setMachineInfoResponse(IEspContext& context, IEspGetMachineI
     reqInfo.setSecurityString(req.getSecurityString());
     reqInfo.setGetProcessorInfo(req.getGetProcessorInfo());
     reqInfo.setGetStorageInfo(req.getGetStorageInfo());
+    double version = context.getClientVersion();
+    if (version > 1.10)
+        reqInfo.setLocalFileSystemsOnly(req.getLocalFileSystemsOnly());
     reqInfo.setGetSoftwareInfo(req.getGetSoftwareInfo());
     reqInfo.setAutoRefresh( req.getAutoRefresh() );
     reqInfo.setMemThreshold(req.getMemThreshold());
@@ -1881,6 +1888,9 @@ void Cws_machineEx::setTargetClusterInfoResponse(IEspContext& context, IEspGetTa
 #endif
     reqInfo.setGetProcessorInfo(req.getGetProcessorInfo());
     reqInfo.setGetStorageInfo(req.getGetStorageInfo());
+    double version = context.getClientVersion();
+    if (version > 1.10)
+        reqInfo.setLocalFileSystemsOnly(req.getLocalFileSystemsOnly());
     reqInfo.setGetSoftwareInfo(req.getGetSoftwareInfo());
     reqInfo.setAutoRefresh( req.getAutoRefresh() );
     reqInfo.setMemThreshold(req.getMemThreshold());
