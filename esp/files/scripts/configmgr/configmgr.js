@@ -1816,7 +1816,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
             {
               if (top.document.rightDT.getRecord(counter)._oData.depth < recDepth)
               {
-                top.document.choice[index] = top.document.rightDT.getRecord(counter).getId();
+                top.document.choice[index] = top.document.rightDT.getRecord(counter).getData('params');
                 recDepth = top.document.rightDT.getRecord(counter)._oData.depth;
                 index++;
               }
@@ -1976,7 +1976,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
           {
             for (counter2 = lastCounter2; true; counter2++)
             {
-              if (this.getRecord(counter2).getId() == top.document.choice[counter])
+              if (this.getRecord(counter2).getData('params') == top.document.choice[counter])
               {
                 this.expandRecord(counter2);
                 lastCounter2 = counter2;
