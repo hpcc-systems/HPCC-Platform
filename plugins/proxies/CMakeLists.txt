@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (auditlib)
-add_subdirectory (debugservices)
-add_subdirectory (fileservices)
-add_subdirectory (logging)
-add_subdirectory (parselib)
-add_subdirectory (stringlib)
-add_subdirectory (unicodelib)
-add_subdirectory (workunitservices)
-if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
-  add_subdirectory (proxies)
-endif ()
+
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_saltlib.eclmod DESTINATION plugins COMPONENT Runtime)
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/lib_metaphone.eclmod DESTINATION plugins COMPONENT Runtime)
+
