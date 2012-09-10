@@ -6192,6 +6192,10 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_map:
                 result = doBuildActivityCase(ctx, expr, isRoot);
                 break;
+            case no_chooseds:
+            case no_choose:
+                result = doBuildActivityChoose(ctx, expr, isRoot);
+                break;
             case no_iterate:
                 result = doBuildActivityIterate(ctx, expr);
                 break;
@@ -15413,6 +15417,62 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySequentialParallel(BuildCtx & 
     return instance->getBoundActivity();
 }
 
+
+ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * cond, CIArrayOf<ABoundActivity> & inputs, bool isRoot)
+{
+    Owned<ABoundActivity> boundDefault = &inputs.popGet();
+
+    bool isChild = (insideChildGraph(ctx) || insideRemoteGraph(ctx));
+    assertex(!expr->isAction());
+    ThorActivityKind tak = isChild ? TAKchildcase : TAKcase;
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, tak, expr, "Case");
+
+    buildActivityFramework(instance, isRoot);
+    buildInstancePrefix(instance);
+
+    BuildCtx funcctx(instance->startctx);
+    funcctx.addQuotedCompound("virtual unsigned getBranch()");
+    OwnedHqlExpr fullCond(foldHqlExpression(cond));
+    if (options.spotCSE)
+        fullCond.setown(spotScalarCSE(fullCond));
+    buildReturn(funcctx, fullCond);
+
+    StringBuffer label;
+    ForEachItemIn(branchIdx, inputs)
+    {
+        ABoundActivity * boundBranch = &inputs.item(branchIdx);
+        label.clear().append("Branch ").append(branchIdx+1);
+        if (expr->isAction())
+            addDependency(ctx, boundBranch, instance->queryBoundActivity(), dependencyAtom, label.str(), branchIdx+1);
+        else
+            buildConnectInputOutput(ctx, instance, boundBranch, 0, branchIdx, label.str());
+    }
+
+    IHqlExpression * activeGraph = queryActiveSubGraph(ctx)->graphTag;
+    bool graphIndependent = isGraphIndependent(fullCond, activeGraph);
+
+    if (graphIndependent && !instance->hasChildActivity)
+        instance->addAttributeBool("_graphIndependent", true);
+
+    buildConnectInputOutput(ctx, instance, boundDefault, 0, inputs.ordinality(), "default");
+
+    buildInstanceSuffix(instance);
+    return instance->getBoundActivity();
+}
+
+ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
+{
+    bool isChild = (insideChildGraph(ctx) || insideRemoteGraph(ctx));
+
+    CIArrayOf<ABoundActivity> inputs;
+    ForEachChildFrom(i, expr, 1)
+        inputs.append(*getConditionalActivity(ctx, expr->queryChild(i), isChild));
+
+    OwnedHqlExpr branch = adjustValue(expr->queryChild(0), -1);
+    return doBuildActivityChoose(ctx, expr, branch, inputs, isRoot);
+}
+
+
 ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     node_operator op = expr->getOperator();
@@ -15427,7 +15487,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpre
         inputs.append(*getConditionalActivity(ctx, expr->queryChild(iinput)->queryChild(1), isChild));
     Owned<ABoundActivity> boundDefault = getConditionalActivity(ctx, expr->queryChild(max-1), isChild);
         
-    
     ThorActivityKind tak = isChild ? TAKchildcase : TAKcase;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, tak, expr, "Case");
 
@@ -17920,13 +17979,17 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
         break;
 
     case no_if:
+    case no_choose:
+    case no_chooseds:
         {
             if (needsRealThor(expr->queryChild(0), 0))
                 return true;
-            if (needsRealThor(expr->queryChild(1), flags))
-                return true;
-            IHqlExpression * c2 = expr->queryChild(2);
-            return (c2 && needsRealThor(c2, flags));
+            ForEachChildFrom(i, expr, 1)
+            {
+                if (needsRealThor(expr->queryChild(i), flags))
+                    return true;
+            }
+            return false;
         }
 
     case no_colon:
