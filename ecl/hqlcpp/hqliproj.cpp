@@ -290,10 +290,16 @@ IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHql
                 {
                     newTransform.setown(match->used.createFilteredTransform(value->queryChild(0), exceptionFields));
                 }
-                else
+                else if (value->getOperator() == no_select)
                 {
                     newTransform.setown(match->used.createRowTransform(value, exceptionFields));
                 }
+                else
+                {
+                    OwnedHqlExpr row = createRow(no_newrow, LINK(value));
+                    newTransform.setown(match->used.createRowTransform(row, exceptionFields));
+                }
+
 
                 newValue.setown(createRow(no_createrow, newTransform.getClear()));
 #if defined(PRESERVE_TRANSFORM_ANNOTATION)
@@ -369,7 +375,7 @@ IHqlExpression * UsedFieldSet::createRowTransform(IHqlExpression * row, const Us
     ForEachItemIn(i, fields)
     {
         IHqlExpression & field = fields.item(i);
-        OwnedHqlExpr value = createNewSelectExpr(LINK(row), LINK(&field));
+        OwnedHqlExpr value = createSelectExpr(LINK(row), LINK(&field));
         OwnedHqlExpr assign = createFilteredAssign(&field, value, self, exceptions);
         if (assign)
             assigns.append(*assign.getClear());
