@@ -1608,10 +1608,10 @@ char *EclAgent::getPlatform()
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
         if (!clusterInfo)
             throw MakeStringException(-1, "Unknown Cluster '%s'", cluster);
-        return (char*)clusterTypeString(clusterInfo->getPlatform());
+        return strdup(clusterTypeString(clusterInfo->getPlatform()));
     }
     else
-        return (char *)"standalone";
+        return strdup("standalone");
 }
 
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 

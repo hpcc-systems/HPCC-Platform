@@ -259,18 +259,19 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
         <title>ecl publish</title>
 
         <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
-        [--name=&lt;val&gt;] [--activate] &lt;wuid&gt; </emphasis></para>
+        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;wuid&gt;
+        </emphasis></para>
 
         <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
-        [--name=&lt;val&gt;] [--activate] &lt;so | dll | -
+        [--name=&lt;val&gt;] [--activate | --no-activate] &lt;so | dll | -
         &gt;</emphasis></para>
 
         <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
-        --name=&lt;val&gt; [--activate] &lt;archive | - &gt;
+        --name=&lt;val&gt; [--activate | --no-activate] &lt;archive | - &gt;
         </emphasis></para>
 
         <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
-        --name=&lt;val&gt; [--activate] &lt;ecl_file | -
+        --name=&lt;val&gt; [--activate | --no-activate] &lt;ecl_file | -
         &gt;</emphasis></para>
 
         <para>Examples:</para>
@@ -279,6 +280,7 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
 ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
 ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
 ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
+ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -345,7 +347,19 @@ ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
                 <row>
                   <entry>-A, --activate</entry>
 
-                  <entry>Activates query when published</entry>
+                  <entry>Activates query when published (default)</entry>
+                </row>
+
+                <row>
+                  <entry>-A-, --no-activate</entry>
+
+                  <entry>Does not activate query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Does not reload the queryset</entry>
                 </row>
 
                 <row>
@@ -439,7 +453,9 @@ ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl unpublish Roxie FindpersonService.1</programlisting>
+        <programlisting>ecl unpublish roxie FindpersonService.1
+ecl unpublish roxie "FindpersonService*"
+</programlisting>
 
         <para></para>
 
@@ -470,7 +486,8 @@ ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
                 <row>
                   <entry>query</entry>
 
-                  <entry>The query to remove from query set</entry>
+                  <entry>The query to remove from query set. Wildcards
+                  allowed, but must be in quotes (e.g., "MyQuery*" ).</entry>
                 </row>
 
                 <row>
@@ -908,8 +925,8 @@ ecl queries list roxie myroxie --show=A </programlisting>
                 <row>
                   <entry>-t, --target</entry>
 
-                  <entry>The target cluster associated with the queries
-                  to list</entry>
+                  <entry>The target cluster associated with the queries to
+                  list</entry>
                 </row>
 
                 <row>
@@ -1045,6 +1062,18 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>The target cluster to associate with the remote
                   workunit</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Does not reload the queryset</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when copied</entry>
                 </row>
 
                 <row>
@@ -1560,8 +1589,8 @@ ecl package list --process=roxie
                   <entry>--process</entry>
 
                   <entry>The name of the process cluster for which to list
-                  information. Default is all process clusters associated
-                  with the Dali server.</entry>
+                  information. Default is all process clusters associated with
+                  the Dali server.</entry>
                 </row>
 
                 <row>
@@ -1652,9 +1681,269 @@ ecl package list --process=myroxie
                 <row>
                   <entry>--process</entry>
 
-                  <entry>The name of the process cluster for which to
-                  list information. (Specify either --process or 
+                  <entry>The name of the process cluster for which to list
+                  information. (Specify either --process or
                   packageName)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie attach</title>
+
+        <para><emphasis role="bold">ecl roxie attach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie attach myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie attach</entry>
+
+                  <entry>Attach the roxie to Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie detach</title>
+
+        <para><emphasis role="bold">ecl roxie attach
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie detach myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie attach</entry>
+
+                  <entry>Detach the roxie from Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie reload</title>
+
+        <para><emphasis role="bold">ecl roxie reload
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie reload myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie reload</entry>
+
+                  <entry>Reloads the roxie info from Dali</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie check</title>
+
+        <para><emphasis role="bold">ecl roxie check
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie check myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie check</entry>
+
+                  <entry>Checks the roxie process state</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
                 </row>
 
                 <row>

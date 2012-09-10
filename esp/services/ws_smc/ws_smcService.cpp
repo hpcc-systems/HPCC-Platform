@@ -590,6 +590,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 resp.setAccessRight("Access_Full");
         }
 
+        IArrayOf<IEspServerJobQueue> serverJobQueues;
         IArrayOf<IConstTpEclServer> eclccservers;
         CTpWrapper dummy;
         dummy.getTpEclCCServers(eclccservers);
@@ -624,10 +625,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
                     wu->setServer("ECLCCserver");
                     wu->setInstance(serverName);
-                    wu->setQueueName(serverName);
+                    wu->setQueueName(queueName);
 
                     aws.append(*wu.getLink());
                 }
+
+                addServerJobQueue(serverJobQueues, queueName, serverName, "ECLCCserver");
             }
         }
 
@@ -645,6 +648,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             {
                 IPropertyTree &serviceTree = services->query();
                 const char *queuename = serviceTree.queryProp("@queue");
+                const char *serverName = serviceTree.queryProp("@name");
                 if (queuename && *queuename)
                 {
                     StringArray queues;
@@ -669,9 +673,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     }
                     ForEachItemIn(q, queues)
                     {
-                        const char *queuename = queues.item(q);
+                        const char *queueName = queues.item(q);
+
                         StringAttrArray wulist;
-                        unsigned running = queuedJobs(queuename, wulist);
+                        unsigned running = queuedJobs(queueName, wulist);
                         ForEachItemIn(i, wulist)
                         {
                             const char *wuid = wulist.item(i).text.get();
@@ -690,9 +695,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
                                     Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
                                     wu1->setServer("DFUserver");
-                                    wu1->setInstance(queuename);
-                                    wu1->setQueueName(queuename);
-
+                                    wu1->setInstance(serverName);
+                                    wu1->setQueueName(queueName);
                                     aws.append(*wu1.getLink());
                                 }
                             }
@@ -701,16 +705,19 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                                 StringBuffer msg;
                                 Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
                                 wu1->setServer("DFUserver");
-                                wu1->setInstance(queuename);
-                                wu1->setQueueName(queuename);
+                                wu1->setInstance(serverName);
+                                wu1->setQueueName(queueName);
                                 aws.append(*wu1.getLink());
                             }
                         }
+                        addServerJobQueue(serverJobQueues, queueName, serverName, "DFUserver");
                     }
                 }
             } while (services->next());
         }
         resp.setRunning(aws);
+        if (version > 1.03)
+            resp.setServerJobQueues(serverJobQueues);
 
         IArrayOf<IEspDFUJob> jobs;
         conn.setown(querySDS().connect("DFU/RECOVERY",myProcessSession(),0, INFINITE));
@@ -747,6 +754,27 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
     }
 
     return true;
+}
+
+void CWsSMCEx::addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType)
+{
+    if (!queueName || !*queueName || !serverName || !*serverName || !serverType || !*serverType)
+        return;
+
+    Owned<IEspServerJobQueue> jobQueue = createServerJobQueue("", "");
+    jobQueue->setQueueName(queueName);
+    jobQueue->setServerName(serverName);
+    jobQueue->setServerType(serverType);
+
+    Owned<IJobQueue> queue = createJobQueue(queueName);
+    if (queue->stopped())
+        jobQueue->setQueueStatus("stopped");
+    else if (queue->paused())
+        jobQueue->setQueueStatus("paused");
+    else
+        jobQueue->setQueueStatus("running");
+
+    jobQueues.append(*jobQueue.getClear());
 }
 
 void CWsSMCEx::addToThorClusterList(IArrayOf<IEspThorCluster>& clusters, IEspThorCluster* cluster, const char* sortBy, bool descending)

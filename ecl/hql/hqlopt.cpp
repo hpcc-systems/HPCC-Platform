@@ -356,7 +356,7 @@ IHqlExpression * CTreeOptimizer::swapIntoAddFiles(IHqlExpression * expr, bool fo
     ForEachChild(idx, child)
     {
         IHqlExpression * in = child->queryChild(idx);
-        if (in->isAttribute())
+        if (!in->isDataset() && !in->isDatarow())
         {
             replacedArgs.append(*LINK(in));
             transformedArgs.append(*LINK(in));
@@ -2065,6 +2065,7 @@ IHqlExpression * CTreeOptimizer::queryMoveKeyedExpr(IHqlExpression * transformed
         return swapIntoIf(transformed, true);
     case no_nonempty:
     case no_addfiles:
+    case no_chooseds:
         return swapIntoAddFiles(transformed, true);
     //Force the child to be keyed if it is surrounded by something that needs to be keyed, to ensure both migrate up the tree
     case no_hqlproject:
@@ -2606,6 +2607,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_if:
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_sort:
                 {
@@ -2642,6 +2644,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_if:
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_limit:
                 {
@@ -2804,6 +2807,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_if:
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_fetch:
                 if (isPureActivity(child) && !hasUnknownTransform(child))
@@ -2954,6 +2958,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_if:
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 return swapIntoAddFiles(transformed);
             }
             break;
@@ -2973,6 +2978,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 if (isComplexTransform(transform))
                     break;
                 return swapIntoAddFiles(transformed);
@@ -3165,6 +3171,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 if (isComplexTransform(transformed->queryChild(2)))
                     break;
                 return swapIntoAddFiles(transformed);
@@ -3468,6 +3475,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_if:
                 return swapIntoIf(transformed);
             case no_nonempty:
+            case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_compound_diskread:
             case no_compound_disknormalize:
