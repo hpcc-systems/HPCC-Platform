@@ -680,6 +680,29 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
             doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(1), doneFirstVar);
             return;
         }
+    case no_chooseds:
+        {
+            CHqlBoundExpr cond;
+            buildExpr(ctx, dataset->queryChild(0), cond);
+
+            IHqlExpression * last = queryLastNonAttribute(dataset);
+            BuildCtx subctx(ctx);
+            IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
+            ForEachChildFrom(i, dataset, 1)
+            {
+                IHqlExpression * cur = dataset->queryChild(i);
+                if (cur != last)
+                {
+                    OwnedHqlExpr label = getSizetConstant(i);
+                    subctx.addCase(switchstmt, label);
+                }
+                else
+                    subctx.addDefault(switchstmt);
+
+                doBuildAssignAggregateLoop(subctx, target, expr, cur, doneFirstVar);
+            }
+            return;
+        }
     case no_null:
         return;
     }
@@ -2760,6 +2783,29 @@ void HqlCppTranslator::buildDatasetAssignAggregate(BuildCtx & ctx, IHqlCppDatase
     target->finishRow(subctx, targetRow);
 }
 
+void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    CHqlBoundExpr cond;
+    buildExpr(ctx, expr->queryChild(0), cond);
+
+    IHqlExpression * last = queryLastNonAttribute(expr);
+    BuildCtx subctx(ctx);
+    IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
+    ForEachChildFrom(i, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur != last)
+        {
+            OwnedHqlExpr label = getSizetConstant(i);
+            subctx.addCase(switchstmt, label);
+        }
+        else
+            subctx.addDefault(switchstmt);
+
+        buildDatasetAssign(subctx, target, cur);
+    }
+}
+
 
 void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * _expr)
 {
@@ -2804,6 +2850,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
                 buildDatasetAssign(subctx, target, elseExpr);
             }
         }
+        return;
+    case no_chooseds:
+        buildDatasetAssignChoose(subctx, target, expr);
         return;
     case no_null:
         return;
@@ -3732,18 +3781,11 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
         return;
     case no_if:
         {
-            OwnedHqlExpr foldedCond = foldHqlExpression(expr->queryChild(0));
-            if (foldedCond->queryValue())
-            {
-                unsigned branch = (foldedCond->queryValue()->getBoolValue()) ? 1 : 2;
-                buildRowAssign(ctx, target, expr->queryChild(branch));
-                return;
-            }
-
             //Assigning a variable size record can mean that references to self need recalculating outside of the condition,
             //producing poor code.
             if (!isVariableSizeRecord(expr->queryRecord()))
             {
+                OwnedHqlExpr foldedCond = foldHqlExpression(expr->queryChild(0));
                 BuildCtx condctx(ctx);
                 IHqlStmt * cond = buildFilterViaExpr(condctx, foldedCond);
 

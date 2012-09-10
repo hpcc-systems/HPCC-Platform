@@ -877,6 +877,15 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         }
         // default action.  Not completely convinced it is correct....
         break;
+    case no_choose:
+        if (type && (type->getTypeCode() == type_void))
+        {
+            if (resourceConditionalActions)
+            {
+                UNIMPLEMENTED;
+            }
+        }
+        break;
     case no_setresult:
         {
             IHqlExpression * value = expr->queryChild(0);
@@ -1086,6 +1095,7 @@ IHqlExpression * ThorScalarTransformer::createTransformed(IHqlExpression * expr)
     switch (op)
     {
     case no_if:
+    case no_chooseds:
         {
             bool isGuard = isFailureGuard(expr);
             HqlExprArray children;
@@ -7487,15 +7497,15 @@ void AutoScopeMigrateTransformer::doAnalyseExpr(IHqlExpression * expr)
     case no_sequential:
         return;
     case no_if:
+    case no_choose:
         {
             if (expr->isAction())
             {
                 bool wasConditional = isConditional;
                 analyseExpr(expr->queryChild(0));
                 isConditional = true;
-                analyseExpr(expr->queryChild(1));
-                if (expr->queryChild(2))
-                    analyseExpr(expr->queryChild(2));
+                ForEachChildFrom(i, expr, 1)
+                    analyseExpr(expr->queryChild(i));
                 isConditional = wasConditional;
                 return;
             }
@@ -8795,12 +8805,13 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
     switch (op)
     {
     case no_if:
+    case no_chooseds:
         {
             HqlExprArray args;
             args.append(*transform(expr->queryChild(0)));
             args.append(*transformNewDataset(expr->queryChild(1), false));
-            if (expr->queryChild(2))
-                args.append(*transformNewDataset(expr->queryChild(2), false));
+            ForEachChildFrom(i, expr, 2)
+                args.append(*transformNewDataset(expr->queryChild(i), false));
             return expr->clone(args);
         }
     case no_addfiles:
@@ -10096,6 +10107,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitShuffle = translatorOptions.implicitBuildIndexShuffle;
+    options.transformCaseToChoose = translatorOptions.transformCaseToChoose;
     errors = translator.queryErrors();
     nextSequenceValue = 1;
 }
@@ -10421,7 +10433,7 @@ IHqlExpression * HqlTreeNormalizer::transformActionList(IHqlExpression * expr)
 }
 
 
-IHqlExpression * HqlTreeNormalizer::transformCase(IHqlExpression * expr)
+IHqlExpression * HqlTreeNormalizer::transformCaseToIfs(IHqlExpression * expr)
 {
     unsigned max = numRealChildren(expr);
     OwnedHqlExpr testVar = transform(expr->queryChild(0));
@@ -10438,6 +10450,54 @@ IHqlExpression * HqlTreeNormalizer::transformCase(IHqlExpression * expr)
         elseExpr.setown(createIf(test.getClear(), trueExpr.getClear(), elseExpr.getClear()));
     }
     return elseExpr.getClear();
+}
+
+IHqlExpression * HqlTreeNormalizer::transformCaseToChoose(IHqlExpression * expr)
+{
+    //For the moment only convert datasets to choose format.  (Partly to test implementation.)
+    //Datarows are unlikely to benefit, and will cause additional work.
+    //Converting actions has implications for needing new activity kinds, and support in thor.
+    if (!expr->isDataset() || !options.transformCaseToChoose)
+        return transformCaseToIfs(expr);
+
+    unsigned max = numRealChildren(expr);
+    HqlExprArray branches;
+    OwnedHqlExpr testVar = transform(expr->queryChild(0));
+
+    HqlExprArray caseArgs;
+    caseArgs.append(*LINK(testVar));
+    bool isNullMapping = true;
+    for (unsigned i1=1; i1 < max-1; i1++)
+    {
+        IHqlExpression * mapto = expr->queryChild(i1);
+        OwnedHqlExpr key = transform(mapto->queryChild(0));
+        OwnedHqlExpr branch = transform(mapto->queryChild(1));
+        unsigned matchIndex = branches.find(*branch);
+        if (matchIndex == NotFound)
+        {
+            matchIndex = branches.ordinality();
+            branches.append(*branch.getClear());
+        }
+        OwnedHqlExpr value = getSizetConstant(matchIndex+1);
+        //MORE: Could calculate a delta and add/subtract it from testVar
+        if (!key->queryValue() || !matchesConstantValue(key, matchIndex+1))
+            isNullMapping = false;
+
+        caseArgs.append(*createValue(no_mapto, value->getType(), key.getClear(), LINK(value)));
+    }
+    caseArgs.append(*getSizetConstant(max-1));
+
+    HqlExprArray args;
+    if (isNullMapping)
+        args.append(*LINK(testVar));
+    else
+        args.append(*createValue(no_case, LINK(sizetType), caseArgs));
+    appendArray(args, branches);
+    args.append(*transform(expr->queryChild(max-1)));
+
+    if (expr->isDataset())
+        return createDataset(no_chooseds, args);
+    return createAction(no_choose, args);
 }
 
 IHqlExpression * HqlTreeNormalizer::transformEvaluate(IHqlExpression * expr)
@@ -11181,6 +11241,22 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
             }
             break;
         }
+    case no_choose:
+    case no_chooseds:
+        {
+            OwnedHqlExpr cond = transform(expr->queryChild(0));
+            IValue * condValue = cond->queryValue();
+            if (condValue)
+            {
+                unsigned idx = (unsigned)condValue->getIntValue();
+                IHqlExpression * branch = queryRealChild(expr, idx);
+                if (branch)
+                    return transform(branch);
+                IHqlExpression * defaultExpr = queryLastNonAttribute(expr);
+                return transform(defaultExpr);
+            }
+            break;
+        }
     case no_and:
         {
             IHqlExpression * left = expr->queryChild(0);
@@ -11241,7 +11317,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         return LINK(expr);          // avoid creating an array in default code...
     case no_case:
         if (isVoidOrDatasetOrList(expr))
-            return transformCase(expr);
+            return transformCaseToChoose(expr);
         break;
     case no_map:
         if (isVoidOrDatasetOrList(expr))

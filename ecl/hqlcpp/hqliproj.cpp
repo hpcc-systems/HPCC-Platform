@@ -2106,6 +2106,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_merge:
     case no_nonempty:
     case no_cogroup:
+    case no_chooseds:
         return PassThroughActivity;
     case no_keydiff:
     case no_keypatch:
