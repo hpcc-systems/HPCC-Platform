@@ -93,7 +93,6 @@ static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
 static unsigned heapLWM;
-static unsigned heapHWM;
 static unsigned heapAllocated;
 static unsigned heapLargeBlocks;
 static unsigned heapLargeBlockGranularity;
@@ -155,7 +154,6 @@ static void initializeHeap(unsigned pages, unsigned largeBlockGranularity, ILarg
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
     heapLargeBlocks = 1;
     heapLWM = 0;
-    heapHWM = heapBitmapSize;
 
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: %u Pages successfully allocated for the pool - memsize=%"I64F"u base=%p alignment=%"I64F"u bitmapSize=%u", 
@@ -348,7 +346,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
             lastStatsCycles = cyclesNow;
             StringBuffer s;
             memstats(s);
-            s.appendf(", heapLWM %u..%u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, heapHWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
+            s.appendf(", heapLWM %u, dataBuffersActive=%d, dataBufferPages=%d", heapLWM, atomic_read(&dataBuffersActive), atomic_read(&dataBufferPages));
             DBGLOG("RoxieMemMgr: %s", s.str());
         }
     }
@@ -407,7 +405,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
     else
     {
         // Usage pattern is such that we expect normally to succeed immediately.
-        unsigned i = heapHWM;
+        unsigned i = heapBitmapSize;
         unsigned matches = 0;
         while (i)
         {
@@ -441,7 +439,6 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                             heapBitmap[i] = hbi;
                             if (memTraceLevel >= 2)
                                 DBGLOG("RoxieMemMgr: suballoc_aligned() %u pages ok - addr=%p", pages, ret);
-                            heapHWM = i+1;
                             heapAllocated += pages;
                             return ret;
                         }
@@ -514,8 +511,6 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
 
         if (wordOffset < heapLWM)
             heapLWM = wordOffset;
-        if (nextPageOffset > heapHWM)
-            heapHWM = nextPageOffset;
         loop
         {
             unsigned prev = heapBitmap[wordOffset];
@@ -535,7 +530,7 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         }
     }
     if (memTraceLevel >= 2)
-        DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u..%u totalPages=%u", _pages, ptr, heapLWM, heapHWM, heapTotalPages);
+        DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u totalPages=%u", _pages, ptr, heapLWM, heapTotalPages);
 }
 
 static inline unsigned getRealActivityId(unsigned allocatorId, const IRowAllocatorCache *allocatorCache)
@@ -3236,7 +3231,6 @@ protected:
             _heapBitmapSize = heapBitmapSize;
             _heapTotalPages = heapTotalPages;
             _heapLWM = heapLWM;
-            _heapHWM = heapHWM;
             _heapAllocated = heapAllocated;
         }
         ~HeapPreserver()
@@ -3246,7 +3240,6 @@ protected:
             heapBitmapSize = _heapBitmapSize;
             heapTotalPages = _heapTotalPages;
             heapLWM = _heapLWM;
-            heapHWM = _heapHWM;
             heapAllocated = _heapAllocated;
         }
         char *_heapBase;
@@ -3254,7 +3247,6 @@ protected:
         unsigned _heapBitmapSize;
         unsigned _heapTotalPages;
         unsigned _heapLWM;
-        unsigned _heapHWM;
         unsigned _heapAllocated;
     };
     void initBitmap(unsigned size)
@@ -3265,7 +3257,6 @@ protected:
         heapBitmapSize = size;
         heapTotalPages = heapBitmapSize * UNSIGNED_BITS;
         heapLWM = 0;
-        heapHWM = size;
         heapAllocated = 0;
     }
 
