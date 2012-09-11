@@ -4145,17 +4145,19 @@ bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAt
     index--;
   }
 
-  char rootXPath[index+2];
-  memset(rootXPath,0,sizeof(rootXPath));
-  xpath2.getChars(0,index+1,rootXPath);
+  char *pRootXPath = new char[index+2];
+  memset(pRootXPath,0,sizeof(char) * (index+2));
+
+  xpath2.getChars(0,index+1,pRootXPath);
 
   if (req.getBLeaf() == true)
     pComp->removeProp(attrib);
-  else if (strlen(rootXPath) >= 14 && strncmp(rootXPath,"./EnvSettings/",14) == 0)
+  else if (strlen(pRootXPath) >= 14 && strncmp(pRootXPath,"./EnvSettings/",14) == 0)
     pEnvRoot->queryPropTree("./EnvSettings")->removeTree(pComp);
   else
-    pEnvRoot->queryPropTree(rootXPath)->removeTree(pComp);
+    pEnvRoot->queryPropTree(pRootXPath)->removeTree(pComp);
 
+  delete[] pRootXPath;
   resp.setStatus("true");
   resp.setCompName(XML_TAG_SOFTWARE);
 
