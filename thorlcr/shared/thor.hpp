@@ -34,6 +34,7 @@ typedef unsigned __int64 rowcount_t;
 typedef size32_t rowidx_t;
 #define RCIDXMAX ((rowidx_t)(size32_t)-1)
 #define RIPF ""
+#define RIMAX ((rowidx_t)-1)
 
 #include "jexcept.hpp"
 
