@@ -4130,7 +4130,8 @@ const memsize_t memorySize = 0x60000000;
 class RoxieMemStressTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemStressTests );
-        CPPUNIT_TEST(testSequential);
+    CPPUNIT_TEST(testFragmenting);
+    CPPUNIT_TEST(testSequential);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
@@ -4167,6 +4168,32 @@ protected:
         unsigned endTime = msTick();
         ReleaseRoxieRow(rows);
         DBGLOG("Time for sequential allocate = %d", endTime - startTime);
+    }
+
+    void testFragmenting()
+    {
+        unsigned requestSize = 32;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        unsigned startTime = msTick();
+        void * prev = rowManager->allocate(requestSize, 1);
+        try
+        {
+            loop
+            {
+                void *next = rowManager->allocate(requestSize*1.25, 1);
+                requestSize *= 1.25;
+                ReleaseRoxieRow(prev);
+                prev = next;
+            }
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        ReleaseRoxieRow(prev);
+        unsigned endTime = msTick();
+        DBGLOG("Time for fragmenting allocate = %d, max allocation=%u, limit = %"I64F"u", endTime - startTime, requestSize, (unsigned __int64) memorySize);
+        ASSERT(requestSize > memorySize/4);
     }
 };
 
