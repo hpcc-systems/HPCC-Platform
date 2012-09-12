@@ -3468,7 +3468,7 @@ public:
         {
         protected:
             CriticalSection &crit;
-            CIStringArray *&newNames;
+            CIArrayOf<CIStringArray> &newNames;
             IDistributedFile *file;
             unsigned width;
             IMultiException *mexcept;
@@ -3480,7 +3480,7 @@ public:
             bool * donerep;
             IException *except;
 
-            casyncforbase(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+            casyncforbase(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
                 : newNames(_newNames),crit(_crit)
             {
                 width = _width;
@@ -3527,7 +3527,7 @@ public:
                     IException *ex = NULL;
                     RemoteFilename oldrfn;
                     part->getFilename(oldrfn,(unsigned)copy);
-                    const char *newfn = newNames[idx].item(copy);
+                    const char *newfn = newNames.item(idx).item(copy);
                     if (!newfn||!*newfn)
                         continue;
                     RemoteFilename newrfn;
@@ -3562,7 +3562,7 @@ public:
         class casyncfor1: public casyncforbase
         {
         public:
-            casyncfor1(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+            casyncfor1(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
                 : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
@@ -3593,7 +3593,7 @@ public:
                 return true;
             }
 
-        } afor1 (this,*newNames.getArray(),width,mexcept,crit,NULL,NULL);
+        } afor1 (this,newNames,width,mexcept,crit,NULL,NULL);
         afor1.For(width,10,false,true);
         if (afor1.except)
             throw afor1.except; // no recovery needed
@@ -3622,7 +3622,7 @@ public:
         class casyncfor2: public casyncforbase
         {
         public:
-            casyncfor2(IDistributedFile *_file,CIStringArray *&_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
+            casyncfor2(IDistributedFile *_file,CIArrayOf<CIStringArray> &_newNames,unsigned _width,IMultiException *_mexcept,CriticalSection &_crit,bool *_ignoreprim,bool *_ignorerep)
                 : casyncforbase(_file,_newNames,_width,_mexcept,_crit,_ignoreprim,_ignorerep)
             {
             }
@@ -3642,7 +3642,7 @@ public:
                 return true;;
             }
 
-        } afor2 (this,*newNames.getArray(),width,mexcept,crit,ignoreprim,ignorerep);
+        } afor2 (this,newNames,width,mexcept,crit,ignoreprim,ignorerep);
         afor2.For(width,10,false,true);
         if (afor2.ok) {
             // now rename directory and partmask
