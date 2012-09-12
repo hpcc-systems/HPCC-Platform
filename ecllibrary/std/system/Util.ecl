@@ -2,6 +2,8 @@
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
+import lib_fileservices;
+
 /**
  * Various utility functions for accessing system function.
  */
@@ -22,7 +24,7 @@ EXPORT string CmdProcess(varstring prog, string src) :=
 /**
  * Returns the host name associated with a particular ip.
  *
- * @param ipaddress     The ip address to resolce.
+ * @param ipaddress     The ip address to resolve.
  * @returns             The host name.
  */
 
