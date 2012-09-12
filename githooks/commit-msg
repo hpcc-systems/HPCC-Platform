@@ -1,78 +1,51 @@
 #!/bin/sh
-#
-# Every commit should have an issue reference at the start of the first line:
-echo Checking git message in $1
+#echo Checking git message in $1
 
-(head -1 "$1" | grep -E -q "^gh-[0-9]+ ") || {
-  echo >&2 "Missing GitHub issue"
-  echo >&2 ""
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file"
-  echo >&2 "Your git commit message should start with a line of the form"
-  echo >&2 ""
-  echo >&2 "gh-XXXX Short description"
-  echo >&2 ""
-  echo >&2 "where XXXX is the github issue number that this commit is referencing, and"
-  echo >&2 "short description is a brief description of the issue that will appear in"
-  echo >&2 "the --oneline version of the generated changelog."
-  echo >&2 ""
-  echo >&2 "Use git commit -s -t .git/COMMIT_EDITMSG to reopen previous message for editing"
+usage="\n
+Please see the guidelines for git commit messages in the CONTRIBUTORS file\n
+Your git commit message should start with a line of the form\n
+\n
+HPCC-XXXX Short description\n
+\n
+where XXXX is the Jira issue number that this commit is referencing, and\n
+short description is a brief description of the issue that will appear in\n
+the --oneline version of the generated changelog.\n
+\n
+Use git commit -s -t $1 to reopen previous message for editing\n"
+
+
+(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ ") || {
+  echo >&2 "\n ERROR: Missing Jira issue on beginning of first line (HPCC-XXXX)"
+  echo >&2 $usage
   exit 1
 }
 
 (head -1 "$1" | grep -E -q "[^.]$") || {
-  echo >&2 "Please don't use . at the end of the short description"
-  echo >&2 ""
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file"
-  echo >&2 "Your git commit message should start with a line of the form"
-  echo >&2 ""
-  echo >&2 "gh-XXXX Short description"
-  echo >&2 ""
-  echo >&2 "where XXXX is the github issue number that this commit is referencing, and"
-  echo >&2 "short description is a brief description of the issue that will appear in"
-  echo >&2 "the --oneline version of the generated changelog."
-  echo >&2 ""
-  echo >&2 "Use git commit -s -t .git/COMMIT_EDITMSG to reopen previous message for editing"
+  echo >&2 "\n ERROR: Please don't use . at the end of the short description"
+  echo >&2 $usage
   exit 1
 }
 
-(head -1 "$1" | grep -E -q "^gh-[0-9]+ [^a-z]") || {
-  echo >&2 "Short description should start with a capital"
-  echo >&2 ""
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file"
-  echo >&2 "Your git commit message should start with a line of the form"
-  echo >&2 ""
-  echo >&2 "gh-XXXX Short description"
-  echo >&2 ""
-  echo >&2 "where XXXX is the github issue number that this commit is referencing, and"
-  echo >&2 "short description is a brief description of the issue that will appear in"
-  echo >&2 "the --oneline version of the generated changelog."
-  echo >&2 ""
-  echo >&2 "Use git commit -s -t .git/COMMIT_EDITMSG to reopen previous message for editing"
+(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ [^a-z]") || {
+  echo >&2 "\n ERROR: Short description should start with a capital"
+  echo >&2 $usage
   exit 1
 }
 
 (head -2 "$1" | tail -1 | grep -E -q "^$") || {
-  echo >&2 "Short description must be followed by a blank line"
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file"
+  echo >&2 "\n ERROR: Short description must be followed by a blank line. Have you signed your commit?"
+  echo >&2 $usage
   exit 1
 }
 
 [ $(cat "$1" | wc -L ) -le 80 ] || {
-  echo >&2 "Commit message lines too long."
-  echo >&2 ""
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file."
-  echo >&2 "Lines in the commit message should be no longer than 80 characters."
-  echo >&2 ""
-  echo >&2 "Use git commit -s -t .git/COMMIT_EDITMSG to reopen previous message for editing"
+  echo >&2 "\n ERROR: Commit message lines too long (max 80 chars)."
+  echo >&2 $usage
   exit 1
 }
 
 (grep -q "^Signed-off-by: " "$1") || {
-  echo >&2 "Commit not signed."
-  echo >&2 ""
-  echo >&2 "Please see the guidelines for git commit messages in the CONTRIBUTORS file."
-  echo >&2 "All commits should be signed (use git commit -s)."
-  echo >&2 ""
-  echo >&2 "Use git commit -s -t .git/COMMIT_EDITMSG to reopen previous message for editing"
+  echo >&2 "\n ERROR: Commit not signed. All commits should be signed (use git commit -s)."
+  echo >&2 $usage
   exit 1
 }
