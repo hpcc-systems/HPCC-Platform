@@ -1118,7 +1118,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackageadd" role="brk">
         <title>ecl package add</title>
 
         <para><emphasis role="bold">ecl package add [options]
@@ -1208,7 +1208,7 @@ ecl package add --queryset=roxie mypkg.pkg --overwritename=false
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackagecopyfiles" role="brk">
         <title>ecl package copyFiles</title>
 
         <para><emphasis role="bold">ecl package copyFiles [options]
@@ -1299,7 +1299,7 @@ ecl package copyFiles
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackagedelete" role="brk">
         <title>ecl package delete</title>
 
         <para><emphasis role="bold">ecl package delete [options]
@@ -1382,7 +1382,7 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackageactivate" role="brk">
         <title>ecl package activate</title>
 
         <para><emphasis role="bold">ecl package activate [options]
@@ -1463,7 +1463,7 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackagedeactivate" role="brk">
         <title>ecl package deactivate</title>
 
         <para><emphasis role="bold">ecl package deactivate [options]
@@ -1544,7 +1544,7 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackagelist" role="brk">
         <title>ecl package list</title>
 
         <para><emphasis role="bold">ecl package list
@@ -1628,7 +1628,7 @@ ecl package list --process=roxie
           </informaltable></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="eclpackageinfo" role="brk">
         <title>ecl package info</title>
 
         <para><emphasis role="bold">ecl package info [options]
