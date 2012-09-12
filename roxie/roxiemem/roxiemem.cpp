@@ -2424,6 +2424,22 @@ protected:
     {
         callbacks.removeRowBuffer(callback);
     }
+
+    virtual size_t getExpectedCapacity(size32_t size, unsigned heapFlags)
+    {
+        if (size > FixedSizeHeaplet::maxHeapSize())
+        {
+            unsigned numPages = PAGES(size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+            return (numPages * HEAP_ALIGNMENT_SIZE) - HugeHeaplet::dataOffset();
+        }
+
+        if (heapFlags & RHFpacked)
+            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+
+        size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
+        size32_t heapSize = ROUNDEDSIZE(rounded);
+        return heapSize - FixedSizeHeaplet::chunkHeaderSize;
+    }
 };
 
 
@@ -4006,6 +4022,7 @@ protected:
         {
             OwnedRoxieRow row = rowManager->allocate(nextSize, 0);
             ASSERT(((memsize_t)row.get() & (ALLOC_ALIGNMENT-1)) == 0);
+            ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, 0));
         }
     }
     void testFixedRelease()
