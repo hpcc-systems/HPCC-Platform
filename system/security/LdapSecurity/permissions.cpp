@@ -1479,6 +1479,7 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const 
         MemoryBuffer umb, gmb;
         if(&user != NULL && DEFAULT_OWNER_PERMISSION != SecAccess_None)
         {
+            //Add SD for given user
             lookupSid(user.getName(), umb);
             psid = (PSID)(umb.toByteArray());
             if(psid != NULL)
@@ -1492,8 +1493,9 @@ CSecurityDescriptor* PermissionProcessor::createDefaultSD(ISecUser& user, const 
             }
         }
 
-        if(DEFAULT_AUTHENTICATED_USERS_PERMISSION != SecAccess_None)
+        if(ptype != PT_ADMINISTRATORS_AND_USER  &&  DEFAULT_AUTHENTICATED_USERS_PERMISSION != SecAccess_None)
         {
+            //Add SD for Authenticated users
             au_psid = (PSID)(authenticated_users_sid);
             unsigned permission = sec2ldap(DEFAULT_AUTHENTICATED_USERS_PERMISSION);
             rc = AddAccessAllowedAce(pacl, ACL_REVISION, permission, au_psid);
