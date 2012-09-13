@@ -2434,11 +2434,27 @@ protected:
         }
 
         if (heapFlags & RHFpacked)
-            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT) - PackedFixedSizeHeaplet::chunkHeaderSize;
 
         size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
         size32_t heapSize = ROUNDEDSIZE(rounded);
         return heapSize - FixedSizeHeaplet::chunkHeaderSize;
+    }
+
+    virtual size_t getExpectedFootprint(size32_t size, unsigned heapFlags)
+    {
+        if (size > FixedSizeHeaplet::maxHeapSize())
+        {
+            unsigned numPages = PAGES(size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+            return (numPages * HEAP_ALIGNMENT_SIZE);
+        }
+
+        if (heapFlags & RHFpacked)
+            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+
+        size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
+        size32_t heapSize = ROUNDEDSIZE(rounded);
+        return heapSize;
     }
 };
 

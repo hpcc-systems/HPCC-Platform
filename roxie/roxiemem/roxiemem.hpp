@@ -432,6 +432,7 @@ interface IRowManager : extends IInterface
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual size_t getExpectedCapacity(size32_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
+    virtual size_t getExpectedFootprint(size32_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);

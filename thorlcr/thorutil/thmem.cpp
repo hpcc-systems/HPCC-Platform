@@ -771,14 +771,14 @@ memsize_t CThorExpandingRowArray::getMemUsage()
     roxiemem::IRowManager *rM = activity.queryJob().queryRowManager();
     IRecordSize *iRecordSize = rowIf->queryRowMetaData();
     if (iRecordSize->isFixedSize())
-        total = c * rM->getExpectedCapacity(iRecordSize->getFixedSize(), 0);
+        total = c * rM->getExpectedFootprint(iRecordSize->getFixedSize(), 0);
     else
     {
         for (rowidx_t i=0; i<c; i++)
-            total += rM->getExpectedCapacity(iRecordSize->getRecordSize(rows[i]), 0);
+            total += rM->getExpectedFootprint(iRecordSize->getRecordSize(rows[i]), 0);
     }
     // NB: worst case, when expanding (see ensure method)
-    memsize_t sz = rM->getExpectedCapacity(maxRows * sizeof(void *), 0);
+    memsize_t sz = rM->getExpectedFootprint(maxRows * sizeof(void *), 0);
     memsize_t szE = sz / 100 * 125; // don't care if sz v. small
     if (stableSort_none == stableSort)
         total += sz + szE;
