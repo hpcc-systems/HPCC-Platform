@@ -2433,11 +2433,27 @@ protected:
         }
 
         if (heapFlags & RHFpacked)
-            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT) - PackedFixedSizeHeaplet::chunkHeaderSize;
 
         size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
         size32_t heapSize = ROUNDEDSIZE(rounded);
         return heapSize - FixedSizeHeaplet::chunkHeaderSize;
+    }
+
+    virtual size_t getExpectedFootprint(size32_t size, unsigned heapFlags)
+    {
+        if (size > FixedSizeHeaplet::maxHeapSize())
+        {
+            unsigned numPages = PAGES(size + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+            return (numPages * HEAP_ALIGNMENT_SIZE);
+        }
+
+        if (heapFlags & RHFpacked)
+            return align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
+
+        size32_t rounded = roundup(size + FixedSizeHeaplet::chunkHeaderSize);
+        size32_t heapSize = ROUNDEDSIZE(rounded);
+        return heapSize;
     }
 };
 
@@ -4015,14 +4031,25 @@ protected:
                 ReleaseRoxieRow(tempRow[i2]);
         }
 
-        //Check small allocations are also aligned
+        //Check small allocations are also aligned, and that size estimates are correct
         size32_t limitSize = firstFractionalHeap;
         for (size_t nextSize = 1; nextSize < limitSize; nextSize++)
         {
-            OwnedRoxieRow row = rowManager->allocate(nextSize, 0);
-            ASSERT(((memsize_t)row.get() & (ALLOC_ALIGNMENT-1)) == 0);
-            ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, 0));
+            {
+                OwnedRoxieRow row = rowManager->allocate(nextSize, 0);
+                ASSERT(((memsize_t)row.get() & (ALLOC_ALIGNMENT-1)) == 0);
+                ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, 0));
+                ASSERT(RoxieRowCapacity(row) < rowManager->getExpectedFootprint(nextSize, 0));
+            }
+            {
+                Owned<IFixedRowHeap> rowHeap = rowManager->createFixedRowHeap(nextSize, ACTIVITY_FLAG_ISREGISTERED|0, RHFpacked|RHFhasdestructor);
+                OwnedRoxieRow row = rowHeap->allocate();
+                ASSERT(RoxieRowCapacity(row) == rowManager->getExpectedCapacity(nextSize, RHFpacked));
+                ASSERT(RoxieRowCapacity(row) < rowManager->getExpectedFootprint(nextSize, RHFpacked));
+            }
         }
+
+
     }
     void testFixedRelease()
     {
@@ -4187,8 +4214,9 @@ protected:
         {
             loop
             {
-                void *next = rowManager->allocate(requestSize*1.25, 1);
-                requestSize *= 1.25;
+                size32_t nextSize = (size32_t)(requestSize*1.25);
+                void *next = rowManager->allocate(nextSize, 1);
+                requestSize = nextSize;
                 ReleaseRoxieRow(prev);
                 prev = next;
             }
