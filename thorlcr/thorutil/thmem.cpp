@@ -770,7 +770,7 @@ memsize_t CThorExpandingRowArray::getMemUsage()
     memsize_t total = 0;
     roxiemem::IRowManager *rM = activity.queryJob().queryRowManager();
     IRecordSize *iRecordSize = rowIf->queryRowMetaData();
-    if (rowIf->queryRowMetaData()->isFixedSize())
+    if (iRecordSize->isFixedSize())
         total = c * rM->getExpectedCapacity(iRecordSize->getFixedSize(), 0);
     else
     {
@@ -1165,7 +1165,7 @@ protected:
         if (!spillableRows.append(row))
         {
             bool oom = false;
-            if (rc_allMem != diskMemMix && (SPILL_PRIORITY_DISABLE != spillPriority))
+            if (spillingEnabled())
             {
                 CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
                 //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
@@ -1197,13 +1197,17 @@ protected:
         if (0 == outStreams)
         {
             spillableRows.flush();
-            if ((SPILL_PRIORITY_DISABLE != spillPriority) && ((rc_allDisk == diskMemMix) || ((rc_allDiskOrAllMem == diskMemMix) && overflowCount)))
+            if (spillingEnabled())
             {
-                CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
-                if (spillableRows.numCommitted())
+                // i.e. all disk OR (some on disk already AND allDiskOrAllMem)
+                if (((rc_allDisk == diskMemMix) || ((rc_allDiskOrAllMem == diskMemMix) && overflowCount)))
                 {
-                    spillRows();
-                    spillableRows.kill();
+                    CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+                    if (spillableRows.numCommitted())
+                    {
+                        spillRows();
+                        spillableRows.kill();
+                    }
                 }
             }
         }
@@ -1255,6 +1259,7 @@ protected:
                 totalRows += spillableRows.numCommitted();
                 if (iCompare && (1 == outStreams))
                     spillableRows.sort(*iCompare, maxCores);
+                // NB: if rc_allDiskOrAllMem and some disk already, will have been spilt already (see above) and not each here
                 if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
                 {
                     assertex(allMemRows);
@@ -1293,6 +1298,8 @@ protected:
         totalRows = 0;
         overflowCount = outStreams = 0;
     }
+
+    inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IRowInterfaces *_rowIf, ICompare *_iCompare, bool _isStable, RowCollectorFlags _diskMemMix, unsigned _spillPriority)
         : activity(_activity),
@@ -1305,7 +1312,7 @@ public:
         mmRegistered = false;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
-        else if (SPILL_PRIORITY_DISABLE != spillPriority)
+        else if (spillingEnabled())
         {
             activity.queryJob().queryRowManager()->addRowBuffer(this);
             mmRegistered = true;
@@ -1358,7 +1365,7 @@ public:
         spillPriority = _spillPriority;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
-        if (mmRegistered && (SPILL_PRIORITY_DISABLE == spillPriority))
+        if (mmRegistered && !spillingEnabled())
         {
             mmRegistered = false;
             activity.queryJob().queryRowManager()->removeRowBuffer(this);
@@ -1376,7 +1383,7 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
-        if ((rc_allMem == diskMemMix) || (SPILL_PRIORITY_DISABLE == spillPriority))
+        if (!spillingEnabled())
             return false;
         CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
         return spillRows();
