@@ -24,7 +24,6 @@
 #include "dfuwu.hpp"
 #include "eclhelper.hpp"
 #include "roxiecontrol.hpp"
-//#include "roxiecommlibscm.hpp"
 #include "dfuutil.hpp"
 #include "dautils.hpp"
 #include "referencedfilelist.hpp"

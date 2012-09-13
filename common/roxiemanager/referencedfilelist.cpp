@@ -91,9 +91,9 @@ public:
     void resolveRemote(IUserDescriptor *user, INode *remote, const char *cluster, bool checkLocalFirst, StringArray *subfiles);
     void resolve(const char *cluster, IUserDescriptor *user, INode *remote, bool checkLocalFirst, StringArray *subfiles);
 
-    virtual const char *getLogicalName(){return logicalName.get();}
-    virtual unsigned getFlags(){return flags;}
-    virtual const SocketEndpoint &getForeignIP(){return foreignNode->endpoint();}
+    virtual const char *getLogicalName() const {return logicalName.get();}
+    virtual unsigned getFlags() const {return flags;}
+    virtual const SocketEndpoint &getForeignIP() const {return foreignNode->endpoint();}
     virtual void cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode *remote, const char *cluster, bool overwrite=false);
     void cloneSuperInfo(IUserDescriptor *user, INode *remote, bool overwrite);
 
