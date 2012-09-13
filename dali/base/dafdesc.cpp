@@ -2182,8 +2182,14 @@ static StringAttr unixreplicatedir;
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
+static SpinLock ldbSpin;
+static bool ldbDone = false;
 void loadDefaultBases()
 {
+    SpinBlock b(ldbSpin);
+    if (ldbDone)
+        return;
+    ldbDone = true;
     // assumed default first thor
     // first set 
     if (winreplicatedir.isEmpty())
