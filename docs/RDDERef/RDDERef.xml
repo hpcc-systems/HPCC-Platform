@@ -505,31 +505,8 @@
     </sect1>
   </chapter>
 
-  <chapter id="Packages">
-    <title>Packages</title>
-
-    <para>Packages are used as a means to separate data from queries. Newer
-    Package files can be copied to and loaded on a Roxie cluster without
-    recompiling queries. This allows you to refresh data and ensure you are
-    using identical code in your query.</para>
-
-    <para>This simplifies change control and allows query developers to
-    continue development without the risk of a query being deployed to
-    production before it is ready while still allowing data to be
-    updated.</para>
-
-    <para>Packages provide a reference to data files used in queries that
-    overrides the information originally provided in the query. This affords
-    greater flexibility and control over the data used by a query or a
-    collection of queries.</para>
-
-    <para>The end result is quicker, more flexible process, without the need
-    of recompiling complex queries. This allows you to update data without the
-    chance of deploying new code that has not been approved for migration to
-    production.</para>
-
-    <para>More to follow ***.</para>
-  </chapter>
+  <xi:include href="RDDERef/RDDE_Mods/Packages.xml" xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
     <title>Deploying Data to a Cluster using DFU</title>
@@ -1161,7 +1138,7 @@
 
         <para>This option is available only to Roxie cluster. It displays
         diagnostic information about the cluster. See the <emphasis>Roxie
-        Metrics</emphasis><emphasis role="bold"> </emphasis>section in this
+        Metrics</emphasis><emphasis role="bold"></emphasis>section in this
         manual.</para>
 
         <para><emphasis role="bold">Get Processor
