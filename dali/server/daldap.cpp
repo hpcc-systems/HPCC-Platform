@@ -24,6 +24,8 @@
 
 #include "dasds.hpp"
 #include "daldap.hpp"
+#include "mpbase.hpp"
+#include "dautils.hpp"
 
 #ifndef _NO_LDAP
 #include "seclib.hpp"
@@ -54,6 +56,14 @@ class CDaliLdapConnection: public CInterface, implements IDaliLdapConnection
             ISecUser* user = NULL;
             if (ldapsecurity->addResourceEx(RT_FILE_SCOPE, *user, "file",PT_ADMINISTRATORS_ONLY, NULL))
                 PROGLOG("LDAP: Created default 'file' scope");
+            else
+                throw MakeStringException(-1, "Error adding LDAP resource 'file'");
+
+            StringBuffer userTempFileScope(queryDfsXmlBranchName(DXB_Internal));
+            if (ldapsecurity->addResourceEx(RT_FILE_SCOPE, *user, userTempFileScope.str(),PT_ADMINISTRATORS_ONLY, NULL))
+                PROGLOG("LDAP: Created default '%s' scope", userTempFileScope.str());
+            else
+                throw MakeStringException(-1, "Error adding LDAP resource '%s'",userTempFileScope.str());
         }
         catch (IException *e) {
             EXCLOG(e,"LDAP createDefaultScopes");
