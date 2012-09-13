@@ -585,7 +585,7 @@ public:
 
     CThorResourceSlave()
     {
-        backupHandler.setown(createBackupHandler(queryBaseDirectory()));
+        backupHandler.setown(createBackupHandler());
         fileCache.setown(createFileCache(globals->getPropInt("@fileCacheLimit", 1800)));
         fipHandler.setown(new CFileInProgressHandler());
     }
