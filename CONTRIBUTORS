@@ -158,7 +158,7 @@ Commit messages
 
 We follow the same guidelines that many other git projects have adopted for git comments.
 
-1.  The first line of the commit must start gh-NNN where NNN is the github issue that the
+1.  The first line of the commit must start HPCC-NNN where NNN is the Jira issue that the
     commit is adddressing. This should be followed by a space, then a short summary of the
     change (this will appear in the condensed form of the changelog generated from the
     git history). Start with a capital, do not end with a full stop.
@@ -181,10 +181,7 @@ We follow the same guidelines that many other git projects have adopted for git 
     should say "Add O(n) travelling salesman support" rather than "Adds fast TSP", "Added
     code to make system faster", or "I changed line 32".
 
-4.  If the commit is a complete fix for the github issue referenced in the summary line,
-    you can add a line "Fixes gh-NNNN." at the bottom of the commit message.
-
-5.  The commit message must be signed. Use commit -s to make this easier.
+4.  The commit message must be signed. Use commit -s to make this easier.
 
 If you copy the files from the githooks directory into .git/hooks, then git will automatically
 check (some of) these requirements whenevery you commit. This is strongly encouraged to
