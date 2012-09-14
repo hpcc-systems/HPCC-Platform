@@ -339,7 +339,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     }
 
     WorkunitUpdate wu(&cw->lock());
-    if (notEmpty(req.getJobName()))
+    if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
         wu->setJobName(req.getJobName());
 
     StringBuffer queryId;
