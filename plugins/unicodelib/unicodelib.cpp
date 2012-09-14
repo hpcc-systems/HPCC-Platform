@@ -1128,6 +1128,7 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleGetNthWord(unsigned & tgtLen,
     UnicodeString uText(text, textLen);
     uText.trim();
     UnicodeString word = getNthWord(*bi, uText, n);
+    delete bi;
     if(word.length()>0)
     {
         tgtLen = word.length();
