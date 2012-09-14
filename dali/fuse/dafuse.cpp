@@ -467,7 +467,7 @@ class CFuseDaliDFS: public CFuseBase
     {
         StringBuffer fn;
         StringArray dirs;
-        DelimToStringArray(path,dirs,"/",false);
+        dirs.appendList(path, "/");
         ForEachItemIn(i,dirs) {
             const char *dir = dirs.item(i);
             if (dir&&*dir) {

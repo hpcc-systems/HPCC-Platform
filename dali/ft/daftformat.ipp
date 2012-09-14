@@ -256,7 +256,7 @@ public:
         if (_format.quote.get()) { 
             isquoted = false;
             StringArray csl;
-            CslToStringArray(_format.quote,csl); // OTT but catches previous kludge of ","
+            csl.appendList(_format.quote, ","); // OTT but catches previous kludge of ","
             ForEachItemIn(i,csl) {
                 if (strlen(csl.item(i)))
                 isquoted = true;

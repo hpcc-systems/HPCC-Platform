@@ -1138,7 +1138,7 @@ static void CheckAllowedProgram(const char *prog,const char *allowed)
         head.append(*(prog++));
     }
     StringArray list;
-    CslToStringArray(allowed, list);
+    list.appendList(allowed, ",");
     ForEachItemIn(i,list) {
         if (WildMatch(head.str(),list.item(i)))
             return;

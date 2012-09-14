@@ -2323,7 +2323,7 @@ void CDeploymentEngine::addDeploymentFile(StringBuffer &ret, const char *in, IXs
 {
     //input is of the format <method>+<file name>+<source dir>+<dest filename>[+<dest subdir>]
     StringArray tokens;
-    DelimToStringArray(in, tokens, "+");
+    tokens.appendList(in, "+");
     
     int len = tokens.length();
     if (len < 4)
@@ -2359,7 +2359,7 @@ void CDeploymentEngine::siteCertificateFunction(StringBuffer &ret, const char *i
 {
     //input is of the format <processType>+<process name>+<instance name>+<output path>
     StringArray tokens;
-    DelimToStringArray(in, tokens, "+");
+    tokens.appendList(in, "+");
     
     int len = tokens.length();
     if (len < 4)

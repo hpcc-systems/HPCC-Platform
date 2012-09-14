@@ -411,7 +411,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 if (qname.length() > 0)
                 {
                     StringArray qlist;
-                    CslToStringArray(qname.str(), qlist, true);
+                    qlist.appendListUniq(qname.str(), ",");
                     ForEachItemIn(q, qlist)
                     {
                         const char *_qname = qlist.item(q);

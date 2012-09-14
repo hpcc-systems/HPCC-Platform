@@ -205,7 +205,7 @@ int main(int argc, char** argv)
     {
       i++;
       StringArray sbarr;
-      DelimToStringArray(argv[i++], sbarr, "=");
+      sbarr.appendList(argv[i++], "=");
       if (sbarr.length() != 2)
        continue;
 
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
         for(unsigned i = 0; i < overrides.ordinality() ; i++)
         {
           StringArray sbarr;
-          DelimToStringArray(overrides.item(i), sbarr, ",");
+          sbarr.appendList(overrides.item(i), ",");
 
           if (sbarr.length() != 3)
           {
