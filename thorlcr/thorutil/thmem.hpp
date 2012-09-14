@@ -323,6 +323,7 @@ public:
     void partition(ICompare &compare, unsigned num, UnsignedArray &out); // returns num+1 points
 
     offset_t serializedSize();
+    memsize_t getMemUsage();
     void serialize(MemoryBuffer &mb);
     void serializeCompress(MemoryBuffer &mb);
     rowidx_t serializeBlock(MemoryBuffer &mb, size32_t dstmax, rowidx_t idx, rowidx_t count);
@@ -346,10 +347,6 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray
     rowidx_t commitRows;  // can only be updated by writing thread within a critical section
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
-
-protected:
-    virtual bool ensure(rowidx_t requiredRows);
-
 public:
 
     class CThorSpillableRowArrayLock
@@ -452,6 +449,7 @@ public:
             throwUnexpected();
         return CThorExpandingRowArray::serializedSize();
     }
+    memsize_t getMemUsage() { return CThorExpandingRowArray::getMemUsage(); }
     void serialize(MemoryBuffer &mb)
     {
         if (firstRow > 0)
@@ -460,6 +458,7 @@ public:
     }
     void deserialize(size32_t sz, const void *buf, bool hasNulls){ CThorExpandingRowArray::deserialize(sz, buf); }
     void deserializeRow(IRowDeserializerSource &in) { CThorExpandingRowArray::deserializeRow(in); }
+    virtual bool ensure(rowidx_t requiredRows);
 };
 
 
@@ -472,12 +471,13 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort=true) = 0;
     virtual void transferRowsIn(CThorExpandingRowArray &src) = 0;
     virtual void setup(ICompare *iCompare, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
+    virtual void ensure(rowidx_t max) = 0;
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon
 {
-    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping=false, CThorExpandingRowArray *allMemRows=NULL) = 0;
-    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows=NULL) = 0;
+    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping=false, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL) = 0;
+    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows=NULL, memsize_t *memUsage=NULL) = 0;
 };
 
 interface IThorRowCollector : extends IThorRowCollectorCommon

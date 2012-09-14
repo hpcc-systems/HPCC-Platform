@@ -24,6 +24,7 @@
 #include "jthread.hpp"
 #include "thormisc.hpp"
 #include "jlib.hpp"
+#include "jisem.hpp"
 #include "jsort.hpp"
 #include "tsorts.hpp"
 #include "tsorta.hpp"
@@ -45,7 +46,8 @@
 #define MINISORT_PARALLEL_TRANSFER 16
 
 
-inline void traceWait(const char *name,Semaphore &sem,unsigned interval=60*1000)
+template <class T>
+inline void traceWait(const char *name, T &sem,unsigned interval=60*1000)
 {
     while (!sem.wait(interval))
         PROGLOG("Waiting for %s",name);
@@ -432,9 +434,9 @@ public:
         deserializer = rowIf.queryRowDeserializer();
         allocator = rowIf.queryRowAllocator();
     }
-    IRowStream *sort(CThorExpandingRowArray &localRows, ICompare &iCompare, bool isStable, rowcount_t &rowCount)
+    IRowStream *sort(CThorExpandingRowArray &localRows, rowcount_t globalTotal, ICompare &iCompare, bool isStable, rowcount_t &rowCount)
     {
-        PrintLog("Minisort started: %s, totalrows=%"RCPF"d", partNo?"seconday node":"primary node", localRows.ordinality());
+        PrintLog("Minisort started: %s, totalrows=%"RIPF"d", partNo?"seconday node":"primary node", localRows.ordinality());
         size32_t blksize = 0x100000;
 
         // JCSMORE - at the moment, the localsort set is already sorted
@@ -472,8 +474,9 @@ public:
         }
         else
         {
-            collector->setup(&iCompare, isStable, rc_mixed, SPILL_PRIORITY_DISABLE); // must not spill
+            collector->setup(&iCompare, isStable, rc_allMem, SPILL_PRIORITY_DISABLE); // must not spill
             collector->transferRowsIn(localRows);
+            collector->ensure((rowidx_t)globalTotal); // pre-expand row array for efficiency
 
             // JCSMORE - very odd, threaded, but semaphores ensuring sequential writes, why?
             class casyncfor: public CAsyncFor
@@ -579,7 +582,8 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
     ICompare *icollateupper; // used in between join
     ISortKeySerializer *keyserializer;      // used on partition calculation
     void *midkeybuf;
-    Semaphore startgathersem, startmergesem, finishedmergesem, closedownsem;
+    Semaphore startgathersem, finishedmergesem, closedownsem;
+    InterruptableSemaphore startmergesem;
     size32_t transferblocksize, midkeybufsize;
 
     void main()
@@ -1031,12 +1035,21 @@ public:
         outbufsize = mb.length();
         outkeybuf = mb.detach();
     }
-    virtual void StartMiniSort(rowcount_t unused) // JCSMORE
+    virtual void StartMiniSort(rowcount_t globalTotal)
     {
         // JCSMORE partno and numnodes should be implicit
         CMiniSort miniSort(*activity, *rowif, *clusterComm, partno, numnodes, mpTagRPC);
 
-        Owned<IRowStream> sortedStream = miniSort.sort(rowArray, *icompare, isstable, totalrows);
+        Owned<IRowStream> sortedStream;
+        try
+        {
+            sortedStream.setown(miniSort.sort(rowArray, globalTotal, *icompare, isstable, totalrows));
+        }
+        catch (IException *e)
+        {
+            startmergesem.interrupt(LINK(e));
+            throw e;
+        }
         merger.setown(sortedStream.getClear());
         startmergesem.signal();
         ActPrintLog(activity, "StartMiniSort output started");
@@ -1180,10 +1193,11 @@ public:
 
         Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:icompare, isstable, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> overflowstream;
+        memsize_t inMemUsage = 0;
         try
         {
             // if all in memory, rows will be transferred into rowArray when done
-            overflowstream.setown(sortedloader->load(in, abort, false, &rowArray));
+            overflowstream.setown(sortedloader->load(in, abort, false, &rowArray, &inMemUsage));
             ActPrintLog(activity, "Local run sort(s) done");
         }
         catch (IException *e)
@@ -1211,7 +1225,7 @@ public:
             {
                 // unspillable at this point, whilst partitioning (or determining if minisort)
                 overflowinterval = 1;
-                grandtotalsize = rowArray.serializedSize(); // expensive
+                grandtotalsize = inMemUsage;
             }
             ActPrintLog(activity, "Sort done: rows sorted = %"RCPF"d, bytes sorted = %"I64F"d, overflowed to disk %d time%c", grandtotal, grandtotalsize, numOverflows, (numOverflows==1)?' ':'s');
         }

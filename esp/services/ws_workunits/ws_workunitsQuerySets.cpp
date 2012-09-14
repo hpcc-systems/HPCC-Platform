@@ -24,6 +24,11 @@
 #include "dfuwu.hpp"
 #include "eclhelper.hpp"
 #include "roxiecontrol.hpp"
+#include "dfuutil.hpp"
+#include "dautils.hpp"
+#include "referencedfilelist.hpp"
+
+#define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
 const unsigned roxieQueryRoxieTimeOut = 60000;
 
@@ -40,7 +45,16 @@ bool isRoxieProcess(const char *process)
     return conn->queryRoot()->hasProp(xpath.str());
 }
 
-void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll)
+void checkUseEspOrDaliIP(SocketEndpoint &ep, const char *ip, const char *esp)
+{
+    if (!ip || !*ip)
+        return;
+    ep.set(ip, 7070);
+    if (ep.isLoopBack() || *ip=='.' || (ip[0]=='0' && ip[1]=='.'))
+        ep.ipset(esp);
+}
+
+void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer)
 {
     Owned<IClientWsWorkunits> ws;
     ws.setown(createWsWorkunitsClient());
@@ -70,6 +84,10 @@ void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const cha
     dll.append(resp->getThefile());
     dllname.append(resp->getFileName());
     name.append(resp->getQueryName());
+    SocketEndpoint ep;
+    checkUseEspOrDaliIP(ep, resp->getDaliServer(), netAddress);
+    if (!ep.isNull())
+        ep.getUrlStr(daliServer);
 }
 
 void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const char *logicalname, const char *cluster, bool isRoxie, bool supercopy)
@@ -280,6 +298,7 @@ bool reloadCluster(const char *cluster, unsigned wait)
     return (clusterInfo) ? reloadCluster(clusterInfo, wait) : true;
 }
 
+
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
     StringBuffer wuid = req.getWuid();
@@ -310,6 +329,15 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     if (!isValidCluster(target.str()))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
 
+    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target.str());
+    if (clusterInfo->getPlatform()==RoxieCluster)
+    {
+        SCMStringBuffer process;
+        Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
+        wufiles->resolveFiles(clusterInfo->getRoxieProcess(process).str(), NULL, true, true);
+        wufiles->cloneAllInfo(false, true);
+    }
+
     WorkunitUpdate wu(&cw->lock());
     if (notEmpty(req.getJobName()))
         wu->setJobName(req.getJobName());
@@ -324,17 +352,9 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     resp.setQueryName(queryName.str());
     resp.setQuerySet(target.str());
 
-    Owned <IConstWUClusterInfo> targetInfo = getTargetClusterInfo(target.str());
-    if (req.getCopyLocal() || req.getShowFiles())
-    {
-        IArrayOf<IConstWUCopyLogicalClusterFileSections> clusterfiles;
-        copyWULogicalFilesToTarget(context, *targetInfo, *cw, clusterfiles, req.getCopyLocal());
-        resp.setClusterFiles(clusterfiles);
-    }
-
     bool reloadFailed = false;
     if (0!=req.getWait() && !req.getNoReload())
-        reloadFailed = !reloadCluster(targetInfo, (unsigned)req.getWait());
+        reloadFailed = !reloadCluster(clusterInfo, (unsigned)req.getWait());
     resp.setReloadFailed(reloadFailed);
 
     return true;
@@ -794,6 +814,32 @@ bool splitQueryPath(const char *path, StringBuffer &netAddress, StringBuffer &qu
     return true;
 }
 
+void copyQueryFilesToClusters(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, StringArray &clusters, bool overwrite)
+{
+    Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
+    wufiles->addFilesFromWorkUnit(cw);
+    ForEachItemIn(i, clusters)
+    {
+        const char *cluster = clusters.item(i);
+        SCMStringBuffer process;
+        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cluster);
+        if (clusterInfo && clusterInfo->getRoxieProcess(process).length())
+        {
+            wufiles->resolveFiles(process.str(), remoteIP, !overwrite, true);
+            wufiles->cloneAllInfo(overwrite, true);
+        }
+    }
+}
+
+void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *cluster, bool overwrite)
+{
+    if (!cluster || !*cluster)
+        return;
+    StringArray clusters;
+    clusters.append(cluster);
+    copyQueryFilesToClusters(context, cw, remoteIP, clusters, overwrite);
+}
+
 bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetCopyQueryRequest &req, IEspWUQuerySetCopyQueryResponse &resp)
 {
     unsigned start = msTick();
@@ -814,6 +860,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     if (!splitQueryPath(source, srcAddress, srcQuerySet, srcQuery))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source query path");
 
+    StringBuffer remoteIP;
     StringBuffer queryName;
     StringBuffer wuid;
     if (srcAddress.length())
@@ -821,7 +868,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         StringBuffer xml;
         MemoryBuffer dll;
         StringBuffer dllname;
-        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll);
+        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP);
         deploySharedObject(context, wuid, dllname.str(), target, queryName.str(), dll, queryDirectory.str(), xml.str());
     }
     else
@@ -838,7 +885,15 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     }
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    WorkunitUpdate wu(factory->updateWorkUnit(wuid.str()));
+    Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+
+    if (!req.getDontCopyFiles())
+    {
+        const char *reqDali = req.getDaliServer();
+        copyQueryFilesToCluster(context, cw, (reqDali && *reqDali) ? reqDali : remoteIP.str(), target, req.getOverwrite());
+    }
+
+    WorkunitUpdate wu(&cw->lock());
     if (!wu)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
 

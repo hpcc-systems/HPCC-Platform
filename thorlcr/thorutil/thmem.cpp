@@ -762,6 +762,30 @@ offset_t CThorExpandingRowArray::serializedSize()
     return total;
 }
 
+
+memsize_t CThorExpandingRowArray::getMemUsage()
+{
+    rowidx_t c = ordinality();
+    memsize_t total = 0;
+    roxiemem::IRowManager *rM = activity.queryJob().queryRowManager();
+    IRecordSize *iRecordSize = rowIf->queryRowMetaData();
+    if (iRecordSize->isFixedSize())
+        total = c * rM->getExpectedFootprint(iRecordSize->getFixedSize(), 0);
+    else
+    {
+        for (rowidx_t i=0; i<c; i++)
+            total += rM->getExpectedFootprint(iRecordSize->getRecordSize(rows[i]), 0);
+    }
+    // NB: worst case, when expanding (see ensure method)
+    memsize_t sz = rM->getExpectedFootprint(maxRows * sizeof(void *), 0);
+    memsize_t szE = sz / 100 * 125; // don't care if sz v. small
+    if (stableSort_none == stableSort)
+        total += sz + szE;
+    else
+        total += sz + szE * 2;
+    return total;
+}
+
 void CThorExpandingRowArray::serialize(IRowSerializerTarget &out)
 {
     bool warnnull = true;
@@ -1093,8 +1117,6 @@ protected:
 
     bool spillRows()
     {
-        if (rc_allMem == diskMemMix)
-            return false;
         rowidx_t numRows = spillableRows.numCommitted();
         if (numRows == 0)
             return false;
@@ -1128,7 +1150,7 @@ protected:
         if (!spillableRows.append(row))
         {
             bool oom = false;
-            if (rc_allMem != diskMemMix)
+            if (spillingEnabled())
             {
                 CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
                 //We should have been called back to free any committed rows, but occasionally it may not (e.g., if
@@ -1154,19 +1176,23 @@ protected:
             }
         }
     }
-    IRowStream *getStream(CThorExpandingRowArray *allMemRows, bool shared)
+    IRowStream *getStream(CThorExpandingRowArray *allMemRows, memsize_t *memUsage, bool shared)
     {
         SpinBlock b(readerLock);
         if (0 == outStreams)
         {
             spillableRows.flush();
-            if ((rc_allDisk == diskMemMix) || ((rc_allDiskOrAllMem == diskMemMix) && overflowCount))
+            if (spillingEnabled())
             {
-                CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
-                if (spillableRows.numCommitted())
+                // i.e. all disk OR (some on disk already AND allDiskOrAllMem)
+                if (((rc_allDisk == diskMemMix) || ((rc_allDiskOrAllMem == diskMemMix) && overflowCount)))
                 {
-                    spillRows();
-                    spillableRows.kill();
+                    CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
+                    if (spillableRows.numCommitted())
+                    {
+                        spillRows();
+                        spillableRows.kill();
+                    }
                 }
             }
         }
@@ -1191,10 +1217,13 @@ protected:
                 totalRows += spillableRows.numCommitted();
                 if (iCompare && (1 == outStreams))
                     spillableRows.sort(*iCompare, maxCores);
+                // NB: if rc_allDiskOrAllMem and some disk already, will have been spilt already (see above) and not each here
                 if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
                 {
                     assertex(allMemRows);
                     assertex(1 == outStreams);
+                    if (memUsage)
+                        *memUsage = spillableRows.getMemUsage(); // a bit expensive if variable rows
                     allMemRows->transferFrom(spillableRows);
                     // stream cannot be used
                     return NULL;
@@ -1227,6 +1256,8 @@ protected:
         totalRows = 0;
         overflowCount = outStreams = 0;
     }
+
+    inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IRowInterfaces *_rowIf, ICompare *_iCompare, bool _isStable, RowCollectorFlags _diskMemMix, unsigned _spillPriority)
         : activity(_activity),
@@ -1239,7 +1270,7 @@ public:
         mmRegistered = false;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
-        else if (SPILL_PRIORITY_DISABLE != spillPriority)
+        else if (spillingEnabled())
         {
             activity.queryJob().queryRowManager()->addRowBuffer(this);
             mmRegistered = true;
@@ -1292,12 +1323,16 @@ public:
         spillPriority = _spillPriority;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
-        if (mmRegistered && (SPILL_PRIORITY_DISABLE == spillPriority))
+        if (mmRegistered && !spillingEnabled())
         {
             mmRegistered = false;
             activity.queryJob().queryRowManager()->removeRowBuffer(this);
         }
         spillableRows.setup(rowIf, false, isStable?stableSort_earlyAlloc:stableSort_none);
+    }
+    virtual void ensure(rowidx_t max)
+    {
+        spillableRows.ensure(max);
     }
 // IBufferedRowCallback
     virtual unsigned getPriority() const
@@ -1306,7 +1341,7 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
-        if (SPILL_PRIORITY_DISABLE == spillPriority)
+        if (!spillingEnabled())
             return false;
         CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
         return spillRows();
@@ -1316,7 +1351,7 @@ public:
 enum TRLGroupFlag { trl_ungroup, trl_preserveGrouping, trl_stopAtEog };
 class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
 {
-    IRowStream *load(IRowStream *in, const bool &abort, TRLGroupFlag grouping, CThorExpandingRowArray *allMemRows)
+    IRowStream *load(IRowStream *in, const bool &abort, TRLGroupFlag grouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
     {
         reset();
         setPreserveGrouping(trl_preserveGrouping == grouping);
@@ -1338,7 +1373,7 @@ class CThorRowLoader : public CThorRowCollectorBase, implements IThorRowLoader
             }
             putRow(next);
         }
-        return getStream(allMemRows, false);
+        return getStream(allMemRows, memUsage, false);
     }
 
 public:
@@ -1358,15 +1393,16 @@ public:
     {
         CThorRowCollectorBase::setup(iCompare, isStable, diskMemMix, spillPriority);
     }
+    virtual void ensure(rowidx_t max) { CThorRowCollectorBase::ensure(max); }
 // IThorRowLoader
-    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows)
+    virtual IRowStream *load(IRowStream *in, const bool &abort, bool preserveGrouping, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
     {
         assertex(!iCompare || !preserveGrouping); // can't sort if group preserving
-        return load(in, abort, preserveGrouping?trl_preserveGrouping:trl_ungroup, allMemRows);
+        return load(in, abort, preserveGrouping?trl_preserveGrouping:trl_ungroup, allMemRows, memUsage);
     }
-    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows)
+    virtual IRowStream *loadGroup(IRowStream *in, const bool &abort, CThorExpandingRowArray *allMemRows, memsize_t *memUsage)
     {
-        return load(in, abort, trl_stopAtEog, allMemRows);
+        return load(in, abort, trl_stopAtEog, allMemRows, memUsage);
     }
 };
 
@@ -1406,6 +1442,7 @@ public:
     {
         CThorRowCollectorBase::setup(iCompare, isStable, diskMemMix, spillPriority);
     }
+    virtual void ensure(rowidx_t max) { CThorRowCollectorBase::ensure(max); }
 // IThorRowCollector
     virtual IRowWriter *getWriter()
     {
@@ -1440,7 +1477,7 @@ public:
     }
     virtual IRowStream *getStream(bool shared)
     {
-        return CThorRowCollectorBase::getStream(NULL, shared);
+        return CThorRowCollectorBase::getStream(NULL, NULL, shared);
     }
 };
 
