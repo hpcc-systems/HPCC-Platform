@@ -1226,6 +1226,7 @@ public:
         }
         ActPrintLog(activity,"Total recs in mem = %"RCPF"d scaled recs= %"RCPF"d size = %"CF"d bytes, minrecsonnode = %"RCPF"d, maxrecsonnode = %"RCPF"d",total,stotal,totalmem,minrecsonnode,maxrecsonnode);
         if (!usepartitionrow&&!betweensort&&(totalmem<minisortthreshold)&&!overflowed) {
+            ActPrintLog(activity, "Performing minisort of %"RCPF"d records", total);
             sorted = MiniSort(total);
             return;
         }
