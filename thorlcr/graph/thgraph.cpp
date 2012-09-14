@@ -908,6 +908,7 @@ bool isGlobalActivity(CGraphElementBase &container)
 // always local
         case TAKcountdisk:
         case TAKfilter:
+        case TAKfilterproject:
         case TAKsplit:
         case TAKpipewrite:
         case TAKdegroup:
@@ -1797,7 +1798,7 @@ StringBuffer &getGlobals(CGraphBase &graph, StringBuffer &str)
 
             ThorActivityKind kind = e.getKind();
             str.append(activityKindStr(kind));
-            str.append("(").append(kind).append(")");
+            str.append("(").append(e.queryId()).append(")");
         }
     }
     if (!first)
