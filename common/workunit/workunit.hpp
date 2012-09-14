@@ -1238,7 +1238,7 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
 
 
 extern WORKUNIT_API const char *getTargetClusterComponentName(const char *clustname, const char *processType, StringBuffer &name);
-
+extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 #if 0
 void WORKUNIT_API testWorkflow();
 #endif

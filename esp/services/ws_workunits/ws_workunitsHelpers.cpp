@@ -121,7 +121,7 @@ void ensureWsWorkunitAccess(IEspContext& context, const char* wuid, SecAccessFla
     Owned<IWorkUnitFactory> wf = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = wf->openWorkUnit(wuid, false);
     if (!cw)
-        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to open workunit %s", wuid);
+        throw MakeStringException(ECLWATCH_ECL_WU_ACCESS_DENIED, "Failed to open workunit %s when ensuring workunit access", wuid);
     ensureWsWorkunitAccess(context, *cw, minAccess);
 }
 
