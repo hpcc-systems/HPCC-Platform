@@ -9495,7 +9495,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     Owned<IDistributedSuperFile> first = transaction->lookupSuperFile(sfnames[0]);
     assertex(first.get());
     StringArray toadd;
-    CslToStringArray(addsubnames, toadd, true);
+    toadd.appendListUniq(addsubnames, ",");
     ForEachItemIn(i,toadd) {
         CDfsLogicalFileName lfn;
         if (!lfn.setValidate(toadd.item(i)))

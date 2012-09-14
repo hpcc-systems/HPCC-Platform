@@ -125,7 +125,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     if (pchExcludePartitions && *pchExcludePartitions)
     {
         StringArray sPartitions;
-        DelimToStringArray(pchExcludePartitions, sPartitions, ", ;");
+        sPartitions.appendList(pchExcludePartitions, ", ;");
         unsigned int numOfPartitions = sPartitions.ordinality();
         for (unsigned int i=0; i<numOfPartitions; i++)
         {
@@ -273,13 +273,13 @@ void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcess
     machineInfoData.getOptions().setGetSoftwareInfo(getSoftwareInfo);
     machineInfoData.getOptions().setApplyProcessFilter(applyProcessFilter);
 
-    DelimToStringArray(addProcessesToFilters, machineInfoData.getOptions().getAdditionalProcessFilters(), " ,\t");
+    machineInfoData.getOptions().getAdditionalProcessFilters().appendList(addProcessesToFilters, " ,\t");
 
     BoolHash uniqueProcesses;
     for (unsigned i=0; i<processes.ordinality(); i++)
     {
         StringArray address;
-        DelimToStringArray(processes.item(i), address, ":");
+        address.appendList(processes.item(i), ":");
 
         StringBuffer address1, address2, processType, compName, path;
         unsigned processNumber = 0;
@@ -314,7 +314,7 @@ void Cws_machineEx::readMachineInfoRequest(IEspContext& context, bool getProcess
     machineInfoData.getOptions().setGetSoftwareInfo(getSoftwareInfo);
     machineInfoData.getOptions().setApplyProcessFilter(applyProcessFilter);
 
-    DelimToStringArray(addProcessesToFilters, machineInfoData.getOptions().getAdditionalProcessFilters(), " ,\t");
+    machineInfoData.getOptions().getAdditionalProcessFilters().appendList(addProcessesToFilters, " ,\t");
 
     readSettingsForTargetClusters(context, targetClustersIn, machineInfoData, targetClusterTreeOut);
 }

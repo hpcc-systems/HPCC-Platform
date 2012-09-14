@@ -1306,7 +1306,7 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
             clusterInfo->getThorQueue(thorQueues);
             resp.setName(req.getName());
             StringArray qlist;
-            CslToStringArray(thorQueues.str(), qlist, true);
+            qlist.appendListUniq(thorQueues.str(), ",");
             IArrayOf<IEspTpQueue> Queues;
             // look for the thor processes which are listening to this clusters queue, some may be listening to other clusters queues as well.
             ForEachItemIn(q, qlist)
@@ -1319,7 +1319,7 @@ bool CWsTopologyEx::onTpClusterInfo(IEspContext &context, IEspTpClusterInfoReque
                     IPropertyTree &server = iter->query();
                     const char *queues = server.queryProp("@queue");
                     StringArray thorqlist;
-                    CslToStringArray(queues, thorqlist, true);
+                    thorqlist.appendListUniq(queues, ",");
                     if (NotFound != thorqlist.find(queueName))
                     {
                         IEspTpQueue* pQueue = createTpQueue("","");

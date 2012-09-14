@@ -534,7 +534,7 @@ public:
         //type is either 'error' or 'warning' and any of the other parts may be empty strings
         //
         StringArray sArray;
-        DelimToStringArray(in, sArray, ":");
+        sArray.appendList(in, ":");
 
         if (sArray.ordinality() != 4)
         {

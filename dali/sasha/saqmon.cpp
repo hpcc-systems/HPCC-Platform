@@ -69,7 +69,7 @@ public:
         if (!qinitdone) {
             qinitdone = true;
             StringArray qs;
-            CslToStringArray(qlist, qs, true);
+            qs.appendListUniq(qlist, ",");
             if (!qs.ordinality())
                 return false;
             StringArray cna;
@@ -188,7 +188,7 @@ public:
                             const char *allowedclusters = ptree->queryProp("Debug/allowedclusters");
                             if (allowedclusters&&*allowedclusters) {
                                 StringArray acs;
-                                CslToStringArray(allowedclusters, acs, true);
+                                acs.appendListUniq(allowedclusters, ",");
                                 bool found = true;
                                 ForEachItemIn(i,acs) {
                                     if (strcmp(cnames.item(qi),acs.item(i))==0) 
