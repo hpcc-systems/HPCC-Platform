@@ -24,6 +24,6 @@ interface IBackup : extends IInterface
     virtual void cancel(const char *src) = 0;
 };
 
-IBackup *createBackupHandler(const char *dataDir);
+IBackup *createBackupHandler();
 
 #endif

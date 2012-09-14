@@ -38,7 +38,6 @@ public:
 class CThorBackupHandler : public CSimpleInterface, implements IBackup, implements IThreaded, implements ICopyFileProgress
 {
     CThreaded threaded;
-    StringAttr dataDir;
     bool aborted, currentAbort;
     Semaphore sem, cancelSem;
     CriticalSection crit;
@@ -149,7 +148,7 @@ class CThorBackupHandler : public CSimpleInterface, implements IBackup, implemen
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorBackupHandler(const char *_dataDir) : threaded("CBackupHandler"), dataDir(_dataDir)
+    CThorBackupHandler() : threaded("CBackupHandler")
     {
         aborted = currentAbort = false;
         async = globals->getPropBool("@replicateAsync", true);
@@ -307,8 +306,8 @@ public:
 const char *CThorBackupHandler::formatV = "01\n";
 
 
-IBackup *createBackupHandler(const char *dataDir)
+IBackup *createBackupHandler()
 {
-    return new CThorBackupHandler(dataDir);
+    return new CThorBackupHandler();
 }
 
