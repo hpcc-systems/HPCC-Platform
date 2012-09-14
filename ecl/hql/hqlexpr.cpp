@@ -14125,6 +14125,10 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
                 break;
             }
 
+            IHqlExpression * xmlAttr = cur->queryProperty(xpathAtom);
+            if (xmlAttr)
+                attrs.setown(createComma(attrs.getClear(), LINK(xmlAttr)));
+
             LinkedHqlExpr newField = cur;
             if (forceSimplify || type != targetType)
             {
