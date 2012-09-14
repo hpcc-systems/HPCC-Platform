@@ -364,17 +364,87 @@ typedef enum _WuActionType
     ActionUnknown
 } WsWuActionType;
 
+void setActionResult(const char* wuid, int action, const char* result, StringBuffer& strAction, IArrayOf<IConstWUActionResult>* results)
+{
+    if (!results || !wuid || !*wuid || !result || !*result)
+        return;
+
+    switch(action)
+    {
+    case ActionDelete:
+    {
+        strAction = "Delete";
+        break;
+    }
+    case ActionProtect:
+    {
+        strAction = "Protect";
+        break;
+    }
+    case ActionAbort:
+    {
+        strAction = "Abort";
+        break;
+    }
+    case ActionRestore:
+    {
+        strAction = "Restore";
+        break;
+    }
+    case ActionEventSchedule:
+    {
+        strAction = "EventSchedule";
+        break;
+    }
+    case ActionEventDeschedule:
+    {
+        strAction = "EventDeschedule";
+        break;
+    }
+    case ActionChangeState:
+    {
+        strAction = "ChangeState";
+        break;
+    }
+    case ActionPause:
+    {
+        strAction = "Pause";
+        break;
+    }
+    case ActionPauseNow:
+    {
+        strAction = "PauseNow";
+        break;
+    }
+    case ActionResume:
+    {
+        strAction = "Resume";
+        break;
+    }
+    default:
+    {
+        strAction = "Unknown";
+    }
+    }
+
+    Owned<IEspWUActionResult> res = createWUActionResult("", "");
+    res->setWuid(wuid);
+    res->setAction(strAction.str());
+    res->setResult(result);
+    results->append(*res.getClear());
+}
+
 bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties* params, IArrayOf<IConstWUActionResult>* results)
 {
     if (!wuids.length())
         return true;
 
-    Owned<IMultiException> me = MakeMultiException();
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
 
     bool bAllSuccess = true;
     for(aindex_t i=0; i<wuids.length();i++)
     {
+        StringBuffer strAction;
         StringBuffer wuidStr = wuids.item(i);
         const char* wuid = wuidStr.trim().str();
         if (isEmpty(wuid))
@@ -382,50 +452,50 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
             WARNLOG("Empty Workunit ID");
             continue;
         }
-        if (!looksLikeAWuid(wuid))
-        {
-            WARNLOG("Invalid Workunit ID: %s",wuid);
-            continue;
-        }
 
         try
         {
-            if (action == ActionRestore)
+            if (!looksLikeAWuid(wuid))
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
+
+            if ((action == ActionRestore) || (action == ActionEventDeschedule))
             {
-                StringBuffer strAction("Restore");
-                SocketEndpoint ep;
-                getSashaNode(ep);
-
-                Owned<ISashaCommand> cmd = createSashaCommand();
-                cmd->setAction(SCA_RESTORE);
-                cmd->addId(wuid);
-
-                Owned<INode> node = createINode(ep);
-                if (!node)
-                    throw MakeStringException(ECLWATCH_INODE_NOT_FOUND,"INode not found.");
-
-                StringBuffer s;
-                if (!cmd->send(node, 1*60*1000))
-                    throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to Archive server at %s.", ep.getUrlStr(s).str());
-
-                if (cmd->numIds()==0)
+                switch(action)
                 {
-                    WARNLOG("Could not Archive/restore %s",wuid);
-                    me->append(*MakeStringException(0,"Cannot archive/restore workunit %s.", wuid));
+                case ActionRestore:
+                {
+                    SocketEndpoint ep;
+                    getSashaNode(ep);
+
+                    Owned<ISashaCommand> cmd = createSashaCommand();
+                    cmd->setAction(SCA_RESTORE);
+                    cmd->addId(wuid);
+
+                    Owned<INode> node = createINode(ep);
+                    if (!node)
+                        throw MakeStringException(ECLWATCH_INODE_NOT_FOUND,"INode not found.");
+
+                    StringBuffer s;
+                    if (!cmd->send(node, 1*60*1000))
+                        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER,"Cannot connect to Archive server at %s.", ep.getUrlStr(s).str());
+
+                    if (cmd->numIds()==0)
+                        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Could not Archive/restore %s",wuid);
+
+                    StringBuffer reply;
+                    cmd->getId(0,reply);
+
+                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                    ensureWsWorkunitAccess(context, wuid, SecAccess_Write);
+                    break;
                 }
-                StringBuffer reply;
-                cmd->getId(0,reply);
-
-                AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                ensureWsWorkunitAccess(context, wuid, SecAccess_Write);
-
-                if (results)
-                {
-                    Owned<IEspWUActionResult> res = createWUActionResult("", "");
-                    res->setWuid(wuid);
-                    res->setAction(strAction.str());
-                    res->setResult("Success");
-                    results->append(*res.getClear());
+                case ActionEventDeschedule:
+                    if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Full, false)
+                        || !context.validateFeatureAccess(OTHERS_WU_ACCESS, SecAccess_Full, false))
+                        ensureWsWorkunitAccess(context, wuid, SecAccess_Full);
+                    descheduleWorkunit(wuid);
+                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                    break;
                 }
             }
             else
@@ -435,151 +505,122 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
 
-                StringBuffer strAction;
-                Owned<IEspWUActionResult> res = createWUActionResult("", "");
-                res->setWuid(wuid);
-                res->setResult("Success");
-
                 if ((action == ActionDelete) && (cw->getState() == WUStateWait))
                     throw MakeStringException(ECLWATCH_CANNOT_DELETE_WORKUNIT,"Cannot delete a workunit which is in a 'Wait' status.");
 
-                try
+                switch(action)
                 {
-                    switch(action)
+                case ActionPause:
+                {
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
+                    WorkunitUpdate wu(&cw->lock());
+                    wu->setAction(WUActionPause);
+                    break;
+                }
+                case ActionPauseNow:
+                {
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
+                    WorkunitUpdate wu(&cw->lock());
+                    wu->setAction(WUActionPauseNow);
+                   break;
+                }
+                case ActionResume:
+                {
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
+                    WorkunitUpdate wu(&cw->lock());
+                    wu->setAction(WUActionResume);
+                   break;
+                }
+                case ActionDelete:
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
                     {
-                    case ActionPause:
-                    {
-                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
-                        WorkunitUpdate wu(&cw->lock());
-                        strAction = "Pause";
-                        wu->setAction(WUActionPause);
-                        break;
-                    }
-                    case ActionPauseNow:
-                    {
-                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
-                        strAction = "PauseNow";
-                        WorkunitUpdate wu(&cw->lock());
-                        wu->setAction(WUActionPauseNow);
-                       break;
-                    }
-                    case ActionResume:
-                    {
-                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
-                        strAction = "Resume";
-                        WorkunitUpdate wu(&cw->lock());
-                        wu->setAction(WUActionResume);
-                       break;
-                    }
-                    case ActionDelete:
-                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
-                        strAction = "Delete";
+                        int state = cw->getState();
+                        switch (state)
                         {
-                            int state = cw->getState();
-                            switch (state)
-                            {
-                                case WUStateWait:
-                                case WUStateAborted:
-                                case WUStateCompleted:
-                                case WUStateFailed:
-                                case WUStateArchived:
-                                case WUStateCompiled:
-                                case WUStateUploadingFiles:
-                                    break;
-                                default:
-                                {
-                                    WorkunitUpdate wu(&cw->lock());
-                                    wu->setState(WUStateFailed);
-                                }
-                            }
-                            cw.clear();
-                            factory->deleteWorkUnit(wuid);
-                            AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
-                        }
-                       break;
-                    case ActionAbort:
-                        ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
-                        strAction = "Abort";
-                        {
-                            if (cw->getState() == WUStateWait)
+                            case WUStateWait:
+                            case WUStateAborted:
+                            case WUStateCompleted:
+                            case WUStateFailed:
+                            case WUStateArchived:
+                            case WUStateCompiled:
+                            case WUStateUploadingFiles:
+                                break;
+                            default:
                             {
                                 WorkunitUpdate wu(&cw->lock());
-                                wu->deschedule();
-                                wu->setState(WUStateAborted);
-                            }
-                            else
-                                secAbortWorkUnit(wuid, *context.querySecManager(), *context.queryUser());
-                            AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
-                        }
-                        break;
-                    case ActionProtect:
-                        strAction = "Protect";
-                        cw->protect(!params || params->getPropBool("Protect",true));
-                        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                        break;
-                    case ActionChangeState:
-                        strAction = "ChangeState";
-                        {
-                            if (params)
-                            {
-                                WUState state = (WUState) params->getPropInt("State");
-                                if (state > WUStateUnknown && state < WUStateSize)
-                                {
-                                    WorkunitUpdate wu(&cw->lock());
-                                    wu->setState(state);
-                                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                                }
+                                wu->setState(WUStateFailed);
                             }
                         }
-                        break;
-                    case ActionEventSchedule:
-                        strAction = "EventSchedule";
-                        {
-                            WorkunitUpdate wu(&cw->lock());
-                            wu->schedule();
-                            AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
-                        }
-                        break;
-                    case ActionEventDeschedule:
-                        strAction = "EventDeschedule";
+                        cw.clear();
+                        factory->deleteWorkUnit(wuid);
+                        AuditSystemAccess(context.queryUserId(), true, "Deleted %s", wuid);
+                    }
+                   break;
+                case ActionAbort:
+                    ensureWsWorkunitAccess(context, *cw, SecAccess_Full);
+                    {
+                        if (cw->getState() == WUStateWait)
                         {
                             WorkunitUpdate wu(&cw->lock());
                             wu->deschedule();
-                            AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                            wu->setState(WUStateAborted);
                         }
-                        break;
+                        else
+                            secAbortWorkUnit(wuid, *context.querySecManager(), *context.queryUser());
+                        AuditSystemAccess(context.queryUserId(), true, "Aborted %s", wuid);
                     }
-                }
-                catch (IException *e)
-                {
-                    bAllSuccess = false;
-                    StringBuffer eMsg;
-                    StringBuffer failedMsg("Failed: ");
-                    res->setResult(failedMsg.append(e->errorMessage(eMsg)).str());
-                    WARNLOG("Failed to %s workunit: %s, %s", strAction.str(), wuid, eMsg.str());
-                    AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction.str(), wuid);
-                    e->Release();
-                }
-
-                if (results)
-                {
-                    res->setAction(strAction.str());
-                    results->append(*res.getClear());
+                    break;
+                case ActionProtect:
+                    cw->protect(!params || params->getPropBool("Protect",true));
+                    AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                    break;
+                case ActionChangeState:
+                    {
+                        if (params)
+                        {
+                            WUState state = (WUState) params->getPropInt("State");
+                            if (state > WUStateUnknown && state < WUStateSize)
+                            {
+                                WorkunitUpdate wu(&cw->lock());
+                                wu->setState(state);
+                                AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                            }
+                        }
+                    }
+                    break;
+                case ActionEventSchedule:
+                    {
+                        WorkunitUpdate wu(&cw->lock());
+                        wu->schedule();
+                        AuditSystemAccess(context.queryUserId(), true, "Updated %s", wuid);
+                    }
+                    break;
                 }
             }
+            setActionResult(wuid, action, "Success", strAction, results);
         }
-        catch (IException *E)
+        catch (IException *e)
         {
-            me->append(*E);
+            bAllSuccess = false;
+            StringBuffer eMsg;
+            StringBuffer failedMsg("Failed: ");
+            setActionResult(wuid, action, failedMsg.append(e->errorMessage(eMsg)).str(), strAction, results);
+            WARNLOG("Failed to %s for workunit: %s, %s", strAction.str(), wuid, eMsg.str());
+            AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction.str(), wuid);
+            e->Release();
+            continue;
         }
         catch (...)
         {
-            me->append(*MakeStringException(0,"Unknown exception wuid=%s",wuid));
+            bAllSuccess = false;
+            StringBuffer failedMsg;
+            failedMsg.appendf("Unknown exception");
+            setActionResult(wuid, action, failedMsg.str(), strAction, results);
+            WARNLOG("Failed to %s for workunit: %s, %s", strAction.str(), wuid, failedMsg.str());
+            AuditSystemAccess(context.queryUserId(), false, "Failed to %s %s", strAction.str(), wuid);
+            continue;
         }
     }
-
-   if(me->ordinality())
-       throw me.getLink();
 
     int timeToWait = 0;
     if (params)

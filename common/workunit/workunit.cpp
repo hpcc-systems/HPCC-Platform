@@ -144,7 +144,22 @@ static bool checkWuSecAccess(const char *wuid, ISecManager &secmgr, ISecUser *se
         Owned<IPropertyTree> ptree=conn->getRoot();
         return checkWuScopeSecAccess(ptree->queryProp("@scope"), secmgr, secuser, required, action, excpt, log);
     }
+
+    if (log || excpt)
+        wuAccessError(secuser ? secuser->getName() : NULL, action, "Unknown", NULL, excpt, log);
     return false;
+}
+
+void doDescheduleWorkkunit(char const * wuid)
+{
+    StringBuffer xpath;
+    xpath.append("*/*/*/");
+    ncnameEscape(wuid, xpath);
+    Owned<IRemoteConnection> conn = querySDS().connect("/Schedule", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if(!conn) return;
+    Owned<IPropertyTree> root = conn->getRoot();
+    bool more;
+    do more = root->removeProp(xpath.str()); while(more);
 }
 
 #define PROGRESS_FORMAT_V 2
@@ -8011,15 +8026,7 @@ void CLocalWorkUnit::deschedule()
     if(queryEventScheduledCount() == 0) return;
     if(getState() == WUStateWait)
         setState(WUStateCompleted);
-    char const * wuid = p->queryName();
-    StringBuffer xpath;
-    xpath.append("*/*/*/");
-    ncnameEscape(wuid, xpath);
-    Owned<IRemoteConnection> conn = querySDS().connect("/Schedule", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if(!conn) return;
-    Owned<IPropertyTree> root = conn->getRoot();
-    bool more;
-    do more = root->removeProp(xpath.str()); while(more);
+    doDescheduleWorkkunit(p->queryName());
 }
 
 mapEnums localFileUploadTypes[] = {
@@ -9258,3 +9265,12 @@ extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, c
     query->addAssociatedFile(type, fullPathname, hostname, description, crc);
 }
 
+extern WORKUNIT_API void descheduleWorkunit(char const * wuid)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IWorkUnit> workunit = factory->updateWorkUnit(wuid);
+    if(workunit)
+        workunit->deschedule();
+    else
+        doDescheduleWorkkunit(wuid);
+}
