@@ -398,12 +398,12 @@ public:
                        str.append(' ');
                 }
                 if (kbs!=0)
-                    str.appendf("@%dKB/s",kbs);
+                    str.appendf("@%dKB/sec",kbs);
                 str.append(')');
             }
             kbs = getKbPerSec();
             if (kbs!=0)
-                str.appendf(" current rate=%dKB/s",kbs);
+                str.appendf(" current rate=%dKB/sec",kbs);
         }
         unsigned totnodes=getTotalNodes();
         if (totnodes==0) { // print subdone/done
@@ -431,7 +431,7 @@ public:
             str.appendf("Total time taken %s", getTimeTaken(timetaken).str());
             unsigned kbs = getKbPerSecAve();
             if (kbs!=0)
-                str.appendf(", Average transfer %dKb/sec", kbs);
+                str.appendf(", Average transfer %dKB/sec", kbs);
         }
         return str;
     }
