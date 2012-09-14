@@ -266,6 +266,12 @@ public:
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
