@@ -1498,7 +1498,7 @@ __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
     }
 
     StringBuffer mangled;
-    mangleHelperFileName(mangled, arg.getFileName(), queryWuid(), arg.getFlags());
+    mangleHelperFileName(mangled, arg.getFileName(), queryWuid(), queryUserDescriptor(), arg.getFlags());
     Owned<ILocalOrDistributedFile> ldFile = resolveLFN(mangled, "CountDisk", 0 != (arg.getFlags() & TDRoptional));
     if (ldFile) 
     {

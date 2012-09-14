@@ -401,7 +401,7 @@ void CHThorDiskWriteActivity::done()
 
 void CHThorDiskWriteActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(),agent.queryCodeContext()->queryUserDescriptor(), helper.getFlags());
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
@@ -7567,7 +7567,7 @@ void CHThorDiskReadBaseActivity::done()
 
 void CHThorDiskReadBaseActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), agent.queryCodeContext()->queryUserDescriptor(), helper.getFlags());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;

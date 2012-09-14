@@ -27,6 +27,9 @@
 #include "dafdesc.hpp"
 #include "dadfs.hpp"
 
+#include "mpbase.hpp"
+#include "dautils.hpp"
+
 unsigned traceLevel = 0;
 
 //OwnedRowArray
@@ -1324,11 +1327,25 @@ ROXIEHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * 
 
 //=====================================================================================================
 
-ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
+ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, IUserDescriptor *userDesc, unsigned int flags)
 {
-    out = in;
     if (flags & (TDXtemporary | TDXjobtemp))
-        out.append("__").append(wuid);
+    {
+        if (in && *in=='~')
+            in++;
+        StringBuffer sb(queryDfsXmlBranchName(DXB_Internal));
+        out.append("~").append(sb.str()).append("::");
+        if (userDesc)
+        {
+            sb.clear();
+            userDesc->getUserName(sb);
+            if (sb.length())
+                out.append(sb.str()).append("::");
+        }
+        out.append(in).append("__").append(wuid);
+    }
+    else
+        out = in;
     return out;
 }
 
