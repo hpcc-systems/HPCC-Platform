@@ -1527,7 +1527,7 @@ void CDfuPlusHelper::info(const char *fmt, ...)
     va_end(args);
     if (msgintercept) {
         StringArray strs;
-        DelimToStringArray(buf.str(), strs, "\n");
+        strs.appendList(buf.str(), "\n");
         ForEachItemIn(i,strs) {
             const char *s = strs.item(i);
             if (*s)
@@ -1547,7 +1547,7 @@ void CDfuPlusHelper::progress(const char *fmt, ...)
     va_end(args);
     if (msgintercept) {
         StringArray strs;
-        DelimToStringArray(buf.str(), strs, "\n");
+        strs.appendList(buf.str(), "\n");
         ForEachItemIn(i,strs) {
             const char *s = strs.item(i);
             if (*s)

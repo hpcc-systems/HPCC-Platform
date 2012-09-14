@@ -513,7 +513,7 @@ void Cws_machineEx::ConvertAddress( const char* originalAddress, StringBuffer& n
         throw MakeStringException(ECLWATCH_INVALID_IP_OR_COMPONENT, "No network address or computer name specified!");
 
     StringArray sArray;
-    DelimToStringArray(originalAddress, sArray, ":");
+    sArray.appendList(originalAddress, ":");
 
     if (sArray.ordinality() < 4)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Incomplete arguments");
@@ -626,7 +626,7 @@ bool Cws_machineEx::doStartStop(IEspContext &context, StringArray& addresses, ch
 
         //address passed in is of the form "192.168.1.4:EspProcess:2:path1"
         StringArray sArray;
-        DelimToStringArray(addresses.item(index), sArray, ":");
+        sArray.appendList(addresses.item(index), ":");
 
         if (sArray.ordinality() < 4)
             throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Incomplete arguments");
@@ -775,7 +775,7 @@ void Cws_machineEx::updatePathInAddress(const char* address, StringBuffer& addrS
     addrStr.append(address);
 
     StringArray sArray;
-    DelimToStringArray(address, sArray, ":");
+    sArray.appendList(address, ":");
     const char* OS    = sArray.item(3);
     const char* Dir  = sArray.item(4);
     if (OS && *OS && Dir && *Dir)

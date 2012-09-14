@@ -1219,7 +1219,7 @@ void JBASE32_Decode(const char *bi,StringBuffer &out)
 }
 
 
-void DelimToStringArray(const char *csl, StringArray &dst, const char * delim,bool deldup)
+static void DelimToStringArray(const char *csl, StringArray &dst, const char *delim, bool deldup)
 {
     if (!csl)
         return;
@@ -1266,9 +1266,14 @@ void DelimToStringArray(const char *csl, StringArray &dst, const char * delim,bo
     }
 }
 
-void CslToStringArray(const char *csl, StringArray &dst,bool deldup)
+void StringArray::appendList(const char *list, const char *delim)
 {
-    DelimToStringArray(csl, dst, NULL , deldup);
+    DelimToStringArray(list, *this, delim, false);
+}
+
+void StringArray::appendListUniq(const char *list, const char *delim)
+{
+    DelimToStringArray(list, *this, delim, true);
 }
 
 #ifdef _WIN32

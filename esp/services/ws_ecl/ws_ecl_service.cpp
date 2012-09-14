@@ -606,7 +606,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
                 if (s && *s)
                 {
                     StringArray items;
-                    DelimToStringArray(s, items, "\n", false);
+                    items.appendList(s, "\n");
                     ForEachItemIn(i, items)
                         appendXMLTag(out, itemName, items.item(i));
                 }

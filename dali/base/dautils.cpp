@@ -145,7 +145,7 @@ public:
             return NULL;
         mlfn.setLength(start-s);
         StringArray lfns;
-        CslToStringArray(start+1, lfns);
+        lfns.appendList(start+1, ",");
         bool anywilds = false;
         ForEachItemIn(i1,lfns) {
             const char *suffix = lfns.item(i1);

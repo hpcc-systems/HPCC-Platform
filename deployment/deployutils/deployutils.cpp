@@ -1815,7 +1815,7 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
     GenOptional genOpt = GENOPTIONAL_COMPS;
     algProp->getProp("do_not_gen_optional", prop);
     StringArray doNotGenOpt;
-    DelimToStringArray(prop.str(), doNotGenOpt, ",");
+    doNotGenOpt.appendList(prop.str(), ",");
 
     if (doNotGenOpt.length() == 0)
       genOpt = GENOPTIONAL_ALL;
@@ -3199,7 +3199,7 @@ void formIPList(const char* ip, StringArray& formattedIpList)
          ipList.setCharAt((ipList.length()-1),' ');
 
     StringArray sArray;
-    DelimToStringArray(ipList, sArray, ";");
+    sArray.appendList(ipList, ";");
 
     if(sArray.ordinality() > 0 )
     {
@@ -3212,13 +3212,13 @@ void formIPList(const char* ip, StringArray& formattedIpList)
               {
                 StringArray rangeArr, commIPPart ;
                 StringBuffer comip;
-                DelimToStringArray(ip, rangeArr ,"-");
+                rangeArr.appendList(ip, "-");
 
                 if( rangeArr.ordinality() == 2 )
                 {
                    unsigned endAddr = atoi(rangeArr.item(1));
                    //to get common part of IP
-                   DelimToStringArray(rangeArr.item(0),commIPPart,".");
+                   commIPPart.appendList(rangeArr.item(0),".");
                    StringBuffer newip;
                    if(commIPPart.ordinality() == 4)
                    {
@@ -3475,7 +3475,7 @@ void getSummary(const IPropertyTree* pEnvRoot, StringBuffer& respXmlStr, bool pr
          {
            linkString.clear().append(espServiceArr.item(x));
            StringArray sArray;
-           DelimToStringArray(linkString.str(), sArray, "-");
+           sArray.appendList(linkString.str(), "-");
            if(sArray.ordinality() == 3)
            {
              IPropertyTree* pEspServiceType = pSummaryTree->addPropTree("Component", createPTree("Component"));

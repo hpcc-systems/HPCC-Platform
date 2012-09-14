@@ -427,7 +427,7 @@ public:
         : subs(this)
     {
         StringArray qlist;
-        CslToStringArray(_qname, qlist, true);
+        qlist.appendListUniq(_qname, ",");
         sQueueData *last = NULL;
         ForEachItemIn(i,qlist) {
             sQueueData *qd = new sQueueData;
