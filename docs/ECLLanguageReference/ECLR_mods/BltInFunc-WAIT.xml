@@ -4,7 +4,8 @@
 <sect1 id="WAIT">
   <title>WAIT</title>
 
-  <para><emphasis role="bold">WAIT<indexterm>
+  <informalexample id="SchWAIT">
+   <para><emphasis role="bold">WAIT<indexterm>
       <primary>WAIT</primary>
     </indexterm><indexterm>
       <primary>WAIT Function</primary>
@@ -41,6 +42,7 @@
   SEQUENTIAL(action1,WAIT('expectedEvent'),action2);
 </programlisting>
 
+ </informalexample>
   <para>See Also: <link linkend="EVENT">EVENT</link>, <link
   linkend="NOTIFY">NOTIFY</link>, <link linkend="WHEN">WHEN</link></para>
 </sect1>

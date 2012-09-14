@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="NOTIFY">
   <title>NOTIFY</title>
-
+  <informalexample id="SchNOTIFY">
   <para><emphasis role="bold">[</emphasis><emphasis>attributename</emphasis>
   :=<emphasis role="bold"> ] <indexterm>
       <primary>NOTIFY function</primary>
@@ -83,6 +83,9 @@ NOTIFY('MyService',
 WAIT('MyServiceComplete');
 OUTPUT('WORKUNIT DONE')
 </programlisting>
-
-  <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="EVENTNAME">EVENTNAME</link>, <link linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link></para>
+</informalexample>
+  <para condition="LR">See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="EVENTNAME">EVENTNAME</link>, <link
+  linkend="EVENTEXTRA">EVENTEXTRA</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link></para>
 </sect1>

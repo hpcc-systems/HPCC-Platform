@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CRON">
   <title>CRON</title>
-
+<informalexample id="SchCRON">
   <para><emphasis role="bold">CRON<indexterm>
       <primary>CRON</primary>
     </indexterm><indexterm>
@@ -114,6 +114,6 @@ BUILD(teenagers) : WHEN(events.dailyAtMidnight);
 BUILD(oldies)    : WHEN(events.dailyAt(6));
 BUILD(NewStuff)    : WHEN(events.EveryThreeHours);
 </programlisting>
-
+</informalexample>
   <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
 </sect1>
