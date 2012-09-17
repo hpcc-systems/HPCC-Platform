@@ -21,7 +21,7 @@ echo starting thorslaves ...
 
 if [ "$localthor" = "true" ]; then
         ulimit -c unlimited
-        ulimit -n 8192
+        ulimit -n $handlelimit
         let "n = 1";
         for slave in $(cat $instancedir/thorgroup); do
             slaveport=${slave/*:/}

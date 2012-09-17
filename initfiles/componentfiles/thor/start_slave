@@ -34,6 +34,9 @@ if [ $# -lt 9 ]; then
   exit 1
 fi
 
+# this must match jsocket hard limit
+export handlelimit=32768
+
 sudo /etc/init.d/hpcc-init -c dafilesrv setup
 mkdir -p $instancedir
 mkdir -p `dirname $logredirect`
@@ -62,7 +65,7 @@ trap "rm -f $lckfile" exit
 echo $$ > $lckfile
 
 ulimit -c unlimited
-ulimit -n 8192
+ulimit -n $handlelimit
 
 echo "slave starting `date`"
 
