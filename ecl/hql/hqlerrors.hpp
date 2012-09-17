@@ -417,6 +417,7 @@
 #define ERR_COUNTER_NOT_COUNT       2387
 #define HQLERR_CannotSubmitMacroX   2388
 #define HQLERR_CannotBeGrouped      2389
+#define HQLERR_CannotAccessShared   2390
 
 #define ERR_ASSERTION_FAILS         100000
 

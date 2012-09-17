@@ -3076,6 +3076,13 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, _ATOM searchName)
     return scope->lookupSymbol(searchName, LSFpublic, lookupCtx);
 }
 
+unsigned HqlGram::extraLookupFlags(IHqlScope * scope)
+{
+    if (scope == containerScope)
+        return LSFsharedOK;
+    return 0;
+}
+
 IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
 {
 #if 0
@@ -3129,7 +3136,10 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
 
         if (modScope)
         {
-            return modScope->lookupSymbol(searchName, LSFrequired, lookupCtx);
+            OwnedHqlExpr resolved = modScope->lookupSymbol(searchName, LSFrequired|LSFsharedOK, lookupCtx);
+            if (resolved && (modScope != containerScope) && !isExported(resolved))
+                reportError(HQLERR_CannotAccessShared, errpos, "Cannot access SHARED symbol '%s' in another module", searchName->str());
+            return resolved.getClear();
         }
 
         // Then come implicitly defined fields...
@@ -3226,7 +3236,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
         ForEachItemIn(idx2, defaultScopes)
         {
             IHqlScope &plugin = defaultScopes.item(idx2);
-            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic, lookupCtx);
+            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic|extraLookupFlags(&plugin), lookupCtx);
             if (ret)
             {
                 recordLookupInTemplateContext(searchName, ret, templateScope);
