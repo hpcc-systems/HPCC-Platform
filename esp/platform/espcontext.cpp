@@ -579,7 +579,7 @@ void getEspUrlParams(IEspContext& ctx, StringBuffer& params, const char* exclude
         if (querystr)
         {
             StringArray ps;
-            DelimToStringArray(querystr,ps,"&",true);
+            ps.appendListUniq(querystr, "&");
             for (unsigned int i=0; i<ps.ordinality(); i++)
             {
                 const char* item = ps.item(i);

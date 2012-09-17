@@ -28,7 +28,7 @@
         <title><emphasis>ECLPlus.exe</emphasis></title>
 
         <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
-        owner= password= cluster= server= queue= timeout=
+        owner= user= password= cluster= server= queue= timeout=
         ecl=</emphasis><emphasis> file= format= output= jobname= -debugparam1=
         _applicationparam1=</emphasis><emphasis>
         /variablename1=</emphasis></para>
@@ -51,15 +51,19 @@
                 <row>
                   <entry><emphasis>owner=</emphasis></entry>
 
-                  <entry>Either the userid or a workunit identifier (in the
-                  form: wuid=&lt;wuid&gt;).</entry>
+                  <entry>The workunit owner.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>user=</emphasis></entry>
+
+                  <entry>The userid.</entry>
                 </row>
 
                 <row>
                   <entry><emphasis>password=</emphasis></entry>
 
-                  <entry>The password authorizing access for the
-                  owner.</entry>
+                  <entry>The password authorizing access for the user.</entry>
                 </row>
 
                 <row>
@@ -151,19 +155,16 @@
                   /variablename=[(int)|(bool)] valueThe default value type is
                   string unless int or bool is specified (in parentheses
                   preceding the value). The <emphasis>variablename</emphasis>
-                  is the STORED name of an EXL file in your ECL code.
-                  <emphasis role="bold">Not yet
-                  implemented.</emphasis></entry>
+                  is the STORED name of an EXL file in your ECL code. </entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
-        <para>The <emphasis role="bold">ECLPlus.exe</emphasis> application
-        accepts command line parameters to send directly to an ECL execution
-        engine. These options can be typed directly on the command line, sent
-        using a script or batch file, through an INI file, or any
-        combination.</para>
+        <para>The <emphasis role="bold">ECLPlus</emphasis> executable accepts
+        command line parameters to send directly to an ECL execution engine.
+        These options can be typed directly on the command line, sent using a
+        script or batch file, through an INI file, or any combination.</para>
 
         <sect3 role="brk">
           <title>ECLPLUS.INI</title>
@@ -175,7 +176,7 @@
           <programlisting>server=10.150.50.12
 cluster=training
 queue=eclserver_training
-owner=rtor
+user=rtor
 password=password</programlisting>
 
           <para>In all the examples below, we'll assume eclplus.ini has the

@@ -1062,6 +1062,7 @@ ESPrequest WUPublishWorkunitRequest
     bool NotifyCluster(false);
     int Wait(10000);
     bool NoReload(0);
+    bool UpdateWorkUnitName(0);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse

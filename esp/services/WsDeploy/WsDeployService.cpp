@@ -2697,7 +2697,7 @@ bool CWsDeployFileInfo::getValue(IEspContext &context, IEspGetValueRequest &req,
     if(pszparams && *pszparams)
     {
       StringArray sArray;
-      DelimToStringArray(pszparams, sArray, ",");
+      sArray.appendList(pszparams, ",");
       for(unsigned i = 0; i < sArray.ordinality() ; i++)
       {
         if(!strcmp(sArray.item(i), "checklock"))
@@ -6531,7 +6531,7 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
     if(pszparams && *pszparams)
     {
       StringArray sArray;
-      DelimToStringArray(pszparams, sArray, ",");
+      sArray.appendList(pszparams, ",");
       for(unsigned i = 0; i < sArray.ordinality() ; i++)
       {
         if(!strcmp(sArray.item(i), "environment"))
@@ -6583,7 +6583,7 @@ bool CWsDeployExCE::onGetValue(IEspContext &context, IEspGetValueRequest &req, I
           if(pszAttrValue && *pszAttrValue)
           {
             StringArray sArray;
-            DelimToStringArray(pszAttrValue, sArray, ",");
+            sArray.appendList(pszAttrValue, ",");
             ForEachItemIn(x, sArray)
             {
               StringBuffer encryptedPasswd ;
@@ -7127,7 +7127,7 @@ bool CWsDeployEx::onGetValue(IEspContext &context, IEspGetValueRequest &req, IEs
     if(pszparams && *pszparams)
     {
       StringArray sArray;
-      DelimToStringArray(pszparams, sArray, ",");
+      sArray.appendList(pszparams, ",");
       for(unsigned i = 0; i < sArray.ordinality() ; i++)
       {
         if(!strcmp(sArray.item(i), "wizops"))
@@ -7245,8 +7245,8 @@ bool CWsDeployFileInfo::checkForRequiredComponents(IPropertyTree* pEnvRoot, cons
       algProps->getProp("comps_on_all_nodes", prop);
       algProps->getProp("exclude_from_comps_on_all_nodes", prop2);
 
-      DelimToStringArray(prop.str(), compOnAllNodes, ",");
-      DelimToStringArray(prop2.str(), compExcludeOnAllNodes, ",");
+      compOnAllNodes.appendList(prop.str(), ",");
+      compExcludeOnAllNodes.appendList(prop2.str(), ",");
 
       for (unsigned i = 0; buildSet != NULL && i < compExcludeOnAllNodes.ordinality(); i++)
       {

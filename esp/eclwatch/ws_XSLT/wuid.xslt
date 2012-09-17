@@ -702,7 +702,7 @@
                 alert('The workunit must have a jobname to be published. \r\nEnter a jobname, then publish.');
                 return;
               }
-              var cObj = YAHOO.util.Connect.asyncRequest('GET', '/WsWorkunits/WUPublishWorkunit?rawxml_&Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1&Wait=5000', publishCallback);
+              var cObj = YAHOO.util.Connect.asyncRequest('GET', '/WsWorkunits/WUPublishWorkunit?rawxml_&Wuid=' + wuid + '&JobName=' + Jobname + '&Activate=1&UpdateWorkUnitName=1&Wait=5000', publishCallback);
             }
 
         /*

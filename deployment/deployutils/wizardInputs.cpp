@@ -169,13 +169,13 @@ void CWizardInputs::setWizardRules()
        else if(!strcmp(iter->getPropKey(), "avoid_combo"))
        {
          StringArray pairValue;
-         DelimToStringArray(prop.str(), pairValue, ",");
+         pairValue.appendList(prop.str(), ",");
          if( pairValue.ordinality() > 0)
          {
            for( unsigned i = 0; i < pairValue.ordinality() ; i++)
            {
              StringArray eachpair;
-             DelimToStringArray(pairValue.item(i), eachpair, "-");
+             eachpair.appendList(pairValue.item(i), "-");
              if(eachpair.ordinality() == 2 )
              {
                StringArray* serverCompArr = 0;
@@ -199,15 +199,15 @@ void CWizardInputs::setWizardRules()
          }
        }
        else if(!strcmp (iter->getPropKey(),"do_not_generate"))
-          DelimToStringArray(prop.str(), m_doNotGenComp, ",");
+           m_doNotGenComp.appendList(prop.str(), ",");
        else if(!strcmp (iter->getPropKey(),"comps_on_all_nodes"))
-          DelimToStringArray(prop.str(), m_compOnAllNodes, ",");
+           m_compOnAllNodes.appendList(prop.str(), ",");
        else if(!strcmp(iter->getPropKey(), "topology_for_comps"))
-        DelimToStringArray(prop.str(), m_clusterForTopology, ",");
+           m_clusterForTopology.appendList(prop.str(), ",");
        else if (!strcmp(iter->getPropKey(), "roxie_agent_redundancy"))
        {
          StringArray sbarr;
-         DelimToStringArray(prop.str(), sbarr, ",");
+         sbarr.appendList(prop.str(), ",");
          if (sbarr.length() > 1)
          {
           int type = atoi(sbarr.item(0));
@@ -1069,7 +1069,7 @@ void CWizardInputs::checkAndAddDependComponent(const char* key)
     if(m_algProp->hasProp(paramEntry.str()))
     {
       StringArray sArray;
-      DelimToStringArray(m_algProp->queryProp(paramEntry.str()), sArray, ";");
+      sArray.appendList(m_algProp->queryProp(paramEntry.str()), ";");
       ForEachItemIn(x, sArray)
       {
         if(m_doNotGenComp.find(sArray.item(x)) == NotFound)
@@ -1108,7 +1108,7 @@ void CWizardInputs::setTopologyParam()
         StringArray* compClusterArr = new StringArray();
        
         StringArray clusterElemArr;
-        DelimToStringArray( elemForCluster, clusterElemArr, ",");
+        clusterElemArr.appendList(elemForCluster, ",");
         ForEachItemIn(y, clusterElemArr)
           compClusterArr->append(clusterElemArr.item(y));
         m_compForTopology.setValue(m_clusterForTopology.item(x),compClusterArr);

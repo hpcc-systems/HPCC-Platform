@@ -2220,7 +2220,7 @@ void doWUQueryFromArchive(IEspContext &context, ArchivedWuCache &archivedWuCache
                         continue;
 
                     StringArray wuidArray;
-                    CslToStringArray(csline, wuidArray, false);
+                    wuidArray.appendList(csline, ",");
 
                     if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cmd->queryOwner(), accessOwn, accessOthers) < SecAccess_Read)
                         continue;

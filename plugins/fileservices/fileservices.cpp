@@ -1799,7 +1799,7 @@ FILESERVICES_API  char * FILESERVICES_CALL fsfPromoteSuperFileList(ICodeContext 
     }
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringArray toadd;
-    CslToStringArray(addhead,toadd,true);
+    toadd.appendListUniq(addhead, ",");
     StringBuffer addlist;
     ForEachItemIn(i1,toadd) {
         if (addlist.length())

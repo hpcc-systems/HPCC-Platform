@@ -883,6 +883,54 @@ void testReadAllSDS()
     printf("Connected to every branch\n");
 }
 
+static void testDFSDel()
+{
+    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(); // disabled, auto-commit
+
+    // Cleanup
+    if (dir.exists("regress::del::super1",false,true) && !dir.removeEntry("regress::del::super1")) {
+        ERROR("Can't remove super1");
+        return;
+    }
+    if (dir.exists("regress::del::sub1",false,true) && !dir.removeEntry("regress::del::sub1")) {
+        ERROR("Can't remove sub1");
+        return;
+    }
+
+    printf("Creating 'regress::del::sub1\n");
+    Owned<IFileDescriptor> sub1 = createFileDescriptor("regress::del", "sub1", 3, 17);
+    Owned<IDistributedFile> dsub1 = dir.createNew(sub1);
+    dsub1->attach("regress::del::sub1");
+    dsub1.clear();
+
+    printf("Creating 'regress::del::super1 and attaching sub\n");
+    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", false, false, NULL, transaction);
+    sfile1->addSubFile("regress::del::sub1", false, NULL, false, transaction);
+    sfile1.clear();
+
+    printf("Deleting 'regress::del::sub1, should fail\n");
+    try {
+        if (dir.removeEntry("regress::del::sub1")) {
+            ERROR("Could remove sub, this will make the DFS inconsistent!");
+            return;
+        }
+    } catch (IException *) {
+        // expecting an exception
+    }
+
+    printf("Deleting 'regress::del::super1, should work\n");
+    if (!dir.removeEntry("regress::del::super1")) {
+        ERROR("Can't remove super1");
+        return;
+    }
+    printf("Deleting 'regress::del::sub1, should work\n");
+    if (!dir.removeEntry("regress::del::sub1")) {
+        ERROR("Can't remove sub1");
+        return;
+    }
+}
+
 // ======================================================================= Test Engine
 
 struct TestArray {
@@ -939,6 +987,7 @@ void initTests() {
     registerTest("DFS basics", testDFS);
     registerTest("DFS transaction", testDFSTrans);
     registerTest("DFS promote super file", testDFSPromote);
+    registerTest("DFS subdel", testDFSDel);
     registerTest("SDS subscriptions", testSDSSubs);
 }
 

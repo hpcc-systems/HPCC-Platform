@@ -46,12 +46,13 @@
             showPreflightControl(method);
             var cbGetSoftwareInfo = document.getElementById("GetSoftwareInfo");
             onGetSoftwareInfo(cbGetSoftwareInfo);            
+            onGetStorageInfo(document.getElementById("GetStorageInfo"));
          }
          
          function reloadPage() {
              document.forms['listitems'].submit();
          }
-                  
+
          function setReloadTimeout(mins) {
              if (reloadTimeout != mins && allowReloadPage) {
                 if (reloadTimer) {              
@@ -130,6 +131,11 @@
               }
             }
          } 
+
+         function onGetStorageInfo(cb)
+         {
+            document.getElementById("LocalFileSystemsOnly").disabled = !cb.checked;
+         }
          
          function onGetSoftwareInfo(cb)
          {
@@ -297,6 +303,7 @@
     <xsl:param name="getProcessorInfo" select="1"/>
     <xsl:param name="getSoftwareInfo" select="1"/>
     <xsl:param name="getStorageInfo" select="1"/>
+    <xsl:param name="localFileSystemsOnly" select="1"/>
     <xsl:param name="applyProcessFilter" select="1"/>
     <xsl:param name="addProcessesToFilter"/>
     <xsl:param name="enableSNMP"/>
@@ -383,7 +390,7 @@
                 </tr>
                 <tr>
                     <td>
-                        <input type="checkbox" name="GetStorageInfo" align="left" value="1">
+                        <input type="checkbox" id="GetStorageInfo" name="GetStorageInfo" align="left" value="1" onclick="onGetStorageInfo(this)">
                             <xsl:if test="$getStorageInfo">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
@@ -407,6 +414,15 @@
                                 <xsl:text>MB</xsl:text>
                             </option>
                         </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td col="2" align="center">
+                        <input type="checkbox" id="LocalFileSystemsOnly" name="LocalFileSystemsOnly" value="1">
+                            <xsl:if test="$localFileSystemsOnly">
+                                <xsl:attribute name="checked"/>
+                            </xsl:if>
+                        </input><xsl:text>Local File Systems Only</xsl:text>
                     </td>
                 </tr>
                 <tr>

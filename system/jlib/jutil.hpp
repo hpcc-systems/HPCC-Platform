@@ -139,14 +139,15 @@ extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const 
 
 class StringArray : public ArrayOf<const char *, const char *>
 {
+public:
+    // Appends a list in a string delimited by 'delim'
+    void appendList(const char *list, const char *delim);
+    // Appends a list in a string delimited by 'delim' without duplicates
+    void appendListUniq(const char *list, const char *delim);
 };
 class CIStringArray : public StringArray, public CInterface
 {
 };
-
-// separated list to array
-extern jlib_decl void DelimToStringArray(const char *csl, StringArray &dst, const char * delim, bool deldup=false);
-extern jlib_decl void CslToStringArray(const char *csl, StringArray &dst, bool deldup=false);
 
 extern jlib_decl unsigned msTick();
 extern jlib_decl unsigned usTick();

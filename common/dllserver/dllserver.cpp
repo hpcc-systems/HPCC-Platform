@@ -133,7 +133,7 @@ static void deleteLocationFiles(IDllLocation & cur, bool removeDirectory)
 
 class DllLocation : public CInterface, implements IDllLocation
 {
-    const char *cacheRoot;
+    StringAttr cacheRoot;
 public:
     DllLocation(IPropertyTree * _entryRoot, IPropertyTree * _locationRoot, const char *_cacheRoot) 
         : cacheRoot(_cacheRoot)
@@ -240,7 +240,7 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
 
 class LocationIterator : public TreeIteratorWrapper
 {
-    const char *cacheRoot;
+    StringAttr cacheRoot;
 public:
     LocationIterator(IPropertyTree * _dllEntry, IPropertyTreeIterator * _iter, const char *_cacheRoot) 
         : TreeIteratorWrapper(_iter), cacheRoot(_cacheRoot)
@@ -295,7 +295,7 @@ public:
 
 protected:
     Owned<IPropertyTree> root;
-    const char *cacheRoot;
+    StringAttr cacheRoot;
 };
 
 DllEntry::DllEntry(IPropertyTree * _root, const char *_cacheRoot)
@@ -433,7 +433,7 @@ public:
 
 protected:
     Owned<IPropertyTree> root;
-    const char *cacheRoot;
+    StringAttr cacheRoot;
 };
 
 
@@ -713,16 +713,11 @@ void DllServer::registerDll(const char * name, const char * kind, const char * d
 //---------------------------------------------------------------------------
 
 static DllServer * dllServer;
-
-#if 0
-struct __init_dllserver
-{
-    ~__init_dllserver() { ::Release(dllServer); }
-} __do_init_dllserver;
-#endif
+CriticalSection dllServerCrit;
 
 IDllServer & queryDllServer()
 {
+    CriticalBlock b(dllServerCrit);
     if (!dllServer)
     {
         const char* dllserver_root = getenv("DLLSERVER_ROOT");
@@ -753,6 +748,7 @@ void closeDllServer()
 
 void initDllServer(const char * localRoot)
 {
+    CriticalBlock b(dllServerCrit);
     ::Release(dllServer);
     dllServer = new DllServer(localRoot);
 }

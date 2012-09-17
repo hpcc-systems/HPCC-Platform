@@ -163,7 +163,7 @@ static void LoadMethodMappings()
         else if (*p)
         {
             strArray.kill();
-            DelimToStringArray(p, strArray, "= \t()");
+            strArray.appendList(p, "= \t()");
 
             const unsigned int ord = strArray.ordinality();
             if (ord == 0)
@@ -218,7 +218,7 @@ static bool lookupMethod(const char* config, StringBuffer& service, StringBuffer
         else
         {
             StringArray strArray;
-            DelimToStringArray(s.str(), strArray, "/");
+            strArray.appendList(s.str(), "/");
             if (strArray.ordinality() < 2)
                 printf("Invalid configuration: %s", s.str());
             else
