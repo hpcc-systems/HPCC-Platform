@@ -103,6 +103,107 @@
             </tbody>
           </tgroup>
         </informaltable>
+
+        <para></para>
+
+        <sect3 role="brk">
+          <title>ecl.ini</title>
+
+          <para>Many options can be placed in a file called <emphasis
+          role="bold">ecl.ini</emphasis> in the local directory. Options that
+          do not change very often should be put in the ini file. For
+          example:</para>
+
+          <programlisting>eclWatchIP=10.150.50.12
+eclWatchPort=28010
+eclUserName=emilykate
+eclPassword=elmo812
+resultLimit=200
+</programlisting>
+
+          <para>In some examples below, we'll assume ecl.ini has the above
+          content.</para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../" /></entry>
+
+                    <entry>We do not recommend storing your password in the
+                    INI file (which is clear text). The password is included
+                    in the INI file for these examples to simplify the example
+                    code.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>The following options can be provided in an ini file:
+          eclWatchIP, eclWatchPort, eclUserName, eclPassword, activateDefault,
+          waitTimeout, resultLimit.</para>
+
+          <para>Evaluation of options follows this order of precedence:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>command line</para>
+            </listitem>
+
+            <listitem>
+              <para>ini file</para>
+            </listitem>
+
+            <listitem>
+              <para>environment variable</para>
+            </listitem>
+
+            <listitem>
+              <para>default value</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 role="brk">
+          <title>Environment Variables</title>
+
+          <para>Some options can be stored in Environment Variables on your
+          machine. The following options are supported:</para>
+
+          <programlisting>ECL_WATCH_IP
+ECL_WATCH_PORT
+ECL_USER_NAME
+ECL_PASSWORD
+ECL_WAIT_TIMEOUT
+ECL_RESULT_LIMIT
+</programlisting>
+
+          <para></para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><graphic fileref="images/caution.png" scale="noin"
+                    xml:base="../../" /></entry>
+
+                    <entry>We do not recommend storing your password in an
+                    Environment Variable unless your system is
+                    secured.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </sect3>
       </sect2>
 
       <sect2 role="brk">
