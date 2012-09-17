@@ -786,6 +786,8 @@ protected:
     void expandScopeEntries(HqlExprArrayArray & branches, IHqlExpression * scope);
     void processIfScope(const attribute & errpos, IHqlExpression * cond, IHqlExpression * trueScope, IHqlExpression * falseScope);
 
+    unsigned extraLookupFlags(IHqlScope * scope);
+
     void appendTransformOption(IHqlExpression * expr) 
     { 
         if (curTransform)
