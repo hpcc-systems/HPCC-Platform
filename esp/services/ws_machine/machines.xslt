@@ -269,6 +269,7 @@
                                            <xsl:with-param name="getProcessorInfo" select="boolean(RequestInfo/GetProcessorInfo=1)"/>
                                            <xsl:with-param name="getSoftwareInfo" select="boolean(RequestInfo/GetSoftwareInfo=1)"/>
                                            <xsl:with-param name="getStorageInfo" select="boolean(RequestInfo/GetStorageInfo=1)"/>
+                                           <xsl:with-param name="localFileSystemsOnly" select="boolean(RequestInfo/LocalFileSystemsOnly=1)"/>
                                            <xsl:with-param name="applyProcessFilter" select="boolean(RequestInfo/ApplyProcessFilter=1)"/>
                                            <xsl:with-param name="addProcessesToFilter" select="RequestInfo/AddProcessesToFilter"/>
                                           <xsl:with-param name="enableSNMP" select="number(RequestInfo/EnableSNMP)"/>

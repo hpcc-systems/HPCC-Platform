@@ -35,6 +35,7 @@ ESPrequest GetMachineInfoRequest
    bool   ApplyProcessFilter;
    bool   GetProcessorInfo;
    bool   GetStorageInfo;
+   [min_ver("1.11")] bool LocalFileSystemsOnly;
    bool   GetSoftwareInfo;
    int    MemThreshold;
    int    DiskThreshold;
@@ -62,6 +63,7 @@ ESPstruct RequestInfoStruct
    bool   ApplyProcessFilter;
    bool   GetProcessorInfo;
    bool   GetStorageInfo;
+   [min_ver("1.11")] bool LocalFileSystemsOnly;
    bool   GetSoftwareInfo;
    int    MemThreshold;
    int    DiskThreshold;
@@ -86,9 +88,9 @@ ESPstruct StorageInfo
 {
    string Description;
    string Type;
-   int    Available;
+   int64  Available;
    int    PercentAvail;
-   int    Total;
+   int64  Total;
    int    Failures;
 };
 
@@ -277,6 +279,7 @@ ESPrequest GetTargetClusterInfoRequest
     bool   ApplyProcessFilter;
     bool   GetProcessorInfo;
     bool   GetStorageInfo;
+    [min_ver("1.11")] bool LocalFileSystemsOnly;
     bool   GetSoftwareInfo;
     int    MemThreshold;
     int    DiskThreshold;
@@ -301,7 +304,7 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     string TimeStamp;
 };
 //-------- service ---------
-ESPservice [version("1.10"), default_client_version("1.10")] ws_machine
+ESPservice [version("1.11"), default_client_version("1.11")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;

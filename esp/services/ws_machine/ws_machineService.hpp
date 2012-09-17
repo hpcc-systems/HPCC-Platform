@@ -493,6 +493,7 @@ class CGetMachineInfoUserOptions : public CInterface
     StringBuffer m_password;
     bool         m_getProcessorInfo;
     bool         m_getStorageInfo;
+    bool         m_localFileSystemsOnly;
     bool         m_getSoftwareInfo;
     bool         m_applyProcessFilter;
     StringArray  m_additionalProcessFilters; //A user may add them using edit box 'Additional processes to filter:'.
@@ -505,6 +506,7 @@ public:
         m_password.clear();
         m_getProcessorInfo = true;
         m_getStorageInfo = true;
+        m_localFileSystemsOnly = true;
         m_getSoftwareInfo = true;
         m_applyProcessFilter = true;
     }
@@ -548,6 +550,16 @@ public:
     const bool getGetStorageInfo()
     {
         return m_getStorageInfo;
+    }
+
+    void setLocalFileSystemsOnly(bool localFileSystemsOnly)
+    {
+        m_localFileSystemsOnly = localFileSystemsOnly;
+    }
+
+    const bool getLocalFileSystemsOnly()
+    {
+        return m_localFileSystemsOnly;
     }
 
     void setGetSoftwareInfo(bool getSoftwareInfo)
@@ -656,8 +668,8 @@ private:
     void getProcessDisplayName(const char* processName, StringBuffer& displayName);
     void readALineFromResult(const char *result, const char *start, StringBuffer& value, bool bTrim = true);
 
-    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSwInfo, bool applyProcessFilter, StringArray& addresses, const char* addProcessesToFilters, CGetMachineInfoData& machineInfoData);
-    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool getSwInfo, bool applyProcessFilter, const char* addProcessesToFilters, StringArray& targetClustersIn, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
+    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSwInfo, bool applyProcessFilter, StringArray& addresses, const char* addProcessesToFilters, CGetMachineInfoData& machineInfoData);
+    void readMachineInfoRequest(IEspContext& context, bool getProcessorInfo, bool getStorageInfo, bool localFileSystemsOnly, bool getSwInfo, bool applyProcessFilter, const char* addProcessesToFilters, StringArray& targetClustersIn, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);
     void getMachineInfo(IEspContext& context, CGetMachineInfoData& machineInfoData);
     void setMachineInfoResponse(IEspContext& context, IEspGetMachineInfoRequest& req, CGetMachineInfoData& machineInfoData, IEspGetMachineInfoResponse& resp);
     void setTargetClusterInfoResponse(IEspContext& context, IEspGetTargetClusterInfoRequest& req, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClusterTree, IEspGetTargetClusterInfoResponse& resp);
