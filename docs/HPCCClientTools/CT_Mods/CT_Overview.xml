@@ -139,7 +139,7 @@
 
       <para>The optional Tutorial Data File is 100 MB.</para>
 
-      <para>In addition, you will need Internet Explorer 7 and have Active
+      <para>In addition, you will need Internet Explorer 8 and have Active
       Scripting support enabled (Javascript). If browser security is set to
       High, you should add the ECLWatch IP (or DNS name) as a Trusted
       Site.</para>

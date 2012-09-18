@@ -14,8 +14,6 @@
       <colspec />
 
       <tbody>
-       
-       
         <row>
           <entry><emphasis role="bold">ECLPlus</emphasis></entry>
 
@@ -99,8 +97,8 @@
       <title><emphasis>Installation</emphasis></title>
 
       <para>The installation program installs all client tools, including the
-      ECLPlus, DFUPlus, and RoxieConfig. The installation program
-      provides the option to select which tools to install.</para>
+      ECLPlus, DFUPlus, and RoxieConfig. The installation program provides the
+      option to select which tools to install.</para>
 
       <itemizedlist mark="bullet">
         <listitem>
@@ -127,7 +125,7 @@
 
       <para>The optional Tutorial Data File is 100 MB.</para>
 
-      <para>In addition, you will need Internet Explorer 7 and have Active
+      <para>In addition, you will need Internet Explorer 8 and have Active
       Scripting support enabled (Javascript). If browser security is set to
       High, you should add the ECLWatch IP (or DNS name) as a Trusted
       Site.</para>
@@ -135,8 +133,8 @@
       <para>Adobe Reader 5 (or higher) is required to view the documentation
       PDF files.</para>
 
-      <para>GVC Viewer is used to display graphs in ECL Watch, and RoxieConfig GUI. 
-      It is installed automatically.</para>
+      <para>GVC Viewer is used to display graphs in ECL Watch, and RoxieConfig
+      GUI. It is installed automatically.</para>
     </sect2>
   </sect1>
 </chapter>
