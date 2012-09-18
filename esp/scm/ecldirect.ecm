@@ -52,6 +52,7 @@ ESPenum RunEclExFormat : string
 ESPrequest [nil_remove] RunEclExRequest
 {
     [rows(28), cols(80)] string eclText;
+    string UserName;
     string cluster;
     string snapshot;
     boolean includeResults;
