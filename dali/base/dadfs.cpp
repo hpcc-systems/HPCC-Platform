@@ -1055,13 +1055,8 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
         {
 #ifdef _DALIUSER_STACKTRACE
             //following debug code to be removed
-            StringBuffer sb;
-            user->getUserName(sb);
-            if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
-            {
-                DBGLOG("UNEXPECTED USER '%s' in %s line %ld",sb.str(),__FILE__, __LINE__);
-                PrintStackReport();
-            }
+            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp line %d",__LINE__);
+            PrintStackReport();
 #endif
             user = queryDistributedFileDirectory().queryDefaultUser();
         }
