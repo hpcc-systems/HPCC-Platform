@@ -3089,6 +3089,32 @@ function onMenuItemClickHandleEspServiceBindings(p_sType, p_aArgs, p_oValue) {
   top.document.navDT.getFileName(true) + 'Operation=' + oper + '&XmlArgs=' + xmlArgs);
 }
 
+function onMenuItemClickHandleComputerItemsCopy(p_sType, p_aArgs, p_oValue)
+{
+  var label = top.document.RightTabView.getTab(top.document.RightTabView.get('activeIndex')).get('label');
+
+  if (label === "Computer Types")
+    label = "ComputerType";
+  else if (label === "Switches")
+    label = "Switch";
+  else if (label === "Domains")
+    label = "Domain"
+  else if (label === "Computers")
+    label = "Computer"
+
+  var dt = top.document.RightTabView.getTab(top.document.RightTabView.get('activeIndex')).dt;
+
+  for (counter = 0; counter < dt.getSelectedRows().length; counter++)
+  {
+    var rec = dt.getRecord(dt.getRecordIndex(dt.getSelectedRows()[counter]));
+    var param = label + rec.getData('params').split("subTypeKey=")[1];
+
+    param = param.replace(/\@/g,'').replace(/\[/g,' ').replace(/\]/g,' ');
+
+    top.document.copyHWSWTo(p_oValue.element.innerText, true, param);
+  }
+}
+
 function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
   var form = top.document.forms['treeForm'];
   if (form.isLocked.value === 'false')
@@ -3205,10 +3231,22 @@ function onContextMenuBeforeShowRegular(p_sType, p_aArgs) {
       "Computers": [
                                 { text: "New", onclick: { fn: onMenuItemClickHandleComputer} },
                                 { text: "New Range...", onclick: { fn: onMenuItemClickHandleComputer} },
-                                { text: "Delete", onclick: { fn: onMenuItemClickHandleComputer}}],
+                                { text: "Delete", onclick: { fn: onMenuItemClickHandleComputer} },
+                                { text: "Copy Hardware Item(s) To",
+                                  submenu: {
+                                    id: "HWCopyItems",
+                                    lazyload: true,
+                                    itemdata: top.document.copyCompMenu2
+                                    } } ],
       "Hardware": [
                                 { text: "New", onclick: { fn: onMenuItemClickHandleComputer} },
-                                { text: "Delete", onclick: { fn: onMenuItemClickHandleComputer} }
+                                { text: "Delete", onclick: { fn: onMenuItemClickHandleComputer} },
+                                { text: "Copy Hardware Item(s) To",
+                                  submenu: {
+                                     id: "HWCopyItems",
+                                     lazyload: true,
+                                     itemdata: top.document.copyCompMenu2
+                                    } }
                                 ],
       "GenericAddDelete": [
                                 { text: "Add", onclick: { fn: onMenuItemClickGenericAddDelete} },
@@ -3219,7 +3257,14 @@ function onContextMenuBeforeShowRegular(p_sType, p_aArgs) {
      };
   }
 
-  var oTarget = this.contextEventTarget, aMenuItems, aClasses;
+  for (var count = 0; count < this.configContextMenuItems.Hardware[2].submenu.itemdata.length; count++)
+  {
+    if (typeof(this.configContextMenuItems.Hardware[2].submenu.itemdata[count]) !== 'undefined')
+      this.configContextMenuItems.Hardware[2].submenu.itemdata[count].onclick.fn  = onMenuItemClickHandleComputerItemsCopy;
+  }
+
+
+var oTarget = this.contextEventTarget, aMenuItems, aClasses;
   if (this.getRoot() === this) {
     var Dom = YAHOO.util.Dom;
     var oSelectedTR = oTarget.nodeName.toUpperCase() === "TR" ?

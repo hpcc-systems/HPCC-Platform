@@ -4293,9 +4293,21 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
   return true;
 }
 
+bool CWsDeployFileInfo::addCopyToPropTree(IPropertyTree* pPropTree, IPropertyTree* pDupTree, const char* tag_name)
+{
+  StringBuffer strTag;
+  strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
+
+  if (pPropTree->addPropTree(strTag.str(), pDupTree) == NULL)
+    return false;
+  else
+    return true;
+}
+
 bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
 {
   StringBuffer xpath;
+  StringBuffer xpath3;
   StringBuffer filePath;
   xpath.clear().appendf("%s", XML_TAG_HARDWARE);
 
@@ -4306,6 +4318,8 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     return false;
 
   CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp(XML_ATTR_TARGET));
+
+  xpath3.clear().appendf("<%s/>", iterComp->query().queryProp(XML_ATTR_HWXPATH));
 
   Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
 
@@ -4345,23 +4359,35 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     }
     xml.append("/>");
 
-    IPropertyTree *dupTree = createPTreeFromXMLString(xml.str());
+    IPropertyTree *dupTree = NULL;
 
-    bWrite = true;
+    if (iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0)
+    {
+      dupTree = createPTreeFromXMLString((xpath3.replace('\'','\"')).str());
 
-    StringBuffer strTag;
-    strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
+      String strTagName(xpath3);
+      strTagName = *strTagName.substring(1,strTagName.indexOf(' '));
 
-    if (pEnvRoot2->addPropTree(strTag.str(), dupTree) == NULL)
+      if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strTagName.toCharArray()) == false)
+        return false;
+
+      break;
+    }
+    else
+      dupTree = createPTreeFromXMLString(xml.str());
+
+    if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, tag_name) == false)
       return false;
   }
+
+  bWrite = true;
 
   if (bWrite == true)
   {
     StringBuffer err;
     fi->saveEnvironment(NULL, NULL, err);
 
-    if (elems.ordinality() > 0)
+    if (elems.ordinality() > 0 && !(iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0))
     {
       StringBuffer errMsg;
       errMsg.appendf("Saved succeeded but some some element(s) could not be copied.  Element(s) may already exist in the target configuration.\n[");
