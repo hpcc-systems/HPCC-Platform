@@ -1184,7 +1184,7 @@ public:
                 {
 #ifdef _DALIUSER_STACKTRACE
                     //following debug code to be removed
-                    if (!username || !strcmpi(username, "daliuser"))
+                    if (!username || !stricmp(username, "daliuser"))
                     {
                         DBGLOG("UNEXPECTED USER '%s' in %s line %ld",username,__FILE__, __LINE__);
                         PrintStackReport();

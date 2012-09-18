@@ -512,7 +512,7 @@ public:
                 //following debug code to be removed
                 StringBuffer sb;
                 udesc->getUserName(sb);
-                if (0==sb.length() || !strcmpi(sb.str(), "daliuser"))
+                if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
                 {
                     DBGLOG("UNEXPECTED USER '%s' in %s line %ld",username,__FILE__, __LINE__);
                     PrintStackReport();
@@ -775,7 +775,7 @@ public:
         //following debug code to be removed
         StringBuffer sb;
         udesc->getUserName(sb);
-        if (0==sb.length() || !strcmpi(sb.str(), "daliuser"))
+        if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
         {
             DBGLOG("UNEXPECTED USER '%s' in %s line %ld",sb.str(),__FILE__, __LINE__);
             PrintStackReport();
