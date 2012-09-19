@@ -37,7 +37,7 @@
 #include "modinit.h"
 #include "jiface.hpp"
 #include <assert.h>
-#include "jarray.hpp"
+#include "jarray.tpp"
 
 #define loop            for(;;)
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
@@ -211,7 +211,6 @@ public:
 };
 
 #include "jstring.hpp"
-#include "jarray.tpp"
 #include "jhash.hpp"
 #include "jstream.hpp"
 #include "jutil.hpp"
