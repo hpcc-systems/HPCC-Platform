@@ -56,6 +56,8 @@ require([
         local: null,
         graphSelect: null,
         timingGrid: null,
+        verticesGrid: null,
+        edgesGrid: null,
         findField: null,
         findText: "",
         found: [],
@@ -108,7 +110,8 @@ require([
             this._initGraphControls();
             this._initGraphSelect()
             this._initTimings();
-            //this._initProperties();
+            this._initVertices();
+            this._initEdges();
         },
 
         _initGraphControls: function () {
@@ -165,11 +168,40 @@ require([
                 var idx = evt.rowIndex;
                 var item = this.getItem(idx);
                 if (this.store.getValue(item, "SubGraphId")) {
-                    var subgraphID = parseInt(this.store.getValue(item, "SubGraphId"), 10);
+                    var subgraphID = this.store.getValue(item, "SubGraphId");
                     var mainItem = context.main.getItem(subgraphID);
                     context.main.centerOnItem(mainItem, true);
                 }
             }, true);
+        },
+
+        _initItemGrid: function (grid) {
+            var context = this;
+            grid.on("RowClick", function (evt) {
+                context.syncSelectionFrom(grid);
+            }, true);
+
+            var context = this;
+            grid.on("RowDblClick", function (evt) {
+                var idx = evt.rowIndex;
+                var item = this.getItem(idx);
+                if (this.store.getValue(item, "_globalID")) {
+                    var globalID = this.store.getValue(item, "_globalID");
+                    var mainItem = context.main.getItem(globalID);
+                    context.main.centerOnItem(mainItem, true);
+                }
+
+            }, true);
+        },
+
+        _initVertices: function () {
+            this.verticesGrid = registry.byId(this.id + "VerticesGrid");
+            this._initItemGrid(this.verticesGrid);
+        },
+
+        _initEdges: function () {
+            this.edgesGrid = registry.byId(this.id + "EdgesGrid");
+            this._initItemGrid(this.edgesGrid);
         },
 
         _initProperties: function () {
@@ -273,6 +305,8 @@ require([
                 context.main.setMessage("Loading Data...");
                 context.main.loadXGMML(xgmml);
                 context.overview.loadXGMML(context.main.getLocalisedXGMML([0]));
+                context.loadVertices();
+                context.loadEdges();
                 if (svg) {
                     context.main.setMessage("Loading Layout...");
                     if (context.main.mergeSVG(svg)) {
@@ -290,6 +324,8 @@ require([
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
                 context.main.mergeXGMML(xgmml);
+                context.loadVertices();
+                context.loadEdges();
             });
         },
 
@@ -302,13 +338,80 @@ require([
             });
         },
 
+        loadVertices: function () {
+            var vertices = this.main.plugin.getVerticesWithProperties();
+
+            var layoutMap = [];
+            for (var i = 0; i < vertices.length; ++i) {
+                for (var key in vertices[i]) {
+                    if (key != "id" && key != "ecl" && key != "label" && key.substring(0, 1) != "_") {
+                        layoutMap[key] = true;
+                    }
+                }
+            }
+
+            var layout = [[
+                { 'name': 'ID', 'field': 'id', 'width': '50px' }, 
+                { 'name': 'Label', 'field': 'label', 'width': '150px' }
+            ]];
+
+            for (var key in layoutMap) {
+                layout[0].push({ 'name': key, 'field': key, 'width': '200px' });
+            }
+            layout[0].push({ 'name': "ECL", 'field': "ecl", 'width': '1024px' });
+
+            var store = new Memory({ data:  vertices});
+            var dataStore = new ObjectStore({ objectStore: store });
+            this.verticesGrid.setStructure(layout);
+            this.verticesGrid.setStore(dataStore);
+            this.verticesGrid.setQuery({
+                id: "*"
+            });
+        },
+
+        loadEdges: function () {
+            var edges = this.main.plugin.getEdgesWithProperties();
+
+            var layoutMap = [];
+            for (var i = 0; i < edges.length; ++i) {
+                for (var key in edges[i]) {
+                    if (key != "id" && key.substring(0, 1) != "_") {
+                        layoutMap[key] = true;
+                    }
+                }
+            }
+
+            var layout = [[
+                { 'name': 'ID', 'field': 'id', 'width': '50px' }
+            ]];
+
+            for (var key in layoutMap) {
+                layout[0].push({ 'name': key, 'field': key, 'width': '100px' });
+            }
+
+            var store = new Memory({ data: edges });
+            var dataStore = new ObjectStore({ objectStore: store });
+            this.edgesGrid.setStructure(layout);
+            this.edgesGrid.setStore(dataStore);
+            this.edgesGrid.setQuery({
+                id: "*"
+            });
+        },
+
         syncSelectionFrom: function (sourceControl) {
             var selItems = [];
             if (sourceControl == this.timingGrid) {
                 var items = sourceControl.selection.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
-                        selItems.push(parseInt(items[i].SubGraphId, 10));
+                        selItems.push(items[i].SubGraphId);
+                    }
+                }
+            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid) {
+                var items = sourceControl.selection.getSelected();
+                for (var i = 0; i < items.length; ++i) {
+                    if (items[i]._globalID) {
+                        selItems.push(items[i]._globalID);
                     }
                 }
             } else {
@@ -316,9 +419,21 @@ require([
             }
 
             if (sourceControl != this.timingGrid && this.timingGrid.store) {
-                for (var i = 0; i < this.timingGrid.store.objectStore.data.length; ++i) {
-                    var row = this.timingGrid.store.objectStore.data[i];
+                for (var i = 0; i < this.timingGrid.rowCount; ++i) {
+                    var row = this.timingGrid.getItem(i);
                     this.timingGrid.selection.setSelected(i, (row.SubGraphId && array.indexOf(selItems, row.SubGraphId) != -1));
+                }
+            }
+            if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
+                for (var i = 0; i < this.verticesGrid.rowCount; ++i) {
+                    var row = this.verticesGrid.getItem(i);
+                    this.verticesGrid.selection.setSelected(i, (row._globalID && array.indexOf(selItems, row._globalID) != -1));
+                }
+            }
+            if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
+                for (var i = 0; i < this.edgesGrid.rowCount; ++i) {
+                    var row = this.edgesGrid.getItem(i);
+                    this.edgesGrid.selection.setSelected(i, (row._globalID && array.indexOf(selItems, row._globalID) != -1));
                 }
             }
             if (sourceControl != this.main)
