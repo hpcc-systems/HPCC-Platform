@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="FromGregorianDate">
+  <title><emphasis role="bold">FromGregorianDate</emphasis></title>
+
+  <para><emphasis role="bold">STD.Date.FromGregorianDate<indexterm>
+      <primary>STD.Date.FromGregorianDate</primary>
+    </indexterm><indexterm>
+      <primary>Date.FromGregorianDate</primary>
+    </indexterm>(</emphasis> <emphasis>date</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>date</emphasis></entry>
+
+          <entry>An Date_t value.</entry>
+        </row>
+
+        <row>
+          <entry>Return:</entry>
+
+          <entry>FromGregorianDate returns an UNSIGNED4 value.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">FromGregorianDate</emphasis> function returns
+  a Days_t value from the <emphasis>date</emphasis> parameter
+  representing the number days since 31st December 1BC in the Gregorian
+  calendar (see The Calendar FAQ by Claus Tondering at
+  http://www.tondering.dk/claus/calendar.html).</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">IMPORT STD;
+UNSIGNED4  MyDate  := 20120101;  
+  
+D := STD.Date.FromGregorianDate(MyDate);
+    //D contains 734503
+  </programlisting>
+
+  <para></para>
+</sect1>
