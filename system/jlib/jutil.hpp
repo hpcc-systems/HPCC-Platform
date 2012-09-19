@@ -137,7 +137,7 @@ extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);
 extern jlib_decl StringBuffer& encodeUrlUseridPassword(StringBuffer& out, const char* in);
 extern jlib_decl StringBuffer& decodeUrlUseridPassword(StringBuffer& out, const char* in);
 
-class StringArray : public ArrayOf<const char *, const char *>
+class jlib_decl StringArray : public ArrayOf<const char *, const char *>
 {
 public:
     // Appends a list in a string delimited by 'delim'
@@ -145,7 +145,7 @@ public:
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim);
 };
-class CIStringArray : public StringArray, public CInterface
+class jlib_decl CIStringArray : public StringArray, public CInterface
 {
 };
 
