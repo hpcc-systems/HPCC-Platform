@@ -4,6 +4,7 @@
 <sect1 id="WHEN_Function">
   <title>WHEN</title>
 
+  <informalexample id="SchWhen">
   <para><emphasis role="bold">WHEN<indexterm>
       <primary>WHEN</primary>
     </indexterm><indexterm>
@@ -72,7 +73,7 @@ z := namesTable : PERSIST('z');
   //the PERSIST causes the side-effect action to execute only when the PERSIST is re-built
 OUTPUT(z);
 </programlisting>
-
+  </informalexample>
   <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
   Structure</link>, <link linkend="WHEN">WHEN</link>, <link
   linkend="WAIT">WAIT</link></para>
