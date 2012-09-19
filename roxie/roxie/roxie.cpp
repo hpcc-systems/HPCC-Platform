@@ -42,6 +42,8 @@ static void roxie_server_usage()
     printf("\n");
 }
 
+#include "javaembed.hpp"
+
 int main(int argc, const char *argv[])
 {
     for (unsigned i=0; i<argc; i++)
@@ -53,5 +55,7 @@ int main(int argc, const char *argv[])
             return EXIT_SUCCESS;
         }
     }
-    return start_query(argc, argv);
+//    return start_query(argc, argv);
+    javaembed::callMethod("JVMinCTest", "main", "([Ljava/lang/String;)V");
+
 }
