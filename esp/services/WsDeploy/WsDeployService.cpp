@@ -4298,10 +4298,7 @@ bool CWsDeployFileInfo::addCopyToPropTree(IPropertyTree* pPropTree, IPropertyTre
   StringBuffer strTag;
   strTag.clear().appendf("%s/%s", XML_TAG_HARDWARE, tag_name);
 
-  if (pPropTree->addPropTree(strTag.str(), pDupTree) == NULL)
-    return false;
-  else
-    return true;
+  return pPropTree->addPropTree(strTag.str(), pDupTree) != NULL;
 }
 
 bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IPropertyTree *pEnvRoot)
@@ -4318,8 +4315,6 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
     return false;
 
   CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp(XML_ATTR_TARGET));
-
-  xpath3.clear().appendf("<%s/>", iterComp->query().queryProp(XML_ATTR_HWXPATH));
 
   Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
 
@@ -4363,6 +4358,8 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
 
     if (iterComp->query().queryProp(XML_ATTR_HWXPATH) && strlen(iterComp->query().queryProp(XML_ATTR_HWXPATH)) > 0)
     {
+      xpath3.clear().appendf("<%s/>", iterComp->query().queryProp(XML_ATTR_HWXPATH));
+
       dupTree = createPTreeFromXMLString((xpath3.replace('\'','\"')).str());
 
       String strTagName(xpath3);
@@ -4371,6 +4368,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
       if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, strTagName.toCharArray()) == false)
         return false;
 
+      bWrite = true;
       break;
     }
     else
@@ -4378,9 +4376,9 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
 
     if (CWsDeployFileInfo::addCopyToPropTree(pEnvRoot2, dupTree, tag_name) == false)
       return false;
-  }
 
-  bWrite = true;
+    bWrite = true;
+  }
 
   if (bWrite == true)
   {
