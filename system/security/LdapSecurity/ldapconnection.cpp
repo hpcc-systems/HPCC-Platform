@@ -1186,7 +1186,7 @@ public:
                     //following debug code to be removed
                     if (!username || !stricmp(username, "daliuser"))
                     {
-                        DBGLOG("UNEXPECTED USER '%s' in %s line %ld",username,__FILE__, __LINE__);
+                        DBGLOG("UNEXPECTED USER '%s' in ldapconnection.cpp line %d",username, __LINE__);
                         PrintStackReport();
                     }
 #endif

@@ -514,7 +514,7 @@ public:
                 udesc->getUserName(sb);
                 if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
                 {
-                    DBGLOG("UNEXPECTED USER '%s' in %s line %ld",username,__FILE__, __LINE__);
+                    DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",username.get(), __LINE__);
                     PrintStackReport();
                 }
 #endif
@@ -774,10 +774,11 @@ public:
 #ifdef _DALIUSER_STACKTRACE
         //following debug code to be removed
         StringBuffer sb;
-        udesc->getUserName(sb);
+        if (udesc)
+            udesc->getUserName(sb);
         if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
         {
-            DBGLOG("UNEXPECTED USER '%s' in %s line %ld",sb.str(),__FILE__, __LINE__);
+            DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",sb.str(),__LINE__);
             PrintStackReport();
         }
 #endif
