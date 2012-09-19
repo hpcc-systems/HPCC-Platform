@@ -156,17 +156,23 @@ bool CEclDirectEx::onRunEcl(IEspContext &context, IEspRunEclRequest & req, IEspR
     if (!context.validateFeatureAccess(ECLDIRECT_ACCESS, SecAccess_Full, false))
         throw MakeStringException(-1, "EclDirect access permission denied.");
 
-    Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-
-    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "ECL-Direct", "user");
-    Owned<IWUQuery> query = workunit->updateQuery();
-    query->setQueryText(req.getEclText());
-    query.clear();
-
     StringBuffer user;
     if (!context.getUserID(user).length())
         user.append(req.getUserName());
-    workunit->setUser((user.length()) ? user.str() : "user");
+
+    Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned <IWorkUnit> workunit;
+    if (!user.length())
+        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+    else
+    {
+        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit->setUser(user.str());
+    }
+
+    Owned<IWUQuery> query = workunit->updateQuery();
+    query->setQueryText(req.getEclText());
+    query.clear();
 
     const char* clustername = req.getCluster();
     if (!clustername || !*clustername || strieq(clustername, "default"))
@@ -235,11 +241,18 @@ bool CEclDirectEx::onRunEclEx(IEspContext &context, IEspRunEclExRequest & req, I
     }
 
     StringBuffer user;
-    context.getUserID(user);
+    if (!context.getUserID(user).length())
+        user.append(req.getUserName());
 
     Owned <IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "ECL-Direct", (user.length()) ? user.str() : "user");
-    workunit->setUser((user.length()) ? user.str() : "user");
+    Owned <IWorkUnit> workunit;
+    if (!user.length())
+        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", ""));
+    else
+    {
+        workunit.setown(factory->createWorkUnit(NULL, "ECL-Direct", user.str()));
+        workunit->setUser(user.str());
+    }
 
     Owned<IWUQuery> query = workunit->updateQuery();
     query->setQueryText(eclText);
