@@ -59,6 +59,7 @@
 #define DFUERR_DSuperFileNotEmpty       8301
 #define DFUERR_DSuperFileContainsSub        8302
 #define DFUERR_DSuperFileDoesntContainSub   8303
+#define DFUERR_DWillNotCreateSuperFile      8304
 
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -98,5 +99,6 @@
 #define DFUERR_DSuperFileNotEmpty_Text      "SuperFile %s not empty"
 #define DFUERR_DSuperFileContainsSub_Text       "Superfile already contains subfile %s"
 #define DFUERR_DSuperFileDoesntContainSub_Text  "Superfile doesn't contains subfile %s"
+#define DFUERR_DWillNotCreateSuperFile_Text     "Will not create Superfile"
 
 #endif

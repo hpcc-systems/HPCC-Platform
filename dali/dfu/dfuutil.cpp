@@ -707,6 +707,9 @@ public:
 
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
+        if (!numtoadd)
+            throwError(DFUERR_DWillNotCreateSuperFile);
+
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
         // MORE - abstract this with DFSAccess, or at least enable caching with a flag
