@@ -15,31 +15,31 @@
 ################################################################################
 
 set ( Hpcc_INCLUDE_DIRS
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/include"
+    "@CPACK_INSTALL_PREFIX@/include"
     )
 
 set ( Hpcc_LIBRARY_DIRS
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib"
+    "@CPACK_INSTALL_PREFIX@/lib"
     )
 
 set ( Hpcc_BIN_DIRS
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/bin"
+    "@CPACK_INSTALL_PREFIX@/bin"
     )
 
 set ( Hpcc_USE_FILE
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/HpccUse.cmake"
+    "@CPACK_INSTALL_PREFIX@/lib/HpccUse.cmake"
     )
 
 include (
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/HpccDepends.cmake"
+    "@CPACK_INSTALL_PREFIX@/lib/HpccDepends.cmake"
     )
 
 set( Hpcc_CMAKE_MODULE_PATH
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/cmake_modules/"
+    "@CPACK_INSTALL_PREFIX@/lib/cmake_modules/"
     )
 
 set( Hpcc_DOC_DIRS
-    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/docs"
+    "@CPACK_INSTALL_PREFIX@/lib/docs"
     )
 
 
@@ -62,3 +62,11 @@ set( RUNTIME_USER "@RUNTIME_USER@" )
 set( RUNTIME_GROUP "@RUNTIME_GROUP@" )
 set( ENV_XML_FILE "@ENV_XML_FILE@" )
 set( ENV_CONF_FILE "@ENV_CONF_FILE@" )
+
+set ( Hpcc_PROJECT "@HPCC_PROJECT@" )
+set ( Hpcc_MAJOR @HPCC_MAJOR@ )
+set ( Hpcc_MINOR @HPCC_MINOR@ )
+set ( Hpcc_POINT @HPCC_POINT@ )
+set ( Hpcc_MATURITY "@HPCC_MATURITY@" )
+set ( Hpcc_SEQUENCE @HPCC_SEQUENCE@ )
+set ( Hpcc_VERSION "@CPACK_RPM_PACKAGE_RELEASE@" )

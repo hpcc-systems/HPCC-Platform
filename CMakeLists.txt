@@ -45,6 +45,37 @@
 #   5. To build the project, load the solution into the visual studio IDE and build in the usual way.
 #   6. Executables will be created in .\hpcc\bin\<release_mode>
 #
+# Building a Dev Package:
+# -----------------------
+#   *This feature is currently linux only.
+#
+#   1. Check out sources to a local directory (for example, to directory ~/hpcc)
+#   2. Create a build directory - either as a child of hpcc or elsewhere
+#   3. Change directory (cd) to the build directory
+#   4. To create makefiles to build the dev pacakge based on the checkout, run
+#       cmake -DDEVEL=ON ~/hpcc
+#   5. Build the linux installable dev package, run
+#       make package
+#   6. Distribute or install as needed to package that now resides in your current directory
+#
+# Using the Hpcc FIND_PACKAGE config:
+# -----------------------------------
+#
+#   1. Create a directory for a new source project (for example, mkdir ~/testlib)
+#   2. Create a CMakeLists.txt file in that directory (following the format of the example,
+#       plugins/testlib/CMakeLists.txt
+#   3. Decide if you want to build against an installed version of the platform (4a) or local build directory (4b).
+#   4a. Set the path for find_package to "/opt/HPCCSystems/lib"
+#   4b. Set the path for find_package to the build directory for the local build of the platform.
+#   5. Build the plugin in the standard method of CMake.
+#      a. Create a build directory (example ~/build_testlib
+#      b. Change directory (cd) to the build directory.
+#      c. To create makefiles to build the plugin, run
+#          cmake ~/testlib
+#      d. Build the plugin, run
+#          make
+#   6. OPTIONAL: If you have decided to include the cpackSetup.cmake and install directive, run
+#       make package
 #########################################################
 
 project (hpccsystems-platform)
