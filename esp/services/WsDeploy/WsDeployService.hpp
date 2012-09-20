@@ -455,6 +455,7 @@ public:
       return m_pFile->queryFilename();
     };
     static void setFilePath(StringBuffer &filePath, const char* targetName);
+    static bool addCopyToPropTree(IPropertyTree* pPropTree, IPropertyTree* pDupTree, const char* tag_name);
     virtual void updateConfigFromFile();
     virtual bool deploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool graph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
