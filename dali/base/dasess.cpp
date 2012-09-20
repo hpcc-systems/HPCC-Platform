@@ -507,6 +507,16 @@ public:
                 StringAttr passwordenc;
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
+#ifdef _DALIUSER_STACKTRACE
+                //following debug code to be removed
+                StringBuffer sb;
+                udesc->getUserName(sb);
+                if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
+                {
+                    DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",username.get(), __LINE__);
+                    PrintStackReport();
+                }
+#endif
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
@@ -760,6 +770,17 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
+#ifdef _DALIUSER_STACKTRACE
+        //following debug code to be removed
+        StringBuffer sb;
+        if (udesc)
+            udesc->getUserName(sb);
+        if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
+        {
+            DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",sb.str(),__LINE__);
+            PrintStackReport();
+        }
+#endif
         udesc->serialize(mb);
         mb.append(auditflags);
         if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))

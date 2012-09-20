@@ -121,6 +121,11 @@ public:
                 udesc->getPassword(password);
             }
             if (username.length()==0)  {
+#ifdef _DALIUSER_STACKTRACE
+                //following debug code to be removed
+                DBGLOG("UNEXPECTED USER (NULL) in daldap.cpp line %d", __LINE__);
+                PrintStackReport();
+#endif
                 username.append(filesdefaultuser);
                 decrypt(password, filesdefaultpassword);
             }

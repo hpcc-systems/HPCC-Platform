@@ -1180,6 +1180,14 @@ public:
             {
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
+#ifdef _DALIUSER_STACKTRACE
+                    //following debug code to be removed
+                    if (!username || !stricmp(username, "daliuser"))
+                    {
+                        DBGLOG("UNEXPECTED USER '%s' in ldapconnection.cpp line %d",username, __LINE__);
+                        PrintStackReport();
+                    }
+#endif
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
                     ldap_unbind(user_ld);

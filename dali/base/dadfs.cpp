@@ -1051,7 +1051,14 @@ static int getScopePermissions(const char *scopename,IUserDescriptor *user,unsig
     int ret = 255;
     if (permissionsavail&&scopename&&*scopename&&((*scopename!='.')||scopename[1])) {
         if (!user)
+        {
+#ifdef _DALIUSER_STACKTRACE
+            //following debug code to be removed
+            DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp line %d",__LINE__);
+            PrintStackReport();
+#endif
             user = queryDistributedFileDirectory().queryDefaultUser();
+        }
         ret = querySessionManager().getPermissionsLDAP(queryDfsXmlBranchName(DXB_Scope),scopename,user,auditflags);
         if (ret<0) {
             if (ret==-1) {
