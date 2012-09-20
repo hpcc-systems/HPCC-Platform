@@ -714,26 +714,20 @@ public:
         Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
         transaction->setActive(false);
 
-        bool newfile = false;
-        if (!superfile) {
+        transaction->start();
+        if (!superfile)
             superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
-            transaction->addFile(superfile);
-            newfile = true;
+
+        for (unsigned i=0;i<numtoadd;i++) {
+            if (superfile->querySubFileNamed(subfiles[i]))
+                throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
+
+            if (before&&*before)
+                superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
+            else
+                superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
         }
-        if (numtoadd) {
-            transaction->start();
-            unsigned i;
-            for (i=0;i<numtoadd;i++)
-                if (superfile->querySubFileNamed(subfiles[i]))
-                    throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
-            for (i=0;i<numtoadd;i++) {
-                if (before&&*before)
-                    superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
-                else
-                    superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
-            }
-            transaction->commit();
-        }
+        transaction->commit();
     }
 
 
