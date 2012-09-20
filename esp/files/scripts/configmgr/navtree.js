@@ -1178,7 +1178,8 @@ function createNavigationTree(navTreeData) {
     }
   }
 
-  var copyCompMenu = new Array();
+  top.document.copyCompMenu = new Array();
+  top.document.copyCompMenu2 = new Array();
   var fnDeleteComps = function(){
   var params = "queryType=sourceEnvironments";
 
@@ -1200,7 +1201,8 @@ function createNavigationTree(navTreeData) {
             {
                continue;
             }
-           copyCompMenu[i] = { text: files[i], onclick: { fn: onMenuSWClick} };
+           top.document.copyCompMenu[i] = { text: files[i], onclick: { fn: onMenuSWClick} };
+           top.document.copyCompMenu2[i] = { text: files[i], onclick: { fn: onMenuSWClick} };
           }
         }
       },
@@ -1228,7 +1230,7 @@ function createNavigationTree(navTreeData) {
                       submenu: {
                            id: "HWCopy",
                            lazyload: true,
-                           itemdata: copyCompMenu,
+                           itemdata: top.document.copyCompMenu,
                            onclick: { fn: onMenuItemClick }
                           } }
                           ],
@@ -1276,7 +1278,7 @@ function createNavigationTree(navTreeData) {
                                 submenu: {
                                   id: "SWCopy",
                                   lazyload: true,
-                                  itemdata: copyCompMenu
+                                  itemdata: top.document.copyCompMenu
                                  }
                               }
                           ],
@@ -1963,16 +1965,21 @@ function saveEnvironment(saveas) {
   getFileName(true) + args);
 }
 
-copyHWSWTo = function (menuItemName, IsHW)
+copyHWSWTo = function (menuItemName, IsHW, HW_XPath)
 {
   var targetRec;
   var xmlStr = "";
   var xmlStr2 = "";
   var idx;
 
+  menuItemName = menuItemName.replace(/\n/g,"");
+
   if (IsHW === true)
   {
-    xmlStr2 = "<Components> <Component name=\"Hardware\" target=\"" + menuItemName + "\"/> " + "</Components>";
+    if (HW_XPath == "" || typeof(HW_XPath) == 'undefined')
+     xmlStr2 = "<Components> <Component name=\"Hardware\" target=\"" + menuItemName + "\"/> " + "</Components>";
+    else
+     xmlStr2 = "<Components> <Component name=\"Hardware\" target=\"" + menuItemName + "\" hwxpath=\"" + HW_XPath + "\"/> " + "</Components>";
   }
   else // software
   {
@@ -2012,6 +2019,8 @@ copyHWSWTo = function (menuItemName, IsHW)
   },
   getFileName(true) + 'Operation=Copy' + (IsHW ? 'HW' : 'SW') + '&XmlArgs='  + xmlStr2);
 }
+
+top.document.copyHWSWTo = copyHWSWTo;
 
 function saveEnvironmentAs() {
   getWaitDlg().show();
