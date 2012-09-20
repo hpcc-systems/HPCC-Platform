@@ -218,8 +218,10 @@
               <i>
                 <h3>
                   <script type="text/javascript">
-                    <!--document.body.style.cursor='wait';-->
-                    document.write('<xsl:value-of select="$Component"/>');
+                    if (top.document.navDT.getRecordIndex(top.document.navDT.getSelectedRows()[0]) == 0)
+                      document.write("XML View");
+                    else
+                      document.write('<xsl:value-of select="$Component"/>');
                   </script>
                 </h3>
               </i>
