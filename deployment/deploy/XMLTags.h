@@ -137,6 +137,7 @@
 #define XML_ATTR_HOLEPREFIX            "@holePrefix"
 #define XML_ATTR_HOLEPRIORITY          "@holePriority"
 #define XML_ATTR_HOLETIMEOUT           "@holeTimeout"
+#define XML_ATTR_HWXPATH               "@hwxpath"
 #define XML_ATTR_INCLUDE               "@include"
 #define XML_ATTR_INSTALLSET            "@installSet"
 #define XML_ATTR_JACKAGENTIP           "@jackAgentIP"
