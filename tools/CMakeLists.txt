@@ -32,5 +32,5 @@ HPCC_ADD_SUBDIRECTORY (genht "PLATFORM")
 # start-stop-daemon is linux only.
 if ( CMAKE_SYSTEM MATCHES Linux )
     message ("-- Building start-stop-daemon")
-    HPCC_ADD_SUBDIRECTORY (start-stop-daemon)
+    HPCC_ADD_SUBDIRECTORY (start-stop-daemon "PLATFORM;CLIENTTOOLS")
 endif()

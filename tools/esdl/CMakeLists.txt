@@ -52,5 +52,7 @@ include_directories (
 ADD_DEFINITIONS( -D_CONSOLE -O0 )
 
 HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
-#install ( TARGETS esdl RUNTIME DESTINATION ${EXEC_DIR} )
+if ( DEVEL )
+    install ( TARGETS esdl DESTINATION ${OSSDIR}/bin )
+endif()
 

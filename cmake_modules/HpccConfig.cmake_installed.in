@@ -1,0 +1,64 @@
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+set ( Hpcc_INCLUDE_DIRS
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/include"
+    )
+
+set ( Hpcc_LIBRARY_DIRS
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib"
+    )
+
+set ( Hpcc_BIN_DIRS
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/bin"
+    )
+
+set ( Hpcc_USE_FILE
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/HpccUse.cmake"
+    )
+
+include (
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/HpccDepends.cmake"
+    )
+
+set( Hpcc_CMAKE_MODULE_PATH
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/cmake_modules/"
+    )
+
+set( Hpcc_DOC_DIRS
+    "@CPACK_INSTALL_PREFIX@/@DIR_NAME@/lib/docs"
+    )
+
+
+set( PREFIX "@PREFIX@" )
+set( EXEC_PREFIX "@EXEC_PREFIX@" )
+set( CONFIG_PREFIX "@CONFIG_PREFIX@" )
+set( DIR_NAME "@DIR_NAME@" )
+set( LIB_DIR "@LIB_DIR@" )
+set( EXEC_DIR "@EXEC_DIR@" )
+set( COMPONENTFILES_DIR "@COMPONENTFILES_DIR@" )
+set( ADMIN_DIR "@ADMIN_DIR@" )
+set( PLUGINS_DIR "@PLUGINS_DIR@" )
+set( CONFIG_SOURCE_DIR "@CONFIG_SOURCE_DIR@" )
+set( RUNTIME_DIR "@RUNTIME_DIR@" )
+set( HOME_DIR "@HOME_DIR@" )
+set( LOCK_DIR "@LOCK_DIR@" )
+set( PID_DIR "@PID_DIR@" )
+set( LOG_DIR "@LOG_DIR@" )
+set( RUNTIME_USER "@RUNTIME_USER@" )
+set( RUNTIME_GROUP "@RUNTIME_GROUP@" )
+set( ENV_XML_FILE "@ENV_XML_FILE@" )
+set( ENV_CONF_FILE "@ENV_CONF_FILE@" )
