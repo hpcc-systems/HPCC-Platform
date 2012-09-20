@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="MonitorLogicalFileName">
-  <title>MonitorLogicalFileName</title>
+  <title><emphasis role="bold">MonitorLogicalFileName</emphasis></title>
 
   <para><emphasis role="bold">STD.File.MonitorLogicalFileName<indexterm>
       <primary>STD.File.MonitorLogicalFileName</primary>
@@ -93,10 +93,10 @@
   <para>The <emphasis role="bold">MonitorLogicalFileName </emphasis>function
   creates a file monitor job in the DFU Server. Once the job is received it
   goes into a 'monitoring' mode (which can be seen in the eclwatch DFU
-  Workunit display), which polls at a fixed interval (settable by configenv
-  but default 15 mins). If an appropriately named file arrives in this
-  interval it will fire the <emphasis>event</emphasis> with the name of the
-  triggering object as the event subtype (see the EVENT function).</para>
+  Workunit display), which polls at a fixed interval (default 15 mins). If an
+  appropriately named file arrives in this interval it will fire the
+  <emphasis>event</emphasis> with the name of the triggering object as the
+  event subtype (see the EVENT function).</para>
 
   <para>This process continues until either:</para>
 
