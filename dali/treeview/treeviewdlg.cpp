@@ -191,6 +191,9 @@ CTreeviewDlg::CTreeviewDlg(LPCSTR fn, CWnd* pParent) : CDialog(CTreeviewDlg::IDD
         // NOTE: the ClassWizard will add member initialization here
     //}}AFX_DATA_INIT
     // Note that LoadIcon does not require a subsequent DestroyIcon in Win32
+    InitModuleObjects();
+    queryStderrLogMsgHandler()->setMessageFields(0);
+
     m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
     tooltipCtrl = NULL;
     hAccel = NULL;
@@ -203,6 +206,8 @@ CTreeviewDlg::CTreeviewDlg(LPCSTR fn, CWnd* pParent) : CDialog(CTreeviewDlg::IDD
 
 CTreeviewDlg::~CTreeviewDlg()
 {
+    releaseAtoms();
+
     free(cmdfname);
     if(expander) delete expander;
     delete tooltipCtrl;
