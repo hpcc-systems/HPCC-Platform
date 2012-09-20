@@ -20,7 +20,7 @@
 #ifndef JKEYBOARD_HPP
 #define JKEYBOARD_HPP
 
-#include "jutil.hpp"
+#include "jlib.hpp"
 #ifdef _WIN32
 #include <conio.h>
 #else
