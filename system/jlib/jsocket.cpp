@@ -312,7 +312,7 @@ struct MCASTREQ
 #define BADSOCKERR(err) ((err==EBADF)||(err==ENOTSOCK))
 #define CHECKSOCKRANGE(s)
 #else
-#define XFD_SETSIZE 8192
+#define XFD_SETSIZE 32768
 struct xfd_set { __fd_mask fds_bits[XFD_SETSIZE / __NFDBITS]; }; // define our own
 // linux 64 bit
 #ifdef __linux__

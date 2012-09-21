@@ -28,7 +28,8 @@ source ${PATH_PRE} ""
 export PID_NAME="$PID/`basename $PWD`_master.pid" ## this needed when we use bash_init_system
 export PID_NAME_BASE="$PID/`basename $PWD`.pid"
 
-
+# this must match jsocket hard limit
+export handlelimit=32768
 
 # deploydir = where binaries and scripts live
 if [ -z "$deploydir" ]; then
@@ -45,8 +46,8 @@ $deploydir/stop_thor $deploydir
 
 # ----------------------------
 
-ulimit -n 8192
-if [ `ulimit -n` -lt 8192 ]; then
+ulimit -n $handlelimit
+if [ `ulimit -n` -lt $handlelimit ]; then
     echo 'ulimit -n failed, aborting start_thor (perhaps you are not logged is as super user?)'
     exit 0
 fi

@@ -19,7 +19,7 @@
 thorpid=0
 
 ulimit -c unlimited
-ulimit -n 8192
+ulimit -n $handlelimit
 
 RUN_THOR_PID_NAME="$PID/run_thor.`basename $PWD`.pid"
 # prevent two thors starting together
