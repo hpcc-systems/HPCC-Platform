@@ -35,7 +35,8 @@ Defaults:${USER_NAME} !requiretty
 %EOF
 
 alter_file /etc/security/limits.conf "^${USER_NAME}" << %EOF
-${USER_NAME}    hard    nofile  8192
+${USER_NAME}    soft    nofile  8192
+${USER_NAME}    hard    nofile  32768
 ${USER_NAME}    soft  core  unlimited
 ${USER_NAME}    hard  core  unlimited
 %EOF

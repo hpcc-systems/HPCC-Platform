@@ -33,6 +33,9 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+# this must match jsocket hard limit
+export handlelimit=32768
+
 export SENTINEL="dafilesrv.sentinel"
 rm -f ${SENTINEL}
 
@@ -42,7 +45,7 @@ killed(){
     sleep 2
     exit 255
 }
-
+ulimit -n $handlelimit
 trap "killed" SIGINT SIGTERM SIGKILL
 dafilesrv -L $log &
 echo $! > $PID_NAME

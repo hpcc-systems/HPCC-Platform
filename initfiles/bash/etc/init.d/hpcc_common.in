@@ -383,7 +383,7 @@ createRuntime() {
     chown -cR $user:$group "${dir_return}"  1> /dev/null 2>/dev/null
 
     # setting up ulimit for thor and other component which needs it.
-    ulimit -n 8192
+    ulimit -n 32768
     ulimit -c unlimited
 
 }
@@ -403,7 +403,7 @@ start_dafilesrv() {
 
       noStatusCheck=1
       /etc/init.d/dafilesrv setup 1>/dev/null 2>/dev/null
-      ulimit -n 8192
+      ulimit -n 32768
       ulimit -c unlimited
       startCmd ${compName} ${noStatusCheck}
       return $?
