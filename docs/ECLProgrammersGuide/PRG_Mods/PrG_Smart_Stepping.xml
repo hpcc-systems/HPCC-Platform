@@ -87,7 +87,7 @@ OUTPUT(STEPPED(IDX(Filter),FirstName),ALL); //Smart Stepping </programlisting>
     which those results are achieved is very different.</para>
 
     <para>Once you've successfully run this code and gotten your result, take
-    a look at the Graphs page:</para>
+    a look at the Graphs page.</para>
 
     <para>Notice that the first OUTPUT's sub-graph contains three activities:
     the index read, the sort, and the output. But the second OUTPUT's

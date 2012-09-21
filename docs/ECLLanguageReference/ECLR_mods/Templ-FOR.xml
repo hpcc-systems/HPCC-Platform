@@ -65,16 +65,16 @@
   XMLstuff :=
    '&lt;section&gt;'+
        '&lt;item&gt;'+
-           '&lt;dataset&gt;people&lt;/dataset&gt;'+
+           '&lt;dataset&gt;person&lt;/dataset&gt;'+
            '&lt;filter&gt;firstname = \'RICHARD\'&lt;/filter&gt;'+
        '&lt;/item&gt;'+
        '&lt;item&gt;'+
-           '&lt;dataset&gt;people&lt;/dataset&gt;'+
+           '&lt;dataset&gt;person&lt;/dataset&gt;'+
            '&lt;filter&gt;firstname = \'JOHN\'&lt;/filter&gt;'+
        '&lt;/item&gt;'+
        '&lt;item&gt;'+
-           '&lt;dataset&gt;people&lt;/dataset&gt;'+
-           '&lt;filter&gt;first_name = \'HENRY\'&lt;/filter&gt;'+
+           '&lt;dataset&gt;person&lt;/dataset&gt;'+
+           '&lt;filter&gt;firstname = \'HENRY\'&lt;/filter&gt;'+
        '&lt;/item&gt;'+
    '&lt;/section&gt;';
   
@@ -89,9 +89,9 @@
   %CountStr% // then execute the generated "COUNT" actions
   
   // Note that the "CountStr" will have 3 COUNT actions in it:
-  //   COUNT(person(person.per_first_name = 'RICHARD'));
-  //   COUNT(person(person.per_first_name = 'JOHN'));
-  //   COUNT(person(person.per_first_name = 'HENRY'));
+  //   COUNT(person(person.firstname = 'RICHARD'));
+  //   COUNT(person(person.firstname = 'JOHN'));
+  //   COUNT(person(person.firstname = 'HENRY'));
 </programlisting>
 
   <para>See Also: <link linkend="_LOOP-_BREAK">#LOOP</link>, <link

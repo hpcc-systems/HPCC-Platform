@@ -346,17 +346,6 @@
     a[][20].</para>
   </sect2>
 
-  <sect2 id="ECL_Plug-Ins">
-    <title>ECL Plug-Ins</title>
-
-    <para>In addition to external services, an ECL code module may be built as
-    an ECL plug-in. These need to be deployed to the ESP and ECL servers
-    through the ConfigEnv utility (see the <emphasis>Systems Operation
-    Manual</emphasis>). A plug-in is accessable to all users of the
-    environment, and appears in the ECL IDE in the same fashion as a service
-    library.</para>
-  </sect2>
-
   <sect2 id="Plug-In_Requirements">
     <title>Plug-In Requirements</title>
 
@@ -418,8 +407,7 @@
     called examplelib that contains one entry point (<emphasis
     role="bold">stringfind</emphasis>). This is a slightly modified version of
     the Find function found in the Str standard library. This version is
-    designed to work in both the Data Refinery and Complex Analysis Engine
-    supercomputers.</para>
+    designed to work in the Data Refinery supercomputer.</para>
   </sect2>
 
   <sect2 id="ECL_definitions">
