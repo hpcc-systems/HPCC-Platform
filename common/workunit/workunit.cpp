@@ -8948,27 +8948,49 @@ void setQueryAlias(IPropertyTree * queryRegistry, const char * name, const char 
     match->setProp("@id", value);
 }
 
-IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegistry, const char * alias)
+extern WORKUNIT_API IPropertyTree * getQueryById(IPropertyTree * queryRegistry, const char *queryid)
 {
+    if (!queryRegistry || !queryid)
+        return NULL;
+    StringBuffer xpath;
+    xpath.append("Query[@id=\"").append(queryid).append("\"]");
+    return queryRegistry->getPropTree(xpath);
+}
+
+extern WORKUNIT_API IPropertyTree * getQueryById(const char *queryset, const char *queryid, bool readonly)
+{
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(queryset, readonly);
+    return getQueryById(queryRegistry, queryid);
+}
+
+extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegistry, const char * alias)
+{
+    if (!queryRegistry || !alias)
+        return NULL;
+
     StringBuffer xpath;
     unsigned cnt = 0;
-    StringBuffer lcAlias(alias);
-    lcAlias.toLowerCase();
-    const char * search = lcAlias.str();
+    StringBuffer lc(alias);
+    const char * search = lc.toLowerCase().str();
     loop
     {
-        xpath.clear().append("Alias[@name=\"").append(search).append("\"]/@id");
+        xpath.set("Alias[@name='").append(search).append("']/@id");
         const char * queryId = queryRegistry->queryProp(xpath);
         if (!queryId)
             break;
         //Check for too many alias indirections.
         if (cnt++ > 10)
             return NULL;
-        search = lcAlias.clear().append(queryId).toLowerCase().str();
+        search = lc.set(queryId).toLowerCase().str();
     }
 
-    xpath.clear().append("Query[@id=\"").append(search).append("\"]");
-    return queryRegistry->getPropTree(xpath);
+    return getQueryById(queryRegistry, search);
+}
+
+extern WORKUNIT_API IPropertyTree * resolveQueryAlias(const char *queryset, const char *alias, bool readonly)
+{
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(queryset, readonly);
+    return resolveQueryAlias(queryRegistry, alias);
 }
 
 void setQuerySuspendedState(IPropertyTree * queryRegistry, const char *id, bool suspend)

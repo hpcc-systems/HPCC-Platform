@@ -180,20 +180,23 @@ public:
         line.append(query.getSuspended() ? 'S' : ' ');
         line.append(isActive ? 'A' : ' ');
         line.append(' ').append(queryid);
-        if (isActive)
+        if (!query.getTimeLimit_isNull())
         {
-            Owned<IPropertyTreeIterator> activeNames = queryMap.getActiveNames(queryid);
-            if (line.length() < 35)
-                line.appendN(35 - line.length(), ' ');
-            line.append("[");
-            activeNames->first();
-            while (activeNames->isValid())
-            {
-                line.append(activeNames->query().queryProp(NULL));
-                if (activeNames->next())
-                    line.append(',');
-            }
-            line.append("]");
+            if (line.length() < 34)
+                line.appendN(34 - line.length(), ' ');
+            line.append(' ').append(query.getTimeLimit());
+        }
+        if (!query.getWarnTimeLimit_isNull())
+        {
+            if (line.length() < 41)
+                line.appendN(41 - line.length(), ' ');
+            line.append(' ').append(query.getWarnTimeLimit());
+        }
+        if (query.getMemoryLimit())
+        {
+            if (line.length() < 48)
+                line.appendN(48 - line.length(), ' ');
+            line.append(' ').append(query.getMemoryLimit());
         }
         fputs(line.append('\n').str(), stdout);
     }
@@ -203,8 +206,10 @@ public:
         ActiveQueryMap queryMap(qs);
         if (qs.getQuerySetName())
             fprintf(stdout, "\nQuerySet: %s\n", qs.getQuerySetName());
-        fputs("\nFlags Query Id                     [Active Name(s)]\n", stdout);
-        fputs("----- ---------------------------- ----------------\n", stdout);
+        fputs("\n", stdout);
+        fputs("                                   Time   Warn   Memory\n", stdout);
+        fputs("Flags Query Id                     Limit  Limit  Limit\n", stdout);
+        fputs("----- ---------------------------- ------ ------ ----------\n", stdout);
 
         IArrayOf<IConstQuerySetQuery> &queries = qs.getQueries();
         ForEachItemIn(id, queries)
@@ -269,6 +274,8 @@ class EclCmdQueriesCopy : public EclCmdCommon
 public:
     EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false)
     {
+        optTimeLimit = (unsigned) -1;
+        optWarnTimeLimit = (unsigned) -1;
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
@@ -308,6 +315,12 @@ public:
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
+            if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optWarnTimeLimit, ECLOPT_WARN_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -327,6 +340,12 @@ public:
             fputs("cluster must be specified for remote copies.\n\n", stderr);
             return false;
         }
+        if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
+        {
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
+
         return true;
     }
 
@@ -348,6 +367,13 @@ public:
         req->setDontCopyFiles(optDontCopyFiles);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
+
+        if (optTimeLimit != (unsigned) -1)
+            req->setTimeLimit(optTimeLimit);
+        if (optWarnTimeLimit != (unsigned) -1)
+            req->setWarnTimeLimit(optWarnTimeLimit);
+        if (!optMemoryLimit.isEmpty())
+            req->setMemoryLimit(optMemoryLimit);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
@@ -383,6 +409,10 @@ public:
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   -O, --overwrite        Overwrite existing files\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
+            "   --timeLimit=<sec>      Value to set for query timeLimit configuration\n"
+            "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
+            "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
+            "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -392,11 +422,142 @@ private:
     StringAttr optTargetQuerySet;
     StringAttr optTargetCluster;
     StringAttr optDaliIP;
+    StringAttr optMemoryLimit;
     unsigned optMsToWait;
+    unsigned optTimeLimit;
+    unsigned optWarnTimeLimit;
     bool optActivate;
     bool optNoReload;
     bool optOverwrite;
     bool optDontCopyFiles;
+};
+
+class EclCmdQueriesConfig : public EclCmdCommon
+{
+public:
+    EclCmdQueriesConfig() : optNoReload(false), optMsToWait(10000)
+    {
+        optTimeLimit = (unsigned) -1;
+        optWarnTimeLimit = (unsigned) -1;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTargetCluster.isEmpty())
+                    optTargetCluster.set(arg);
+                else if (optQueryId.isEmpty())
+                    optQueryId.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
+                continue;
+            if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optWarnTimeLimit, ECLOPT_WARN_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optTargetCluster.isEmpty() || optQueryId.isEmpty())
+        {
+            fputs("Target and QueryId must both be specified.\n\n", stderr);
+            return false;
+        }
+        if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
+        {
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
+        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
+        client->addServiceUrl(url.str());
+        if (optUsername.length())
+            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
+
+        Owned<IClientWUQueryConfigRequest> req = client->createWUQueryConfigRequest();
+        req->setTarget(optTargetCluster.get());
+        req->setQueryId(optQueryId.get());
+        req->setWait(optMsToWait);
+        req->setNoReload(optNoReload);
+
+        if (optTimeLimit != (unsigned) -1)
+            req->setTimeLimit(optTimeLimit);
+        if (optWarnTimeLimit != (unsigned) -1)
+            req->setWarnTimeLimit(optWarnTimeLimit);
+        if (!optMemoryLimit.isEmpty())
+            req->setMemoryLimit(optMemoryLimit);
+
+        Owned<IClientWUQueryConfigResponse> resp = client->WUQueryConfig(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        IArrayOf<IConstWUQueryConfigResult> &results = resp->getResults();
+        if (results.length())
+        {
+            fputs("configured:\n", stdout);
+            ForEachItemIn(i, results)
+                fprintf(stdout, "   %s\n", results.item(i).getQueryId());
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries config' command updates query configuration values.\n"
+            "\n"
+            "ecl queries config <target> <queryid> [options]\n"
+            "\n"
+            " Options:\n"
+            "   <target>               Name of target queryset containing query\n"
+            "   <queryid>              Id of the query to configure\n"
+            "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --wait=<ms>            Max time to wait in milliseconds\n"
+            "   --timeLimit=<sec>      Value to set for query timeLimit configuration\n"
+            "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
+            "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
+            "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTargetCluster;
+    StringAttr optQueryId;
+    StringAttr optMemoryLimit;
+    unsigned optMsToWait;
+    unsigned optTimeLimit;
+    unsigned optWarnTimeLimit;
+    bool optNoReload;
 };
 
 IEclCommand *createEclQueriesCommand(const char *cmdname)
@@ -405,6 +566,8 @@ IEclCommand *createEclQueriesCommand(const char *cmdname)
         return NULL;
     if (strieq(cmdname, "list"))
         return new EclCmdQueriesList();
+    if (strieq(cmdname, "config"))
+        return new EclCmdQueriesConfig();
     if (strieq(cmdname, "copy"))
         return new EclCmdQueriesCopy();
     return NULL;
@@ -426,6 +589,7 @@ public:
             "ecl queries <command> [command options]\n\n"
             "   Queries Commands:\n"
             "      list         list queries in queryset(s)\n"
+            "      config       update query settings\n"
             "      copy         copy a query from one queryset to another\n"
         );
     }

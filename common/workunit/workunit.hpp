@@ -1213,9 +1213,14 @@ extern WORKUNIT_API void removeWuidFromNamedQueries(IPropertyTree * queryRegistr
 extern WORKUNIT_API void removeDllFromNamedQueries(IPropertyTree * queryRegistry, const char * dll);
 extern WORKUNIT_API void removeAliasesFromNamedQuery(IPropertyTree * queryRegistry, const char * id);
 extern WORKUNIT_API void setQueryAlias(IPropertyTree * queryRegistry, const char * name, const char * value);
+
+extern WORKUNIT_API IPropertyTree * getQueryById(IPropertyTree * queryRegistry, const char *queryid);
+extern WORKUNIT_API IPropertyTree * getQueryById(const char *queryset, const char *queryid, bool readonly);
 extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegistry, const char * alias);
+extern WORKUNIT_API IPropertyTree * resolveQueryAlias(const char *queryset, const char *alias, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot();
+
 extern WORKUNIT_API void setQueryCommentForNamedQuery(IPropertyTree * queryRegistry, const char *id, const char *queryComment);
 
 extern WORKUNIT_API void setQuerySuspendedState(IPropertyTree * queryRegistry, const char * name, bool suspend);
