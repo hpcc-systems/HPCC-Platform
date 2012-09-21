@@ -903,6 +903,7 @@ TABLE               { RETURNSYM(TABLE); }
 TAN                 { RETURNSYM(TAN); }
 TANH                { RETURNSYM(TANH); }
 TERMINATOR          { RETURNSYM(TERMINATOR); }
+ESCAPE              { RETURNSYM(ESCAPE); }
 THEN                { RETURNSYM(THEN); }
 THISNODE            { RETURNSYM(THISNODE); }
 THOR                { RETURNSYM(THOR); }

@@ -411,6 +411,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TAN
   TANH
   TERMINATOR
+  ESCAPE
   THEN
   THISNODE
   THOR
@@ -9510,6 +9511,12 @@ csvOption
                         {
                             parser->normalizeExpression($3);
                             $$.setExpr(createExprAttribute(terminatorAtom, createComma($3.getExpr(), createAttribute(quoteAtom))));
+                            $$.setPosition($1);
+                        }
+    | ESCAPE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3);
+                            $$.setExpr(createExprAttribute(escapeAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | NOTRIM

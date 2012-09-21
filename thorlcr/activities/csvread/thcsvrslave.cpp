@@ -36,7 +36,7 @@
 class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDataLink
 {
     IHThorCsvReadArg *helper;
-    StringAttr csvQuote, csvSeparate, csvTerminate;
+    StringAttr csvQuote, csvSeparate, csvTerminate, csvEscape;
     Owned<IRowStream> out;
     rowcount_t limit;
     rowcount_t stopAfter;
@@ -85,7 +85,7 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             readFinished = false;
             //Initialise information...
             ICsvParameters * csvInfo = activity.helper->queryCsvParameters();
-            csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate);
+            csvSplitter.init(activity.helper->getMaxColumns(), csvInfo, activity.csvQuote, activity.csvSeparate, activity.csvTerminate, activity.csvEscape);
         }
         virtual void setPart(IPartDescriptor *partDesc, unsigned partNoSerialized)
         {
@@ -315,6 +315,8 @@ public:
             if (b) data.read(csvSeparate);
             data.read(b);
             if (b) data.read(csvTerminate);
+            data.read(b);
+            if (b) data.read(csvEscape);
         }
         if (headerLines)
         {

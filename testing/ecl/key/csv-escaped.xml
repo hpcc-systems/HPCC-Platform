@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><foo>this is an &apos;escaped&apos; string</foo><id>10</id><bar>while this is not</bar></Row>
+</Dataset>
