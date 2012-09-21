@@ -710,31 +710,27 @@ public:
 
     void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
     {
-        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
-        // We need this here, since caching only happens with active transactions
-        // MORE - abstract this with DFSAccess, or at least enable caching with a flag
-        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFileCached(superfname);
+        if (!numtoadd)
+            throwError(DFUERR_DNoSubfileToAddToSuperFile);
 
-        bool newfile = false;
-        if (!superfile) {
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
+        transaction->start();
+
+        Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
+        if (!superfile)
             superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
-            transaction->addFile(superfile);
-            newfile = true;
+
+        for (unsigned i=0;i<numtoadd;i++)
+        {
+            if (superfile->querySubFileNamed(subfiles[i]))
+                throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
+
+            if (before&&*before)
+                superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
+            else
+                superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
         }
-        if (numtoadd) {
-            transaction->start();
-            unsigned i;
-            for (i=0;i<numtoadd;i++)
-                if (superfile->querySubFileNamed(subfiles[i]))
-                    throwError1(DFUERR_DSuperFileContainsSub, subfiles[i]);
-            for (i=0;i<numtoadd;i++) {
-                if (before&&*before)
-                    superfile->addSubFile(subfiles[i],true,(stricmp(before,"*")==0)?NULL:before,false,transaction);
-                else
-                    superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
-            }
-            transaction->commit();
-        }
+        transaction->commit();
     }
 
 
