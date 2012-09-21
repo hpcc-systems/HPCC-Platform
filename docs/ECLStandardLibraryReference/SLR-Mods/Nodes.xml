@@ -2,7 +2,7 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Nodes">
-  <title>Nodes</title>
+  <title><emphasis role="bold">Nodes</emphasis></title>
 
   <para><emphasis role="bold">STD.System.Thorlib.Nodes<indexterm>
       <primary>STD.System.Thorlib.Nodes</primary>
@@ -23,24 +23,19 @@
 
       <tbody>
         <row>
-          
+          <entry>Return:<emphasis> </emphasis></entry>
 
-
-  <entry>Return:<emphasis> </emphasis></entry><entry>Nodes returns an UNSIGNED INTEGER4
-  value.</entry>
-
-
+          <entry>Nodes returns an UNSIGNED INTEGER4 value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-
   <para>The <emphasis role="bold">Nodes </emphasis>function returns the number
-  of nodes in the cluster. This number is the same as the CLUSTERSIZE compile
-  time constant. The Nodes function is evaluated each time it is called, so
-  the choice to use the function versus the constant depends upon the
-  circumstances.</para>
+  of nodes in the Thor cluster (always returns 1 on hThor and Roxie). This
+  number is the same as the CLUSTERSIZE compile time constant. The Nodes
+  function is evaluated each time it is called, so the choice to use the
+  function versus the constant depends upon the circumstances.</para>
 
   <para>Example:</para>
 

@@ -37,8 +37,7 @@
   <para>The <emphasis role="bold">PULL </emphasis>function is a meta-operation
   intended only to hint that the <emphasis>dataset</emphasis> should be fully
   loaded into the Data Refinery before continuing the operation in Data
-  Refinery. This allows the Data Refinery optimizer to ensure optimal
-  performance and frees up the Complex Analysis Engine sooner.</para>
+  Refinery. </para>
 
   <para>Example:</para>
 

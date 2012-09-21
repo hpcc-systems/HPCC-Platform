@@ -2,13 +2,13 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ToGregorianYMD">
-  <title>ToGregorianYMD</title>
+  <title><emphasis role="bold">ToGregorianYMD</emphasis></title>
 
   <para><emphasis role="bold">STD.Date.ToGregorianYMD<indexterm>
       <primary>STD.Date.ToGregorianYMD</primary>
     </indexterm><indexterm>
       <primary>Date.ToGregorianYMD</primary>
-    </indexterm>(</emphasis> <emphasis>year</emphasis> <emphasis
+    </indexterm>(</emphasis> <emphasis>days</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">

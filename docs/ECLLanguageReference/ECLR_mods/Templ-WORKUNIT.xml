@@ -83,8 +83,7 @@
             <entry>The value parameter is a string constant containing the
             scope value to use to override the workunit's default scope (the
             user ID of the submitting person). This is a Workunit Security
-            feature (see the supercomputer Operations Manual for a discussion
-            of this feature).</entry>
+            feature.</entry>
           </row>
         </tbody>
       </tgroup>
