@@ -1053,7 +1053,7 @@ ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
 };
 
 
-ESPrequest WUPublishWorkunitRequest
+ESPrequest [nil_remove] WUPublishWorkunitRequest
 {
     string Wuid;
     string Cluster;
@@ -1063,6 +1063,9 @@ ESPrequest WUPublishWorkunitRequest
     int Wait(10000);
     bool NoReload(0);
     bool UpdateWorkUnitName(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1074,6 +1077,28 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     string QueryId;
     bool ReloadFailed;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
+};
+
+ESPrequest [nil_remove] WUQueryConfigRequest
+{
+    string Target;
+    string QueryId;
+    int Wait(10000);
+    bool NoReload(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
+};
+
+ESPStruct WUQueryConfigResult
+{
+    string  QueryId;
+};
+
+ESPresponse [exceptions_inline] WUQueryConfigResponse
+{
+    bool ReloadFailed;
+    ESParray<ESPStruct WUQueryConfigResult, Result> Results;
 };
 
 
@@ -1098,7 +1123,7 @@ ESPStruct ClusterQueryState
     string State;
 };
 
-ESPStruct QuerySetQuery
+ESPStruct [nil_remove] QuerySetQuery
 {
     string Id;
     string Name;
@@ -1106,6 +1131,9 @@ ESPStruct QuerySetQuery
     string Dll;
     bool Suspended;
     ESParray<ESPstruct ClusterQueryState> Clusters;
+    string memoryLimit;
+    nonNegativeInteger timeLimit;
+    nonNegativeInteger warnTimeLimit;
 };
 
 ESPStruct QuerySetAlias
@@ -1241,7 +1269,7 @@ ESPresponse [exceptions_inline] WUQuerySetAliasActionResponse
     ESParray<ESPstruct QuerySetAliasActionResult, Result> Results;
 };
 
-ESPrequest WUQuerySetCopyQueryRequest
+ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
 {
     string Source;
     string Target;
@@ -1252,6 +1280,9 @@ ESPrequest WUQuerySetCopyQueryRequest
     bool DontCopyFiles(false);
     int Wait(10000);
     bool NoReload(0);
+    string memoryLimit;
+    nonNegativeInteger TimeLimit(0);
+    nonNegativeInteger WarnTimeLimit(0);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
@@ -1325,6 +1356,7 @@ ESPservice [
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
+    ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
 };
 
 

@@ -104,6 +104,34 @@ static bool looksLikeOnlyAWuid(const char * wuid)
     return true;
 }
 
+bool isValidMemoryValue(const char *value)
+{
+    if (!value || !*value || !isdigit(*value))
+        return false;
+    while (isdigit(*++value));
+
+    if (!*value)
+        return true;
+
+    switch (toupper(*value++))
+    {
+        case 'E':
+        case 'P':
+        case 'T':
+        case 'G':
+        case 'M':
+        case 'K':
+            if (!*value || strieq("B", value))
+                return true;
+            break;
+        case 'B':
+            if (!*value)
+                return true;
+            break;
+    }
+    return false;
+}
+
 //=========================================================================================
 
 #define PE_OFFSET_LOCATION_IN_DOS_SECTION 0x3C
