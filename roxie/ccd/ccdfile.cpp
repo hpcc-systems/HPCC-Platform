@@ -1622,7 +1622,8 @@ ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, IPartDesc
     makePhysicalPartName(logicalname, partNo, numParts, localFileName, false, DFD_OSdefault, baseDataDirectory);  // MORE - if we get the dataDirectory we can pass it in and possibly` reuse an existing file
 
     appendRemoteLocations(pdesc, remoteLocations, true);
-    appendRemoteLocations(remotePDesc, remoteLocations, false);
+    if (remotePDesc)
+        appendRemoteLocations(remotePDesc, remoteLocations, false);
 
     return queryFileCache().lookupFile(id, partNo, fileType, localFileName, NULL, NULL, localLocations, remoteLocations, dfsSize, fileDate, false, true, false, false, crcResources ? crc : 0, pdesc->queryOwner().isCompressed(), NULL);
 }
