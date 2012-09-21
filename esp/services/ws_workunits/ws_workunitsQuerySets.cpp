@@ -298,6 +298,88 @@ bool reloadCluster(const char *cluster, unsigned wait)
     return (clusterInfo) ? reloadCluster(clusterInfo, wait) : true;
 }
 
+static inline void updateQuerySetting(bool ignore, IPropertyTree *queryTree, const char *xpath, int value)
+{
+    if (ignore || !queryTree)
+        return;
+    if (value!=0)
+        queryTree->setPropInt(xpath, value);
+    else
+        queryTree->removeProp(xpath);
+}
+
+static inline unsigned __int64 memoryLimitUInt64FromString(const char *value)
+{
+    if (!value || !*value || !isdigit(*value))
+        return 0;
+    unsigned __int64 result = (*value - '0');
+    const char *s = value+1;
+    while (isdigit(*s))
+    {
+        result = 10 * result + ((*s) - '0');
+        s++;
+    }
+    if (*s)
+    {
+        const char unit = toupper(*s++);
+        if (*s && !strieq("B", s)) //more?
+            return 0;
+        switch (unit)
+        {
+            case 'E':
+                result <<=60;
+                break;
+            case 'P':
+                result <<=50;
+                break;
+            case 'T':
+                result <<=40;
+                break;
+            case 'G':
+                result <<=30;
+                break;
+            case 'M':
+                result <<=20;
+                break;
+            case 'K':
+                result <<=10;
+                break;
+            case 'B':
+                break;
+            default:
+                return 0;
+        }
+    }
+    return result;
+}
+
+const char memUnitAbbrev[] = {'B', 'K', 'M', 'G', 'T', 'P', 'E'};
+#define MAX_MEMUNIT_ABBREV 6
+
+static inline StringBuffer &memoryLimitStringFromUInt64(StringBuffer &s, unsigned __int64 in)
+{
+    if (!in)
+        return s;
+    unsigned __int64 value = in;
+    unsigned char unit = 0;
+    while (!(value & 0x3FF) && unit < MAX_MEMUNIT_ABBREV)
+    {
+        value >>= 10;
+        unit++;
+    }
+    return s.append(value).append(memUnitAbbrev[unit]);
+}
+
+static inline void updateMemoryLimitSetting(IPropertyTree *queryTree, const char *value)
+{
+    if (!value || !queryTree)
+        return;
+    unsigned __int64 limit = memoryLimitUInt64FromString(value);
+    if (0==limit)
+        queryTree->removeProp("@memoryLimit");
+    else
+        queryTree->setPropInt64("@memoryLimit", limit);
+}
 
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
@@ -343,7 +425,15 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         wu->setJobName(req.getJobName());
 
     StringBuffer queryId;
-    addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), queryId);
+    WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
+    addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, activate, queryId);
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull())
+    {
+        Owned<IPropertyTree> queryTree = getQueryById(target.str(), queryId, false);
+        updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
+        updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
+        updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+    }
     wu->commit();
     wu.clear();
 
@@ -383,6 +473,16 @@ void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryIn
     queryInfo->setDll(query->queryProp("@dll"));
     queryInfo->setWuid(query->queryProp("@wuid"));
     queryInfo->setSuspended(query->getPropBool("@suspended", false));
+    if (query->hasProp("@memoryLimit"))
+    {
+        StringBuffer s;
+        memoryLimitStringFromUInt64(s, query->getPropInt64("@memoryLimit"));
+        queryInfo->setMemoryLimit(s);
+    }
+    if (query->hasProp("@timeLimit"))
+        queryInfo->setTimeLimit(query->getPropInt("@timeLimit"));
+    if (query->hasProp("@warnTimeLimit"))
+        queryInfo->setWarnTimeLimit(query->getPropInt("@warnTimeLimit"));
     if (queriesOnCluster)
     {
         IArrayOf<IEspClusterQueryState> clusters;
@@ -675,6 +775,58 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
     }
 }
 
+void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset, const char *id, CQuerySetQueryActionTypes action)
+{
+    IArrayOf<IConstQuerySetQueryActionItem> items;
+    Owned<IEspQuerySetQueryActionItem> item = createQuerySetQueryActionItem();
+    item->setQueryId(id);
+    items.append(*(IConstQuerySetQueryActionItem*)item.getClear());
+    expandQueryActionTargetList(queryIds, queryset, items, action);
+}
+
+bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequest & req, IEspWUQueryConfigResponse & resp)
+{
+    StringAttr target(req.getTarget());
+    if (target.isEmpty())
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
+    if (!isValidCluster(target))
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid target name: %s", target.get());
+
+    Owned<IPropertyTree> queryset = getQueryRegistry(target.get(), false);
+    if (!queryset)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Target Queryset %s not found", req.getTarget());
+
+    Owned<IProperties> queryIds = createProperties();
+    expandQueryActionTargetList(queryIds, queryset, req.getQueryId(), QuerySetQueryActionTypes_Undefined);
+
+    IArrayOf<IEspWUQueryConfigResult> results;
+    Owned<IPropertyIterator> it = queryIds->getIterator();
+    ForEach(*it)
+    {
+        Owned<IEspWUQueryConfigResult> result = createWUQueryConfigResult();
+        result->setQueryId(it->getPropKey());
+
+        VStringBuffer xpath("Query[@id='%s']", it->getPropKey());
+        IPropertyTree *queryTree = queryset->queryPropTree(xpath);
+        if (queryTree)
+        {
+            updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
+            updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
+            updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+        }
+
+        results.append(*result.getClear());
+    }
+    resp.setResults(results);
+
+    bool reloadFailed = false;
+    if (0!=req.getWait() && !req.getNoReload())
+        reloadFailed = !reloadCluster(target.get(), (unsigned)req.getWait());
+    resp.setReloadFailed(reloadFailed);
+
+    return true;
+}
+
 bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySetQueryActionRequest & req, IEspWUQuerySetQueryActionResponse & resp)
 {
     resp.setQuerySetName(req.getQuerySetName());
@@ -898,7 +1050,15 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Error opening wuid %s for query %s", wuid.str(), source);
 
     StringBuffer targetQueryId;
-    addQueryToQuerySet(wu, target, queryName.str(), NULL, (WUQueryActivationOptions)req.getActivate(), targetQueryId);
+    WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
+    addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId);
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull())
+    {
+        Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
+        updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
+        updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
+        updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+    }
     wu.clear();
 
     resp.setQueryId(targetQueryId.str());

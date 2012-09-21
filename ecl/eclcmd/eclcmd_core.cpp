@@ -328,6 +328,8 @@ public:
     EclCmdPublish() : optNoActivate(false), activateSet(false), optNoReload(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
+        optTimeLimit = (unsigned) -1;
+        optWarnTimeLimit = (unsigned) -1;
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
@@ -348,6 +350,12 @@ public:
             if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
+                continue;
+            if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optWarnTimeLimit, ECLOPT_WARN_TIME_LIMIT))
+                continue;
+            if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
                 continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
@@ -396,6 +404,11 @@ public:
                 return false;
             }
         }
+        if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
+        {
+            fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
         return true;
     }
     virtual int processCMD()
@@ -425,6 +438,13 @@ public:
             req->setCluster(optTargetCluster.get());
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
+
+        if (optTimeLimit != (unsigned) -1)
+            req->setTimeLimit(optTimeLimit);
+        if (optWarnTimeLimit != (unsigned) -1)
+            req->setWarnTimeLimit(optWarnTimeLimit);
+        if (!optMemoryLimit.isEmpty())
+            req->setMemoryLimit(optMemoryLimit);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
@@ -467,6 +487,10 @@ public:
             "   -A, --activate         Activate query when published (default)\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
+            "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
+            "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
+            "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -474,7 +498,10 @@ public:
 private:
     StringAttr optTargetCluster;
     StringAttr optName;
+    StringAttr optMemoryLimit;
     unsigned optMsToWait;
+    unsigned optTimeLimit;
+    unsigned optWarnTimeLimit;
     bool optNoActivate;
     bool activateSet;
     bool optNoReload;
