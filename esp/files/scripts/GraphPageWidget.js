@@ -36,13 +36,16 @@ require([
 
     "hpcc/GraphWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/TimingTreeMapWidget",
+
     "dojo/text!./templates/GraphPageWidget.html",
 
     "dijit/form/Select",
     "dijit/form/TextBox"
 ], function (declare, sniff, array, dom, domConstruct, on, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
-            DataGrid, GraphWidget, ESPWorkunit, template) {
+            DataGrid, GraphWidget, ESPWorkunit, TimingTreeMapWidget,
+            template) {
     return declare("GraphPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "GraphPageWidget",
@@ -56,6 +59,7 @@ require([
         local: null,
         graphSelect: null,
         timingGrid: null,
+        timingTreeMap: null,
         verticesGrid: null,
         edgesGrid: null,
         findField: null,
@@ -152,6 +156,7 @@ require([
                 context.timingGrid.setQuery({
                     GraphName: context.graphName
                 });
+                context.timingTreeMap.loadTimers(context.wu.timers, context.graphName);
             }
         },
 
@@ -163,7 +168,6 @@ require([
                 context.syncSelectionFrom(context.timingGrid);
             }, true);
 
-            var context = this;
             this.timingGrid.on("RowDblClick", function (evt) {
                 var idx = evt.rowIndex;
                 var item = this.getItem(idx);
@@ -173,6 +177,15 @@ require([
                     context.main.centerOnItem(mainItem, true);
                 }
             }, true);
+
+            this.timingTreeMap = registry.byId(this.id + "TimingsTreeMap");
+            this.timingTreeMap.onClick = function (value) {
+                context.syncSelectionFrom(context.timingTreeMap);
+            }
+            this.timingTreeMap.onDblClick = function (value) {
+                var mainItem = context.main.getItem(value.subGraphId);
+                context.main.centerOnItem(mainItem, true);
+            }
         },
 
         _initItemGrid: function (grid) {
@@ -351,7 +364,7 @@ require([
             }
 
             var layout = [[
-                { 'name': 'ID', 'field': 'id', 'width': '50px' }, 
+                { 'name': 'ID', 'field': 'id', 'width': '50px' },
                 { 'name': 'Label', 'field': 'label', 'width': '150px' }
             ]];
 
@@ -360,7 +373,7 @@ require([
             }
             layout[0].push({ 'name': "ECL", 'field': "ecl", 'width': '1024px' });
 
-            var store = new Memory({ data:  vertices});
+            var store = new Memory({ data: vertices });
             var dataStore = new ObjectStore({ objectStore: store });
             this.verticesGrid.setStructure(layout);
             this.verticesGrid.setStore(dataStore);
@@ -407,6 +420,8 @@ require([
                         selItems.push(items[i].SubGraphId);
                     }
                 }
+            } else if (sourceControl == this.timingTreeMap) {
+                selItems.push(sourceControl.lastSelection.subGraphId);
             } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid) {
                 var items = sourceControl.selection.getSelected();
                 for (var i = 0; i < items.length; ++i) {
@@ -424,6 +439,9 @@ require([
                     this.timingGrid.selection.setSelected(i, (row.SubGraphId && array.indexOf(selItems, row.SubGraphId) != -1));
                 }
             }
+            if (sourceControl != this.timingTreeMap) {
+                //TODO - Not sure if this is currently possible.
+            }
             if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
                 for (var i = 0; i < this.verticesGrid.rowCount; ++i) {
                     var row = this.verticesGrid.getItem(i);
@@ -436,10 +454,12 @@ require([
                     this.edgesGrid.selection.setSelected(i, (row._globalID && array.indexOf(selItems, row._globalID) != -1));
                 }
             }
-            if (sourceControl != this.main)
+            if (sourceControl != this.main) {
                 this.main.setSelectedAsGlobalID(selItems);
-            if (sourceControl != this.overview)
+            }
+            if (sourceControl != this.overview) {
                 this.overview.setSelectedAsGlobalID(selItems);
+            }
 
             var mainItems = [];
             for (var i = 0; i < selItems.length; ++i) {
