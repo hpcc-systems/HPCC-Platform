@@ -70,6 +70,8 @@ const char *wsEclXsdTypes[] = {
 
 typedef MapStringTo<wsEclType> MapStringToWsEclType;
 
+int strptrcmp(char const ** l, char const ** r) { return strcmp(*l, *r); }
+
 class wsEclTypeTranslator
 {
 private:
@@ -319,6 +321,25 @@ void CWsEclBinding::addQueryNavLink(IPropertyTree &data, IPropertyTree *query, c
     ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
 }
 
+void CWsEclBinding::getQueryNames(IPropertyTree* settree, const char *id, const char *qname, StringArray& qnames)
+{
+    if (!id || !*id)
+        return;
+
+    VStringBuffer xpath("Query[@id='%s']", id);
+    IPropertyTree *query = settree->queryPropTree(xpath.str());
+    if (query->getPropBool("@suspended"))
+        return;
+
+    if (!qname || !*qname)
+        qname = query->queryProp("@id");
+
+    if (!qname || !*qname)
+        return;
+
+    qnames.append(qname);
+}
+
 void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data)
 {
     if (!params)
@@ -332,6 +353,9 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
     else if (params->hasProp("queryset"))
     {
         const char *setname = params->queryProp("queryset");
+        if (!setname || !*setname)
+            return;
+
         Owned<IPropertyTree> settree = getQueryRegistry(setname, true);
 
         if (params->hasProp("QueryList"))
@@ -342,15 +366,22 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
         }
         else
         {
+            StringArray qnames;
             Owned<IPropertyTreeIterator> iter = settree->getElements("Alias");
             ForEach(*iter)
             {
                 IPropertyTree &alias = iter->query();
-                const char *id = alias.queryProp("@id");
-                if (id && *id)
+                getQueryNames(settree, alias.queryProp("@id"), alias.queryProp("@name"), qnames);
+            }
+            if (qnames.ordinality())
+            {
+                qnames.sort(strptrcmp);
+                ForEachItemIn(i,qnames)
                 {
-                    VStringBuffer xpath("Query[@id='%s']", id);
-                    addQueryNavLink(data, settree->queryPropTree(xpath.str()), setname, alias.queryProp("@name"));
+                    StringBuffer navPath;
+                    const char *qname = qnames.item(i);
+                    navPath.appendf("/WsEcl/tabview/query/%s/%s", setname, qname);
+                    ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
                 }
             }
         }
