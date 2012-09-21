@@ -51,6 +51,7 @@ extern da_decl const char *queryDfsXmlBranchName(DfsXmlBranchKind kind)
     case DXB_SuperFile:     return "SuperFile";
     case DXB_Collection:    return "Collection";
     case DXB_Scope:         return "Scope";
+    case DXB_Internal:      return "HpccInternal";
     }
     assertex(!"unknown DFS XML branch name");
     return "UNKNOWN";
