@@ -1319,9 +1319,8 @@ public:
     
     IDistributedFile *lookupFile(const char *name,unsigned timeout)
     {
-        // dont expect *that* many so do a linear search for now
         IDistributedFile * ret = findFile(name);
-        if (ret) 
+        if (ret)
             return LINK(ret);
         ret = queryDistributedFileDirectory().lookup(name,udesc,false,this,timeout);
         if (!ret)
@@ -1352,16 +1351,26 @@ public:
         return ret;
     }
 
+    IDistributedSuperFile *lookupSuperFileCached(const char *name, unsigned timeout)
+    {
+        IDistributedSuperFile *ret;
+        bool prev = isactive;
+        isactive = true;
+        try {
+            ret = lookupSuperFile(name, timeout);
+        }
+        catch (IException *)
+        {
+            isactive = prev;
+            throw;
+        }
+        isactive = prev;
+        return ret;
+    }
+
     bool active()
     {
         return isactive;
-    }
-
-    bool setActive(bool on)
-    {
-        bool old = isactive;
-        isactive = on;
-        return old;
     }
 
     void clearFiles()
