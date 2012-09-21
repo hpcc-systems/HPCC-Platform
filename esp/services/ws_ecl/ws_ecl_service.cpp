@@ -70,6 +70,8 @@ const char *wsEclXsdTypes[] = {
 
 typedef MapStringTo<wsEclType> MapStringToWsEclType;
 
+int strptrcmp(char const ** l, char const ** r) { return strcmp(*l, *r); }
+
 class wsEclTypeTranslator
 {
 private:
@@ -335,18 +337,7 @@ void CWsEclBinding::getQueryNames(IPropertyTree* settree, const char *id, const 
     if (!qname || !*qname)
         return;
 
-    bool queueNameAdded = false;
-    ForEachItemIn(i,qnames)
-    {
-        if (strcmp(qname, qnames.item(i))>0)
-            continue;
-
-        qnames.add(qname, i);
-        queueNameAdded = true;
-        break;
-    }
-    if (!queueNameAdded)
-        qnames.append(qname);
+    qnames.append(qname);
 }
 
 void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data)
@@ -382,12 +373,16 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
                 IPropertyTree &alias = iter->query();
                 getQueryNames(settree, alias.queryProp("@id"), alias.queryProp("@name"), qnames);
             }
-            ForEachItemIn(i,qnames)
+            if (qnames.ordinality())
             {
-                StringBuffer navPath;
-                const char *qname = qnames.item(i);
-                navPath.appendf("/WsEcl/tabview/query/%s/%s", setname, qname);
-                ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
+                qnames.sort(strptrcmp);
+                ForEachItemIn(i,qnames)
+                {
+                    StringBuffer navPath;
+                    const char *qname = qnames.item(i);
+                    navPath.appendf("/WsEcl/tabview/query/%s/%s", setname, qname);
+                    ensureNavLink(data, qname, navPath.str(), qname, "menu2", navPath.str());
+                }
             }
         }
     }
