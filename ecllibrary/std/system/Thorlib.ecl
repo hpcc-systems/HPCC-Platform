@@ -62,6 +62,12 @@ export group() := externals.group();
 export getExpandLogicalName(const varstring name) := externals.getExpandLogicalName(name);
 
 /*
+ * Returns the name of the cluster the query is currently executing on.
+ */
+
+export cluster() := externals.cluster();
+
+/*
  * The following are either unused, or should be replaced with a different syntax.
  
 export getenv(const varstring name, const varstring defaultValue) := externals.getenv(name, defaultValue);
