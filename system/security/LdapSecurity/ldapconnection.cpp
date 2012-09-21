@@ -27,6 +27,8 @@
 #include "ldapsecurity.ipp"
 #include "jsmartsock.hpp"
 #include "jrespool.tpp"
+#include "mpbase.hpp"
+#include "dautils.hpp"
 
 #undef new
 #include <map>
@@ -3223,6 +3225,11 @@ public:
                 continue;
             changeUserGroup("delete", username, grp);
         }
+
+        //Remove tempfile scope for this user
+        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
+        resName.append("::").append(username);
+        deleteResource(RT_FILE_SCOPE, resName.str(), m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
         
         return true;
     }
@@ -4866,6 +4873,13 @@ private:
             passwd = "password";
 
         updateUser(*tmpuser, passwd);
+
+        //Add tempfile scope for this user (spill, paused and checkpoint
+        //will be created under this user specific scope)
+        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
+        resName.append("::").append(tmpuser->getName());
+        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
+        addResource(RT_FILE_SCOPE, *tmpuser, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
 
         return true;
     }

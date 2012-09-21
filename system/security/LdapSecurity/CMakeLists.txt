@@ -41,6 +41,8 @@ include_directories (
          ./../shared 
          ./../../jlib 
          ./../../../esp/platform 
+	     ./../../../dali/base
+	     ./../../../system/mp
          ${OPENLDAP_INCLUDE_DIR}
     )
 
@@ -50,6 +52,7 @@ HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
 install ( TARGETS LdapSecurity DESTINATION ${OSSDIR}/lib )
 target_link_libraries ( LdapSecurity
          jlib
+         dalibase
          ${OPENLDAP_LIBRARIES}
     )
 

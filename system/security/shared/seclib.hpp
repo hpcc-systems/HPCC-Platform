@@ -85,7 +85,8 @@ const char* resTypeDesc(SecResourceType type);
 enum SecPermissionType
 {
     PT_DEFAULT = 0,
-    PT_ADMINISTRATORS_ONLY = 1
+    PT_ADMINISTRATORS_ONLY = 1,
+    PT_ADMINISTRATORS_AND_USER = 2  //excludes Authenticated users
 };
 
 
