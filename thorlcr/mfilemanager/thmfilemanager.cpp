@@ -195,6 +195,10 @@ public:
         if (temporary)
         {
             StringBuffer tail;
+            tmp.append(queryDfsXmlBranchName(DXB_Internal)).append("::");
+            const char *user = job.queryUser();
+            if (user && *user)
+                tmp.append(user).append("::");
             if (paused)
             {
                 tmp.append(PAUSETMPSCOPE);

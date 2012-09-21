@@ -373,12 +373,12 @@ function createNavigationTree(navTreeData) {
   var navDT = new YAHOO.widget.ScrollingDataTable(
             'pageBody',
             [
-                { key: "DisplayName", label: "Name", width: 275, maxAutoWidth: 275, formatter: function(el, oRecord, oColumn, oData) {
+                { key: "DisplayName", label: "Name", width: 325, maxAutoWidth: 325, formatter: function(el, oRecord, oColumn, oData) {
                   el.innerHTML = "<div id='depth" + oRecord.getData('depth') + "'>" + oData + "</div>";
                   Dom.addClass(el, 'yui-dt-liner depth' + oRecord.getData('depth'));
                 }, scrollable: true, resizeable: true
                 },
-                { key: "BuildSet", width: 125, resizeable: true }
+                { key: "BuildSet", width: 125, resizeable: true, hidden: true}
             ],
       navDS,
             {

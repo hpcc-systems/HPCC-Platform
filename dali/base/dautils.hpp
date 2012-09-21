@@ -39,7 +39,8 @@ enum DfsXmlBranchKind
     DXB_File,
     DXB_SuperFile,
     DXB_Collection,
-    DXB_Scope
+    DXB_Scope,
+    DXB_Internal // intended as branch for engines to place per user transient files
 };
 
 
