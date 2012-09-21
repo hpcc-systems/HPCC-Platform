@@ -1,0 +1,15 @@
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><foo>this is an \&apos;escaped\&apos; string</foo><id>10</id><bar>while this is not</bar></Row>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><foo>this is an &apos;escaped&apos; string</foo><id>10</id><bar>while this is not</bar></Row>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><foo>this is an &apos;escaped&apos; string</foo><id>0</id><bar>while this is not</bar></Row>
+</Dataset>

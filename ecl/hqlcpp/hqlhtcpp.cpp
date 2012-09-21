@@ -9129,6 +9129,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     IHqlExpression * headerAttr = queryProperty(headerAtom, attrs);
     IHqlExpression * terminator = queryProperty(terminatorAtom, attrs);
     IHqlExpression * separator = queryProperty(separatorAtom, attrs);
+    IHqlExpression * escape = queryProperty(escapeAtom, attrs);
     if (headerAttr)
     {
         IHqlExpression * header = queryRealChild(headerAttr, 0);
@@ -9187,11 +9188,13 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     buildCsvListFunc(classctx, "queryQuote", queryProperty(quoteAtom, attrs), isReading ? "'" : NULL);
     buildCsvListFunc(classctx, "querySeparator", separator, ",");
     buildCsvListFunc(classctx, "queryTerminator", terminator, isReading ? "\r\n|\n" : "\n");
+    buildCsvListFunc(classctx, "queryEscape", escape, NULL);
 
     StringBuffer flags;
     if (!queryProperty(quoteAtom, attrs))       flags.append("|defaultQuote");
     if (!queryProperty(separatorAtom, attrs))   flags.append("|defaultSeparate");
     if (!queryProperty(terminatorAtom, attrs))  flags.append("|defaultTerminate");
+    if (!queryProperty(escapeAtom, attrs))      flags.append("|defaultEscape");
     if (singleHeader)                           flags.append("|singleHeaderFooter");
     if (manyHeader)                             flags.append("|manyHeaderFooter");
     if (queryProperty(noTrimAtom, attrs))       flags.append("|preserveWhitespace");
