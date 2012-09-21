@@ -52,7 +52,7 @@
 #   1. Check out sources to a local directory (for example, to directory ~/hpcc)
 #   2. Create a build directory - either as a child of hpcc or elsewhere
 #   3. Change directory (cd) to the build directory
-#   4. To create makefiles to build the dev pacakge based on the checkout, run
+#   4. To create makefiles to build the dev package based on the checkout, run
 #       cmake -DDEVEL=ON ~/hpcc
 #   5. Build the linux installable dev package, run
 #       make package
