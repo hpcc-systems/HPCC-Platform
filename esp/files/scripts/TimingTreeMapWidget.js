@@ -21,8 +21,8 @@ require([
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/dom-class",
-	"dojo/store/Memory", 
-	"dojo/_base/Color",
+    "dojo/store/Memory",
+    "dojo/_base/Color",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
@@ -31,17 +31,17 @@ require([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
-	"dojox/treemap/TreeMap",
-	"dojox/color/MeanColorModel",
+    "dojox/treemap/TreeMap",
+    "dojox/color/MeanColorModel",
 
-	"hpcc/ESPWorkunit",
+    "hpcc/ESPWorkunit",
 
     "dojo/text!./templates/TimingTreeMapWidget.html"
 ],
     function (declare, aspect, has, dom, domConstruct, domClass, Memory, Color,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane,
-			TreeMap, MeanColorModel,
-			ESPWorkunit,
+            TreeMap, MeanColorModel,
+            ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -51,6 +51,8 @@ require([
 
             dataStore: null,
 
+            lastSelection: null,
+
             buildRendering: function (args) {
                 this.inherited(arguments);
             },
@@ -59,6 +61,17 @@ require([
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
                 this.timingContentPane = registry.byId(this.id + "TimingContentPane");
+
+                var context = this;
+                this.timingContentPane.on("change", function (e) {
+                    context.lastSelection = e.newValue;
+                });
+                this.timingContentPane.on("click", function (evt) {
+                    context.onClick(context.lastSelection);
+                });
+                this.timingContentPane.on("dblclick", function (evt) {
+                    context.onDblClick(context.lastSelection);
+                });
             },
 
             startup: function (args) {
@@ -74,55 +87,73 @@ require([
                 this.inherited(arguments);
             },
 
-        	//  Plugin wrapper  ---
+            //  Plugin wrapper  ---
+            onClick: function (value) {
+            },
+
+            onDblClick: function (value) {
+            },
+
             initTreeMap: function () {
             },
 
             setWuid: function (wuid) {
-            	this.wuid = wuid;
-            	var context = this;
-            	if (wuid) {
-            		this.wu = new ESPWorkunit({
-            			wuid: wuid
-            		});
-            		this.wu.fetchTimers(function (timers) {
-            			context.largestValue = 0;
-            			var timerData = [];
-            			for (var i = 0; i < timers.length; ++i) {
-            				if (timers[i].GraphName) {
-            					var value = timers[i].Value;
-            					timerData.push({
-            						name: timers[i].Name,
-            						graphName: timers[i].GraphName,
-            						value: value
-            					});
-            					if (context.largestValue < value * 1000) {
-            						context.largestValue = value * 1000;
-            					}
-            				}
-            			}
-            			var dataStore = new Memory({
-            				idProperty: "name",
-            				data: timerData
-            			});
+                this.wuid = wuid;
+                var context = this;
+                if (wuid) {
+                    this.wu = new ESPWorkunit({
+                        wuid: wuid
+                    });
+                    this.wu.fetchTimers(function (timers) {
+                        context.loadTimers(timers, "*");
+                    });
+                }
+            },
 
-            			context.timingContentPane.set("colorFunc", function (item) {
-            				var redness = 255 * (item.value * 1000 / context.largestValue);
-            				return {
-            					r: 255,
-            					g: 255 - redness,
-            					b: 255 - redness
-            				};
-            			});
-            			context.timingContentPane.set("areaAttr", "value");
-            			context.timingContentPane.set("tooltipFunc", function (item) {
-            				return item.name + " " + item.value;
-            			});
-            			context.timingContentPane.set("groupAttrs", ["graphName"]);
+            loadTimers: function (timers, query) {
+                this.largestValue = 0;
+                var timerData = [];
+                for (var i = 0; i < timers.length; ++i) {
+                    if (timers[i].GraphName && (query == "*" || query == timers[i].GraphName)) {
+                        var value = timers[i].Value;
+                        timerData.push({
+                            graphName: timers[i].GraphName,
+                            subGraphId: timers[i].SubGraphId,
+                            name: timers[i].Name,
+                            value: value
+                        });
+                        if (this.largestValue < value * 1000) {
+                            this.largestValue = value * 1000;
+                        }
+                    }
+                }
+                var dataStore = new Memory({
+                    idProperty: "name",
+                    data: timerData
+                });
 
-            			context.timingContentPane.set("store", dataStore);
-            		});
-            	}
-        	}
+                var context = this;
+                this.timingContentPane.set("colorFunc", function (item) {
+                    var redness = 255 * (item.value * 1000 / context.largestValue);
+                    return {
+                        r: 255,
+                        g: 255 - redness,
+                        b: 255 - redness
+                    };
+                });
+                this.timingContentPane.set("areaAttr", "value");
+                this.timingContentPane.set("tooltipFunc", function (item) {
+                    return item.name + " " + item.value;
+                });
+                this.timingContentPane.set("groupAttrs", ["graphName"]);
+
+                this.timingContentPane.set("store", dataStore);
+            },
+
+            select: function (graphID, subGraphID) {
+                //this.timingContentPane.setItemSelected(this.timingContentPane.store.data[2]);
+
+            }
+
         });
     });
