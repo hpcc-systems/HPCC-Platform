@@ -1420,12 +1420,14 @@ private:
     void reload()
     {
         CriticalBlock b(packageCrit);
-        ForEachItemIn(idx, allQuerySetNames)
+        if (standAloneDll)
+            loadStandaloneQuery(standAloneDll, numChannels, "roxie");
+        else
         {
-            if (standAloneDll)
-                loadStandaloneQuery(standAloneDll, numChannels, allQuerySetNames.item(idx));
-            else
+            ForEachItemIn(idx, allQuerySetNames)
+            {
                 createQueryPackageManagers(numChannels, allQuerySetNames.item(idx));
+            }
         }
     }
 
