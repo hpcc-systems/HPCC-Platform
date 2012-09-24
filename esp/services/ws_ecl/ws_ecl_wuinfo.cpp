@@ -25,6 +25,8 @@ WsEclWuInfo::WsEclWuInfo(const char *wuid_, const char *qset, const char *qname,
     wu.setown(wf->openWorkUnit(wuid.sget(), false));
     if (!wu)
         throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
+    if (isLibrary(wu))
+        throw MakeStringException(-1, "%s/%s is a library", qset, qname);
 }
 
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
