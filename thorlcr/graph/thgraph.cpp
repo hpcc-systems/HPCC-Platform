@@ -2354,6 +2354,12 @@ void CJobBase::init()
     if (gmemSize && largeMemSize >= gmemSize)
         throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
     PROGLOG("Global memory size = %d MB, large mem size = %d MB", gmemSize, largeMemSize);
+    StringBuffer tracing("maxActivityCores = ");
+    if (maxActivityCores)
+        tracing.append(maxActivityCores);
+    else
+        tracing.append("[unbound]");
+    PROGLOG("%s", tracing.str());
     setLargeMemSize(largeMemSize);
     graphExecutor.setown(new CGraphExecutor(*this));
 }
@@ -2368,6 +2374,13 @@ CJobBase::~CJobBase()
     ::Release(userDesc);
     timeReporter->Release();
     delete pluginMap;
+
+    StringBuffer memStatsStr;
+    roxiemem::memstats(memStatsStr);
+    PROGLOG("Roxiemem stats: %s", memStatsStr.str());
+    memsize_t heapUsage = getMapInfo("heap");
+    if (heapUsage) // if 0, assumed to be unavailable
+        PROGLOG("Heap usage : %"I64F"d bytes", (unsigned __int64)heapUsage);
 }
 
 bool CJobBase::queryForceLogging(graph_id graphId, bool def) const
