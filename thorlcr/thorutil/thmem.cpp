@@ -599,7 +599,9 @@ void CThorExpandingRowArray::clearUnused()
 
 bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
 {
-    if (getRowsCapacity() < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
+    if (0 == requiredRows)
+        return true;
+    else if (getRowsCapacity() < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
     {
         OwnedConstThorRow newRows = allocateNewRows(requiredRows);
         if (!newRows)
@@ -955,6 +957,8 @@ void CThorSpillableRowArray::kill()
 bool CThorSpillableRowArray::ensure(rowidx_t requiredRows)
 {
     //Only the writer is allowed to reallocate rows (otherwise append can't be optimized), so rows is valid outside the lock
+    if (0 == requiredRows)
+        return true;
 
     OwnedConstThorRow newRows;
     if (getRowsCapacity() < requiredRows) // check, because may have expanded previously, but failed to allocate stableSortTmp and set new maxRows
