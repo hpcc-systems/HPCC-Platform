@@ -45,6 +45,7 @@ interface IActivityFactory : extends IInterface
     virtual IQueryFactory &queryQueryFactory() const = 0;
     virtual ThorActivityKind getKind() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const = 0;
 };
 
 interface IRoxieSlaveActivity : extends IInterface

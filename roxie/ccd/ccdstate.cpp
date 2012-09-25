@@ -753,6 +753,33 @@ protected:
 
     virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext) = 0;
 
+    void getQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
+    {
+        HashIterator elems(queries);
+        for (elems.first(); elems.isValid(); elems.next())
+        {
+            IMapping &cur = elems.query();
+            IQueryFactory *query = queries.mapToValue(&cur);
+            if (full)
+            {
+                query->getQueryXrefInfo(reply, logctx);
+            }
+            else
+            {
+                reply.appendf(" <Query id='%s'", query->queryQueryName());
+                if (query->suspended())
+                    reply.append(" suspended='1'");
+                reply.append("/>\n");
+            }
+        }
+        HashIterator aliasIterator(aliases);
+        for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
+        {
+            IMapping &cur = aliasIterator.query();
+            reply.appendf(" <Alias id='%s' query='%s'/>\n", (const char *) cur.getKey(), aliases.mapToValue(&cur)->queryQueryName());
+        }
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieQuerySetManager(unsigned _channelNo, const char *_querySetName)
@@ -877,24 +904,14 @@ public:
         }
     }
 
-    virtual void getQueries(StringBuffer &reply) const
+    virtual void getQueries(StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
-        HashIterator elems(queries);
-        for (elems.first(); elems.isValid(); elems.next())
-        {
-            IMapping &cur = elems.query();
-            IQueryFactory *query = queries.mapToValue(&cur);
-            reply.appendf(" <Query id='%s'", query->queryQueryName());
-            if (query->suspended())
-                reply.append(" suspended='1'");
-            reply.append("/>\n");
-        }
-        HashIterator aliasIterator(aliases);
-        for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
-        {
-            IMapping &cur = aliasIterator.query();
-            reply.appendf(" <Alias id='%s' query='%s'/>\n", (const char *) cur.getKey(), aliases.mapToValue(&cur)->queryQueryName());
-        }
+        getQueryInfo(reply, false, logctx);
+    }
+
+    virtual void getAllQueryXrefInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    {
+        getQueryInfo(reply, true, logctx);
     }
 
     virtual IQueryFactory * lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
@@ -1183,10 +1200,10 @@ public:
             }
         }
     }
-    void getQueries(StringBuffer &reply) const
+    void getQueries(StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        serverManager->getQueries(reply);
+        serverManager->getQueries(reply, logctx);
     }
 protected:
     void reloadQueryManagers(CRoxieSlaveQuerySetManagerSet *newSlaveManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
@@ -1631,44 +1648,41 @@ private:
             {
                 // MORE - do nothing for now - possibly needed in the future - leave this so no exception is thrown
             }
-            else if (stricmp(queryName, "control:getAllFileNames")==0)
-            {
-                UNIMPLEMENTED;
-            }
-            else if (stricmp(queryName, "control:getAllQueryInfo")==0)
-            {
-                const char* id = control->queryProp("@id");
-                if (!id)
-                    throw MakeStringException(ROXIE_MISSING_PARAMS, "No query name specified");
-                UNIMPLEMENTED;
-            }
             else if (stricmp(queryName, "control:getClusterName")==0)
             {
                 reply.appendf("<clusterName id='%s'/>", roxieName.str());
-            }
-            else if (stricmp(queryName, "control:getFilesUsedByQuery")==0)
-            {
-                UNIMPLEMENTED;
-            }
-            else if (stricmp(queryName, "control:getFileUsageInfo")==0)
-            {
-                UNIMPLEMENTED;
             }
             else if (stricmp(queryName, "control:getKeyInfo")==0)
             {
                 reportInMemoryIndexStatistics(reply, control->queryProp("@id"), control->getPropInt("@count", 10));
             }
-            else if (stricmp(queryName, "control:getLibrariesUsedByQuery")==0)
+            else if (stricmp(queryName, "control:getQueryXrefInfo")==0)
             {
-                UNIMPLEMENTED;
-            }
-            else if (stricmp(queryName, "control:getQueriesUsingFile")==0)
-            {
-                UNIMPLEMENTED;
-            }
-            else if (stricmp(queryName, "control:getQueriesUsingFileList")==0)
-            {
-                UNIMPLEMENTED;
+                // Report on all files and libraries used by a query, set of queries, or all queries
+                Owned<IPropertyTreeIterator> ids = control->getElements("Query");
+                reply.append("<QueryInfo>\n");
+                if (ids->first())
+                {
+                    ForEach(*ids)
+                    {
+                        const char *id = ids->query().queryProp("@id");
+                        if (!id)
+                            throw MakeStringException(ROXIE_MISSING_PARAMS, "Query name missing");
+                        Owned<IQueryFactory> query = getQuery(id, logctx);
+                        if (!query)
+                            throw MakeStringException(ROXIE_MISSING_PARAMS, "Query %s not found", id);
+                        query->getQueryXrefInfo(reply, logctx);
+                    }
+                }
+                else
+                {
+                    ForEachItemIn(idx, allQueryPackages)
+                    {
+                        Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
+                        sm->getAllQueryXrefInfo(reply, logctx);
+                    }
+                }
+                reply.append("</QueryInfo>\n");
             }
             else if (stricmp(queryName, "control:getQuery")==0)
             {
@@ -1686,10 +1700,6 @@ private:
                 else
                     throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", id);
             }
-            else if (stricmp(queryName, "control:getQueriesUsingLibrary")==0)
-            {
-                UNIMPLEMENTED;
-            }
             else if (stricmp(queryName, "control:getQueryWarningTime")==0)
             {
                 const char *id = control->queryProp("Query/@id");
@@ -1701,10 +1711,6 @@ private:
                     unsigned warnLimit = f->getWarnTimeLimit();
                     reply.appendf("<QueryTimeWarning val='%d'/>", warnLimit);
                 }
-            }
-            else if (stricmp(queryName, "control:getSubFiles")==0)
-            {
-                UNIMPLEMENTED;
             }
             else if (stricmp(queryName, "control:getBuildVersion")==0)
             {
@@ -1879,7 +1885,7 @@ private:
                 ForEachItemIn(idx, allQueryPackages)
                 {
                     CRoxieQueryPackageManager &qpm = allQueryPackages.item(idx);
-                    qpm.getQueries(reply);
+                    qpm.getQueries(reply, logctx);
                 }
                 reply.append("</Queries>\n");
             }
