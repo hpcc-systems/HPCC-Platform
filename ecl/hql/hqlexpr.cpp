@@ -5606,6 +5606,7 @@ static bool isMany(IHqlExpression * expr)
     }
 }
 
+// Is this numeric expression evaluated to zero?
 bool isZero(IHqlExpression * expr)
 {
     IValue * value = expr->queryValue();
@@ -5631,6 +5632,49 @@ bool isZero(IHqlExpression * expr)
     }
     if (expr->getOperator() == no_translated)
         return isZero(expr->queryChild(0));
+    return false;
+}
+
+// Return -1 is constant is negative, 1 if positive, 0 if zero
+static int compareConstantZero(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_constant);
+    IValue * value = expr->queryValue();
+    // MORE: optimising this for int and real could save some cycles
+    Owned<IValue> zero = value->queryType()->castFrom(true, I64C(0));
+    return value->compare(zero);
+}
+
+// If it's at all possible (but not necessarily sure) that expr could be negative
+// Default is true (maybe). Use isNegative for a clear answer
+bool couldBeNegative(IHqlExpression * expr)
+{
+    ITypeInfo * type = expr->queryType();
+    if (!isNumericType(type))
+        return false;
+    if (!type->isSigned())
+        return false;
+    if (isCast(expr) && castPreservesValueAndOrder(expr))
+        return couldBeNegative(expr->queryChild(0));
+    if (expr->getOperator() == no_constant)
+        return (compareConstantZero(expr) == -1);
+
+    // Default is a conservative maybe
+    return true;
+}
+
+// If expr is negative for sure.
+// Default is false (not sure). Use couldBeNegative for possibilities
+bool isNegative(IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_constant)
+        return (compareConstantZero(expr) == -1);
+    if (!couldBeNegative(expr))
+        return false;
+    if (expr->getOperator() == no_translated)
+        return isNegative(expr->queryChild(0));
+
+    // When unsure, say no
     return false;
 }
 

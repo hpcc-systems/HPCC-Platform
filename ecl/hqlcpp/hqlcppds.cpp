@@ -2656,32 +2656,40 @@ void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IH
 {
     assertex(expr->getOperator() == no_dataset_from_transform);
     IHqlExpression * count = expr->queryChild(0);
-    if (isZero(count))
+    if (isZero(count) || isNegative(count))
         return;
 
     IHqlExpression * transform = expr->queryChild(1);
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
-    BuildCtx loopctx(ctx);
+    // If it is at all possible that it could be negative, we must test before producing rows
+    CHqlBoundExpr boundCount;
+    buildSimpleExpr(ctx, count, boundCount);
+    BuildCtx subctx(ctx);
+    if (couldBeNegative(count))
+    {
+        OwnedHqlExpr zero = createConstant(0, count->getType());
+        OwnedHqlExpr ifTest = createValue(no_gt, makeBoolType(), boundCount.getTranslatedExpr(), LINK(zero));
+        buildFilter(subctx, ifTest);
+    }
+
     // loopVar = 1;
-    OwnedHqlExpr loopVar = loopctx.getTempDeclare(counterType, NULL);
+    OwnedHqlExpr loopVar = subctx.getTempDeclare(counterType, NULL);
     OwnedHqlExpr one = getSizetConstant(1);
-    buildAssignToTemp(loopctx, loopVar, one);
+    buildAssignToTemp(subctx, loopVar, one);
 
     // for(; loopVar <= maxRows; loopVar++)
-    CHqlBoundExpr boundCount;
-    buildSimpleExpr(loopctx, count, boundCount);
     OwnedHqlExpr loopTest = createValue(no_le, makeBoolType(), LINK(loopVar), LINK(boundCount.expr));
     OwnedHqlExpr inc = createValue(no_postinc, loopVar->getType(), LINK(loopVar));
-    loopctx.addLoop(loopTest, inc, false);
+    subctx.addLoop(loopTest, inc, false);
     if (counter)
-        loopctx.associateExpr(counter, loopVar);
+        subctx.associateExpr(counter, loopVar);
 
     OwnedHqlExpr rowValue = createRow(no_createrow, LINK(transform));
-    BoundRow * targetRow = target->buildCreateRow(loopctx);
-    Owned<IReferenceSelector> targetRef = buildActiveRow(loopctx, targetRow->querySelector());
-    buildRowAssign(loopctx, targetRef, rowValue);
-    target->finishRow(loopctx, targetRow);
+    BoundRow * targetRow = target->buildCreateRow(subctx);
+    Owned<IReferenceSelector> targetRef = buildActiveRow(subctx, targetRow->querySelector());
+    buildRowAssign(subctx, targetRef, rowValue);
+    target->finishRow(subctx, targetRow);
 }
 
 class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
