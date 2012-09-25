@@ -215,7 +215,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -230,7 +231,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg" />
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -368,7 +370,8 @@
             logical entries in the Dali Server’s Distributed File
             System.</para>
 
-            <para><graphic fileref="images/DHMan-3.jpg" scalefit="1" /></para>
+            <para><graphic fileref="images/DHMan-3.jpg"
+            vendor="eclwatchSS" /></para>
 
             <para>From this page, you can despray or copy any file.</para>
           </listitem>
@@ -454,7 +457,7 @@
 
               <para>The <emphasis role="bold">DFU Workunit</emphasis>
               displays.<graphic fileref="images/DHMan-4.jpg"
-              scalefit="1" /></para>
+              vendor="eclwatchSS" /></para>
             </listitem>
 
             <listitem>
@@ -466,10 +469,10 @@
               <emphasis role="bold">View Progress</emphasis> hyperlink to see
               a progress indicator.</para>
 
-              <para><graphic fileref="images/DHMan-5.jpg" scalefit="1" />The
-              Progress window shows a green progress bar indicating the
-              percentage of completion, as well as other information related
-              to the operation.</para>
+              <para><graphic fileref="images/DHMan-5.jpg"
+              vendor="eclwatchSS" />The Progress window shows a green progress
+              bar indicating the percentage of completion, as well as other
+              information related to the operation.</para>
 
               <para>If a job fails, information related to the cause of the
               failure also displays.</para>
