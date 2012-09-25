@@ -377,8 +377,15 @@ void Thread::startRelease()
         ERRLOG("Running threads:\n %s",s.str());
         throw MakeOsException(status);
     }
-    if (!starting.wait(1000*10))
-        throw MakeStringException(-1, "Thread::start(%s) failed",getName());
+    unsigned retryCount = 10;
+    loop
+    {
+        if (starting.wait(1000*10))
+            break;
+        else if (0 == --retryCount)
+            throw MakeStringException(-1, "Thread::start(%s) failed", getName());
+        WARNLOG("Thread::start(%s) stalled, waiting to start, retrying", getName());
+    }
 #endif
     alive = true;
     if (prioritydelta)
