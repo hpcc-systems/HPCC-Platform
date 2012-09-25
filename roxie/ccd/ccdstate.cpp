@@ -152,12 +152,12 @@ public:
  *  - once it has loaded, mark it active, and mark the previous one as inactive
  *  - Once sure no queries in flight, unload the previous one
  *
- * Each Roxie will load all PackageMaps that are in any PackageSet whose id matches the cluster name.
+ * Each Roxie will load all PackageMaps that are in any PackageSet whose @process attribute matches the cluster name.
  *
  * All package information is stored in Dali (and cached locally)
  *
  * <PackageSets>
- *  <PackageSet id='*'>                                    # use this packageset for all roxies (same as omitting id)
+ *  <PackageSet id = 'ps1' process='*'>                                # use this packageset for all roxies (same as omitting process)
  *   <PackageMap id='pm1b' querySet='qs1' active='true'/>  # Use the PackageMap pm1b for QuerySet qs1 and make it active
  *   <PackageMap id='pm1a' querySet='qs1' active='false'/> # Use the PackageMap pm1a for QuerySet qs1 but don't make it active
  *   <PackageMap id='pm2' querySet='dev*' active='true'/>  # Use the PackageMap pm1a for all QuerySets with names starting dev and make it active
@@ -2317,9 +2317,14 @@ private:
         ForEach(*packageSets)
         {
             IPropertyTree &ps = packageSets->query();
-            const char *packageSetId = ps.queryProp("@id");
-            if (!packageSetId || WildMatch(roxieName, packageSetId, false))
+            const char *packageSetSpec = ps.queryProp("@process");
+            if (!packageSetSpec || WildMatch(roxieName, packageSetSpec, false))
             {
+                if (traceLevel)
+                {
+                    DBGLOG("Loading package set %s, process spec %s", ps.queryProp("@id") ?  ps.queryProp("@id") : "<no-id>",
+                                                                      packageSetSpec ? packageSetSpec : "<*>");
+                }
                 Owned<IPropertyTreeIterator> packageMaps = ps.getElements("PackageMap");
                 ForEach(*packageMaps)
                 {
