@@ -614,6 +614,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
                 keyBuf = expandKeys(keys,keyLen,expandedSize,quick);
             }
         }
+        assertex(keyBuf||rowexp.get());
     }
     else
     {
@@ -708,6 +709,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
                 }
                 expandedSize = keyBufMb.length();
                 keyBuf = (char *)keyBufMb.detach();
+                assertex(keyBuf);
             }
             else {
                 keyBuf = NULL;
@@ -722,7 +724,6 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
             memcpy(keyBuf, keys, hdr.keyBytes + sizeof( __int64 ));
         }
     }
-    assertex(keyBuf||rowexp.get());
 }
 
 offset_t CJHTreeNode::prevNodeFpos() const
