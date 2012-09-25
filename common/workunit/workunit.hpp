@@ -1207,7 +1207,7 @@ enum WUQueryActivationOptions
 };
 
 
-extern WORKUNIT_API IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll);       // result not linked
+extern WORKUNIT_API IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library);       // result not linked
 extern WORKUNIT_API void removeNamedQuery(IPropertyTree * queryRegistry, const char * id);
 extern WORKUNIT_API void removeWuidFromNamedQueries(IPropertyTree * queryRegistry, const char * wuid);
 extern WORKUNIT_API void removeDllFromNamedQueries(IPropertyTree * queryRegistry, const char * dll);
