@@ -123,7 +123,7 @@
             {
                 pos = value.indexOf('@');
                 thorLogDate = value.substring(pos+1);
-                numberOfSlaves = value.substring(0, pos);
+                numberOfSlaves = parseInt(value.substring(0, pos));
                 pos1 = thorLogDate.indexOf('@');
                 thorProcess = thorLogDate.substring(pos1+1);
                 thorLogDate = thorLogDate.substring(0, pos1);
@@ -135,7 +135,7 @@
                 if (el == undefined)
                     return;
 
-                if (numberOfSlaves == '1')
+                if (numberOfSlaves == 1)
                 {
                     el.innerText = '';
                     document.getElementById('SlaveNum').disabled=true;
@@ -152,7 +152,7 @@
             {
                 if (document.getElementById('NumberSlaves') != undefined)
                 {
-                    var slaveNum = document.getElementById('SlaveNum').value;
+                    var slaveNum = parseInt(document.getElementById('SlaveNum').value);
                     if (slaveNum > numberOfSlaves)
                     {
                         alert('Slave Number cannot be greater than ' + numberOfSlaves);

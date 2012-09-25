@@ -1451,6 +1451,7 @@ public:
         const char *quotes = NULL;
         const char *separators = NULL;
         const char *terminators = NULL;
+        const char *escapes = NULL;
         CSVSplitter csvSplitter;
         if (datafile)
         {
@@ -1460,9 +1461,10 @@ public:
                 quotes = options->queryProp("@csvQuote");
                 separators = options->queryProp("@csvSeparate");
                 terminators = options->queryProp("@csvTerminate");
+                escapes = options->queryProp("@csvEscape");
             }
         }
-        csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators);
+        csvSplitter.init(helper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
         while (!aborted)
         {
             // MORE - there are rumours of a  csvSplitter that operates on a stream... if/when it exists, this should use it
@@ -4382,6 +4384,7 @@ public:
         const char * quotes = NULL;
         const char * separators = NULL;
         const char * terminators = NULL;
+        const char * escapes = NULL;
 
         const IResolvedFile *fileInfo = varFileInfo ? varFileInfo : factory->datafile;
         if (fileInfo)
@@ -4392,12 +4395,13 @@ public:
                 quotes = options->queryProp("@csvQuote");
                 separators = options->queryProp("@csvSeparate");
                 terminators = options->queryProp("@csvTerminate");
+                escapes = options->queryProp("@csvEscape");
             }
         }
 
         IHThorCsvFetchArg *h = (IHThorCsvFetchArg *) helper;
         ICsvParameters *csvInfo = h->queryCsvParameters();
-        csvSplitter.init(_maxColumns, csvInfo, quotes, separators, terminators);
+        csvSplitter.init(_maxColumns, csvInfo, quotes, separators, terminators, escapes);
     }
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)

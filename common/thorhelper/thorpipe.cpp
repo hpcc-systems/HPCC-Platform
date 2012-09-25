@@ -163,7 +163,8 @@ public:
         const char * quotes = NULL;
         const char * separators = NULL;
         const char * terminators = NULL;
-        csvSplitter.init(csvTransformer->getMaxColumns(), csvInfo, quotes, separators, terminators);
+        const char * escapes = NULL;
+        csvSplitter.init(csvTransformer->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
     }
 
     virtual const void * next()

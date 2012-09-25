@@ -41,8 +41,9 @@ public:
     void addQuote(const char * text);
     void addSeparator(const char * text);
     void addTerminator(const char * text);
+    void addEscape(const char * text);
 
-    void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators);
+    void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes);
     void reset();
     size32_t splitLine(size32_t maxLen, const byte * start);
 
@@ -50,10 +51,10 @@ public:
     inline const byte * * queryData() { return data; }
 
 protected:
-    void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip);
+    void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape);
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned            maxColumns;
     StringMatcher       matcher;
     unsigned            numQuotes;
@@ -83,6 +84,7 @@ protected:
     StringAttr separator;
     StringAttr terminator;
     StringAttr quote;
+    StringAttr escape;
     const char * prefix;
     bool oldOutputFormat;
 };

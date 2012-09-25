@@ -341,6 +341,7 @@ extern HQL_API _ATOM tempAtom;
 extern HQL_API _ATOM templateAtom;
 extern HQL_API _ATOM terminateAtom;
 extern HQL_API _ATOM terminatorAtom;
+extern HQL_API _ATOM escapeAtom;
 extern HQL_API _ATOM thorAtom;
 extern HQL_API _ATOM thresholdAtom;
 extern HQL_API _ATOM timeoutAtom;

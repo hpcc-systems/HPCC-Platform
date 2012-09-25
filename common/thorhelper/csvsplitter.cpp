@@ -62,6 +62,10 @@ void CSVSplitter::addTerminator(const char * text)
     matcher.addEntry(text, TERMINATOR);
 }
 
+void CSVSplitter::addEscape(const char * text)
+{
+    matcher.addEntry(text, ESCAPE);
+}
 
 void CSVSplitter::reset()
 {
@@ -76,7 +80,7 @@ void CSVSplitter::reset()
     maxCsvSize = 0;
 }
 
-void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators)
+void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes)
 {
     reset();
     maxCsvSize = csvInfo->queryMaxSize();
@@ -127,6 +131,19 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
         }
     }
 
+    if (dfsEscapes && (flags & ICsvParameters::defaultEscape))
+        addActionList(matcher, dfsEscapes, ESCAPE);
+    else
+    {
+        for (idx=0;;idx++)
+        {
+            const char * text = csvInfo->queryEscape(idx);
+            if (!text)
+                break;
+            addEscape(text);
+        }
+    }
+
     //MORE Should this be configurable??
     if (!(flags & ICsvParameters::preserveWhitespace))
     {
@@ -135,8 +152,7 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     }
 }
 
-
-void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip)
+void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape)
 {
     if (quoteToStrip)
     {
@@ -190,6 +206,24 @@ done:
         data[curColumn] = start;
         lengths[curColumn] = (size32_t)(end-start);
     }
+    // Un-escape string, if necessary. MORE: What about Unicode?
+    if (unescape)
+    {
+        byte * cur = const_cast<byte*>(data[curColumn]);
+        byte * end = cur + lengths[curColumn];
+        for (; cur <= end; cur++)
+        {
+            unsigned matchLen;
+            unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+            if ((match & 255) == ESCAPE)
+            {
+                unsigned long restLen = end-cur+matchLen;
+                memmove(cur, cur+matchLen, restLen);
+                cur++; end--;         // Assumes ASCii
+                lengths[curColumn]--; // Assumes ASCii
+            }
+        }
+    }
 }
 
 size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
@@ -201,6 +235,7 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
     const byte * end = start + maxLength;
     const byte * firstGood = start;
     const byte * lastGood = start;
+    bool unescape = false;
     curUnquoted = unquotedBuffer;
 
     while (cur != end)
@@ -226,7 +261,8 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
         case SEPARATOR:
             if ((curColumn < maxColumns) && (quote == 0))
             {
-                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, unescape);
+                unescape = false;
                 quoteToStrip = 0;
                 curColumn++;
                 firstGood = cur + matchLen;
@@ -236,7 +272,8 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
         case TERMINATOR:
             if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
             {
-                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, unescape);
+                unescape = false;
                 while (++curColumn < maxColumns)
                     lengths[curColumn] = 0;
                 return (size32_t)(cur + matchLen - start);
@@ -279,11 +316,15 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
                     lastGood = cur+matchLen;
             }
             break;
+        case ESCAPE:
+            unescape = true;
+            lastGood = cur+matchLen+1;
+            cur++; // MORE: This assumes next char is ASCii
         }
         cur += matchLen;
     }
 
-    setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+    setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, unescape);
     while (++curColumn < maxColumns)
         lengths[curColumn] = 0;
     return (size32_t)(end - start);
@@ -310,6 +351,7 @@ void CSVOutputStream::init(ICsvParameters * args, bool _oldOutputFormat)
     quote.set(args->queryQuote(0));
     separator.set(args->querySeparator(0));
     terminator.set(args->queryTerminator(0));
+    escape.set(args->queryEscape(0));
     oldOutputFormat = _oldOutputFormat||!quote.length();
 }
 
