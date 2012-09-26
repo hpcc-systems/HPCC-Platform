@@ -1375,7 +1375,7 @@ public:
 
     virtual IRoxieLibraryLookupContext *getLibraryLookupContext(const char *querySet) const
     {
-        CriticalBlock b(packageCrit);
+        ReadLockBlock b(packageCrit);
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
@@ -1387,7 +1387,7 @@ public:
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
     {
-        CriticalBlock b(packageCrit);
+        ReadLockBlock b(packageCrit);
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
@@ -1411,7 +1411,7 @@ private:
     Owned<const IQueryDll> standAloneDll;
     Owned<CRoxieDebugSessionManager> debugSessionManager;
     CIArrayOf<CRoxieQueryPackageManager> allQueryPackages;
-    mutable CriticalSection packageCrit;
+    mutable ReadWriteLock packageCrit;
     InterruptableSemaphore controlSem;
     IArrayOf<IDaliPackageWatcher> notifiers;
     Owned<IRoxieDaliHelper> daliHelper;
@@ -1419,7 +1419,7 @@ private:
 
     void reload()
     {
-        CriticalBlock b(packageCrit);
+        WriteLockBlock b(packageCrit);
         if (standAloneDll)
             loadStandaloneQuery(standAloneDll, numChannels, "roxie");
         else
@@ -1433,7 +1433,7 @@ private:
 
     void _doControlMessage(IPropertyTree *control, StringBuffer &reply, const IRoxieContextLogger &logctx)
     {
-        CriticalBlock b(packageCrit); // Some of the control activities below need a lock
+        ReadLockBlock b(packageCrit); // Some of the control activities below need a lock
         const char *queryName = control->queryName();
         logctx.CTXLOG("doControlMessage - %s", queryName);
         assertex(memicmp(queryName, "control:", 8) == 0);
@@ -2291,7 +2291,7 @@ private:
 
     void createQueryPackageManager(unsigned numChannels, const IPackageMap *packageMap, const char *querySet)
     {
-        // Called from reload inside critical block
+        // Called from reload inside write lock block
         Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageMap, querySet);
         qpm->load();
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
@@ -2300,7 +2300,7 @@ private:
 
     void createQueryPackageManagers(unsigned numChannels, const char *querySet)
     {
-        // Called from reload inside critical block
+        // Called from reload inside write lock block
         unsubscribe();
         // We want to kill the old packages, but not until we have created the new ones (i.e. at the end of this function)
         // So that the query/dll caching will work for anything that is not affected by the changes
@@ -2367,7 +2367,7 @@ private:
 
     void loadStandaloneQuery(const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet)
     {
-        // Called from reload inside critical block
+        // Called from reload inside write lock block
         Owned<IPropertyTree> standAloneDllTree;
         standAloneDllTree.setown(createPTree("Query"));
         standAloneDllTree->setProp("@id", "roxie");
