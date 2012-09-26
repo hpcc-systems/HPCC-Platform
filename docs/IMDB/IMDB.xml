@@ -31,7 +31,7 @@
       fictitious. Any similarity to actual persons, living or dead, is purely
       coincidental.</para>
 
-      <para />
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -296,7 +296,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -311,7 +312,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg" />
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -379,7 +381,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_01.jpg" />
+                    <imagedata fileref="images/IMDB_01.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -446,7 +449,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_02.jpg" />
+                    <imagedata fileref="images/IMDB_02.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -463,7 +467,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_03.jpg" />
+                    <imagedata fileref="images/IMDB_03.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -483,7 +488,8 @@ Blankline</programlisting></para>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/IMDB_03-1.jpg" />
+                  <imagedata fileref="images/IMDB_03-1.jpg"
+                             vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
             </figure>
@@ -511,7 +517,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_03-2.jpg" />
+                    <imagedata fileref="images/IMDB_03-2.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -523,7 +530,8 @@ Blankline</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_05.jpg" />
+                    <imagedata fileref="images/IMDB_05.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>

@@ -2079,9 +2079,9 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/AWS_21.jpg" />
+                  <imagedata fileref="images/AWS_21.jpg" vendor="eclwatchSS" />
 
-                  <!--CHeck this why does roxie display?***
+                  <!--Check this why does roxie display?***
 -->
                 </imageobject>
               </mediaobject>
@@ -2159,7 +2159,8 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/GS_1311.JPG" />
+                      <imagedata fileref="images/GS_1311.JPG"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -2559,7 +2560,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" scale="75" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -2575,7 +2577,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg" />
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -3059,7 +3062,8 @@ s3cmd --configure
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/AWS_ECLWatchNextSteps.jpg" />
+            <imagedata fileref="images/AWS_ECLWatchNextSteps.jpg"
+                       vendor="eclwatchSS" />
           </imageobject>
         </mediaobject>
       </figure></para>
