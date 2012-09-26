@@ -56,3 +56,12 @@ xRecord t3(idRecord l) := TRANSFORM
     SELF.ids := makeNegativeVarDs(l.id);
 END;
 output(PROJECT(nofold(ds3), t3(LEFT)));
+
+// Valid range, distributed (should not inline)
+makeDistributedDs(unsigned start) := dataset(10, transform(idRecord, self.id := start + counter), DISTRIBUTED);
+ds4 := dataset([0,1,2,3,5], idRecord);
+xRecord t4(idRecord l) := TRANSFORM
+    SELF.id := l.id;
+    SELF.ids := makeDistributedDs(l.id);
+END;
+output(PROJECT(nofold(ds4), t4(LEFT)));
