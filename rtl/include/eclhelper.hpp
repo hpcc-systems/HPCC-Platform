@@ -1914,14 +1914,15 @@ struct ICsvParameters
 {
     enum
     {
-        defaultQuote = 1,
-        defaultSeparate = 2,
-        defaultTerminate = 4,
-        hasUnicode = 8,
-        singleHeaderFooter = 16,
-        preserveWhitespace = 32,
-        manyHeaderFooter = 64,
-        defaultEscape = 128
+        defaultQuote =        0x0001,
+        defaultSeparate =     0x0002,
+        defaultTerminate =    0x0004,
+        hasUnicode =          0x0008,
+        singleHeaderFooter =  0x0010,
+        preserveWhitespace =  0x0020,
+        manyHeaderFooter =    0x0040,
+        defaultEscape =       0x0080,
+        supportsEscape =      0x0100, // MORE: deprecate on next major version
     }; // flags values
     virtual unsigned     getFlags() = 0;
     virtual bool         queryEBCDIC() = 0;

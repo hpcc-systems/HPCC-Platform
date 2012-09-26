@@ -9191,6 +9191,9 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     buildCsvListFunc(classctx, "queryEscape", escape, NULL);
 
     StringBuffer flags;
+    // Backward compatible option hasEscape should be deprecated in next major version
+    flags.append("|supportsEscape");
+    // Proper flags
     if (!queryProperty(quoteAtom, attrs))       flags.append("|defaultQuote");
     if (!queryProperty(separatorAtom, attrs))   flags.append("|defaultSeparate");
     if (!queryProperty(terminatorAtom, attrs))  flags.append("|defaultTerminate");

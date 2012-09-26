@@ -23,8 +23,8 @@ END;
 
 // Default is no escape
 orig := DATASET([{'this is an \\\'escaped\\\' string', 10, 'while this is not'}], rec);
-OUTPUT(orig, , 'regress::csv-escaped', OVERWRITE, CSV);
-escaped := DATASET('regress::csv-escaped', rec, CSV);
+OUTPUT(orig, , 'regress::csv-orig', OVERWRITE, CSV);
+escaped := DATASET('regress::csv-orig', rec, CSV);
 OUTPUT(escaped);
 
 // Standard escape
@@ -35,6 +35,42 @@ OUTPUT(escaped2);
 
 // Multi-char escape
 orig3 := DATASET([{'this is an -=-\'escaped-=-\' string', 10, 'while this is not'}], rec);
-OUTPUT(orig3, , 'regress::csv-escaped', OVERWRITE, CSV);
-escaped3 := DATASET('regress::csv-escaped', rec, CSV(ESCAPE('-=-')));
+OUTPUT(orig3, , 'regress::csv-escaped-multi', OVERWRITE, CSV);
+escaped3 := DATASET('regress::csv-escaped-multi', rec, CSV(ESCAPE('-=-')));
 OUTPUT(escaped3);
+
+// Escape the escape
+orig4 := DATASET([{'escape the \\\\ escape', 10, 'escape at the end \\\\'}], rec);
+OUTPUT(orig4, , 'regress::csv-escaped-escape', OVERWRITE, CSV);
+escaped4 := DATASET('regress::csv-escaped-escape', rec, CSV(ESCAPE('\\')));
+OUTPUT(escaped4);
+
+// Multi-escapes in a row
+orig5 := DATASET([{'multiple escapes \\\\\\\\ in a row', 10, 'multiple at end \\\\\\\\'}], rec);
+OUTPUT(orig5, , 'regress::csv-escaped-many', OVERWRITE, CSV);
+escaped5 := DATASET('regress::csv-escaped-many', rec, CSV(ESCAPE('\\')));
+OUTPUT(escaped5);
+
+// Many escapes
+orig6 := DATASET([{'many escapes like \\\'\\\' \\\'  \\\' and \\\\\\\\ \\\\ \\\\  \\\\  \\\\ escape', 10, 'escape at the end \\\''}], rec);
+OUTPUT(orig6, , 'regress::csv-escaped-many-more', OVERWRITE, CSV);
+escaped6 := DATASET('regress::csv-escaped-many-more', rec, CSV(ESCAPE('\\')));
+OUTPUT(escaped6);
+
+// Escape separator
+orig7 := DATASET([{'escaping \\, the \\,\\, \\, \\, separator', 10, 'escape at the end \\,'}], rec);
+OUTPUT(orig7, , 'regress::csv-escaped-separator', OVERWRITE, CSV);
+escaped7 := DATASET('regress::csv-escaped-separator', rec, CSV(ESCAPE('\\')));
+OUTPUT(escaped7);
+
+// Escape with quotes
+orig8 := DATASET([{'\'escaping\'\'the quote\'', 10, 'au naturel'}], rec);
+OUTPUT(orig8, , 'regress::csv-escaped-escaped', OVERWRITE, CSV);
+escaped8 := DATASET('regress::csv-escaped-escaped', rec, CSV);
+OUTPUT(escaped8);
+
+// Escape with quotes with ESCAPE()
+orig9 := DATASET([{'\'escaping\'\'the quote\'', 10, 'with user defined escape'}], rec);
+OUTPUT(orig9, , 'regress::csv-escaped-escaped2', OVERWRITE, CSV);
+escaped9 := DATASET('regress::csv-escaped-escaped2', rec, CSV(ESCAPE('\\')));
+OUTPUT(escaped9);
