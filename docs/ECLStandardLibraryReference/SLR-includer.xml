@@ -254,6 +254,10 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EqualIgnoreCase.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeFirstWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeLastWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeNthWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Extract.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Filter.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
