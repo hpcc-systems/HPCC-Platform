@@ -906,7 +906,7 @@ public:
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *_logicalname,IUserDescriptor *user);
+    bool removeEntry(const char *_logicalname,IUserDescriptor *user, unsigned timeoutms=INFINITE);
     bool removePhysical(const char *_logicalname,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
     bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user);
     void removeEmptyScope(const char *name);
@@ -920,7 +920,7 @@ public:
     IUserDescriptor* queryDefaultUser();
 
     bool doRemovePhysical(CDfsLogicalFileName &dlfn,const char *cluster,IMultiException *mexcept,IUserDescriptor *user,bool ignoresub);
-    bool doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub);
+    bool doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub, unsigned timeoutms=INFINITE);
     DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user);
     bool filePhysicalVerify(const char *lfn1,bool includecrc,StringBuffer &errstr,IUserDescriptor *user);
     void setDefaultPreferredClusters(const char *clusters);
@@ -3219,7 +3219,7 @@ public:
 #endif
     }
 
-    void detach()
+    void detach(unsigned timeoutms=INFINITE)
     {
         assert(proplockcount == 0 && "CDistributedFile detach: Some properties are still locked");
         CriticalBlock block (sect);
@@ -3237,7 +3237,7 @@ public:
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile::detach root.2",root);
 #endif
-        parent->removeEntry(lname.get(),udesc);
+        parent->removeEntry(lname.get(),udesc, timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *cluster,IMultiException *mexcept)
@@ -4648,7 +4648,7 @@ public:
         root.setown(conn->getRoot());
     }
 
-    void detach()
+    void detach(unsigned timeoutms=INFINITE)
     {   
         // will need more thought but this gives limited support for anon
         if (isAnon())
@@ -4664,7 +4664,7 @@ public:
         root.setown(createPTree(mb));
         StringAttr lname(logicalName.get());
         logicalName.clear();
-        parent->removeEntry(lname.get(),udesc);
+        parent->removeEntry(lname.get(),udesc, timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *clustername,IMultiException *mexcept)
@@ -6650,7 +6650,7 @@ bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IUserDesc
     return false;
 }
 
-bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub)
+bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub, unsigned timeoutms)
 {
     const char *logicalname = dlfn.get();
 #ifdef EXTRA_LOGGING
@@ -6659,7 +6659,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     if (!checkLogicalName(dlfn,user,true,true,true,"remove"))
         return false;
     StringBuffer reason;
-    if (cannotRemove(dlfn,user,reason,ignoresub,defaultTimeout)) {
+    if (cannotRemove(dlfn,user,reason,ignoresub,timeoutms)) {
 #ifdef EXTRA_LOGGING
         PROGLOG("CDistributedFileDirectory::doRemoveEntry(cannotRemove) %s",reason.str());
 #endif
@@ -6673,7 +6673,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     CFileConnectLock fconnlock;
     {
         IPropertyTree *froot=NULL;
-        if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",dlfn,bkind,true,false,defaultTimeout)) 
+        if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",dlfn,bkind,true,false,timeoutms))
             froot = fconnlock.queryRoot();
         if (!froot) {
 #ifdef EXTRA_LOGGING
@@ -6711,7 +6711,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
                     subfn.set(name);
                     CFileConnectLock fconnlock;
                     DfsXmlBranchKind subbkind;
-                    if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",subfn,subbkind,false,false,defaultTimeout)) { 
+                    if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",subfn,subbkind,false,false,timeoutms)) {
                         IPropertyTree *subfroot = fconnlock.queryRoot();
                         if (subfroot) {
                             if (!subfroot->removeProp(oquery.str()))
@@ -6725,7 +6725,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     fconnlock.remove();
     fconnlock.kill();
     try {
-        removeFileEmptyScope(dlfn,defaultTimeout);
+        removeFileEmptyScope(dlfn,timeoutms);
         removeAllFileRelationships(logicalname);
     }
     catch (IException *e) {
@@ -6736,11 +6736,11 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
 }
 
 
-bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user)
+bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms)
 {
     CDfsLogicalFileName dlfn;   
     dlfn.set(name);
-    return doRemoveEntry(dlfn,user,false);
+    return doRemoveEntry(dlfn,user,false, timeoutms);
 }
 
 void CDistributedFileDirectory::removeEmptyScope(const char *scope)

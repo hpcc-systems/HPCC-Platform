@@ -68,6 +68,8 @@ static const char* FEATURE_URL="DfuAccess";
 #define     COUNTBY_MONTH   "Month"
 #define     COUNTBY_DAY     "Day"
 
+#define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
+
 const int DESCRIPTION_DISPLAY_LENGTH = 12;
 const unsigned MAX_VIEWKEYFILE_ROWS = 1000;
 const unsigned MAX_KEY_ROWS = 20;
@@ -1231,7 +1233,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 if(!req.getNoDelete() && !df->querySuperFile())
                 {
                     Owned<IMultiException> pExceptionHandler = MakeMultiException();
-                    deleted = queryDistributedFileSystem().remove(df,cname.length()?cname.str():NULL,pExceptionHandler);
+                    deleted = queryDistributedFileSystem().remove(df,cname.length()?cname.str():NULL,pExceptionHandler, REMOVE_FILE_SDS_CONNECT_TIMEOUT);
                     StringBuffer errorStr;
                     pExceptionHandler->errorMessage(errorStr);
                     if (errorStr.length() > 0)
@@ -1248,7 +1250,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 else
                 {
                     df.clear(); 
-                    deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(),userdesc); // this can remove clusters also
+                    deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(),userdesc, REMOVE_FILE_SDS_CONNECT_TIMEOUT); // this can remove clusters also
                     if (deleted)
                         returnStr.appendf("<Message><Value>Detached File %s</Value></Message>", logicalFileName.str());
                 }
