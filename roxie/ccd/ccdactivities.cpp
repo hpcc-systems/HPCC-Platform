@@ -194,12 +194,15 @@ public:
     {
         CActivityFactory::getActivityMetrics(reply);
     }
-
     IRoxieSlaveContext *createSlaveContext(SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
         return queryFactory.createSlaveContext(logctx, packet);
     }
-
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+    }
     IRoxieSlaveContext *createChildQueries(IHThorArg *colocalArg, IArrayOf<IActivityGraph> &childGraphs, IProbeManager *_probeManager, SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
         if (!childQueries.length())
@@ -220,6 +223,8 @@ public:
         }
         return NULL;
     }
+
+    Owned<const IResolvedFile> datafile;
 
 protected:
 
@@ -908,7 +913,6 @@ class CRoxieDiskBaseActivityFactory : public CSlaveActivityFactory
 protected:
     Owned<IFileIOArray> fileArray;
     Owned<IInMemoryIndexManager> manager;
-    Owned<const IResolvedFile> datafile;
 
 public:
     CRoxieDiskBaseActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -2972,7 +2976,6 @@ ISlaveActivityFactory *createRoxieDiskGroupAggregateActivityFactory(IPropertyTre
 class CRoxieKeyedActivityFactory : public CSlaveActivityFactory
 {
 protected:
-    Owned<const IResolvedFile> datafile;
     Owned<IKeyArray> keyArray;
     Owned<TranslatorArray> layoutTranslators;
     Owned<IDefRecordMeta> activityMeta;
@@ -2986,7 +2989,6 @@ public:
     inline IKeyArray *queryKeyArray() const { return keyArray; }
     inline TranslatorArray *queryLayoutTranslators() const { return layoutTranslators; }
     inline IDefRecordMeta *queryActivityMeta() const { return activityMeta; }
-
 };
 
 class CRoxieIndexActivityFactory : public CRoxieKeyedActivityFactory
@@ -4199,7 +4201,6 @@ class CRoxieFetchActivityFactory : public CSlaveActivityFactory
 public:
     IMPLEMENT_IINTERFACE;
     Owned<IFileIOArray> fileArray;
-    Owned<const IResolvedFile> datafile;
 
     CRoxieFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
         : CSlaveActivityFactory(_graphNode, _subgraphId, _queryFactory, _helperFactory)
@@ -4890,7 +4891,6 @@ class CRoxieKeyedJoinFetchActivityFactory : public CSlaveActivityFactory
 {
 public:
     IMPLEMENT_IINTERFACE;
-    Owned<const IResolvedFile> datafile;
     Owned<IFileIOArray> fileArray;
 
     CRoxieKeyedJoinFetchActivityFactory(IPropertyTree &_graphNode, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory)
@@ -4921,7 +4921,6 @@ public:
     {
         return fileArray->getFilePart(partNo, _base);
     }
-
 };
 
 class CRoxieKeyedJoinFetchActivity : public CRoxieSlaveActivity
@@ -5235,7 +5234,6 @@ class CRoxieDummyActivityFactory : public CSlaveActivityFactory  // not a real a
 {
 protected:
     Owned<const IResolvedFile> indexfile;
-    Owned<const IResolvedFile> datafile;
     Owned<IKeyArray> keyArray;
     Owned<IFileIOArray> fileArray;
     TranslatorArray layoutTranslators;
