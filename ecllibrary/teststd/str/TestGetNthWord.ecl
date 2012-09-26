@@ -25,6 +25,7 @@ EXPORT TestGetNthWord := MODULE
     EXPORT Test16 := ASSERT(Str.GetNthWord(' abc def ', 2)+'!' = 'def!');
     EXPORT Test17 := ASSERT(Str.GetNthWord(' a b c   def ',3)+'!' = 'c!');
     EXPORT Test18 := ASSERT(Str.GetNthWord(' ,,,, ',1)+'!' = ',,,,!');
+    EXPORT Test19 := ASSERT(Str.GetNthWord(' a    b c   def ',3)+'!' = 'c!');
   END;
 
 END;

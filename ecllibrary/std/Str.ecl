@@ -338,6 +338,37 @@ EXPORT unsigned4 WordCount(string text) :=
 EXPORT string GetNthWord(string text, unsigned4 n) :=
     lib_stringlib.StringLib.StringGetNthWord(text, n);
 
+/**
+ * Returns everything except the first word from the string.  Words are separated by one or more whitespace characters.
+ * Whitespace before and after the first word is also removed.
+ *
+ * @param text          The string to be broken into words.
+ * @return              The string excluding the first word.
+ */
+
+EXPORT ExcludeFirstWord(STRING text) := lib_stringlib.Stringlib.StringExcludeNthWord(text, 1);
+
+/**
+ * Returns everything except the last word from the string.  Words are separated by one or more whitespace characters.
+ * Whitespace after a word is removed with the word and leading whitespace is removed with the first word.
+ *
+ * @param text          The string to be broken into words.
+ * @return              The string excluding the last word.
+ */
+
+EXPORT ExcludeLastWord(STRING text) := lib_stringlib.Stringlib.StringExcludeLastWord(text);
+
+/**
+ * Returns everything except the nth word from the string.  Words are separated by one or more whitespace characters.
+ * Whitespace after a word is removed with the word and leading whitespace is removed with the first word.
+ *
+ * @param text          The string to be broken into words.
+ * @param n             Which word should be returned from the function.
+ * @return              The string excluding the nth word.
+ */
+
+EXPORT ExcludeNthWord(STRING text, UNSIGNED2 n) := lib_stringlib.Stringlib.StringExcludeNthWord(text, n);
+
 /*
  * Converts the data value to a sequence of hex pairs.
  *
