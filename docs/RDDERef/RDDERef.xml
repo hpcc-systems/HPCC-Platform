@@ -543,14 +543,16 @@
             the icon, then select <emphasis role="bold">Copy</emphasis> from
             the pop-up menu.</para>
 
-            <para><graphic fileref="images/RDDE_DFUcopy.jpg" /></para>
+            <para><graphic fileref="images/RDDE_DFUcopy.jpg"
+            vendor="eclwatchSS" /></para>
           </listitem>
 
           <listitem>
             <para>Fill in <emphasis role="bold">Destination</emphasis> and
             <emphasis role="bold">Options</emphasis>information.</para>
 
-            <para><graphic fileref="images/RDDE_DFUcopy.2.jpg" /></para>
+            <para><graphic fileref="images/RDDE_DFUcopy.2.jpg"
+            vendor="eclwatchSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1048,7 +1050,8 @@
           </listitem>
         </itemizedlist>
 
-        <para><graphic fileref="images/RM-16.jpg" /></para>
+        <para><graphic fileref="images/RM-16.jpg"
+        vendor="eclwatchSS" /></para>
 
         <para>A page displays showing all machines of the type selected in the
         previous steps.</para>
@@ -1096,7 +1099,8 @@
             <para>The resulting page displays all the requested information,
             as shown below:</para>
 
-            <para><graphic fileref="images/RM-17.jpg" /></para>
+            <para><graphic fileref="images/RM-17.jpg"
+            vendor="eclwatchSS" /></para>
           </listitem>
         </itemizedlist>
 
@@ -1214,7 +1218,8 @@
 
             <para>Click on the <emphasis role="bold">Search Roxie Queries
             </emphasis>below <emphasis role="bold">Roxie
-            Queries</emphasis><graphic fileref="images/RM-18.jpg" /></para>
+            Queries</emphasis><graphic fileref="images/RM-18.jpg"
+            vendor="eclwatchSS" /></para>
           </listitem>
         </itemizedlist>
 
@@ -1253,7 +1258,8 @@
 
             <para>Rt-click to the <inlinegraphic fileref="images/RM-19.jpg" />
             button on the left of any query, then select the action from the
-            popup menu.<graphic fileref="images/RM-20.jpg" /></para>
+            popup menu.<graphic fileref="images/RM-20.jpg"
+            vendor="eclwatchSS" /></para>
           </listitem>
         </itemizedlist>
 
@@ -1306,7 +1312,7 @@
             <para><emphasis role="bold">ShowGVCGraph </emphasis>displays the
             execution query's graph (in GVC format).</para>
 
-            <graphic fileref="images/RM-20a.jpg" />
+            <graphic fileref="images/RM-20a.jpg" vendor="eclwatchSS" />
           </listitem>
         </itemizedlist>
 
@@ -1479,14 +1485,15 @@
 
         <para>The result displays in a similar manner as shown below:</para>
 
-        <para><graphic fileref="images/RM-28.jpg" scalefit="1" /></para>
+        <para><graphic fileref="images/RM-28.jpg"
+        vendor="eclwatchSS" /></para>
       </sect2>
     </sect1>
 
     <sect1 id="Roxie_Metrics">
       <title>Roxie Metrics<?dbfo-need height="5in"?></title>
 
-      <para><graphic fileref="images/RM-30.jpg" /></para>
+      <para><graphic fileref="images/RM-30.jpg" vendor="eclwatchSS" /></para>
 
       <para></para>
 
