@@ -161,36 +161,39 @@ public:
                         queryClusterComm().flush(mptag);
                         deserializeMPtag(msg, slaveMsgTag);
                         queryClusterComm().flush(slaveMsgTag);
-                        StringAttr wuid, graphName, soPath;
+                        StringBuffer soPath, soPathTail;
+                        StringAttr wuid, graphName, remoteSoPath;
                         msg.read(wuid);
                         msg.read(graphName);
-                        msg.read(soPath);
+                        msg.read(remoteSoPath);
                         bool sendSo;
                         msg.read(sendSo);
+
+                        RemoteFilename rfn;
+                        rfn.setPath(queryClusterGroup().queryNode(0).endpoint(), remoteSoPath);
+                        rfn.getTail(soPathTail);
                         if (sendSo)
                         {
                             size32_t size;
                             msg.read(size);
-                            Owned<IFile> iFile = createIFile(soPath);
+                            globals->getProp("@query_so_dir", soPath);
+                            if (soPath.length())
+                                addPathSepChar(soPath);
+                            soPath.append(soPathTail);
+                            const byte *queryPtr = msg.readDirect(size);
+                            Owned<IFile> iFile = createIFile(soPath.str());
                             try
                             {
-                                const void *soPtr = msg.readDirect(size);
-#ifdef _DEBUG
-                                if (!iFile->exists())
-#else
-                                if (1)
-#endif
-                                {
-                                    iFile->setCreateFlags(S_IRWXU);
-                                    Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
-                                    iFileIO->write(0, size, soPtr);
-                                }
+                                iFile->setCreateFlags(S_IRWXU);
+                                Owned<IFileIO> iFileIO = iFile->open(IFOwrite);
+                                iFileIO->write(0, size, queryPtr);
                             }
                             catch (IException *e)
                             {
                                 StringBuffer msg("Failed to save dll, cwd = ");
                                 char buf[255];
-                                if (!GetCurrentDirectory(sizeof(buf), buf)) {
+                                if (!GetCurrentDirectory(sizeof(buf), buf))
+                                {
                                     ERRLOG("CJobListener::main: Current directory path too big, setting it to null");
                                     buf[0] = 0;
                                 }
@@ -199,33 +202,29 @@ public:
                                 e->Release();
                             }
                             assertex(globals->getPropBool("Debug/@dllsToSlaves", true));
-                            querySoCache.add(soPath);
+                            querySoCache.add(soPath.str());
+                        }
+                        else if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                        {
+                            // i.e. should have previously been sent.
+                            globals->getProp("@query_so_dir", soPath);
+                            if (soPath.length())
+                                addPathSepChar(soPath);
+                            soPath.append(soPathTail);
+                            OwnedIFile iFile = createIFile(soPath.str());
+                            if (!iFile->exists())
+                            {
+                                WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
+                                StringBuffer rpath;
+                                rfn.getRemotePath(rpath);
+                                if (rfn.isLocal())
+                                    rfn.getLocalPath(rpath.clear());
+                                copyFile(soPath.str(), rpath.str());
+                            }
+                            querySoCache.add(soPath.str());
                         }
                         else
-                        {
-                            RemoteFilename rfn;
-                            SocketEndpoint masterEp = queryClusterGroup().queryNode(0).endpoint();
-                            masterEp.port = 0;
-                            rfn.setPath(masterEp, soPath);
-                            StringBuffer rpath;
-                            if (rfn.isLocal())
-                                rfn.getLocalPath(rpath);
-                            else
-                                rfn.getRemotePath(rpath);
-                            if (globals->getPropBool("Debug/@dllsToSlaves", true))
-                            {
-                                // i.e. should have previously been sent.
-                                OwnedIFile iFile = createIFile(soPath);
-                                if (!iFile->exists())
-                                {
-                                    WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.get());
-                                    copyFile(soPath, rpath.str());
-                                }
-                                querySoCache.add(soPath);
-                            }
-                            else
-                                soPath.set(rpath.str());
-                        }
+                            soPath.append(remoteSoPath);
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;
@@ -233,8 +232,8 @@ public:
 
                         PROGLOG("Started wuid=%s, user=%s, graph=%s\n", wuid.get(), user.str(), graphName.get());
 
-                        PROGLOG("Using query: %s", soPath.get());
-                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath, mptag, slaveMsgTag);
+                        PROGLOG("Using query: %s", soPath.str());
+                        Owned<CJobSlave> job = new CJobSlave(watchdog, workUnitInfo, graphName, soPath.str(), mptag, slaveMsgTag);
                         jobs.replace(*LINK(job));
 
                         Owned<IPropertyTree> deps = createPTree(msg);
