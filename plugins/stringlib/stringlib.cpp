@@ -74,6 +74,8 @@ const char * EclDefinition =
 "  unsigned integer4 EditDistanceV2(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2'; \n"
 "  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
+"  string StringExcludeLastWord(const string src) : c, pure,entrypoint='slStringExcludeLastWord'; \n"
+"  string StringExcludeNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringExcludeNthWord'; \n"
 "  unsigned4 StringWordCount(const string src) : c, pure,entrypoint='slStringWordCount'; \n"
 "  unsigned4 CountWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slCountWords'; \n"
 "  SET OF STRING SplitWords(const string src, const string _separator, BOOLEAN allow_blanks) : c, pure,entrypoint='slSplitWords'; \n"
@@ -1162,12 +1164,17 @@ STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen,
     return nsStringlib::editDistanceV3(leftLen, left, rightLen, right, radius) <= radius;
 }
 
+inline bool isWordSeparator(char x)
+{
+    return (unsigned char)x <= 0x20;
+}
+
 STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n)
 {
     const char* start = 0;
     const char* end = 0;
     // skip any leading white space
-    while (srcLen>0 && (unsigned char)*src<=0x20) {
+    while (srcLen>0 && isWordSeparator(*src)) {
         src++;
         srcLen--;
     }
@@ -1175,13 +1182,13 @@ STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * &
         start = src;
         n--;
         // go to the next white space
-        while (srcLen>0 && (unsigned char)*src>0x20) {
+        while (srcLen>0 && !isWordSeparator(*src)) {
             src++;
             srcLen--;
         }
         end = src;
         // skip white space again
-        while (srcLen>0 && (unsigned char)*src<=0x20) {
+        while (srcLen>0 && isWordSeparator(*src)) {
             src++;
             srcLen--;
         }
@@ -1201,7 +1208,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen,const ch
 {
     // skip any leading white space
     unsigned word_count = 0;
-    while (srcLen>0 && (unsigned char)*src<=0x20) {
+    while (srcLen>0 && isWordSeparator(*src)) {
         src++;
         srcLen--;
     }
@@ -1209,17 +1216,90 @@ STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen,const ch
     while (srcLen>0) {
         word_count++;
         // go to the next white space
-        while (srcLen>0 && (unsigned char)*src>0x20) {
+        while (srcLen>0 && !isWordSeparator(*src)) {
             src++;
             srcLen--;
         }
         // skip white space again
-        while (srcLen>0 && (unsigned char)*src<=0x20) {
+        while (srcLen>0 && isWordSeparator(*src)) {
             src++;
             srcLen--;
         }
     }
     return word_count;
+}
+
+STRINGLIB_API void STRINGLIB_CALL slStringExcludeLastWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src)
+{
+    //Remove first word also removes leading whitespace, otherwise just remove trailing whitespace
+    unsigned idx = 0;
+    unsigned startLast = 0;
+    while (idx < srcLen && isWordSeparator(src[idx]))
+        idx++;
+
+    for (;;)
+    {
+        while (idx < srcLen && !isWordSeparator(src[idx]))
+            idx++;
+
+        while (idx < srcLen && isWordSeparator(src[idx]))
+            idx++;
+
+        if (idx == srcLen)
+            break;
+
+        startLast = idx;
+    }
+
+    unsigned len = startLast;
+    tgtLen = len;
+    if (len)
+    {
+        tgt = (char *)CTXMALLOC(parentCtx, len);
+        memcpy(tgt,src,len);
+    }
+    else
+        tgt = NULL;
+}
+
+STRINGLIB_API void STRINGLIB_CALL slStringExcludeNthWord(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n)
+{
+    unsigned idx = 0;
+    unsigned startLast = 0;
+    while (idx < srcLen && isWordSeparator(src[idx]))
+        idx++;
+
+    unsigned matchIndex = 0;
+    //Remove first word also removes leading whitespace, otherwise just remove trailing whitespace
+    //No matching words returns a blank string
+    if (idx != srcLen)
+    {
+        for (;;)
+        {
+            while (idx < srcLen && !isWordSeparator(src[idx]))
+                idx++;
+
+            while (idx < srcLen && isWordSeparator(src[idx]))
+                idx++;
+
+            if (++matchIndex == n)
+                break;
+            startLast = idx;
+            if (idx == srcLen)
+                break;
+        }
+    }
+
+    unsigned len = startLast + (srcLen - idx);
+    tgtLen = len;
+    if (len)
+    {
+        tgt = (char *)CTXMALLOC(parentCtx, len);
+        memcpy(tgt,src,startLast);
+        memcpy(tgt+startLast,src+idx,(srcLen - idx));
+    }
+    else
+        tgt = NULL;
 }
 
 //--------------------------------------------------------------------------------------------------------------------
