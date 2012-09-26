@@ -8865,7 +8865,7 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
     }
 }
 
-IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll)
+IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library)
 {
     StringBuffer lcName(name);
     lcName.toLowerCase();
@@ -8893,6 +8893,8 @@ IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, 
     newEntry->setProp("@dll", dll);
     newEntry->setProp("@id", id);
     newEntry->setPropInt("@seq", seq);
+    if (library)
+        newEntry->setPropBool("@isLibrary", true);
     return queryRegistry->addPropTree("Query", newEntry);
 }
 
@@ -9167,7 +9169,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str());
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit));
     newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();

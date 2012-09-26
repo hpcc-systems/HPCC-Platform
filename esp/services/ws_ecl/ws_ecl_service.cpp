@@ -328,7 +328,7 @@ void CWsEclBinding::getQueryNames(IPropertyTree* settree, const char *id, const 
 
     VStringBuffer xpath("Query[@id='%s']", id);
     IPropertyTree *query = settree->queryPropTree(xpath.str());
-    if (query->getPropBool("@suspended"))
+    if (query->getPropBool("@isLibrary") || query->getPropBool("@suspended"))
         return;
 
     if (!qname || !*qname)
@@ -362,7 +362,10 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
         {
             Owned<IPropertyTreeIterator> iter = settree->getElements("Query");
             ForEach(*iter)
-                addQueryNavLink(data, &iter->query(), setname);
+            {
+                if (!iter->query().getPropBool("@isLibrary"))
+                    addQueryNavLink(data, &iter->query(), setname);
+            }
         }
         else
         {

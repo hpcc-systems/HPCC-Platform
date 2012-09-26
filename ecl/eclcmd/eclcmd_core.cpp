@@ -282,7 +282,7 @@ public:
         }
         if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())
         {
-            fprintf(stderr, "\nCluster must be specified when deploying from ECL Source or Archive\n");
+            fprintf(stderr, "\nTarget must be specified when deploying from ECL Source or Archive\n");
             return false;
         }
         return true;
@@ -400,7 +400,7 @@ public:
         {
             if (optTargetCluster.isEmpty())
             {
-                fprintf(stderr, "\nCluster must be specified when publishing ECL Text or Archive\n");
+                fprintf(stderr, "\nTarget must be specified when publishing ECL Text or Archive\n");
                 return false;
             }
         }
@@ -563,7 +563,7 @@ public:
         {
             if (optTargetCluster.isEmpty())
             {
-                fprintf(stderr, "\nCluster must be specified when running ECL Text or Archive\n");
+                fprintf(stderr, "\nTarget must be specified when running ECL Text or Archive\n");
                 return false;
             }
         }
