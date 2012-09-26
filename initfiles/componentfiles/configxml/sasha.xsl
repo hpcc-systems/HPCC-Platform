@@ -201,6 +201,9 @@
                       <xsl:with-param name="val" select="@xrefEclWatchProvider"/>
                    </xsl:call-template>
                 </xsl:attribute>
+                <xsl:attribute name="memoryLimit">
+                   <xsl:value-of select="@memoryLimit"/>
+                </xsl:attribute>
             </xsl:element>
             <xsl:element name="DfuExpiry">
                 <xsl:attribute name="interval">
