@@ -17691,7 +17691,7 @@ public:
             left = input->nextInGroup();
             matchedLeft = false;
             countForLeft = keepLimit;
-            if((left == NULL))
+            if(left == NULL)
             {
                 eos = true;
                 return NULL;
@@ -21691,7 +21691,7 @@ public:
     {
         Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
         unsigned flags = indexHelper->getFlags();
-        sorted = (flags & TIRsorted) != 0;
+        sorted = (flags & TIRunsorted) == 0;
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         rtlDataAttr indexLayoutMeta;
         size32_t indexLayoutSize;
