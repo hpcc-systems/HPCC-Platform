@@ -349,7 +349,29 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>--wait</entry>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
 
                   <entry>Maximum time to wait for cluster finish
                   updating</entry>
@@ -612,7 +634,7 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
-                  <entry>--wait</entry>
+                  <entry>--wait=&lt;sec&gt;</entry>
 
                   <entry>Maximum time to wait for cluster finish updating (in
                   ms)</entry>
@@ -1048,10 +1070,155 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>--wait</entry>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
+                </row>
+
+                <row>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
 
                   <entry>Maximum time to wait for cluster finish updating (in
                   ms)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclqueriescopy" role="brk">
+        <title>ecl queries config</title>
+
+        <para><emphasis role="bold">ecl queries config &lt;target&gt;
+        &lt;queryid&gt; [options]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries config thor findperson --wait=1000
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries config</entry>
+
+                  <entry>Updates query configuration values</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>config</entry>
+
+                  <entry>Set or update query configuration values</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The name of the target queryset</entry>
+                </row>
+
+                <row>
+                  <entry>queryid</entry>
+
+                  <entry>The name of the query</entry>
+                </row>
+
+                <row>
+                  <entry> --no-reload </entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
+                </row>
+
+                <row>
+                  <entry>--timeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query timeLimit configuration
+                  </entry>
+                </row>
+
+                <row>
+                  <entry>--warnTimeLimit=&lt;sec&gt;</entry>
+
+                  <entry>Value to set for query warnTimeLimit configuration
+                  </entry>
+                </row>
+
+                <row>
+                  <entry> --memoryLimit=&lt;mem&gt;</entry>
+
+                  <entry>Value to set for query memoryLimit configuration.
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T, etc.
+                  </entry>
                 </row>
 
                 <row>
