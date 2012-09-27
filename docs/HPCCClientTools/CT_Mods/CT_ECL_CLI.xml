@@ -1133,7 +1133,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
           </informaltable></para>
       </sect2>
 
-      <sect2 id="eclqueriescopy" role="brk">
+      <sect2 id="eclqueriesconfig" role="brk">
         <title>ecl queries config</title>
 
         <para><emphasis role="bold">ecl queries config &lt;target&gt;
@@ -1822,6 +1822,115 @@ ecl package list --cluster=roxie
                   <entry>The name of the cluster from which to list
                   information. (Specify either --cluster or
                   packageName)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address of ESP server running eclwatch
+                  services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie attach</title>
+
+        <para><emphasis role="bold">ecl roxie &lt;action&gt;
+        &lt;processCluster&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie attach myroxie
+ecl roxie detach myroxie
+</programlisting>
+
+        <para>Sends commands to attach, detach, check, or reload a Roxie
+        cluster. </para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie</entry>
+
+                  <entry>Calls the command to execute an action</entry>
+                </row>
+
+                <row>
+                  <entry>processCluster</entry>
+
+                  <entry>the name of the cluster's process</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>attach</entry>
+
+                  <entry>Attach or reattach a Roxie cluster to Dali</entry>
+                </row>
+
+                <row>
+                  <entry>detach</entry>
+
+                  <entry>Detach a Roxie cluster from Dali</entry>
+                </row>
+
+                <row>
+                  <entry>check</entry>
+
+                  <entry>Verifies the Roxie nodes have the same state</entry>
+                </row>
+
+                <row>
+                  <entry>reload</entry>
+
+                  <entry>Reloads the queries on a Roxie process cluster.
+                  </entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--wait=&lt;sec&gt;</entry>
+
+                  <entry>Maximum time to wait for cluster finish updating (in
+                  ms)</entry>
                 </row>
 
                 <row>
