@@ -919,6 +919,12 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
     var form = top.window.document.forms['treeForm'];
     top.document.startWait(document);
+
+    if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer"))
+      bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value?\n\n(If you are unsure select 'Ok')");
+    else
+      bUpdateFilesBasedn = false;
+
     var xmlArgs = argsToXml(category, params, attrName, oldValue, newValue, recordIndex + 1, record.getData(column.key + '_onChange'));
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/SaveSetting', {
       success: function(o) {
@@ -1019,6 +1025,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
               doPageRefresh();
             }
           }
+          top.document.navDT.clickCurrentSelOrName(top.document.navDT); // refresh
         } else {
           alert(r.replyText);
           callback();
@@ -1033,7 +1040,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
       },
       scope: this
     },
-    top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlArgs);
+    top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlArgs + '&bUpdateFilesBasedn='  + bUpdateFilesBasedn);
   };
 
   if (typeof (caller.editors) === 'undefined') {
