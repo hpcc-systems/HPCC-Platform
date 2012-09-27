@@ -1067,6 +1067,7 @@ enum
     TIRdynamicfilename  = 0x00002000,
     TIRunfilteredtransform = 0x00004000,
     TIRorderedmerge     = 0x00008000,
+    TIRunsorted         = 0x00010000,
 };
 
 //flags for thor index write
