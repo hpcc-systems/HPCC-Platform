@@ -1450,7 +1450,7 @@ private:
 
     void _doControlMessage(IPropertyTree *control, StringBuffer &reply, const IRoxieContextLogger &logctx)
     {
-        ReadLockBlock b(packageCrit); // Some of the control activities below need a lock
+        ReadLockBlock readBlock(packageCrit); // Some of the control activities below need a lock
         const char *queryName = control->queryName();
         logctx.CTXLOG("doControlMessage - %s", queryName);
         assertex(memicmp(queryName, "control:", 8) == 0);
@@ -1984,6 +1984,7 @@ private:
         case 'R':
             if (stricmp(queryName, "control:reload")==0)
             {
+                readBlock.clear();
                 reload();
                 if (daliHelper && daliHelper->connected())
                     reply.appendf("<Dali connected='1'/>");
