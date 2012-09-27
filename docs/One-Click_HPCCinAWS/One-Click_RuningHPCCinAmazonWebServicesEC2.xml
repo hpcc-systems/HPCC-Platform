@@ -690,7 +690,8 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/GS_1311.JPG" />
+                      <imagedata fileref="images/GS_1311.JPG"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -1089,7 +1090,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" scale="75" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1105,7 +1107,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg" />
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1164,7 +1167,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_01.jpg" />
+                    <imagedata fileref="images/IMDB_01.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1231,7 +1235,7 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/VM1000.jpg" />
+                    <imagedata fileref="images/VM1000.jpg" vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1248,7 +1252,7 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/VM1001.jpg" />
+                    <imagedata fileref="images/VM1001.jpg" vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1269,7 +1273,7 @@ OUTPUT(L);</programlisting></para>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/VM1002.jpg" />
+                  <imagedata fileref="images/VM1002.jpg" vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
             </figure>

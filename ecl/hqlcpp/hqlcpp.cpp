@@ -1510,7 +1510,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.checkThorRestrictions,"checkThorRestrictions", true),       // a debug aid for running regression suite
         DebugOption(options.allowCsvWorkunitRead,"allowStoredCsvFormat", false),
         DebugOption(options.evaluateCoLocalRowInvariantInExtract,"evaluateCoLocalRowInvariantInExtract", false),
-        DebugOption(options.spanMultipleCpp,"spanMultipleCpp", false),
+        DebugOption(options.spanMultipleCpp,"spanMultipleCpp", true),
         DebugOption(options.activitiesPerCpp, "<exception>", 0x7fffffff),
         DebugOption(options.allowInlineSpill,"allowInlineSpill", true),
         DebugOption(options.optimizeGlobalProjects,"optimizeGlobalProjects", false),

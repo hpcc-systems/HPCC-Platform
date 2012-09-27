@@ -322,7 +322,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -337,7 +338,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg" />
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -453,7 +455,7 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg01.jpg" scale="85" />
+                    <imagedata fileref="images/DTimg01.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -475,7 +477,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg02.jpg" />
+                    <imagedata fileref="images/DTimg02.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure>The Workunit progress page displays.</para>
@@ -485,7 +488,8 @@
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg03.jpg" />
+                    <imagedata fileref="images/DTimg03.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure> Once the spray is complete, we can proceed.</para>

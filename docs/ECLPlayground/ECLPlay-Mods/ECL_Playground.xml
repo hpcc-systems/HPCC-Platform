@@ -78,7 +78,8 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../../images/ECLP_001.jpg" />
+                      <imagedata fileref="../../images/ECLP_001.jpg"
+                                 vendor="eclswatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -212,7 +213,8 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../../images/ECLP_007.jpg" />
+                      <imagedata fileref="../../images/ECLP_007.jpg"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -232,7 +234,8 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../../images/ECLP_008.jpg" />
+                      <imagedata fileref="../../images/ECLP_008.jpg"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>

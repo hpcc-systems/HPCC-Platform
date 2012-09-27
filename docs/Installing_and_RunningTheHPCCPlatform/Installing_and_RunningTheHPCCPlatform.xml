@@ -144,7 +144,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/DHSMC8508T.jpg" />
+                <imagedata fileref="images/DHSMC8508T.jpg" vendor="hardwareSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -172,7 +172,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/c150-lg.jpg" />
+                <imagedata fileref="images/c150-lg.jpg"
+                           vendor="Force10,HardwareSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -186,7 +187,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/Force10_ExaScaleE6001200.jpg" />
+                <imagedata fileref="images/Force10_ExaScaleE6001200.jpg"
+                           vendor="Force10,HardwareSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -238,7 +240,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/IR-009a.jpg" />
+              <imagedata fileref="images/IR-009a.jpg" vendor="F5, Hardware" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -776,7 +778,8 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/GS_1311.JPG" />
+                        <imagedata fileref="images/GS_1311.JPG"
+                                   vendor="eclwatchSS" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -1811,7 +1814,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg03-1.jpg" />
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1827,7 +1831,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/LZimg04a.jpg" />
+                    <imagedata fileref="images/LZimg04a.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1887,7 +1892,8 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_01.jpg" />
+                    <imagedata fileref="images/IMDB_01.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1954,7 +1960,7 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/VM1000.jpg" />
+                    <imagedata fileref="images/VM1000.jpg" vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1971,7 +1977,7 @@ OUTPUT(L);</programlisting></para>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/VM1001.jpg" />
+                    <imagedata fileref="images/VM1001.jpg" vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>

@@ -37,7 +37,7 @@
 #include "modinit.h"
 #include "jiface.hpp"
 #include <assert.h>
-#include "jarray.tpp"
+#include "jarray.hpp"
 
 #define loop            for(;;)
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
@@ -46,15 +46,15 @@
 #define _copy(dest, src)   memcpy(&dest, &src, sizeof(src))
 
 
-inline IInterface & Array__Member2Param(IInterface * src)              { return *src; }  
+inline IInterface & Array__Member2Param(IInterface * src)              { return *src; }
 inline void Array__Assign(IInterface * & dest, IInterface & src)       { dest = &src; assert(dest); }
 inline bool Array__Equal(IInterface * const & m, const IInterface & p) { return m==&p; }
 inline void Array__Destroy(IInterface * & next)                        { if (next) next->Release(); }
-inline IInterface * Array__Member2ParamPtr(IInterface * src)           { return src; }  
+inline IInterface * Array__Member2ParamPtr(IInterface * src)           { return src; }
 inline void Array__Assign(IInterface * & dest, IInterface * src)       { dest = src; }
 inline bool Array__Equal(IInterface * const & m, const IInterface * p) { return m==p; }
 
-inline CInterface & Array__Member2Param(CInterface * src)              { return *src; }  
+inline CInterface & Array__Member2Param(CInterface * src)              { return *src; }
 inline void Array__Assign(CInterface * & dest, CInterface & src)       { dest = &src; assert(dest);}
 inline bool Array__Equal(CInterface * const & m, const CInterface & p) { return m==&p; }
 inline void Array__Destroy(CInterface * & next)                        { if (next) next->Release(); }
@@ -211,6 +211,7 @@ public:
 };
 
 #include "jstring.hpp"
+#include "jarray.tpp"
 #include "jhash.hpp"
 #include "jstream.hpp"
 #include "jutil.hpp"

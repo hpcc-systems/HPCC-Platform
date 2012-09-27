@@ -606,6 +606,10 @@ public:
         mystats.noteStatistic(statCode, value, count);
     }
 
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        // Most activities have nothing to say...
+    }
 };
 
 class CRoxieServerMultiInputInfo
@@ -15142,6 +15146,11 @@ public:
     }
 
     virtual unsigned numInputs() const { return inputs.ordinality(); }
+
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        addXrefLibraryInfo(reply, extra.libraryName);
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerLibraryCallActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, LibraryCallFactoryExtra & _extra)
@@ -17682,7 +17691,7 @@ public:
             left = input->nextInGroup();
             matchedLeft = false;
             countForLeft = keepLimit;
-            if((left == NULL))
+            if(left == NULL)
             {
                 eos = true;
                 return NULL;
@@ -20652,6 +20661,11 @@ public:
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() should not be called for %s activity", getActivityText(kind));
     }
 
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
@@ -21677,7 +21691,7 @@ public:
     {
         Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
         unsigned flags = indexHelper->getFlags();
-        sorted = (flags & TIRsorted) != 0;
+        sorted = (flags & TIRunsorted) == 0;
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         rtlDataAttr indexLayoutMeta;
         size32_t indexLayoutSize;
@@ -21713,6 +21727,12 @@ public:
     ~CRoxieServerBaseIndexActivityFactory()
     {
         delete cache;
+    }
+
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (indexfile)
+            addXrefFileInfo(reply, indexfile);
     }
 
     virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
@@ -22613,6 +22633,12 @@ public:
             answer = 0;
     }
 
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+    }
+
     virtual IRoxieServerActivity *createFunction(IHThorArg &arg, IProbeManager *_probeManager) const
     {
         arg.Release();
@@ -22822,6 +22848,11 @@ public:
         return new CRoxieServerFetchActivity(this, _probeManager, remoteId, map);
     }
 
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerFetchActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
@@ -22878,6 +22909,14 @@ public:
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const { throw MakeStringException(ROXIE_INTERNAL_ERROR, "%s query %s is suspended and cannot be executed - error occurred at %s(%d)", (queryFactory.isQueryLibrary()) ? "Library" : " ", queryFactory.queryQueryName(), __FILE__, __LINE__); }
+
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+        if (indexfile)
+            addXrefFileInfo(reply, indexfile);
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerDummyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool isLoadDataOnly)
@@ -24411,6 +24450,13 @@ public:
                 tailId, map, joinFlags, isLocal);
     }
 
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        if (datafile)
+            addXrefFileInfo(reply, datafile);
+        if (indexfile)
+            addXrefFileInfo(reply, indexfile);
+    }
 };
 
 IRoxieServerActivityFactory *createRoxieServerKeyedJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, const RemoteActivityId &_remoteId2, IPropertyTree &_graphNode)
