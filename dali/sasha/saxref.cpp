@@ -25,6 +25,7 @@
 #include "sacmd.hpp"
 
 #define DEFAULT_MAXDIRTHREADS 500
+#define DEFAULT_MAXMEMORY 4096
 
 #define SDS_CONNECT_TIMEOUT  (1000*60*60*2)     // better than infinite
 #define SDS_LOCK_TIMEOUT 300000
@@ -673,8 +674,8 @@ public:
     bool verbose;
 
 
-    CNewXRefManager()
-        : mem(0x100000*1000,0x10000,true)
+    CNewXRefManager(unsigned maxMb=DEFAULT_MAXMEMORY)
+        : mem(0x100000*maxMb,0x10000,true)
     {
         iswin = false; // set later
         root = new cDirDesc(mem,"");
@@ -685,6 +686,7 @@ public:
         lostbranch.setown(createPTree("Lost"));
         orphansbranch.setown(createPTree("Orphans"));
         dirbranch.setown(createPTree("Directories"));
+        log("Max memory = %d MB", maxMb);
     }
 
     ~CNewXRefManager()
@@ -2084,7 +2086,8 @@ public:
             continue;
 #endif          
             const char *gname = groups.item(i);
-            CNewXRefManager manager;
+            unsigned maxMb = serverConfig->getPropInt("DfuXRef/@memoryLimit", DEFAULT_MAXMEMORY);
+            CNewXRefManager manager(maxMb);
             if (!manager.setGroup(cnames.item(i),gname,groupsdone,dirsdone)) 
                 continue;
             manager.start(updateeclwatch);

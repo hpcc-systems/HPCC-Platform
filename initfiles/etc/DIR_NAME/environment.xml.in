@@ -978,7 +978,8 @@
                       xrefCutoff="1"
                       xrefEclWatchProvider="true"
                       xrefInterval="0"
-                      xrefList="*">
+                      xrefList="*"
+                      xrefMaxMemory="4096">
    <Instance computer="localhost"
              directory="${RUNTIME_PATH}/mysasha"
              name="s1"
