@@ -968,17 +968,23 @@ public:
             }
         }
     }
-    virtual void getQueryXrefInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    virtual void getQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
         Owned<IPropertyTree> xref = createPTree("Query", 0);
         xref->setProp("@id", id);
         if (suspended())
-            xref->setPropBool("@suspended", true);
-        HashIterator i(allActivities);
-        ForEach(i)
         {
-            IActivityFactory *f = *allActivities.mapToValue(&i.query());
-            f->getXrefInfo(*xref, logctx);
+            xref->setPropBool("@suspended", true);
+            xref->setProp("@error", errorMessage);
+        }
+        if (full)
+        {
+            HashIterator i(allActivities);
+            ForEach(i)
+            {
+                IActivityFactory *f = *allActivities.mapToValue(&i.query());
+                f->getXrefInfo(*xref, logctx);
+            }
         }
         toXML(xref, reply);
     }
