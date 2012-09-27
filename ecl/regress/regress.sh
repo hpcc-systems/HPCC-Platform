@@ -93,7 +93,7 @@ fi
 if [[ $eclcc != '' ]]; then
     ## Set flags
     default_flags="-P$target_dir -legacy -platform=thorlcr -fforceGenerate -fregressionTest -faddTimingToWorkunit=0 -b -S -shared"
-    flags="$default_flags $include_dir -fshowMetaInGraph $userflags"
+    flags="$default_flags $include_dir -fshowMetaInGraph -fspanMultipleCpp- $userflags"
 
     ## Prepare target directory
     if [[ $query == '' ]]; then

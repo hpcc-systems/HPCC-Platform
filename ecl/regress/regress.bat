@@ -23,7 +23,7 @@ rd /s /q %regresstgt%
 md %regresstgt% 2>nul
 
 set flags=-P%regresstgt% -legacy -target=thorlcr -fforceGenerate -fdebugNlp=1 -fnoteRecordSizeInGraph -fregressionTest -b -m -S -shared -faddTimingToWorkunit=0 -fshowRecordCountInGraph
-set flags=%flags% %regressinclude% -fshowMetaInGraph
+set flags=%flags% %regressinclude% -fshowMetaInGraph -fspanMultipleCpp-
 
 if NOT '%regressProcesses%'=='' goto multiway
 eclcc %flags% %* > out.log
