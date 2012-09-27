@@ -112,6 +112,7 @@ interface IQueryFactory : extends IInterface
     virtual void getGraphNames(StringArray &ret) const = 0;
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
+    virtual void getQueryXrefInfo(StringBuffer &result, const IRoxieContextLogger &logctx) const = 0;
 };
 
 class ActivityArray : public CInterface
@@ -204,9 +205,15 @@ public:
     {
         mystats.toXML(reply);
     }
+    virtual void getXrefInfo(IPropertyTree &reply, const IRoxieContextLogger &logctx) const
+    {
+        // Default is no additional information
+    }
 
 };
 
+extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile);
+extern void addXrefLibraryInfo(IPropertyTree &reply, const char *libraryName);
 
 interface IQueryDll : public IInterface
 {

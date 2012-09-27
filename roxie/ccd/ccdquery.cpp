@@ -155,6 +155,28 @@ extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu)
     return CQueryDll::getWorkUnitDll(wu);
 }
 
+// Add information to the xref information to be returned for a control:getQueryXrefInfo request
+
+void addXrefInfo(IPropertyTree &reply, const char *section, const char *name)
+{
+    VStringBuffer xpath("%s[@name='%s']", section, name);
+    if (!reply.hasProp(xpath))
+    {
+        IPropertyTree *info = createPTree(section, 0);
+        info->setProp("@name", name);
+        reply.addPropTree(section, info);
+    }
+}
+
+extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile)
+{
+    addXrefInfo(reply, "File", dataFile->queryFileName());
+}
+
+extern void addXrefLibraryInfo(IPropertyTree &reply, const char *libraryName)
+{
+    addXrefInfo(reply, "Library", libraryName);
+}
 
 //----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
@@ -946,6 +968,20 @@ public:
             }
         }
     }
+    virtual void getQueryXrefInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    {
+        Owned<IPropertyTree> xref = createPTree("Query", 0);
+        xref->setProp("@id", id);
+        if (suspended())
+            xref->setPropBool("@suspended", true);
+        HashIterator i(allActivities);
+        ForEach(i)
+        {
+            IActivityFactory *f = *allActivities.mapToValue(&i.query());
+            f->getXrefInfo(*xref, logctx);
+        }
+        toXML(xref, reply);
+    }
     virtual void resetQueryTimings()
     {
         HashIterator i(allActivities);
@@ -1261,7 +1297,6 @@ public:
     {
         return queryStats->getStats(from, to);
     }
-
 };
 
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext)
