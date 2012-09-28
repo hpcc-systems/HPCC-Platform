@@ -479,12 +479,14 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     bool overWrite = req.getOverWrite();
     StringAttr target(req.getTarget());
     StringAttr pkgMapName(req.getPackageMap());
-    StringAttr pkgSetId(req.getPackageSetId());
-    StringAttr pkgProcessName(req.getPackageProcessName());
+    StringAttr processName(req.getProcess());
+
+    VStringBuffer pkgSetId("default_%s", processName.get());
+    pkgSetId.replace('*', '_');
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.get(), pkgProcessName.get(), false);
-    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.get(), LINK(packageTree), activate, overWrite);
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
+    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), LINK(packageTree), activate, overWrite);
 
     StringBuffer msg;
     msg.append("Successfully loaded ").append(pkgMapName.get());
@@ -509,7 +511,7 @@ bool CWsPackageProcessEx::onActivatePackage(IEspContext &context, IEspActivatePa
 {
     resp.updateStatus().setCode(0);
     StringBuffer target(req.getTarget());
-    StringBuffer pkgMapName(req.getPackageMapName());
+    StringBuffer pkgMapName(req.getPackageMap());
 
     activatePackageMapInfo(target.str(), pkgMapName.str(), true);
     return true;
@@ -519,7 +521,7 @@ bool CWsPackageProcessEx::onDeActivatePackage(IEspContext &context, IEspDeActiva
 {
     resp.updateStatus().setCode(0);
     StringBuffer target(req.getTarget());
-    StringBuffer pkgMapName(req.getPackageMapName());
+    StringBuffer pkgMapName(req.getPackageMap());
 
     activatePackageMapInfo(target.str(), pkgMapName.str(), false);
     return true;

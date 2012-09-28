@@ -26,8 +26,7 @@ ESPrequest AddPackageRequest
     boolean OverWrite;
     string Target;
     string PackageMap;
-    string PackageProcessName;
-    string PackageSetId;
+    string Process;
 };
 
 
@@ -50,7 +49,7 @@ ESPresponse [exceptions_inline] DeletePackageResponse
 ESPrequest ActivatePackageRequest
 {
     string Target;
-    string PackageMapName;
+    string PackageMap;
 };
 
 ESPresponse [exceptions_inline] ActivatePackageResponse
@@ -61,7 +60,7 @@ ESPresponse [exceptions_inline] ActivatePackageResponse
 ESPrequest DeActivatePackageRequest
 {
     string Target;
-    string PackageMapName;
+    string PackageMap;
 };
 
 ESPresponse [exceptions_inline] DeActivatePackageResponse

@@ -28,11 +28,6 @@
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
-#define ECLOPT_OVERWRITE "--overwrite"
-#define ECLOPT_OVERWRITE_S "-O"
-#define ECLOPT_PACKAGE "--packagename"
-#define ECLOPT_PACKAGESETID "--packagesetid"
-
 //=========================================================================================
 
 IClientWsPackageProcess *getWsPackageSoapService(const char *server, const char *port, const char *username, const char *password)
@@ -109,7 +104,7 @@ public:
 
         Owned<IClientActivatePackageRequest> request = packageProcessClient->createActivatePackageRequest();
         request->setTarget(optTarget);
-        request->setPackageMapName(optPackageMap);
+        request->setPackageMap(optPackageMap);
 
         Owned<IClientActivatePackageResponse> resp = packageProcessClient->ActivatePackage(request);
         if (resp->getExceptions().ordinality())
@@ -122,9 +117,9 @@ public:
         fputs("\nUsage:\n"
                     "\n"
                     "The 'activate' command will deactivate the currently activate packagmap \n"
-                    "and make the specified package the one that is used.\n"
+                    "and make the specified packagemap the one that is used.\n"
                     "\n"
-                    "ecl package activate <target> <packagemap>\n"
+                    "ecl pakagemap activate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -196,7 +191,7 @@ public:
 
         Owned<IClientDeActivatePackageRequest> request = packageProcessClient->createDeActivatePackageRequest();
         request->setTarget(optTarget);
-        request->setPackageMapName(optPackageMap);
+        request->setPackageMap(optPackageMap);
 
         Owned<IClientDeActivatePackageResponse> resp = packageProcessClient->DeActivatePackage(request);
         if (resp->getExceptions().ordinality())
@@ -210,7 +205,7 @@ public:
                     "\n"
                     "The 'deactivate' command will deactivate the currently activate packagmap \n"
                     "\n"
-                    "ecl package deactivate <target> <packagemap>\n"
+                    "ecl pakagemap deactivate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -307,9 +302,9 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'list' command will list package information for the target cluster \n"
+                    "The 'list' command will list package map information for the target cluster \n"
                     "\n"
-                    "ecl package list <target> \n"
+                    "ecl pakagemap list <target> \n"
                     " Options:\n"
                     "   <target>               name of target containing package map to use when retrieve list of package maps\n",
                     stdout);
@@ -381,11 +376,11 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'info' command will return the contents of the active package information for the target cluster \n"
+                    "The 'info' command will return the contents of the active package map information for the target cluster \n"
                     "\n"
-                    "ecl package list <target> \n"
+                    "ecl pakagemap info <target> \n"
                     " Options:\n"
-                    "   <target>               name of the target to use when retrieving active package information\n",
+                    "   <target>               name of the target to use when retrieving active package map information\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -454,7 +449,7 @@ public:
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
 
-        fprintf(stdout, "\n ... deleting package %s now\n\n", optPackageMap.sget());
+        fprintf(stdout, "\n ... deleting package map %s now\n\n", optPackageMap.sget());
 
         Owned<IClientDeletePackageRequest> request = packageProcessClient->createDeletePackageRequest();
         request->setTarget(optTarget);
@@ -470,7 +465,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl package delete [options] [<filename>]\n\n"
+            "ecl pakagemap delete [options] [<filename>]\n\n"
             "   Options:\n"
             "      --queryset=<queryset>        name of queryset to associate the information\n"
         );
@@ -515,8 +510,6 @@ public:
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE_S))
                 continue;
-            if (iter.matchOption(optPackageSetId, ECLOPT_PACKAGESETID))
-                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -542,11 +535,8 @@ public:
             return false;
         }
 
-        if (optPackageSetId.isEmpty())
-            optPackageSetId.set("*");
-
-        if (optPackageProcessName.isEmpty())
-            optPackageProcessName.set(optFileName);
+        if (optProcess.isEmpty())
+            optProcess.set("*");
 
         return true;
     }
@@ -556,15 +546,14 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... adding package %s now\n\n", optFileName.sget());
+        fprintf(stdout, "\n ... adding package map %s now\n\n", optFileName.sget());
 
         Owned<IClientAddPackageRequest> request = packageProcessClient->createAddPackageRequest();
         request->setActivate(optActivate);
         request->setInfo(pkgInfo);
         request->setTarget(optTarget);
         request->setPackageMap(optFileName);
-        request->setPackageProcessName(optPackageProcessName);
-        request->setPackageSetId(optPackageSetId);
+        request->setProcess(optProcess);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         if (resp->getExceptions().ordinality())
@@ -577,16 +566,15 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'add' command will add the package information to dali \n"
+                    "The 'add' command will add the package map information to dali \n"
                     "\n"
-                    "ecl package add [options] <target> <filename>\n"
+                    "ecl pakagemap add [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
-                    "  --packagesetid               if not set use <filename>"
 // NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
-                    "   <target>                    name of target to use when adding package information\n"
-                    "   <filename>                  name of file containing package information\n",
+                    "   <target>                    name of target to use when adding package map information\n"
+                    "   <filename>                  name of file containing package map information\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -594,8 +582,7 @@ public:
 private:
     StringAttr optFileName;
     StringAttr optTarget;
-    StringAttr optPackageProcessName;
-    StringAttr optPackageSetId;
+    StringAttr optProcess;
     bool optActivate;
     bool optOverWrite;
     StringBuffer pkgInfo;
@@ -692,7 +679,7 @@ public:
                     "The 'copyFiles' command will copy any file listed in the package that is not currently \n"
                     "known on the cluster.  This will NOT load the package information \n"
                     "\n"
-                    "ecl package copyFiles [options] <target> <filename>\n"
+                    "ecl pakagemap copyFiles [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "  --daliip=<daliip>            ip of the source dali to use for file lookups\n"
@@ -744,15 +731,15 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl package <command> [command options]\n\n"
-            "   Package Commands:\n"
-            "      add          add a package to the environment\n"
+            "ecl pakagemap <command> [command options]\n\n"
+            "   packagemap Commands:\n"
+            "      add          add a package map to the environment\n"
             "      copyFiles    copy missing data files to the appropriate cluster\n"
-            "      delete       delete a package\n"
-            "      activate     activate a package\n"
-            "      deactivate   deactivate a package (package will not get loaded)\n"
-            "      list         list loaded package names\n"
-            "      info         return active package information for a cluster\n"
+            "      delete       delete a packag emap\n"
+            "      activate     activate a package map\n"
+            "      deactivate   deactivate a package map (package map will not get loaded)\n"
+            "      list         list loaded package map names\n"
+            "      info         return active package map information for a cluster\n"
         );
     }
 };
