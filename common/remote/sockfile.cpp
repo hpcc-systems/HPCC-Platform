@@ -3117,7 +3117,9 @@ class CRemoteFileServer : public CInterface, implements IRemoteFileServer, imple
         {
             CThrottler throttler(parent->throttleSem());
             MemoryBuffer reply;
-            parent->dispatchCommand(buf, initSendBuffer(reply), this, &throttler);
+            RemoteFileCommandType cmd;
+            buf.read(cmd);
+            parent->dispatchCommand(cmd, buf, initSendBuffer(reply), this, &throttler);
             buf.clear();
             sendBuffer(socket, reply);
         }
@@ -4244,10 +4246,8 @@ public:
         return false;
     }
 
-    bool dispatchCommand(MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
+    bool dispatchCommand(RemoteFileCommandType cmd, MemoryBuffer & msg, MemoryBuffer & reply, CRemoteClientHandler *client, CThrottler *throttler)
     {
-        RemoteFileCommandType cmd;
-        msg.read(cmd);
         bool ret = true;
         switch(cmd) {
             MAPCOMMAND(RFCcloseIO, cmdCloseFileIO);
@@ -4376,17 +4376,13 @@ public:
         selecthandler->stop(true);
     }
 
-    void processUnauthenticatedCommand(RemoteFileCommandType typ,ISocket *socket, MemoryBuffer &msg)
+    void processUnauthenticatedCommand(RemoteFileCommandType cmd, ISocket *socket, MemoryBuffer &msg)
     {
         // these are unauthenticated commands
-        switch (typ) {
-        case RFCgetver: break;
-        default:
-            typ = RFCinvalid;
-            msg.writeDirect(msg.getPos()-sizeof(RemoteFileCommandType),sizeof(RemoteFileCommandType),&typ);
-        }
+        if (cmd != RFCgetver)
+            cmd = RFCinvalid;
         MemoryBuffer reply;
-        dispatchCommand(msg, initSendBuffer(reply), NULL, NULL);
+        dispatchCommand(cmd, msg, initSendBuffer(reply), NULL, NULL);
         sendBuffer(socket, reply);
     }
 
