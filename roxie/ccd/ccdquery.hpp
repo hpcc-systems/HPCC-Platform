@@ -112,7 +112,7 @@ interface IQueryFactory : extends IInterface
     virtual void getGraphNames(StringArray &ret) const = 0;
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
-    virtual void getQueryXrefInfo(StringBuffer &result, const IRoxieContextLogger &logctx) const = 0;
+    virtual void getQueryInfo(StringBuffer &result, bool full, const IRoxieContextLogger &logctx) const = 0;
 };
 
 class ActivityArray : public CInterface
