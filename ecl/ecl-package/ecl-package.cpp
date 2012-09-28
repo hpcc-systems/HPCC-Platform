@@ -116,10 +116,10 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'activate' command will deactivate the currently activate packagmap \n"
+                    "The 'activate' command will deactivate the currently activate packagemap \n"
                     "and make the specified packagemap the one that is used.\n"
                     "\n"
-                    "ecl pakagemap activate <target> <packagemap>\n"
+                    "ecl package activate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -203,9 +203,9 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'deactivate' command will deactivate the currently activate packagmap \n"
+                    "The 'deactivate' command will deactivate the currently activate packagemap \n"
                     "\n"
-                    "ecl pakagemap deactivate <target> <packagemap>\n"
+                    "ecl package deactivate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -304,7 +304,7 @@ public:
                     "\n"
                     "The 'list' command will list package map information for the target cluster \n"
                     "\n"
-                    "ecl pakagemap list <target> \n"
+                    "ecl package list <target> \n"
                     " Options:\n"
                     "   <target>               name of target containing package map to use when retrieve list of package maps\n",
                     stdout);
@@ -378,7 +378,7 @@ public:
                     "\n"
                     "The 'info' command will return the contents of the active package map information for the target cluster \n"
                     "\n"
-                    "ecl pakagemap info <target> \n"
+                    "ecl package info <target> \n"
                     " Options:\n"
                     "   <target>               name of the target to use when retrieving active package map information\n",
                     stdout);
@@ -465,7 +465,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl pakagemap delete [options] [<filename>]\n\n"
+            "ecl package delete [options] [<filename>]\n\n"
             "   Options:\n"
             "      --queryset=<queryset>        name of queryset to associate the information\n"
         );
@@ -568,7 +568,7 @@ public:
                     "\n"
                     "The 'add' command will add the package map information to dali \n"
                     "\n"
-                    "ecl pakagemap add [options] <target> <filename>\n"
+                    "ecl package add [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
@@ -679,7 +679,7 @@ public:
                     "The 'copyFiles' command will copy any file listed in the package that is not currently \n"
                     "known on the cluster.  This will NOT load the package information \n"
                     "\n"
-                    "ecl pakagemap copyFiles [options] <target> <filename>\n"
+                    "ecl package copyFiles [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "  --daliip=<daliip>            ip of the source dali to use for file lookups\n"
@@ -731,8 +731,8 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl pakagemap <command> [command options]\n\n"
-            "   packagemap Commands:\n"
+            "ecl package <command> [command options]\n\n"
+            "   package Commands:\n"
             "      add          add a package map to the environment\n"
             "      copyFiles    copy missing data files to the appropriate cluster\n"
             "      delete       delete a packag emap\n"
