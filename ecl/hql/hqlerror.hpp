@@ -88,11 +88,15 @@ class HQL_API NullErrorReceiver : public CInterface, implements IErrorReceiver
 public:
     IMPLEMENT_IINTERFACE;
 
-    void reportError(int errNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
-    void reportWarning(int warnNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) {}
-    void report(IECLError*) { }
-    virtual size32_t errCount() { return 0; };
-    virtual size32_t warnCount() { return 0; };
+    void reportError(int errNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) { numErrors++; }
+    void reportWarning(int warnNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) { numWarnings++; }
+    void report(IECLError* err) { if (err->isError()) numErrors++; else numWarnings++; }
+    virtual size32_t errCount() { return numErrors; };
+    virtual size32_t warnCount() { return numWarnings; };
+
+private:
+    unsigned numErrors;
+    unsigned numWarnings;
 };
 
 

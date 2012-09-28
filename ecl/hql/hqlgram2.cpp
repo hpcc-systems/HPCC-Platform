@@ -11042,7 +11042,7 @@ IHqlExpression * PseudoPatternScope::lookupSymbol(_ATOM name, unsigned lookupFla
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, bool loadImplicit)
+extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IXmlScope *xmlScope, IProperties * macroParams, bool loadImplicit)
 {
     assertex(scope);
     try
@@ -11053,6 +11053,7 @@ extern HQL_API IHqlExpression * parseQuery(IHqlScope *scope, IFileContents * con
         parser.setQuery(true);
         parser.getLexer()->set_yyLineNo(1);
         parser.getLexer()->set_yyColumn(1);
+        parser.getLexer()->setMacroParams(macroParams);
         OwnedHqlExpr ret = parser.yyParse(false, true);
         ctx.noteEndQuery();
         return parser.clearFieldMap(ret.getClear());
@@ -11120,7 +11121,7 @@ extern HQL_API IHqlExpression * parseQuery(const char * text, IErrorReceiver * e
     Owned<IHqlScope> scope = createScope();
     HqlDummyLookupContext ctx(errs);
     Owned<IFileContents> contents = createFileContentsFromText(text, NULL);
-    return parseQuery(scope, contents, ctx, NULL, true);
+    return parseQuery(scope, contents, ctx, NULL, NULL, true);
 }
 
 
@@ -11261,12 +11262,14 @@ IHqlExpression *HqlGram::doParse()
     if (eclyyparse(this) != 0)
         return NULL;
     unsigned nowErrors = errorHandler ? errorHandler->errCount() : 0;
-    if (prevErrors != nowErrors)
-        return NULL;
 
     lookupCtx.noteFinishedParse(defineScopes.tos().privateScope);
     if (!parseConstantText)
         lookupCtx.noteFinishedParse(parseScope);
+
+    if (prevErrors != nowErrors)
+        return NULL;
+
     if (parsingTemplateAttribute)
     {
         if (parseResults.ordinality() == 0)

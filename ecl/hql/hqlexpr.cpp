@@ -15642,28 +15642,14 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM
     try
     {
         OwnedHqlExpr resolved = modScope->lookupSymbol(name, LSFpublic, ctx);
-
-        //Expand macros with no parameters
         if (!resolved || !resolved->isMacro())
             return;
 
-        IHqlExpression * macroBodyExpr;
-        if (resolved->getOperator() == no_funcdef)
-        {
-            if (resolved->queryChild(1)->numChildren() != 0)
-                return;
-            macroBodyExpr = resolved->queryChild(0);
-        }
-        else
-            macroBodyExpr = resolved;
+        //Macros need special processing to expand their definitions.
+        HqlLookupContext childContext(ctx);
+        childContext.createDependencyEntry(modScope, name);
 
-        _ATOM moduleName = modScope->queryName();
-        HqlLookupContext localContext(ctx);
-        localContext.createDependencyEntry(modScope, name);
-
-        IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        Owned<IHqlScope> scope = createPrivateScope();
-        OwnedHqlExpr query = parseQuery(scope, macroContents, localContext, NULL, true);
+        OwnedHqlExpr expanded = expandMacroDefinition(resolved, childContext, false);
     }
     catch (IException * e)
     {
@@ -15673,8 +15659,11 @@ static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM
 
 static void gatherAttributeDependencies(HqlLookupContext & ctx, IHqlScope * modScope)
 {
+    modScope->ensureSymbolsDefined(ctx);
     HqlExprArray symbols;
     modScope->getSymbols(symbols);
+    symbols.sort(compareSymbolsByName);
+
     ForEachItemIn(i, symbols)
         safeLookupSymbol(ctx, modScope, symbols.item(i).queryName());
 }
@@ -15718,7 +15707,8 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     HqlParseContext parseCtx(dataServer, NULL);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
-    HqlLookupContext ctx(parseCtx, NULL);
+    NullErrorReceiver errorHandler;
+    HqlLookupContext ctx(parseCtx, &errorHandler);
     if (items && *items)
     {
         loop
@@ -15738,6 +15728,7 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     {
         HqlScopeArray scopes;   
         getRootScopes(scopes, dataServer, ctx);
+        scopes.sort(compareScopesByName);
         ForEachItemIn(i, scopes)
         {
             IHqlScope & cur = scopes.item(i);

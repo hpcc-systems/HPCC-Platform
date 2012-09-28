@@ -54,6 +54,7 @@ extern HQL_API IHqlExpression * queryLastField(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);
 extern HQL_API int compareSymbolsByName(IInterface * * pleft, IInterface * * pright);
+extern HQL_API int compareScopesByName(IInterface * * pleft, IInterface * * pright);
 extern HQL_API int compareAtoms(IInterface * * pleft, IInterface * * pright);
 extern HQL_API IHqlExpression * getSizetConstant(unsigned size);
 extern HQL_API IHqlExpression * createIntConstant(__int64 val);
@@ -178,6 +179,7 @@ extern HQL_API bool isConstantDataset(IHqlExpression * expr);
 extern HQL_API bool isSimpleTransformToMergeWith(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryUncastExpr(IHqlExpression * expr);
 extern HQL_API bool areConstant(const HqlExprArray & args);
+extern HQL_API bool getFoldedConstantText(StringBuffer& ret, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * createTransformForField(IHqlExpression * field, IHqlExpression * value);
 extern HQL_API IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldType);
@@ -655,6 +657,7 @@ extern HQL_API IPropertyTree * queryArchiveAttribute(IPropertyTree * module, con
 extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, const char * name);
 
 extern HQL_API IECLError * annotateExceptionWithLocation(IException * e, IHqlExpression * location);
+extern HQL_API IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError);
 extern HQL_API IHqlExpression * convertAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx);
 extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * location, const char * suffix = NULL);
 extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
