@@ -1,1 +1,1 @@
-installFile "$binPath/ecl-package" "/usr/bin/ecl-package" 1 || exit 1
+installFile "$binPath/ecl-packagemap" "/usr/bin/ecl-packagemap" 1 || exit 1
