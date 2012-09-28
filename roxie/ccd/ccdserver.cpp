@@ -21691,7 +21691,7 @@ public:
     {
         Owned<IHThorIndexReadBaseArg> indexHelper = (IHThorIndexReadBaseArg *) helperFactory();
         unsigned flags = indexHelper->getFlags();
-        sorted = (flags & TIRunsorted) == 0;
+        sorted = (flags & TIRunordered) == 0;
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         rtlDataAttr indexLayoutMeta;
         size32_t indexLayoutSize;

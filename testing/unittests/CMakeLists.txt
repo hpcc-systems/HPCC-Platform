@@ -46,7 +46,7 @@ install ( TARGETS unittests DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( unittests
          jlib
          remote
-         cppunit
+         ${CPPUNIT_LIBRARIES}
     )
 
 endif ()

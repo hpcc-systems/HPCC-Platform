@@ -598,18 +598,34 @@ protected:
 
 class ReadLockBlock
 {
-    ReadWriteLock &lock;
+    ReadWriteLock *lock;
 public:
-    ReadLockBlock(ReadWriteLock &l) : lock(l)       { lock.lockRead(); }
-    ~ReadLockBlock()                                { lock.unlockRead(); }
+    ReadLockBlock(ReadWriteLock &l) : lock(&l)      { lock->lockRead(); }
+    ~ReadLockBlock()                                { if (lock) lock->unlockRead(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockRead();
+            lock = NULL;
+        }
+    }
 };
 
 class WriteLockBlock
 {
-    ReadWriteLock &lock;
+    ReadWriteLock *lock;
 public:
-    WriteLockBlock(ReadWriteLock &l) : lock(l)      { lock.lockWrite(); }
-    ~WriteLockBlock()                               { lock.unlockWrite(); }
+    WriteLockBlock(ReadWriteLock &l) : lock(&l)     { lock->lockWrite(); }
+    ~WriteLockBlock()                               { if (lock) lock->unlockWrite(); }
+    void clear()
+    {
+        if (lock)
+        {
+            lock->unlockWrite();
+            lock = NULL;
+        }
+    }
 };
 
 class Barrier
