@@ -105,6 +105,8 @@ public:
 
     void setPort(unsigned short _port){port=_port;}
 
+    bool isQuerySuspended(const char* query, const char *target, unsigned wait, StringBuffer& errorMessage);
+
 private:
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;

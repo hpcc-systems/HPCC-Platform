@@ -401,6 +401,48 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
     }
 }
 
+bool CWsWorkunitsEx::isQuerySuspended(const char* query, const char *target, unsigned wait, StringBuffer& errorMessage)
+{
+    try
+    {
+        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        if (0==wait || !clusterInfo || clusterInfo->getPlatform()!=RoxieCluster)
+            return false;
+
+        const SocketEndpointArray &addrs = clusterInfo->getRoxieServers();
+        if (addrs.length() < 1)
+            return false;
+
+        StringBuffer control;
+        control.appendf("<control:queries><Query id='%s'/></control:queries>",  query);
+        Owned<IPropertyTree> result = sendRoxieControlAllNodes(addrs.item(0), control.str(), false, wait);
+        if (!result)
+            return false;
+
+        Owned<IPropertyTreeIterator> suspendedQueries = result->getElements("Endpoint/Queries/Query[@suspended='1']");
+        if (!suspendedQueries->first())
+            return false;
+
+        errorMessage.set(suspendedQueries->query().queryProp("@error"));
+        return true;
+    }
+    catch(IMultiException *me)
+    {
+        StringBuffer err;
+        DBGLOG("ERROR control:queries roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        me->Release();
+        return false;
+    }
+    catch(IException *e)
+    {
+        StringBuffer err;
+        DBGLOG("ERROR control:queries roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        e->Release();
+        return false;
+    }
+}
+
+
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
     StringBuffer wuid = req.getWuid();
@@ -458,7 +500,19 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     bool reloadFailed = false;
     if (0!=req.getWait() && !req.getNoReload())
         reloadFailed = !reloadCluster(target.str(), (unsigned)req.getWait());
+    
     resp.setReloadFailed(reloadFailed);
+
+    double version = context.getClientVersion();
+    if (version > 1.38)
+    {
+        StringBuffer errorMessage;
+        if (!reloadFailed && !req.getNoReload() && isQuerySuspended(queryName.str(), target.str(), (unsigned)req.getWait(), errorMessage))
+        {
+            resp.setSuspended(true);
+            resp.setErrorMessage(errorMessage);
+        }
+    }
 
     return true;
 }
