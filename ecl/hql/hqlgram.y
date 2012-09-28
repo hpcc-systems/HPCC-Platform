@@ -2979,6 +2979,7 @@ indexFlag
                             $$.setExpr(createAttribute(dynamicAtom));
                             $$.setPosition($1);
                         }
+    | UNORDERED         {   $$.setExpr(createAttribute(unorderedAtom)); $$.setPosition($1); }
     | commonAttribute
     ;
 

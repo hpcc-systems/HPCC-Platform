@@ -6194,6 +6194,8 @@ void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
     StringBuffer flags;
     if (tableExpr->hasProperty(sortedAtom))
         flags.append("|TIRsorted");
+    else if (tableExpr->hasProperty(unorderedAtom))
+        flags.append("|TIRunordered");
     if (!monitors.isFiltered())
         flags.append("|TIRnofilter");
     if (isPreloaded)
