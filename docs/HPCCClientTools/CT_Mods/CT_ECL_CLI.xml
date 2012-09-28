@@ -48,7 +48,7 @@
               <row>
                 <entry><emphasis role="bold">Arguments</emphasis></entry>
 
-                <entry>deploy</entry>
+                <entry></entry>
               </row>
 
               <row>
@@ -108,20 +108,20 @@
       <sect2 role="brk">
         <title>ecl deploy</title>
 
-        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
         --name=&lt;value&gt; &lt;ecl_file | - &gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy --cluster=&lt;value&gt;
+        <para><emphasis role="bold">ecl deploy --target=&lt;value&gt;
         --name=&lt;value&gt; &lt;archive | - &gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl deploy [--cluster=&lt;value&gt;]
+        <para><emphasis role="bold">ecl deploy [--target=&lt;value&gt;]
         [--name=&lt;value&gt;] &lt;so | dll | - &gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl deploy --cluster=roxie --name=FindPersonService findperson.ecl
-ecl deploy --cluster=roxie --name=FindPersonService ArchiveQuery.xml
-ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
+        <programlisting>ecl deploy --target=roxie --name=FindPersonService findperson.ecl
+ecl deploy --target=roxie --name=FindPersonService ArchiveQuery.xml
+ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -137,7 +137,10 @@ ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
                 <row>
                   <entry>ecl deploy</entry>
 
-                  <entry>executes the supplied ecl deploy command</entry>
+                  <entry>Creates a workunit on the HPCC system from the given
+                  ECL text, file, archive, shared object, or dll. The workunit
+                  is created in the <emphasis>compiled</emphasis> state.
+                  </entry>
                 </row>
 
                 <row>
@@ -168,9 +171,9 @@ ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -258,27 +261,27 @@ ecl deploy --cluster=roxie --name=FindPersonService libW20120224-125557.so
       <sect2 role="brk">
         <title>ecl publish</title>
 
-        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
         [--name=&lt;val&gt;] [--activate] &lt;wuid&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish [--cluster=&lt;val&gt;]
+        <para><emphasis role="bold">ecl publish [--target=&lt;val&gt;]
         [--name=&lt;val&gt;] [--activate] &lt;so | dll | -
         &gt;</emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
         --name=&lt;val&gt; [--activate] &lt;archive | - &gt;
         </emphasis></para>
 
-        <para><emphasis role="bold">ecl publish --cluster=&lt;val&gt;
+        <para><emphasis role="bold">ecl publish --target=&lt;val&gt;
         --name=&lt;val&gt; [--activate] &lt;ecl_file | -
         &gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl publish --cluster=roxie --name=FindPersonService -A W20120224-125557
-ecl publish --cluster=roxie --name=FindPersonService -A libW20120224-125557.so
-ecl publish --cluster=roxie --name=FindPersonService -A ArchiveQuery.xml
-ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
+        <programlisting>ecl publish --target=roxie --name=FindPersonService -A W20120224-125557
+ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
+ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
+ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -294,7 +297,9 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                 <row>
                   <entry>ecl publish</entry>
 
-                  <entry>executes the supplied ecl publish command</entry>
+                  <entry>Publishes a query into a queryset. The query is
+                  created by adding a workunit to a queryset and assigning it
+                  a query name. </entry>
                 </row>
 
                 <row>
@@ -331,9 +336,9 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -346,6 +351,13 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                   <entry>-A, --activate</entry>
 
                   <entry>Activates query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
                 </row>
 
                 <row>
@@ -457,7 +469,7 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
         <title>ecl unpublish</title>
 
         <para><emphasis role="bold">ecl unpublish &lt;queryset&gt;
-        &lt;query&gt;</emphasis></para>
+        &lt;query_id&gt;</emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -490,7 +502,7 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>query</entry>
+                  <entry>query_id</entry>
 
                   <entry>The query to remove from query set</entry>
                 </row>
@@ -538,32 +550,32 @@ ecl publish --cluster=roxie --name=FindPersonService --activate findperson.ecl
         <title>ecl run</title>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        [--target=&lt;val&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
         &lt;wuid&gt; </emphasis></para>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
+        [--target=&lt;c&gt;][--input=&lt;file|xml&gt;][--wait=&lt;ms&gt;]
         &lt;queryset&gt; &lt;query&gt; </emphasis></para>
 
         <para><emphasis role="bold">ecl run
-        [--cluster=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
+        [--target=&lt;c&gt;][--name=&lt;nm&gt;][--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;dll|-&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
         --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;archive|-&gt; </emphasis></para>
 
-        <para><emphasis role="bold">ecl run --cluster=&lt;c&gt;
+        <para><emphasis role="bold">ecl run --target=&lt;c&gt;
         --name=&lt;nm&gt; [--input=&lt;file|xml&gt;][--wait=&lt;i&gt;]
         &lt;eclfile|-&gt;</emphasis></para>
 
         <para><emphasis role="bold">Examples</emphasis>:</para>
 
-        <programlisting>ecl run --cluster=thor --input=data.xml --wait=1000 W20120224-125557
-ecl run --cluster=thor --input=data.xml --wait=1000 thor findpersonservice
-ecl run --cluster=thor --input=data.xml --wait=1000 ArchiveQuery.xml
-ecl run --cluster=thor --input=data.xml --wait=1000 findperson.ecl
-ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
+        <programlisting>ecl run --target=thor --input=data.xml --wait=1000 W20120224-125557
+ecl run --target=thor --input=data.xml --wait=1000 thor findpersonservice
+ecl run --target=thor --input=data.xml --wait=1000 ArchiveQuery.xml
+ecl run --target=thor --input=data.xml --wait=1000 findperson.ecl
+ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&lt;/request&gt;" findperson.ecl
 </programlisting>
 
         <para>A hyphen (-) specifies that the object should be read from
@@ -616,9 +628,9 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate workunit with</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -628,9 +640,16 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
-                  <entry>-A, --activate</entry>
+                  <entry> -in,--input=&lt;file|xml&gt;</entry>
 
-                  <entry>Activates query when published</entry>
+                  <entry>The file or xml content to use as query input
+                  </entry>
+                </row>
+
+                <row>
+                  <entry>-X&lt;name&gt;</entry>
+
+                  <entry>Sets the stored input value (stored('name')) </entry>
                 </row>
 
                 <row>
@@ -686,6 +705,20 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
+                  <entry>--limit</entry>
+
+                  <entry>Sets the result limit for the query, defaults to
+                  100</entry>
+                </row>
+
+                <row>
+                  <entry>-f&lt;option&gt;[=value] </entry>
+
+                  <entry>set an ECL option (equivalent to #OPTION in
+                  ECL)</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">eclcc
                   Options</emphasis></entry>
 
@@ -720,7 +753,7 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
         <title>ecl activate</title>
 
         <para><emphasis role="bold">ecl activate &lt;queryset&gt;
-        &lt;query&gt;</emphasis></para>
+        &lt;query_id&gt;</emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -738,7 +771,8 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 <row>
                   <entry>ecl activate</entry>
 
-                  <entry>Activates a published query</entry>
+                  <entry>Activates a published query. This assigns a query to
+                  the active alias with the same name as the query. </entry>
                 </row>
 
                 <row>
@@ -753,7 +787,7 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 </row>
 
                 <row>
-                  <entry>query</entry>
+                  <entry>query_id</entry>
 
                   <entry>The query to activate</entry>
                 </row>
@@ -801,7 +835,7 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
         <title>ecl deactivate</title>
 
         <para><emphasis role="bold">ecl deactivate &lt;queryset&gt;
-        &lt;query&gt;</emphasis></para>
+        &lt;active_alias&gt;</emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
@@ -819,7 +853,8 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 <row>
                   <entry>ecl deactivate</entry>
 
-                  <entry>Deactivates a published query</entry>
+                  <entry>Deactivates a published query by removing an active
+                  query alias from the given queryset. </entry>
                 </row>
 
                 <row>
@@ -829,14 +864,15 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
                 <row>
                   <entry>queryset</entry>
 
-                  <entry>The name of queryset containing query to
+                  <entry>The name of queryset containing alias to
                   deactivate</entry>
                 </row>
 
                 <row>
-                  <entry>query</entry>
+                  <entry>active_alias</entry>
 
-                  <entry>The query to deactivate</entry>
+                  <entry>The active alias to be removed from the queryset
+                  </entry>
                 </row>
 
                 <row>
@@ -882,14 +918,14 @@ ecl run --cluster=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&
         <title id="eclquerieslist">ecl queries list</title>
 
         <para><emphasis role="bold">ecl queries list
-        [&lt;queryset&gt;][--cluster=&lt;cluster&gt;][--show=&lt;flags&gt;]</emphasis></para>
+        [&lt;queryset&gt;][--target=&lt;value&gt;][--show=&lt;flags&gt;]</emphasis></para>
 
         <para><emphasis role="bold"></emphasis></para>
 
         <para>Examples:</para>
 
         <programlisting>ecl queries list roxie
-ecl queries list roxie myroxie --show=A </programlisting>
+ecl queries list roxie --target=roxie --show=A </programlisting>
 
         <para></para>
 
@@ -903,7 +939,10 @@ ecl queries list roxie myroxie --show=A </programlisting>
                 <row>
                   <entry>ecl queries list</entry>
 
-                  <entry>Calls the queries list command</entry>
+                  <entry>Displays a list of the queries in one or more
+                  querysets. If a cluster is provided the querysets associated
+                  with that cluster will be shown. If no queryset or cluster
+                  is specified all querysets are shown. </entry>
                 </row>
 
                 <row>
@@ -928,10 +967,9 @@ ecl queries list roxie myroxie --show=A </programlisting>
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster associated with the queries to
-                  list</entry>
+                  <entry>The target cluster to associate workunit with</entry>
                 </row>
 
                 <row>
@@ -1010,8 +1048,8 @@ ecl queries list roxie myroxie --show=A </programlisting>
       <sect2 id="eclqueriescopy" role="brk">
         <title>ecl queries copy</title>
 
-        <para><emphasis role="bold">ecl queries copy &lt;from querypath&gt;
-        &lt;to queryset&gt; [--activate]</emphasis></para>
+        <para><emphasis role="bold">ecl queries copy &lt;source_query_path&gt;
+        &lt;target_queryset&gt; [--activate] </emphasis></para>
 
         <para>Examples:</para>
 
@@ -1031,7 +1069,11 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>ecl queries copy</entry>
 
-                  <entry>Calls the queries copy command</entry>
+                  <entry>Copies a query from one queryset to another. A query
+                  can be copied from one HPCC environment to another by using
+                  a path which begins with '//' followed by the IP and Port of
+                  the source EclWatch and then followed by the source queryset
+                  and query. </entry>
                 </row>
 
                 <row>
@@ -1049,24 +1091,50 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry>from querypath</entry>
+                  <entry>source_query_path</entry>
 
                   <entry>The path of the query to copy using the format:
-                  [//ip:port/]queryset/query</entry>
+                  [//ip:port/]queryset/query or queryset/query. </entry>
                 </row>
 
                 <row>
-                  <entry>to queryset</entry>
+                  <entry>target_queryset</entry>
 
                   <entry>The name of the queryset to which the query should be
                   copied</entry>
                 </row>
 
                 <row>
-                  <entry>-cl, --cluster</entry>
+                  <entry>-t, --target</entry>
 
-                  <entry>The cluster to associate with the remote
-                  workunit</entry>
+                  <entry>The target cluster to associate workunit with</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to NOT copy files referenced by the
+                  query</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates query when published</entry>
+                </row>
+
+                <row>
+                  <entry>--no-reload</entry>
+
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>[true | false] Whether to overwrite existing
+                  information - defaults to true</entry>
                 </row>
 
                 <row>
@@ -1259,13 +1327,13 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
       <sect2 role="brk">
         <title>ecl package add</title>
 
-        <para><emphasis role="bold">ecl package add [options]
-        [&lt;filename&gt;]</emphasis></para>
+        <para><emphasis role="bold">ecl package add [options] &lt;target&gt;
+        &lt;filename&gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package add --queryset=roxie mypackage.pkg -s=192.168.1.10
-ecl package add --queryset=roxie mypkg.pkg --overwritename=false
+        <programlisting>ecl package add  -s=192.168.1.10 roxie mypkg.pkg
+ecl package add roxie mypkg.pkg --overwrite=false
 </programlisting>
 
         <para></para>
@@ -1290,7 +1358,25 @@ ecl package add --queryset=roxie mypkg.pkg --overwritename=false
                 <row>
                   <entry>add</entry>
 
-                  <entry>Adds a package to the environment</entry>
+                  <entry>Adds a package to the target cluster</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target to use when adding package
+                  information.</entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>The name of the file containing package
+                  information.</entry>
                 </row>
 
                 <row>
@@ -1298,17 +1384,23 @@ ecl package add --queryset=roxie mypkg.pkg --overwritename=false
                 </row>
 
                 <row>
-                  <entry>--queryset</entry>
-
-                  <entry>The name of the queryset to which the information
-                  should be associated</entry>
-                </row>
-
-                <row>
-                  <entry>--overwritename</entry>
+                  <entry>-O, --overwrite</entry>
 
                   <entry>[true | false] Whether to overwrite existing
                   information - defaults to true</entry>
+                </row>
+
+                <row>
+                  <entry>-A, --activate</entry>
+
+                  <entry>Activates package</entry>
+                </row>
+
+                <row>
+                  <entry>--packagesetid</entry>
+
+                  <entry>The packagesetid to use. If not set, use
+                  &lt;filename&gt;</entry>
                 </row>
 
                 <row>
@@ -1370,7 +1462,9 @@ ecl package copyFiles
                 <row>
                   <entry>ecl package copyFiles</entry>
 
-                  <entry>Calls the package copyFiles command</entry>
+                  <entry>The copyFiles command will copy any file listed in
+                  the package that is not currently known on the cluster. This
+                  will NOT load the package information</entry>
                 </row>
 
                 <row>
@@ -1385,14 +1479,25 @@ ecl package copyFiles
                 </row>
 
                 <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  activate</entry>
+                </row>
+
+                <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
                 </row>
 
                 <row>
-                  <entry>--process</entry>
+                  <entry>-O, --overwrite</entry>
 
-                  <entry>The process name of the cluster to which to copy
-                  files</entry>
+                  <entry>[true | false] Whether to overwrite existing
+                  information - defaults to true</entry>
                 </row>
 
                 <row>
@@ -1523,12 +1628,12 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       <sect2 role="brk">
         <title>ecl package activate</title>
 
-        <para><emphasis role="bold">ecl package activate [options]
-        &lt;querySetName&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl package activate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package activate --packagemap=mypkg.pkg roxie</programlisting>
+        <programlisting>ecl package activate roxie mypkg.pkg</programlisting>
 
         <para></para>
 
@@ -1542,7 +1647,9 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
                 <row>
                   <entry>ecl package activate</entry>
 
-                  <entry>Activates a package</entry>
+                  <entry>The activate command will deactivate the currently
+                  active packagemap and make the specified package
+                  active.</entry>
                 </row>
 
                 <row>
@@ -1550,20 +1657,20 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
                 </row>
 
                 <row>
-                  <entry>querySetName</entry>
+                  <entry>target</entry>
 
-                  <entry>The name of queryset referred to in the
-                  package</entry>
+                  <entry>The target containing the packagemap to
+                  activate</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>name of packagemap to update</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>--packagemap</entry>
-
-                  <entry>name of packagemap to update</entry>
                 </row>
 
                 <row>
@@ -1604,12 +1711,12 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       <sect2 role="brk">
         <title>ecl package deactivate</title>
 
-        <para><emphasis role="bold">ecl package deactivate [options]
-        &lt;querySetName&gt; </emphasis></para>
+        <para><emphasis role="bold">ecl package deactivate &lt;target&gt;
+        &lt;packagemap&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package deactivate --packagemap=mypkg.pkg roxie</programlisting>
+        <programlisting>ecl package deactivate roxie mypkg.pkg</programlisting>
 
         <para></para>
 
@@ -1623,7 +1730,8 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
                 <row>
                   <entry>ecl package deactivate</entry>
 
-                  <entry>Deactivates a package</entry>
+                  <entry>The activate command will deactivate the currently
+                  active packagemap. </entry>
                 </row>
 
                 <row>
@@ -1631,20 +1739,20 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
                 </row>
 
                 <row>
-                  <entry>querySetName</entry>
+                  <entry>target</entry>
 
-                  <entry>The name of queryset referred to in the
-                  package</entry>
+                  <entry>The target containing the packagemap to
+                  deactivate</entry>
+                </row>
+
+                <row>
+                  <entry>packagemap</entry>
+
+                  <entry>Name of packagemap to deactivate</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>--packagemap</entry>
-
-                  <entry>name of packagemap to update</entry>
                 </row>
 
                 <row>
@@ -1685,13 +1793,12 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       <sect2 role="brk">
         <title>ecl package list</title>
 
-        <para><emphasis role="bold">ecl package list
-        [options]</emphasis></para>
+        <para><emphasis role="bold">ecl package list &lt;target&gt;
+        </emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package list
-ecl package list --cluster=roxie
+        <programlisting>ecl package list roxie
 </programlisting>
 
         <para></para>
@@ -1717,6 +1824,16 @@ ecl package list --cluster=roxie
                   <entry>list</entry>
 
                   <entry>Lists loaded package names</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to list</entry>
                 </row>
 
                 <row>
@@ -1769,14 +1886,12 @@ ecl package list --cluster=roxie
       <sect2 role="brk">
         <title>ecl package info</title>
 
-        <para><emphasis role="bold">ecl package info [options]
-        [--cluster=&lt;clusterName&gt; |
-        --packageName=MyPackage]</emphasis></para>
+        <para><emphasis role="bold">ecl package info
+        &lt;target&gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package info --packageName=mypackage
-ecl package list --cluster=roxie
+        <programlisting>ecl package info roxie
 </programlisting>
 
         <para>Specify either --cluster or packageName.</para>
