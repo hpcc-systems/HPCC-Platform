@@ -2737,6 +2737,7 @@ function selectLastActiveTab() {
       tabView.inInit = true;
 
     top.document.needsRefresh = false;
+    top.document.navDT._elBdContainer.scrollTop =  top.document.navigatorScrollOffset;
     tabView.selectTab(i);
   }
   else if (typeof (tabView) !== 'undefined' && tabView !== null) {
