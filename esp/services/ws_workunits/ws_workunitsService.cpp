@@ -2016,8 +2016,11 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         SCMStringBuffer parent;
         if (!cw.getParentWuid(parent).length())
         {
+            const char* wuid = cw.getWuid(parent).str();
+            if (!looksLikeAWuid(wuid))
+                continue;
             Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-            WsWuInfo winfo(context, cw.getWuid(parent).str());
+            WsWuInfo winfo(context, wuid);
             winfo.getCommon(*info, 0);
             results.append(*info.getClear());
         }
