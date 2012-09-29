@@ -96,9 +96,9 @@
               </row>
 
               <row>
-                <entry>package</entry>
+                <entry>packagemap</entry>
 
-                <entry>execute package commands (for Roxie)</entry>
+                <entry>execute packagemap commands (for Roxie)</entry>
               </row>
             </tbody>
           </tgroup>
@@ -1220,15 +1220,15 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
       </sect2>
 
       <sect2 id="eclpackageadd" role="brk">
-        <title>ecl package add</title>
+        <title>ecl packagemap add</title>
 
         <para><emphasis role="bold">ecl package add [options]
         [&lt;filename&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package add --queryset=roxie mypackage.pkg -s=192.168.1.10
-ecl package add --queryset=roxie mypkg.pkg --overwritename=false
+        <programlisting>ecl packagemap add --queryset=roxie mypackage.pkg -s=192.168.1.10
+ecl packagemap add --queryset=roxie mypkg.pkg --overwritename=false
 </programlisting>
 
         <para></para>
@@ -1241,9 +1241,9 @@ ecl package add --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package add</entry>
+                  <entry>ecl packagemap add</entry>
 
-                  <entry>Calls the package add command</entry>
+                  <entry>Calls the packagemap add command</entry>
                 </row>
 
                 <row>
@@ -1310,15 +1310,15 @@ ecl package add --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackagecopyfiles" role="brk">
-        <title>ecl package copyFiles</title>
+        <title>ecl packagemap copyFiles</title>
 
-        <para><emphasis role="bold">ecl package copyFiles [options]
+        <para><emphasis role="bold">ecl packagemap copyFiles [options]
         [&lt;filename&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package copyFiles  --process=myroxie  --daliip=192.168.1.10
-ecl package copyFiles 
+        <programlisting>ecl packagemap copyFiles  --process=myroxie  --daliip=192.168.1.10
+ecl packagemap copyFiles
 </programlisting>
 
         <para></para>
@@ -1331,9 +1331,9 @@ ecl package copyFiles
 
               <tbody>
                 <row>
-                  <entry>ecl package copyFiles</entry>
+                  <entry>ecl packagemap copyFiles</entry>
 
-                  <entry>Calls the package copyFiles command</entry>
+                  <entry>Calls the packagemap copyFiles command</entry>
                 </row>
 
                 <row>
@@ -1401,15 +1401,15 @@ ecl package copyFiles
       </sect2>
 
       <sect2 id="eclpackagedelete" role="brk">
-        <title>ecl package delete</title>
+        <title>ecl packagemap delete</title>
 
-        <para><emphasis role="bold">ecl package delete [options]
+        <para><emphasis role="bold">ecl packagemap delete [options]
         [&lt;filename&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package delete --queryset=roxie mypackage.pkg -s=192.168.1.10
-ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
+        <programlisting>ecl packagemap delete --queryset=roxie mypackage.pkg -s=192.168.1.10
+ecl packagemap delete --queryset=roxie mypkg.pkg --overwritename=false
 </programlisting>
 
         <para></para>
@@ -1422,9 +1422,9 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package delete</entry>
+                  <entry>ecl packagemap delete</entry>
 
-                  <entry>Calls the package delete command</entry>
+                  <entry>Calls the packagemap delete command</entry>
                 </row>
 
                 <row>
@@ -1484,14 +1484,14 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackageactivate" role="brk">
-        <title>ecl package activate</title>
+        <title>ecl packagemap activate</title>
 
-        <para><emphasis role="bold">ecl package activate [options]
+        <para><emphasis role="bold">ecl packagemap activate [options]
         &lt;querySetName&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package activate --packagemap=mypkg.pkg roxie</programlisting>
+        <programlisting>ecl packagemap activate --packagemap=mypkg.pkg roxie</programlisting>
 
         <para></para>
 
@@ -1503,9 +1503,9 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package activate</entry>
+                  <entry>ecl packagemap activate</entry>
 
-                  <entry>Activates a package</entry>
+                  <entry>Activates a packagemap</entry>
                 </row>
 
                 <row>
@@ -1565,14 +1565,14 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackagedeactivate" role="brk">
-        <title>ecl package deactivate</title>
+        <title>ecl packagemap deactivate</title>
 
-        <para><emphasis role="bold">ecl package deactivate [options]
+        <para><emphasis role="bold">ecl packagemap deactivate [options]
         &lt;querySetName&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package deactivate --packagemap=mypkg.pkg roxie</programlisting>
+        <programlisting>ecl packagemap deactivate --packagemap=mypkg.pkg roxie</programlisting>
 
         <para></para>
 
@@ -1584,7 +1584,7 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package deactivate</entry>
+                  <entry>ecl packagemap deactivate</entry>
 
                   <entry>Deactivates a package</entry>
                 </row>
@@ -1646,15 +1646,15 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackagelist" role="brk">
-        <title>ecl package list</title>
+        <title>ecl packagemap list</title>
 
-        <para><emphasis role="bold">ecl package list
+        <para><emphasis role="bold">ecl packagemap list
         [options]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package list
-ecl package list --process=roxie
+        <programlisting>ecl packagemap list
+ecl packagemap list --process=roxie
 </programlisting>
 
         <para></para>
@@ -1667,9 +1667,9 @@ ecl package list --process=roxie
 
               <tbody>
                 <row>
-                  <entry>ecl package list</entry>
+                  <entry>ecl packagemap list</entry>
 
-                  <entry>Calls the package list command</entry>
+                  <entry>Calls the packagemap list command</entry>
                 </row>
 
                 <row>
@@ -1730,16 +1730,16 @@ ecl package list --process=roxie
       </sect2>
 
       <sect2 id="eclpackageinfo" role="brk">
-        <title>ecl package info</title>
+        <title>ecl packagemap info</title>
 
-        <para><emphasis role="bold">ecl package info [options]
+        <para><emphasis role="bold">ecl packagemap info [options]
         [--process=&lt;processCluster&gt; |
         --packageName=MyPackage]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package info --packageName=mypackage
-ecl package list --process=myroxie
+        <programlisting>ecl packagemap info --packageName=mypackage
+ecl packagemap list --process=myroxie
 </programlisting>
 
         <para>Specify either --process or packageName.</para>
@@ -1752,9 +1752,9 @@ ecl package list --process=myroxie
 
               <tbody>
                 <row>
-                  <entry>ecl package list</entry>
+                  <entry>ecl packagemap list</entry>
 
-                  <entry>Calls the package list command</entry>
+                  <entry>Calls the packagemap list command</entry>
                 </row>
 
                 <row>
