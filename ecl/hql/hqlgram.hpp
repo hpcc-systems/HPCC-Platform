@@ -1053,6 +1053,7 @@ class HqlLex
             return sourcePath;
         }
 
+        inline void setMacroParams(IProperties * _macroParams) { macroParms.set(_macroParams); }
         inline void setTokenPosition(YYSTYPE & returnToken)
         {
             returnToken.setPosition(yyLineNo, yyColumn, yyPosition, sourcePath);
@@ -1155,7 +1156,7 @@ private:
         /* to handle recursive macro */
         HqlLex *parentLex;
 
-        IProperties *macroParms;
+        Owned<IProperties> macroParms;
         IIterator *forLoop;
         IHqlExpression *macroExpr;
         StringBuffer forBody;
