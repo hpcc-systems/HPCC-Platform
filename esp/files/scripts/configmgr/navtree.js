@@ -1225,7 +1225,7 @@ function createNavigationTree(navTreeData) {
 
   var oContextMenuItems = {
     "Environment": [{text: "Save Environment", onclick: { fn: onMenuItemClick } },
-                    {text: "Save Environment As...", onclick: { fn: onMenuItemClick } },
+                    {text: "Save Environment As", onclick: { fn: onMenuItemClick } },
                     {text: "Validate Environment", onclick: { fn: onMenuItemClick } },
                     {text: "Copy Hardware To",
                       submenu: {
