@@ -993,6 +993,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
   checkForRefresh(context, &req.getReqInfo(), true);
 
   const char* xmlArg = req.getXmlArgs();
+  bool bUpdateFilesBasedn = req.getBUpdateFilesBasedn();
   Owned<IPropertyTree> pEnvRoot = &m_Environment->getPTree();
   IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree(XML_TAG_SOFTWARE);
   IPropertyTree* pEnvHardware = pEnvRoot->queryPropTree(XML_TAG_HARDWARE);
@@ -1268,6 +1269,72 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               pComp = &iter->query();
 
             break;
+          }
+        }
+      }
+
+      if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_LDAPSERVER) == 0 && strcmp(pszCompType, XML_TAG_DALISERVERPROCESS) == 0 && pComp != NULL && pszNewValue && *pszNewValue)
+      {
+        Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
+
+        StringBuffer ldapXPath;
+        ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+
+        StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+
+        pComp->setProp(XML_ATTR_FILESBASEDN,strFilesBasedn);
+      }
+      else if (bUpdateFilesBasedn == true && pComp != NULL && strcmp(pszCompType, XML_TAG_ESPPROCESS) == 0 && strcmp(pszAttrName, TAG_SERVICE) == 0 && pszNewValue && *pszNewValue)
+      {
+        Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
+
+        StringBuffer ldapXPath;
+        StringBuffer espServiceXPath;
+        StringBuffer espProcessXPath;
+
+        espServiceXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, pszNewValue);
+        espProcessXPath.appendf("./%s/%s/[%s=\"%s\"]/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_ATTR_NAME, pszCompName, XML_TAG_AUTHENTICATION);
+
+        StringBuffer strLDAPName(pActiveEnvRoot->queryPropTree(espProcessXPath.str())->queryProp(XML_ATTR_LDAPSERVER));
+
+        if (strLDAPName.length() > 0)
+        {
+          ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, strLDAPName.str());
+
+          StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+
+          if (strFilesBasedn.length() > 0)
+            pActiveEnvRoot->queryPropTree(espServiceXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
+        }
+      }
+      else if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_LDAPSERVER) == 0 && strcmp(pszCompType, XML_TAG_ESPPROCESS) == 0 && pComp != NULL)
+      {
+        Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
+
+        StringBuffer ldapXPath;
+        StringBuffer espBindingXPath;
+        StringBuffer espProcessXPath;
+
+        ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+        espBindingXPath.appendf("./%s/%s[%s=\"%s\"]/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_ATTR_NAME, pszCompName, XML_TAG_ESPBINDING);
+
+        StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+
+        if (strFilesBasedn.length() > 0)
+        {
+          Owned<IPropertyTreeIterator> iterItems = pActiveEnvRoot->getElements(espBindingXPath.str());
+
+          ForEach(*iterItems)
+          {
+            IPropertyTree *pItem = &iterItems->query();
+            const char* service_name = pItem->queryProp(XML_ATTR_SERVICE);
+
+            espProcessXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
+
+            const char* service_type = pActiveEnvRoot->queryPropTree(espProcessXPath.str())->queryProp(XML_ATTR_BUILDSET);
+
+            if (service_type && *service_type && !strcmp(service_type, "espsmc"))
+              pActiveEnvRoot->queryPropTree(espProcessXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
           }
         }
       }
