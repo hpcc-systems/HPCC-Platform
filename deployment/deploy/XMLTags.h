@@ -31,6 +31,7 @@
 
 #define XML_TAG_ATTRIBUTESERVER        "AttributeServer"
 #define XML_TAG_ATTRSERVERINSTANCE     "AttrServerInstance"
+#define XML_TAG_AUTHENTICATION         "Authentication"
 #define XML_TAG_BUILD                  "Build"
 #define XML_TAG_BUILDSET               "BuildSet"
 #define XML_TAG_CLUSTER                "Cluster"
@@ -128,6 +129,7 @@
 #define XML_ATTR_EXTERNALPROGDIR       "@externalProgDir"
 #define XML_ATTR_FAMILY                "@family"
 #define XML_ATTR_FILENAME              "@filename"
+#define XML_ATTR_FILESBASEDN           "@filesBasedn"
 #define XML_ATTR_FOLDSQL               "@foldSQL"
 #define XML_ATTR_FORCECOMPARECLUSTER   "@forceCompareCluster"
 #define XML_ATTR_FORCETHORCOMPARECLUSTER "@forceThorCompareCluster"
@@ -143,6 +145,7 @@
 #define XML_ATTR_JACKAGENTIP           "@jackAgentIP"
 #define XML_ATTR_KEEPCPP               "@keepCPP"
 #define XML_ATTR_LABEL                 "@label"
+#define XML_ATTR_LDAPSERVER            "@ldapServer"
 #define XML_ATTR_LOADERNAME            "@loaderName"
 #define XML_ATTR_LOADORDER             "@loadOrder"
 #define XML_ATTR_LOCALCACHE            "@localCache"
@@ -269,6 +272,9 @@
 #define TAG_VALUE                       "value"
 #define TAG_ATTRIBUTE                   "Attribute"
 #define TAG_ELEMENT                     "Element"
+#define TAG_DALISERVER                  "daliServer"
+#define TAG_LDAPSERVER                  "ldapServer"
+#define TAG_SERVICE                     "service"
 
 //---------------------------------------------------------------------------
 #endif // !defined(AFX_XMLTAGS_H__57887617_2BDE_4E3E_92CB_43FCDEDD05B8__INCLUDED_)
