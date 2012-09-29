@@ -370,6 +370,7 @@ function createNavigationTree(navTreeData) {
   var navDS = new YAHOO.util.DataSource(navTreeData);
   navDS.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
   navDS.responseSchema = { fields: ["Name", "DisplayName", "Build", "BuildSet", "parent", "id", "depth", "menu", "Params", "CompType"] };
+
   var navDT = new YAHOO.widget.ScrollingDataTable(
             'pageBody',
             [
@@ -1315,6 +1316,7 @@ function createNavigationTree(navTreeData) {
   }
 
   function onContextMenuBeforeShow(p_sType, p_aArgs) {
+    top.document.navDT._elBdContainer.scrollTop = top.document.navigatorScrollOffset;
     var oTarget = this.contextEventTarget,
           aMenuItems,
             aClasses;
