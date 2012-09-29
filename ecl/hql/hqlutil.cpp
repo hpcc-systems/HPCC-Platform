@@ -3831,6 +3831,22 @@ int compareSymbolsByName(IInterface * * pleft, IInterface * * pright)
     return stricmp(left->queryName()->str(), right->queryName()->str());
 }
 
+int compareScopesByName(IInterface * * pleft, IInterface * * pright)
+{
+    IHqlScope * left = static_cast<IHqlScope *>(*pleft);
+    IHqlScope * right = static_cast<IHqlScope *>(*pright);
+
+    const char * leftName = left->queryName()->str();
+    const char * rightName = right->queryName()->str();
+    if (leftName && rightName)
+        return stricmp(leftName, rightName);
+    if (leftName)
+        return +1;
+    if (rightName)
+        return -1;
+    return 0;
+}
+
 class ModuleExpander
 {
 public:
@@ -5549,6 +5565,18 @@ extern HQL_API bool areConstant(const HqlExprArray & args)
     return true;
 }
 
+
+bool getFoldedConstantText(StringBuffer& ret, IHqlExpression * expr)
+{
+    OwnedHqlExpr folded = foldExprIfConstant(expr);
+
+    IValue * value = folded->queryValue();
+    if (!value)
+        return false;
+
+    value->getStringValue(ret);
+    return true;
+}
 
 //===========================================================================
 
@@ -7652,43 +7680,60 @@ IHqlExpression * createMappingTransform(IHqlExpression * selfSelector, IHqlExpre
 
 //---------------------------------------------------------------------------------------------------------------------
 
+IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext & ctx, bool reportError)
+{
+    assertex(expr->isMacro());
+
+    Owned<IProperties> macroParms = createProperties();
+    IHqlExpression * macroBodyExpr;
+    if (expr->getOperator() == no_funcdef)
+    {
+        IHqlExpression * formals = expr->queryChild(1);
+        IHqlExpression * defaults = expr->queryChild(2);
+        ForEachChild(i, formals)
+        {
+            IHqlExpression* formal = formals->queryChild(i);
+            IHqlExpression* def = queryDefaultValue(defaults, i);
+
+            StringBuffer curParam;
+            if (!def || !getFoldedConstantText(curParam, def))
+            {
+                if (reportError)
+                    ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters that do no have default values", NULL, 1, 0, 0);
+                return NULL;
+            }
+            macroParms->setProp(formal->queryName()->str(), curParam.str());
+        }
+        macroBodyExpr = expr->queryChild(0);
+    }
+    else
+        macroBodyExpr = expr;
+
+    IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
+    size32_t len = macroContents->length();
+
+    //Strangely some macros still have the ENDMACRO on the end, and others don't.  This should be removed really.
+    StringBuffer macroText;
+    macroText.append(len, macroContents->getText());
+    if ((len >= 8) && strieq(macroText.str()+(len-8),"ENDMACRO"))
+        macroText.setLength(len-8);
+    //Now append a semi colon since that is how macros are normally called.
+    macroText.append(";");
+
+    //This might be cleaner if it was implemented by parsing the text myModule.myAttribute().
+    //It would make implementing default parameters easy.  However it could introduce other problems
+    //with implicitly importing myModule.
+    Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
+    Owned<IHqlScope> scope = createPrivateScope();
+    if (queryLegacyEclSemantics())
+        importRootModulesToScope(scope, ctx);
+    return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true);
+}
+
 static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLookupContext & ctx)
 {
     if (expr->isMacro())
-    {
-        IHqlExpression * macroBodyExpr;
-        if (expr->getOperator() == no_funcdef)
-        {
-            if (expr->queryChild(1)->numChildren() != 0)
-            {
-                ctx.errs->reportError(HQLERR_CannotSubmitMacroX, "Cannot submit a MACRO with parameters()", NULL, 1, 0, 0);
-                return NULL;
-            }
-            macroBodyExpr = expr->queryChild(0);
-        }
-        else
-            macroBodyExpr = expr;
-
-        IFileContents * macroContents = static_cast<IFileContents *>(macroBodyExpr->queryUnknownExtra());
-        size32_t len = macroContents->length();
-
-        //Strangely some macros still have the ENDMACRO on the end, and others don't.  This should be removed really.
-        StringBuffer macroText;
-        macroText.append(len, macroContents->getText());
-        if ((len >= 8) && strieq(macroText.str()+(len-8),"ENDMACRO"))
-            macroText.setLength(len-8);
-        //Now append a semi colon since that is how macros are normally called.
-        macroText.append(";");
-
-        //This might be cleaner if it was implemented by parsing the text myModule.myAttribute().
-        //It would make implementing default parameters easy.  However it could introduce other problems
-        //with implicitly importing myModule.
-        Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
-        Owned<IHqlScope> scope = createPrivateScope();
-        if (queryLegacyEclSemantics())
-            importRootModulesToScope(scope, ctx);
-        return parseQuery(scope, mappedContents, ctx, NULL, true);
-    }
+        return expandMacroDefinition(expr, ctx, true);
 
     if (expr->isFunction())
     {
