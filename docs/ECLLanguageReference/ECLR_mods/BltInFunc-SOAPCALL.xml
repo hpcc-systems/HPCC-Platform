@@ -163,11 +163,24 @@
           <row>
             <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
                 <primary>TIMEOUT</primary>
-              </indexterm>(<emphasis>seconds</emphasis>)</entry>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
 
-            <entry>Specifies the number of seconds to attempt the read before
-            failing. Setting to zero (0) indicates waiting forever . If
-            omitted, the default is three hundred (300).</entry>
+            <entry>Specifies the amount of time to attempt the read before
+            failing. The <emphasis>period</emphasis> is a real number where
+            the integer portion specifies seconds. Setting to zero (0)
+            indicates waiting forever. If omitted, the default is three
+            hundred (300).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+                <primary>TIMELIMIT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Specifies the total amount of time allowed for the SOAPCALL. 
+            The <emphasis>period</emphasis> is a real number where
+            the integer portion specifies seconds. If omitted, the default is 
+            zero (0) indicating no limit.</entry>
           </row>
 
           <row>
@@ -358,6 +371,7 @@ SOAPCALL( 'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData := 
 SOAPCALL( InputDataset,'https://127.0.0.1:8022/','MyModule.SomeService',{STRING500 InData});
 </programlisting>
 
-    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
+    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
   </sect2>
 </sect1>
