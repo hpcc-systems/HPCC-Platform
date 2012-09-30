@@ -33,6 +33,7 @@
 #define RefFileSuper          0x020
 #define RefSubFile            0x040
 #define RefFileCopyInfoFailed 0x080
+#define RefFileCloned         0x100
 
 interface IReferencedFile : extends IInterface
 {
