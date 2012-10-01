@@ -51,17 +51,17 @@
 
 void outputXmlString(unsigned len, const char *field, const char *fieldname, StringBuffer &out)
 {
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     encodeXML(field, out, 0, len);
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 
 void outputXmlBool(bool field, const char *fieldname, StringBuffer &out)
 {
     const char * text = field ? "true" : "false";
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>').append(text).append("</").append(fieldname).append('>');
     else
         out.append(text);
@@ -72,32 +72,32 @@ static char hexchar[] = "0123456789ABCDEF";
 void outputXmlData(unsigned len, const void *_field, const char *fieldname, StringBuffer &out)
 {
     const unsigned char *field = (const unsigned char *) _field;
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     for (unsigned int i = 0; i < len; i++)
     {
         out.append(hexchar[field[i] >> 4]).append(hexchar[field[i] & 0x0f]);
     }
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 void outputXmlInt(__int64 field, const char *fieldname, StringBuffer &out)
 {
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>').append(field).append("</").append(fieldname).append('>');
     else
         out.append(field);
 }
 void outputXmlUInt(unsigned __int64 field, const char *fieldname, StringBuffer &out)
 {
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>').append(field).append("</").append(fieldname).append('>');
     else
         out.append(field);
 }
 void outputXmlReal(double field, const char *fieldname, StringBuffer &out)
 {
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>').append(field).append("</").append(fieldname).append('>');
     else
         out.append(field);
@@ -105,7 +105,7 @@ void outputXmlReal(double field, const char *fieldname, StringBuffer &out)
 void outputXmlDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
     char dec[50];
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     DecLock();
     if (DecValid(true, size*2-1, field))
@@ -119,14 +119,14 @@ void outputXmlDecimal(const void *field, unsigned size, unsigned precision, cons
     else
         out.append("####");
     DecUnlock();
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 
 void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
 {
     char dec[50];
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     DecLock();
     if (DecValid(false, size*2, field))
@@ -140,7 +140,7 @@ void outputXmlUDecimal(const void *field, unsigned size, unsigned precision, con
     else
         out.append("####");
     DecUnlock();
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 
@@ -149,20 +149,20 @@ void outputXmlUnicode(unsigned len, const UChar *field, const char *fieldname, S
     char * buff = 0;
     unsigned bufflen = 0;
     rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     encodeXML(buff, out, 0, bufflen, true); // output as UTF-8
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
     rtlFree(buff);
 }
 
 void outputXmlUtf8(unsigned len, const char *field, const char *fieldname, StringBuffer &out)
 {
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
     encodeXML(field, out, 0, rtlUtf8Size(len, field), true); // output as UTF-8
-    if (fieldname)
+    if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
 
