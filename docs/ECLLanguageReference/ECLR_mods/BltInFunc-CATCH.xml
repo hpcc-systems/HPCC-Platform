@@ -2,18 +2,14 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="CATCH">
-  <title>CATCH<indexterm>
-      <primary>CATCH</primary>
-    </indexterm></title>
+  <title>CATCH</title>
 
   <para><emphasis>result</emphasis><emphasis role="bold"> := CATCH<indexterm>
+      <primary>CATCH</primary>
+    </indexterm><indexterm>
       <primary>CATCH Function</primary>
     </indexterm>(</emphasis> <emphasis>recset, action</emphasis><emphasis
-  role="bold"> );</emphasis><emphasis role="bold"></emphasis></para>
-
-  <para><emphasis>result</emphasis><emphasis role="bold"> := CATCH(
-  </emphasis><emphasis>tryexpression, catchexpression</emphasis><emphasis
-  role="bold">);</emphasis></para>
+  role="bold"> );</emphasis></para>
 
   <para><informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
@@ -32,119 +28,103 @@
             <entry><emphasis>recset</emphasis></entry>
 
             <entry>The recordset expression that, if it fails, causes the
-            <emphasis>action</emphasis> to .</entry>
+            <emphasis>action</emphasis> to launch.</entry>
           </row>
 
           <row>
             <entry><emphasis>action</emphasis></entry>
 
-            <entry>One of thre list of valid actions below.</entry>
-          </row>
-
-          <row>
-            <entry><emphasis>tryexpression</emphasis></entry>
-
-            <entry>A recordset expression, typically a nested CATCH function
-            of the first form.</entry>
-          </row>
-
-          <row>
-            <entry><emphasis>catchexpresssion</emphasis></entry>
-
-            <entry>An expression to try if the
-            <emphasis>tryexpression</emphasis> fails.</entry>
+            <entry>One of the three valid actions below.</entry>
           </row>
 
           <row>
             <entry>Return:</entry>
 
-            <entry>CATCH returns either a set of records or nothing.</entry>
+            <entry>CATCH returns a set of records (which may be
+            empty).</entry>
           </row>
         </tbody>
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">CATCH </emphasis>function will execute its
-  second parameter only if the first fails. There are two forms, and the
-  second is primarily used for nesting CATCH within CATCH</para>
+  <para>The <emphasis role="bold">CATCH </emphasis>function executes the
+  <emphasis>action</emphasis> if the <emphasis>recset</emphasis> expression
+  fails for any reason.</para>
 
-  <sect2 id="CATCH_Form1">
-    <title>CATCH Form 1</title>
+  <para>Valid <emphasis>actions</emphasis> are:</para>
 
-    <para>This form of CATCH executes the <emphasis>action</emphasis> if the
-    <emphasis>recset</emphasis> expression fails for any reason.</para>
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt" />
 
-    <para>Valid <emphasis>actions</emphasis> are:</para>
+        <colspec />
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
-        <tgroup cols="2">
-          <colspec colwidth="135.80pt" />
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">SKIP<indexterm>
+                <primary>SKIP</primary>
+              </indexterm></emphasis></entry>
 
-          <colspec />
+            <entry>Specifies ignoring the error and continuing, returning an
+            empty dataset.</entry>
+          </row>
 
-          <tbody>
-            <row>
-              <entry><emphasis role="bold">SKIP<indexterm>
-                  <primary>SKIP</primary>
-                </indexterm></emphasis></entry>
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
 
-              <entry>Specifies ignoring the error and continuing.</entry>
-            </row>
+            <entry>Specifies returning a single record from the
+            <emphasis>transform</emphasis> function. The TRANSFORM function
+            may use FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> to provide details of the failure and must result
+            in a RECORD structure the same format as the
+            <emphasis>recset</emphasis>.</entry>
+          </row>
 
-            <row>
-              <entry><emphasis role="bold">ONFAIL<indexterm>
-                  <primary>ONFAIL</primary>
-                </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+          <row>
+            <entry><emphasis role="bold">FAIL<indexterm>
+                <primary>FAIL</primary>
+              </indexterm></emphasis></entry>
 
-              <entry>Specifies the <emphasis>transform</emphasis> function to
-              call. The TRANSFORM function may use FAILCODE and/or
-              FAILMESSAGE<indexterm>
-                  <primary>FAILMESSAGE</primary>
-                </indexterm> to provide details of the failure.</entry>
-            </row>
+            <entry>The FAIL action, which specifies the error message to
+            produce. This is meant to provide more useful information to the
+            end user about why the job failed.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
 
-            <row>
-              <entry><emphasis role="bold">FAIL<indexterm>
-                  <primary>FAIL</primary>
-                </indexterm></emphasis>(<emphasis>message</emphasis>)</entry>
+  <para>Example:</para>
 
-              <entry>Specifies the FAIL action (which see).</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </informaltable></para>
-
-    <para>Example:</para>
-
-    <programlisting>// Skip
-recovered := CATCH(myTransform, SKIP);
-
-// Report
-MyRec FailTransform := TRANSFORM
- self.value1 := FAILMESSAGE[1..17];
- self.value2 := FAILCODE
+  <programlisting>MyRec := RECORD
+    STRING50 Value1;
+    UNSIGNED Value2;
 END;
-recovered2 := CATCH(myTransform, ONFAIL(FailTransform));
+
+ds := DATASET([{'C',1},{'C',2},{'C',3},
+               {'C',4},{'C',5},{'X',1},{'A',1}],MyRec);
+
+MyRec FailTransform := transform
+  self.value1 := FAILMESSAGE[1..17]; 
+  self.value2 := FAILCODE
+END;
+
+limited1 := LIMIT(ds, 2);
+limited2 := LIMIT(ds, 3);
+limited3 := LIMIT(ds, 4);
+
+recovered1 := CATCH(limited1, SKIP);
+recovered2 := CATCH(limited2, ONFAIL(FailTransform));
+recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, dude')), ONFAIL(FailTransform));
+
+OUTPUT(recovered1);  //empty recordset 
+OUTPUT(recovered2);  //
+OUTPUT(recovered3);  //
 </programlisting>
-  </sect2>
 
-  <sect2 id="CATCH_Form2">
-    <title>CATCH Form 2</title>
-
-    <para>The second form of CATCH is primarily used to nest CATCH.</para>
-
-    <para>Example:</para>
-
-    <programlisting>ds := CATCH(
-   // Try one transform first...
-   CATCH(myTransform, FAIL('first attempt failed, trying another'),
-   // If this fails, stop the program
-   myOtherTransform);
-
-</programlisting>
-
-    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
-    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
-    linkend="FAIL">FAIL</link></para>
-  </sect2>
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="FAIL">FAIL</link>, <link linkend="FAILCODE">FAILCODE</link>, <link
+  linkend="FAILMESSAGE">FAILMESSAGE</link></para>
 </sect1>
