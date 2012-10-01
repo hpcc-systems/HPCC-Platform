@@ -64,6 +64,8 @@ const char *skipForeign(const char *name, StringBuffer *ip=NULL)
     return name;
 }
 
+class ReferencedFileList;
+
 class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
@@ -95,13 +97,48 @@ public:
     virtual unsigned getFlags() const {return flags;}
     virtual const SocketEndpoint &getForeignIP() const {return foreignNode->endpoint();}
     virtual void cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode *remote, const char *cluster, bool overwrite=false);
-    void cloneSuperInfo(IUserDescriptor *user, INode *remote, bool overwrite);
+    void cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite);
 
 public:
     StringAttr logicalName;
     Owned<INode> foreignNode;
 
     unsigned flags;
+};
+
+class ReferencedFileList : public CInterface, implements IReferencedFileList
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    ReferencedFileList(const char *username, const char *pw)
+    {
+        if (username && pw)
+        {
+            user.setown(createUserDescriptor());
+            user->set(username, pw);
+        }
+    }
+
+    virtual void addFile(const char *ln);
+    virtual void addFiles(StringArray &files);
+    virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
+
+    virtual IReferencedFileIterator *getFiles();
+    virtual void cloneFileInfo(bool overwrite, bool cloneSuperInfo);
+    virtual void cloneRelationships();
+    virtual void cloneAllInfo(bool overwrite, bool cloneSuperInfo)
+    {
+        cloneFileInfo(overwrite, cloneSuperInfo);
+        cloneRelationships();
+    }
+    virtual void resolveFiles(const char *process, const char *remoteIP, bool checkLocalFirst, bool addSubFiles);
+    void resolveSubFiles(StringArray &subfiles, bool checkLocalFirst);
+
+public:
+    Owned<IUserDescriptor> user;
+    Owned<INode> remote;
+    MapStringToMyClass<ReferencedFile> map;
+    StringAttr process;
 };
 
 void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *cluster, StringArray *subfiles)
@@ -112,7 +149,7 @@ void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *clus
         flags |= RefFileSuper;
         if (subfiles)
         {
-            Owned<IDistributedFileIterator> it = super->getSubFileIterator();
+            Owned<IDistributedFileIterator> it = super->getSubFileIterator(true); //supersub = true, no need to deal with LOCAL supersubs
             ForEach(*it)
             {
                 IDistributedFile &sub = it->query();
@@ -199,7 +236,7 @@ void ReferencedFile::resolve(const char *cluster, IUserDescriptor *user, INode *
 
 void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode *remote, const char *cluster, bool overwrite)
 {
-    if (flags & RefFileSuper)
+    if ((flags & RefFileCloned) || (flags & RefFileSuper))
         return;
     if (!(flags & (RefFileRemote | RefFileForeign | RefFileNotOnCluster)))
         return;
@@ -214,6 +251,7 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode 
     {
         helper->createSingleFileClone(logicalName.get(), logicalName.get(), cluster,
             DFUcpdm_c_replicated_by_d, true, NULL, user, addr.str(), NULL, overwrite, false);
+        flags |= RefFileCloned;
     }
     catch (IException *e)
     {
@@ -228,9 +266,9 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode 
     }
 }
 
-void ReferencedFile::cloneSuperInfo(IUserDescriptor *user, INode *remote, bool overwrite)
+void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite)
 {
-    if (!(flags & RefFileSuper) || !(flags & RefFileRemote))
+    if ((flags & RefFileCloned) || !(flags & RefFileSuper) || !(flags & RefFileRemote))
         return;
 
     try
@@ -250,10 +288,18 @@ void ReferencedFile::cloneSuperInfo(IUserDescriptor *user, INode *remote, bool o
         }
 
         Owned<IDistributedSuperFile> superfile = dir.createSuperFile(logicalName.get(), true, false, user);
+        flags |= RefFileCloned;
         Owned<IPropertyTreeIterator> subfiles = tree->getElements("SubFile");
         ForEach(*subfiles)
         {
             const char *name = subfiles->query().queryProp("@name");
+            if (list)
+            {
+                //ensure superfile in superfile is cloned, before add
+                ReferencedFile *subref = list->map.getValue(name);
+                if (subref)
+                    subref->cloneSuperInfo(list, user, remote, overwrite);
+            }
             if (name && *name)
                 superfile->addSubFile(name, false, NULL, false);
         }
@@ -271,40 +317,6 @@ void ReferencedFile::cloneSuperInfo(IUserDescriptor *user, INode *remote, bool o
     }
 }
 
-class ReferencedFileList : public CInterface, implements IReferencedFileList
-{
-public:
-    IMPLEMENT_IINTERFACE;
-    ReferencedFileList(const char *username, const char *pw)
-    {
-        if (username && pw)
-        {
-            user.setown(createUserDescriptor());
-            user->set(username, pw);
-        }
-    }
-
-    virtual void addFile(const char *ln);
-    virtual void addFiles(StringArray &files);
-    virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
-
-    virtual IReferencedFileIterator *getFiles();
-    virtual void cloneFileInfo(bool overwrite, bool cloneSuperInfo);
-    virtual void cloneRelationships();
-    virtual void cloneAllInfo(bool overwrite, bool cloneSuperInfo)
-    {
-        cloneFileInfo(overwrite, cloneSuperInfo);
-        cloneRelationships();
-    }
-    virtual void resolveFiles(const char *process, const char *remoteIP, bool checkLocalFirst, bool addSubFiles);
-    void resolveSubFiles(StringArray &subfiles, bool checkLocalFirst);
-
-public:
-    Owned<IUserDescriptor> user;
-    Owned<INode> remote;
-    MapStringToMyClass<ReferencedFile> map;
-    StringAttr process;
-};
 
 class ReferencedFileIterator : public CInterface, implements IReferencedFileIterator
 {
@@ -424,7 +436,7 @@ void ReferencedFileList::cloneFileInfo(bool overwrite, bool cloneSuperInfo)
         files.queryObject().cloneInfo(helper, user, remote, process, overwrite);
     if (cloneSuperInfo)
         ForEach(files)
-            files.queryObject().cloneSuperInfo(user, remote, overwrite);
+            files.queryObject().cloneSuperInfo(this, user, remote, overwrite);
 }
 
 void ReferencedFileList::cloneRelationships()
