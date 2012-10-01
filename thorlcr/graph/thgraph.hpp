@@ -134,6 +134,8 @@ interface IThorGraphResults : extends IEclGraphResults
     virtual unsigned addResult(IThorResult *result) = 0;
     virtual void setResult(unsigned id, IThorResult *result) = 0;
     virtual unsigned count() = 0;
+    virtual void setOwner(activity_id id) = 0;
+    virtual activity_id queryOwnerId() const = 0;
 };
 
 class CGraphBase;
@@ -141,7 +143,8 @@ interface IThorBoundLoopGraph : extends IInterface
 {
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results) = 0;
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos) = 0;
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *rowStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte * parentExtract) = 0;
+    virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos) = 0;
+    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *rowStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte * parentExtract) = 0;
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults * graphLoopResults, size32_t parentExtractSz, const byte * parentExtract) = 0;
     virtual CGraphBase *queryGraph() = 0;
 };
@@ -361,26 +364,6 @@ public:
     virtual bool isValid() { return iter.isValid(); }
     virtual CGraphElementBase & query() { return iter.query(); }
             CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
-};
-
-// Stolen from eclagent.ipp 'EclCounterMeta'
-class CThorEclCounterMeta : public CInterface, implements IOutputMetaData
-{
-public:
-    IMPLEMENT_IINTERFACE
-
-    virtual size32_t getRecordSize(const void *rec)         { return sizeof(thor_loop_counter_t); }
-    virtual size32_t getMinRecordSize() const               { return sizeof(thor_loop_counter_t); }
-    virtual size32_t getFixedSize() const                   { return sizeof(thor_loop_counter_t); }
-    virtual void toXML(const byte * self, IXmlWriter & out) { }
-    virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
-    virtual unsigned getMetaFlags()                         { return 0; }
-    virtual void destruct(byte * self) {}
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputMetaData * querySerializedMeta() { return this; }
-    virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
 };
 
 typedef OwningStringSuperHashTableOf<CFileUsageEntry> CFileUsageTable;
@@ -746,6 +729,7 @@ public:
 
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
+    virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
@@ -882,6 +866,7 @@ public:
 
     IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags=roxiemem::RHFnone) const;
     roxiemem::IRowManager *queryRowManager() const;
+    IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
     IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
     const bool &queryPausing() const { return pausing; }
@@ -954,6 +939,7 @@ protected:
     const byte *parentExtract;
     bool receiving, cancelledReceive, reInit;
     unsigned maxCores; // NB: only used by acts that sort at the moment
+    Owned<IThorGraphResults> ownedResults; // NB: probably only to be used by loop results
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -983,10 +969,11 @@ public:
     virtual bool wait(unsigned timeout) { return true; } // NB: true == success
     virtual void reset() { receiving = abortSoon = cancelledReceive = false; }
     virtual void done() { }
-    virtual void kill() { }
+    virtual void kill();
     virtual void abort();
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const = 0;
     virtual MemoryBuffer &getInitializationData(unsigned slave, MemoryBuffer &mb) const = 0;
+    virtual IThorGraphResults *queryResults() { return ownedResults; }
 
     void ActPrintLog(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
@@ -1074,6 +1061,7 @@ protected:
     };
     IArrayOf<IThorResult> results;
     CriticalSection cs;
+    activity_id ownerId;
     void ensureAtLeast(unsigned id)
     {
         while (results.ordinality() < id)
@@ -1082,7 +1070,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorGraphResults(unsigned _numResults) { ensureAtLeast(_numResults); }
+    CThorGraphResults(unsigned _numResults) { ensureAtLeast(_numResults); ownerId = 0; }
     virtual void clear()
     {
         CriticalBlock procedure(cs);
@@ -1127,6 +1115,8 @@ public:
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);
     }
+    virtual void setOwner(activity_id _ownerId) { ownerId = _ownerId; }
+    virtual activity_id queryOwnerId() const { return ownerId; }
 };
 
 extern graph_decl IThorResult *createResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);

@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //nothor
-//skip type==thorlcr TBD
 #option ('newChildQueries', true)
 
 namesRecord := 
