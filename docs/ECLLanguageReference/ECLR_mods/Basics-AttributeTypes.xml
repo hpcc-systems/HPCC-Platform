@@ -104,6 +104,46 @@ SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
     <programlisting>SetDS := [ds1, ds2, ds3]; // a set of datasets</programlisting>
   </sect2>
 
+  <sect2 id="Set_Comparison">
+    <title>Set Comparison<indexterm>
+        <primary>Set Comparison</primary>
+      </indexterm><indexterm>
+        <primary>Comparing Sets</primary>
+      </indexterm></title>
+
+    <para>Sets may be compared using standard comparison operators, as in
+    these examples:</para>
+
+    <programlisting>s1 := [1,2,3];
+s2 := [1,2,3];
+s3 := [1,2,4];
+s1 =  s2; //true
+s1 =  s3; //false
+s1 &lt;&gt; s2; //false
+s1 &lt;&gt; s3; //true
+s1 &lt;  s2; //false
+s1 &lt;  s3; //true
+
+ds1 := DATASET(s1,{UNSIGNED1 num});
+ds2 := DATASET(s2,{UNSIGNED1 num});
+ds3 := DATASET(s3,{UNSIGNED1 num});
+s4  := SET(ds1,num);
+s5  := SET(ds2,num);
+s6  := SET(ds3,num);
+s4 =  s5; //true
+s4 =  s6; //false
+s4 &lt;&gt; s5; //false
+s4 &lt;&gt; s6; //true
+s4 &lt;  s5; //false
+s4 &lt;  s6; //true
+
+ds4 := DATASET([{1},{3},{2}],{UNSIGNED1 num});
+s7  := SET(ds4,num);
+s8  := SET(SORT(ds4,RECORD),num);
+s4 =  s7;  //false
+s4 =  s8;  //true    </programlisting>
+  </sect2>
+
   <sect2 id="Set_Ordering_and_Indexing">
     <title>Set Ordering and Indexing <indexterm>
         <primary>Set Ordering</primary>
