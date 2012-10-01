@@ -282,6 +282,8 @@ sub _copy_query($$$;$)
     Regress::Query::print_variant_ecl($variant, \*OUT) if($variant);
     my $setupFileLocation = "$self->{setup_file_location}";
     print(OUT "setupTextFileLocation := '$setupFileLocation';\n");
+    my $tempFiles = "$self->{temp_files}";
+    print(OUT "tempFiles := '$tempFiles';\n");
     my $usesTextSearch = ($variant && $variant->{uts});
     my @paths;
     push(@paths, $self->{setuptxt}) if($variant);

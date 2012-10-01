@@ -58,6 +58,7 @@ GetOptions('help|?' => sub { pod2usage(-exitstatus => 0, -verbose => 2) },
            'variant=s' => \$options->{variant},
            'setup_clusters=s' => \$options->{setup_clusters},
            'setup_file_location=s' => \$options->{setup_file_location},
+           'temp_files=s' => \$options->{temp_files},
            'class|c=s' => \$options->{class},
            'parallel_queries|pq=s' => \$options->{parallel_queries},
            'ecloption=s' => $options->{ecloptions},
@@ -161,6 +162,10 @@ During a setup run, specifies the clusters to use, as a comma- or space-separate
 =item B<-setup_file_location>
 
 During a setup run, defines the location of the text files used to create the additional text searching attributes.
+
+=item B<-temp_files>
+
+During execution, some files need to be used for import/export tests. This is the directory those files will be. The default is the directory where the tests and the import files are.
 
 =item B<-testdir>|B<-t> I<directory>
 
