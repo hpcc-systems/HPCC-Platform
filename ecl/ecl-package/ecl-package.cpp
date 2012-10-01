@@ -464,11 +464,15 @@ public:
 
     virtual void usage()
     {
-        fprintf(stdout,"\nUsage:\n\n"
-            "ecl package delete [options] [<filename>]\n\n"
-            "   Options:\n"
-            "      --queryset=<queryset>        name of queryset to associate the information\n"
-        );
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'delete' command will delete the package map from the target cluster \n"
+                    "\n"
+                    "ecl package delete <target> <packagemap>\n"
+                    " Options:\n"
+                    "   <target>               name of the target to use \n"
+                    "   <packagemap>           name of the package map to delete",
+                    stdout);
         EclCmdCommon::usage();
     }
 private:

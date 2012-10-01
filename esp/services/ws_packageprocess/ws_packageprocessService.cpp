@@ -482,7 +482,8 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     StringAttr processName(req.getProcess());
 
     VStringBuffer pkgSetId("default_%s", processName.get());
-    pkgSetId.replace('*', '_');
+    pkgSetId.replace('*', '#');
+    pkgSetId.replace('?', '~');
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
