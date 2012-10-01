@@ -466,7 +466,12 @@ function createNavigationTree(navTreeData) {
 
     if (typeof (selectedRows) !== 'undefined') {
       for (var i = 0; i < selectedRows.length; i++) {
-        xmlStr += "<Component name=\"" + navDT.getRecord(selectedRows[i]).getData('Name');
+        if (navDT.getRecord(selectedRows[i]).getData('Name') == "")
+          continue;
+        if (navDT.getRecord(selectedRows[i]).getData('CompType') == 'Directories')
+          continue;
+        else
+          xmlStr += "<Component name=\"" + navDT.getRecord(selectedRows[i]).getData('Name');
         xmlStr += "\" compType=\"" + navDT.getRecord(selectedRows[i]).getData('CompType');
         xmlStr += "\" build=\"" + navDT.getRecord(selectedRows[i]).getData('Build');
 
@@ -608,7 +613,8 @@ function createNavigationTree(navTreeData) {
         if (compName === "Environment" && document.forms['treeForm'].wizops.value === '3')
           getWaitDlg().show();
           
-        document.getElementById('center1frame').src = '/WsDeploy/DisplaySettings?Cmd=Select&' + getFileName(true) + 'XmlArgs=' + navDT.selectionToXML(record, selectedRows);
+        if (oArgs.event.shiftKey == false && oArgs.event.ctrlKey == false)
+          document.getElementById('center1frame').src = '/WsDeploy/DisplaySettings?Cmd=Select&' + getFileName(true) + 'XmlArgs=' + navDT.selectionToXML(record, selectedRows);
         if (top.document.lastSelectedRow !== 'Hardware' && record.getData('BuildSet') === '')
           top.document.stopWait();
         return;
@@ -1353,6 +1359,7 @@ function createNavigationTree(navTreeData) {
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
         this.getItem(2).cfg.setProperty("disabled", true);
         this.getItem(3).cfg.setProperty("disabled", true);
+        this.getItem(4).cfg.setProperty("disabled", true);
       }
 
       if (record.getData('id') === 0) {
