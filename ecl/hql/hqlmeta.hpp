@@ -45,6 +45,7 @@ extern HQL_API ITypeInfo * getTypeGroupSort(ITypeInfo * prev, IHqlExpression * s
 extern HQL_API ITypeInfo * getTypeDistribute(ITypeInfo * prev, IHqlExpression * distribution, IHqlExpression * optMergeOrder);
 extern HQL_API ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsigned firstChild);
 extern HQL_API ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType);
+extern HQL_API ITypeInfo * getTypeLoseDistributionKeepOrder(ITypeInfo * prev);
 extern HQL_API ITypeInfo * getTypeProject(ITypeInfo * prev, IHqlExpression * newRecord, TableProjectMapper & mapper);
 extern HQL_API ITypeInfo * getTypeShuffle(ITypeInfo * prev, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal);
 extern HQL_API ITypeInfo * getTypeCannotProject(ITypeInfo * prev, IHqlExpression * newRecord); // preserve grouping, but that's it.

@@ -751,6 +751,21 @@ ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isL
     return makeGroupedTableType(tableType, newGrouping.getClear(), newGroupOrder.getClear());
 }
 
+//NB: This does not handle ALL groups that is handled in createDataset()
+ITypeInfo * getTypeLoseDistributionKeepOrder(ITypeInfo * prev)
+{
+    OwnedITypeInfo prevUngrouped = getTypeUngroup(prev);
+
+    IHqlExpression * distribution = NULL;
+    IHqlExpression * globalOrder = queryGlobalSortOrder(prevUngrouped);
+
+    //If records are moved from one node to the next, the global order will be preserved, and the local order will
+    //only be valid if it matches the global order.
+
+    ITypeInfo * rowType = queryRowType(prevUngrouped);
+    return makeTableType(LINK(rowType), LINK(distribution), LINK(globalOrder), LINK(globalOrder));
+}
+
 ITypeInfo * getTypeGlobalSort(ITypeInfo * prev, IHqlExpression * sortOrder)
 {
     OwnedHqlExpr newSortOrder = normalizeSortlist(sortOrder);
