@@ -165,7 +165,6 @@ void HqlLex::init(IFileContents * _text)
     text.set(_text);
     inmacro = NULL;
     parentLex = NULL;
-    macroParms = NULL;
     inComment = false;
     inCpp = false;
     hasHashbreak = false;
@@ -202,7 +201,6 @@ HqlLex::~HqlLex()
     delete[] yyBuffer;
     ::Release(xmlScope);
     ::Release(macroExpr);
-    ::Release(macroParms);
     if (inmacro) delete inmacro;        
     ::Release(forLoop);
 }
@@ -329,21 +327,6 @@ void HqlLex::pushText(const char *s)
 #endif
 }
 
-static bool getDefaultParam(IHqlExpression* _defValue, StringBuffer& ret)
-{
-    OwnedHqlExpr defValue = foldExprIfConstant(_defValue);
-
-    IValue * value = defValue->queryValue();
-    if (!value)
-        return false;
-
-    StringBuffer temp;
-    value->getStringValue(temp);
-    //PrintLog("Get macro param: %s", fixed.str());
-    ret.append(temp);
-    return true;
-}
-
 void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms)
 {
     IHqlExpression * formals = queryFunctionParameters(funcdef);
@@ -384,7 +367,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
             }
             else
             {
-                if (!getDefaultParam(def, curParam))
+                if (!getFoldedConstantText(curParam, def))
                 {
                     StringBuffer msg("Default value for parameter ");
                     msg.append(parmno).append(" should be a constant");
@@ -516,7 +499,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
                 IHqlExpression* def = queryDefaultValue(defaults, idx); 
                 if (def)
                 {
-                    if (!getDefaultParam(def, curParam))
+                    if (!getFoldedConstantText(curParam, def))
                     {
                         StringBuffer msg("Omitted parameter ");
                         msg.append(idx+1);
@@ -570,7 +553,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
         inmacro->yyLineNo = macroBodyExpr->getStartLine();
         inmacro->yyColumn = macroBodyExpr->getStartColumn();
         inmacro->setParentLex(this);
-        inmacro->macroParms = macroParms.getClear();
+        inmacro->macroParms.setown(macroParms.getClear());
     }
 }
 
@@ -1011,7 +994,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         {
             HqlLookupContext ctx(yyParser->lookupCtx);
             Owned<IFileContents> exportContents = createFileContentsFromText(curParam.str(), sourcePath);
-            expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, true));
+            expr.setown(parseQuery(scope, exportContents, ctx, xmlScope, NULL, true));
 
             if (expr && (expr->getOperator() == no_sizeof))
             {
@@ -1437,7 +1420,7 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
         HqlLookupContext ctx(yyParser->lookupCtx);
         ctx.errs.clear();   //Deliberately ignore any errors
         Owned<IFileContents> contents = createFileContentsFromText(curParam.str(), sourcePath);
-        expr = parseQuery(scope, contents, ctx, xmlScope, true);
+        expr = parseQuery(scope, contents, ctx, xmlScope, NULL, true);
         
         if(expr)
         {   

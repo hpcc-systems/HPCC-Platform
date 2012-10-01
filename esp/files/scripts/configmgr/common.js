@@ -107,6 +107,7 @@ function getRecord(table, id) {
 
 function setFocusToNavTable() {
   var tabView = top.document.RightTabView;
+  top.document.navigatorScrollOffset =  top.document.navDT._elBdContainer.scrollTop;
   top.document.navDT.focus();
   if (tabView) {
     var dt = tabView.get("activeTab").dt;

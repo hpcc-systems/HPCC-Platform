@@ -3325,10 +3325,12 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_distribute:
     case no_distributed:
         {
+            if (isNull(child) || isFail(child))
+                return removeParentNode(expr);
+            if (expr->hasProperty(skewAtom))
+            	break;
             //Careful - distribute also destroys grouping, so don't remove if input is grouped.
             if ((expr->queryType()->queryDistributeInfo() == child->queryType()->queryDistributeInfo()) && !isGrouped(child))
-                return removeParentNode(expr);
-            if (isNull(child) || isFail(child))
                 return removeParentNode(expr);
             break;
         }

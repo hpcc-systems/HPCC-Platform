@@ -385,10 +385,11 @@
           <row>
             <entry><emphasis role="bold">HASH</emphasis></entry>
 
-            <entry>Specifies implicit distribution of the
+            <entry>Specifies an implicit DISTRIBUTE of the
             <emphasis>leftrecset</emphasis> and
-            <emphasis>rightrecset</emphasis> across the supercomputer nodes so
-            each node can do its job with local data.</entry>
+            <emphasis>rightrecset</emphasis> across the supercomputer nodes
+            based on the <emphasis>joincondition</emphasis> so each node can
+            do its job with local data.</entry>
           </row>
 
           <row>

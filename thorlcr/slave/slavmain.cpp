@@ -170,7 +170,9 @@ public:
                         msg.read(sendSo);
 
                         RemoteFilename rfn;
-                        rfn.setPath(queryClusterGroup().queryNode(0).endpoint(), remoteSoPath);
+                        SocketEndpoint masterEp = queryClusterGroup().queryNode(0).endpoint();
+                        masterEp.port = 0;
+                        rfn.setPath(masterEp, remoteSoPath);
                         rfn.getTail(soPathTail);
                         if (sendSo)
                         {
@@ -204,27 +206,31 @@ public:
                             assertex(globals->getPropBool("Debug/@dllsToSlaves", true));
                             querySoCache.add(soPath.str());
                         }
-                        else if (globals->getPropBool("Debug/@dllsToSlaves", true))
-                        {
-                            // i.e. should have previously been sent.
-                            globals->getProp("@query_so_dir", soPath);
-                            if (soPath.length())
-                                addPathSepChar(soPath);
-                            soPath.append(soPathTail);
-                            OwnedIFile iFile = createIFile(soPath.str());
-                            if (!iFile->exists())
-                            {
-                                WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
-                                StringBuffer rpath;
-                                rfn.getRemotePath(rpath);
-                                if (rfn.isLocal())
-                                    rfn.getLocalPath(rpath.clear());
-                                copyFile(soPath.str(), rpath.str());
-                            }
-                            querySoCache.add(soPath.str());
-                        }
                         else
-                            soPath.append(remoteSoPath);
+                        {
+                            if (!rfn.isLocal())
+                            {
+                                StringBuffer _remoteSoPath;
+                                rfn.getRemotePath(_remoteSoPath);
+                                remoteSoPath.set(_remoteSoPath);
+                            }
+                            if (globals->getPropBool("Debug/@dllsToSlaves", true))
+                            {
+                                globals->getProp("@query_so_dir", soPath);
+                                if (soPath.length())
+                                    addPathSepChar(soPath);
+                                soPath.append(soPathTail);
+                                OwnedIFile iFile = createIFile(soPath.str());
+                                if (!iFile->exists())
+                                {
+                                    WARNLOG("Slave cached query dll missing: %s, will attempt to fetch from master", soPath.str());
+                                    copyFile(soPath.str(), remoteSoPath);
+                                }
+                                querySoCache.add(soPath.str());
+                            }
+                            else
+                                soPath.append(remoteSoPath);
+                        }
 
                         Owned<IPropertyTree> workUnitInfo = createPTree(msg);
                         StringBuffer user;

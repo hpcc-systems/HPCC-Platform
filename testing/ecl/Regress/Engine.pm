@@ -518,7 +518,8 @@ sub _check_ini_file($)
             'server' => $server,
             'owner' => $username,
             'password' => $passwd,
-            'setup_file_location' => $fileloc,
+            'temp_files' => $fileloc,
+            'setup_file_location' => '',
             'os' => $os,
             'parallel_queries' => $parallel,
             'purge' => $purge,
@@ -623,6 +624,7 @@ sub _set_defaults($)
     $self->{report} = 'Default' unless(defined($self->{report}));
     $self->{time} = _current_time();
     $self->{iamwindows} = $self->_am_i_windows();
+    $self->{temp_files} = '' unless(defined($self->{temp_files}));
     $self->{setup_file_location} = '' unless(defined($self->{setup_file_location}));
 }
 

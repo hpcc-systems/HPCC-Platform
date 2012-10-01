@@ -5,59 +5,68 @@
   <title>WHEN</title>
 
   <informalexample id="SchWhen">
-  <para><emphasis role="bold">WHEN<indexterm>
-      <primary>WHEN</primary>
-    </indexterm><indexterm>
-      <primary>WHEN Function</primary>
-    </indexterm>(</emphasis><emphasis>trigger, action</emphasis><emphasis
-  role="bold"> [ BEFORE | SUCCESS ] )</emphasis></para>
+    <para><emphasis role="bold">WHEN<indexterm>
+        <primary>WHEN</primary>
+      </indexterm><indexterm>
+        <primary>WHEN Function</primary>
+      </indexterm>(</emphasis><emphasis>trigger, action</emphasis><emphasis
+    role="bold"> [ BEFORE | SUCCESS | FAILURE] )</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
-      <tgroup cols="2">
-        <colspec colwidth="122.40pt" />
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="122.40pt" />
 
-        <colspec />
+          <colspec />
 
-        <tbody>
-          <row>
-            <entry><emphasis>trigger</emphasis></entry>
+          <tbody>
+            <row>
+              <entry><emphasis>trigger</emphasis></entry>
 
-            <entry>A dataset or action whose success triggers the
-            <emphasis>action</emphasis>.</entry>
-          </row>
+              <entry>A dataset or action that launches the
+              <emphasis>action</emphasis>.</entry>
+            </row>
 
-          <row>
-            <entry><emphasis>action</emphasis></entry>
+            <row>
+              <entry><emphasis>action</emphasis></entry>
 
-            <entry>The action to execute.</entry>
-          </row>
+              <entry>The action to execute.</entry>
+            </row>
 
-          <row>
-            <entry><emphasis role="bold">BEFORE</emphasis></entry>
+            <row>
+              <entry><emphasis role="bold">BEFORE</emphasis></entry>
 
-            <entry>Optional. Specifies an <emphasis>action</emphasis> that
-            should be executed before the input is read.</entry>
-          </row>
+              <entry>Optional. Specifies an <emphasis>action</emphasis> that
+              should be executed before the input is read.</entry>
+            </row>
 
-          <row>
-            <entry><emphasis role="bold">SUCCESS</emphasis></entry>
+            <row>
+              <entry><emphasis role="bold">SUCCESS</emphasis></entry>
 
-            <entry>Optional. Specifies an <emphasis>action</emphasis> that
-            should only be executed on SUCCESS of the
-            <emphasis>trigger</emphasis> (e.g., no LIMITs exceeded).</entry>
-          </row>
-        </tbody>
-      </tgroup>
-    </informaltable></para>
+              <entry>Optional. Specifies an <emphasis>action</emphasis> that
+              should only be executed on SUCCESS of the
+              <emphasis>trigger</emphasis> (e.g., no LIMITs exceeded).</entry>
+            </row>
 
-  <para>The <emphasis role="bold">WHEN </emphasis>function associates an
-  <emphasis>action</emphasis> with a <emphasis>trigger</emphasis> (dataset or
-  action) so that when the <emphasis>trigger</emphasis> is executed the
-  <emphasis>action</emphasis> is also executed. This allows</para>
+            <row>
+              <entry><emphasis role="bold">FAILURE</emphasis></entry>
 
-  <para>Example:</para>
+              <entry>Optional. Specifies an <emphasis>action</emphasis> that
+              should only be executed on FAILURE of the
+              <emphasis>trigger</emphasis> (e.g., a LIMIT was
+              exceeded).</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
 
-  <programlisting>//a FUNCTION with side-effect Action
+    <para>The <emphasis role="bold">WHEN </emphasis>function associates an
+    <emphasis>action</emphasis> with a <emphasis>trigger</emphasis> (dataset
+    or action) so that when the <emphasis>trigger</emphasis> is executed the
+    <emphasis>action</emphasis> is also executed. This allows</para>
+
+    <para>Example:</para>
+
+    <programlisting>//a FUNCTION with side-effect Action
 namesTable := FUNCTION
    namesRecord := RECORD
      STRING20 surname;
@@ -74,6 +83,7 @@ z := namesTable : PERSIST('z');
 OUTPUT(z);
 </programlisting>
   </informalexample>
+
   <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
   Structure</link>, <link linkend="WHEN">WHEN</link>, <link
   linkend="WAIT">WAIT</link></para>

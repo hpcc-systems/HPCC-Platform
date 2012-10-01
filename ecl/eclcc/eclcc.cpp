@@ -41,6 +41,8 @@
 #include "build-config.h"
 #include "rmtfile.hpp"
 
+//#define TEST_LEGACY_DEPENDENCY_CODE
+
 #define INIFILE "eclcc.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "eclcc.ini"
@@ -767,6 +769,13 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                                IFileContents * queryContents,
                                const char * queryAttributePath)
 {
+#ifdef TEST_LEGACY_DEPENDENCY_CODE
+    setLegacyEclSemantics(instance.legacyMode);
+    Owned<IPropertyTree> dependencies = gatherAttributeDependencies(instance.dataServer, "");
+    if (dependencies)
+        saveXML("depends.xml", dependencies);
+#endif
+
     Owned<IErrorReceiver> wuErrs = new WorkUnitErrorReceiver(instance.wu, "eclcc");
     Owned<IErrorReceiver> errs = createCompoundErrorReceiver(instance.errs, wuErrs);
 
@@ -835,7 +844,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 if (instance.legacyMode)
                     importRootModulesToScope(scope, ctx);
 
-                instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, true));
+                instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true));
 
                 if (instance.archive)
                 {

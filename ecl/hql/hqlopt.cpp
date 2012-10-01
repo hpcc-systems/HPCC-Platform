@@ -2427,6 +2427,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
     case no_keyeddistribute:
     case no_distribute:
         {
+            if (transformed->hasProperty(skewAtom))
+                break;
             //If distribution matches existing and grouped then don't distribute, but still remove grouping.
             IHqlExpression * distn = queryDistribution(transformed);
             if (distn == queryDistribution(child))

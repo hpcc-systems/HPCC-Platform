@@ -15,19 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef PACKAGEPROCESS_ERRORS_H
-#define PACKAGEPROCESS_ERRORS_H
+namesRecord :=
+            RECORD
+integer2        age := 25;
+string20        surname;
+string10        forename;
+            END;
 
-#include "errorlist.h"
+namesTable := dataset('x',namesRecord,FLAT);
 
-#define PKG_NAME_EXISTS   PKG_PROCESS_ERROR_START
-#define PKG_MISSING_PARAM   PKG_PROCESS_ERROR_START+1
-#define PKG_DALI_LOOKUP_ERROR    PKG_PROCESS_ERROR_START+2
-#define PKG_MISSING_DALI_LOOKUP_IP  PKG_PROCESS_ERROR_START+3
-#define PKG_TARGET_NOT_DEFINED   PKG_PROCESS_ERROR_START+4
-#define PKG_ACTIVATE_NOT_FOUND   PKG_PROCESS_ERROR_START+5
-#define PKG_DEACTIVATE_NOT_FOUND   PKG_PROCESS_ERROR_START+6
-#define PKG_DELETE_NOT_FOUND   PKG_PROCESS_ERROR_START+7
-#define PKG_NONE_DEFINED   PKG_PROCESS_ERROR_START+8
+sort1 := sort(namesTable, surname, forename, local);
 
-#endif
+//Only preserves local sort order if it was globally sorted!
+dist1 := distribute(sort1, skew(1.0));
+
+group3 := group(dist1, surname, LOCAL);
+sort2 := sort(group3, forename); // This should not be optimized away - no longer locally sorted  
+
+output(sort2);
