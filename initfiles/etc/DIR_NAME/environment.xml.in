@@ -876,7 +876,7 @@
                 udpOutQsPriority="0"
                 udpQueueSize="100"
                 udpRequestToSendTimeout="5"
-                udpResendEnabled="true"
+                udpResendEnabled="false"
                 udpRetryBusySenders="0"
                 udpSendCompletedInData="false"
                 udpSendQueueSize="50"
