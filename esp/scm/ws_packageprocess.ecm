@@ -24,9 +24,9 @@ ESPrequest AddPackageRequest
     string Info;
     boolean Activate;
     boolean OverWrite;
-    string QuerySet;
-    strint PackageSet;
-    string PackageName;
+    string Target;
+    string PackageMap;
+    string Process;
 };
 
 
@@ -37,8 +37,8 @@ ESPresponse [exceptions_inline] AddPackageResponse
 
 ESPrequest DeletePackageRequest
 {
-    string QuerySet;
-    string PackageName;
+    string Target;
+    string PackageMap;
 };
 
 ESPresponse [exceptions_inline] DeletePackageResponse
@@ -48,8 +48,8 @@ ESPresponse [exceptions_inline] DeletePackageResponse
 
 ESPrequest ActivatePackageRequest
 {
-    string PackageName;
-    string PackageMapName;
+    string Target;
+    string PackageMap;
 };
 
 ESPresponse [exceptions_inline] ActivatePackageResponse
@@ -59,8 +59,8 @@ ESPresponse [exceptions_inline] ActivatePackageResponse
 
 ESPrequest DeActivatePackageRequest
 {
-    string PackageName;
-    string PackageMapName;
+    string Target;
+    string PackageMap;
 };
 
 ESPresponse [exceptions_inline] DeActivatePackageResponse
@@ -70,8 +70,7 @@ ESPresponse [exceptions_inline] DeActivatePackageResponse
 
 ESPrequest GetPackageRequest
 {
-    string Cluster;
-    string PackageName;
+    string Target;
 };
 
 ESPresponse [exceptions_inline] GetPackageResponse
@@ -82,7 +81,7 @@ ESPresponse [exceptions_inline] GetPackageResponse
 
 ESPrequest ListPackageRequest
 {
-    string Cluster;
+    string Target;
 };
 
 ESPstruct PackageListData
@@ -105,7 +104,7 @@ ESPresponse [exceptions_inline] ListPackageResponse
 
 ESPrequest CopyFilesRequest
 {
-    string Process;
+    string Target;
     string PackageName;
     string DaliIp;
     string Info;
