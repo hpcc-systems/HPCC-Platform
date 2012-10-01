@@ -396,7 +396,7 @@ int main( int argc, char *argv[]  )
                 globals->getProp("@query_so_dir", str.clear());
             if (str.length())
             {
-                if (globals->getPropBool("Debug/@dllsToSlaves"))
+                if (globals->getPropBool("Debug/@dllsToSlaves", true))
                 {
                     StringBuffer uniqSoPath;
                     if (PATHSEPCHAR == str.charAt(str.length()-1))
