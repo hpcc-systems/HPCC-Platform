@@ -40,7 +40,7 @@ A derived implementation resizes the array if necessary.
 
 */
 
-//This allows up to 32Gb of pointers to rows on a 64bit machine.  That is likely to be enough for the next few years.
+//This allows up to 32Gb of pointers to rows on a 64bit machine.  That is likely to be enough for the next few months.
 typedef size32_t rowidx_t;
 
 class roxiemem_decl RoxieOutputRowArray
