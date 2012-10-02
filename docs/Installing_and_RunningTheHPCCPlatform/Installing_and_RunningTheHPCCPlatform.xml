@@ -716,9 +716,7 @@
         </orderedlist>
       </sect2>
 
-      <?hard-pagebreak ?>
-
-      <sect2 id="ECL-on-a-single-node-system">
+      <sect2 id="ECL-on-a-single-node-system" role="brk">
         <title>Running an ECL Query on your Single-Node System</title>
 
         <para>The single node system is running, and you can now create and
