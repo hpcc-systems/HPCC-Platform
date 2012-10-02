@@ -70,6 +70,13 @@ interface IBCastReceive
     virtual void bCastReceive(CSendItem *sendItem) = 0;
 };
 
+/*
+ * CBroadcaster, is a utility class, that sends CSendItem packets to sibling nodes, which in turn resend to others,
+ * ensuring the data is broadcast to all other nodes.
+ * sender and receiver threads are employed to handle the receipt/resending of packets.
+ * CBroadcaster should be started on all receiving nodes, each receiver will receive CSendItem packets
+ * through IBCastReceive::bCastReceive calls.
+ */
 class CBroadcaster : public CSimpleInterface
 {
     ICommunicator &comm;
@@ -143,7 +150,8 @@ class CBroadcaster : public CSimpleInterface
         CriticalBlock b(allDoneLock);
         bool done = slavesDone->testSet(slave, true);
         assertex(false == done);
-        if (slavesDone->scan(0, false) == slaves) // i.e. got all
+        unsigned which = slavesDone->scan(0, false);
+        if (which == slaves) // i.e. got all
         {
             allDone = true;
             if (allDoneWaiting)
@@ -152,19 +160,18 @@ class CBroadcaster : public CSimpleInterface
                 allDoneSem.signal();
             }
         }
-        else
-        {
-            unsigned which = slavesDone->scan(0, false);
-            if (which == (myNode-1))
-            {
-                if (which == slaves || (slavesDone->scan(which+1, false) == slaves))
-                    return true; // all done except me
-            }
-        }
+        else if (which == (myNode-1))
+		{
+			if (slavesDone->scan(which+1, false) == slaves)
+				return true; // all done except me
+		}
         return false;
     }
     unsigned target(unsigned i, unsigned node)
     {
+        // For a tree broadcast, calculate the next node to send the data to. i represents the ith copy sent from this node.
+    	// node is a 0 based node number.
+        // It returns a 1 based node number of the next node to send the data to.
         unsigned n = node;
         unsigned j=0;
         while (n)
@@ -328,6 +335,14 @@ public:
 
 */
 
+/*
+ * The main activity class
+ * It's intended to be used when the RHS globally, is small enough to fit within the memory of a single node.
+ * It performs the join, by 1st ensuring all RHS data is on all nodes, creating a hash table of this gathered set
+ * then it streams the LHS through, matching against the RHS hash table entries.
+ * It also handles match conditions where there is no hard match (, ALL), in those cases no hash table is needed.
+ * TODO: right outer/only joins
+ */
 class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, implements ISmartBufferNotify, implements IBCastReceive
 {
     IHThorHashJoinArg *hashJoinHelper;
@@ -403,6 +418,10 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
             throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", rows);
         return (rowidx_t)res;
     }
+    /* Utility class, that is called from the broadcaster to queue up received blocks
+     * It will block if it has > MAX_QUEUE_BLOCKS to process (on the queue)
+     * Processing will decompress the incoming blocks and add them to a row array per slave
+     */
     class CRowProcessor : implements IThreaded
     {
         CThreaded threaded;
@@ -1074,23 +1093,13 @@ public:
                 h = 0;
         }
     }
+    // Add to HT if one has been created, otherwise to row array and HT will be created later
     void addRow(const void *p)
     {
         if (rhsTableLen)
             addRowHt(p);
         else
             rhs.append(p);
-    }
-    void processRows(MemoryBuffer &mb)
-    {
-        CThorStreamDeserializerSource memDeserializer(mb.length(), mb.toByteArray());
-        while (!memDeserializer.eos())
-        {
-            RtlDynamicRowBuilder rowBuilder(rightAllocator);
-            size32_t sz = rightDeserializer->deserialize(rowBuilder, memDeserializer);
-            OwnedConstThorRow fRow = rowBuilder.finalizeRowClear(sz);
-            addRow(fRow.getClear());
-        }
     }
     void sendRHS() // broadcasting local rhs
     {
@@ -1109,7 +1118,7 @@ public:
                         break;
                     localRhsRows.append(row.getLink());
                     rightSerializer->serialize(mbs, (const byte *)row.get());
-                    if (mb.length() > MAX_SEND_SIZE)
+                    if (mb.length() >= MAX_SEND_SIZE)
                         break;
                 }
                 if (0 == mb.length())
