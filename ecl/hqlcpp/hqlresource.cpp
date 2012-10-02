@@ -2429,15 +2429,33 @@ protected:
                 return false;
         }
 
+        if (!isEfficientToHoistDataset(ds, ignoreInline))
+            return false;
+
+        return true;
+    }
+
+    bool isEfficientToHoistDataset(IHqlExpression * ds, bool ignoreInline) const
+    {
+        //MORE: This whole function could do with some significant improvements.  Whether it is inefficient to hoist
+        //depends on at least the following...
+        //a) cost of serializing v cost of re-evaluating (which can depend on the engine).
+        //b) How many times it will be evaluated in the child context
+        if (isInlineTrivialDataset(ds))
+            return false;
+
 #ifdef MINIMAL_CHANGES
-        if (isInlineTrivialDataset(ds) || (!ignoreInline && canProcessInline(NULL, ds)))
-//      if (isInlineTrivialDataset(ds))// || (!ignoreInline && canProcessInline(NULL, ds)))
-            return false;
-#else
-        //Not worth hoisting...
-        if (isTrivialDataset(ds))
-            return false;
+        if (!ignoreInline)
+        {
+            //Generally this appears to be better to hoist since it involves calling a transform.
+            if (ds->getOperator() == no_dataset_from_transform)
+                return true;
+
+            if (canProcessInline(NULL, ds))
+                return false;
+        }
 #endif
+
         return true;
     }
 

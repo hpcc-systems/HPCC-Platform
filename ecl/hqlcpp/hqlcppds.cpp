@@ -2652,6 +2652,45 @@ void HqlCppTranslator::buildDatasetAssignInlineTable(BuildCtx & ctx, IHqlCppData
     }
 }
 
+void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_dataset_from_transform);
+    IHqlExpression * count = expr->queryChild(0);
+    if (isZero(count) || isNegative(count))
+        return;
+
+    IHqlExpression * transform = expr->queryChild(1);
+    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+
+    // If it is at all possible that it could be negative, we must test before producing rows
+    CHqlBoundExpr boundCount;
+    buildSimpleExpr(ctx, count, boundCount);
+    BuildCtx subctx(ctx);
+    if (couldBeNegative(count))
+    {
+        OwnedHqlExpr zero = createConstant(0, count->getType());
+        OwnedHqlExpr ifTest = createValue(no_gt, makeBoolType(), boundCount.getTranslatedExpr(), LINK(zero));
+        buildFilter(subctx, ifTest);
+    }
+
+    // loopVar = 1;
+    OwnedHqlExpr loopVar = subctx.getTempDeclare(counterType, NULL);
+    OwnedHqlExpr one = getSizetConstant(1);
+    buildAssignToTemp(subctx, loopVar, one);
+
+    // for(; loopVar <= maxRows; loopVar++)
+    OwnedHqlExpr loopTest = createValue(no_le, makeBoolType(), LINK(loopVar), LINK(boundCount.expr));
+    OwnedHqlExpr inc = createValue(no_postinc, loopVar->getType(), LINK(loopVar));
+    subctx.addLoop(loopTest, inc, false);
+    if (counter)
+        subctx.associateExpr(counter, loopVar);
+
+    OwnedHqlExpr rowValue = createRow(no_createrow, LINK(transform));
+    BoundRow * targetRow = target->buildCreateRow(subctx);
+    Owned<IReferenceSelector> targetRef = buildActiveRow(subctx, targetRow->querySelector());
+    buildRowAssign(subctx, targetRef, rowValue);
+    target->finishRow(subctx, targetRow);
+}
 
 class InlineDatasetSkipCallback : public CInterface, implements IHqlCodeCallback
 {
@@ -2826,6 +2865,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
+        return;
+    case no_dataset_from_transform:
+        buildDatasetAssignDatasetFromTransform(subctx, target, expr);
         return;
     case no_xmlproject:
         buildDatasetAssignXmlProject(subctx, target, expr);
