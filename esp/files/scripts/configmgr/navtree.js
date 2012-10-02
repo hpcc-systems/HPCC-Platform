@@ -470,8 +470,8 @@ function createNavigationTree(navTreeData) {
           continue;
         if (navDT.getRecord(selectedRows[i]).getData('CompType') == 'Directories')
           continue;
-        else
-          xmlStr += "<Component name=\"" + navDT.getRecord(selectedRows[i]).getData('Name');
+
+        xmlStr += "<Component name=\"" + navDT.getRecord(selectedRows[i]).getData('Name');
         xmlStr += "\" compType=\"" + navDT.getRecord(selectedRows[i]).getData('CompType');
         xmlStr += "\" build=\"" + navDT.getRecord(selectedRows[i]).getData('Build');
 
