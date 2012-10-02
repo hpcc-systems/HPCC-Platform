@@ -246,9 +246,9 @@
       </indexterm>(</emphasis><emphasis> value </emphasis><emphasis
     role="bold">[, SKIP<indexterm>
         <primary>SKIP</primary>
-      </indexterm>]</emphasis><emphasis> </emphasis><emphasis role="bold">)
-    ]</emphasis><emphasis role="bold">[</emphasis>,<emphasis role="bold">
-    SKEW<indexterm>
+      </indexterm></emphasis> | <emphasis> transform </emphasis> | <emphasis
+    role="bold"> FAIL ]) ] </emphasis><emphasis
+    role="bold">[</emphasis>,<emphasis role="bold"> SKEW<indexterm>
         <primary>SKEW</primary>
       </indexterm>(</emphasis><emphasis>limit </emphasis><emphasis
     role="bold">[</emphasis><emphasis>, target</emphasis><emphasis
@@ -471,6 +471,21 @@
             <entry>Optional. Specifies eliminating the matching records that
             exceed the maximum value of the LIMIT result instead of failing
             the job.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>transform</emphasis></entry>
+
+            <entry>Optional. Specifies outputting a single record produced 
+            by the <emphasis>transform</emphasis> instead of failing the workunit 
+            (similar to the ONFAIL option of the LIMIT function).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FAIL</emphasis></entry>
+
+            <entry>Optional. Specifies using the <link linkend="FAIL">FAIL</link> action to configure the error 
+            message when the job fails.</entry>
           </row>
 
           <row>
