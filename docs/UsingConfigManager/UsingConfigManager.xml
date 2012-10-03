@@ -1809,7 +1809,7 @@ sudo configmgr</programlisting>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2021,7 +2021,7 @@ sudo configmgr</programlisting>
                 <para>Select all computers in the list, then press the
                 <emphasis role="bold">OK</emphasis> button.</para>
 
-                <para><graphic fileref="images/CM-img11.jpg"
+                <para><graphic fileref="images/CM-112-4.jpg"
                 vendor="configmgrSS" /></para>
               </listitem>
 
@@ -2341,15 +2341,23 @@ sudo configmgr</programlisting>
                     </row>
 
                     <row>
+                      <entry><emphasis>memoryLimit</emphasis></entry>
+
+                      <entry>set value for Memory Limit</entry>
+                    </row>
+
+                    <row>
                       <entry><emphasis>xrefAt</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>xrefCutoff</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
 
                     <row>
@@ -2367,7 +2375,15 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>xrefList</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefMaxScanThreads</emphasis></entry>
+
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2428,7 +2444,7 @@ sudo configmgr</programlisting>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2525,8 +2541,9 @@ sudo configmgr</programlisting>
 
           <itemizedlist mark="square">
             <listitem>
-              <para>Select Thor Cluster - mythor in the Navigator panel on the
-              left side.</para>
+              <para>Select <emphasis role="bold">Thor Cluster -
+              mythor</emphasis> in the Navigator panel on the left
+              side.</para>
             </listitem>
 
             <listitem>
@@ -2562,7 +2579,7 @@ sudo configmgr</programlisting>
               <para>Select a computer from the list, then press the OK
               button.</para>
 
-              <para><graphic fileref="images/gs_img17.png"
+              <para><graphic fileref="images/CM-112-5.jpg"
               vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
@@ -2586,7 +2603,7 @@ sudo configmgr</programlisting>
               press the OK button. Use CTRL+CLICK to multi-select or
               SHIFT+CLICK to select a range.</para>
 
-              <para><graphic fileref="images/CM-112.jpg"
+              <para><graphic fileref="images/CM-112-3.jpg"
               vendor="configmgrSS" />The Nodes now display below the Thor
               Master node.</para>
 
@@ -2634,7 +2651,7 @@ sudo configmgr</programlisting>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2925,7 +2942,7 @@ sudo configmgr</programlisting>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
