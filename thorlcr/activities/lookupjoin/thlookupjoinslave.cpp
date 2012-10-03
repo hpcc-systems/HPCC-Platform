@@ -161,16 +161,16 @@ class CBroadcaster : public CSimpleInterface
             }
         }
         else if (which == (myNode-1))
-		{
-			if (slavesDone->scan(which+1, false) == slaves)
-				return true; // all done except me
-		}
+        {
+            if (slavesDone->scan(which+1, false) == slaves)
+                return true; // all done except me
+        }
         return false;
     }
     unsigned target(unsigned i, unsigned node)
     {
         // For a tree broadcast, calculate the next node to send the data to. i represents the ith copy sent from this node.
-    	// node is a 0 based node number.
+        // node is a 0 based node number.
         // It returns a 1 based node number of the next node to send the data to.
         unsigned n = node;
         unsigned j=0;
