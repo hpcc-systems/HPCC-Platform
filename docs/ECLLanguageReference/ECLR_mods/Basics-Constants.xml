@@ -25,8 +25,41 @@
 STRING20 MyString3 := 'Fred\\Ginger\'s Place';
                     //evaluated as: "Fred\Ginger's Place"</programlisting>
 
-    <para>Other available escape characters are: \t tab \n new line \r
-    carriage return \nnn 3 octal digits (for any other character)</para>
+    <para>Other available escape characters are: </para>
+
+    <para><informaltable colsep="0" frame="none" rowsep="0">
+        <tgroup cols="2">
+          <colspec colwidth="85.75pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><emphasis>\t</emphasis></entry>
+
+              <entry>tab</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>\n</emphasis></entry>
+
+              <entry>new line</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>\r</emphasis></entry>
+
+              <entry>carriage return</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>\nnn</emphasis></entry>
+
+              <entry>3 octal digits (for any other character)</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
 
     <para><emphasis role="bold">Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
@@ -77,7 +110,8 @@ MyUnicodeString := U'abcd\353'; // becomes 'abcdë'</programlisting>
     <title>Numeric</title>
 
     <para>Numeric constants containing a decimal portion are treated as REAL
-    values and those without are treated as INTEGER<indexterm>
+    values (scientific notation is allowed) and those without are treated as
+    INTEGER<indexterm>
         <primary>INTEGER</primary>
       </indexterm> (see <emphasis role="bold">Value Types</emphasis>). Integer
     constants may be decimal, hexadecimal, or binary values.
@@ -89,11 +123,13 @@ MyUnicodeString := U'abcd\353'; // becomes 'abcdë'</programlisting>
       </indexterm> are specified with either a leading “0b” or a trailing “b”
     character.</para>
 
-    <programlisting>MyInt1 := 10; // value of MyInt1 is the INTEGER value 10
-MyInt2 := 0x0A; // value of MyInt2 is the INTEGER value 10
-MyInt3 := 0Ax; // value of MyInt3 is the INTEGER value 10
-MyInt4 := 0b1010; // value of MyInt4 is the INTEGER value 10
-MyInt5 := 1010b; // value of MyInt5 is the INTEGER value 10
-MyReal := 10.0; // value of MyReal is the REAL value 10.0</programlisting>
+    <programlisting>MyInt1  := 10;     // value of MyInt1 is the INTEGER value 10
+MyInt2  := 0x0A;   // value of MyInt2 is the INTEGER value 10
+MyInt3  := 0Ax;    // value of MyInt3 is the INTEGER value 10
+MyInt4  := 0b1010; // value of MyInt4 is the INTEGER value 10
+MyInt5  := 1010b;  // value of MyInt5 is the INTEGER value 10
+MyReal1 := 10.0;   // value of MyReal1 is the REAL value 10.0
+MyReal2 := 1.0e1;  // value of MyReal2 is the REAL value 10.0
+</programlisting>
   </sect2>
 </sect1>

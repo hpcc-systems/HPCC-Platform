@@ -126,11 +126,11 @@
           <row>
             <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-            <entry>Optional. Specifies the operation is performed on each
-            supercomputer node independently, without requiring interaction
-            with all other nodes to acquire data; the operation maintains the
-            distribution of any previous DISTRIBUTE. An error occurs if the
-            recordset has been GROUPed.</entry>
+            <entry>Optional. Specifies the operation is performed on each node
+            independently, without requiring interaction with all other nodes
+            to acquire data; the operation maintains the distribution of any
+            previous DISTRIBUTE. An error occurs if the recordset has been
+            GROUPed.</entry>
           </row>
 
           <row>
@@ -176,10 +176,12 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">SORT </emphasis>function sorts the
+  <para>The <emphasis role="bold">SORT </emphasis>function orders the
   <emphasis>recordset</emphasis> according to the <emphasis>values</emphasis>
-  specified. SORT is usually used to produce the record sets operated on by
-  the DEDUP, GROUP, and ROLLUP function<indexterm>
+  specified, and (if LOCAL Is not specified) partitions the result such that
+  all records with the same <emphasis>values</emphasis> are on the same node.
+  SORT is usually used to produce the record sets operated on by the DEDUP,
+  GROUP, and ROLLUP function<indexterm>
       <primary>ROLLUP function</primary>
     </indexterm>s, so that those functions may operate optimally. Sorting
   final output is, of course, another common use.</para>
