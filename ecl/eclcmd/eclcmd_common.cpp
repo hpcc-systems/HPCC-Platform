@@ -279,6 +279,11 @@ StringBuffer &EclObjectParameter::getDescription(StringBuffer &s)
 eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
 {
     bool boolValue;
+    if (iter.matchFlag(boolValue, ECLOPT_HELP))
+    {
+        usage();
+        return EclCmdOptionCompletion;
+    }
     if (iter.matchFlag(boolValue, ECLOPT_VERSION))
     {
         fprintf(stdout, "%s\n", BUILD_TAG);

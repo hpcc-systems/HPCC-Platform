@@ -156,7 +156,7 @@ bool EclCMDShell::parseCommandLineOptions(ArgvIterator &iter)
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
-        if (iter.matchFlag(optHelp, "help"))
+        if (iter.matchFlag(optHelp, ECLARG_HELP) || iter.matchFlag(optHelp, ECLOPT_HELP)) //users expect --help to work too
             continue;
         if (*arg!='-')
         {
