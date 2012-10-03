@@ -633,7 +633,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         numChannels = topology->getPropInt("@numChannels", 0);
         numActiveChannels = topology->getPropInt("@numActiveChannels", numChannels);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
-        roxiemem::memTraceSizeLimit = topology->getPropInt("@memTraceSizeLimit", 0);
+        roxiemem::memTraceSizeLimit = (memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0);
         callbackRetries = topology->getPropInt("@callbackRetries", 3);
         callbackTimeout = topology->getPropInt("@callbackTimeout", 5000);
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
