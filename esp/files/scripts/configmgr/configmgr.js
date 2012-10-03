@@ -1803,11 +1803,57 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         width: "100%"
       });
 
+      function onContextMenuBeforeAddAttribute(p_sType, p_aArgs, menuitem)
+      {
+        var name = prompt("Enter Attribute Name:");
+
+        if (name.length == 0)
+        {
+          alert("Attribute name can not be empty!");
+          return;
+        }
+
+        var record = top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]);
+        var pp = parseParamsForXPath(record.getData('params'), "", "", false, true);
+
+        var xmlStr = "<XmlArgs><Setting operation=\"add\" params= \"" + pp + "\" attrib= \"" + (menuitem.element.outerText.trimRight() == 'Add Tag' ? name : "@" + name) + "\"/></XmlArgs>";
+
+        YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleAttributeAdd', {
+          success: function(o) {
+            top.document.forms['treeForm'].isChanged.value = "true";
+            top.document.choice = new Array();
+            top.document.choice[0] = top.document.rightDT.getRecordIndex(top.document.rightDT.getSelectedRows()[0])+1;
+            var recDepth =  top.document.rightDT.getRecord(top.document.choice[0])._oData.depth;
+
+            var index = 0;
+            for (counter = top.document.choice[0]; counter >= 0; counter--)
+            {
+              if (top.document.rightDT.getRecord(counter)._oData.depth < recDepth)
+              {
+                top.document.choice[index] = top.document.rightDT.getRecord(counter).getData('params');
+                recDepth = top.document.rightDT.getRecord(counter)._oData.depth;
+                index++;
+              }
+            }
+
+            top.document.doJumpToChoice = true;
+            doPageRefresh();
+
+             YAHOO.util.UserAction.click(top.document.rightDT.getFirstTrEl());
+           },
+          failure: function(o) {
+            alert("Failed to delete attribute.  (XPath maybe ambiguous. A manual edit of the XML configuration file maybe required to delete this attribute.) ");
+            },
+          scope: this
+        },
+          top.document.navDT.getFileName(true) + 'XmlArgs=' + xmlStr + '&bLeaf=' +  false );
+        }
+
       function onContextMenuBeforeShowDeleteContextMenu(p_sType, p_aArgs) {
         var record = top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]);
         var pp = parseParamsForXPath( record.getData('params'), top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('name'),
                    top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]).getData('value'),
-                   record.getData('hasChildren') == undefined ? false : record.getData('hasChildren') );
+                   record.getData('hasChildren') == undefined ? false : record.getData('hasChildren'), false);
 
         var xmlStr = "<XmlArgs><Setting operation=\"delete\" params= \"" + pp + "\"/></XmlArgs>";
 
@@ -1851,12 +1897,23 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         top.document.ContextMenuCenter = this;
       }
 
-      function onTriggerContextMenu(p_oEvent)
+      function onShowContextMenu(p_oEvent)
       {
-        if (top.document.rightDT.getRecord(top.document.rightDT.getSelectedRows()[0])._oData.hasChildren == true)  // only allow attributes to be deleted
-          this.cancel();
+        if (top.document.rightDT.getRecord(top.document.rightDT.getSelectedRows()[0])._oData.hasChildren == true)  // only allow attributes to be delete
+        {
+          top.document.ContextMenuCenter.getRoot().body.lastElementChild.childNodes[0].hidden = true;
+          top.document.ContextMenuCenter.getRoot().body.lastElementChild.childNodes[1].hidden = false;
+        }
+        else
+        {
+          top.document.ContextMenuCenter.getRoot().body.lastElementChild.childNodes[0].hidden = false;
+          top.document.ContextMenuCenter.getRoot().body.lastElementChild.childNodes[1].hidden = true;
+        }
       }
-      var aMenuItemsX = [{text: "Delete", onclick: { fn: onContextMenuBeforeShowDeleteContextMenu}  }];
+
+     var aMenuItemsX = [ { text: "Delete",        onclick: { fn: onContextMenuBeforeShowDeleteContextMenu} },
+                          { text: "Add Attribute", onclick: { fn: onContextMenuBeforeAddAttribute}, }
+                        ];
       top.document.rightDT = dt;
       top.document.rightDT.expandRecord = function(id) {
       var recSet = top.document.rightDT.getRecordSet();
@@ -1895,8 +1952,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
       var oContextMenuX = new YAHOO.widget.ContextMenu( "EnvironmentTabCM2", { trigger: dt.getTbodyEl(), lazyload: true, itemdata: aMenuItemsX, container: tabNameTemp});
       top.document.ContextMenuCenter = oContextMenuX;
 
-
-     oContextMenuX.subscribe("triggerContextMenu", onTriggerContextMenu);
+      oContextMenuX.subscribe("show", onShowContextMenu);
 
       oContextMenuX.dt = dt;
       oContextMenuX.subscribe("beforeShow",onContextMenuXBeforeShow);
@@ -3591,7 +3647,7 @@ function setChildrenOf(parent, rec) {
   childrenOf[parent][childrenOf[parent].length] = rec;
 }
 
-function parseParamsForXPath(params, key, value, hasChildren)
+function parseParamsForXPath(params, key, value, hasChildren, skip)
 {
   var splitParams = params.split(":");
   var xpath = "";
@@ -3634,7 +3690,7 @@ function parseParamsForXPath(params, key, value, hasChildren)
   {
     xpath = xpath + "]";
   }
-  else
+  else if (skip == false)
   {
     if (xpath[xpath.length-1] == '/')
     {
