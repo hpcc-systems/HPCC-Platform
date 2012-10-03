@@ -364,7 +364,7 @@ public:
                 unsigned doLoopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
                 ownedResults.setown(queryGraph().createThorGraphResults(3));
                 // ensures remote results are available, via owning activity (i.e. this loop act)
-                // so that when aggreagate result is fetched from the master, it will retreive from the act, not the (already cleaed) graph localresults
+                // so that when aggreagate result is fetched from the master, it will retreive from the act, not the (already cleaned) graph localresults
                 ownedResults->setOwner(container.queryId());
 
                 boundGraph->prepareLoopResults(*this, ownedResults);
