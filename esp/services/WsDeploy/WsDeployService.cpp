@@ -1288,7 +1288,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
 
         pComp->setProp(XML_ATTR_FILESBASEDN,strFilesBasedn);
       }
-      else if (bUpdateFilesBasedn == true && pComp != NULL && strcmp(pszCompType, XML_TAG_ESPPROCESS) == 0 && strcmp(pszAttrName, TAG_SERVICE) == 0 pszNewValue && *pszNewValue)
+      else if (bUpdateFilesBasedn == true && pComp != NULL && strcmp(pszCompType, XML_TAG_ESPPROCESS) == 0 && strcmp(pszAttrName, TAG_SERVICE) == 0 && pszNewValue && *pszNewValue)
       {
         Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
 
