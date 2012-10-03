@@ -922,6 +922,8 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
     if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer") && (typeof(column.field) !== 'undefined' && column.field == 'service'))
       bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value?\n\n(If you are unsure select 'Ok')");
+    else if (record.getData('compType') == 'LDAPServerProcess' && record.getData('name') == 'filesBasedn')
+      bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value in dependent components?\n\n(If you are unsure select 'Ok')");
     else
       bUpdateFilesBasedn = false;
 
