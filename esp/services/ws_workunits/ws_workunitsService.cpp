@@ -3659,6 +3659,10 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     if (name.length())
         wu->setJobName(name.str());
 
+    {
+        //Ensure that a query is always created
+        Owned<IWUQuery> query=wu->updateQuery();
+    }
     if (req.getObject().length())
     {
         StringBuffer text(req.getObject().length(), req.getObject().toByteArray());
