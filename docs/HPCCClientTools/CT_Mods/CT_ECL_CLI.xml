@@ -96,7 +96,7 @@
               </row>
 
               <row>
-                <entry>package</entry>
+                <entry>packagemap</entry>
 
                 <entry>execute package commands (for Roxie)</entry>
               </row>
@@ -240,8 +240,8 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
 
                   <entry>Creates a workunit on the HPCC system from the given
                   ECL text, file, archive, shared object, or dll. The workunit
-                  is created in the <emphasis>compiled</emphasis> state.
-                  </entry>
+                  is created in the <emphasis>compiled</emphasis>
+                  state.</entry>
                 </row>
 
                 <row>
@@ -402,7 +402,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
 
                   <entry>Publishes a query into a queryset. The query is
                   created by adding a workunit to a queryset and assigning it
-                  a query name. </entry>
+                  a query name.</entry>
                 </row>
 
                 <row>
@@ -758,16 +758,15 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
-                  <entry> -in,--input=&lt;file|xml&gt;</entry>
+                  <entry>-in,--input=&lt;file|xml&gt;</entry>
 
-                  <entry>The file or xml content to use as query input
-                  </entry>
+                  <entry>The file or xml content to use as query input</entry>
                 </row>
 
                 <row>
                   <entry>-X&lt;name&gt;</entry>
 
-                  <entry>Sets the stored input value (stored('name')) </entry>
+                  <entry>Sets the stored input value (stored('name'))</entry>
                 </row>
 
                 <row>
@@ -830,7 +829,7 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
-                  <entry>-f&lt;option&gt;[=value] </entry>
+                  <entry>-f&lt;option&gt;[=value]</entry>
 
                   <entry>set an ECL option (equivalent to #OPTION in
                   ECL)</entry>
@@ -890,7 +889,7 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                   <entry>ecl activate</entry>
 
                   <entry>Activates a published query. This assigns a query to
-                  the active alias with the same name as the query. </entry>
+                  the active alias with the same name as the query.</entry>
                 </row>
 
                 <row>
@@ -972,7 +971,7 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                   <entry>ecl deactivate</entry>
 
                   <entry>Deactivates a published query by removing an active
-                  query alias from the given queryset. </entry>
+                  query alias from the given queryset.</entry>
                 </row>
 
                 <row>
@@ -989,8 +988,8 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>active_alias</entry>
 
-                  <entry>The active alias to be removed from the queryset
-                  </entry>
+                  <entry>The active alias to be removed from the
+                  queryset</entry>
                 </row>
 
                 <row>
@@ -1060,7 +1059,7 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry>Displays a list of the queries in one or more
                   querysets. If a cluster is provided the querysets associated
                   with that cluster will be shown. If no queryset or cluster
-                  is specified all querysets are shown. </entry>
+                  is specified all querysets are shown.</entry>
                 </row>
 
                 <row>
@@ -1192,7 +1191,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   can be copied from one HPCC environment to another by using
                   a path which begins with '//' followed by the IP and Port of
                   the source EclWatch and then followed by the source queryset
-                  and query. </entry>
+                  and query.</entry>
                 </row>
 
                 <row>
@@ -1213,7 +1212,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>source_query_path</entry>
 
                   <entry>The path of the query to copy using the format:
-                  [//ip:port/]queryset/query or queryset/query. </entry>
+                  [//ip:port/]queryset/query or queryset/query.</entry>
                 </row>
 
                 <row>
@@ -1253,8 +1252,8 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-O, --overwrite</entry>
 
-                  <entry>[true | false] Whether to overwrite existing
-                  information - defaults to true</entry>
+                  <entry>Whether to overwrite existing information - true if
+                  present</entry>
                 </row>
 
                 <row>
@@ -1374,7 +1373,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
-                  <entry> --no-reload </entry>
+                  <entry>--no-reload</entry>
 
                   <entry>Specifies to not request a reload of the Roxie
                   cluster</entry>
@@ -1390,23 +1389,23 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>--timeLimit=&lt;sec&gt;</entry>
 
-                  <entry>Value to set for query timeLimit configuration
-                  </entry>
+                  <entry>Value to set for query timeLimit
+                  configuration</entry>
                 </row>
 
                 <row>
                   <entry>--warnTimeLimit=&lt;sec&gt;</entry>
 
-                  <entry>Value to set for query warnTimeLimit configuration
-                  </entry>
+                  <entry>Value to set for query warnTimeLimit
+                  configuration</entry>
                 </row>
 
                 <row>
-                  <entry> --memoryLimit=&lt;mem&gt;</entry>
+                  <entry>--memoryLimit=&lt;mem&gt;</entry>
 
                   <entry>Value to set for query memoryLimit configuration.
-                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T, etc.
-                  </entry>
+                  Format &lt;mem&gt; as 500000B, 550K, 100M, 10G, or 1T,
+                  etc.</entry>
                 </row>
 
                 <row>
@@ -1445,15 +1444,15 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
       </sect2>
 
       <sect2 id="eclpackageadd" role="brk">
-        <title>ecl package add</title>
+        <title>ecl packagemap add</title>
 
-        <para><emphasis role="bold">ecl package add [options] &lt;target&gt;
-        &lt;filename&gt;</emphasis></para>
+        <para><emphasis role="bold">ecl packagemap add [options]
+        &lt;target&gt; &lt;filename&gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package add  -s=192.168.1.10 roxie mypkg.pkg
-ecl package add roxie mypkg.pkg --overwrite=false
+        <programlisting>ecl packagemap add  -s=192.168.1.10 roxie mypackagemap.pkg
+ecl packagemap add roxie mypackagemap.pkg --overwrite
 </programlisting>
 
         <para></para>
@@ -1466,9 +1465,9 @@ ecl package add roxie mypkg.pkg --overwrite=false
 
               <tbody>
                 <row>
-                  <entry>ecl package add</entry>
+                  <entry>ecl packagemap add</entry>
 
-                  <entry>Calls the package add command</entry>
+                  <entry>Calls the packagemap add command</entry>
                 </row>
 
                 <row>
@@ -1478,7 +1477,7 @@ ecl package add roxie mypkg.pkg --overwrite=false
                 <row>
                   <entry>add</entry>
 
-                  <entry>Adds a package to the target cluster</entry>
+                  <entry>Adds a packagemap to the target cluster</entry>
                 </row>
 
                 <row>
@@ -1488,14 +1487,13 @@ ecl package add roxie mypkg.pkg --overwrite=false
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target to use when adding package
-                  information.</entry>
+                  <entry>The target to associate the packagemap with</entry>
                 </row>
 
                 <row>
                   <entry>filename</entry>
 
-                  <entry>The name of the file containing package
+                  <entry>The name of the file containing packagemap
                   information.</entry>
                 </row>
 
@@ -1506,21 +1504,14 @@ ecl package add roxie mypkg.pkg --overwrite=false
                 <row>
                   <entry>-O, --overwrite</entry>
 
-                  <entry>[true | false] Whether to overwrite existing
-                  information - defaults to true</entry>
+                  <entry>Whether to overwrite existing information - true if
+                  present</entry>
                 </row>
 
                 <row>
-                  <entry>-A, --activate</entry>
+                  <entry> -A, --activate</entry>
 
-                  <entry>Activates package</entry>
-                </row>
-
-                <row>
-                  <entry>--packagesetid</entry>
-
-                  <entry>The packagesetid to use. If not set, use
-                  &lt;filename&gt;</entry>
+                  <entry>Activates packagemap</entry>
                 </row>
 
                 <row>
@@ -1559,15 +1550,15 @@ ecl package add roxie mypkg.pkg --overwrite=false
       </sect2>
 
       <sect2 id="eclpackagecopyfiles" role="brk">
-        <title>ecl package copyFiles</title>
+        <title>ecl packagemap copyFiles</title>
 
-        <para><emphasis role="bold">ecl package copyFiles [options]
-        [&lt;filename&gt;]</emphasis></para>
+        <para><emphasis role="bold">ecl packagemap copyFiles &lt;target&gt;
+        &lt;filename&gt; [options]</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package copyFiles  --process=myroxie  --daliip=192.168.1.10
-ecl package copyFiles 
+        <programlisting>ecl packagemap copyFiles myroxie  mypackagemap.pkg
+ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
 </programlisting>
 
         <para></para>
@@ -1580,11 +1571,11 @@ ecl package copyFiles
 
               <tbody>
                 <row>
-                  <entry>ecl package copyFiles</entry>
+                  <entry>ecl packagemap copyFiles</entry>
 
                   <entry>The copyFiles command will copy any file listed in
-                  the package that is not currently known on the cluster. This
-                  will NOT load the package information</entry>
+                  the packagemap that is not currently known on the cluster.
+                  This will NOT load the packagemap information</entry>
                 </row>
 
                 <row>
@@ -1605,8 +1596,7 @@ ecl package copyFiles
                 <row>
                   <entry>target</entry>
 
-                  <entry>The target containing the packagemap to
-                  activate</entry>
+                  <entry>The target to which files are to be copied</entry>
                 </row>
 
                 <row>
@@ -1616,8 +1606,8 @@ ecl package copyFiles
                 <row>
                   <entry>-O, --overwrite</entry>
 
-                  <entry>[true | false] Whether to overwrite existing
-                  information - defaults to true</entry>
+                  <entry>Whether to overwrite existing information - true if
+                  present</entry>
                 </row>
 
                 <row>
@@ -1663,15 +1653,14 @@ ecl package copyFiles
       </sect2>
 
       <sect2 id="eclpackagedelete" role="brk">
-        <title>ecl package delete</title>
+        <title>ecl packagemap delete</title>
 
-        <para><emphasis role="bold">ecl package delete [options]
-        [&lt;filename&gt;]</emphasis></para>
+        <para><emphasis role="bold">ecl packagemap delete [options]
+        &lt;target&gt;&lt;packagemap&gt;</emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package delete --queryset=roxie mypackage.pkg -s=192.168.1.10
-ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
+        <programlisting>ecl packagemap delete roxie mypackagemap
 </programlisting>
 
         <para></para>
@@ -1684,9 +1673,9 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package delete</entry>
+                  <entry>ecl packagemap delete</entry>
 
-                  <entry>Calls the package delete command</entry>
+                  <entry>Calls the packagemap delete command</entry>
                 </row>
 
                 <row>
@@ -1696,18 +1685,11 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
                 <row>
                   <entry>delete</entry>
 
-                  <entry>Deletes a package</entry>
+                  <entry>Deletes a packagemap</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>--queryset</entry>
-
-                  <entry>The name of the queryset to which the information is
-                  associated</entry>
                 </row>
 
                 <row>
@@ -1746,14 +1728,14 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackageactivate" role="brk">
-        <title>ecl package activate</title>
+        <title>ecl packagemap activate</title>
 
-        <para><emphasis role="bold">ecl package activate &lt;target&gt;
+        <para><emphasis role="bold">ecl packagemap activate &lt;target&gt;
         &lt;packagemap&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package activate roxie mypkg.pkg</programlisting>
+        <programlisting>ecl packagemap activate roxie mypackagemap.pkg</programlisting>
 
         <para></para>
 
@@ -1765,10 +1747,10 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package activate</entry>
+                  <entry>ecl packagemap activate</entry>
 
                   <entry>The activate command will deactivate the currently
-                  active packagemap and make the specified package
+                  active packagemap and make the specified packagemap
                   active.</entry>
                 </row>
 
@@ -1829,14 +1811,14 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackagedeactivate" role="brk">
-        <title>ecl package deactivate</title>
+        <title>ecl packagemap deactivate</title>
 
-        <para><emphasis role="bold">ecl package deactivate &lt;target&gt;
+        <para><emphasis role="bold">ecl packagemap deactivate &lt;target&gt;
         &lt;packagemap&gt; </emphasis></para>
 
         <para><emphasis role="bold">Example:</emphasis></para>
 
-        <programlisting>ecl package deactivate roxie mypkg.pkg</programlisting>
+        <programlisting>ecl packagemap deactivate roxie mypackagemap.pkg</programlisting>
 
         <para></para>
 
@@ -1848,10 +1830,10 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
 
               <tbody>
                 <row>
-                  <entry>ecl package deactivate</entry>
+                  <entry>ecl packagemap deactivate</entry>
 
-                  <entry>The activate command will deactivate the currently
-                  active packagemap. </entry>
+                  <entry>The deactivate command will deactivate the currently
+                  active packagemap.</entry>
                 </row>
 
                 <row>
@@ -1911,15 +1893,14 @@ ecl package delete --queryset=roxie mypkg.pkg --overwritename=false
       </sect2>
 
       <sect2 id="eclpackagelist" role="brk">
-        <title>ecl package list</title>
+        <title>ecl packagemap list</title>
 
-        <para><emphasis role="bold">ecl package list &lt;target&gt;
+        <para><emphasis role="bold">ecl packagemap list &lt;target&gt;
         </emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package list
-ecl package list --process=roxie
+        <programlisting>ecl packagemap list roxie
 </programlisting>
 
         <para></para>
@@ -1932,9 +1913,9 @@ ecl package list --process=roxie
 
               <tbody>
                 <row>
-                  <entry>ecl package list</entry>
+                  <entry>ecl packagemap list</entry>
 
-                  <entry>Calls the package list command</entry>
+                  <entry>Calls the packagemap list command</entry>
                 </row>
 
                 <row>
@@ -1944,7 +1925,7 @@ ecl package list --process=roxie
                 <row>
                   <entry>list</entry>
 
-                  <entry>Lists loaded package names</entry>
+                  <entry>Lists loaded packagemap names</entry>
                 </row>
 
                 <row>
@@ -1959,14 +1940,6 @@ ecl package list --process=roxie
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>--process</entry>
-
-                  <entry>The name of the process cluster for which to list
-                  information. Default is all process clusters associated with
-                  the Dali server.</entry>
                 </row>
 
                 <row>
@@ -2005,19 +1978,17 @@ ecl package list --process=roxie
       </sect2>
 
       <sect2 id="eclpackageinfo" role="brk">
-        <title>ecl package info</title>
+        <title>ecl packagemap info</title>
 
-        <para><emphasis role="bold">ecl package info [options]
-        [--process=&lt;processCluster&gt; |
-        --packageName=MyPackage]</emphasis></para>
+        <para><emphasis role="bold">ecl packagemap info [options]
+        &lt;target&gt; </emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl package info --packageName=mypackage
-ecl package list --process=myroxie
+        <programlisting>ecl packagemap info roxie
 </programlisting>
 
-        <para>Specify either --process or packageName.</para>
+        <para></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2027,9 +1998,9 @@ ecl package list --process=myroxie
 
               <tbody>
                 <row>
-                  <entry>ecl package list</entry>
+                  <entry>ecl packagemap info</entry>
 
-                  <entry>Calls the package list command</entry>
+                  <entry>Calls the packagemap info command</entry>
                 </row>
 
                 <row>
@@ -2037,29 +2008,24 @@ ecl package list --process=myroxie
                 </row>
 
                 <row>
-                  <entry>list</entry>
+                  <entry>info</entry>
 
-                  <entry>Lists loaded package names</entry>
+                  <entry>returns packagemap info</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
+                  retrieve</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">Options</emphasis></entry>
-                </row>
-
-                <row>
-                  <entry>--packageName</entry>
-
-                  <entry>The name of the package from which to list
-                  information. (Specify either --process or
-                  packageName)</entry>
-                </row>
-
-                <row>
-                  <entry>--process</entry>
-
-                  <entry>The name of the process cluster for which to list
-                  information. (Specify either --process or
-                  packageName)</entry>
                 </row>
 
                 <row>
