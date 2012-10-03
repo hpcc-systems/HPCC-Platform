@@ -920,8 +920,16 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
     var form = top.window.document.forms['treeForm'];
     top.document.startWait(document);
 
-    if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer") && (typeof(column.field) !== 'undefined' && column.field == 'service'))
+    var refreshConfirm = true;
+
+    if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer") && (typeof(column.field) !== 'undefined' && (column.field == 'service' || column.field == 'value')))
+    {
       bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value?\n\n(If you are unsure select 'Ok')");
+      if (column.field == 'service')
+        refreshConfirm = false;
+    }
+    else if (record.getData('compType') == 'LDAPServerProcess' && record.getData('name') == 'filesBasedn')
+      bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value in dependent components?\n\n(If you are unsure select 'Ok')");
     else
       bUpdateFilesBasedn = false;
 
@@ -1008,7 +1016,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
             if (refreshPage[1].indexOf("</Refresh>") !== 0) {
               var refreshPage1 = refreshPage[1].split(/<\/Refresh>/g);
-              if (refreshPage1[0] === "true")
+              if (refreshPage1[0] === "true" && refreshConfirm == true)
                 doPageRefresh();
             }
           }
