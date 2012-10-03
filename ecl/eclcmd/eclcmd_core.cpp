@@ -249,10 +249,6 @@ public:
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
-            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
-                continue;
-            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
-                continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
@@ -264,25 +260,10 @@ public:
     {
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
-        if (optObj.value.isEmpty())
-        {
-            fprintf(stderr, "\nNo ECL Source, Archive, or DLL specified for deployment\n");
-            return false;
-        }
-        if (optObj.type==eclObjTypeUnknown)
-        {
-            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-            return false;
-        }
         if (optObj.type==eclObjWuid)
         {
             StringBuffer s;
             fprintf(stderr, "\nWUID (%s) cannot be the target for deployment\n", optObj.getDescription(s).str());
-            return false;
-        }
-        if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())
-        {
-            fprintf(stderr, "\nTarget must be specified when deploying from ECL Source or Archive\n");
             return false;
         }
         return true;
@@ -318,7 +299,6 @@ public:
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optTargetCluster;
     StringAttr optName;
 };
 
@@ -344,10 +324,6 @@ public:
             if (iter.matchOption(optObj.value, ECLOPT_WUID)||iter.matchOption(optObj.value, ECLOPT_WUID_S))
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
-                continue;
-            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
-                continue;
-            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -385,24 +361,6 @@ public:
             bool activate;
             if (extractEclCmdOption(activate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, true))
                 optNoActivate=!activate;
-        }
-        if (optObj.value.isEmpty())
-        {
-            fprintf(stderr, "\nMust specify a WUID, ECL File, Archive, or shared object to publish\n");
-            return false;
-        }
-        if (optObj.type==eclObjTypeUnknown)
-        {
-            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-            return false;
-        }
-        if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
-        {
-            if (optTargetCluster.isEmpty())
-            {
-                fprintf(stderr, "\nTarget must be specified when publishing ECL Text or Archive\n");
-                return false;
-            }
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
@@ -496,7 +454,6 @@ public:
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optTargetCluster;
     StringAttr optName;
     StringAttr optMemoryLimit;
     unsigned optMsToWait;
@@ -530,10 +487,6 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
-            if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
-                continue;
-            if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
-                continue;
             if (iter.matchOption(optInput, ECLOPT_INPUT)||iter.matchOption(optInput, ECLOPT_INPUT_S))
                 continue;
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
@@ -549,24 +502,6 @@ public:
     {
         if (!EclCmdWithEclTarget::finalizeOptions(globals))
             return false;
-        if (optObj.value.isEmpty())
-        {
-            fprintf(stderr, "\nMust specify a Query, WUID, ECL File, Archive, or shared object to run\n");
-            return false;
-        }
-        if (optObj.type==eclObjTypeUnknown)
-        {
-            fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
-            return false;
-        }
-        if (optObj.type==eclObjArchive || optObj.type==eclObjSource)
-        {
-            if (optTargetCluster.isEmpty())
-            {
-                fprintf(stderr, "\nTarget must be specified when running ECL Text or Archive\n");
-                return false;
-            }
-        }
         if (optInput.length())
         {
             const char *in = optInput.get();
@@ -675,7 +610,6 @@ public:
         EclCmdWithEclTarget::usage();
     }
 private:
-    StringAttr optTargetCluster;
     StringAttr optName;
     StringAttr optInput;
     IArrayOf<IEspNamedValue> variables;

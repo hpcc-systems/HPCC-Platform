@@ -462,22 +462,33 @@ private:
     };
 };
 
+bool addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values)
+{
+    Owned<IEspNamedValue> nv = createNamedValue();
+    nv->setName(name);
+    if (value)
+        nv->setValue(value);
+    values.append(*nv.getClear());
+}
+
+bool addNamedValue(const char * arg, IArrayOf<IEspNamedValue> &values)
+{
+    const char *eq = strchr(arg, '=');
+    if (!eq)
+        addNamedValue(arg, NULL, values);
+    else
+    {
+        StringAttr name(arg, eq - arg);
+        addNamedValue(name.get(),eq+1,values);
+    }
+}
+
 bool matchVariableOption(ArgvIterator &iter, const char prefix, IArrayOf<IEspNamedValue> &values)
 {
     const char *arg = iter.query();
     if (*arg++!='-' || *arg++!=prefix || !*arg)
         return false;
-    Owned<IEspNamedValue> nv = createNamedValue();
-    const char *eq = strchr(arg, '=');
-    if (!eq)
-        nv->setName(arg);
-    else
-    {
-        StringAttr name(arg, eq - arg);
-        nv->setName(name.get());
-        nv->setValue(eq+1);
-    }
-    values.append(*nv.getClear());
+    addNamedValue(arg, values);
     return true;
 }
 eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
@@ -519,6 +530,10 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
         return EclCmdOptionMatch;
     if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
         return EclCmdOptionMatch;
+    if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
+        return EclCmdOptionMatch;
+    if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
+        return EclCmdOptionMatch;
 
     return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
 }
@@ -534,16 +549,17 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
         {
             optNoArchive=true;
             optObj.type = eclObjSource;
-            optObj.value.set(optAttributePath.get());
-            StringBuffer text(optAttributePath.get());
-            text.append("();");
-            optObj.mb.append(text.str());
         }
         else if (optManifest.length())
         {
             optObj.set(optManifest.get()); //treat as stand alone manifest that must declare ecl to compile
             optManifest.clear();
         }
+    }
+
+    if (optNoArchive && optAttributePath.length())
+    {
+        addNamedValue("eclcc-main", optAttributePath.get(), debugValues);
     }
 
     if (!optNoArchive && (optObj.type == eclObjSource || optObj.type == eclObjManifest))
@@ -555,8 +571,25 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
     if (optResultLimit == (unsigned)-1)
         extractEclCmdOption(optResultLimit, globals, ECLOPT_RESULT_LIMIT_ENV, ECLOPT_RESULT_LIMIT_INI, 0);
 
-    return true;
+    if (optObj.value.isEmpty() && optAttributePath.isEmpty())
+    {
+        fprintf(stderr, "\nMust specify a Query, WUID, ECL File, Archive, or shared object\n");
+        return false;
+    }
 
+    if (optObj.type==eclObjTypeUnknown)
+    {
+        fprintf(stderr, "\nCan't determine content type of argument %s\n", optObj.value.sget());
+        return false;
+    }
+
+    if ((optObj.type==eclObjSource || optObj.type==eclObjArchive) && optTargetCluster.isEmpty())
+    {
+        fprintf(stderr, "\nTarget must be specified when source is ECL Source or Archive\n");
+        return false;
+    }
+
+    return true;
 }
 
 eclCmdOptionMatchIndicator EclCmdWithQueryTarget::matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
