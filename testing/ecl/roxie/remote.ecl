@@ -22,54 +22,54 @@ IMPORT Std.system.thorlib as thorlib;
 
 // Try some remote activities reading from normal indexes and local indexes
 
-index_best := topn(LIMIT(DG_FetchIndex1(LName[1]='A'),1000000), 3, LName, FName);
+index_best := SORT(LIMIT(DG_FetchIndex1(LName[1]='A'),1000000), LName, FName);
 index_best_all := allnodes(index_best);
 s1 := sort(index_best_all, LName, FName);
-count(s1) / thorlib.nodes();
+count(s1) / thorlib.nodes();  // Every node should return all matching results
 o1 := output(DEDUP(s1,LName, FName, KEEP(1)), {LName, FName});
 
 index_best_all_local := allnodes(LOCAL(index_best));
 s2 := sort(index_best_all_local, LName, FName);
-count(s2) / thorlib.nodes();
+count(s2); // Every node should return only local matching results
 o2 := output(DEDUP(s2,LName, FName, KEEP(1)), {LName, FName});
 
 // Now try with disk files
 
-disk_best := topn(DG_FetchFile(LName[1]='A'), 3, LName, FName);
+disk_best := SORT(DG_FetchFile(LName[1]='A'), LName, FName);
 disk_best_all := allnodes(disk_best);
 s3 := sort(disk_best_all, LName, FName);
-count(s3) / thorlib.nodes();
+count(s3) / thorlib.nodes();    // Every node should return all matching results
 o3 := output(DEDUP(s3,LName, FName, KEEP(1)), {LName, FName});
 
 disk_best_all_local := allnodes(LOCAL(disk_best));
 s4 := sort(disk_best_all_local, LName, FName);
-count(s4) / thorlib.nodes();
+count(s4);  // Every node should return only local matching results
 o4 := output(DEDUP(s4,LName, FName, KEEP(1)), {LName, FName});
 
 // Now try with in-memory files
 
-preload_best := topn(DG_FetchFilePreload(LName[1]='A'), 3, LName, FName);
+preload_best := sort(DG_FetchFilePreload(LName[1]='A'), LName, FName);
 preload_best_all := allnodes(preload_best);
 s5 := sort(preload_best_all, LName, FName);
-count(s5) / thorlib.nodes();
+count(s5) / thorlib.nodes();  // Every node should return all matching results
 o5 := output(DEDUP(s5,LName, FName, KEEP(1)), {LName, FName});
 
 preload_best_all_local := allnodes(LOCAL(preload_best));
 s6 := sort(preload_best_all_local, LName, FName);
-count(s6) / thorlib.nodes();
+count(s6);  // Every node should return only local matching results
 o6 := output(DEDUP(s6,LName, FName, KEEP(1)), {LName, FName});
 
 // Now try with keyed in-memory files
 
-preload_indexed_best := topn(DG_FetchFilePreloadIndexed(KEYED(LName[1]='A')), 3, LName, FName);
+preload_indexed_best := SORT(DG_FetchFilePreloadIndexed(KEYED(LName[1]='A')), LName, FName);
 preload_indexed_best_all := allnodes(preload_indexed_best);
 s7 := sort(preload_indexed_best_all, LName, FName);
-count(s7) / thorlib.nodes();
+count(s7) / thorlib.nodes();  // Every node should return all matching results
 o7 := output(DEDUP(s7,LName, FName, KEEP(1)), {LName, FName});
 
 preload_indexed_best_all_local := allnodes(LOCAL(preload_indexed_best));
 s8 := sort(preload_indexed_best_all_local, LName, FName);
-count(s8) / thorlib.nodes();
+count(s8);   // Every node should return only local matching results
 o8 := output(DEDUP(s8,LName, FName, KEEP(1)), {LName, FName});
 
 
