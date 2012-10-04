@@ -11,11 +11,11 @@
     </indexterm>(</emphasis><emphasis>recordset, condition, transform
   </emphasis><emphasis role="bold">[, LOCAL<indexterm>
       <primary>LOCAL</primary>
-    </indexterm>] )</emphasis><emphasis role="bold"></emphasis></para>
+    </indexterm>] )</emphasis></para>
 
   <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
   transform, fieldlist </emphasis><emphasis role="bold">[, LOCAL]
-  )</emphasis><emphasis role="bold"></emphasis></para>
+  )</emphasis></para>
 
   <para><emphasis role="bold">ROLLUP(</emphasis><emphasis>recordset,
   </emphasis><emphasis role="bold">GROUP</emphasis><emphasis><indexterm>
@@ -43,23 +43,23 @@
 
             <entry>An expression that defines "duplicate" records. The
             keywords LEFT and RIGHT may be used as dataset qualifiers for
-            fields in the recordset.</entry>
+            fields in the <emphasis>recordset</emphasis>.</entry>
           </row>
 
           <row>
             <entry><emphasis>transform</emphasis></entry>
 
             <entry>The TRANSFORM function to call for each pair of duplicate
-            records in the recordset.</entry>
+            records found.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-            <entry>Optional. Specifies the operation is performed on each
-            supercomputer node independently, without requiring interaction
-            with all other nodes to acquire data; the operation maintains the
-            distribution of any previous DISTRIBUTE.</entry>
+            <entry>Optional. Specifies the operation is performed on each node
+            independently, without requiring interaction with all other nodes
+            to acquire data; the operation maintains the distribution of any
+            previous DISTRIBUTE.</entry>
           </row>
 
           <row>
@@ -67,17 +67,17 @@
 
             <entry>A comma-delimited list of expressions or fields in the
             recordset that defines "duplicate" records. You may use the
-            keyword WHOLE RECORD (or just RECORD) to indicate all fields in
+            keywords WHOLE RECORD (or just RECORD) to indicate all fields in
             that structure, and/or you may use the keyword EXCEPT to list
-            fields in the structure to exclude.</entry>
+            fields to exclude.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">GROUP</emphasis></entry>
 
-            <entry>Specifies the recordset is GROUPed and the ROLLUP operation
-            will produce a single output record for each group. If this is not
-            the case, an error occurs.</entry>
+            <entry>Specifies the <emphasis>recordset</emphasis> is GROUPed and
+            the ROLLUP operation will produce a single output record for each
+            group. If this is not the case, an error occurs.</entry>
           </row>
 
           <row>
@@ -89,15 +89,37 @@
       </tgroup>
     </informaltable></para>
 
-  <para>The <emphasis role="bold">ROLLUP </emphasis>function is similar to the
+  <para>The <emphasis role="bold">ROLLUP</emphasis> function is similar to the
   DEDUP function<indexterm>
       <primary>DEDUP function</primary>
-    </indexterm> with the addition of the call to the
+    </indexterm> with the addition of a call to the
   <emphasis>transform</emphasis> function to process each duplicate record
   pair. This allows you to retrieve valuable information from the "duplicate"
   record before it's thrown away. Depending on how you code the
   <emphasis>transform </emphasis>function, ROLLUP can keep the LEFT or RIGHT
   record, or any mixture of data from both.</para>
+
+  <para>Record matching is done solely based on the values in adjacent records
+  in the <emphasis>recordset</emphasis>. For the first match, the two matching
+  records from the <emphasis>recordset</emphasis> are passed to the
+  <emphasis>transform</emphasis>. For subsequent matches of the same values,
+  the LEFT record passed is the result record from the previous call to the
+  <emphasis>transform</emphasis> and the RIGHT record is the next record in
+  the <emphasis>recordset</emphasis>, as in this example:</para>
+
+  <programlisting>ds := DATASET([{1,10},{1,20},{1,30},{3,40},{4,50}], 
+              {UNSIGNED r, UNSIGNED n});
+d t(ds L, ds R) := TRANSFORM
+  SELF.r := L.r + R.r;
+  SELF.n := L.n + R.n;
+END;
+ROLLUP(ds, t(LEFT, RIGHT), r);
+ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
+/* Both ROLLUPs result in:
+   3  60
+   3  40
+   4  50
+*/</programlisting>
 
   <sect2 id="TRANSFORM_Function_Requirements_Rollup">
     <title>TRANSFORM Function Requirements - ROLLUP</title>
