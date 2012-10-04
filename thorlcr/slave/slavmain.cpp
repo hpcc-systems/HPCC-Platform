@@ -366,23 +366,15 @@ public:
                         {
                             graph_id gid;
                             msg.read(gid);
-                            Owned<CGraphBase> graph = job->getGraph(gid);
-                            if (!graph)
-                            {
-                                Owned<IThorException> e = MakeThorException(0, "GraphGetResult: graph not found");
-                                e->setGraphId(gid);
-                                throw e.getClear();
-                            }
+                            activity_id ownerId;
+                            msg.read(ownerId);
                             unsigned resultId;
                             msg.read(resultId);
                             mptag_t replyTag = job->deserializeMPTag(msg);
-                            msg.setReplyTag(replyTag);
-                            Owned<IThorResult> result = graph->getResult(resultId);
-                            if (!result)
-                                throw MakeGraphException(graph, 0, "GraphGetResult: result not found: %d", resultId);
-                            msg.clear();
-
+                            Owned<IThorResult> result = job->getOwnedResult(gid, ownerId, resultId);
                             Owned<IRowStream> resultStream = result->getRowStream();
+                            msg.setReplyTag(replyTag);
+                            msg.clear();
                             sendInChunks(job->queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
                             doReply = false;
                         }

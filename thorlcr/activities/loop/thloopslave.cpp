@@ -231,6 +231,15 @@ public:
         helper = (IHThorLoopArg *) queryHelper();
         flags = helper->getFlags();
     }
+    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    {
+        CLoopSlaveActivityBase::init(data, slaveData);
+        if (!global && (flags & IHThorLoopArg::LFnewloopagain))
+        {
+            if (container.queryOwner().isGlobal())
+                global = true;
+        }
+    }
     virtual void kill()
     {
         CLoopSlaveActivityBase::kill();
@@ -316,22 +325,7 @@ public:
                 switch (container.getKind())
                 {
                 case TAKloopdataset:
-                    throwUnexpected();
-/*
-                    if (!helper->loopAgain(loopCounter, loopPendingCount, loopPending))
-                    {
-                        if (0 == loopPendingCount)
-                        {
-                            eof = true;
-                            return NULL;
-                        }
-
-                        curInput.set(loopPending); // clear loopPending?
-                        sendEndLooping();
-                        finishedLooping = true;
-                        continue;       // back to the input loop again
-                    }
-*/
+                    assertex(flags & IHThorLoopArg::LFnewloopagain);
                     break;
                 case TAKlooprow:
                     if (0 == loopPendingCount)
@@ -364,15 +358,44 @@ public:
                 if (!sendLoopingCount(loopCounter, emptyIterations)) // only if global
                     return NULL;
                 loopPending->flush();
-                curInput.setown(queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes()));
+
+                IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
+                unsigned doLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter:0;
+                unsigned doLoopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
+                ownedResults.setown(queryGraph().createThorGraphResults(3));
+                // ensures remote results are available, via owning activity (i.e. this loop act)
+                // so that when aggreagate result is fetched from the master, it will retreive from the act, not the (already cleaned) graph localresults
+                ownedResults->setOwner(container.queryId());
+
+                boundGraph->prepareLoopResults(*this, ownedResults);
+                if (doLoopCounter) // cannot be 0
+                    boundGraph->prepareCounterResult(*this, ownedResults, loopCounter, 2);
+                if (doLoopAgain) // cannot be 0
+                    boundGraph->prepareLoopAgainResult(*this, ownedResults, helper->loopAgainResult());
+
+                boundGraph->execute(*this, doLoopCounter, ownedResults, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes());
+
+                Owned<IThorResult> result0 = ownedResults->getResult(0);
+                curInput.setown(result0->getRowStream());
+
+                if (flags & IHThorLoopArg::LFnewloopagain)
+                {
+                    Owned<IThorResult> loopAgainResult = ownedResults->getResult(helper->loopAgainResult(), !queryGraph().isLocalChild());
+                    assertex(loopAgainResult);
+                    Owned<IRowStream> loopAgainRows = loopAgainResult->getRowStream();
+                    OwnedConstThorRow row = loopAgainRows->nextRow();
+                    assertex(row);
+                    //Result is a row which contains a single boolean field.
+                    if (!((const bool *)row.get())[0])
+                        finishedLooping = true;
+                }
                 loopPending.setown(createOverflowableBuffer(*this, this, false, true));
                 loopPendingCount = 0;
                 ++loopCounter;
                 if ((container.getKind() == TAKloopcount) && (loopCounter > maxIterations))
-                {
-                    sendEndLooping();
                     finishedLooping = true;
-                }
+                if (finishedLooping)
+                    sendEndLooping();
             }
         }
         return NULL;
