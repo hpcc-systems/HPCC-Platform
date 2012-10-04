@@ -24,6 +24,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include "jmisc.hpp"
+#include "dalienv.hpp"
 
 #ifdef _MSC_VER
 #pragma warning (disable : 4355)
@@ -43,6 +44,7 @@ void usage()
     printf("    dafilesrv -remove                             -- remove windows service\n\n");
     
     printf("add -A to enable authentication to the above \n\n");
+    printf("add -I <instance name>  to specify an instance name\n\n");
     printf("Standard port is %d\n",DAFILESRV_PORT);
     printf("Version:  %s\n\n",remoteServerVersionString());
 }
@@ -328,15 +330,6 @@ int main(int argc,char **argv)
 #ifndef __64BIT__
     Thread::setDefaultStackSize(0x10000);   // 64K stack (also set in windows DSP)
 #endif
-
-    StringBuffer logDir;
-#ifdef _WIN32
-    logDir.append("c:\\");
-#else
-    if (checkDirExists("/c$"))
-        logDir.append("/c$/");
-#endif
-
     Owned<IFile> sentinelFile = createSentinelTarget();
     removeSentinelFile(sentinelFile);
 
@@ -349,6 +342,8 @@ int main(int argc,char **argv)
     bool locallisten = false;
     const char *logdir=NULL;
     bool requireauthenticate = false;
+    StringBuffer logDir;
+    StringBuffer instanceName;
     while (argc>i) {
         if (stricmp(argv[i],"-D")==0) {
             i++;
@@ -375,7 +370,10 @@ int main(int argc,char **argv)
         else if ((argc>i+1)&&(stricmp(argv[i],"-L")==0)) { 
             i++;
             logDir.clear().append(argv[i++]);
-            addPathSepChar(logDir);
+        }
+        else if ((argc>i+1)&&(stricmp(argv[i],"-I")==0)) {
+            i++;
+            instanceName.clear().append(argv[i++]);
         }
         else if (stricmp(argv[i],"-LOCAL")==0) { 
             i++;
@@ -383,6 +381,18 @@ int main(int argc,char **argv)
         }
         else
             break;
+    }
+
+    if (0 == logDir.length())
+    {
+        getConfigurationDirectory(NULL,"log","dafilesrv",instanceName.str(),logDir);
+        if (0 == logDir.length())
+            logDir.append(".");
+    }
+    if (instanceName.length())
+    {
+        addPathSepChar(logDir);
+        logDir.append(instanceName.str());
     }
 
 #ifdef _WIN32
