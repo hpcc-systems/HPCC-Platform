@@ -1342,7 +1342,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         }
       }
       // Update of LDAP component filesBasedn
-      else if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_FILESBASEDN) == 0 && strcmp(pszCompType, XML_TAG_LDAPSERVERPROCESS) == 0)
+      else if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_FILESBASEDN) == 0 && strcmp(pszCompType, XML_TAG_LDAPSERVERPROCESS) == 0 && pszCompName != NULL && pszNewValue != NULL)
       {
         // update dali
         StringBuffer daliProcessXPath;
@@ -1357,12 +1357,11 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           const char* ldap_server = pItem->queryProp(XML_ATTR_LDAPSERVER);
 
           // check if dali has this ldap server assigned before changing filesBasedn
-          if (ldap_server != NULL && pszCompName != NULL && strcmp(ldap_server, pszCompName) == 0)
+          if (ldap_server != NULL && strcmp(ldap_server, pszCompName) == 0)
             pItem->setProp(XML_ATTR_FILESBASEDN, pszNewValue);
         }
 
         //update esp services
-        StringBuffer espServiceXPath;
         StringBuffer espProcessXPath;
         StringBuffer espBindingXPath;
 
@@ -1374,7 +1373,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           IPropertyTree *pItem = &iterItems2->query();
           const char* ldap_server = pItem->queryPropTree(XML_TAG_AUTHENTICATION)->queryProp(XML_ATTR_LDAPSERVER);
 
-          if (ldap_server != NULL && pszCompName != NULL && strcmp(ldap_server, pszCompName) == 0)
+          if (ldap_server != NULL && strcmp(ldap_server, pszCompName) == 0)
           {
             espBindingXPath.clear().appendf("%s[%s=\"%s\"]/%s", espProcessXPath.str(), XML_ATTR_NAME, pItem->queryProp(XML_ATTR_NAME), XML_TAG_ESPBINDING);
 
