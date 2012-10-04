@@ -2393,8 +2393,9 @@ class HashDedupSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
 protected:
     IRowStream *input;      // can be changed
+    IRowStream *initialInput;
     Owned<IRowStream> currentInput;
-    bool inputstopped, eos, extractKey, local, isVariable;
+    bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
     const char *actTxt;
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
@@ -2406,7 +2407,7 @@ protected:
     SpinLock stopSpin;
     PointerArrayOf<CHashTableRowTable> _hashTables;
     CHashTableRowTable **hashTables;
-    unsigned numHashTables;
+    unsigned numHashTables, initialNumBuckets;
     roxiemem::RoxieHeapFlags allocFlags;
 
     inline CHashTableRowTable &queryHashTable(unsigned n) const { return *hashTables[n]; }
@@ -2445,7 +2446,17 @@ public:
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
         : CSlaveActivity(_container), CThorDataLink(this), local(_local)
     {
-        inputstopped = false;
+        input = initialInput = NULL;
+        actTxt = NULL;
+        initialNumBuckets = 0;
+        inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
+        helper = NULL;
+        iHash = iKeyHash = NULL;
+        iCompare = rowKeyCompare = NULL;
+        keyRowInterfaces = NULL;
+        hashTables = NULL;
+        numHashTables = initialNumBuckets = 0;
+        roxiemem::RoxieHeapFlags allocFlags = roxiemem::RHFnone;
     }
     ~HashDedupSlaveActivityBase()
     {
@@ -2458,8 +2469,6 @@ public:
         iHash = helper->queryHash();
         appendOutputLinked(this);
         iCompare = helper->queryCompare();
-        numHashTables = 0;
-        hashTables = NULL;
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
@@ -2496,21 +2505,27 @@ public:
             rowKeyCompare = iCompare;
             iKeyHash = iHash;
         }
+        grouped = container.queryGrouped();
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         inputstopped = false;
-        eos = false;
+        eos = lastEog = false;
         startInput(inputs.item(0));
-        input = inputs.item(0);
         ThorDataLinkMetaInfo info;
         inputs.item(0)->getMetaInfo(info);
+        initialInput = input = inputs.item(0);
         unsigned div = local ? 1 : queryJob().querySlaves(); // if global, hash values already modulated by # slaves
         bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, div));
-        unsigned initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
+        initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
         if (0 == initialNumBuckets)
-            initialNumBuckets = bucketHandler->getBucketEstimate(info.totalRowsMax); // will use default if no meta total
+        {
+            if (grouped)
+                initialNumBuckets = HASHDEDUP_BUCKETS_MIN;
+            else
+                initialNumBuckets = bucketHandler->getBucketEstimate(info.totalRowsMax); // will use default if no meta total
+        }
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
         dataLinkStart(actTxt, container.queryId());
@@ -2543,10 +2558,11 @@ public:
             OwnedConstThorRow row;
             {
                 SpinBlock b(stopSpin);
-                row.setown(input->ungroupedNextRow());
+                row.setown(grouped?input->nextRow():input->ungroupedNextRow());
             }
             if (row)
             {
+                lastEog = false;
                 if (bucketHandler->addRow(row)) // true if new, i.e. non-duplicate (does not take ownership)
                 {
                     dataLinkIncrement();
@@ -2558,7 +2574,7 @@ public:
                 Owned<CBucketHandler> nextBucketHandler;
                 loop
                 {
-                    // If spill event occured, disk buckets + key buckets will have been created by this stage.
+                    // If spill event occurred, disk buckets + key buckets will have been created by this stage.
                     bucketHandler->flushBuckets();
 
                     // pop off parents until one has a bucket left to read
@@ -2570,7 +2586,22 @@ public:
                         {
                             currentInput.clear();
                             bucketHandler.clear();
-                            eos = true;
+                            if (grouped)
+                            {
+                                if (lastEog)
+                                    eos = true;
+                                else
+                                {
+                                    lastEog = true;
+                                    // reset for next group
+                                    input = initialInput;
+                                    bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, 1));
+                                    ensureNumHashTables(initialNumBuckets); // resets
+                                    bucketHandler->init(initialNumBuckets);
+                                }
+                            }
+                            else
+                                eos = true;
                             return NULL;
                         }
                         bucketHandler.setown(&bucketHandlerStack.popGet());
@@ -2591,7 +2622,7 @@ public:
         }
     }
 
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() { return grouped; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
 friend class CBucketHandler;
 friend class CHashTableRowTable;
