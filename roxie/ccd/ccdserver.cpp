@@ -32365,6 +32365,7 @@ extern "C" IHThorArg * localResultActivityTestFactory() { return new LocalResult
 class CcdServerTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(CcdServerTest);
+        CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testHeapSort);
         CPPUNIT_TEST(testInsertionSort);
         CPPUNIT_TEST(testQuickSort);
@@ -32372,6 +32373,7 @@ class CcdServerTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testMergeDedup);
         CPPUNIT_TEST(testPrefetchProject);
         CPPUNIT_TEST(testMiscellaneous);
+        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
 protected:
     SlaveContextLogger logctx;
@@ -32380,14 +32382,18 @@ protected:
     Owned<IRoxieSlaveContext> ctx;
     Owned<IQueryFactory> queryFactory;
 
+    void testSetup()
+    {
+        roxiemem::setTotalMemoryLimit(100 * 1024 * 1024, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        roxiemem::releaseRoxieHeap();
+    }
+
     void init()
     {
-        static bool heapInitialized = false;
-        if (!heapInitialized)
-        {
-            roxiemem::setTotalMemoryLimit(100 * 1024 * 1024, 0, NULL);
-            heapInitialized = true;
-        }
         package.setown(createPackage(NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
