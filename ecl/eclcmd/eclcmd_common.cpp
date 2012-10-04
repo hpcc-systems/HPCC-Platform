@@ -467,7 +467,7 @@ private:
     };
 };
 
-bool addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values)
+void addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValue> &values)
 {
     Owned<IEspNamedValue> nv = createNamedValue();
     nv->setName(name);
@@ -476,7 +476,7 @@ bool addNamedValue(const char * name, const char * value, IArrayOf<IEspNamedValu
     values.append(*nv.getClear());
 }
 
-bool addNamedValue(const char * arg, IArrayOf<IEspNamedValue> &values)
+void addNamedValue(const char * arg, IArrayOf<IEspNamedValue> &values)
 {
     const char *eq = strchr(arg, '=');
     if (!eq)
@@ -560,11 +560,6 @@ bool EclCmdWithEclTarget::finalizeOptions(IProperties *globals)
             optObj.set(optManifest.get()); //treat as stand alone manifest that must declare ecl to compile
             optManifest.clear();
         }
-    }
-
-    if (optNoArchive && optAttributePath.length())
-    {
-        addNamedValue("eclcc-main", optAttributePath.get(), debugValues);
     }
 
     if (!optNoArchive && (optObj.type == eclObjSource || optObj.type == eclObjManifest))
