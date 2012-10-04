@@ -15,8 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-// Testing DISTRIBUTE,MERGE
+// temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
+nononcelib :=
+    SERVICE
+varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
+    END;
 
+// Testing DISTRIBUTE,MERGE
 
 unsigned numrecs := 1000000 : stored('numrecs');
 
@@ -56,7 +61,7 @@ rollup_ds := ROLLUP(hdsds,checksort(LEFT, RIGHT),TRUE,LOCAL);
 
 
 SEQUENTIAL(
-  IF (COUNT(rollup_ds) = CLUSTERSIZE, 
+  IF (COUNT(rollup_ds) = IF(nononcelib.platform()='roxie',1,CLUSTERSIZE),
      output('Sort order verified'), 
      FAIL('ERROR: rollup count did not match expected!')
   ),
