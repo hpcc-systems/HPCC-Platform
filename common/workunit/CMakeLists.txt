@@ -27,10 +27,12 @@ project( workunit )
 set (    SRCS 
          workunit.cpp 
          wujobq.cpp
+         package.cpp
                  
          workunit.hpp 
          wuerror.hpp
          wujobq.hpp
+         package.hpp
     )
 
 include_directories ( 

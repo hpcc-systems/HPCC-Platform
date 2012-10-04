@@ -219,9 +219,11 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
             ForEach(*super_iter)
             {
                 IPropertyTree &supertree = super_iter->query();
-                StringAttr id(supertree.queryProp("@id"));
-                if (id.length() && id[0] == '~')
-                    supertree.setProp("@id", id+1);
+                StringBuffer lc(supertree.queryProp("@id"));
+                const char *id = lc.toLowerCase().str();
+                if (*id == '~')
+                    id++;
+                supertree.setProp("@id", id);
 
                 Owned<IPropertyTreeIterator> sub_iter = supertree.getElements("SubFile");
                 ForEach(*sub_iter)
