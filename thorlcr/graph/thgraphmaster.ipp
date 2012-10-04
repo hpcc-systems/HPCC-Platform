@@ -76,6 +76,7 @@ public:
     virtual void start();
     virtual void done();
     virtual void abort(IException *e);
+    IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
@@ -233,6 +234,7 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     bool asyncStart;
     MemoryBuffer *data;
     CriticalSection progressCrit;
+
 protected:
     ProgressInfoArray progressInfo;
     CTimingInfo timingInfo;

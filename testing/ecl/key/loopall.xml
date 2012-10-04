@@ -92,3 +92,9 @@
  <Row><surname>X                   </surname><forename>Z         </forename><age>150</age></Row>
  <Row><surname>Salter              </surname><forename>Abi       </forename><age>240</age></Row>
 </Dataset>
+<Dataset name='Result 12'>
+ <Row><parentfield>parent1changed</parentfield><children><Row><surname>Halliday            </surname><forename>Gavin     </forename><age>51</age></Row><Row><surname>Halliday            </surname><forename>Liz       </forename><age>50</age></Row><Row><surname>Salter              </surname><forename>Abi       </forename><age>30</age></Row><Row><surname>X                   </surname><forename>Z         </forename><age>45</age></Row></children></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><parentfield>parent1changed</parentfield><children><Row><surname>Halliday            </surname><forename>Gavin     </forename><age>62</age></Row><Row><surname>Halliday            </surname><forename>Liz       </forename><age>120</age></Row><Row><surname>X                   </surname><forename>Z         </forename><age>100</age></Row><Row><surname>Salter              </surname><forename>Abi       </forename><age>80</age></Row></children></Row>
+</Dataset>
