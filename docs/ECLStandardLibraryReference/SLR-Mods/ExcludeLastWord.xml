@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="ExcludeNthWord">
-  <title>ExcludeNthWord</title>
+<sect1 id="ExcludeLastWord">
+  <title>ExcludeLastWord</title>
 
-  <para><emphasis role="bold">STD.Str.ExcludeNthWord<indexterm>
-      <primary>STD.Str.ExcludeNthWord</primary>
+  <para><emphasis role="bold">STD.Str.ExcludeLastWord<indexterm>
+      <primary>STD.Str.ExcludeLastWord</primary>
     </indexterm><indexterm>
-      <primary>Str.ExcludeNthWord</primary>
+      <primary>Str.ExcludeLastWord</primary>
     </indexterm><indexterm>
-      <primary>ExcludeNthWord</primary>
-    </indexterm>(</emphasis> <emphasis>text, n</emphasis> <emphasis
+      <primary>ExcludeLastWord</primary>
+    </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
@@ -23,32 +23,26 @@
         <row>
           <entry><emphasis>text</emphasis></entry>
 
-          <entry>A string containing words separated by whitespace.</entry>
+          <entry>A string containing words separated by whitespace. </entry>
         </row>
 
         <row>
-          <entry><emphasis>n</emphasis></entry>
+          <entry>Return:</entry>
 
-          <entry>A integer containing the ordinal position of the word to remove.</entry>
-        </row>
-
-        <row>
-          <entry>Return:<emphasis> </emphasis></entry>
-
-          <entry>ExcludeNthWord returns a STRING value.</entry>
+          <entry>ExcludeLastWord returns a STRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ExcludeNthWord </emphasis>function returns
-  the <emphasis>text</emphasis> string with the <emphasis>n</emphasis>th word removed. Words are
+  <para>The <emphasis role="bold">ExcludeLastWord</emphasis> function returns
+  the <emphasis>text</emphasis> string with the last word removed. Words are
   separated by one or more whitespace characters. Whitespace after
-  the <emphasis>n</emphasis>th word is also removed (along with whitespace before, if <emphasis>n</emphasis>=1).</para>
+  the last word is also removed.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.ExcludeNthWord('The quick brown fox',2);
- //A contains 'The brown fox'
+  <programlisting format="linespecific">A := STD.Str.ExcludeLastWord('The quick brown fox');
+ //A contains 'The quick brown'
 </programlisting>
 </sect1>
