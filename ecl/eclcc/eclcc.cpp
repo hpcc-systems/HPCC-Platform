@@ -987,6 +987,11 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         const char * sourceFilename = archiveTree->queryProp("Query/@originalFilename");
         Owned<ISourcePath> sourcePath = createSourcePath(sourceFilename);
         contents.setown(createFileContentsFromText(queryText, sourcePath));
+        if (queryAttributePath && queryText && *queryText)
+        {
+            Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(queryAttributePath, contents);
+            repositories.append(*createRepository(inputFileCollection));
+        }
     }
     else
     {
@@ -1045,8 +1050,20 @@ void EclCC::processFile(EclCompileInstance & instance)
     else
     {
         StringBuffer attributePath;
+        bool withinRepository = false;
         bool inputFromStdIn = streq(curFilename, "stdin:");
-        bool withinRepository = !inputFromStdIn && checkWithinRepository(attributePath, curFilename);
+
+        //Specifying --main indicates that the query text (if present) replaces that definition
+        if (optQueryRepositoryReference)
+        {
+            withinRepository = true;
+            attributePath.clear().append(optQueryRepositoryReference);
+        }
+        else
+        {
+            withinRepository = !inputFromStdIn && checkWithinRepository(attributePath, curFilename);
+        }
+
 
         StringBuffer expandedSourceName;
         if (!inputFromStdIn)
@@ -1062,8 +1079,12 @@ void EclCC::processFile(EclCompileInstance & instance)
         //Note, this will not override standard library files.
         if (withinRepository)
         {
-            Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
-            repositories.append(*createRepository(inputFileCollection));
+            //-main only overrides the definition if the query is non-empty.  Otherwise use the existing text.
+            if (!optQueryRepositoryReference || queryText->length())
+            {
+                Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
+                repositories.append(*createRepository(inputFileCollection));
+            }
         }
         else
         {
@@ -1246,10 +1267,11 @@ bool EclCC::processFiles()
     }
     if (inputFiles.ordinality() == 0)
     {
-        if (!optBatchMode && optQueryRepositoryReference)
-            return true;
-        ERRLOG("No input files could be opened");
-        return false;
+        if (optBatchMode || !optQueryRepositoryReference)
+        {
+            ERRLOG("No input files could be opened");
+            return false;
+        }
     }
 
 
