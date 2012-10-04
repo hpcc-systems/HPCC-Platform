@@ -401,11 +401,10 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
     }
 }
 
-bool CWsWorkunitsEx::isQuerySuspended(const char* query, const char *target, unsigned wait, StringBuffer& errorMessage)
+bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage)
 {
     try
     {
-        Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
         if (0==wait || !clusterInfo || clusterInfo->getPlatform()!=RoxieCluster)
             return false;
 
@@ -497,9 +496,10 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     resp.setQueryName(queryName.str());
     resp.setQuerySet(target.str());
 
+    Owned <IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target.str());
     bool reloadFailed = false;
     if (0!=req.getWait() && !req.getNoReload())
-        reloadFailed = !reloadCluster(target.str(), (unsigned)req.getWait());
+        reloadFailed = !reloadCluster(clusterInfo, (unsigned)req.getWait());
     
     resp.setReloadFailed(reloadFailed);
 
@@ -507,7 +507,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     if (version > 1.38)
     {
         StringBuffer errorMessage;
-        if (!reloadFailed && !req.getNoReload() && isQuerySuspended(queryName.str(), target.str(), (unsigned)req.getWait(), errorMessage))
+        if (!reloadFailed && !req.getNoReload() && isQuerySuspended(queryName.str(), clusterInfo, (unsigned)req.getWait(), errorMessage))
         {
             resp.setSuspended(true);
             resp.setErrorMessage(errorMessage);
