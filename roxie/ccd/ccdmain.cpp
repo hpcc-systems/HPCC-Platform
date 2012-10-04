@@ -463,8 +463,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             // MORE - maybe add a 'list' function here?
             for (int name = 2; name < argc; name++)
             {
-                CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(argv[name]);
-                runner.addTest( registry.makeTest() );
+                if (stricmp(argv[name], "-q")==0)
+                {
+                    traceLevel = 0;
+                    roxiemem::memTraceLevel = 0;
+                    removeLog();
+                }
+                else
+                {
+                    CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry(argv[name]);
+                    runner.addTest( registry.makeTest() );
+                }
             }
         }
         bool wasSucessful = runner.run( "", false );
