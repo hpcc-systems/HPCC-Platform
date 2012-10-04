@@ -48,7 +48,7 @@ public:
 
     CNullSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
-        appendOutputLinked(this);
+        appendOutput(this);
     }
 // IThorSlaveActivity
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
