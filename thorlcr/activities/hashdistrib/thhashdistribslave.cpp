@@ -2393,8 +2393,8 @@ public:
             if (!isVariable && helper->queryOutputMeta()->isFixedSize())
             {
                 roxiemem::IRowManager *rM = queryJob().queryRowManager();
-                size32_t keySize = rM->getExpectedCapacity(km->getMinRecordSize(), allocFlags);
-                size32_t rowSize = rM->getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
+                memsize_t keySize = rM->getExpectedCapacity(km->getMinRecordSize(), allocFlags);
+                memsize_t rowSize = rM->getExpectedCapacity(helper->queryOutputMeta()->getMinRecordSize(), allocFlags);
                 if (keySize >= rowSize)
                     extractKey = false;
             }
@@ -2760,7 +2760,7 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
         roxiemem::IRowManager *rM = owner.queryJob().queryRowManager();
 
         memsize_t availMem = roxiemem::getTotalMemoryLimit()-0x500000;
-        size32_t initKeySize = rM->getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
+        memsize_t initKeySize = rM->getExpectedCapacity(keyIf->queryRowMetaData()->getMinRecordSize(), owner.allocFlags);
         memsize_t minBucketSpace = retBuckets * rM->getExpectedCapacity(HASHDEDUP_HT_BUCKET_SIZE * sizeof(void *), owner.allocFlags);
 
         rowcount_t _maxRowGuess = (availMem-minBucketSpace) / initKeySize; // without taking into account ht space / other overheads

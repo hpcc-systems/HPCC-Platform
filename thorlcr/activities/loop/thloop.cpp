@@ -33,6 +33,7 @@ protected:
     unsigned emptyIterations;
     unsigned maxEmptyLoopIterations;
     Owned<CThorStats> loopCounterProgress;
+    bool global;
 
     bool sync(unsigned loopCounter)
     {
@@ -100,14 +101,13 @@ public:
         }
         return CMasterActivity::fireException(e);
     }
-    bool doinit()
+    void doinit()
     {
         loopGraph = queryContainer().queryLoopGraph()->queryGraph();
+        global = !loopGraph->isLocalOnly();
         if (container.queryLocalOrGrouped())
-            return false;
-        bool global = !loopGraph->isLocalOnly();
+            return;
         maxEmptyLoopIterations = (unsigned)container.queryJob().getWorkUnitValueInt("@maxEmptyLoopIterations", 1000);
-        return !global;
     }
     void process()
     {
@@ -146,6 +146,9 @@ public:
 
 class CLoopActivityMaster : public CLoopActivityMasterBase
 {
+    IHThorLoopArg *helper;
+    IThorBoundLoopGraph *boundGraph;
+    unsigned flags;
     void checkEmpty()
     {
         // similar to sync, but continiously listens for messages from slaves
@@ -185,16 +188,36 @@ public:
     }
     void init()
     {
+        helper = (IHThorLoopArg *) queryHelper();
+        boundGraph = queryContainer().queryLoopGraph();
+        flags = helper->getFlags();
         if (TAKloopdataset == container.getKind())
-            throwUnexpected();
-        if (!CLoopActivityMasterBase::doinit())
+            assertex(flags & IHThorLoopArg::LFnewloopagain);
+        CLoopActivityMasterBase::doinit();
+        if (!global && (flags & IHThorLoopArg::LFnewloopagain))
+        {
+            if (container.queryOwner().isGlobal())
+                global = true;
+        }
+        if (!global)
             return;
-        IHThorLoopArg *helper = (IHThorLoopArg *) queryHelper();
-        Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(3);
-        queryContainer().queryLoopGraph()->prepareLoopResults(*this, results);
-        if (helper->getFlags() & IHThorLoopArg::LFcounter)
-            queryContainer().queryLoopGraph()->prepareCounterResult(*this, results, 1, 2);
-        loopGraph->setResults(results);
+        initLoopResults(1);
+    }
+    void initLoopResults(unsigned loopCounter)
+    {
+        unsigned doLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter : 0;
+        unsigned doLoopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
+        ownedResults.setown(queryGraph().createThorGraphResults(3)); // will not be cleared until next sync
+        // ensures remote results are available, via owning activity (i.e. this loop act)
+        // so that when the master/slave result parts are fetched, it will retreive from the act, not the (already cleaed) graph localresults
+        ownedResults->setOwner(container.queryId());
+
+        boundGraph->prepareLoopResults(*this, ownedResults);
+        if (doLoopCounter) // cannot be 0
+            boundGraph->prepareCounterResult(*this, ownedResults, loopCounter, 2);
+        if (doLoopAgain) // cannot be 0
+            boundGraph->prepareLoopAgainResult(*this, ownedResults, helper->loopAgainResult());
+
     }
     void process()
     {
@@ -202,8 +225,6 @@ public:
         if (container.queryLocalOrGrouped())
             return;
 
-        IHThorLoopArg *helper = (IHThorLoopArg *) queryHelper();
-        bool global = !loopGraph->isLocalOnly();
         if (global)
         {
             helper->createParentExtract(extractBuilder);
@@ -212,7 +233,9 @@ public:
             {
                 if (sync(loopCounter))
                     break;
-                Owned<IRowStream> curInput = queryContainer().queryLoopGraph()->execute(*this, (helper->getFlags() & IHThorLoopArg::LFcounter)?loopCounter:0, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
+                if (loopCounter > 1)
+                    initLoopResults(loopCounter);
+                boundGraph->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
             }
         }
@@ -236,7 +259,8 @@ public:
     }
     void init()
     {
-        if (!CLoopActivityMasterBase::doinit())
+        CLoopActivityMasterBase::doinit();
+        if (!global)
             return;
         IHThorGraphLoopArg *helper = (IHThorGraphLoopArg *) queryHelper();
         Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(1);

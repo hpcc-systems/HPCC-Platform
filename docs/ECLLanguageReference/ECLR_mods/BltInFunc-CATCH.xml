@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="CATCH">
+  <title>CATCH</title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> := CATCH<indexterm>
+      <primary>CATCH</primary>
+    </indexterm><indexterm>
+      <primary>CATCH Function</primary>
+    </indexterm>(</emphasis> <emphasis>recset, action</emphasis><emphasis
+  role="bold"> );</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>The definition name for the resulting recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>recset</emphasis></entry>
+
+            <entry>The recordset expression that, if it fails, causes the
+            <emphasis>action</emphasis> to launch.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>action</emphasis></entry>
+
+            <entry>One of the three valid actions below.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>CATCH returns a set of records (which may be
+            empty).</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">CATCH </emphasis>function executes the
+  <emphasis>action</emphasis> if the <emphasis>recset</emphasis> expression
+  fails for any reason.</para>
+
+  <para>Valid <emphasis>actions</emphasis> are:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">SKIP<indexterm>
+                <primary>SKIP</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies ignoring the error and continuing, returning an
+            empty dataset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Specifies returning a single record from the
+            <emphasis>transform</emphasis> function. The TRANSFORM function
+            may use FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> to provide details of the failure and must result
+            in a RECORD structure the same format as the
+            <emphasis>recset</emphasis>.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">FAIL<indexterm>
+                <primary>FAIL</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>The FAIL action, which specifies the error message to
+            produce. This is meant to provide more useful information to the
+            end user about why the job failed.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Example:</para>
+
+  <programlisting>MyRec := RECORD
+    STRING50 Value1;
+    UNSIGNED Value2;
+END;
+
+ds := DATASET([{'C',1},{'C',2},{'C',3},
+               {'C',4},{'C',5},{'X',1},{'A',1}],MyRec);
+
+MyRec FailTransform := transform
+  self.value1 := FAILMESSAGE[1..17]; 
+  self.value2 := FAILCODE
+END;
+
+limited1 := LIMIT(ds, 2);
+limited2 := LIMIT(ds, 3);
+limited3 := LIMIT(ds, 4);
+
+recovered1 := CATCH(limited1, SKIP);
+recovered2 := CATCH(limited2, ONFAIL(FailTransform));
+recovered3 := CATCH(CATCH(limited3, FAIL(1, 'Failed, dude')), ONFAIL(FailTransform));
+
+OUTPUT(recovered1);  //empty recordset 
+OUTPUT(recovered2);  //
+OUTPUT(recovered3);  //
+</programlisting>
+
+  <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
+  Structure</link>, <link linkend="FAIL">FAIL</link>, <link linkend="FAILCODE">FAILCODE</link>, <link
+  linkend="FAILMESSAGE">FAILMESSAGE</link></para>
+</sect1>

@@ -40,6 +40,8 @@
 #include "thorplugin.hpp"
 #include "roxiecontrol.hpp"
 
+#include "package.hpp"
+
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif

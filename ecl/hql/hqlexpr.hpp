@@ -1536,6 +1536,8 @@ extern HQL_API bool isSortDistribution(IHqlExpression * distribution);
 extern HQL_API bool isChooseNAllLimit(IHqlExpression * limit);
 
 extern HQL_API bool isZero(IHqlExpression * expr);
+extern HQL_API bool couldBeNegative(IHqlExpression * expr);
+extern HQL_API bool isNegative(IHqlExpression * expr);
 
 extern HQL_API bool isSelectFirstRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryTransformSingleAssign(IHqlExpression * expr);

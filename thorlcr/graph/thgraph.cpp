@@ -213,15 +213,16 @@ class CThorBoundLoopGraph : public CInterface, implements IThorBoundLoopGraph
     CGraphBase *graph;
     activity_id activityId;
     Linked<IOutputMetaData> resultMeta;
-    Owned<IOutputMetaData> counterMeta;
-    Owned<IRowInterfaces> resultRowIf, countRowIf;
+    Owned<IOutputMetaData> counterMeta, loopAgainMeta;
+    Owned<IRowInterfaces> resultRowIf, countRowIf, loopAgainRowIf;
 
 public:
     IMPLEMENT_IINTERFACE;
 
     CThorBoundLoopGraph(CGraphBase *_graph, IOutputMetaData * _resultMeta, unsigned _activityId) : graph(_graph), resultMeta(_resultMeta), activityId(_activityId)
     {
-        counterMeta.setown(new CThorEclCounterMeta);
+        counterMeta.setown(createFixedSizeMetaData(sizeof(thor_loop_counter_t)));
+        loopAgainMeta.setown(createFixedSizeMetaData(sizeof(bool)));
     }
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos)
     {
@@ -235,6 +236,12 @@ public:
         Owned<IRowWriter> counterResultWriter = counterResult->getWriter();
         counterResultWriter->putRow(counterRowFinal.getClear());
     }
+    virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
+    {
+        if (!loopAgainRowIf)
+            loopAgainRowIf.setown(createRowInterfaces(loopAgainMeta, activityId, activity.queryCodeContext()));
+        activity.queryGraph().createResult(activity, pos, results, loopAgainRowIf, !activity.queryGraph().isLocalChild(), SPILL_PRIORITY_DISABLE);
+    }
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results)
     {
         if (!resultRowIf)
@@ -242,23 +249,14 @@ public:
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild());
     }
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
+    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
-        Owned<IThorGraphResults> results = graph->createThorGraphResults(3);
-        prepareLoopResults(activity, results);
         if (counter)
-        {
-            prepareCounterResult(activity, results, counter, 2);
             graph->setLoopCounter(counter);
-        }
         Owned<IThorResult> inputResult = results->getResult(1);
         if (inputStream)
             inputResult->setResultStream(inputStream, rowStreamCount);
         graph->executeChild(parentExtractSz, parentExtract, results, NULL);
-        if (0 == graph->queryJob().queryMyRank())
-            return NULL; // unset and unused on master
-        Owned<IThorResult> result0 = results->getResult(0);
-        return result0->getRowStream();
     }
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *graphLoopResults, size32_t parentExtractSz, const byte *parentExtract)
     {
@@ -1835,6 +1833,11 @@ IThorResult *CGraphBase::getGraphLoopResult(unsigned id, bool distributed)
     return graphLoopResults->getResult(id, distributed);
 }
 
+IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+{
+    return results->createResult(activity, id, rowIf, distributed, spillPriority);
+}
+
 IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
     return localResults->createResult(activity, id, rowIf, distributed, spillPriority);
@@ -2616,6 +2619,30 @@ roxiemem::IRowManager *CJobBase::queryRowManager() const
     return thorAllocator->queryRowManager();
 }
 
+IThorResult *CJobBase::getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId)
+{
+    Owned<CGraphBase> graph = getGraph(gid);
+    if (!graph)
+    {
+        Owned<IThorException> e = MakeThorException(0, "getOwnedResult: graph not found");
+        e->setGraphId(gid);
+        throw e.getClear();
+    }
+    Owned<IThorResult> result;
+    if (ownerId)
+    {
+        CGraphElementBase *container = graph->queryElement(ownerId);
+        assertex(container);
+        CActivityBase *activity = container->queryActivity();
+        result.setown(activity->queryResults()->getResult(resultId));
+    }
+    else
+        result.setown(graph->getResult(resultId));
+    if (!result)
+        throw MakeGraphException(graph, 0, "GraphGetResult: result not found: %d", resultId);
+    return result.getClear();
+}
+
 static IThorResource *iThorResource = NULL;
 void setIThorResource(IThorResource &r)
 {
@@ -2652,6 +2679,11 @@ void CActivityBase::abort()
 {
     if (!abortSoon) ActPrintLog("Abort condition set");
     abortSoon = true;
+}
+
+void CActivityBase::kill()
+{
+    ownedResults.clear();
 }
 
 void CActivityBase::ActPrintLog(const char *format, ...)

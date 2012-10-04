@@ -107,7 +107,7 @@ protected:
 
     virtual void noteReleased(const void *ptr) = 0;
     virtual bool _isShared(const void *ptr) const = 0;
-    virtual size32_t _capacity() const = 0;
+    virtual memsize_t _capacity() const = 0;
     virtual void _setDestructorFlag(const void *ptr) = 0;
     virtual bool _hasDestructor(const void *ptr) const = 0;
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
@@ -144,7 +144,7 @@ public:
         throwUnexpected();
     }
 
-    static size32_t capacity(const void *ptr)
+    static memsize_t capacity(const void *ptr)
     {
         if (ptr)
         {
@@ -261,7 +261,7 @@ class roxiemem_decl DataBuffer : public DataBufferBase
     friend class CDataBufferManager;
 private:
     virtual void released();
-    virtual size32_t _capacity() const;
+    virtual memsize_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
@@ -293,7 +293,7 @@ private:
     virtual void released();
     virtual void noteReleased(const void *ptr);
     virtual bool _isShared(const void *ptr) const;
-    virtual size32_t _capacity() const;
+    virtual memsize_t _capacity() const;
     virtual void _setDestructorFlag(const void *ptr);
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
@@ -396,9 +396,9 @@ interface IFixedRowHeap : extends IInterface
 
 interface IVariableRowHeap : extends IInterface
 {
-    virtual void *allocate(size32_t size, size32_t & capacity) = 0;
-    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, size32_t &capacity) = 0;
-    virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize) = 0;
+    virtual void *allocate(memsize_t size, memsize_t & capacity) = 0;
+    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, memsize_t &capacity) = 0;
+    virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize) = 0;
 };
 
 enum RoxieHeapFlags
@@ -413,9 +413,9 @@ enum RoxieHeapFlags
 // Variable size aggregated link-counted Roxie (etc) row manager
 interface IRowManager : extends IInterface
 {
-    virtual void *allocate(size32_t size, unsigned activityId) = 0;
-    virtual void *resizeRow(void * original, size32_t oldsize, size32_t newsize, unsigned activityId, size32_t &capacity) = 0;
-    virtual void *finalizeRow(void *final, size32_t originalSize, size32_t finalSize, unsigned activityId) = 0;
+    virtual void *allocate(memsize_t size, unsigned activityId) = 0;
+    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity) = 0;
+    virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
     virtual unsigned numPagesAfterCleanup(bool forceFreeAll) = 0; // calls releaseEmptyPages() then returns
@@ -430,8 +430,8 @@ interface IRowManager : extends IInterface
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
-    virtual size_t getExpectedCapacity(size32_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
-    virtual size_t getExpectedFootprint(size32_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
+    virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
+    virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
@@ -464,7 +464,7 @@ extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();
 extern roxiemem_decl unsigned memTraceLevel;
-extern roxiemem_decl size32_t memTraceSizeLimit;
+extern roxiemem_decl memsize_t memTraceSizeLimit;
 
 extern roxiemem_decl atomic_t dataBufferPages;
 extern roxiemem_decl atomic_t dataBuffersActive;

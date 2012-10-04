@@ -1273,14 +1273,18 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         }
       }
 
-      if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_LDAPSERVER) == 0 && strcmp(pszCompType, XML_TAG_DALISERVERPROCESS) == 0 && pComp != NULL && pszNewValue && *pszNewValue)
+      if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_LDAPSERVER) == 0 && strcmp(pszCompType, XML_TAG_DALISERVERPROCESS) == 0 && pComp != NULL)
       {
         Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
 
         StringBuffer ldapXPath;
-        ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+        StringBuffer strFilesBasedn;
 
-        StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+        if (pszNewValue && *pszNewValue)
+        {
+          ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+          strFilesBasedn.appendf("%s",pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+        }
 
         pComp->setProp(XML_ATTR_FILESBASEDN,strFilesBasedn);
       }
@@ -1291,6 +1295,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         StringBuffer ldapXPath;
         StringBuffer espServiceXPath;
         StringBuffer espProcessXPath;
+        StringBuffer strFilesBasedn;
 
         espServiceXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, pszNewValue);
         espProcessXPath.appendf("./%s/%s/[%s=\"%s\"]/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_ATTR_NAME, pszCompName, XML_TAG_AUTHENTICATION);
@@ -1300,12 +1305,9 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         if (strLDAPName.length() > 0)
         {
           ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, strLDAPName.str());
-
-          StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
-
-          if (strFilesBasedn.length() > 0)
-            pActiveEnvRoot->queryPropTree(espServiceXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
+          strFilesBasedn.appendf("%s", pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
         }
+        pActiveEnvRoot->queryPropTree(espServiceXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
       }
       else if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_LDAPSERVER) == 0 && strcmp(pszCompType, XML_TAG_ESPPROCESS) == 0 && pComp != NULL)
       {
@@ -1314,28 +1316,29 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         StringBuffer ldapXPath;
         StringBuffer espBindingXPath;
         StringBuffer espProcessXPath;
+        StringBuffer strFilesBasedn;
 
-        ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+        if (pszNewValue != NULL && *pszNewValue != 0)
+        {
+          ldapXPath.appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_LDAPSERVERPROCESS, XML_ATTR_NAME, pszNewValue);
+          strFilesBasedn.appendf("%s",pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+        }
+
         espBindingXPath.appendf("./%s/%s[%s=\"%s\"]/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_ATTR_NAME, pszCompName, XML_TAG_ESPBINDING);
 
-        StringBuffer strFilesBasedn(pActiveEnvRoot->queryPropTree(ldapXPath.str())->queryProp(XML_ATTR_FILESBASEDN));
+        Owned<IPropertyTreeIterator> iterItems = pActiveEnvRoot->getElements(espBindingXPath.str());
 
-        if (strFilesBasedn.length() > 0)
+        ForEach(*iterItems)
         {
-          Owned<IPropertyTreeIterator> iterItems = pActiveEnvRoot->getElements(espBindingXPath.str());
+          IPropertyTree *pItem = &iterItems->query();
+          const char* service_name = pItem->queryProp(XML_ATTR_SERVICE);
 
-          ForEach(*iterItems)
-          {
-            IPropertyTree *pItem = &iterItems->query();
-            const char* service_name = pItem->queryProp(XML_ATTR_SERVICE);
+          espProcessXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
 
-            espProcessXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
+          const char* service_type = pActiveEnvRoot->queryPropTree(espProcessXPath.str())->queryProp(XML_ATTR_BUILDSET);
 
-            const char* service_type = pActiveEnvRoot->queryPropTree(espProcessXPath.str())->queryProp(XML_ATTR_BUILDSET);
-
-            if (service_type && *service_type && !strcmp(service_type, "espsmc"))
-              pActiveEnvRoot->queryPropTree(espProcessXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
-          }
+          if (service_type && *service_type && !strcmp(service_type, "espsmc"))
+            pActiveEnvRoot->queryPropTree(espProcessXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
         }
       }
 

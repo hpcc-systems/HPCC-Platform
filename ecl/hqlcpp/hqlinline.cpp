@@ -292,6 +292,14 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETassign;
     case no_xmlproject:
         return RETiterate;
+    case no_dataset_from_transform:
+    {
+        if (expr->hasProperty(distributedAtom))
+            return 0;
+        if (transformContainsSkip(expr->queryChild(1)))
+            return 0;
+        return RETassign;
+    }
     case no_inlinetable:
         {
             if (transformListContainsSkip(expr->queryChild(0)))

@@ -146,9 +146,10 @@
     the following circumstances:</para>
 
     <para>* For LOOKUP and ALL joins, the GROUPing and sort order of the
-    <emphasis>leftrecset</emphasis> are preserved.* For KEYED joins the
-    GROUPing (but not the sort order) of the <emphasis>leftrecset</emphasis>
-    is preserved.</para>
+    <emphasis>leftrecset</emphasis> are preserved.</para>
+
+    <para>* For KEYED joins the GROUPing (but not the sort order) of the
+    <emphasis>leftrecset</emphasis> is preserved.</para>
   </sect2>
 
   <sect2 id="Matching_Logic">
@@ -332,8 +333,12 @@
           <row>
             <entry><emphasis role="bold">NOSORT</emphasis></entry>
 
-            <entry>Performs the JOIN without dynamically sorting the
-            tables.</entry>
+            <entry>Performs the JOIN without dynamically sorting the tables.
+            This implies that the <emphasis>leftrecset</emphasis> and/or
+            <emphasis>rightrecset</emphasis> must have been previously sorted
+            and partitioned based on the fields specified in the
+            <emphasis>joincondition</emphasis> so that records can be easily
+            matched.</entry>
           </row>
 
           <row>
@@ -357,7 +362,7 @@
           <row>
             <entry><emphasis>index</emphasis></entry>
 
-            <entry>Optional. The attribute name of an INDEX into the
+            <entry>Optional. The name of an INDEX into the
             <emphasis>rightrecset</emphasis> for a full-keyed JOIN (see
             below). If omitted, indicates the <emphasis>rightrecset</emphasis>
             will always be an INDEX (useful when the
