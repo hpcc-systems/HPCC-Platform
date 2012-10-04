@@ -507,6 +507,12 @@
                   </td>
                </tr>
                <tr>
+                  <td>Escape:</td>
+                  <td>
+                     <input type="text" id="sourceCsvEscape" name="sourceCsvEscape" size="6" value="" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                  </td>
+               </tr>
+               <tr>
                   <td>Line Terminator:</td>
                   <td>
                      <input type="text" id="sourceCsvTerminate" name="sourceCsvTerminate" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>

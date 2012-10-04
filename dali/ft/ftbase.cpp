@@ -54,6 +54,7 @@
 #define FPcsvSeparate       "@csvSeparate"
 #define FPcsvQuote          "@csvQuote"
 #define FPcsvTerminate      "@csvTerminate"
+#define FPcsvEscape         "@csvEscape"
 #define FProwTag            "@rowTag"
 
 
@@ -226,6 +227,7 @@ void FileFormat::deserialize(MemoryBuffer & in)
         ::deserialize(in, separate);
         ::deserialize(in, quote);
         ::deserialize(in, terminate);
+        ::deserialize(in, escape);
         ::deserialize(in, rowTag);
         break;
     }
@@ -274,6 +276,8 @@ bool FileFormat::restore(IPropertyTree * props)
         separate.set(props->queryProp(FPcsvSeparate));
         quote.set(props->queryProp(FPcsvQuote));
         terminate.set(props->queryProp(FPcsvTerminate));
+        if (props->hasProp(FPcsvEscape))
+            escape.set(props->queryProp(FPcsvEscape));
         if (maxRecordSize == 0)
             throwError(DFTERR_MaxRecordSizeZero);
     }
@@ -305,6 +309,8 @@ bool FileFormat::restore(IPropertyTree * props)
         separate.set(props->queryProp(FPcsvSeparate));
         quote.set(props->queryProp(FPcsvQuote));
         terminate.set(props->queryProp(FPcsvTerminate));
+        if (props->hasProp(FPcsvEscape))
+            escape.set(props->queryProp(FPcsvEscape));
         rowTag.set(props->queryProp(FProwTag));
         if (maxRecordSize == 0)
             throwError(DFTERR_MaxRecordSizeZero);
@@ -349,6 +355,7 @@ void FileFormat::save(IPropertyTree * props)
         if (separate)       props->setProp(FPcsvSeparate, separate);
         if (quote)          props->setProp(FPcsvQuote, quote);
         if (terminate)      props->setProp(FPcsvTerminate, terminate);
+        if (escape)         props->setProp(FPcsvEscape, escape);
         if (rowTag)         props->setProp(FProwTag, rowTag);
         break;
     case FFTrecfmvb:
@@ -379,6 +386,7 @@ void FileFormat::serialize(MemoryBuffer & out) const
         ::serialize(out, separate);
         ::serialize(out, quote);
         ::serialize(out, terminate);
+        ::serialize(out, escape);
         ::serialize(out, rowTag);
         break;
     }
@@ -392,6 +400,7 @@ void FileFormat::set(const FileFormat & src)
     separate.set(src.separate);
     quote.set(src.quote);
     terminate.set(src.terminate);
+    escape.set(src.escape);
     rowTag.set(src.rowTag);
 }
 
