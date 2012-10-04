@@ -18,7 +18,7 @@
 ###<REPLACE>###
 
 if [ -z $1 ]; then
-        log=${LOG_DIR}/dafilesrv
+        log=${LOG_DIR}
 else
         log=$1
 fi
@@ -28,6 +28,8 @@ shift
 PATH_PRE=`type -path hpcc_setenv`
 source ${PATH_PRE}
 PID_NAME="$PID/`basename $PWD`.pid"
+
+INSTANCE_NAME="`basename $PWD`"
 
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
@@ -46,14 +48,14 @@ killed(){
 }
 ulimit -n $handlelimit
 trap "killed" SIGINT SIGTERM SIGKILL
-dafilesrv -L $log &
+dafilesrv -L $log -I ${INSTANCE_NAME} &
 echo $! > $PID_NAME
 wait
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
     if [ -e ${SENTINEL} ]; then
-        dafilesrv -L $log &
+        dafilesrv -L $log -I ${INSTANCE_NAME} &
         echo $! > $PID_NAME
         wait
     fi
