@@ -3354,6 +3354,25 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
     Owned<CThorRowAggregator> localAggTable;
     bool eos;
 
+    bool doNextGroup()
+    {
+        localAggTable->start(queryRowAllocator());
+        while (!abortSoon)
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (!row)
+            {
+                if (container.queryGrouped())
+                    break;
+                row.setown(input->nextRow());
+                if (!row)
+                    break;
+            }
+            localAggTable->addRow(row);
+        }
+        return 0 != localAggTable->elementCount();
+    }
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -3369,48 +3388,33 @@ public:
         appendOutputLinked(this);
 
         if (!container.queryLocalOrGrouped())
+        {
             mptag = container.queryJob().deserializeMPTag(data);
-        ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+            ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+        }
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
-        localAggTable->start(queryRowAllocator());
-
         input = inputs.item(0);
         startInput(input);
-        try
-        {
-            dataLinkStart("HASHAGGREGATE", container.queryId());
-            while (!abortSoon)
-            {
-                OwnedConstThorRow row = input->ungroupedNextRow();
-                if (!row)
-                    break;
-                localAggTable->addRow(row);
-            }
-            StringBuffer str("HASHAGGREGATE: Table before distribution contains ");
-            ActPrintLog("%s", str.append(localAggTable->elementCount()).append(" entries").str());
-        }
-        catch (IException *)
-        {
-            stopInput(input);
-            throw;
-        }
-        stopInput(input);
-        if (abortSoon)
-            return;
-        if (!container.queryLocal() && container.queryJob().querySlaves()>1)
+        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
+        doNextGroup(); // or local set if !grouped
+        if (!container.queryGrouped())
+            ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
+        if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
         {
             bool ordered = 0 != (TAForderedmerge & helper->getAggregateFlags());
             localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mptag, ordered));
+            ActPrintLog("Table after distribution contains %d entries", localAggTable->elementCount());
         }
         eos = false;
+        dataLinkStart("HASHAGGREGATE", container.queryId());
     }
     void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
+        stopInput(input);
         dataLinkStop();
     }
     CATCH_NEXTROW()
@@ -3423,7 +3427,14 @@ public:
             dataLinkIncrement();
             return next->finalizeRowClear();
         }
-        eos = true;
+        if (container.queryGrouped())
+        {
+            localAggTable->reset();
+            if (!doNextGroup())
+                eos = true;
+        }
+        else
+            eos = true;
         return NULL;
     }
     bool isGrouped() { return false; }
