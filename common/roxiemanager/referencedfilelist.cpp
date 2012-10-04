@@ -70,10 +70,11 @@ class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *name, bool isSubFile=false) : flags(0)
+    ReferencedFile(const char *name, bool isSubFile=false, unsigned _flags=0) : flags(_flags)
     {
         StringBuffer ip;
-        logicalName.set(skipForeign(name, &ip));
+        StringBuffer lc(skipForeign(name, &ip));
+        logicalName.set(lc.toLowerCase());
         if (ip.length())
             foreignNode.setown(createINode(ip.str()));
         if (isSubFile)
@@ -119,9 +120,12 @@ public:
         }
     }
 
+    void ensureFile(const char *ln, unsigned flags);
+
     virtual void addFile(const char *ln);
     virtual void addFiles(StringArray &files);
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
+    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
 
     virtual IReferencedFileIterator *getFiles();
     virtual void cloneFileInfo(bool overwrite, bool cloneSuperInfo);
@@ -188,6 +192,8 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, bool foreign, St
 
 void ReferencedFile::resolveLocal(const char *cluster, IUserDescriptor *user, StringArray *subfiles)
 {
+    if (flags & RefFileInPackage)
+        return;
     reset();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.get(), user);
     if(df)
@@ -209,6 +215,8 @@ IPropertyTree *ReferencedFile::getForeignOrRemoteFileTree(IUserDescriptor *user,
 
 void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const char *cluster, bool checkLocalFirst, StringArray *subfiles)
 {
+    if (flags & RefFileInPackage)
+        return;
     reset();
     if (checkLocalFirst)
     {
@@ -236,7 +244,7 @@ void ReferencedFile::resolve(const char *cluster, IUserDescriptor *user, INode *
 
 void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode *remote, const char *cluster, bool overwrite)
 {
-    if ((flags & RefFileCloned) || (flags & RefFileSuper))
+    if ((flags & RefFileCloned) || (flags & RefFileSuper) || (flags & RefFileInPackage))
         return;
     if (!(flags & (RefFileRemote | RefFileForeign | RefFileNotOnCluster)))
         return;
@@ -268,7 +276,7 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode 
 
 void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite)
 {
-    if ((flags & RefFileCloned) || !(flags & RefFileSuper) || !(flags & RefFileRemote))
+    if ((flags & RefFileCloned) || (flags & RefFileInPackage) || !(flags & RefFileSuper) || !(flags & RefFileRemote))
         return;
 
     try
@@ -317,7 +325,6 @@ void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *u
     }
 }
 
-
 class ReferencedFileIterator : public CInterface, implements IReferencedFileIterator
 {
 public:
@@ -356,14 +363,24 @@ public:
     Owned<HashIterator> iter;
 };
 
-void ReferencedFileList::addFile(const char *ln)
+void ReferencedFileList::ensureFile(const char *ln, unsigned flags)
 {
-    Owned<ReferencedFile> file = new ReferencedFile(ln);
-    if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
+    Owned<ReferencedFile> file = new ReferencedFile(ln, false, flags);
+    if (!file->logicalName.length())
+        return;
+    ReferencedFile *existing = map.getValue(file->getLogicalName());
+    if (existing)
+        existing->flags |= flags;
+    else
     {
         const char *refln = file->getLogicalName();
         map.setValue(refln, file.getClear());
     }
+}
+
+void ReferencedFileList::addFile(const char *ln)
+{
+    ensureFile(ln, 0);
 }
 
 void ReferencedFileList::addFiles(StringArray &files)
@@ -372,8 +389,12 @@ void ReferencedFileList::addFiles(StringArray &files)
         addFile(files.item(i));
 }
 
-void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
+void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)
 {
+    const IHpccPackage *pkg = NULL;
+    if (pm && queryid && *queryid)
+        pkg = pm->matchPackage(queryid);
+
     Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
     ForEach(*graphs)
     {
@@ -392,9 +413,30 @@ void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
             if (node.getPropBool("att[@name='_isSpill']/@value") ||
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))
                 continue;
-            addFile(logicalName);
+            unsigned flags = 0;
+            if (pkg && pkg->hasSuperFile(logicalName))
+            {
+                flags |= (RefFileSuper | RefFileInPackage);
+                Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(logicalName);
+                if (ssfe && ssfe->numSubFiles()>0)
+                {
+                    unsigned count = ssfe->numSubFiles();
+                    while (count--)
+                    {
+                        StringBuffer subfile;
+                        ssfe->getSubFileName(count, subfile);
+                        ensureFile(subfile, RefSubFile | RefFileInPackage);
+                    }
+                }
+            }
+            ensureFile(logicalName, flags);
         }
     }
+}
+
+void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
+{
+    addFilesFromQuery(cw, NULL, NULL);
 }
 
 void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalFirst)
