@@ -659,7 +659,7 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... looking up files in package to see what needs copying\n\n");
+        fprintf(stdout, "\n ... looking up files in packagemap to see what needs copying\n\n");
 
         Owned<IClientCopyFilesRequest> request = packageProcessClient->createCopyFilesRequest();
         request->setInfo(pkgInfo);
@@ -680,8 +680,9 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'copyFiles' command will copy any file listed in the package that is not currently \n"
-                    "known on the cluster.  This will NOT load the package information \n"
+                    "The 'copyFiles' command will copy any file listed in the packages contained \n"
+                    "in the packagemap file that are not currently known to the cluster.\n"
+                    "This will NOT load the package information \n"
                     "\n"
                     "ecl packagemap copyFiles [options] <target> <filename>\n"
                     " Options:\n"
