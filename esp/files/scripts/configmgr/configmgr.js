@@ -920,7 +920,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
     var form = top.window.document.forms['treeForm'];
     top.document.startWait(document);
 
-    if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer"))
+    if ((record.getData('compType') == 'EspProcess' || record.getData('compType') == "DaliServerProcess") && (record.getData('params').indexOf('subType=EspBinding') != -1 || record.getData('_key') == "ldapServer") && (typeof(column.field) !== 'undefined' && column.field == 'service'))
       bUpdateFilesBasedn = confirm("If available, proceed with update of filesBasedn value?\n\n(If you are unsure select 'Ok')");
     else
       bUpdateFilesBasedn = false;
