@@ -164,6 +164,8 @@ extern void releaseRoxieHeap()
 {
     if (heapBase)
     {
+        if (memTraceLevel)
+            DBGLOG("RoxieMemMgr: releasing heap");
         delete [] heapBitmap;
         heapBitmap = NULL;
         heapBitmapSize = 0;
@@ -3145,6 +3147,7 @@ public:
 class RoxieMemTests : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE( RoxieMemTests );
+        CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testRoundup);
         CPPUNIT_TEST(testBitmapThreading);
         CPPUNIT_TEST(testAllocSize);
@@ -3156,21 +3159,30 @@ class RoxieMemTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDatamanagerThreading);
         CPPUNIT_TEST(testCallbacks);
         CPPUNIT_TEST(testRecursiveCallbacks);
+        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
 public:
     RoxieMemTests() : logctx(queryDummyContextLogger())
     {
-        initializeHeap(300, 0, NULL);
     }
 
     ~RoxieMemTests()
     {
-        releaseRoxieHeap();
     }
 
 protected:
+    void testSetup()
+    {
+        initializeHeap(300, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
+    }
+
     static int mc4(const void *x, const void *y)
     {
         return -memcmp(x, y, sizeof(void*));
@@ -4168,23 +4180,33 @@ const memsize_t memorySize = 0x60000000;
 class RoxieMemStressTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemStressTests );
+    CPPUNIT_TEST(testSetup);
     CPPUNIT_TEST(testFragmenting);
     CPPUNIT_TEST(testSequential);
+    CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
 public:
     RoxieMemStressTests() : logctx(queryDummyContextLogger())
     {
-        setTotalMemoryLimit(memorySize, 0, NULL);
     }
 
     ~RoxieMemStressTests()
     {
-        releaseRoxieHeap();
     }
 
 protected:
+    void testSetup()
+    {
+        setTotalMemoryLimit(memorySize, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
+    }
+
     void testSequential()
     {
         unsigned requestSize = 20;
@@ -4244,22 +4266,32 @@ const memsize_t initialAllocSize = 0x100;
 class RoxieMemHugeTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieMemHugeTests );
+    CPPUNIT_TEST(testSetup);
     CPPUNIT_TEST(testHuge);
+    CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
 public:
     RoxieMemHugeTests() : logctx(queryDummyContextLogger())
     {
-        setTotalMemoryLimit(hugeMemorySize, 0, NULL);
     }
 
     ~RoxieMemHugeTests()
     {
-        releaseRoxieHeap();
     }
 
 protected:
+    void testSetup()
+    {
+        setTotalMemoryLimit(hugeMemorySize, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
+    }
+
     void testHuge()
     {
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);

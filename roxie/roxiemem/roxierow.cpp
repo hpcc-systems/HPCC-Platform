@@ -336,19 +336,19 @@ namespace roxiemem {
 class RoxieRowAllocatorTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieRowAllocatorTests );
+        CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testChecking);
+        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
 public:
     RoxieRowAllocatorTests() : logctx(queryDummyContextLogger())
     {
-        setTotalMemoryLimit(40*HEAP_ALIGNMENT_SIZE, 0, NULL);
     }
 
     ~RoxieRowAllocatorTests()
     {
-        releaseRoxieHeap();
     }
 
 protected:
@@ -442,6 +442,16 @@ protected:
         testAllocator(meta, flags, low, high, 0, true);
         testAllocator(meta, flags, low, high, -1, true);
         testAllocator(meta, flags, low, high, +1, true);
+    }
+
+    void testSetup()
+    {
+        setTotalMemoryLimit(40*HEAP_ALIGNMENT_SIZE, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
     }
 
     void testChecking()
