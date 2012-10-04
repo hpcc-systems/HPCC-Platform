@@ -2594,7 +2594,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             if (strieq(File_ArchiveQuery, req.getType()))
             {
                 winfo.getWorkunitArchiveQuery(mb);
-                openSaveFile(context, opt, "ArchiveQuery.xml", HTTP_TYPE_TEXT_XML, mb, resp);
+                openSaveFile(context, opt, "ArchiveQuery.xml", HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_Cpp,req.getType()) && notEmpty(req.getName()))
             {
@@ -2640,7 +2640,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 if (plainText && (!stricmp(plainText, "yes")))
                     resp.setThefile_mimetype(HTTP_TYPE_TEXT_PLAIN);
                 else
-                    resp.setThefile_mimetype(HTTP_TYPE_TEXT_XML);
+                    resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
             }
         }
     }
@@ -3095,7 +3095,7 @@ bool CWsWorkunitsEx::onWUExport(IEspContext &context, IEspWUExportRequest &req, 
         MemoryBuffer mb;
         mb.setBuffer(xml.length(),(void*)xml.str());
         resp.setExportData(mb);
-        resp.setExportData_mimetype(HTTP_TYPE_TEXT_XML);
+        resp.setExportData_mimetype(HTTP_TYPE_APPLICATION_XML);
     }
     catch(IException* e)
     {

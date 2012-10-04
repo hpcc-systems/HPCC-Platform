@@ -1099,7 +1099,7 @@ int EspHttpBinding::onGetConfig(IEspContext &context, CHttpRequest* request, CHt
         StringBuffer content;
         xmlContentFromFile(m_configFile, "/esp/xslt/xmlformatter.xsl", content);
         response->setContent(content.str());
-        response->setContentType("text/xml; charset=UTF-8");
+        response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
         response->setStatus(HTTP_STATUS_OK);
         response->send();
         return 0;
@@ -1117,7 +1117,7 @@ int EspHttpBinding::onGetVersion(IEspContext &context, CHttpRequest* request, CH
     verxml.appendf("<VersionInfo><Service>%s</Service><Version>%.3f</Version></VersionInfo>", srvQName.str(), m_wsdlVer);
     
     response->setContent(verxml.str());
-    response->setContentType("text/xml; charset=UTF-8");
+    response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
     response->setStatus(HTTP_STATUS_OK);
     response->send();
     return 0;
@@ -1283,7 +1283,7 @@ int EspHttpBinding::getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CH
             }
 
             response->setContent(content.length(), content.str());
-            response->setContentType("text/xml; charset=UTF-8");
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
             response->setStatus(HTTP_STATUS_OK);
         }
     }
@@ -1410,7 +1410,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
 
             genSampleXml(parent,type, content, element, generateNamespace(context, request, serviceQName.str(), methodQName.str(), nsdecl).append('\"').str());
             response->setContent(content.length(), content.str());
-            response->setContentType("text/xml; charset=UTF-8");
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
             response->setStatus(HTTP_STATUS_OK);
             response->send();
             return;

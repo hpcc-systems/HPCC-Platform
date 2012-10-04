@@ -622,7 +622,7 @@ public:
                 mimeType = "application/x-www-form-urlencoded";
             }
             else
-                mimeType = "text/xml";
+                mimeType = "application/xml";
         }
         else
             mimeType = "text/html; charset=UTF-8";

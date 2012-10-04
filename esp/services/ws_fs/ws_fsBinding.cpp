@@ -183,7 +183,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
         if(requestparams && requestparams->hasProp("rawxml_"))
         {
             response->setContent(xml.str());
-            response->setContentType(HTTP_TYPE_TEXT_XML_UTF8);
+            response->setContentType(HTTP_TYPE_APPLICATION_XML);
         }
         else{
             StringBuffer htmlbuf;

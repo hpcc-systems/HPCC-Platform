@@ -1890,8 +1890,6 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     const char* excludes[] = {"soap_builder_",NULL};
     getEspUrlParams(context,params,excludes);
 
-    StringBuffer header("Content-Type: text/xml; charset=UTF-8");
-
     Owned<IXslProcessor> xslp = getXslProcessor();
     Owned<IXslTransform> xform = xslp->createXslTransform();
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_xmltest.xsl").str());
@@ -1902,18 +1900,22 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     srcxml.append("]]></soapbody></srcxml>");
     xform->setXmlSource(srcxml.str(), srcxml.length());
 
+    StringBuffer header;
     if (!stricmp(formtype, "roxiexml"))
     {
+        header.append("Content-Type: application/xml; charset=UTF-8");
         xform->setStringParameter("showhttp", "true()");
         pageName.append("ROXIE XML Test");
     }
     else if (!stricmp(formtype, "roxiesoap"))
     {
+        header.append("Content-Type: text/xml; charset=UTF-8");
         xform->setStringParameter("showhttp", "true()");
         pageName.append("ROXIE SOAP Test");
     }
     else
     {
+        header.append("Content-Type: text/xml; charset=UTF-8");
         xform->setStringParameter("showhttp", "true()");
         pageName.append("SOAP Test");
     }
@@ -2361,7 +2363,7 @@ int CWsEclBinding::onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* re
     }
 
     response->setContent(output.str());
-    response->setContentType("text/xml");
+    response->setContentType(HTTP_TYPE_APPLICATION_XML);
     response->setStatus("200 OK");
     response->send();
 
@@ -2520,7 +2522,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
         {
             response->setStatus("200 OK");
             response->setContent(blockStr.str());
-            response->setContentType("text/xml");
+            response->setContentType(HTTP_TYPE_APPLICATION_XML);
             response->send();
         }
     }
@@ -2585,7 +2587,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
             {
                 response->setStatus("200 OK");
                 response->setContent(output.str());
-                response->setContentType("text/xml");
+                response->setContentType(HTTP_TYPE_APPLICATION_XML);
                 response->send();
             }
         }
@@ -2618,7 +2620,7 @@ int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* respons
             {
                 response->setStatus("200 OK");
                 response->setContent(output.str());
-                response->setContentType("text/xml");
+                response->setContentType(HTTP_TYPE_APPLICATION_XML);
                 response->send();
             }
     }
