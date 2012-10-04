@@ -4,12 +4,9 @@
  <Row><s>9</s></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><f1>1</f1></Row>
- <Row><f1>9</f1></Row>
- <Row><f1>3</f1></Row>
+ <Row><c>1</c></Row>
+ <Row><c>1</c></Row>
+ <Row><c>1</c></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><c>1</c></Row>
- <Row><c>1</c></Row>
- <Row><c>1</c></Row>
 </Dataset>
