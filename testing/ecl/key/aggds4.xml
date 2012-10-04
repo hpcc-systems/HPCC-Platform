@@ -15,3 +15,10 @@
  <Row><surname>Jones               </surname><_unnamed_avg_aage2>49.5</_unnamed_avg_aage2></Row>
  <Row><surname>Windsor             </surname><_unnamed_avg_aage2>80.5</_unnamed_avg_aage2></Row>
 </Dataset>
+<Dataset name='Result 3'>
+ <Row><surname>Flintstone          </surname><_unnamed_avg_aage2>99.0</_unnamed_avg_aage2></Row>
+ <Row><surname>Grabdale            </surname><_unnamed_avg_aage2>68.0</_unnamed_avg_aage2></Row>
+ <Row><surname>Halliday            </surname><_unnamed_avg_aage2>24.66666666666667</_unnamed_avg_aage2></Row>
+ <Row><surname>Jones               </surname><_unnamed_avg_aage2>49.5</_unnamed_avg_aage2></Row>
+ <Row><surname>Windsor             </surname><_unnamed_avg_aage2>80.5</_unnamed_avg_aage2></Row>
+</Dataset>

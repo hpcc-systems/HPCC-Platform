@@ -2549,8 +2549,10 @@ public:
         appendOutputLinked(this);
 
         if (!container.queryLocalOrGrouped())
+        {
             mptag = container.queryJob().deserializeMPTag(data);
-        ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+            ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+        }
     }
     void start()
     {
@@ -2581,7 +2583,7 @@ public:
         stopInput(input);
         if (abortSoon)
             return;
-        if (!container.queryLocal() && container.queryJob().querySlaves()>1)
+        if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
         {
             bool ordered = 0 != (TAForderedmerge & helper->getAggregateFlags());
             localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mptag, ordered));
