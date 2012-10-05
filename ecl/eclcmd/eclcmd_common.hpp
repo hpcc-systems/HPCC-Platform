@@ -225,6 +225,7 @@ public:
         );
     }
 public:
+    StringAttr optTargetCluster;
     EclObjectParameter optObj;
     StringBuffer optLibPath;
     StringBuffer optImpPath;
