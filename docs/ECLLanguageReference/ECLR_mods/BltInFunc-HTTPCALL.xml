@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="HTTPCALL">
+  <title>HTTPCALL<indexterm>
+      <primary>HTTPCALL</primary>
+    </indexterm></title>
+
+  <para><emphasis>result</emphasis><emphasis role="bold"> :=
+  HTTPCALL<indexterm>
+      <primary>HTTPCALL Function</primary>
+    </indexterm>( </emphasis><emphasis> url, httpmethod, responsemimetype,
+  outstructure</emphasis> <emphasis role="bold">[</emphasis><emphasis>,
+  options </emphasis><emphasis role="bold"> ] );</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="121.70pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>result</emphasis></entry>
+
+            <entry>The definition name for the resulting recordset.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>url</emphasis></entry>
+
+            <entry>A string containing the URL that hosts the service to
+            invoke. This may contain parameters to the service.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>httpmethod</emphasis></entry>
+
+            <entry>A string containing the HTTP Method to invoke. Valid
+            methods are: "GET"</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>responsemimetype</emphasis></entry>
+
+            <entry>A string containing the Response MIME type to use. Valid
+            types are: "text/xml"</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>outstructure</emphasis></entry>
+
+            <entry>A RECORD structure containing the output field definitions.
+            For an XML-based <emphasis>responsemimetype</emphasis> these
+            should use XPATH to specify the exact data path.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>options</emphasis></entry>
+
+            <entry>A comma-delimited list of optional specifications from the
+            list below.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para><emphasis role="bold">HTTPCALL<indexterm>
+      <primary>HTTPCALL Options</primary>
+    </indexterm> </emphasis>is a function that calls a REST service.</para>
+
+  <para>Valid <emphasis>options</emphasis> are:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="135.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">RETRY</emphasis><indexterm>
+                <primary>RETRY</primary>
+              </indexterm>(<emphasis>count</emphasis>)</entry>
+
+            <entry>Specifies re-attempting the call count number of times if
+            non-fatal errors occur. If omitted, the default is three
+            (3).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMEOUT</emphasis><indexterm>
+                <primary>TIMEOUT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Specifies the amount of time to attempt the read before
+            failing. The <emphasis>period</emphasis> is a real number where
+            the integer portion specifies seconds. Setting to zero (0)
+            indicates waiting forever. If omitted, the default is three
+            hundred (300).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TIMELIMIT</emphasis><indexterm>
+                <primary>TIMELIMIT</primary>
+              </indexterm>(<emphasis>period</emphasis>)</entry>
+
+            <entry>Specifies the total amount of time allowed for the
+            HTTPCALL. The <emphasis>period</emphasis> is a real number where
+            the integer portion specifies seconds. If omitted, the default is
+            zero (0) indicating no limit.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">XPATH<indexterm>
+                <primary>XPATH</primary>
+              </indexterm></emphasis>(<emphasis>xpath</emphasis>)</entry>
+
+            <entry>Specifies the path used to access rows in the output. If
+            omitted, the default is:
+            'serviceResponse/Results/Result/Dataset/Row'.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ONFAIL<indexterm>
+                <primary>ONFAIL</primary>
+              </indexterm></emphasis>(<emphasis>transform</emphasis>)</entry>
+
+            <entry>Specifies either the transform function to call if the
+            service fails for a particular record, or the keyword SKIP. The
+            TRANSFORM function must produce a <emphasis>resultype</emphasis>
+            the same as the <emphasis>outstructure</emphasis> and may use
+            FAILCODE and/or FAILMESSAGE<indexterm>
+                <primary>FAILMESSAGE</primary>
+              </indexterm> to provide details of the failure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">TRIM<indexterm>
+                <primary>TRIM</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies all trailing spaces are removed from strings
+            before output.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>Example:</para>
+
+  <programlisting>worldBankSource := RECORD
+  STRING name {XPATH('name')}
+END;
+
+OutRec1 := RECORD
+  DATASET(worldBankSource) Fred{XPATH('/source')};
+END;
+
+raw := HTTPCALL('http://api.worldbank.org/sources', 'GET', 'text/xml', OutRec1);
+
+OUTPUT(raw);</programlisting>
+</sect1>
