@@ -243,22 +243,24 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     }
     else
     {
-        if (TAKchildif == container.getKind())
+        switch (container.getKind())
         {
-            if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
-            {
-                IThorDataLink *input = inputs.item(container.whichBranch);
-                if (input)
+            case TAKchildif:
+            case TAKchildcase:
+                if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
+                {
+                    IThorDataLink *input = inputs.item(container.whichBranch);
+                    if (input)
+                        inputCycles += input->queryTotalCycles();
+                }
+                break;
+            default:
+                ForEachItemIn(i, inputs)
+                {
+                    IThorDataLink *input = inputs.item(i);
                     inputCycles += input->queryTotalCycles();
-            }
-        }
-        else
-        {
-            ForEachItemIn(i, inputs)
-            {
-                IThorDataLink *input = inputs.item(i);
-                inputCycles += input->queryTotalCycles();
-            }
+                }
+                break;
         }
     }
     if (totalCycles < inputCycles) // not sure how/if possible, but guard against

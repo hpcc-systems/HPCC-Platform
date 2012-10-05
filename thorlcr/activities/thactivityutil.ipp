@@ -33,6 +33,7 @@
 #include "eclhelper.hpp"
 #define NO_BWD_COMPAT_MAXSIZE
 #include "thorcommon.ipp"
+#include "commonext.hpp"
 
 #define OUTPUT_RECORDSIZE
 
@@ -101,6 +102,10 @@ protected:
         dataLinkStart(NULL, 0);
     }
 
+    inline void dataLinkStart(ThorActivityKind kind, activity_id activityId, unsigned outputId = 0)
+    {
+        dataLinkStart(activityKindStr(kind), activityId, outputId);
+    }
     inline void dataLinkStart(const char * _activityName, activity_id _activityId, unsigned _outputId = 0)
     {
         if(_activityName) 

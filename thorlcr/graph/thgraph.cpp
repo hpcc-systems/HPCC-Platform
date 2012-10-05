@@ -637,6 +637,9 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 }
                 return true;
             }
+            case TAKchildcase:
+                owner->ifs.append(*this);
+                // fall through
             case TAKcase:
             {
                 if (_shortCircuit) return true;
@@ -728,6 +731,7 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
         switch (getKind())
         {
             case TAKchildif:
+            case TAKchildcase:
             {
                 if (inputs.queryItem(whichBranch))
                 {
@@ -778,7 +782,6 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                         switch (input->getKind())
                         {
                             case TAKif:
-//                          case TAKchildif:
                             case TAKcase:
                             {
                                 if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
@@ -919,6 +922,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKpipethrough:
         case TAKif:
         case TAKchildif:
+        case TAKchildcase:
         case TAKcase:
         case TAKparse:
         case TAKpiperead:
@@ -1484,6 +1488,7 @@ public:
             {
                 case TAKif:
                 case TAKchildif:
+                case TAKchildcase:
                 case TAKcase:
                     setNext(cur->inputs, cur->whichBranch);
                     break;
