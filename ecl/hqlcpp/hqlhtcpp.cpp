@@ -11337,8 +11337,28 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             {
                 HqlExprArray args;
                 args.append(*LINK(rhs));
-                unwindChildren(args, rowlimit);
-                rhs.setown(createDataset(no_limit, args));
+
+                //A LIMIT on a join means no limit, whilst a LIMIT(ds, 0) limits to no records.
+                //So avoid adding a zero limit (if constant), or ensure 0 is mapped to a maximal value.
+                LinkedHqlExpr count = rowlimit->queryChild(0);
+                if (count->queryValue())
+                {
+                    if (isZero(count))
+                        count.clear();
+                }
+                else
+                {
+                    OwnedHqlExpr zero = createConstant(count->queryType()->castFrom(false, I64C(0)));
+                    OwnedHqlExpr all = createConstant(count->queryType()->castFrom(false, I64C(-1)));
+                    OwnedHqlExpr ne = createBoolExpr(no_ne, LINK(count), zero.getClear());
+                    count.setown(createValue(no_if, count->getType(), LINK(ne), LINK(count), LINK(all)));
+                }
+                if (count)
+                {
+                    args.append(*LINK(count));
+                    unwindChildren(args, rowlimit, 1);
+                    rhs.setown(createDataset(no_limit, args));
+                }
             }
             isAllJoin = true;
             WARNING(HQLWRN_JoinConditionFoldedNowAll);

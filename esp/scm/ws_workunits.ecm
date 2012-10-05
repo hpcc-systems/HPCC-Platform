@@ -304,6 +304,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     string FileName;
     binary Object;
     int ResultLimit;
+    string QueryMainDefinition;
     ESParray<ESPstruct NamedValue> DebugValues;
 };
 
@@ -1076,6 +1077,8 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     string QueryName;
     string QueryId;
     bool ReloadFailed;
+    [min_ver("1.39")] bool Suspended;
+    [min_ver("1.39")] string ErrorMessage;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
@@ -1291,7 +1294,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.38"), default_client_version("1.38"),
+    version("1.39"), default_client_version("1.39"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

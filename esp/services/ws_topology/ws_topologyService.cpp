@@ -563,7 +563,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         MemoryBuffer membuff;
         membuff.setBuffer(strBuff.length(), (void*)strBuff.toCharArray());
 
-        resp.setThefile_mimetype(HTTP_TYPE_TEXT_XML);
+        resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
         resp.setThefile(membuff);
     }
     catch(IException* e)
@@ -1748,7 +1748,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                         }
                     }
                     resp.setFileContents(buf);
-                    resp.setFileContents_mimetype(HTTP_TYPE_TEXT_XML);
+                    resp.setFileContents_mimetype(HTTP_TYPE_APPLICATION_XML);
                 }
             }
         }

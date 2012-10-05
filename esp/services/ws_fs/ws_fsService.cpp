@@ -2646,7 +2646,7 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
                 xmlbuf.append("<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
                 wu->toXML(xmlbuf);
                 resp.setFile(xmlbuf.str());
-                resp.setFile_mimetype(HTTP_TYPE_TEXT_XML);
+                resp.setFile_mimetype(HTTP_TYPE_APPLICATION_XML);
             }
         }
     }

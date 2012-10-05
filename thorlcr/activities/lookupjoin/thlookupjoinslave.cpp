@@ -28,7 +28,6 @@
 
 #include "thorxmlwrite.hpp"
 
-// #define STOPRIGHT_ASAP
 #ifdef _DEBUG
 #define _TRACEBROADCAST
 #endif
@@ -37,149 +36,296 @@ enum join_t { JT_Undefined, JT_Inner, JT_LeftOuter, JT_RightOuter, JT_LeftOnly, 
 enum joinkind_t { join_lookup, join_all, denormalize_lookup, denormalize_all };
 const char *joinActName[4] = { "LOOKUPJOIN", "ALLJOIN", "LOOKUPDENORMALIZE", "ALLDENORMALIZE" };
 
-class CBroadcaster
-{
-    CActivityBase *activity;
-public:
-    CMessageBuffer broadcasting;
-    unsigned nodeindex, broadcastSlave;
-    unsigned numnodes;
-    mptag_t mpTag;
-    bool &aborted, receiving;
-    ICommunicator *comm;
 
-    CBroadcaster(CActivityBase *_activity, bool &_aborted) : activity(_activity), aborted(_aborted)
+#define MAX_SEND_SIZE 0x100000 // 1MB
+#define MAX_QUEUE_BLOCKS 5
+
+enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop };
+class CSendItem : public CSimpleInterface
+{
+    CMessageBuffer msg;
+    broadcast_code code;
+    unsigned origin;
+public:
+    CSendItem(broadcast_code _code, unsigned _origin) : code(_code), origin(_origin)
     {
-        numnodes = 0;
-        comm = NULL;
-        receiving = false;
+        msg.append((unsigned)code);
+        msg.append(origin);
     }
-    ~CBroadcaster()
+    CSendItem(CMessageBuffer &_msg)
     {
-        clear();
+        msg.swapWith(_msg);
+        msg.read((unsigned &)code);
+        msg.read(origin);
+    }
+    unsigned length() const { return msg.length(); }
+    CMessageBuffer &queryMsg() { return msg; }
+    broadcast_code queryCode() const { return code; }
+    unsigned queryOrigin() const { return origin; }
+};
+
+
+interface IBCastReceive
+{
+    virtual void bCastReceive(CSendItem *sendItem) = 0;
+};
+
+/*
+ * CBroadcaster, is a utility class, that sends CSendItem packets to sibling nodes, which in turn resend to others,
+ * ensuring the data is broadcast to all other nodes.
+ * sender and receiver threads are employed to handle the receipt/resending of packets.
+ * CBroadcaster should be started on all receiving nodes, each receiver will receive CSendItem packets
+ * through IBCastReceive::bCastReceive calls.
+ */
+class CBroadcaster : public CSimpleInterface
+{
+    ICommunicator &comm;
+    CActivityBase &activity;
+    mptag_t mpTag;
+    unsigned myNode, slaves;
+    Owned<IBitSet> slavesStopped;
+    IBCastReceive *recvInterface;
+    Semaphore allDoneSem;
+    CriticalSection allDoneLock;
+    bool allDone, allDoneWaiting, allRequestStop, stopping;
+    Owned<IBitSet> slavesDone, slavesStopping;
+
+    class CRecv : implements IThreaded
+    {
+        CBroadcaster &broadcaster;
+        CThreaded threaded;
+    public:
+        CRecv(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CRecv"), broadcaster(_broadcaster)
+        {
+        }
+        void start() { threaded.init(this); }
+    // IThreaded
+        virtual void main() { broadcaster.recvLoop(); }
+    } receiver;
+    class CSend : implements IThreaded
+    {
+        CBroadcaster &broadcaster;
+        CThreaded threaded;
+        SimpleInterThreadQueueOf<CSendItem, true> broadcastQueue;
+    public:
+        CSend(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CSend"), broadcaster(_broadcaster)
+        {
+        }
+        ~CSend()
+        {
+            stop();
+        }
+        void addBlock(CSendItem *sendItem)
+        {
+            broadcastQueue.enqueue(sendItem); // will block if queue full
+        }
+        void start() { threaded.init(this); }
+        void stop()
+        {
+            broadcastQueue.stop();
+            loop
+            {
+                Owned<CSendItem> sendItem = broadcastQueue.dequeueNow();
+                if (NULL == sendItem)
+                    break;
+            }
+            threaded.join();
+        }
+    // IThreaded
+        virtual void main()
+        {
+            while (!broadcaster.activity.queryAbortSoon())
+            {
+                Owned<CSendItem> sendItem = broadcastQueue.dequeue();
+                if (NULL == sendItem)
+                    break;
+                broadcaster.broadcastToOthers(sendItem);
+            }
+        }
+    } sender;
+
+    // NB: returns true if all except me(myNode) are done
+    bool slaveStop(unsigned slave)
+    {
+        CriticalBlock b(allDoneLock);
+        bool done = slavesDone->testSet(slave, true);
+        assertex(false == done);
+        unsigned which = slavesDone->scan(0, false);
+        if (which == slaves) // i.e. got all
+        {
+            allDone = true;
+            if (allDoneWaiting)
+            {
+                allDoneWaiting = false;
+                allDoneSem.signal();
+            }
+        }
+        else if (which == (myNode-1))
+        {
+            if (slavesDone->scan(which+1, false) == slaves)
+                return true; // all done except me
+        }
+        return false;
     }
     unsigned target(unsigned i, unsigned node)
     {
+        // For a tree broadcast, calculate the next node to send the data to. i represents the ith copy sent from this node.
+        // node is a 0 based node number.
+        // It returns a 1 based node number of the next node to send the data to.
         unsigned n = node;
         unsigned j=0;
-        while (n) {
+        while (n)
+        {
             j++;
             n /= 2;
         }
-        unsigned res = ((1<<(i+j))+node)+1;
-        if (res == broadcastSlave)
-            res = 1;
-        return res;
+        return ((1<<(i+j))+node)+1;
     }
-    void init(unsigned _self, unsigned _numnodes, ICommunicator *_comm, mptag_t _mpTag, unsigned _broadcastSlave)
+    void broadcastToOthers(CSendItem *sendItem)
     {
-        nodeindex = _self;
-        numnodes = _numnodes;
-        comm = _comm;
-        mpTag = _mpTag;
-        broadcastSlave = _broadcastSlave;
-    }
-    bool receive(MemoryBuffer &mb)
-    {
-#ifdef _TRACEBROADCAST
-        ActPrintLog(activity, "Broadcast node %d Receiving on tag %d",nodeindex,(int)mpTag);
-#endif
-        CMessageBuffer msg;
-        rank_t sender;
-        BooleanOnOff onOff(receiving);
-        if (comm->recv(msg, RANK_ALL, mpTag, &sender))
-        {
-#ifdef _TRACEBROADCAST
-            ActPrintLog(activity, "Broadcast node %d Received %d from %d",nodeindex, msg.length(), sender);
-#endif
-            try
-            {
-                mb.swapWith(msg);
-                msg.clear(); // send empty reply
-#ifdef _TRACEBROADCAST
-                ActPrintLog(activity, "Broadcast node %d reply to %d",nodeindex, sender);
-#endif
-                comm->reply(msg);
-                if (aborted) 
-                    return false;
-#ifdef _TRACEBROADCAST
-                ActPrintLog(activity, "Broadcast node %d Received %d",nodeindex, mb.length());
-#endif
-            }
-            catch (IException *e)
-            {
-                ActPrintLog(activity, e, "CBroadcaster::recv(2): exception");
-                throw;
-            }
-        }
-#ifdef _TRACEBROADCAST
-        ActPrintLog(activity, "receive done");
-#endif
-        return (0 != mb.length());
-    }
-    void cancelReceive()
-    {
-        ActPrintLog(activity, "CBroadcaster::cancelReceive");
-        if (comm && receiving)
-            comm->cancel(RANK_ALL, mpTag);
-    }
-    void broadcast(MemoryBuffer &buffer)
-    {
-        clear();
-        broadcasting.swapWith(buffer);
-        doBroadcast();
-    }
-    void doBroadcast()
-    {
-        try
+        mptag_t rt = createReplyTag();
+        unsigned origin = sendItem->queryOrigin();
+        unsigned psuedoNode = (myNode<origin) ? slaves-origin+myNode : myNode-origin;
+        CMessageBuffer replyMsg;
+        // sends to all in 1st pass, then waits for ack from all
+        for (unsigned sendRecv=0; sendRecv<2 && !activity.queryAbortSoon(); sendRecv++)
         {
             unsigned i = 0;
-            unsigned n;
-            if (1 == nodeindex)
-                n = broadcastSlave-1;
-            else if (broadcastSlave==nodeindex)
-                n = 0;
-            else
-                n = nodeindex-1;
-            loop {
-                unsigned t = target(i++,n);
-                if (t>numnodes)
+            while (!activity.queryAbortSoon())
+            {
+                unsigned t = target(i++, psuedoNode);
+                if (t>slaves)
                     break;
-                if (t != broadcastSlave)
+                t += (origin-1);
+                if (t>slaves)
+                    t -= slaves;
+                unsigned sendLen = sendItem->length();
+                if (0 == sendRecv) // send
                 {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(activity, "Broadcast node %d Sending to node %d size %d",nodeindex,t,broadcasting.length());
+                    ActPrintLog(&activity, "Broadcast node %d Sending to node %d size %d", myNode, t, sendLen);
 #endif
-                    mptag_t rt = createReplyTag();
-                    broadcasting.setReplyTag(rt); // simulate sendRecv
-                    comm->send(broadcasting, t, mpTag);     
-                    CMessageBuffer rMsg;
-                    comm->recv(rMsg, t, rt);                    
+                    CMessageBuffer &msg = sendItem->queryMsg();
+                    msg.setReplyTag(rt); // simulate sendRecv
+                    comm.send(msg, t, mpTag);
+                }
+                else // recv reply
+                {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(activity, "Broadcast node %d Sent to node %d size %d received back %d",nodeindex,t,broadcasting.length(),rMsg.length());
+                    ActPrintLog(&activity, "Broadcast node %d Sent to node %d size %d received ack", myNode, t, sendLen);
 #endif
+                    if (!activity.receiveMsg(replyMsg, t, rt))
+                        break;
                 }
             }
         }
-        catch (IException *e)
+    }
+    // called by CRecv thread
+    void recvLoop()
+    {
+        CMessageBuffer msg;
+        while (!activity.queryAbortSoon())
         {
-            ActPrintLog(activity, e, "CBroadcaster::broadcast exception");
-            throw;
+            rank_t sendRank;
+            if (!activity.receiveMsg(msg, RANK_ALL, mpTag, &sendRank))
+                break;
+            mptag_t replyTag = msg.getReplyTag();
+            CMessageBuffer ackMsg;
+            Owned<CSendItem> sendItem = new CSendItem(msg);
+            comm.send(ackMsg, sendRank, replyTag); // send ack
+            sender.addBlock(sendItem.getLink());
+            assertex(myNode != sendItem->queryOrigin());
+            switch (sendItem->queryCode())
+            {
+                case bcast_stop:
+                {
+                    CriticalBlock b(allDoneLock);
+                    if (slaveStop(sendItem->queryOrigin()-1) || allDone)
+                    {
+                        recvInterface->bCastReceive(NULL); // signal last
+                        return; // finished
+                    }
+                    break;
+                }
+                case bcast_sendStopping:
+                    slavesStopping->set(sendItem->queryOrigin()-1, true);
+                    // allRequestStop=true, if I'm stopping and all others have requested also
+                    allRequestStop = slavesStopping->scan(0, false) == slaves;
+                    // fall through
+                case bcast_send:
+                {
+                    if (!allRequestStop) // don't care if all stopping
+                        recvInterface->bCastReceive(sendItem.getClear());
+                    break;
+                }
+                default:
+                    throwUnexpected();
+            }
         }
-#ifdef _TRACEBROADCAST
-        ActPrintLog(activity, "do broadcast done done");
-#endif
     }
-    void endBroadcast()
+public:
+    CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJob().queryJobComm())
     {
-        clear();
-        doBroadcast();
+        allDone = allDoneWaiting = allRequestStop = stopping = false;
+        myNode = activity.queryJob().queryMyRank();
+        slaves = activity.queryJob().querySlaves();
+        slavesDone.setown(createBitSet());
+        slavesStopping.setown(createBitSet());
+        mpTag = TAG_NULL;
+        recvInterface = NULL;
     }
-    void clear()
+    void start(IBCastReceive *_recvInterface, mptag_t _mpTag, bool _stopping)
     {
-        broadcasting.clear();
-    }   
+        stopping = _stopping;
+        if (stopping)
+            slavesStopping->set(myNode-1, true);
+        recvInterface = _recvInterface;
+        mpTag = _mpTag;
+        receiver.start();
+        sender.start();
+    }
+    void reset()
+    {
+        allDone = allDoneWaiting = allRequestStop = stopping = false;
+        slavesDone->reset();
+        slavesStopping->reset();
+    }
+    CSendItem *newSendItem(broadcast_code code)
+    {
+        if (stopping && (bcast_send==code))
+            code = bcast_sendStopping;
+        return new CSendItem(code, myNode);
+    }
+    void waitReceiverDone()
+    {
+        {
+            CriticalBlock b(allDoneLock);
+            slaveStop(myNode-1);
+            if (allDone)
+                return;
+            allDoneWaiting = true;
+        }
+        allDoneSem.wait();
+    }
+    void cancel()
+    {
+        allDoneWaiting = false;
+        allDone = true;
+        sender.stop();
+        allDoneSem.signal();
+    }
+    bool send(CSendItem *sendItem)
+    {
+        broadcastToOthers(sendItem);
+        return !allRequestStop;
+    }
+    void final()
+    {
+        Owned<CSendItem> sendItem = newSendItem(bcast_stop);
+        send(sendItem);
+    }
 };
+
 
 /* 
     This activity loads the RIGHT hand stream into the hash table, therefore
@@ -189,13 +335,21 @@ public:
 
 */
 
-class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, implements ISmartBufferNotify
+/*
+ * The main activity class
+ * It's intended to be used when the RHS globally, is small enough to fit within the memory of a single node.
+ * It performs the join, by 1st ensuring all RHS data is on all nodes, creating a hash table of this gathered set
+ * then it streams the LHS through, matching against the RHS hash table entries.
+ * It also handles match conditions where there is no hard match (, ALL), in those cases no hash table is needed.
+ * TODO: right outer/only joins
+ */
+class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, implements ISmartBufferNotify, implements IBCastReceive
 {
     IHThorHashJoinArg *hashJoinHelper;
     IHThorAllJoinArg *allJoinHelper;
     const void **rhsTable;
-    unsigned rhsTableLen;
-    unsigned rhsRows;
+    rowidx_t rhsTableLen, htCount, htDedupCount;
+    rowidx_t rhsRows;
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
 
@@ -205,26 +359,29 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     Owned<IEngineRowAllocator> leftAllocator;
     Owned<IEngineRowAllocator> allocator;
     Owned<IOutputRowSerializer> rightSerializer;
+    Owned<IOutputRowDeserializer> rightDeserializer;
     bool gotRHS;
     join_t joinType;
     OwnedConstThorRow defaultRight;
     OwnedConstThorRow leftRow;
-    CBroadcaster broadcaster;
     Owned<IException> leftexception;
     Semaphore leftstartsem;
-    CThorExpandingRowArray rhs;
+    CThorExpandingRowArray rhs, ht;
     bool eos;
     unsigned flags;
     bool exclude;
     unsigned candidateMatches, abortLimit, atMost;
-    unsigned broadcastSlave;
     ConstPointerArray candidates;
     unsigned candidateIndex;
     const void *rhsNext;
     Owned<IOutputMetaData> outputMeta;
+    rowcount_t rhsTotalCount;
+
+    PointerArrayOf<CThorExpandingRowArray> rhsNodeRows;
+    CBroadcaster broadcaster;
 
     // AllJoin only
-    unsigned nextRhsRow;
+    rowidx_t nextRhsRow;
     unsigned keepLimit;
     unsigned joined;
     OwnedConstThorRow defaultLeft;
@@ -234,7 +391,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     bool doRightOuter;
     bool eog, someSinceEog, leftMatch, grouped;
     Semaphore gotOtherROs;
-    bool waitForOtherRO, fuzzyMatch, returnMany;
+    bool waitForOtherRO, fuzzyMatch, returnMany, dedup;
 
     inline bool isLookup() { return (joinKind==join_lookup)||(joinKind==denormalize_lookup); }
     inline bool isAll() { return (joinKind==join_all)||(joinKind==denormalize_all); }
@@ -253,6 +410,62 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         }
         return str.append("---> Unknown Join Type <---");
     }
+    rowidx_t getHTSize(rowcount_t rows)
+    {
+        if (rows < 10) return 16;
+        rowcount_t res = rows/3*4; // make HT 1/3 bigger than # rows
+        if ((res < rows) || (res > RIMAX)) // check for overflow, or result bigger than rowidx_t size
+            throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", rows);
+        return (rowidx_t)res;
+    }
+    /* Utility class, that is called from the broadcaster to queue up received blocks
+     * It will block if it has > MAX_QUEUE_BLOCKS to process (on the queue)
+     * Processing will decompress the incoming blocks and add them to a row array per slave
+     */
+    class CRowProcessor : implements IThreaded
+    {
+        CThreaded threaded;
+        CLookupJoinActivity &owner;
+        bool stopped;
+        SimpleInterThreadQueueOf<CSendItem, true> blockQueue;
+    public:
+        CRowProcessor(CLookupJoinActivity &_owner) : threaded("CRowProcessor"), owner(_owner)
+        {
+            stopped = false;
+            blockQueue.setLimit(MAX_QUEUE_BLOCKS);
+        }
+        ~CRowProcessor()
+        {
+            blockQueue.stop();
+            loop
+            {
+                Owned<CSendItem> sendItem = blockQueue.dequeueNow();
+                if (NULL == sendItem)
+                    break;
+            }
+            wait();
+        }
+        void start() { threaded.init(this); }
+        void wait() { threaded.join(); }
+        void addBlock(CSendItem *sendItem)
+        {
+            blockQueue.enqueue(sendItem); // will block if queue full
+        }
+    // IThreaded
+        virtual void main()
+        {
+            while (!stopped)
+            {
+                Owned<CSendItem> sendItem = blockQueue.dequeue();
+                if (NULL == sendItem)
+                    break;
+                MemoryBuffer expandedMb;
+                ThorExpand(sendItem->queryMsg(), expandedMb);
+                owner.processRHSRows(sendItem->queryOrigin(), expandedMb);
+            }
+        }
+    } rowProcessor;
+
 
 protected:
     joinkind_t joinKind;
@@ -261,7 +474,8 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CLookupJoinActivity(CGraphElementBase *_container, joinkind_t _joinKind) 
-        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(this, abortSoon), rhs(*this, NULL, true)
+        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(*this), rhs(*this, NULL), ht(*this, NULL, true),
+          rowProcessor(*this)
     {
         gotRHS = false;
         joinType = JT_Undefined;
@@ -270,6 +484,15 @@ public:
         returnMany = false;
         candidateMatches = 0;
         atMost = 0;
+    }
+    ~CLookupJoinActivity()
+    {
+        ForEachItemIn(a, rhsNodeRows)
+        {
+            CThorExpandingRowArray *rhsRows = rhsNodeRows.item(a);
+            if (rhsRows)
+                rhsRows->Release();
+        }
     }
     void stopRightInput()
     {
@@ -306,6 +529,7 @@ public:
         rightHash = NULL;
         compareLeftRight = NULL;
         keepLimit = 0;
+        fuzzyMatch = 0 != (JFmatchrequired & flags);
         switch (joinKind)
         {
             case join_all:
@@ -331,13 +555,16 @@ public:
                 keepLimit = hashJoinHelper->getKeepLimit();
                 abortLimit = hashJoinHelper->getMatchAbortLimit();
                 atMost = hashJoinHelper->getJoinLimit();
+
+                bool maySkip = 0 != (flags & JFtransformMaySkip);
+                dedup = compareRight && !maySkip && !fuzzyMatch && (!returnMany || 1==keepLimit);
+
                 // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
                 break;
             }
             default:
                 assertex(!"Unexpected join kind");
         }
-        fuzzyMatch = 0 != (JFmatchrequired & flags);
         exclude = 0 != (flags & JFexclude);
         if(0 == keepLimit)
             keepLimit = (unsigned)-1;
@@ -361,10 +588,14 @@ public:
 
         if (!container.queryLocal())
             mpTag = container.queryJob().deserializeMPTag(data);
-        broadcastSlave = 1; // first node collects local, then nodes 2->n ordered
+
+        unsigned slaves = container.queryJob().querySlaves();
+        rhsNodeRows.ensure(slaves);
+        while (slaves--)
+            rhsNodeRows.append(new CThorExpandingRowArray(*this, NULL, true)); // true, nulls not needed?
 
         StringBuffer str;
-        ActPrintLog("%s: Join type is %s, broadcastSlave=%d", joinStr.get(), getJoinTypeStr(str).str(), broadcastSlave);
+        ActPrintLog("%s: Join type is %s", joinStr.get(), getJoinTypeStr(str).str());
     }
     virtual void onInputStarted(IException *except)
     {
@@ -387,6 +618,8 @@ public:
         nextRhsRow = 0;
         rhsNext = NULL;
         candidateMatches = 0;
+        rhsTotalCount = RCUNSET;
+        htCount = htDedupCount = 0;
         eos = false;
         grouped = inputs.item(0)->isGrouped();
         left.set(inputs.item(0));
@@ -399,6 +632,8 @@ public:
         right.set(inputs.item(1));
         rightAllocator.set(::queryRowAllocator(right));
         rightSerializer.set(::queryRowSerializer(right));
+        rightDeserializer.set(::queryRowDeserializer(right));
+
         try
         {
             startInput(right); 
@@ -455,8 +690,8 @@ public:
     {
         CSlaveActivity::abort();
         gotOtherROs.signal();
-        broadcaster.cancelReceive();
         cancelReceiveMsg(RANK_ALL, mpTag);
+        broadcaster.cancel();
     }
     virtual void stop()
     {
@@ -835,246 +1070,143 @@ public:
         info.unknownRowsOutput = true;
         info.canStall = true;
     }
-    bool sendToBroadcastSlave(bool stopping)
+    void addRowHt(const void *p)
     {
-#ifdef _TRACEBROADCAST
-        ActPrintLog("%s: sendToBroadcastSlave sending to slave %d", joinStr.get(), broadcastSlave);
-#endif
-        bool allRequestStop = false;
+        OwnedConstThorRow _p = p;
+        unsigned h = rightHash->hash(p)%rhsTableLen;
+        loop
+        {
+            const void *e = ht.query(h);
+            if (!e)
+            {
+                ht.setRow(h, _p.getClear());
+                htCount++;
+                break;
+            }
+            if (dedup && 0 == compareRight->docompare(e,p))
+            {
+                htDedupCount++;
+                break; // implicit dedup
+            }
+            h++;
+            if (h>=rhsTableLen)
+                h = 0;
+        }
+    }
+    // Add to HT if one has been created, otherwise to row array and HT will be created later
+    void addRow(const void *p)
+    {
+        if (rhsTableLen)
+            addRowHt(p);
+        else
+            rhs.append(p);
+    }
+    void sendRHS() // broadcasting local rhs
+    {
         try
         {
-            bool sentStop = false;
+            CThorExpandingRowArray &localRhsRows = *rhsNodeRows.item(queryJob().queryMyRank()-1);
+            Owned<CSendItem> sendItem = broadcaster.newSendItem(bcast_send);
             MemoryBuffer mb;
             CMemoryRowSerializer mbs(mb);
-
-            unsigned r=0;
             while (!abortSoon)
             {
-                while (r!=rhs.ordinality())
+                while (!abortSoon)
                 {
-                    const void *row = rhs.query(r++);
-                    rightSerializer->serialize(mbs, (const byte *)row);
-                    if (mb.length() > 0x80000)
+                    OwnedConstThorRow row = right->ungroupedNextRow();
+                    if (!row)
+                        break;
+                    localRhsRows.append(row.getLink());
+                    rightSerializer->serialize(mbs, (const byte *)row.get());
+                    if (mb.length() >= MAX_SEND_SIZE)
                         break;
                 }
-                CMessageBuffer msg;
-                if (!receiveMsg(msg, broadcastSlave, mpTag))
-                    return false;
-                msg.read(allRequestStop);
-                msg.clear();
-                if (!allRequestStop && 0 != mb.length())
-                {
-                    msg.append(stopping);
-                    ThorCompress(mb.toByteArray(), mb.length(), msg);
-#ifdef _TRACEBROADCAST
-                    ActPrintLog("sendToBroadcastSlave Compressing buf from %d to %d",mb.length(),msg.length());
-#endif
-#ifdef _TRACEBROADCAST
-                    ActPrintLog("sendToBroadcastSlave sending reply to %d on tag %d",(int)broadcastSlave,(int)mpTag);
-                    if (stopping)
-                        sentStop = true;
-#endif
-                }
-                else
-                {
-                    // prevent stop at this point unless have already sent stop,
-                    // to prevent allRequestStop at broadcaster, before this slave knows about it.
-                    msg.append(sentStop && stopping);
-                }
-                if (!container.queryJob().queryJobComm().reply(msg))
-                    return false;
                 if (0 == mb.length())
+                    break;
+                ThorCompress(mb, sendItem->queryMsg());
+                if (!broadcaster.send(sendItem))
                     break;
                 mb.clear();
             }
-#ifdef _TRACEBROADCAST
-            ActPrintLog("%s: sendToBroadcastSlave sent", joinStr.get());
-#endif
         }
         catch (IException *e)
         {
-            ActPrintLog(e, "CLookupJoinActivity::sendToBroadcastSlave: exception");
+            ActPrintLog(e, "CLookupJoinActivity::sendRHS: exception");
             throw;
         }
-        return !allRequestStop;
+        broadcaster.final(); // signal stop to others
     }
-    void processRows(MemoryBuffer &mb)
+    void processRHSRows(unsigned slave, MemoryBuffer &mb)
     {
-        Linked<IEngineRowAllocator> allocator = ::queryRowAllocator(right);
-        Linked<IOutputRowDeserializer> deserializer = ::queryRowDeserializer(right);
+        CThorExpandingRowArray &rows = *rhsNodeRows.item(slave-1);
+        RtlDynamicRowBuilder rowBuilder(rightAllocator);
         CThorStreamDeserializerSource memDeserializer(mb.length(), mb.toByteArray());
         while (!memDeserializer.eos())
         {
-            RtlDynamicRowBuilder rowBuilder(allocator);
-            size32_t sz = deserializer->deserialize(rowBuilder, memDeserializer);
+            size32_t sz = rightDeserializer->deserialize(rowBuilder, memDeserializer);
             OwnedConstThorRow fRow = rowBuilder.finalizeRowClear(sz);
-            rhs.append(fRow.getClear());
+            rows.append(fRow.getClear());
         }
-    }
-    void gatherLocal()
-    {
-        while (!abortSoon)
-        {
-            OwnedConstThorRow rhsRow = right->ungroupedNextRow();
-            if (!rhsRow)
-                break;
-            rhs.append(rhsRow.getClear());
-        }
-#ifdef STOPRIGHT_ASAP
-        stopRightInput();
-#endif
     }
     void getRHS(bool stopping)
     {
         if (gotRHS)
             return;
         gotRHS = true;
+        // if input counts known, get global aggregate and pre-allocate HT
+        ThorDataLinkMetaInfo rightMeta;
+        right->getMetaInfo(rightMeta);
+        if (rightMeta.totalRowsMin == rightMeta.totalRowsMax)
+            rhsTotalCount = rightMeta.totalRowsMax;
+        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
+        {
+            CMessageBuffer msg;
+            msg.append(rhsTotalCount);
+            container.queryJob().queryJobComm().send(msg, 0, mpTag);
+            if (!receiveMsg(msg, 0, mpTag))
+                return;
+            msg.read(rhsTotalCount);
+        }
+        if (RCUNSET==rhsTotalCount)
+            rhsTableLen = 0; // set later after gather
+        else
+        {
+            if (isLookup())
+            {
+                rhsTableLen = getHTSize(rhsTotalCount);
+                ht.ensure(rhsTableLen);
+                ht.clearUnused();
+                // NB: 'rhs' row array will not be used
+            }
+            else
+            {
+                rhsTableLen = 0;
+                rhs.ensure((rowidx_t)rhsTotalCount);
+            }
+        }
         Owned<IException> exception;
         try
         {
             if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
             {
-                bool allRequestStop = false;
-                gatherLocal();
-                broadcaster.init(container.queryJob().queryMyRank(), container.queryJob().querySlaves(), &container.queryJob().queryJobComm(), mpTag, broadcastSlave);
-                if (container.queryJob().queryMyRank()==broadcastSlave)
-                {
-                    unsigned fromNode = 1;
-                    Owned<IBitSet> slavesDone = createBitSet();
-                    Owned<IBitSet> slavesStopping = createBitSet();
-                    slavesDone->testSet(broadcastSlave-1, true);
-                    slavesStopping->testSet(broadcastSlave-1, true);
-                    // loop, requesting data from all other slaves (in chunks)
-                    // track slaves which have finished sending in slavesDone (signalled via 0 len. packet)
-                    // NB: collates from slaves serially, probably should be in parallel
-                    MemoryBuffer tmp;
-                    CMessageBuffer msg;
-                    bool allDone = false;
-                    while (!abortSoon)
-                    {
-#ifdef _TRACEBROADCAST
-                        ActPrintLog("getRHS Receiving");
-#endif
-                        if (fromNode == broadcastSlave)
-                            ++fromNode;
-
-                        { // request more
-                            BooleanOnOff onOff(receiving);
-                            msg.append(allRequestStop);
-                            container.queryJob().queryJobComm().sendRecv(msg, fromNode, mpTag);
-                        }
-#ifdef _TRACEBROADCAST
-                        ActPrintLog("getRHS got %d from %d",msg.length(),(int)fromNode);
-#endif
-                        bool slaveStopRequest; // only true if slave stopping without needing RHS
-                        msg.read(slaveStopRequest);
-                        slavesStopping->testSet(fromNode-1, slaveStopRequest);
-                        if (stopping)
-                        {
-                            // can only stop if I'm stopping and all other slaves are
-                            allRequestStop = slavesStopping->scan(0, false) == container.queryJob().querySlaves();
-                            // if true, next request will tell slaves to stop sending
-                        }
-                        if (0 == msg.remaining()) // slave signalled no more data
-                        {
-                            msg.clear();
-                            bool done = slavesDone->testSet(fromNode-1, true);
-                            assertex(false == done);
-                            if (slavesDone->scan(0, false) == container.queryJob().querySlaves()) // i.e. got all
-                                allDone = true;
-                            ++fromNode;
-                        }
-                        else
-                        {
-                            if (allRequestStop)
-                            {
-                                // only here, if all stopping, 1st packet from slave and signalled stopping
-                                msg.clear(); // no longer wanted
-                            }
-                            else
-                            {
-                                ThorExpand(msg, tmp);
-#ifdef _TRACEBROADCAST
-                                ActPrintLog("getRHS expanding.1 %d to %d",msg.length(), tmp.length());
-#endif
-                                msg.clear();
-                                processRows(tmp);
-                                tmp.clear();
-                            }
-                        }
-                        if (allDone)
-                            break;
-                    }
-                    if (!allRequestStop)
-                    {
-                        // now all (global) RHS rows on this (broadcast) node
-                        CMemoryRowSerializer mbs(tmp.clear());
-                        allDone = false;
-                        unsigned r=0;
-                        while (!abortSoon)
-                        {
-                            loop
-                            {
-                                if (r == rhs.ordinality())
-                                {
-                                    allDone = true;
-                                    break;
-                                }
-                                const void *row = rhs.query(r++);
-                                rightSerializer->serialize(mbs, (const byte *)row);
-                                if (tmp.length() > 0x80000)
-                                    break;
-                            }
-                            if (0 != tmp.length())
-                            {
-                                ThorCompress(tmp, msg);
-#ifdef _TRACEBROADCAST
-                                ActPrintLog("getRHS compress.1 %d to %d",tmp.length(), msg.length());
-#endif
-                                tmp.clear();
-
-                                broadcaster.broadcast(msg);
-                                msg.clear();
-                            }
-                            if (allDone)
-                                break;
-                        }
-                    }
-                }
-                else
-                {
-                    if (!sendToBroadcastSlave(stopping))
-                        allRequestStop = true;
-                    else
-                    {
-                        rhs.kill();
-                        MemoryBuffer buf;
-                        MemoryBuffer expBuf;
-                        while (broadcaster.receive(buf))
-                        {
-                            ThorExpand(buf, expBuf);
-#ifdef _TRACEBROADCAST
-                            ActPrintLog("Expanding received buf from %d to %d",buf.length(),expBuf.length());
-#endif
-                            processRows(expBuf);
-                            expBuf.clear();
-                            broadcaster.broadcast(buf); // will swap buf
-                            buf.clear();
-                        }
-                    }
-                }
-                if (!allRequestStop)
-                {
-                    broadcaster.endBroadcast();     // send final
-                    broadcaster.clear();
-                    prepareRHS();
-                }
+                rowProcessor.start();
+                broadcaster.start(this, mpTag, stopping);
+                sendRHS();
+                broadcaster.waitReceiverDone();
+                rowProcessor.wait();
             }
             else if (!stopping)
             {   // single node or local
-                gatherLocal();
-                prepareRHS();
+                while (!abortSoon)
+                {
+                    OwnedConstThorRow row = right->ungroupedNextRow();
+                    if (!row)
+                        break;
+                    addRow(row.getClear());
+                }
             }
+            if (!stopping)
+                prepareRHS();
         }
         catch (IOutOfMemException *e) { exception.setown(e); }
         if (exception.get())
@@ -1091,51 +1223,52 @@ public:
     }
     void prepareRHS()
     {
-        // first count records (a bit slow for variable)
-        rhsRows = rhs.ordinality();
-        rhsTableLen = rhsRows*4/3+16;  // could go bigger if room (or smaller if not)
-        if (isAll())
+        rowidx_t maxRows = 0;
+        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
         {
-            rhsTable = rhs.getRowArray();
-            ActPrintLog("ALLJOIN rhs table: %d elements", rhsRows);
-        }
-        else // lookup, or all join with some hard matching.
-        {
-            unsigned htTable = rhsRows;
-            rhs.ensure(htTable+rhsTableLen);
-            rhs.clearUnused();
-
-            unsigned count = 0;
-            unsigned dup = 0;
-
-            bool maySkip = 0 != (flags & JFtransformMaySkip);
-            bool dedup = compareRight && !maySkip && !fuzzyMatch && (!returnMany || 1==keepLimit);
-            for (unsigned i=0;i<rhsRows;i++)
+            ForEachItemIn(a, rhsNodeRows)
             {
-                OwnedConstThorRow p = rhs.getClear(i);
-                unsigned h = htTable+rightHash->hash(p.get())%rhsTableLen;
-                loop
-                {
-                    const void *e = rhs.query(h);
-                    if (!e)
-                    {
-                        rhs.setRow(h, p.getClear());
-                        count++;
-                        break;
-                    }
-                    if (dedup && 0 == compareRight->docompare(e,p))
-                    {
-                        dup++;
-                        break; // implicit dedup
-                    }
-                    h++;
-                    if (h>=htTable+rhsTableLen)
-                        h = htTable;
-                }
+                CThorExpandingRowArray &rows = *rhsNodeRows.item(a);
+                maxRows += rows.ordinality();
             }
-            rhsTable = rhs.getRowArray()+htTable;
-            ActPrintLog("LOOKUPJOIN hash table created: %d elements %d duplicates",count,dup);
+            if (rhsTotalCount != RCUNSET)
+            { // ht pre-expanded already
+                assertex(maxRows == rhsTotalCount);
+            }
+            rhsRows = maxRows;
+            if (isAll())
+                rhs.ensure(maxRows);
         }
+        else if (isLookup()) // local & lookup
+            maxRows = rhs.ordinality();
+        if (RCUNSET == rhsTotalCount && isLookup())
+        {
+            rhsTableLen = getHTSize(maxRows);
+            ht.ensure(rhsTableLen); // pesimistic if LOOKUP,KEEP(1)
+            ht.clearUnused();
+        }
+        // JCSMORE - would be nice to make this multi-core, clashes and compares can be expensive
+        ForEachItemIn(a2, rhsNodeRows)
+        {
+            CThorExpandingRowArray &rows = *rhsNodeRows.item(a2);
+            rowidx_t r=0;
+            for (; r<rows.ordinality(); r++)
+                addRow(rows.getClear(r));
+            rows.kill(); // free up ptr table asap
+        }
+        ActPrintLog("rhs table: %d elements", rhsRows);
+        if (isLookup())
+            rhsTable = ht.getRowArray();
+        else
+        {
+            assertex(isAll());
+            rhsTable = rhs.getRowArray();
+        }
+    }
+// IBCastReceive
+    virtual void bCastReceive(CSendItem *sendItem)
+    {
+        rowProcessor.addBlock(sendItem);
     }
 };
 

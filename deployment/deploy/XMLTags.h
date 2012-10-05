@@ -275,6 +275,7 @@
 #define TAG_DALISERVER                  "daliServer"
 #define TAG_LDAPSERVER                  "ldapServer"
 #define TAG_SERVICE                     "service"
+#define TAG_FILESBASEDN                 "filesBasedn"
 
 //---------------------------------------------------------------------------
 #endif // !defined(AFX_XMLTAGS_H__57887617_2BDE_4E3E_92CB_43FCDEDD05B8__INCLUDED_)

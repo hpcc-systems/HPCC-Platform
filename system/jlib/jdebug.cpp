@@ -1707,6 +1707,8 @@ public:
     {
         free(partition);
         free(kbuf);
+        free(newblkio);
+        free(oldblkio);
     }
 
     bool getLine(StringBuffer &out)

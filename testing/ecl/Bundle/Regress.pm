@@ -47,3 +47,4 @@ Term::Prompt                    - required if password not supplied by configura
 Text::Diff                      - required for Diff, DiffFull, and HTML report types
 Text::Diff::HTML                - required for the HTML report type
 # Text::Wrap                    - core, optional, some output more tidy if installed
+XML::Simple                     - required
