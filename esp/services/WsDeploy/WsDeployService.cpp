@@ -1364,6 +1364,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         //update esp services
         StringBuffer espProcessXPath;
         StringBuffer espBindingXPath;
+        StringBuffer espServiceXPath;
 
         espProcessXPath.appendf("./%s/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS);
         Owned<IPropertyTreeIterator> iterItems2 = pActiveEnvRoot->getElements(espProcessXPath.str());
@@ -1384,12 +1385,12 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
               IPropertyTree *pItem = &iterItems3->query();
               const char* service_name = pItem->queryProp(XML_ATTR_SERVICE);
 
-              espProcessXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
+              espServiceXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
 
-              const char* service_type = pActiveEnvRoot->queryPropTree(espProcessXPath.str())->queryProp(XML_ATTR_BUILDSET);
+              const char* service_type = pActiveEnvRoot->queryPropTree(espServiceXPath.str())->queryProp(XML_ATTR_BUILDSET);
 
               if (service_type && *service_type && !strcmp(service_type, "espsmc"))
-                pActiveEnvRoot->queryPropTree(espProcessXPath.str())->setProp(XML_ATTR_FILESBASEDN, pszNewValue);
+                pActiveEnvRoot->queryPropTree(espServiceXPath.str())->setProp(XML_ATTR_FILESBASEDN, pszNewValue);
             }
           }
         }
