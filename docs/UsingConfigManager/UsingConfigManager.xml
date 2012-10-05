@@ -130,8 +130,8 @@
               role="bold">Generate new environment using wizard</emphasis>
               button.</para>
 
-              <para><graphic
-              fileref="images/GS_ConfigMgrWizStart.jpg" /></para>
+              <para><graphic fileref="images/GS_ConfigMgrWizStart.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
@@ -164,7 +164,8 @@
               using the range syntax, and also a single IP
               10.239.219.111.</para>
 
-              <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg" /></para>
+              <para><graphic fileref="images/GS_ConfigMgrWiz002.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
@@ -184,7 +185,8 @@
 
               <para>Enter the appropriate values as indicated.</para>
 
-              <para><graphic fileref="images/GS_CMWiz003.jpg" /></para>
+              <para><graphic fileref="images/GS_CMWiz003.jpg"
+              vendor="configmgrSS" /></para>
 
               <variablelist>
                 <varlistentry>
@@ -453,7 +455,8 @@ sudo configmgr</programlisting>
                 <?dbfo keep-together="always"?>
 
                 <para>Press the <emphasis role="bold">Next</emphasis> button.
-                <graphic fileref="images/CM-WizStart.jpg" /></para>
+                <graphic fileref="images/CM-WizStart.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
             </itemizedlist>
           </listitem>
@@ -494,24 +497,30 @@ sudo configmgr</programlisting>
           <para>Check the <emphasis role="bold">Write Access</emphasis>
           box.</para>
 
-          <para><graphic fileref="images/CM-img101.jpg" />The Save
-          button<inlinegraphic fileref="images/GS-img01c.png" /> validates and
-          saves the environment.</para>
+          <para><graphic fileref="images/CM-img101.jpg"
+          vendor="configmgrSS" />The <emphasis role="bold">Save</emphasis>
+          button<inlinegraphic fileref="images/GS-img01c.png"
+          vendor="configmgrSS" /> validates and saves the environment.</para>
 
-          <para>The validate button<inlinegraphic
-          fileref="images/GS-img01d.png" /> just validates the current
-          environment including any changes that have not yet been
-          saved.</para>
+          <para>The <emphasis role="bold">Save Environment As</emphasis>
+          button <inlinegraphic fileref="images/CM-img181.jpg"
+          vendor="configmgrSS" /> validates and lets you specify the
+          environment filename to save.</para>
 
-          <para>The open button <inlinegraphic
-          fileref="images/CM-img18.jpg" /> allows you to open a new
-          environment file to work on.</para>
+          <para>The <emphasis role="bold">Validate Environment</emphasis>
+          button<inlinegraphic fileref="images/GS-img01d.png"
+          vendor="configmgrSS" /> just validates the current environment
+          including any changes that have not yet been saved.</para>
 
-          <para>The wizard button <inlinegraphic
-          fileref="images/CM-img19.jpg" /> will bring up the Configuration
-          Manager chooser form which will allow you to create or view an
-          environment file where you can also launch the configuration
-          wizard.</para>
+          <para>The <emphasis role="bold">Open Environment</emphasis> button
+          <inlinegraphic fileref="images/CM-img18.jpg" vendor="configmgrSS" />
+          allows you to open a new environment file to work on.</para>
+
+          <para>The <emphasis role="bold">Wizard</emphasis> button
+          <inlinegraphic fileref="images/CM-img19.jpg" vendor="configmgrSS" />
+          will bring up the Configuration Manager chooser form which will
+          allow you to create or view an environment file where you can also
+          launch the configuration wizard.</para>
 
           <para>These buttons are only enabled in Write Access mode.</para>
         </listitem>
@@ -531,7 +540,8 @@ sudo configmgr</programlisting>
             <para>Select <emphasis role="bold">Hardware</emphasis> in the
             Navigator panel on the left side.</para>
 
-            <para><graphic fileref="images/CM-img01.jpg" /></para>
+            <para><graphic fileref="images/CM-img01.jpg"
+            vendor="configmgrSS" /></para>
           </listitem>
         </itemizedlist>
 
@@ -547,7 +557,8 @@ sudo configmgr</programlisting>
             <para>RT-CLICK on one of computers listed, then select New
             Range.</para>
 
-            <para><graphic fileref="images/CM-img02.jpg" /></para>
+            <para><graphic fileref="images/CM-img02.jpg"
+            vendor="configmgrSS" /></para>
           </listitem>
         </itemizedlist>
 
@@ -588,7 +599,8 @@ sudo configmgr</programlisting>
             <para>The list of nodes now displays with the nodes that you just
             added.</para>
 
-            <para><inlinegraphic fileref="images/CM-img03.jpg" /></para>
+            <para><inlinegraphic fileref="images/CM-img03.jpg"
+            vendor="configmgrSS" /></para>
 
             <para>Next, edit each System Server component instance and set it
             to a newly defined node.</para>
@@ -621,6 +633,10 @@ sudo configmgr</programlisting>
         system. These definitions are used by the configuration
         generator.</para>
 
+        <para>Items that appear in red indicate optional values. They are only
+        written to the environment if you add to or change that value. If
+        untouched, they will not appear in the environment XML file.</para>
+
         <sect3>
           <title>Dali</title>
 
@@ -641,8 +657,8 @@ sudo configmgr</programlisting>
                   <?dbfo keep-together="always"?>
 
                   <para>In the computer column, choose a node from the drop
-                  list as shown below:<graphic
-                  fileref="images/CM-img04.jpg" /></para>
+                  list as shown below:<graphic fileref="images/CM-img04.jpg"
+                  vendor="configmgrSS" /></para>
                 </listitem>
 
                 <listitem>
@@ -657,7 +673,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the DaliServer attributes.</para>
 
-            <para><graphic fileref="images/CM-img04-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img04-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -727,7 +744,8 @@ sudo configmgr</programlisting>
             <para>This section describes the attributes configuring how Dali
             handles the system data store.</para>
 
-            <para><graphic fileref="images/CM-img04-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img04-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -801,7 +819,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the DaliServer LDAP tab.</para>
 
-            <para><graphic fileref="images/CM-img04-4.jpg" /></para>
+            <para><graphic fileref="images/CM-img04-4.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -897,11 +916,12 @@ sudo configmgr</programlisting>
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Select all computers in the list, then press the OK
-                button.</para>
+                <para>Select all computers in the list by checking the
+                <emphasis role="bold">Select All</emphasis> box, then press
+                the <emphasis role="bold">OK</emphasis> button.</para>
 
                 <para><graphic fileref="images/CM-img12.jpg"
-                scalefit="1" /></para>
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -918,7 +938,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the Dafilesrv attributes.</para>
 
-            <para><graphic fileref="images/CM-img12-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img12-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -975,8 +996,8 @@ sudo configmgr</programlisting>
 
               <listitem>
                 <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic
-                fileref="images/CM-img05.jpg" /></para>
+                as shown below:<graphic fileref="images/CM-img05.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -991,7 +1012,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the DfuServer attributes.</para>
 
-            <para><graphic fileref="images/CM-img05-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img05-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1064,7 +1086,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the DfuServer SSH Options..</para>
 
-            <para><graphic fileref="images/CM-img05-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img05-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <?dbfo keep-together="always"?>
@@ -1132,7 +1155,8 @@ sudo configmgr</programlisting>
           components to determine the directories they will use for various
           functions.</para>
 
-          <para><graphic fileref="images/CM-161a.jpg" /></para>
+          <para><graphic fileref="images/CM-161a.jpg"
+          vendor="configmgrSS" /></para>
 
           <para></para>
 
@@ -1238,8 +1262,7 @@ sudo configmgr</programlisting>
               <listitem>
                 <para>In the Value column of the Computer row, choose a node
                 from the drop list as shown below:<graphic
-                fileref="images/CM-img06.jpg" scale="90"
-                scalefit="1" /></para>
+                fileref="images/CM-img06.jpg" vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -1276,8 +1299,8 @@ sudo configmgr</programlisting>
 
               <listitem>
                 <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic
-                fileref="images/CM-img07.jpg" /></para>
+                as shown below:<graphic fileref="images/CM-img07.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -1292,7 +1315,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the EclAgent Attributes tab.</para>
 
-            <para><graphic fileref="images/CM-img07-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img07-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1329,7 +1353,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the EclAgent Options tab.</para>
 
-            <para><graphic fileref="images/CM-img07-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img07-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1354,12 +1379,6 @@ sudo configmgr</programlisting>
                       <entry><emphasis>daliServers</emphasis></entry>
 
                       <entry>the Dali Servers</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>logDir</emphasis></entry>
-
-                      <entry>The log directory</entry>
                     </row>
 
                     <row>
@@ -1418,7 +1437,8 @@ sudo configmgr</programlisting>
                 <listitem>
                   <para>In the computer column, choose a node from the drop
                   list as shown below:<graphic
-                  fileref="images/CM-ECLCC-01.jpg" /></para>
+                  fileref="images/CM-ECLCC-01.jpg"
+                  vendor="configmgrSS" /></para>
                 </listitem>
 
                 <listitem>
@@ -1434,7 +1454,8 @@ sudo configmgr</programlisting>
             <para>This section describes the Ecl CC Server Attributes
             tab.</para>
 
-            <para><graphic fileref="images/CM-ECLCC-02.jpg" /></para>
+            <para><graphic fileref="images/CM-ECLCC-02.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1527,7 +1548,8 @@ sudo configmgr</programlisting>
 
               <listitem>
                 <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic fileref="images/CM-161.jpg" /></para>
+                as shown below:<graphic fileref="images/CM-161.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -1537,15 +1559,14 @@ sudo configmgr</programlisting>
             </itemizedlist>
           </sect4>
 
-          <?hard-pagebreak ?>
-
-          <sect4>
+          <sect4 role="brk">
             <title>EclScheduler Attributes Tab</title>
 
             <para>This section describes the EclScheduler Attributes
             tab.</para>
 
-            <para><graphic fileref="images/CM-160.jpg" /></para>
+            <para><graphic fileref="images/CM-160.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1604,8 +1625,8 @@ sudo configmgr</programlisting>
 
               <listitem>
                 <para>In the computer column, choose a node from the drop list
-                as shown below:<graphic
-                fileref="images/CM-img08.jpg" /></para>
+                as shown below:<graphic fileref="images/CM-img08.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -1623,7 +1644,8 @@ sudo configmgr</programlisting>
             <para>This section describes the Esp - myesp Attributes
             tab.</para>
 
-            <para><graphic fileref="images/CM-img08-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img08-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1733,7 +1755,8 @@ sudo configmgr</programlisting>
             <para>This section describes the Esp - myesp Service Bindings
             tab.</para>
 
-            <para><graphic fileref="images/CM-img08-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img08-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1781,11 +1804,12 @@ sudo configmgr</programlisting>
             Authentication tab. LDAP is a feature only available in Enterprise
             Edition.</para>
 
-            <para><graphic fileref="images/CM-img08-3.jpg" /></para>
+            <para><graphic fileref="images/CM-img08-3.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -1838,7 +1862,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the Esp - myesp HTTPS tab.</para>
 
-            <para><graphic fileref="images/CM-img08-4.jpg" /></para>
+            <para><graphic fileref="images/CM-img08-4.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -1986,7 +2011,8 @@ sudo configmgr</programlisting>
                 <para>RT-CLICK on a computer in the computer column, and
                 select Add Instance .</para>
 
-                <para><graphic fileref="images/CM-190.jpg" /></para>
+                <para><graphic fileref="images/CM-190.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -1995,7 +2021,8 @@ sudo configmgr</programlisting>
                 <para>Select all computers in the list, then press the
                 <emphasis role="bold">OK</emphasis> button.</para>
 
-                <para><graphic fileref="images/CM-img11.jpg" /></para>
+                <para><graphic fileref="images/CM-112-4.jpg"
+                vendor="configmgrSS" /></para>
               </listitem>
 
               <listitem>
@@ -2076,7 +2103,7 @@ sudo configmgr</programlisting>
               </listitem>
             </itemizedlist>
 
-            <graphic fileref="images/CM-img17.jpg" scalefit="1" />
+            <graphic fileref="images/CM-img17.jpg" vendor="configmgrSS" />
           </sect4>
 
           <?hard-pagebreak ?>
@@ -2087,7 +2114,8 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process Archiver
             tab.</para>
 
-            <para><graphic fileref="images/CM-img17-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2244,7 +2272,8 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process Coalescer
             tab.</para>
 
-            <para><graphic fileref="images/CM-img17-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2295,7 +2324,8 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process DfuXref
             tab.</para>
 
-            <para><graphic fileref="images/CM-img17-3.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-3.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2311,15 +2341,23 @@ sudo configmgr</programlisting>
                     </row>
 
                     <row>
+                      <entry><emphasis>memoryLimit</emphasis></entry>
+
+                      <entry>set value for Memory Limit</entry>
+                    </row>
+
+                    <row>
                       <entry><emphasis>xrefAt</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>xrefCutoff</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
 
                     <row>
@@ -2337,7 +2375,15 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>xrefList</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute description</entry>
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>xrefMaxScanThreads</emphasis></entry>
+
+                      <entry>SashaServer DfuXRef Attribute
+                      description...</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2352,7 +2398,8 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process DfuExpiry
             tab.</para>
 
-            <para><graphic fileref="images/CM-img17-4.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-4.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2392,11 +2439,12 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process ThorQMon
             tab.</para>
 
-            <para><graphic fileref="images/CM-img17-5.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-5.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2437,7 +2485,8 @@ sudo configmgr</programlisting>
             <para>This section describes the SashaServer Process
             DaFileSrvMonitor tab.</para>
 
-            <para><graphic fileref="images/CM-img17-6.jpg" /></para>
+            <para><graphic fileref="images/CM-img17-6.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2492,8 +2541,9 @@ sudo configmgr</programlisting>
 
           <itemizedlist mark="square">
             <listitem>
-              <para>Select Thor Cluster - mythor in the Navigator panel on the
-              left side.</para>
+              <para>Select <emphasis role="bold">Thor Cluster -
+              mythor</emphasis> in the Navigator panel on the left
+              side.</para>
             </listitem>
 
             <listitem>
@@ -2517,7 +2567,8 @@ sudo configmgr</programlisting>
 
               <para>RT-CLICK on the Topology and select Add Master.</para>
 
-              <para><graphic fileref="images/CM-img13.jpg" /></para>
+              <para><graphic fileref="images/CM-img13.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -2528,7 +2579,8 @@ sudo configmgr</programlisting>
               <para>Select a computer from the list, then press the OK
               button.</para>
 
-              <para><graphic fileref="images/gs_img17.png" /></para>
+              <para><graphic fileref="images/CM-112-5.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -2538,7 +2590,8 @@ sudo configmgr</programlisting>
 
               <para>RT-CLICK on the Master and select Add Slaves.</para>
 
-              <para><graphic fileref="images/CM-111.jpg" /></para>
+              <para><graphic fileref="images/CM-111.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -2550,10 +2603,12 @@ sudo configmgr</programlisting>
               press the OK button. Use CTRL+CLICK to multi-select or
               SHIFT+CLICK to select a range.</para>
 
-              <para><graphic fileref="images/CM-112.jpg" />The Nodes now
-              display below the Thor Master node.</para>
+              <para><graphic fileref="images/CM-112-3.jpg"
+              vendor="configmgrSS" />The Nodes now display below the Thor
+              Master node.</para>
 
-              <para><graphic fileref="images/CM-img14.jpg" /></para>
+              <para><graphic fileref="images/CM-img14.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -2568,7 +2623,8 @@ sudo configmgr</programlisting>
 
               <para>Select the Attributes tab.</para>
 
-              <para><graphic fileref="images/CM-img15.jpg" /></para>
+              <para><graphic fileref="images/CM-img15.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
@@ -2590,11 +2646,12 @@ sudo configmgr</programlisting>
             <para>This section describes the Thor Cluster Attributes
             tab.</para>
 
-            <para><graphic fileref="images/CM-img18-1.jpg" /></para>
+            <para><graphic fileref="images/CM-img18-1.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2816,7 +2873,8 @@ sudo configmgr</programlisting>
             <para>This section describes the ThorCluster SSH Options
             tab.</para>
 
-            <para><graphic fileref="images/CM-img18-2.jpg" /></para>
+            <para><graphic fileref="images/CM-img18-2.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -2879,11 +2937,12 @@ sudo configmgr</programlisting>
 
             <para>This section describes the ThorCluster Swap Node tab.</para>
 
-            <para><graphic fileref="images/CM-img18-4.jpg" /></para>
+            <para><graphic fileref="images/CM-img18-4.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+                  <colspec align="left" colwidth="155.50pt" />
 
                   <colspec />
 
@@ -2961,7 +3020,8 @@ sudo configmgr</programlisting>
 
             <para>This section describes the ThorCluster Backup tab.</para>
 
-            <para><graphic fileref="images/CM-img18-5.jpg" /></para>
+            <para><graphic fileref="images/CM-img18-5.jpg"
+            vendor="configmgrSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -3025,7 +3085,8 @@ sudo configmgr</programlisting>
               RT-CLICK the Server and select
               <guimenuitem>Delete</guimenuitem>.</para>
 
-              <para><graphic fileref="images/CM-112.jpg" /></para>
+              <para><graphic fileref="images/CM-112.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -3040,7 +3101,8 @@ sudo configmgr</programlisting>
 
               <para>RT-CLICK on the Roxie Cluster and select Add Farm.</para>
 
-              <para><graphic fileref="images/CM-112-1.jpg" /></para>
+              <para><graphic fileref="images/CM-112-1.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
@@ -3050,7 +3112,8 @@ sudo configmgr</programlisting>
               press the OK button. Use Ctrl+click to multi-select or
               shift+click to select a range.</para>
 
-              <para><graphic fileref="images/CM-112-2.jpg" /></para>
+              <para><graphic fileref="images/CM-112-2.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -3068,7 +3131,8 @@ sudo configmgr</programlisting>
               <para>This allows you to replace the single agent with the
               multiple nodes you added as Servers.</para>
 
-              <para><graphic fileref="images/CM-img16.jpg" /></para>
+              <para><graphic fileref="images/CM-img16.jpg"
+              vendor="configmgrSS" /></para>
             </listitem>
           </itemizedlist>
 
@@ -3081,10 +3145,10 @@ sudo configmgr</programlisting>
               Ctrl+click to multi-select or shift+click to select a
               range.</para>
 
-              <para><graphic fileref="images/CM-112-2.jpg" /><emphasis
-              role="bold">Note:</emphasis> In this example, we are using the
-              same five nodes that were made to be Servers. This is a typical
-              configuration.</para>
+              <para><graphic fileref="images/CM-112-2.jpg"
+              vendor="configmgrSS" /><emphasis role="bold">Note:</emphasis> In
+              this example, we are using the same five nodes that were made to
+              be Servers. This is a typical configuration.</para>
             </listitem>
           </itemizedlist>
 
@@ -3095,7 +3159,8 @@ sudo configmgr</programlisting>
               <para>Select the redundancy scheme to use. Typically, this is
               Circular Redundancy, as shown below.</para>
 
-              <para><graphic fileref="images/GS-img25.png" /></para>
+              <para><graphic fileref="images/GS-img25.png"
+              vendor="configmgrSS" /></para>
             </listitem>
 
             <listitem>
@@ -3117,8 +3182,9 @@ sudo configmgr</programlisting>
 
           <para></para>
 
-          <para><graphic fileref="images/CM-img20.jpg" /><informaltable
-              colsep="0" frame="none" rowsep="0">
+          <para><graphic fileref="images/CM-img20.jpg"
+          vendor="configmgrSS" /><informaltable colsep="0" frame="none"
+              rowsep="0">
               <tgroup cols="2">
                 <colspec align="left" colwidth="122.40pt" />
 
