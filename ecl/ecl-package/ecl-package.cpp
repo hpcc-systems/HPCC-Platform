@@ -71,7 +71,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
@@ -158,7 +158,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
@@ -242,7 +242,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
@@ -339,7 +339,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
@@ -415,7 +415,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
@@ -506,7 +506,7 @@ public:
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
-                    return EclCmdOptionCompletion;
+                    return false;
                 }
                 continue;
             }
