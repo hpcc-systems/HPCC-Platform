@@ -89,6 +89,14 @@ public:
         Owned<IWUQuery> query=get()->updateQuery();
         query->setQueryText(text);
     }
+
+    void setQueryMain(const char *s)
+    {
+        if (!s || !*s)
+            return;
+        Owned<IWUQuery> query=get()->updateQuery();
+        query->setQueryMainDefinition(s);
+    }
 };
 
 void setWsWuXmlParameters(IWorkUnit *wu, const char *xml, bool setJobname=false)
@@ -3666,6 +3674,8 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
         StringBuffer text(req.getObject().length(), req.getObject().toByteArray());
         wu.setQueryText(text.str());
     }
+    if (req.getQueryMainDefinition())
+        wu.setQueryMain(req.getQueryMainDefinition());
     if (!req.getResultLimit_isNull())
         wu->setResultLimit(req.getResultLimit());
 
