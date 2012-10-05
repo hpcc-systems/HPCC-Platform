@@ -70,8 +70,8 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
                    mimetype.append("image/gif");
                 else if (!stricmp(ext, "png"))
                    mimetype.append("image/png");
-                else if (!stricmp(ext, "xml") || !stricmp(ext, "xsl"))
-                   mimetype.append("text/xml");
+                else if (!stricmp(ext, "xml") || !stricmp(ext, "xsl") || !stricmp(ext, "xslt"))
+                   mimetype.append("application/xml");
                 else if (!stricmp(ext, "txt") || !stricmp(ext, "text"))
                    mimetype.append("text/plain");
                 else if (!stricmp(ext, "zip"))
@@ -84,8 +84,6 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
                    mimetype.append("application/x-xpinstall");
                 else if (!stricmp(ext, "exe") || !stricmp(ext, "class"))
                    mimetype.append("application/octet-stream");
-                else if (!stricmp(ext, "xsl") || !stricmp(ext, "xslt"))
-                   mimetype.append("text/xml");
                 else if (!stricmp(ext, "css"))
                    mimetype.append("text/css");
                 else if (!stricmp(ext, "svg"))
@@ -768,22 +766,35 @@ void CHttpMessage::logSOAPMessage(const char* message, const char* prefix)
 
 void CHttpMessage::logMessage(MessageLogFlag messageLogFlag, const char *prefix)
 {
-    if (((messageLogFlag == LOGHEADERS) || (messageLogFlag == LOGALL)) && (m_header.length() > 0))
-        logMessage(m_header.str(), prefix, "Authorization:[~\r\n]*", "Authorization: (hidden)");
+    try
+    {
+        if (((messageLogFlag == LOGHEADERS) || (messageLogFlag == LOGALL)) && (m_header.length() > 0))
+            logMessage(m_header.str(), prefix, "Authorization:[~\r\n]*", "Authorization: (hidden)");
 
-    if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (m_content.length() > 0))
-    {//log content
-        if ((m_header.length() > 0) && (startsWith(m_header.str(), "POST /ws_access/AddUser")
-            || startsWith(m_header.str(), "POST /ws_access/UserResetPass") || startsWith(m_header.str(), "POST /ws_account/UpdateUser")))
-            DBGLOG("%s<For security, ESP does not log the content of this request.>", prefix);
-        else if (isSoapMessage())
-            logSOAPMessage(m_content.str(), prefix);
-        else if(!isTextMessage())
-            DBGLOG("%s<non-text content or content type not specified>", prefix);
-        else if ((m_content_type.length() > 0) && (strieq(m_content_type, "text/css") || strieq(m_content_type, "text/javascript")))
-            DBGLOG("%s<content_type: %s>", prefix, m_content_type.get());
+        if (((messageLogFlag == LOGCONTENT) || (messageLogFlag == LOGALL)) && (m_content.length() > 0))
+        {//log content
+            if ((m_header.length() > 0) && (startsWith(m_header.str(), "POST /ws_access/AddUser")
+                || startsWith(m_header.str(), "POST /ws_access/UserResetPass") || startsWith(m_header.str(), "POST /ws_account/UpdateUser")))
+                DBGLOG("%s<For security, ESP does not log the content of this request.>", prefix);
+            else if (isSoapMessage())
+                logSOAPMessage(m_content.str(), prefix);
+            else if(!isTextMessage())
+                DBGLOG("%s<non-text content or content type not specified>", prefix);
+            else if ((m_content_type.length() > 0) && (strieq(m_content_type.get(), "text/css") || strieq(m_content_type.get(), "text/javascript")))
+                DBGLOG("%s<content_type: %s>", prefix, m_content_type.get());
+            else
+                logMessage(m_content.str(), prefix);
+        }
+    }
+    catch (IException *e)
+    {
+        StringBuffer msg;
+        ERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), m_content.str());
+        if (m_content_type.length() > 0)
+            ERRLOG("EXCEPTION %s when logging the message (m_content_type:%s):%s", e->errorMessage(msg).str(), m_content_type.get(), m_content.str());
         else
-            logMessage(m_content.str(), prefix);
+            ERRLOG("EXCEPTION %s when logging the message: %s", e->errorMessage(msg).str(), m_content.str());
+        e->Release();
     }
     return;
 }
@@ -2345,7 +2356,7 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
             if (returnXml)
             {
                 setContent(text.str());
-                setContentType("text/xml");
+                setContentType(HTTP_TYPE_APPLICATION_XML);
             }
             else
             {

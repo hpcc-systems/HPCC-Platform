@@ -45,6 +45,7 @@
 #define HTTP_TYPE_TEXT_HTML                     "text/html"
 #define HTTP_TYPE_TEXT_PLAIN                    "text/plain"
 #define HTTP_TYPE_TEXT_XML                      "text/xml"
+#define HTTP_TYPE_APPLICATION_XML               "application/xml"
 #define HTTP_TYPE_IMAGE_JPEG                    "image/jpeg"
 #define HTTP_TYPE_OCTET_STREAM                  "application/octet-stream"
 #define HTTP_TYPE_SOAP                          "application/soap"
@@ -57,6 +58,7 @@
 #define HTTP_TYPE_TEXT_HTML_UTF8                "text/html; charset=UTF-8"
 #define HTTP_TYPE_TEXT_PLAIN_UTF8               "text/plain; charset=UTF-8"
 #define HTTP_TYPE_TEXT_XML_UTF8                 "text/xml; charset=UTF-8"
+#define HTTP_TYPE_APPLICATION_XML_UTF8          "application/xml; charset=UTF-8"
 #define HTTP_TYPE_SOAP_UTF8                     "application/soap; charset=UTF-8"
 
 
