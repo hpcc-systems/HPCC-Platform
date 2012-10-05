@@ -119,7 +119,7 @@ public:
                     "The 'activate' command will deactivate the currently activate packagemap \n"
                     "and make the specified packagemap the one that is used.\n"
                     "\n"
-                    "ecl package activate <target> <packagemap>\n"
+                    "ecl packagemap activate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -205,7 +205,7 @@ public:
                     "\n"
                     "The 'deactivate' command will deactivate the currently activate packagemap \n"
                     "\n"
-                    "ecl package deactivate <target> <packagemap>\n"
+                    "ecl packagemap deactivate <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of target containing package map to activate\n"
                     "   <packagemap>           packagemap to activate\n",
@@ -304,7 +304,7 @@ public:
                     "\n"
                     "The 'list' command will list package map information for the target cluster \n"
                     "\n"
-                    "ecl package list <target> \n"
+                    "ecl packagemap list <target> \n"
                     " Options:\n"
                     "   <target>               name of target containing package map to use when retrieve list of package maps\n",
                     stdout);
@@ -378,7 +378,7 @@ public:
                     "\n"
                     "The 'info' command will return the contents of the active package map information for the target cluster \n"
                     "\n"
-                    "ecl package info <target> \n"
+                    "ecl packagemap info <target> \n"
                     " Options:\n"
                     "   <target>               name of the target to use when retrieving active package map information\n",
                     stdout);
@@ -468,7 +468,7 @@ public:
                     "\n"
                     "The 'delete' command will delete the package map from the target cluster \n"
                     "\n"
-                    "ecl package delete <target> <packagemap>\n"
+                    "ecl packagemap delete <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of the target to use \n"
                     "   <packagemap>           name of the package map to delete",
@@ -572,7 +572,7 @@ public:
                     "\n"
                     "The 'add' command will add the package map information to dali \n"
                     "\n"
-                    "ecl package add [options] <target> <filename>\n"
+                    "ecl packagemap add [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
@@ -659,7 +659,7 @@ public:
         StringBuffer pkgInfo;
         pkgInfo.loadFile(optFileName);
 
-        fprintf(stdout, "\n ... looking up files in package to see what needs copying\n\n");
+        fprintf(stdout, "\n ... looking up files in packagemap to see what needs copying\n\n");
 
         Owned<IClientCopyFilesRequest> request = packageProcessClient->createCopyFilesRequest();
         request->setInfo(pkgInfo);
@@ -680,10 +680,11 @@ public:
     {
         fputs("\nUsage:\n"
                     "\n"
-                    "The 'copyFiles' command will copy any file listed in the package that is not currently \n"
-                    "known on the cluster.  This will NOT load the package information \n"
+                    "The 'copyFiles' command will copy any file listed in the packages contained \n"
+                    "in the packagemap file that are not currently known to the cluster.\n"
+                    "This will NOT load the package information \n"
                     "\n"
-                    "ecl package copyFiles [options] <target> <filename>\n"
+                    "ecl packagemap copyFiles [options] <target> <filename>\n"
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "  --daliip=<daliip>            ip of the source dali to use for file lookups\n"
@@ -735,8 +736,8 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl package <command> [command options]\n\n"
-            "   package Commands:\n"
+            "ecl packagemap <command> [command options]\n\n"
+            "   packagemap Commands:\n"
             "      add          add a package map to the environment\n"
             "      copyFiles    copy missing data files to the appropriate cluster\n"
             "      delete       delete a packag emap\n"
