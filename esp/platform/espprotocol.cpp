@@ -207,7 +207,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
         if (rawxml)
         {
             content.swapWith(xml);
-            contentType.clear().append("text/xml; charset=UTF-8");
+            contentType.clear().append(HTTP_TYPE_APPLICATION_XML_UTF8);
         }
         else
         {
@@ -247,7 +247,7 @@ const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IPr
 
     if (!bVolatile)
         bVolatile = navtree->getPropBool("@volatile", false);
-    contentType.clear().append("text/xml; charset=UTF-8");
+    contentType.clear().append(HTTP_TYPE_APPLICATION_XML_UTF8);
     return toXML(navtree.get(), content.clear());
 }
 

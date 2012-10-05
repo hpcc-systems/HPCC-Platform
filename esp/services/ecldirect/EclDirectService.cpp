@@ -389,7 +389,7 @@ inline const char *runEclExFormatMimeType(CRunEclExFormat format)
 {
     if (format == CRunEclExFormat_Table)
         return "text/html; charset=utf-8";
-    return "text/xml; charset=utf-8";
+    return "application/xml; charset=utf-8";
 }
 
 int CEclDirectSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* response)
