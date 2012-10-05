@@ -666,6 +666,26 @@
                     headerText = "Error reloading cluster";
                     exceptionHtml = "Published to Queryset.<br/>But request to update cluster failed.";
                   }
+                  else {
+                    i = o.responseText.indexOf('<Suspended>1');
+                    if (i > -1) {
+                        headerText = "Query is suspended";
+
+                        var error = "";
+                        var j = o.responseText.indexOf('<ErrorMessage>');
+                        if (j > -1) {
+                            var k = o.responseText.indexOf('</ErrorMessage>');
+                            if (k > j+14) {
+                                error = o.responseText.substring(j+14, k);
+                            }
+                        }
+
+                        if (error.length > 0)
+                            exceptionHtml = "Published to Queryset.<br/>Error: " + error;
+                        else
+                            exceptionHtml = "Published to Queryset.<br/>No error message.";
+                    }
+                  }
                 }
                 var publishDialog =
                      new YAHOO.widget.SimpleDialog("publishDialog",
