@@ -158,7 +158,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/s55.jpg" />
+                <imagedata fileref="images/s55.jpg"
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -173,7 +174,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="images/c150-lg.jpg"
-                           vendor="Force10,HardwareSS" />
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -188,7 +189,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="images/Force10_ExaScaleE6001200.jpg"
-                           vendor="Force10,HardwareSS" />
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -240,7 +241,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/IR-009a.jpg" vendor="F5, Hardware" />
+              <imagedata fileref="images/IR-009a.jpg" vendor="hardwareSS,F5SS" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -715,9 +716,7 @@
         </orderedlist>
       </sect2>
 
-      <?hard-pagebreak ?>
-
-      <sect2 id="ECL-on-a-single-node-system">
+      <sect2 id="ECL-on-a-single-node-system" role="brk">
         <title>Running an ECL Query on your Single-Node System</title>
 
         <para>The single node system is running, and you can now create and
