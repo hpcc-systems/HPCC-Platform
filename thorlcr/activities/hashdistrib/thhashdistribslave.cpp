@@ -534,6 +534,7 @@ public:
 
     virtual void recvloop()
     {
+        CCycleTimer timer;
         MemoryBuffer tempMb;
         try {
             ActPrintLog(activity, "Read loop start");
@@ -564,8 +565,19 @@ public:
                     }
                     {
                         CriticalBlock block(putsect);
-                        while (!rowSource.eos()) 
-                            pipewr->putRow(ptrallocator.deserializeRow(allocator,rowSource));      
+                        while (!rowSource.eos())
+                        {
+                            timer.reset();
+                            const void *row = ptrallocator.deserializeRow(allocator,rowSource);
+                            unsigned took=timer.elapsedMs();
+                            if (took>=1000)
+                                DBGLOG("RECVLOOP deserializeRow blocked for : %d second(s)", took/1000);
+                            timer.reset();
+                            pipewr->putRow(row);
+                            took=timer.elapsedMs();
+                            if (took>=1000)
+                                DBGLOG("RECVLOOP pipewr->putRow blocked for : %d second(s)", took/1000);
+                        }
                     }
                 }
                 else {
