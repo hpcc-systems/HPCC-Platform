@@ -31,7 +31,6 @@ interface IRowStreamWithMetaData: extends IRowStream
 interface IHashDistributor: extends IInterface
 {
     virtual IRowStream *connect(IRowStream *in, IHash *_ihash, ICompare *_icompare)=0;
-    virtual IRowStreamWithMetaData *connect(IRowStreamWithMetaData *in, size32_t sizemeta, IHash *_ihash, ICompare *_icompare)=0;
     virtual void disconnect(bool stop)=0;
     virtual void removetemp()=0;
     virtual void join()=0;

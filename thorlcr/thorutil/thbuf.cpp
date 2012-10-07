@@ -437,7 +437,6 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
     bool waitingout;
     Semaphore waitoutsem;
     size32_t blocksize;
-    Linked<ISRBRowInterface> srbrowif; // only used for releasing
     bool eoi;
 #ifdef _DEBUG
     bool putrecheck;
@@ -447,8 +446,8 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSmartRowInMemoryBuffer(CActivityBase *_activity, IRowInterfaces *_rowIf, size32_t bufsize,ISRBRowInterface *_srbrowif)
-        : activity(_activity), rowIf(_rowIf), srbrowif(_srbrowif)
+    CSmartRowInMemoryBuffer(CActivityBase *_activity, IRowInterfaces *_rowIf, size32_t bufsize)
+        : activity(_activity), rowIf(_rowIf)
     {
 #ifdef _DEBUG
         putrecheck = false;
@@ -466,10 +465,7 @@ public:
     {
         // clear in contents 
         while (in->ordinality()) 
-            if (srbrowif)
-                srbrowif->releaseRow(in->dequeue());
-            else
-                ReleaseThorRow(in->dequeue());
+            ReleaseThorRow(in->dequeue());
         delete in;
     }
 
@@ -478,10 +474,7 @@ public:
         REENTRANCY_CHECK(putrecheck)
         size32_t sz = 0;
         if (row) {
-            if (srbrowif)
-                sz = srbrowif->rowMemSize(row);
-            else
-                sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), row);
+            sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), row);
 #ifdef _DEBUG
             assertex(sz<0x1000000);
 #endif
@@ -519,10 +512,7 @@ public:
             }
         }
         // cancelled
-        if (srbrowif)
-            srbrowif->releaseRow(row);
-        else
-            ReleaseThorRow(row);
+        ReleaseThorRow(row);
     }
 
     const void *nextRow()
@@ -535,11 +525,7 @@ public:
             if (in->ordinality()) {
                 ret = in->dequeue();
                 if (ret) {
-                    size32_t sz;
-                    if (srbrowif)
-                        sz = srbrowif->rowMemSize(ret);
-                    else
-                        sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), ret);
+                    size32_t sz = thorRowMemoryFootprint(rowIf->queryRowSerializer(), ret);
 #ifdef _TRACE_SMART_PUTGET
                     ActPrintLog(activity, "***dequeueRow(%x) %d insize=%d {%x}",(unsigned)ret,sz,insz,*(const unsigned *)ret);
 #endif
@@ -582,10 +568,7 @@ public:
 
         eoi = true;
         while (in->ordinality()) 
-            if (srbrowif)
-                srbrowif->releaseRow(in->dequeue());
-            else
-                ReleaseThorRow(in->dequeue());
+            ReleaseThorRow(in->dequeue());
         in->clear();
         if (waitingin) {
             waitinsem.signal();
@@ -632,9 +615,9 @@ ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempna
     return new CSmartRowBuffer(activity,file,buffsize,rowif);
 }
 
-ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity, IRowInterfaces *rowIf, size32_t buffsize, ISRBRowInterface *srbrowif)
+ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity, IRowInterfaces *rowIf, size32_t buffsize)
 {
-    return new CSmartRowInMemoryBuffer(activity, rowIf, buffsize, srbrowif);
+    return new CSmartRowInMemoryBuffer(activity, rowIf, buffsize);
 }
 
 class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiReader
