@@ -3903,7 +3903,7 @@ struct SuperFileSubTreeCache
             name = "UNKNOWN";
         // HACK: This is temporary and should not linger beyond 3.8.x
         unsigned subList[n];
-        memset(subList, 0, sizeof(subList));
+        memset(subList, 0, n * sizeof(unsigned));
         // HACKEND
         ForEach (*subit) {
             IPropertyTree &sub = subit->query();
