@@ -1720,7 +1720,7 @@ public:
     CThorAllocator(memsize_t memSize, unsigned memorySpillAt, bool _usePacked) : usePacked(_usePacked)
     {
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
-        rowManager->setMemoryLimit(memSize, memSize/100*memorySpillAt);
+        rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
         rtlSetReleaseRowHook(this);
     }
     ~CThorAllocator()

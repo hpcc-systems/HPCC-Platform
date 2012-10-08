@@ -536,6 +536,7 @@ public:
     {
         CCycleTimer timer;
         MemoryBuffer tempMb;
+        static cycle_t oneSec = nanosec_to_cycle(1000000000);
         try {
             ActPrintLog(activity, "Read loop start");
             CMessageBuffer recvMb;
@@ -569,14 +570,14 @@ public:
                         {
                             timer.reset();
                             const void *row = ptrallocator.deserializeRow(allocator,rowSource);
-                            unsigned took=timer.elapsedMs();
-                            if (took>=1000)
-                                DBGLOG("RECVLOOP deserializeRow blocked for : %d second(s)", took/1000);
+                            cycle_t took=timer.elapsedCycles();
+                            if (took>=oneSec)
+                                DBGLOG("RECVLOOP deserializeRow blocked for : %d second(s)", (unsigned)(cycle_to_nanosec(took)/1000000000));
                             timer.reset();
                             pipewr->putRow(row);
-                            took=timer.elapsedMs();
-                            if (took>=1000)
-                                DBGLOG("RECVLOOP pipewr->putRow blocked for : %d second(s)", took/1000);
+                            took=timer.elapsedCycles();
+                            if (took>=oneSec)
+                                DBGLOG("RECVLOOP pipewr->putRow blocked for : %d second(s)", (unsigned)(cycle_to_nanosec(took)/1000000000));
                         }
                     }
                 }
