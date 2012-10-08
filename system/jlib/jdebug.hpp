@@ -87,6 +87,28 @@ struct ITimeReporter : public IInterface
   virtual void serialize(MemoryBuffer &mb) = 0;
 };
 
+class CCycleTimer
+{
+    cycle_t start_time;
+public:
+    CCycleTimer()
+    {
+        reset();
+    }
+    inline void reset()
+    {
+        start_time = get_cycles_now();
+    }
+    inline cycle_t elapsedCycles()
+    {
+        return get_cycles_now() - start_time;
+    }
+    inline unsigned elapsedMs()
+    {
+        return cycle_to_nanosec(elapsedCycles())/1000000;
+    }
+};
+
 class jlib_decl TimeSection
 {
 public:
