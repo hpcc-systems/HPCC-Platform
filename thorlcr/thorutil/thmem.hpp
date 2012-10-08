@@ -157,7 +157,7 @@ interface IThorAllocator : extends IInterface
     virtual bool queryCrc() const = 0;
 };
 
-IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool usePacked);
+IThorAllocator *createThorAllocator(memsize_t memSize, unsigned memorySpillAt, bool crcChecking, bool usePacked);
 
 extern graph_decl IOutputMetaData *createOutputMetaDataWithExtra(IOutputMetaData *meta, size32_t sz);
 extern graph_decl IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz);

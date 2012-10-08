@@ -28,3 +28,7 @@ pr2:= table(sqNamesTable2, { surname, forename, aage, unsigned8 seq := (random()
 
 //Filtered Aggregate on a projected table.
 output(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few, keyed));
+
+//Should not generate a grouped Hash Aggregate
+output(sort(table(group(sort(sqNamesTable1, surname),surname), { surname, ave(group, aage) }, surname, few), record));
+

@@ -353,6 +353,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="memorySpillAt" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Threshold that the memory manager should start requesting memory to be freed (percentage)</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="pluginsPath" type="relativePath" default="${PLUGINS_PATH}/"/>
       <xs:attribute name="nodeGroup" type="xs:string" use="optional">
         <xs:annotation>
