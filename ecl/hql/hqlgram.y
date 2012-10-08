@@ -8052,7 +8052,7 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             OwnedHqlExpr grouping = parser->processSortList($7, no_usertable, dataset, sortItems, NULL, &attrs);
 
-                            if (grouping)
+                            if (grouping && !queryPropertyInList(groupedAtom, attrs))
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
                                 if (dataset->getOperator() == no_group && dataset->queryType()->queryGroupInfo())
@@ -10886,6 +10886,10 @@ sortItem
                         {
                             $$.setExpr(createAttribute(keyedAtom));
                             $$.setPosition($1);
+                        }
+    | GROUPED
+                        {
+                            $$.setExpr(createAttribute(groupedAtom), $1);
                         }
     | UNSTABLE '(' expression ')'
                         {

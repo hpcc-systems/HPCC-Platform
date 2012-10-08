@@ -32,3 +32,8 @@ output(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few, keyed))
 //Should not generate a grouped Hash Aggregate
 output(sort(table(group(sort(sqNamesTable1, surname),surname), { surname, ave(group, aage) }, surname, few), record));
 
+//This should generate a grouped Hash Aggregate
+output(sort(table(group(sort(sqNamesTable1, surname),surname), { surname, ave(group, aage) }, surname, few, grouped), record));
+
+//As should this...
+output(sort(table(group(sort(sqNamesTable1, surname),surname), { surname, ave(group, aage) }, surname, grouped), record));
