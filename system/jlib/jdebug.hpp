@@ -88,6 +88,28 @@ struct ITimeReporter : public IInterface
   virtual void serialize(MemoryBuffer &mb) = 0;
 };
 
+class CCycleTimer
+{
+    cycle_t start_time;
+public:
+    CCycleTimer()
+    {
+        reset();
+    }
+    inline void reset()
+    {
+        start_time = get_cycles_now();
+    }
+    inline cycle_t elapsedCycles()
+    {
+        return get_cycles_now() - start_time;
+    }
+    inline unsigned elapsedMs()
+    {
+        return cycle_to_nanosec(elapsedCycles())/1000000;
+    }
+};
+
 class jlib_decl TimeSection
 {
 public:
@@ -254,6 +276,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
 #endif
 
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
+extern jlib_decl memsize_t getMapInfo(const char *type);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl unsigned getAffinityCpus();
 extern jlib_decl void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffer *lnout, MemoryBuffer *mb, bool useprintf);

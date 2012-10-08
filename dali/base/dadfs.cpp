@@ -3898,20 +3898,34 @@ struct SuperFileSubTreeCache
         n=root->getPropInt("@numsubfiles");
         subs = (IPropertyTree **)calloc(sizeof(IPropertyTree *),n);
         Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
+        const char *name = root->queryProp("OrigName");
+        if (!name)
+            name = "UNKNOWN";
+        // HACK: This is temporary and should not linger beyond 3.8.x
+        unsigned subList[n];
+        memset(subList, 0, sizeof(subList));
+        // HACKEND
         ForEach (*subit) {
             IPropertyTree &sub = subit->query();
             unsigned sn = sub.getPropInt("@num",0);
+            // HACK: This is temporary and should not linger beyond 3.8.x
+            if (subList[sn])
+                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, double subfile part number %d of %d",name,sn,n);
+            subList[sn]++;
+            // HACKEND
             if ((sn>0)&&(sn<=n)) 
                 subs[sn-1] = &sub;
             else  {
-                const char *name = root->queryProp("OrigName");
-                if (!name)
-                    name = "UNKNOWN";
                 WARNLOG("CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d",name,sn,n);
                 if (fixerr) 
                     todelete.append(sub);
             }
         }
+        // HACK: This is temporary and should not linger beyond 3.8.x
+        for (unsigned i=0; i<n; i++)
+            if (subList[i] == 0)
+                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, no subfile part number %d of %d",name,i,n);
+        // HACKEND
         ForEachItemIn(i,todelete) {
             root->removeTree(&todelete.item(i));
         }
