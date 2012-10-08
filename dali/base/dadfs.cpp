@@ -3902,16 +3902,18 @@ struct SuperFileSubTreeCache
         if (!name)
             name = "UNKNOWN";
         // HACK: This is temporary and should not linger beyond 3.8.x
-        unsigned subList[n];
-        memset(subList, 0, sizeof(subList));
+        UnsignedArray subList;
+        subList.ensure(n);
         // HACKEND
         ForEach (*subit) {
             IPropertyTree &sub = subit->query();
             unsigned sn = sub.getPropInt("@num",0);
             // HACK: This is temporary and should not linger beyond 3.8.x
-            if (subList[sn])
+            if (!sn)
+                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, missing subfile part number",name);
+            if (subList.isItem(sn-1) && subList.item(sn-1) == 1)
                 throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, double subfile part number %d of %d",name,sn,n);
-            subList[sn]++;
+            subList.add(1, sn-1);
             // HACKEND
             if ((sn>0)&&(sn<=n)) 
                 subs[sn-1] = &sub;
@@ -3923,8 +3925,8 @@ struct SuperFileSubTreeCache
         }
         // HACK: This is temporary and should not linger beyond 3.8.x
         for (unsigned i=0; i<n; i++)
-            if (subList[i] == 0)
-                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, no subfile part number %d of %d",name,i,n);
+            if (!subList.isItem(i) && subList.item(sn-1) == 1)
+                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, no subfile part number %d of %d",name,i+1,n);
         // HACKEND
         ForEachItemIn(i,todelete) {
             root->removeTree(&todelete.item(i));
