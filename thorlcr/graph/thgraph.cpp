@@ -2354,13 +2354,14 @@ void CJobBase::init()
 #endif
     bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", defaultCrcChecking));
     bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
-    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000, crcChecking, usePackedAllocator));
+    unsigned memorySpillAt = getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
+    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000, memorySpillAt, crcChecking, usePackedAllocator));
 
     unsigned defaultMemMB = gmemSize*3/4;
     unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
     if (gmemSize && largeMemSize >= gmemSize)
         throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
-    PROGLOG("Global memory size = %d MB, large mem size = %d MB", gmemSize, largeMemSize);
+    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", gmemSize, memorySpillAt, largeMemSize);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
