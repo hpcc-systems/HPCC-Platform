@@ -22,5 +22,6 @@
 extern HQL_API bool retrieveWebServicesInfo(IWorkUnit *workunit, HqlLookupContext & ctx);
 extern HQL_API bool retrieveWebServicesInfo(IWorkUnit *workunit, const char * queryText, HqlLookupContext & ctx);
 extern HQL_API IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext & ctx);
+extern HQL_API IPropertyTree * retrieveMainWebServicesInfo(const char * mainDefinition, HqlLookupContext & ctx);
 
 #endif

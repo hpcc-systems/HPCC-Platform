@@ -1670,6 +1670,14 @@ bool isLocalActivity(IHqlExpression * expr)
     }
 }
 
+bool isGroupedAggregateActivity(IHqlExpression * expr, IHqlExpression * grouping)
+{
+    if (grouping && !grouping->isAttribute())
+        return false;
+
+    return isGrouped(expr->queryChild(0));
+}
+
 bool isGroupedActivity(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -1704,6 +1712,13 @@ bool isGroupedActivity(IHqlExpression * expr)
     case no_related:
     case no_pipe:
         return isGrouped(expr->queryType());
+    case no_selectfields:
+    case no_usertable:
+        return isGroupedAggregateActivity(expr, expr->queryChild(2));
+    case no_aggregate:
+    case no_newaggregate:
+    case no_newusertable:
+        return isGroupedAggregateActivity(expr, expr->queryChild(3));
     case no_null:
     case no_anon:
     case no_pseudods:

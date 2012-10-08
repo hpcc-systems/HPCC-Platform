@@ -1341,6 +1341,60 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
             pActiveEnvRoot->queryPropTree(espProcessXPath.str())->setProp(XML_ATTR_FILESBASEDN, strFilesBasedn);
         }
       }
+      // Update of LDAP component filesBasedn
+      else if (bUpdateFilesBasedn == true && strcmp(pszAttrName, TAG_FILESBASEDN) == 0 && strcmp(pszCompType, XML_TAG_LDAPSERVERPROCESS) == 0 && pszCompName != NULL && pszNewValue != NULL)
+      {
+        // update dali
+        StringBuffer daliProcessXPath;
+        daliProcessXPath.appendf("./%s/%s", XML_TAG_SOFTWARE, XML_TAG_DALISERVERPROCESS);
+
+        Owned<IPropertyTree> pActiveEnvRoot = getEnvTree(context, &req.getReqInfo());
+        Owned<IPropertyTreeIterator> iterItems = pActiveEnvRoot->getElements(daliProcessXPath.str());
+
+        ForEach(*iterItems)
+        {
+          IPropertyTree *pItem = &iterItems->query();
+          const char* ldap_server = pItem->queryProp(XML_ATTR_LDAPSERVER);
+
+          // check if dali has this ldap server assigned before changing filesBasedn
+          if (ldap_server != NULL && strcmp(ldap_server, pszCompName) == 0)
+            pItem->setProp(XML_ATTR_FILESBASEDN, pszNewValue);
+        }
+
+        //update esp services
+        StringBuffer espProcessXPath;
+        StringBuffer espBindingXPath;
+        StringBuffer espServiceXPath;
+
+        espProcessXPath.appendf("./%s/%s", XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS);
+        Owned<IPropertyTreeIterator> iterItems2 = pActiveEnvRoot->getElements(espProcessXPath.str());
+
+        ForEach(*iterItems2)
+        {
+          IPropertyTree *pItem = &iterItems2->query();
+          const char* ldap_server = pItem->queryPropTree(XML_TAG_AUTHENTICATION)->queryProp(XML_ATTR_LDAPSERVER);
+
+          if (ldap_server != NULL && strcmp(ldap_server, pszCompName) == 0)
+          {
+            espBindingXPath.clear().appendf("%s[%s=\"%s\"]/%s", espProcessXPath.str(), XML_ATTR_NAME, pItem->queryProp(XML_ATTR_NAME), XML_TAG_ESPBINDING);
+
+            Owned<IPropertyTreeIterator> iterItems3 = pActiveEnvRoot->getElements(espBindingXPath.str());
+
+            ForEach(*iterItems3)
+            {
+              IPropertyTree *pItem = &iterItems3->query();
+              const char* service_name = pItem->queryProp(XML_ATTR_SERVICE);
+
+              espServiceXPath.clear().appendf("./%s/%s[%s=\"%s\"]", XML_TAG_SOFTWARE, XML_TAG_ESPSERVICE, XML_ATTR_NAME, service_name);
+
+              const char* service_type = pActiveEnvRoot->queryPropTree(espServiceXPath.str())->queryProp(XML_ATTR_BUILDSET);
+
+              if (service_type && *service_type && !strcmp(service_type, "espsmc"))
+                pActiveEnvRoot->queryPropTree(espServiceXPath.str())->setProp(XML_ATTR_FILESBASEDN, pszNewValue);
+            }
+          }
+        }
+      }
 
       if (!pComp)
         throw MakeStringException(-1, "No such component in environment: '%s' named '%s'.", pszCompType, pszCompName);
