@@ -87,6 +87,7 @@
 #define XML_TAG_LOCALENVCONFFILE       "LocalEnvConfFile"
 
 #define XML_ATTR_AGENTPORT             "@agentPort"
+#define XML_ATTR_ATTRIB                "@attrib"
 #define XML_ATTR_ATTRSERVER            "@attrServer"
 #define XML_ATTR_BACKUPCOMPUTER        "@backupComputer"
 #define XML_ATTR_BLOBDIRECTORY         "@blobDirectory"
@@ -174,6 +175,7 @@
 #define XML_ATTR_OPSYS                 "@opSys"
 #define XML_ATTR_OPTIMIZESQL           "@optimizeSQL"
 #define XML_ATTR_ORPHANSASERROR        "@orphansAsError"
+#define XML_ATTR_PARAMS                "@params"
 #define XML_ATTR_PASSWORD              "@password"
 #define XML_ATTR_PATH                  "@path"
 #define XML_ATTR_PERFDATALEVEL         "@perfDataLevel"
