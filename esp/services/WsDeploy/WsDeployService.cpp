@@ -4187,6 +4187,9 @@ bool CWsDeployFileInfo::handleAttributeAdd(IEspContext &context, IEspHandleAttri
   StringBuffer xpath =  pSetting->queryProp(XML_ATTR_PARAMS);
   StringBuffer attribName = pSetting->queryProp(XML_ATTR_ATTRIB);
 
+  if (attribName.length() == 0)
+    throw MakeStringException(-1,"Attribute name can't be empty!");
+
   IPropertyTree* pComp =  pEnvRoot->getPropTree(xpath.str());
 
   if (pComp != NULL)

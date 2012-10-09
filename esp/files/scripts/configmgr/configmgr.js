@@ -1842,7 +1842,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
              YAHOO.util.UserAction.click(top.document.rightDT.getFirstTrEl());
            },
           failure: function(o) {
-            alert("Failed to delete attribute.  (XPath maybe ambiguous. A manual edit of the XML configuration file maybe required to delete this attribute.) ");
+            alert("Failed to add attribute.  (XPath maybe ambiguous. A manual edit of the XML configuration file maybe required to add this attribute.) ");
             },
           scope: this
         },
