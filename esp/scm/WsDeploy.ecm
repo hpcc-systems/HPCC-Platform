@@ -260,6 +260,19 @@ ESPrequest HandleAttributeDeleteRequest
     ESPstruct WsDeployReqInfo ReqInfo;
 };
 
+ESPrequest HandleAttributeAddRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleAttributeAddResponse
+{
+    string Status;
+    string CompName;
+};
+
 ESPresponse [exceptions_inline, encode(0)] HandleAttributeDeleteResponse
 {
     string Status;
@@ -566,7 +579,9 @@ ESPservice [exceptions_inline("xslt/exceptions.xslt")] WsDeploy
         HandleRoxieOperation(HandleRoxieOperationRequest, HandleRoxieOperationResponse);
     ESPmethod[description("Add computers to Thor topology"), help("")] 
         HandleThorTopology(HandleThorTopologyRequest, HandleThorTopologyResponse);
-   ESPmethod[description("Handle branch or leaf deletes from XML view"), help("")]
+    ESPmethod[description("Handle add fom XML view"), help("")]
+        HandleAttributeAdd(HandleAttributeAddRequest, HandleAttributeAddResponse);
+    ESPmethod[description("Handle branch or leaf deletes from XML view"), help("")]
         HandleAttributeDelete(HandleAttributeDeleteRequest, HandleAttributeDeleteResponse);
     ESPmethod[description("Handle new component operations like add & delete in the environment"), help("")] 
         HandleComponent(HandleComponentRequest, HandleComponentResponse);

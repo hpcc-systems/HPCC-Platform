@@ -4222,6 +4222,39 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   return true;
 }
 
+bool CWsDeployFileInfo::handleAttributeAdd(IEspContext &context, IEspHandleAttributeAddRequest &req, IEspHandleAttributeAddResponse &resp)
+{
+  synchronized block(m_mutex);
+  const char* xmlArg = req.getXmlArgs();
+
+  if (!xmlArg || !*xmlArg)
+    return false;
+
+  Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg);
+  Owned<IPropertyTreeIterator> iter = pSrcTree->getElements("Setting[@operation='add']");
+
+  if (iter->first() == false)
+    return false;
+
+  IPropertyTree* pSetting = &iter->query();
+  Owned<IPropertyTree> pEnvRoot = getEnvTree(context, &req.getReqInfo());
+  StringBuffer xpath =  pSetting->queryProp(XML_ATTR_PARAMS);
+  StringBuffer attribName = pSetting->queryProp(XML_ATTR_ATTRIB);
+
+  if (attribName.length() == 0)
+    throw MakeStringException(-1,"Attribute name can't be empty!");
+
+  IPropertyTree* pComp =  pEnvRoot->getPropTree(xpath.str());
+
+  if (pComp != NULL)
+    pComp->addProp(attribName.str(), "");
+
+  resp.setStatus("true");
+  resp.setCompName(XML_TAG_SOFTWARE);
+
+  return true;
+}
+
 bool CWsDeployFileInfo::handleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
 {
   synchronized block(m_mutex);
@@ -6937,6 +6970,12 @@ bool CWsDeployEx::onHandleComponent(IEspContext &context, IEspHandleComponentReq
   return fi->handleComponent(context, req, resp);
 }
 
+bool CWsDeployEx::onHandleAttributeAdd(IEspContext &context, IEspHandleAttributeAddRequest &req, IEspHandleAttributeAddResponse &resp)
+{
+  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
+  return fi->handleAttributeAdd(context, req, resp);
+}
+
 bool CWsDeployEx::onHandleAttributeDelete(IEspContext &context, IEspHandleAttributeDeleteRequest &req, IEspHandleAttributeDeleteResponse &resp)
 {
   CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
@@ -7195,6 +7234,11 @@ bool CWsDeployExCE::onHandleThorTopology(IEspContext &context, IEspHandleThorTop
 }
 
 bool CWsDeployExCE::onHandleComponent(IEspContext &context, IEspHandleComponentRequest &req, IEspHandleComponentResponse &resp)
+{
+  return supportedInEEOnly();
+}
+
+bool CWsDeployExCE::onHandleAttributeAdd(IEspContext &context, IEspHandleAttributeAddRequest &req, IEspHandleAttributeAddResponse &resp)
 {
   return supportedInEEOnly();
 }
