@@ -326,7 +326,9 @@ extern da_decl IClusterFileScanIterator *getClusterFileScanIterator(
                       IGroup *group,        // only scans file with nodes in specified group
                       bool exactmatch,          // only files that match group exactly (if not true includes base subset or wrapped superset)
                       bool anymatch,            // any nodes match (overrides exactmatch)
-                      bool loadbranch);         // whether to load entire branch
+                      bool loadbranch,         // whether to load entire branch
+                      IUserDescriptor *user);
+
 
 class da_decl CheckTime
 {

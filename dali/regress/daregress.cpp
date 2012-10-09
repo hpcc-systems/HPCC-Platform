@@ -46,6 +46,8 @@ static int errorcount;
 // ======================================================================= Support Functions / Classes
 
 static IRemoteConnection *Rconn;
+static IDistributedFileDirectory &dir = queryDistributedFileDirectory();
+static IUserDescriptor *user = createUserDescriptor();
 
 static unsigned fn(unsigned n, unsigned m, unsigned seed, unsigned depth, IPropertyTree *parent)
 {
@@ -261,7 +263,7 @@ static RunOptions read_cmdline(int argc, char **argv)
     opt.dali = argv[1];
     opt.full = false;
     opt.match = 0;
-    for (unsigned i=2;i<argc;i++) {
+    for (int i=2;i<argc;i++) {
         if (stricmp(argv[i],"full")==0)
             opt.full = 1;
         else
@@ -293,6 +295,51 @@ static IFileDescriptor *createFileDescriptor(const char* dir, const char* name, 
     }
     fdesc->queryProperties().setPropInt("@recordSize",recSize);
     return fdesc.getClear();
+}
+
+static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToCreate=4)
+{
+    StringBuffer buf;
+    buf.append("regress::").append(scope);
+
+    printf("Cleaning up '%s' scope\n", buf.str());
+    for (unsigned i=1; i<=supersToDel; i++) {
+        StringBuffer super = buf;
+        super.append("::super").append(i);
+        if (dir.exists(super.str(),false,true) && !dir.removeEntry(super.str(), user)) {
+            ERROR1("Can't remove %s", super.str());
+            return false;
+        }
+    }
+
+    printf("Creating 'regress::trans' subfiles(1,4)\n");
+    for (unsigned i=1; i<=subsToCreate; i++) {
+        StringBuffer name;
+        name.append("sub").append(i);
+        StringBuffer sub = buf;
+        sub.append("::").append(name);
+
+        // Remove first
+        if (dir.exists(sub.str(),user,true,false) && !dir.removeEntry(sub.str(), user)) {
+            ERROR1("Can't remove %s", sub.str());
+            return false;
+        }
+
+        // Create the sub file with an arbitrary format
+        Owned<IFileDescriptor> subd = createFileDescriptor(scope, name, 3, 17);
+        Owned<IDistributedFile> dsub = dir.createNew(subd);
+        dsub->attach(sub.str(),user);
+        subd.clear();
+        dsub.clear();
+
+        // Make sure it got created
+        if (!dir.exists(sub.str(),user,true,false)) {
+            ERROR1("Can't add %s", sub.str());
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // ======================================================================= Test cases
@@ -345,14 +392,13 @@ static void testSDSRW()
 
 static void testDFS()
 {
-    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
     const size32_t recsize = 17;
     StringBuffer s;
     unsigned i;
     unsigned n;
     unsigned t;
     queryNamedGroupStore().remove("daregress_group");
-    dir.removeEntry("daregress::superfile1");
+    dir.removeEntry("daregress::superfile1", user);
     SocketEndpointArray epa;
     for (n=0;n<400;n++) {
         s.clear().append("192.168.").append(n/256).append('.').append(n%256);
@@ -384,22 +430,22 @@ static void testDFS()
         }
         fdesc->queryProperties().setPropInt("@recordSize",17);
         s.clear().append("daregress::test").append(i);
-        dir.removeEntry(s.str());
+        dir.removeEntry(s.str(), user);
         StringBuffer cname;
         Owned<IDistributedFile> dfile = dir.createNew(fdesc);
         if (stricmp(dfile->getClusterName(0,cname),"daregress_group")!=0)
             ERROR1("Cluster name wrong %d",i);
         s.clear().append("daregress::test").append(i);
-        dfile->attach(s.str());
+        dfile->attach(s.str(),user);
     }
     printf("DFile create done      - 100 files\n");
     unsigned samples = 5;
     t = 33;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
-        if (!dir.exists(s.str()))
+        if (!dir.exists(s.str(),user))
             ERROR1("Could not find %s",s.str());
-        Owned<IDistributedFile> dfile = dir.lookup(s.str());
+        Owned<IDistributedFile> dfile = dir.lookup(s.str(), user);
         if (!dfile) {
             ERROR1("Could not find %s",s.str());
             continue;
@@ -444,7 +490,7 @@ static void testDFS()
     __int64 crctot = 0;
     unsigned np = 0;
     unsigned totrows = 0;
-    Owned<IDistributedFileIterator> fiter = dir.getIterator("daregress::*",false);
+    Owned<IDistributedFileIterator> fiter = dir.getIterator("daregress::*",false, user);
     Owned<IDistributedFilePartIterator> piter;
     ForEach(*fiter) {
         piter.setown(fiter->query().getIterator()); 
@@ -464,13 +510,13 @@ static void testDFS()
     fiter.clear();
     printf("DFile iterate done     - %d parts, %d rows, CRC sum %"I64F"d\n",np,totrows,crctot);
     Owned<IDistributedSuperFile> sfile;
-    sfile.setown(dir.createSuperFile("daregress::superfile1",true));
+    sfile.setown(dir.createSuperFile("daregress::superfile1",user,true,false));
     for (i = 0;i<100;i++) {
         s.clear().append("daregress::test").append(i);
         sfile->addSubFile(s.str());
     }
     sfile.clear();
-    sfile.setown(dir.lookupSuperFile("daregress::superfile1"));
+    sfile.setown(dir.lookupSuperFile("daregress::superfile1", user));
     if (!sfile) {
         ERROR("Could not find added superfile");
         return;
@@ -503,28 +549,28 @@ static void testDFS()
         ERROR1("Superfile size does not match part sum %d",tr);
     sfile->detach();
     sfile.clear();
-    sfile.setown(dir.lookupSuperFile("daregress::superfile1"));
+    sfile.setown(dir.lookupSuperFile("daregress::superfile1",user));
     if (sfile)
         ERROR("Superfile deletion failed");
     t = 37;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
         if (i%1) {
-            Owned<IDistributedFile> dfile = dir.lookup(s.str());
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(),user);
             if (!dfile)
                 ERROR1("Could not find %s",s.str());
             dfile->detach();
         }
         else 
-            dir.removeEntry(s.str());
+            dir.removeEntry(s.str(), user);
         t = (t+37)%100; 
     }
     printf("DFile removal complete\n");
     t = 39;
     for (i=0;i<100;i++) {
-        if (dir.exists(s.str()))
+        if (dir.exists(s.str(),user))
             ERROR1("Found %s after deletion",s.str());
-        Owned<IDistributedFile> dfile = dir.lookup(s.str());
+        Owned<IDistributedFile> dfile = dir.lookup(s.str(), user);
         if (dfile)
             ERROR1("Found %s after deletion",s.str());
         t = (t+39)%100; 
@@ -535,80 +581,20 @@ static void testDFS()
         ERROR("Named group not removed");
 }
 
-static bool setupDFS()
-{
-    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-
-    // Prepare - MORE - Change this when create/remove file is part of transactions
-    printf("Cleaning up 'regress::trans' scope\n");
-    if (dir.exists("regress::trans::super1",false,true) && !dir.removeEntry("regress::trans::super1")) {
-        ERROR("Can't remove super1");
-        return false;
-    }
-    if (dir.exists("regress::trans::super2",false,true) && !dir.removeEntry("regress::trans::super2")) {
-        ERROR("Can't remove super2");
-        return false;
-    }
-    if (dir.exists("regress::trans::super3",false,true) && !dir.removeEntry("regress::trans::super3")) {
-        ERROR("Can't remove super3");
-        return false;
-    }
-
-    if (dir.exists("regress::trans::sub1",true,false) && !dir.removeEntry("regress::trans::sub1")) {
-        ERROR("Can't remove sub1");
-        return false;
-    }
-    printf("Creating 'regress::trans' subfiles(1,4)\n");
-    Owned<IFileDescriptor> sub1 = createFileDescriptor("regress::trans", "sub1", 3, 17);
-    Owned<IDistributedFile> dsub1 = dir.createNew(sub1);
-    dsub1->attach("regress::trans::sub1");
-    dsub1.clear();
-
-    if (dir.exists("regress::trans::sub2",true,false) && !dir.removeEntry("regress::trans::sub2")) {
-        ERROR("Can't remove sub2");
-        return false;
-    }
-    Owned<IFileDescriptor> sub2 = createFileDescriptor("regress::trans", "sub2", 3, 17);
-    Owned<IDistributedFile> dsub2 = dir.createNew(sub2);
-    dsub2->attach("regress::trans::sub2");
-    dsub2.clear();
-
-    if (dir.exists("regress::trans::sub3",true,false) && !dir.removeEntry("regress::trans::sub3")) {
-        ERROR("Can't remove sub3");
-        return false;
-    }
-    Owned<IFileDescriptor> sub3 = createFileDescriptor("regress::trans", "sub3", 3, 17);
-    Owned<IDistributedFile> dsub3 = dir.createNew(sub3);
-    dsub3->attach("regress::trans::sub3");
-    dsub3.clear();
-
-    if (dir.exists("regress::trans::sub4",true,false) && !dir.removeEntry("regress::trans::sub4")) {
-        ERROR("Can't remove sub4");
-        return false;
-    }
-    Owned<IFileDescriptor> sub4 = createFileDescriptor("regress::trans", "sub4", 3, 17);
-    Owned<IDistributedFile> dsub4 = dir.createNew(sub4);
-    dsub4->attach("regress::trans::sub4");
-    dsub4.clear();
-
-    return true;
-}
-
 static void testDFSTrans()
 {
-    if (!setupDFS())
+    if (!setupDFS("trans"))
         return;
 
-    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
     // Auto-commit
     printf("Auto-commit test (inactive transaction)\n");
-    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::trans::super1", false, false, NULL, transaction);
+    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::trans::super1",user , false, false, transaction);
     sfile1->addSubFile("regress::trans::sub1", false, NULL, false, transaction);
     sfile1->addSubFile("regress::trans::sub2", false, NULL, false, transaction);
     sfile1.clear();
-    sfile1.setown(dir.lookupSuperFile("regress::trans::super1", NULL, transaction));
+    sfile1.setown(dir.lookupSuperFile("regress::trans::super1", user, transaction));
     if (!sfile1.get())
         ERROR("non-transactional add super1 failed");
     if (sfile1->numSubFiles() != 2)
@@ -624,26 +610,26 @@ static void testDFSTrans()
     // Rollback
     printf("Rollback test (active transaction)\n");
     transaction->start();
-    Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::trans::super2", false, false, NULL, transaction);
+    Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::trans::super2", user, false, false, transaction);
     sfile2->addSubFile("regress::trans::sub3", false, NULL, false, transaction);
     sfile2->addSubFile("regress::trans::sub4", false, NULL, false, transaction);
     transaction->rollback();
     if (sfile2->numSubFiles() != 0)
         ERROR("transactional rollback failed, some subs were added");
     sfile2.clear();
-    sfile2.setown(dir.lookupSuperFile("regress::trans::super2", NULL, transaction));
+    sfile2.setown(dir.lookupSuperFile("regress::trans::super2", user, transaction));
     if (sfile2.get())
         ERROR("transactional rollback super2 failed, it exists!");
 
     // Commit
     printf("Commit test (active transaction)\n");
     transaction->start();
-    Owned<IDistributedSuperFile> sfile3 = dir.createSuperFile("regress::trans::super3", false, false, NULL, transaction);
+    Owned<IDistributedSuperFile> sfile3 = dir.createSuperFile("regress::trans::super3", user, false, false, transaction);
     sfile3->addSubFile("regress::trans::sub3", false, NULL, false, transaction);
     sfile3->addSubFile("regress::trans::sub4", false, NULL, false, transaction);
     transaction->commit();
     sfile3.clear();
-    sfile3.setown(dir.lookupSuperFile("regress::trans::super3", NULL, transaction));
+    sfile3.setown(dir.lookupSuperFile("regress::trans::super3", user, transaction));
     if (!sfile3.get())
         ERROR("transactional add super3 failed");
     if (sfile3->numSubFiles() != 2)
@@ -659,11 +645,10 @@ static void testDFSTrans()
 
 static void testDFSPromote()
 {
-    if (!setupDFS())
+    if (!setupDFS("trans"))
         return;
 
-    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
     // ===============================================================================
     // Don't change these parameters, or you'll have to change all ERROR tests below
@@ -677,16 +662,16 @@ static void testDFSPromote()
     StringArray outlinked;
 
     printf("Promote (1, -, -) - first iteration\n");
-    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1", delsub, createonlyone, NULL, timeout, outlinked);
+    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1", delsub, createonlyone, user, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") != 0)
             ERROR("promote failed, wrong name for sub1");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
         if (sfile2.get())
             ERROR("promote failed, super2 does exist");
         if (outlinked.length() != 0)
@@ -694,23 +679,23 @@ static void testDFSPromote()
     }
 
     printf("Promote (2, 1, -) - second iteration\n");
-    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2", delsub, createonlyone, NULL, timeout, outlinked);
+    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2", delsub, createonlyone, user, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub1") != 0)
             ERROR("promote failed, wrong name for sub1");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, NULL, timeout);
         if (sfile3.get())
             ERROR("promote failed, super3 does exist");
         if (outlinked.length() != 0)
@@ -718,23 +703,23 @@ static void testDFSPromote()
     }
 
     printf("Promote (3, 2, 1) - third iteration\n");
-    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub3", delsub, createonlyone, NULL, timeout, outlinked);
+    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub3", delsub, createonlyone, user, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub3") != 0)
             ERROR("promote failed, wrong name for sub3");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
@@ -746,23 +731,23 @@ static void testDFSPromote()
     }
 
     printf("Promote (4, 3, 2) - fourth iteration, expect outlinked\n");
-    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub4", delsub, createonlyone, NULL, timeout, outlinked);
+    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub4", delsub, createonlyone, user, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 1)
             ERROR("promote failed, super1 should have one subfile");
         if (strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub4") != 0)
             ERROR("promote failed, wrong name for sub4");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub3") != 0)
             ERROR("promote failed, wrong name for sub3");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
@@ -773,15 +758,15 @@ static void testDFSPromote()
             ERROR("promote failed, outlinked expected only one item");
         if (strcmp(outlinked.popGet(), "regress::trans::sub1") != 0)
             ERROR("promote failed, outlinked expected to be sub1");
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", NULL, false, NULL, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, NULL, timeout);
         if (!sub1.get())
             ERROR("promote failed, sub1 was physically deleted");
     }
 
     printf("Promote ([1,2], 4, 3) - fifth iteration, two in-files\n");
-    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1,regress::trans::sub2", delsub, createonlyone, NULL, timeout, outlinked);
+    dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1,regress::trans::sub2", delsub, createonlyone, user, timeout, outlinked);
     {
-        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
         if (!sfile1.get())
             ERROR("promote failed, super1 doesn't exist");
         if (sfile1->numSubFiles() != 2)
@@ -790,14 +775,14 @@ static void testDFSPromote()
             ERROR("promote failed, wrong name for sub1");
         if (strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub2") != 0)
             ERROR("promote failed, wrong name for sub2");
-        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
         if (!sfile2.get())
             ERROR("promote failed, super2 doesn't exist");
         if (sfile2->numSubFiles() != 1)
             ERROR("promote failed, super2 should have one subfile");
         if (strcmp(sfile2->querySubFile(0).queryLogicalName(), "regress::trans::sub4") != 0)
             ERROR("promote failed, wrong name for sub4");
-        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", NULL, NULL, timeout);
+        Owned<IDistributedSuperFile> sfile3 = dir.lookupSuperFile("regress::trans::super3", user, NULL, timeout);
         if (!sfile3.get())
             ERROR("promote failed, super3 doesn't exist");
         if (sfile3->numSubFiles() != 1)
@@ -808,10 +793,10 @@ static void testDFSPromote()
             ERROR("promote failed, outlinked expected only one item");
         if (strcmp(outlinked.popGet(), "regress::trans::sub2") != 0)
             ERROR("promote failed, outlinked expected to be sub2");
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", NULL, false, NULL, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, NULL, timeout);
         if (!sub1.get())
             ERROR("promote failed, sub1 was physically deleted");
-        Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", NULL, false, NULL, timeout);
+        Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, NULL, timeout);
         if (!sub2.get())
             ERROR("promote failed, sub2 was physically deleted");
     }
@@ -885,33 +870,19 @@ void testReadAllSDS()
 
 static void testDFSDel()
 {
-    IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(); // disabled, auto-commit
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
-    // Cleanup
-    if (dir.exists("regress::del::super1",false,true) && !dir.removeEntry("regress::del::super1")) {
-        ERROR("Can't remove super1");
+    if (!setupDFS("del"))
         return;
-    }
-    if (dir.exists("regress::del::sub1",false,true) && !dir.removeEntry("regress::del::sub1")) {
-        ERROR("Can't remove sub1");
-        return;
-    }
-
-    printf("Creating 'regress::del::sub1\n");
-    Owned<IFileDescriptor> sub1 = createFileDescriptor("regress::del", "sub1", 3, 17);
-    Owned<IDistributedFile> dsub1 = dir.createNew(sub1);
-    dsub1->attach("regress::del::sub1");
-    dsub1.clear();
 
     printf("Creating 'regress::del::super1 and attaching sub\n");
-    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", false, false, NULL, transaction);
+    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", user, false, false, transaction);
     sfile1->addSubFile("regress::del::sub1", false, NULL, false, transaction);
     sfile1.clear();
 
     printf("Deleting 'regress::del::sub1, should fail\n");
     try {
-        if (dir.removeEntry("regress::del::sub1")) {
+        if (dir.removeEntry("regress::del::sub1", user)) {
             ERROR("Could remove sub, this will make the DFS inconsistent!");
             return;
         }
@@ -920,12 +891,12 @@ static void testDFSDel()
     }
 
     printf("Deleting 'regress::del::super1, should work\n");
-    if (!dir.removeEntry("regress::del::super1")) {
+    if (!dir.removeEntry("regress::del::super1", user)) {
         ERROR("Can't remove super1");
         return;
     }
     printf("Deleting 'regress::del::sub1, should work\n");
-    if (!dir.removeEntry("regress::del::sub1")) {
+    if (!dir.removeEntry("regress::del::sub1", user)) {
         ERROR("Can't remove sub1");
         return;
     }
@@ -1000,6 +971,7 @@ int main(int argc, char* argv[])
     ReleaseAtomBlock rABlock;
     InitModuleObjects();
     EnableSEHtoExceptionMapping();
+    user->set("user", "passwd");
     RunOptions opt = read_cmdline(argc, argv);
     initTests();
     unsigned nt = 0;
