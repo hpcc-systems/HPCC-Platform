@@ -2410,7 +2410,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
             Owned<IUserDescriptor> udesc=createUserDescriptor();
             udesc->set(u.str(),p.str());
-            if (!queryDistributedFileDirectory().isSuperFile(srcname,foreigndali,udesc))
+            if (!queryDistributedFileDirectory().isSuperFile(srcname,udesc,foreigndali))
                 supercopy = false;
         }
 

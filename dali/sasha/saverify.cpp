@@ -221,7 +221,7 @@ public:
 
     void verifyFile(const char *name,CDateTime *cutoff)
     {
-        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name);
+        Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,UNKNOWN_USER);
         if (!file)
             return;
         IPropertyTree &fileprops = file->queryAttributes();
@@ -343,7 +343,7 @@ public:
             }
         }
         if (!stopped) {
-            file.setown(queryDistributedFileDirectory().lookup(name));
+            file.setown(queryDistributedFileDirectory().lookup(name,UNKNOWN_USER));
             if (!file)
                 return;
             if (afor.ok) {
@@ -411,7 +411,7 @@ public:
             try {
                 PROGLOG("VERIFIER: Started");
                 CFileCrcList filelist(stopped);
-                Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",true,false);
+                Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
                 if (iter) {
                     CDateTime mincutoff;
                     mincutoff.setNow();

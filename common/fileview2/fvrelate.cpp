@@ -23,6 +23,7 @@
 #include "fvrelate.ipp"
 #include "deftype.hpp"
 #include "fvresultset.ipp"
+#include "dasess.hpp"
 
 //---------------------------------------------------------------------------
 
@@ -425,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename);
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,UNKNOWN_USER);//MORE:Pass IUserDescriptor
     if (!resolved)
         return NULL;
 
