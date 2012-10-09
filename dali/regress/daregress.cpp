@@ -352,7 +352,7 @@ static void testDFS()
     unsigned n;
     unsigned t;
     queryNamedGroupStore().remove("daregress_group");
-    dir.removeEntry("daregress::superfile1");
+    dir.removeEntry("daregress::superfile1",NULL);
     SocketEndpointArray epa;
     for (n=0;n<400;n++) {
         s.clear().append("192.168.").append(n/256).append('.').append(n%256);
@@ -384,22 +384,22 @@ static void testDFS()
         }
         fdesc->queryProperties().setPropInt("@recordSize",17);
         s.clear().append("daregress::test").append(i);
-        dir.removeEntry(s.str());
+        dir.removeEntry(s.str(),NULL);
         StringBuffer cname;
         Owned<IDistributedFile> dfile = dir.createNew(fdesc);
         if (stricmp(dfile->getClusterName(0,cname),"daregress_group")!=0)
             ERROR1("Cluster name wrong %d",i);
         s.clear().append("daregress::test").append(i);
-        dfile->attach(s.str());
+        dfile->attach(s.str(),NULL);
     }
     printf("DFile create done      - 100 files\n");
     unsigned samples = 5;
     t = 33;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
-        if (!dir.exists(s.str()))
+        if (!dir.exists(s.str(),NULL))
             ERROR1("Could not find %s",s.str());
-        Owned<IDistributedFile> dfile = dir.lookup(s.str());
+        Owned<IDistributedFile> dfile = dir.lookup(s.str(),NULL);
         if (!dfile) {
             ERROR1("Could not find %s",s.str());
             continue;
@@ -444,7 +444,7 @@ static void testDFS()
     __int64 crctot = 0;
     unsigned np = 0;
     unsigned totrows = 0;
-    Owned<IDistributedFileIterator> fiter = dir.getIterator("daregress::*",false);
+    Owned<IDistributedFileIterator> fiter = dir.getIterator("daregress::*",false,NULL);
     Owned<IDistributedFilePartIterator> piter;
     ForEach(*fiter) {
         piter.setown(fiter->query().getIterator()); 
@@ -464,13 +464,13 @@ static void testDFS()
     fiter.clear();
     printf("DFile iterate done     - %d parts, %d rows, CRC sum %"I64F"d\n",np,totrows,crctot);
     Owned<IDistributedSuperFile> sfile;
-    sfile.setown(dir.createSuperFile("daregress::superfile1",true));
+    sfile.setown(dir.createSuperFile("daregress::superfile1",NULL,true));
     for (i = 0;i<100;i++) {
         s.clear().append("daregress::test").append(i);
         sfile->addSubFile(s.str());
     }
     sfile.clear();
-    sfile.setown(dir.lookupSuperFile("daregress::superfile1"));
+    sfile.setown(dir.lookupSuperFile("daregress::superfile1",NULL));
     if (!sfile) {
         ERROR("Could not find added superfile");
         return;
@@ -503,28 +503,28 @@ static void testDFS()
         ERROR1("Superfile size does not match part sum %d",tr);
     sfile->detach();
     sfile.clear();
-    sfile.setown(dir.lookupSuperFile("daregress::superfile1"));
+    sfile.setown(dir.lookupSuperFile("daregress::superfile1",NULL));
     if (sfile)
         ERROR("Superfile deletion failed");
     t = 37;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
         if (i%1) {
-            Owned<IDistributedFile> dfile = dir.lookup(s.str());
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(),NULL);
             if (!dfile)
                 ERROR1("Could not find %s",s.str());
             dfile->detach();
         }
         else 
-            dir.removeEntry(s.str());
+            dir.removeEntry(s.str(),NULL);
         t = (t+37)%100; 
     }
     printf("DFile removal complete\n");
     t = 39;
     for (i=0;i<100;i++) {
-        if (dir.exists(s.str()))
+        if (dir.exists(s.str(),NULL))
             ERROR1("Found %s after deletion",s.str());
-        Owned<IDistributedFile> dfile = dir.lookup(s.str());
+        Owned<IDistributedFile> dfile = dir.lookup(s.str(),NULL);
         if (dfile)
             ERROR1("Found %s after deletion",s.str());
         t = (t+39)%100; 
@@ -541,54 +541,54 @@ static bool setupDFS()
 
     // Prepare - MORE - Change this when create/remove file is part of transactions
     printf("Cleaning up 'regress::trans' scope\n");
-    if (dir.exists("regress::trans::super1",false,true) && !dir.removeEntry("regress::trans::super1")) {
+    if (dir.exists("regress::trans::super1",false,true) && !dir.removeEntry("regress::trans::super1",NULL)) {
         ERROR("Can't remove super1");
         return false;
     }
-    if (dir.exists("regress::trans::super2",false,true) && !dir.removeEntry("regress::trans::super2")) {
+    if (dir.exists("regress::trans::super2",false,true) && !dir.removeEntry("regress::trans::super2",NULL)) {
         ERROR("Can't remove super2");
         return false;
     }
-    if (dir.exists("regress::trans::super3",false,true) && !dir.removeEntry("regress::trans::super3")) {
+    if (dir.exists("regress::trans::super3",false,true) && !dir.removeEntry("regress::trans::super3",NULL)) {
         ERROR("Can't remove super3");
         return false;
     }
 
-    if (dir.exists("regress::trans::sub1",true,false) && !dir.removeEntry("regress::trans::sub1")) {
+    if (dir.exists("regress::trans::sub1",NULL,true,false) && !dir.removeEntry("regress::trans::sub1",NULL)) {
         ERROR("Can't remove sub1");
         return false;
     }
     printf("Creating 'regress::trans' subfiles(1,4)\n");
     Owned<IFileDescriptor> sub1 = createFileDescriptor("regress::trans", "sub1", 3, 17);
     Owned<IDistributedFile> dsub1 = dir.createNew(sub1);
-    dsub1->attach("regress::trans::sub1");
+    dsub1->attach("regress::trans::sub1",NULL);
     dsub1.clear();
 
-    if (dir.exists("regress::trans::sub2",true,false) && !dir.removeEntry("regress::trans::sub2")) {
+    if (dir.exists("regress::trans::sub2",NULL,true,false) && !dir.removeEntry("regress::trans::sub2",NULL)) {
         ERROR("Can't remove sub2");
         return false;
     }
     Owned<IFileDescriptor> sub2 = createFileDescriptor("regress::trans", "sub2", 3, 17);
     Owned<IDistributedFile> dsub2 = dir.createNew(sub2);
-    dsub2->attach("regress::trans::sub2");
+    dsub2->attach("regress::trans::sub2",NULL);
     dsub2.clear();
 
-    if (dir.exists("regress::trans::sub3",true,false) && !dir.removeEntry("regress::trans::sub3")) {
+    if (dir.exists("regress::trans::sub3",NULL,true,false) && !dir.removeEntry("regress::trans::sub3",NULL)) {
         ERROR("Can't remove sub3");
         return false;
     }
     Owned<IFileDescriptor> sub3 = createFileDescriptor("regress::trans", "sub3", 3, 17);
     Owned<IDistributedFile> dsub3 = dir.createNew(sub3);
-    dsub3->attach("regress::trans::sub3");
+    dsub3->attach("regress::trans::sub3",NULL);
     dsub3.clear();
 
-    if (dir.exists("regress::trans::sub4",true,false) && !dir.removeEntry("regress::trans::sub4")) {
+    if (dir.exists("regress::trans::sub4",NULL,true,false) && !dir.removeEntry("regress::trans::sub4",NULL)) {
         ERROR("Can't remove sub4");
         return false;
     }
     Owned<IFileDescriptor> sub4 = createFileDescriptor("regress::trans", "sub4", 3, 17);
     Owned<IDistributedFile> dsub4 = dir.createNew(sub4);
-    dsub4->attach("regress::trans::sub4");
+    dsub4->attach("regress::trans::sub4",NULL);
     dsub4.clear();
 
     return true;
@@ -600,7 +600,7 @@ static void testDFSTrans()
         return;
 
     IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(NULL);
 
     // Auto-commit
     printf("Auto-commit test (inactive transaction)\n");
@@ -663,7 +663,7 @@ static void testDFSPromote()
         return;
 
     IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(NULL);
 
     // ===============================================================================
     // Don't change these parameters, or you'll have to change all ERROR tests below
@@ -886,14 +886,14 @@ void testReadAllSDS()
 static void testDFSDel()
 {
     IDistributedFileDirectory &dir = queryDistributedFileDirectory();
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(); // disabled, auto-commit
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(NULL); // disabled, auto-commit
 
     // Cleanup
-    if (dir.exists("regress::del::super1",false,true) && !dir.removeEntry("regress::del::super1")) {
+    if (dir.exists("regress::del::super1",false,true) && !dir.removeEntry("regress::del::super1",NULL)) {
         ERROR("Can't remove super1");
         return;
     }
-    if (dir.exists("regress::del::sub1",false,true) && !dir.removeEntry("regress::del::sub1")) {
+    if (dir.exists("regress::del::sub1",false,true) && !dir.removeEntry("regress::del::sub1",NULL)) {
         ERROR("Can't remove sub1");
         return;
     }
@@ -901,7 +901,7 @@ static void testDFSDel()
     printf("Creating 'regress::del::sub1\n");
     Owned<IFileDescriptor> sub1 = createFileDescriptor("regress::del", "sub1", 3, 17);
     Owned<IDistributedFile> dsub1 = dir.createNew(sub1);
-    dsub1->attach("regress::del::sub1");
+    dsub1->attach("regress::del::sub1",NULL);
     dsub1.clear();
 
     printf("Creating 'regress::del::super1 and attaching sub\n");
@@ -911,7 +911,7 @@ static void testDFSDel()
 
     printf("Deleting 'regress::del::sub1, should fail\n");
     try {
-        if (dir.removeEntry("regress::del::sub1")) {
+        if (dir.removeEntry("regress::del::sub1",NULL)) {
             ERROR("Could remove sub, this will make the DFS inconsistent!");
             return;
         }
@@ -920,12 +920,12 @@ static void testDFSDel()
     }
 
     printf("Deleting 'regress::del::super1, should work\n");
-    if (!dir.removeEntry("regress::del::super1")) {
+    if (!dir.removeEntry("regress::del::super1",NULL)) {
         ERROR("Can't remove super1");
         return;
     }
     printf("Deleting 'regress::del::sub1, should work\n");
-    if (!dir.removeEntry("regress::del::sub1")) {
+    if (!dir.removeEntry("regress::del::sub1",NULL)) {
         ERROR("Can't remove sub1");
         return;
     }

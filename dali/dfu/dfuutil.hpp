@@ -25,19 +25,19 @@ interface IUserDescriptor;
 
 interface IDfuFileCopier: extends IInterface
 {
-    virtual bool copyFile(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser=NULL,IUserDescriptor *user=NULL) = 0;
+    virtual bool copyFile(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser,IUserDescriptor *user) = 0;
     virtual bool wait()=0; // waits for all outstanding copies to complete
 };
 
 
 interface IDFUhelper: extends IInterface
 {
-    virtual void addSuper(const char *superfname, unsigned numtoadd=0, const char **subfiles=NULL, const char *before=NULL, IUserDescriptor *user=NULL) = 0;
-    virtual void removeSuper(const char *superfname, unsigned numtodelete=0, const char **subfiles=NULL, bool delsub=false, bool removesuperfile=true, IUserDescriptor *user=NULL) = 0;
-    virtual void listSubFiles(const char *superfname,StringAttrArray &out, IUserDescriptor *user=NULL) = 0;
-    virtual StringBuffer &getFileXML(const char *lfn,StringBuffer &out, IUserDescriptor *user=NULL) = 0;
-    virtual void addFileXML(const char *lfn,const StringBuffer &xml, IUserDescriptor *user=NULL) = 0;
-    virtual void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser=NULL,IUserDescriptor *user=NULL) = 0;
+    virtual void addSuper(const char *superfname, IUserDescriptor *user, unsigned numtoadd=0, const char **subfiles=NULL, const char *before=NULL) = 0;
+    virtual void removeSuper(const char *superfname, IUserDescriptor *user, unsigned numtodelete=0, const char **subfiles=NULL, bool delsub=false, bool removesuperfile=true) = 0;
+    virtual void listSubFiles(const char *superfname,StringAttrArray &out, IUserDescriptor *user) = 0;
+    virtual StringBuffer &getFileXML(const char *lfn,StringBuffer &out, IUserDescriptor *user) = 0;
+    virtual void addFileXML(const char *lfn,const StringBuffer &xml, IUserDescriptor *user) = 0;
+    virtual void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser,IUserDescriptor *user) = 0;
     virtual void superForeignCopy(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser,IUserDescriptor *user, bool overwrite, IDfuFileCopier *copier) = 0;
 
     virtual void createFileClone(

@@ -369,7 +369,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 static void emptyScopes()
 {
     PROGLOG("Removing empty scopes");
-    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(NULL,true,true);
+    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(NULL,NULL,true,true);//MORE:Pass IUserDescriptor
     CDfsLogicalFileName dlfn;
     StringBuffer s;
     StringArray toremove;

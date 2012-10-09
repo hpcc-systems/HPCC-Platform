@@ -709,7 +709,7 @@ struct CLogicalNameEntry: public CInterface
     bool remove()
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
-        Owned<IDistributedFile> file = fdir.lookup(lname.get());
+        Owned<IDistributedFile> file = fdir.lookup(lname.get(),NULL);
         if (!file)
             return false;
         file->detach();
@@ -2269,7 +2269,7 @@ class CXRefManager: public CXRefManagerBase
             ForEachItemIn(i,logicalnamelist) {
                 CLogicalNameEntry &item = logicalnamelist.item(i);
                 if (item.unknowngrp||item.mismatchgrp.get()||item.missinggrp) {
-                    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get());
+                    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(item.lname.get(),NULL);
                     if (file) {
                         if (item.missinggrp)
                             outf("WARNING: Missing group for %s\n",item.lname.get());

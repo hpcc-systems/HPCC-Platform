@@ -50,7 +50,7 @@ static unsigned nIter = 1;
 
 static void addTestFile(const char *name,unsigned n)
 {
-    queryDistributedFileDirectory().removeEntry(name);
+    queryDistributedFileDirectory().removeEntry(name,NULL);
     SocketEndpointArray epa;
     for (unsigned i=0;i<n;i++) {
         StringBuffer ips("192.168.0.");
@@ -82,7 +82,7 @@ static void addTestFile(const char *name,unsigned n)
         t.setPropInt("@recordSize",1);
         t.setProp("ECL","TESTECL();");
     }
-    dfile->attach(name);
+    dfile->attach(name,NULL);
 }
 
 #define TEST_SUPER_FILE "nhtest::super"
@@ -96,21 +96,21 @@ void Test_SuperFile()
     // first remove if exists
     unsigned i;
     unsigned n;
-    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction();
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(NULL);
     Owned<IDistributedSuperFile> sfile;
     Owned<IDistributedFilePartIterator> piter;
     Owned<IDistributedFileIterator> iter;
-    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"4");
-    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"3");
-    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"2");
+    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"4",NULL);
+    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"3",NULL);
+    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"2",NULL);
 #if 1
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1"));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1",NULL));
     if (sfile) {
         sfile->removeSubFile(NULL,true,false);
         sfile.clear();
-        queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"1");
+        queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"1",NULL);
     }
-    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"1",true));
+    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"1",NULL,true));
     for (i = 0;i<3;i++) {
         StringBuffer name(TEST_SUB_FILE);
         name.append(i+1);
@@ -119,7 +119,7 @@ void Test_SuperFile()
     }
     sfile.clear();
 #endif
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1"));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1",NULL));
     printf("NumSubFiles = %d\n",sfile->numSubFiles());
 #if 1
     i=0;
@@ -156,7 +156,7 @@ void Test_SuperFile()
         i++;
     }
     piter.clear();
-    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"2",true));
+    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"2",NULL,true));
     transaction->start();
     for (i = 0;i<3;i++) {
         StringBuffer name(TEST_SUB_FILE);
@@ -165,7 +165,7 @@ void Test_SuperFile()
     }
     sfile.clear(); // mustn't have owner open when commit transaction
     transaction->commit();
-    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"3",true));
+    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"3",NULL,true));
     for (i = 0;i<3;i++) {
         StringBuffer name(TEST_SUB_FILE);
         name.append(i+1);
@@ -173,7 +173,7 @@ void Test_SuperFile()
     }
     sfile.clear();  // mustn't have owner open when commit transaction
     transaction->rollback();
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"2"));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"2",NULL));
     transaction->start();
     sfile->removeSubFile(TEST_SUB_FILE"1",false,false,false,transaction);
     StringBuffer name(TEST_SUB_FILE"4");
@@ -181,14 +181,14 @@ void Test_SuperFile()
     sfile->addSubFile(name,false,NULL,false,transaction);
     sfile.clear(); // mustn't have owner open when commit transaction
     transaction->commit();
-    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"4",true));
+    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"4",NULL,true));
     transaction->start();
     sfile->addSubFile(TEST_SUPER_FILE"1",false,NULL,false,transaction);
     sfile->addSubFile(TEST_SUPER_FILE"2",false,NULL,false,transaction);
     sfile->addSubFile(TEST_SUPER_FILE"3",false,NULL,false,transaction);
     sfile.clear();  // mustn't have owner open when commit transaction
     transaction->commit();
-    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"4"));
+    sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"4",NULL));
     i=0;
     iter.setown(sfile->getSubFileIterator());
     ForEach(*iter) {
@@ -241,21 +241,21 @@ void Test_SuperFile2()
     // first remove if exists
     unsigned i;
     Owned<IDistributedSuperFile> sfile;
-    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"B1");
-    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"B1",true));
+    queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"B1",NULL);
+    sfile.setown(queryDistributedFileDirectory().createSuperFile(TEST_SUPER_FILE"B1",NULL,true));
     for (unsigned tst=0;tst<2;tst++) {
         printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
         for (i = 0;i<3;i++) {
             StringBuffer name(TEST_SUB_FILE);
             name.append(i+1);
             addTestFile(name.str(),i+2);
-            Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name);
+            Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,NULL);
             printf("adding size = %"I64F"d\n",sbfile->getFileSize(false,false));
             sfile->addSubFile(name);
             printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
         }
         sfile.clear();
-        sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1"));
+        sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1",NULL));
         printf("NumSubFiles = %d\n",sfile->numSubFiles());
         if (tst==1) {
             sfile->removeSubFile(NULL,false,false);
@@ -265,7 +265,7 @@ void Test_SuperFile2()
             for (i = 0;i<3;i++) {
                 StringBuffer name(TEST_SUB_FILE);
                 name.append(i+1);
-                Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name);
+                Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,NULL);
                 printf("removing size = %"I64F"d\n",sbfile->getFileSize(false,false));
                 sfile->removeSubFile(name,false,false);
                 printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
@@ -279,7 +279,7 @@ void Test_SuperFile2()
 void Test_PartIter()
 {
     unsigned start = msTick();
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup("nhtest::file_name_ssn20030805");
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup("nhtest::file_name_ssn20030805",NULL);
     Owned<IDistributedFilePartIterator> parts = file->getIterator();
     ForEach(*parts) {
         IDistributedFilePart & thisPart = parts->query(); 
@@ -462,9 +462,9 @@ void Test_DFS()
     pp->setPropInt64("@size",3456);
     fdesc->setPart(2,node,"testfile1.d00._3_of_3",pp);
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile1");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile1",NULL);
     IDistributedFile *dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile1");
+    dfile->attach("nigel::test::testfile1",NULL);
     dfile->Release();
     fdesc->Release();
     fdesc = createFileDescriptor();
@@ -484,9 +484,9 @@ void Test_DFS()
     node = createINode("192.168.0.4");
     fdesc->setPart(1,node,"testfile2.d00._2_of_3");
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile2");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile2",NULL);
     dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile2");
+    dfile->attach("nigel::test::testfile2",NULL);
     dfile->Release();
     fdesc->Release();
     fdesc = createFileDescriptor();
@@ -500,24 +500,24 @@ void Test_DFS()
     node = createINode("192.168.0.3");
     fdesc->setPart(2,node,"testfile3.d00._3_of_3");
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile3");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile3",NULL);
     dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile3");
+    dfile->attach("nigel::test::testfile3",NULL);
     dfile->Release();
     fdesc->Release();
-    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2");
+    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2",NULL);
     if (!f)
         printf("failed 1");
     ::Release(f);
-    f = queryDistributedFileDirectory().lookup("nigel::zest::testfile1");
+    f = queryDistributedFileDirectory().lookup("nigel::zest::testfile1",NULL);
     assertex(!f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::zestfile1");
+    f = queryDistributedFileDirectory().lookup("nigel::test::zestfile1",NULL);
     assertex(!f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::testfile1");
+    f = queryDistributedFileDirectory().lookup("nigel::test::testfile1",NULL);
     if (!f)
         printf("failed 2 ");
     ::Release(f);
-    f = queryDistributedFileDirectory().lookup("nigel::test::testfile3");
+    f = queryDistributedFileDirectory().lookup("nigel::test::testfile3",NULL);
     if (!f)
         printf("failed 3");
     StringBuffer str;
@@ -569,9 +569,9 @@ void Test_DFSU()
     pp->setPropInt64("@size",3456);
     fdesc->setPart(2,node,"testfile1.d00._3_of_3",pp);
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile1u");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile1u",NULL);
     IDistributedFile *dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile1u");
+    dfile->attach("nigel::test::testfile1u",NULL);
     dfile->Release();
     fdesc->Release();
     fdesc = createFileDescriptor();
@@ -591,9 +591,9 @@ void Test_DFSU()
     node = createINode("192.168.0.4");
     fdesc->setPart(1,node,"testfile2.d00._2_of_3");
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile2u");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile2u",NULL);
     dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile2u");
+    dfile->attach("nigel::test::testfile2u",NULL);
     dfile->Release();
     fdesc->Release();
     fdesc = createFileDescriptor();
@@ -607,12 +607,12 @@ void Test_DFSU()
     node = createINode("192.168.0.3");
     fdesc->setPart(2,node,"testfile3.d00._3_of_3");
     node->Release();
-    queryDistributedFileDirectory().removeEntry("nigel::test::testfile3u");
+    queryDistributedFileDirectory().removeEntry("nigel::test::testfile3u",NULL);
     dfile = queryDistributedFileDirectory().createNew(fdesc);
-    dfile->attach("nigel::test::testfile3u");
+    dfile->attach("nigel::test::testfile3u",NULL);
     dfile->Release();
     fdesc->Release();
-    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2u");
+    IDistributedFile *f = queryDistributedFileDirectory().lookup("nigel::test::testfile2u",NULL);
     if (!f)
         printf("failed 1");
     StringBuffer str;
@@ -2769,8 +2769,8 @@ void testDaliLog(bool listener)
 
 void testlockprop(const char *lfn)
 {
-    Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn);
-    Owned<IDistributedFile> f2 = queryDistributedFileDirectory().lookup(lfn);
+    Owned<IDistributedFile> f1 = queryDistributedFileDirectory().lookup(lfn,NULL);
+    Owned<IDistributedFile> f2 = queryDistributedFileDirectory().lookup(lfn,NULL);
     f1->lockProperties();
     f1->unlockProperties();
     printf("done\n");
