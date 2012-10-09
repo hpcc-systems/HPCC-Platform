@@ -180,7 +180,7 @@ bool copyWULogicalFiles(IEspContext &context, IConstWorkUnit &cw, const char *cl
                             if (copyLocal)
                             {
                                 StringBuffer wuid;
-                                bool supercopy = queryDistributedFileDirectory().isSuperFile(logicalname, NULL, udesc);
+                                bool supercopy = queryDistributedFileDirectory().isSuperFile(logicalname, udesc, NULL);
                                 doWuFileCopy(*fs, *info, logicalname, cluster, isRoxie, supercopy);
                             }
                             notOnCluster.append(*info.getClear());

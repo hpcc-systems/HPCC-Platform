@@ -348,7 +348,7 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removePhysical(lfn.str(),NULL,NULL,udesc))
+    if (queryDistributedFileDirectory().removePhysical(lfn.str(),udesc,NULL,NULL))
     {
         StringBuffer s("DeleteLogicalFile ('");         // ** TBD use removephysical (handles cluster)
         s.append(lfn).append("') done");
@@ -462,7 +462,7 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IMultiException> exceptions = MakeMultiException();
 
-    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),exceptions,udesc)) {
+    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,exceptions)) {
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
         WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
@@ -1025,7 +1025,7 @@ FILESERVICES_API void FILESERVICES_CALL fsCreateSuperFile(ICodeContext *ctx, con
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
-    Owned<IDistributedSuperFile> file = queryDistributedFileDirectory().createSuperFile(lsfn,!sequentialparts,ifdoesnotexist,udesc,transaction);
+    Owned<IDistributedSuperFile> file = queryDistributedFileDirectory().createSuperFile(lsfn,udesc,!sequentialparts,ifdoesnotexist,transaction);
     StringBuffer s("CreateSuperFile ('");
     s.append(lsfn).append("') done");
     AuditMessage(ctx,"CreateSuperFile",lsfn.str());
@@ -1504,7 +1504,7 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileList(ICodeContext *ctx, siz
         mask ="*";
     StringBuffer masklower(mask);
     masklower.toLowerCase();
-    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getForeignDFAttributesIterator(masklower.str(),true,includesuper,foreigndali,ctx->queryUserDescriptor());
+    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getForeignDFAttributesIterator(masklower.str(),ctx->queryUserDescriptor(),true,includesuper,foreigndali);
     if (iter) {
         StringBuffer s;
         ForEach(*iter) {
@@ -1646,7 +1646,7 @@ FILESERVICES_API char *  FILESERVICES_CALL fsVerifyFile(ICodeContext *ctx,const 
     constructLogicalName(ctx, name, lfn);
     StringBuffer retstr;
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    if (queryDistributedFileDirectory().filePhysicalVerify(lfn.str(),usecrcs,retstr,udesc))
+    if (queryDistributedFileDirectory().filePhysicalVerify(lfn.str(),udesc,usecrcs,retstr))
         retstr.append("OK");
     return retstr.detach();
 }

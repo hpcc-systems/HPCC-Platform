@@ -565,7 +565,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),srcdali,foreignuserdesc, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),foreignuserdesc,srcdali, FOREIGN_DALI_TIMEOUT, false);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
@@ -631,7 +631,7 @@ public:
                 subfiles.append(dlfnres.get());
             }
             // now construct the superfile
-            Owned<IDistributedSuperFile> sfile = fdir->createSuperFile(dlfn.get(),true,false,userdesc);
+            Owned<IDistributedSuperFile> sfile = fdir->createSuperFile(dlfn.get(),userdesc,true,false);
             if (!sfile)
                 throw MakeStringException(-1,"SuperFile %s could not be created",dlfn.get());
             ForEachItemIn(i,subfiles) {
@@ -662,7 +662,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(),srcdali,foreignuserdesc, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = fdir->getFileTree(slfn.get(), foreignuserdesc, srcdali, FOREIGN_DALI_TIMEOUT, false);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
@@ -708,7 +708,7 @@ class CDFUhelper: public CInterface, implements IDFUhelper
 public:
     IMPLEMENT_IINTERFACE;
 
-    void addSuper(const char *superfname, unsigned numtoadd, const char **subfiles, const char *before,IUserDescriptor *user)
+    void addSuper(const char *superfname,IUserDescriptor *user, unsigned numtoadd, const char **subfiles, const char *before)
     {
         if (!numtoadd)
             throwError(DFUERR_DNoSubfileToAddToSuperFile);
@@ -718,7 +718,7 @@ public:
 
         Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
         if (!superfile)
-            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,true,false,user,transaction));
+            superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,user,true,false,transaction));
 
         for (unsigned i=0;i<numtoadd;i++)
         {
@@ -734,7 +734,7 @@ public:
     }
 
 
-    void removeSuper(const char *superfname, unsigned numtodelete, const char **subfiles, bool delsub, bool removesuperfile, IUserDescriptor *user)
+    void removeSuper(const char *superfname, IUserDescriptor *user, unsigned numtodelete, const char **subfiles, bool delsub, bool removesuperfile)
     {
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
         // We need this here, since caching only happens with active transactions
@@ -785,7 +785,7 @@ public:
         if (removesuperfile && (superfile->numSubFiles() == 0)) {
             superfile.clear();
             // MORE - add file deletion to transaction
-            queryDistributedFileDirectory().removeEntry(superfname);
+            queryDistributedFileDirectory().removeEntry(superfname,user);
         }
     }
 
@@ -829,7 +829,7 @@ public:
         return out;
     }
 
-    void addFileXML(const char *lfn,const StringBuffer &xml,IUserDescriptor *user=NULL)
+    void addFileXML(const char *lfn,const StringBuffer &xml,IUserDescriptor *user)
     {
         Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(t,&queryNamedGroupStore(),0);
@@ -838,13 +838,13 @@ public:
             file->attach(lfn,user);
     }
 
-    void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *srcuser=NULL,IUserDescriptor *user=NULL)
+    void addFileRemote(const char *lfn,SocketEndpoint &srcdali,const char *srclfn,IUserDescriptor *user,IUserDescriptor *srcuser=NULL)
     {
         SocketEndpoint daliep = srcdali;
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
         Owned<INode> node = createINode(daliep);
-        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn,node,srcuser);
+        Owned<IFileDescriptor> fdesc = queryDistributedFileDirectory().getFileDescriptor(srclfn,srcuser,node);
         if (!fdesc) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
@@ -876,7 +876,7 @@ public:
                 return;
             }
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcnode,srcuser, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,srcnode, FOREIGN_DALI_TIMEOUT, false);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
@@ -902,7 +902,7 @@ public:
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
             assertex(copier);
-            if (!copier->copyFile(lfn,daliep,srclfn,user))
+            if (!copier->copyFile(lfn,daliep,srclfn,user,NULL))
                 throw MakeStringException(-1,"File %s could not be copied",lfn);
 
         }
@@ -920,7 +920,7 @@ public:
                 return;
 
             // now construct the superfile
-            Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(lfn,true,false,user);
+            Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(lfn,user,true,false);
             if (!sfile)
                 throw MakeStringException(-1,"SuperFile %s could not be created",lfn);
             ForEachItemIn(i,subfiles) {
@@ -988,7 +988,7 @@ public:
         bool *ex = (bool *)ma.allocate(dstfns.ordinality()*sizeof(bool));
         unsigned i;
         for (i=0;i<n;i++)
-            ex[i] = queryDistributedFileDirectory().exists(dstfns.item(i));
+            ex[i] = queryDistributedFileDirectory().exists(dstfns.item(i),NULL);//MORE:Pass IUserDescriptor
         for (i=0;i<n;i++) {
             if (!ex[i])
                 continue;

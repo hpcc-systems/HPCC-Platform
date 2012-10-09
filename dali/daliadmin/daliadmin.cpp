@@ -520,7 +520,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
     CDfsLogicalFileName lfn;
     lfn.set(lname);
     if (!lfn.isExternal()) {
-        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,NULL,userDesc,1000*60*5,true); //,userDesc);
+        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,NULL,1000*60*5,true); //,userDesc);
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
@@ -567,7 +567,7 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
         foreigndali.setown(createINode(ep));
     }
     unsigned start = msTick();
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",true,false,foreigndali,udesc);
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",udesc,true,false,foreigndali);
     StringBuffer ln;
     unsigned i;
     for (i=0;fields[i];i++) {
@@ -620,7 +620,7 @@ static void dfsgroup(const char *name)
 
 static void dfsmap(const char *lname)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,NULL);
     if (!file) {
         ERRLOG("File %s not found",lname);
         return;
@@ -645,15 +645,15 @@ static void dfsmap(const char *lname)
 
 //=============================================================================
 
-static int dfsexists(const char *lname)
+static int dfsexists(const char *lname,IUserDescriptor *user)
 {
-    return queryDistributedFileDirectory().exists(lname)?0:1;
+    return queryDistributedFileDirectory().exists(lname,user)?0:1;
 }
 //=============================================================================
 
 static void dfsparents(const char *lname)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,NULL);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter) 
@@ -666,7 +666,7 @@ static void dfsparents(const char *lname)
 static void dfsunlink(const char *lname)
 {
     loop {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,NULL);
         if (file) {
             Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
             if (!iter->first())
@@ -790,7 +790,7 @@ public:
 static int dfsverify(const char *name,CDateTime *cutoff)
 {
     static CIpTable dafilesrvips;
-    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name);
+    Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(name,NULL);
     if (!file) {
         ERRLOG("VERIFY: cannot find %s",name);
         return 1;
@@ -914,7 +914,7 @@ static void dfsVerifyFiles(const char *grp,unsigned days)
         cutoff.adjustTime(-60*24*days);
     }
 
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",true,false);
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",NULL,true,false);//MORE:Pass IUserDescriptor
     ForEach(*iter) {
         StringBuffer lpath;
         IPropertyTree &attr=iter->query();
@@ -929,7 +929,7 @@ static void dfsVerifyFiles(const char *grp,unsigned days)
 
 static void setprotect(const char *filename, const char *callerid)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,NULL);
     file->setProtect(callerid,true);
 }
 
@@ -937,7 +937,7 @@ static void setprotect(const char *filename, const char *callerid)
 
 static void unprotect(const char *filename, const char *callerid)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(filename,NULL);
     file->setProtect((strcmp(callerid,"*")==0)?NULL:callerid,false);
 }
 //=============================================================================
@@ -1273,7 +1273,7 @@ static void checksubfile(const char *lfn)
 
 static void listexpires(const char * lfnmask)
 {
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,true,false);
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,NULL,true,false);//MORE:Pass IUserDescriptor
     ForEach(*iter) {
         IPropertyTree &attr=iter->query();
         const char * expires = attr.queryProp("@expires");
@@ -1374,7 +1374,7 @@ static offset_t getCompressedSize(IDistributedFile *file)
 
 static void dfscompratio (const char *lname)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,NULL);
     StringBuffer out;
     out.appendf("File %s ",lname);
     if (file) {
@@ -1455,7 +1455,7 @@ static bool countScopeChildren(IPropertyTree *t,unsigned &files, unsigned &sfile
 static void dfsscopes(const char *name)
 {
     bool wild = isWild(name);
-    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(wild?NULL:name,true,true);
+    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(NULL,wild?NULL:name,true,true);//MORE:Pass IUserDescriptor
     StringBuffer ln;
     ForEach(*iter) {
         CDfsLogicalFileName dlfn;
@@ -1508,7 +1508,7 @@ static bool recursiveCheckEmptyScope(IPropertyTree &ct)
 
 static void cleanscopes()
 {
-    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(NULL,true,true);
+    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(NULL, NULL,true,true);//MORE:Pass IUserDescriptor
     CDfsLogicalFileName dlfn;
     StringBuffer s;
     StringArray toremove;
@@ -2241,7 +2241,7 @@ int main(int argc, char* argv[])
             }
             else if (stricmp(cmd,"dfsexist")==0) {
                 CHECKPARAMS(1,1);
-                ret = dfsexists(params.item(1));
+                ret = dfsexists(params.item(1),userDesc);
             }
             else if (stricmp(cmd,"dfsparents")==0) {
                 CHECKPARAMS(1,1);

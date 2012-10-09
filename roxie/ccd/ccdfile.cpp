@@ -1538,7 +1538,7 @@ IFileDescriptor *checkCloneFrom(const char *id, IFileDescriptor *fdesc)
         CDfsLogicalFileName lfn;
         lfn.set(id);
         lfn.setForeign(cloneFrom, false);
-        Owned<IDistributedFile> cloneFile = queryDistributedFileDirectory().lookup(lfn);
+        Owned<IDistributedFile> cloneFile = queryDistributedFileDirectory().lookup(lfn,NULL);//MORE:Pass IUserDescriptor
         if (cloneFile)
         {
             Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();

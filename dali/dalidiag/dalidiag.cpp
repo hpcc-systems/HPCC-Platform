@@ -273,7 +273,7 @@ void dirParts(const char *ip,const char *dir)
 
 void partInfo(const char *name,unsigned copy)
 {
-    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(name);
+    Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(name,NULL);
     if (f) {
         Owned<IDistributedFilePartIterator> parts = f->getIterator();
         unsigned partno = 0;

@@ -80,25 +80,25 @@ void testMultiCluster()
     fdesc->addCluster(grp1,mapping);
     fdesc->addCluster(grp2,mapping);
     fdesc->addCluster(grp3,mapping);
-    queryDistributedFileDirectory().removeEntry("test::testfile1");
+    queryDistributedFileDirectory().removeEntry("test::testfile1",NULL);
     Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-    queryDistributedFileDirectory().removeEntry("test::testfile1");
-    file->attach("test::testfile1");
+    queryDistributedFileDirectory().removeEntry("test::testfile1",NULL);
+    file->attach("test::testfile1",NULL);
     StringBuffer name;
     unsigned i;
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     file.clear();
-    file.setown(queryDistributedFileDirectory().lookup("test::testfile1"));
+    file.setown(queryDistributedFileDirectory().lookup("test::testfile1",NULL));
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     file.clear();
-    file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1"));
+    file.setown(queryDistributedFileDirectory().lookup("test::testfile1@testgrp1",NULL));
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     file.clear();
-    queryDistributedFileDirectory().removePhysical("test::testfile1@testgrp2");
-    file.setown(queryDistributedFileDirectory().lookup("test::testfile1"));
+    queryDistributedFileDirectory().removePhysical("test::testfile1@testgrp2",NULL);
+    file.setown(queryDistributedFileDirectory().lookup("test::testfile1",NULL));
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
 }
@@ -233,7 +233,7 @@ void checkFiles(const char *fn)
     if (fn) {
         checker.title(1,fn);
         try {
-            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn);
+            Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fn,NULL);
             if (!file)
                 printf("file '%s' not found\n",fn);
             else
@@ -247,7 +247,7 @@ void checkFiles(const char *fn)
         }
     }
     else {
-        Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator("*",false);
+        Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator("*",false,NULL);
         unsigned i=0;
         unsigned ss = msTick();
         ForEach(*iter) {
@@ -329,33 +329,33 @@ void testDFile(ClusterPartDiskMapSpec &map)
 {
     {   // 1: single part file old method
 #define TN "1"
-        queryDistributedFileDirectory().removeEntry("test::ftest"TN);
+        queryDistributedFileDirectory().removeEntry("test::ftest"TN,NULL);
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         RemoteFilename rfn;
         rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest"TN"._1_of_1");
         fdesc->setPart(0,rfn);
         fdesc->endCluster(map);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-        file->attach("test::ftest"TN);
+        file->attach("test::ftest"TN,NULL);
 #undef TN
     }
     {   // 2: single part file new method
 #define TN "2"
-        queryDistributedFileDirectory().removeEntry("test::ftest"TN);
+        queryDistributedFileDirectory().removeEntry("test::ftest"TN,NULL);
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         fdesc->setPartMask("ftest"TN"._$P$_of_$N$");
         fdesc->setNumParts(1);
         Owned<IGroup> grp = createIGroup("10.150.10.1");
         fdesc->addCluster(grp,map);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-        file->attach("test::ftest"TN);
+        file->attach("test::ftest"TN,NULL);
 #undef TN
     }
     Owned<IGroup> grp3 = createIGroup("10.150.10.1,10.150.10.2,10.150.10.3");
     queryNamedGroupStore().add("__testgroup3__",grp3,true);
     {   // 3: three parts file old method
 #define TN "3"
-        queryDistributedFileDirectory().removeEntry("test::ftest"TN);
+        queryDistributedFileDirectory().removeEntry("test::ftest"TN,NULL);
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         RemoteFilename rfn;
         rfn.setRemotePath("//10.150.10.1/c$/thordata/test/ftest"TN"._1_of_3");
@@ -366,18 +366,18 @@ void testDFile(ClusterPartDiskMapSpec &map)
         fdesc->setPart(2,rfn);
         fdesc->endCluster(map);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-        file->attach("test::ftest"TN);
+        file->attach("test::ftest"TN,NULL);
 #undef TN
     }
     {   // 4: three part file new method
 #define TN "4"
-        queryDistributedFileDirectory().removeEntry("test::ftest"TN);
+        queryDistributedFileDirectory().removeEntry("test::ftest"TN,NULL);
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         fdesc->setPartMask("ftest"TN"._$P$_of_$N$");
         fdesc->setNumParts(3);
         fdesc->addCluster(grp3,map);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-        file->attach("test::ftest"TN);
+        file->attach("test::ftest"TN,NULL);
 #undef TN
     }
 }
@@ -589,7 +589,7 @@ void testDF1()
         DistributedFilePropertyLock lock(file);
         lock.queryAttributes().setProp("@testing","1");
     }
-    file->attach("testing::propfile2");
+    file->attach("testing::propfile2",NULL);
 }
 
 void testDF2() // 4*3 superfile
