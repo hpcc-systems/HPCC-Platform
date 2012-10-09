@@ -2840,8 +2840,10 @@ sudo /sbin/service hpcc-init --component=myeclserver start
 sudo /sbin/service hpcc-init -c esp start
 </programlisting>
     </sect1>
-
-    <sect1 id="Running-HPCC-Tools-Under-WINE">
+<xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude"/>
+<sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Running the ECL IDE under WINE</title>
 
       <para>To run the ECL IDE under WINE in Linux, follow these steps.</para>
