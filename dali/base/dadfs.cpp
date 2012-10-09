@@ -3909,9 +3909,11 @@ struct SuperFileSubTreeCache
             IPropertyTree &sub = subit->query();
             unsigned sn = sub.getPropInt("@num",0);
             // HACK: This is temporary and should not linger beyond 3.8.x
-            if (subList[sn])
+            if (!sn)
+                throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, missing subfile part number",name);
+            if (subList[sn-1])
                 throw MakeStringException(-1,"CDistributedSuperFile: SuperFile %s corrupt, double subfile part number %d of %d",name,sn,n);
-            subList[sn]++;
+            subList[sn-1]++;
             // HACKEND
             if ((sn>0)&&(sn<=n)) 
                 subs[sn-1] = &sub;
