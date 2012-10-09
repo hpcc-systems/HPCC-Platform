@@ -178,6 +178,7 @@ void usage(char *prog)
 
 int main(int argc, char **argv)
 {
+    InitModuleObjects();
     try
     {
         if (argc>=2)
