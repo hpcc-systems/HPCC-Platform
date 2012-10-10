@@ -981,11 +981,11 @@ ITypeInfo * getTypeRemoveAllSortOrders(ITypeInfo * prev)
 ITypeInfo * getTypeRemoveActiveSort(ITypeInfo * prev)
 {
     IHqlExpression * grouping = queryGrouping(prev);
-    ITypeInfo * childType = prev->queryChildType();
     if (grouping)
-        return makeGroupedTableType(LINK(childType), LINK(grouping), NULL);
+        return getTypeGroupSort(prev, NULL);
 
     IHqlExpression * distribution = queryDistribution(prev);
+    ITypeInfo * childType = prev->queryChildType();
     return makeTableType(LINK(childType), LINK(distribution), NULL, NULL);
 }
 
