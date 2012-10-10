@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2>
+  <title><emphasis role="bold">Queries and Data</emphasis></title>
+
+  <para>Data files and index files referenced by a Roxie query’s ECL code are
+  made available in one of four ways, depending on the configuration of the
+  RDDE cluster.</para>
+
+  <para>There are two settings in the Roxie configuration that control where
+  Roxie looks for data and index files:</para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="123.60pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">copyResources</emphasis></entry>
+
+            <entry>Copies necessary data and key files from the current
+            location when the query is published.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">useRemoteResources</emphasis></entry>
+
+            <entry>Instructs Roxie to look for data and key files in the
+            current location after the query is published.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <graphic fileref="../../images/RM-31.jpg" />
+
+  <para>These options may appear to be mutually exclusive, but the chart below
+  shows what each of the four possible combination means.</para>
+
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="5">
+        <colspec colwidth="125.40pt" />
+
+        <tbody>
+          <row>
+            <entry>copyResources</entry>
+
+            <entry>T</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+
+            <entry>F</entry>
+          </row>
+
+          <row>
+            <entry>useRemoteResources</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+
+            <entry>T</entry>
+
+            <entry>F</entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry align="left">Directs the Roxie cluster to use the remote
+            instance of the data until it can copy the data locally. This
+            allows a query to be available immediately while the data is
+            copied.</entry>
+
+            <entry align="left">Directs the Roxie cluster to copy the data
+            locally. The query cannot be executed until the data is copied.
+            This ensures optimum performance after the data is copied.</entry>
+
+            <entry align="left">Directs the Roxie cluster to load the data
+            from a remote location. The query can be executed immediately, but
+            performance is limited by network bandwidth. This allows queries
+            to run without using any Roxie disk space, but reduces its
+            throughput capabilities.</entry>
+
+            <entry align="left">Will use data and indexes already loaded
+            (placed on the Roxie cluster using DFU ) but will not copy or read
+            remote data.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>When <emphasis role="bold">copyResources</emphasis> is enabled, data
+  files are copied from source locations to slave nodes. Index files are also
+  copied, with an extra file part that is a “key-of-keys” or a metakey.</para>
+
+  <para>A copy of the metakey is always stored on each Farmer and in most
+  cases is loaded into memory at startup to increase performance.</para>
+
+  <sect3>
+    <title><emphasis role="bold">Command Line support</emphasis></title>
+
+    <para>The ecl command line tool offers a means of copying queries from one
+    Roxie to another. Typically, this means data and index files would be
+    copied or accessed remotely following Roxie’s configuration
+    settings.</para>
+
+    <para>The ecl command line tool provides an option to instruct Roxie to
+    not copy files at the time of the query copy. This allows you to quickly
+    copy a query without copying files.</para>
+
+    <programlisting>
+ecl queries copy --no-files
+     </programlisting>
+
+    <para>This specifies to NOT copy files referenced by the query being
+    copied. The query cannot run until data is made available.</para>
+  </sect3>
+</sect2>
