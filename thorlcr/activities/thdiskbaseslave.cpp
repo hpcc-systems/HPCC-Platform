@@ -70,6 +70,8 @@ CDiskPartHandlerBase::CDiskPartHandlerBase(CDiskReadSlaveActivityBase &_activity
     which = 0;
     eoi = false;
     kindStr = activityKindStr(activity.queryContainer().getKind());
+    compressed = blockCompressed = firstInGroup = checkFileCrc = false;
+
 }
 
 void CDiskPartHandlerBase::setPart(IPartDescriptor *_partDesc, unsigned partNoSerialized)

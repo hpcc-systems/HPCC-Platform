@@ -146,7 +146,7 @@ protected:
                     {
                         StringBuffer remotePath;
                         rfn.getRemotePath(remotePath);
-                        unsigned crc;
+                        unsigned crc = 0;
                         part->getCrc(crc);
                         keyIndex.setown(createKeyIndex(remotePath.str(), crc, false, false));
                         break;
