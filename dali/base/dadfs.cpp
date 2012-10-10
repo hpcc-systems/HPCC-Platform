@@ -3902,7 +3902,7 @@ struct SuperFileSubTreeCache
         if (!name)
             name = "UNKNOWN";
         // HACK: This is temporary and should not linger beyond 3.8.x
-        unsigned subList[n];
+        unsigned *subList = (unsigned *) alloca(n * sizeof(unsigned));
         memset(subList, 0, n * sizeof(unsigned));
         // HACKEND
         ForEach (*subit) {
