@@ -513,15 +513,18 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
         type=view->queryProp("@type");
         if (!type)
             throw MakeStringException(WUWEBERR_UnknownViewType, "No type defined for view %s", viewName);
-        if (!strieq(type, "xslt") && !strieq(type, "xml"))
+        if (strieq(type, "xslt"))
+        {
+            const char *resname = view->queryProp("@resource");
+            if (!resname || !*resname)
+                throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource for %s view not defined", viewName);
+            xpath.set("Resource[@name='").append(resname).append("']/@resourcePath");
+            respath = mf->queryProp(xpath.str());
+            if (!respath || !*respath)
+                throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource %s not resolved", resname);
+        }
+        else if (!strieq(type, "xml"))
             throw MakeStringException(WUWEBERR_UnknownViewType, "View %s has an unknown type of %s", viewName, type);
-        const char *resname = view->queryProp("@resource");
-        if (!resname || !*resname)
-            throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource for %s view not defined", viewName);
-        xpath.set("Resource[@name='").append(resname).append("']/@resourcePath");
-        respath = mf->queryProp(xpath.str());
-        if (!respath || !*respath)
-            throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource %s not resolved", resname);
     }
 
     expanded.appendXML(view, "view");
