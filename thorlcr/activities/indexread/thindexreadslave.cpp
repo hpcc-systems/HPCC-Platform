@@ -56,7 +56,7 @@ static IKeyIndex *openKeyPart(CActivityBase *activity, const char *logicalFilena
         EXCLOG(e, NULL);
         throw e;
     }
-    unsigned crc;
+    unsigned crc=0;
     partDesc.getCrc(crc);
     return createKeyIndex(filePath.str(), crc, false, false);
 }

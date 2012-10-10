@@ -115,7 +115,14 @@ private:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CInlineTableSlaveActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this) { }
+    CInlineTableSlaveActivity(CGraphElementBase *_container)
+    : CSlaveActivity(_container), CThorDataLink(this)
+    {
+        helper = NULL;
+        startRow = 0;
+        currentRow = 0;
+        maxRow = 0;
+    }
     virtual bool isGrouped() { return false; }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
