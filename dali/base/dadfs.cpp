@@ -1039,7 +1039,14 @@ public:
 static void setUserDescriptor(Linked<IUserDescriptor> &udesc,IUserDescriptor *user)
 {
     if (!user)
+    {
+        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp setUserDescriptor %d",__LINE__);
+#ifdef _DALIUSER_STACKTRACE
+        //following debug code to be removed
+        PrintStackReport();
+#endif
         user = queryDistributedFileDirectory().queryDefaultUser();
+    }
     udesc.set(user);
 }
 
@@ -8594,7 +8601,7 @@ IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
         CDfsLogicalFileName dlfn;
         dlfn.set(lname);
-        Owned<CDistributedSuperFile> sfile = new CDistributedSuperFile(this,tree, dlfn, NULL);
+        Owned<CDistributedSuperFile> sfile = new CDistributedSuperFile(this,tree, dlfn, user);
         return sfile->getFileDescriptor(NULL);
     }
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_File))!=0)
@@ -8615,7 +8622,7 @@ IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,const INo
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
         CDfsLogicalFileName dlfn;
         dlfn.set(lname);
-        return new CDistributedSuperFile(this,tree, dlfn, NULL);
+        return new CDistributedSuperFile(this,tree, dlfn, user);
     }
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_File))!=0)
         return NULL; // what is it?

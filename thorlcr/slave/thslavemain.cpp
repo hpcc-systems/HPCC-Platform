@@ -441,6 +441,7 @@ int main( int argc, char *argv[]  )
 
     if (multiThorMemoryThreshold)
         setMultiThorMemoryNotify(0,NULL);
+    roxiemem::releaseRoxieHeap();
 
 #ifdef ISDALICLIENT
     closeEnvironment();

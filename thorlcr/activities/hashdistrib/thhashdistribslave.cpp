@@ -2391,6 +2391,7 @@ public:
         iCompare = helper->queryCompare();
         numHashTables = 0;
         hashTables = NULL;
+        allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracing the key,
         // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
@@ -2426,7 +2427,6 @@ public:
             rowKeyCompare = iCompare;
             iKeyHash = iHash;
         }
-        allocFlags = queryJob().queryThorAllocator()->queryFlags();
     }
     void start()
     {

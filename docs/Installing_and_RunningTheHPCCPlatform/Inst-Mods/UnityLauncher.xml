@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Unity_Launcher">
+  <title><emphasis role="bold">Unity Launcher Icon</emphasis></title>
+
+  <para>The HPCC platform supports an Ubuntu Unity Launcher icon.</para>
+
+  <para>This allows you to start, stop, restart, or query the status of an
+  installed single node system from an icon on the Unity Launcher of a desktop
+  version of Ubuntu.</para>
+
+  <para><variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>This is only useful on a single-node system at this time.
+          Future versions may operate in a different manner and support
+          multi-node HPCC systems.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist></para>
+
+  <sect2>
+    <title><emphasis role="bold">To add the icon:</emphasis></title>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Use the search on Dash Home to find the HPCC Systems application
+        icon.</para>
+
+        <figure>
+          <title>HPCC Application Icon</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GS-100.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click and Drag it to the Unity Launcher bar.</para>
+
+        <para><figure>
+            <title>Unity Launcher</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/GS-101.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Drop it on the bar.</para>
+      </listitem>
+    </orderedlist>
+
+    <variablelist>
+      <varlistentry>
+        <term>Note:</term>
+
+        <listitem>
+          <para>In Ubuntu 12.04 or later, you can move the to any position on
+          the bar by dragging and dropping to the desired position.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+  </sect2>
+
+  <sect2>
+    <title><emphasis role="bold">To use the icon:</emphasis></title>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>Rt-click on the icon, then select the desired action from the
+        menu.</para>
+
+        <para><figure>
+            <title>Context Menu</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/GS-102.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>The result displays in a Terminal window.</para>
+
+        <figure>
+          <title>Results</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GS-103.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </listitem>
+
+      <listitem>
+        <para>Close the window when you are done.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+</sect1>
