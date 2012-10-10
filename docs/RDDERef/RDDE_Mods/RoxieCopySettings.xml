@@ -6,7 +6,7 @@
 
   <para>Data files and index files referenced by a Roxie query’s ECL code are
   made available in one of four ways, depending on the configuration of the
-  RDDE cluster.</para>
+  Roxie cluster.</para>
 
   <para>There are two settings in the Roxie configuration that control where
   Roxie looks for data and index files:</para>
