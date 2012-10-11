@@ -27,6 +27,7 @@
 #include "jexcept.hpp"
 #include "jsort.hpp"
 #include "jptree.hpp"
+#include "jbuff.hpp"
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "dasess.hpp"
@@ -4134,16 +4135,25 @@ protected:
         try {
             // Find all reported indexes and bail on bad range (before we lock any file)
             Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-            unsigned index = 1; // indexes must be in order
+            // Adding a sub 'before' another get the list out of order (but still valid)
+            OwnedMalloc<unsigned> subFiles(n, true);
             ForEach (*subit)
             {
                 IPropertyTree &sub = subit->query();
                 unsigned sn = sub.getPropInt("@num",0);
-                if (sn != index++ || sn > n)
-                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: corrupt subfile part number %d of %d", logicalName.get(), sn, n);
+                if (sn == 0)
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad subfile part number %d of %d", logicalName.get(), sn, n);
+                if (sn > n)
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: out-of-range subfile part number %d of %d", logicalName.get(), sn, n);
+                if (subFiles[sn-1])
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: duplicated subfile part number %d of %d", logicalName.get(), sn, n);
+                subFiles[sn-1] = 1;
             }
-            if (--index != n)
-                ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad number of files. Expecting %d, got %d", logicalName.get(), n, index);
+            for (unsigned i=0; i<n; i++)
+            {
+                if (!subFiles[i])
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: missing subfile part number %d of %d", logicalName.get(), i+1, n);
+            }
 
             // Now try to resolve them all (file/superfile)
             ForEach (*subit)
