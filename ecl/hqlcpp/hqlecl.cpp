@@ -248,8 +248,6 @@ bool HqlDllGenerator::generatePackage(const char * packageName)
 
 bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 {
-    wu->resetBeforeGeneration();
-
     noOutput = true;
     {
         // ensure warnings/errors are available before we do the processing...
