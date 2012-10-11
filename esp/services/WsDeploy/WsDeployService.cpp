@@ -4373,9 +4373,9 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
           break;
         }
       }
-      resp.setStatus(errMsg.length() > 1 ? errMsg.str() : "true");
       resp.setCompName(compName);
     }
+    resp.setStatus(errMsg.length() > 1 ? errMsg.str() : "true");
   }
   else if (!strcmp(operation, "Duplicate"))
   {
