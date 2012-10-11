@@ -24,14 +24,8 @@ set_environmentvars
 
 if [ -e /etc/debian_version ]; then
     dpkg --purge hpccsystems-platform
-    dpkg --purge hpccsystems-clienttools
-    dpkg --purge hpccsystems-graphcontrol
-    dpkg --purge hpccsystems-documentation
 elif [ -e /etc/redhat-release -o -e /etc/SuSE-release ]; then
     echo "Removing RPM"
-    rpm -e hpccsystems-clienttools
-    rpm -e hpccsystems-graphcontrol
-    rpm -e hpccsystems-documentation
     rpm -e hpccsystems-platform
 fi
 
