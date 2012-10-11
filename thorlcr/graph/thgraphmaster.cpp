@@ -1706,6 +1706,11 @@ __int64 CJobMaster::getWorkUnitValueInt(const char *prop, __int64 defVal) const
     return queryWorkUnit().getDebugValueInt64(prop, defVal);
 }
 
+bool CJobMaster::getWorkUnitValueBool(const char *prop, bool defVal) const
+{
+    return queryWorkUnit().getDebugValueBool(prop, defVal);
+}
+
 StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
     SCMStringBuffer scmStr;

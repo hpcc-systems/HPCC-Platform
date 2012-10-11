@@ -59,14 +59,6 @@
 #define DISK_BUFFER_SIZE 0x10000 // 64K
 #define DEFAULT_TIMEOUT (1000*60*60)
 
-static bool isMaster(unsigned src,unsigned dst)
-{
-    // simple way of connecting up directed graph in balanced fashion
-    if (src>dst)
-        return !isMaster(dst,src);
-    return (src&1)==(dst&1);
-}
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
@@ -83,12 +75,11 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor
     IHash *ihash;
     Owned<IRowStream> innm;
 
-    size32_t metasize;
     Semaphore distribdone;
     ICompare *icompare;
     CMessageBuffer outputbuf;
     size32_t outputBufferSize;
-    bool dedup;
+    bool dedup, allowSpill;
     StringBuffer tempname;
     int outfh;
     Owned<IException> sendexc;
@@ -102,12 +93,11 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor
     unsigned numsendfinished;
     bool selfstopped;
     size32_t fixedEstSize;
-    Owned<IRowWriter> pipewr;               // NB not Thor rows!
+    Owned<IRowWriter> pipewr;
     roxiemem::IRowManager *rowManager;
 protected:
     Owned<ISmartRowBuffer> piperd;
     Linked<IOutputRowDeserializer> deserializer;
-
 
     class cRecvThread: public Thread
     {
@@ -156,7 +146,6 @@ protected:
     size32_t inputBufferSize, pullBufferSize;
     unsigned self;
     unsigned numnodes;
-    Owned<IRandomNumberGenerator> irandom;
     CriticalSection putsect;
     bool pull;
 public:
@@ -171,7 +160,6 @@ public:
         numnodes = 0;
         icompare = NULL;
 
-        outfh = -1;
         outputBufferSize = globals->getPropInt("@hd_out_buffer_size", DEFAULT_OUT_BUFFER_SIZE);
         outputbuf.reserveTruncate(outputBufferSize+2);  // 2 for trailing flag
         nodedupcount = 0;
@@ -187,13 +175,18 @@ public:
         rowManager = activity->queryJob().queryRowManager();
         if (fixedEstSize)
             fixedEstSize = rowManager->getExpectedCapacity(fixedEstSize, 0);
+
+        unsigned defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist"));
+        allowSpill = activity->queryContainer().queryXGMML().getPropBool("hint[@name=\"allow_spill\"]/@value", defaultAllowSpill);
+        if (allowSpill)
+            ActPrintLog(activity, "Using spilling buffer (will spill if overflows)");
     }
 
     ~CDistributorBase()
     {
-        try {
+        try
+        {
             disconnect(true); // in case exception
-            removetemp();
         }
         catch (IException *e)
         {
@@ -218,27 +211,20 @@ public:
         if (_pullBufferSize) pullBufferSize = _pullBufferSize;
     }
 
-    virtual IRowStream *doconnect(size32_t _metasize, IHash *_ihash, ICompare *_icompare)
+    virtual IRowStream *connect(IRowStream *_input, IHash *_ihash, ICompare *_icompare)
     {
         ActPrintLog(activity, "HASHDISTRIB: connect");
-        metasize = _metasize;
+        innm.set(_input);
         ihash = _ihash;
         icompare = _icompare;
-        irandom.setown(createRandomNumberGenerator());
-        irandom->seed(self);
-        piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));
-/*
-        if (allowspill)
+        if (allowSpill)
         {
             StringBuffer temp;
-            GetTempName(temp,"hdlookahd", true);
-            piperd.setown(createSmartBuffer(&activity, temp.toCharArray(), pullBufferSize));
+            GetTempName(temp,"hddrecvbuff", true);
+            piperd.setown(createSmartBuffer(activity, temp.toCharArray(), pullBufferSize, rowIf));
         }
         else
-            piperd.setown(createSmartInMemoryBuffer(activity, activity, pullBufferSize));
-            smartbuf.setown(createSmartInMemoryBuffer(&activity, queryRowInterfaces(in), bufsize));
-  */
-
+            piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));
 
         pipewr.set(piperd->queryWriter());
         connected = true;
@@ -259,13 +245,6 @@ public:
         return piperd.getLink();
     }
 
-    virtual IRowStream *connect(IRowStream *_in, IHash *_ihash, ICompare *_icompare)
-    {
-        innm.set(_in);
-        return doconnect(0, _ihash,_icompare);
-    }
-
-
     virtual void disconnect(bool stop)
     {
         if (connected) {
@@ -283,18 +262,6 @@ public:
             if (recvexc.get())
                 throw recvexc.getClear();
 
-        }
-    }
-
-    virtual void removetemp()
-    {
-        if (outfh!=-1) {
-            close(outfh);
-            outfh = -1;
-        }
-        if (tempname.length()) {
-            remove(tempname.toCharArray());
-            tempname.clear();
         }
     }
 
@@ -928,7 +895,6 @@ class CRowPullDistributor: public CDistributorBase
             assertex(idx<numnodes);
             bufs[idx].resetBuffer();
         }
-
     };
     void clean()
     {
@@ -1015,7 +981,6 @@ public:
             setRecvExc(e);
         }
     }
-
 
     virtual bool sendBlock(unsigned i, CMessageBuffer &msg)
     {
@@ -1270,7 +1235,6 @@ public:
         if (distributor)
         {
             distributor->disconnect(false);
-            distributor->removetemp();
             distributor->join();
             distributor->Release();
         }
@@ -1328,7 +1292,6 @@ public:
         }
         if (distributor) {
             distributor->disconnect(true);
-            distributor->removetemp();
             distributor->join();
         }
         stopInput();
@@ -2651,7 +2614,6 @@ public:
         if (distributor)
         {
             distributor->disconnect(false);
-            distributor->removetemp();
             distributor->join();
             distributor->Release();
         }
@@ -2686,7 +2648,6 @@ public:
             instrm.clear();
         }
         distributor->disconnect(true);
-        distributor->removetemp();
         distributor->join();
         stopInput();
         dataLinkStop();
@@ -2775,7 +2736,6 @@ public:
         reader.clear();
         stopInputL();
         distributor->disconnect(false);
-        distributor->removetemp();
         distributor->join();
         distributor.clear();
         leftdone = true;
@@ -2787,7 +2747,6 @@ public:
         reader.clear();
         stopInputR();
         distributor->disconnect(false);
-        distributor->removetemp();
         distributor->join();
         distributor.clear();
         { CriticalBlock b(joinHelperCrit);
@@ -3001,7 +2960,6 @@ CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator 
     strm->stop();
     strm.clear();
     distributor->disconnect(true);
-    distributor->removetemp();
     distributor->join();
     distributor.clear();
 

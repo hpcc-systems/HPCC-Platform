@@ -879,6 +879,7 @@ public:
     virtual void markWuDirty() { };
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const = 0;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const = 0;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const = 0;
     const char *queryWuid() const { return wuid.str(); }
     const char *queryUser() const { return user.str(); }
     const char *queryScope() const { return scope.str(); }
