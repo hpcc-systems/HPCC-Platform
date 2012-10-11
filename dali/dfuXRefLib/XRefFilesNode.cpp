@@ -153,7 +153,7 @@ bool CXRefFilesNode::RemovePhysical(const char *Partmask,IUserDescriptor* udesc,
     bool exists = false;
     StringBuffer lfn;
     if (LogicalNameFromMask(Partmask,lfn)) {
-        if (queryDistributedFileDirectory().exists(lfn.str(),true)) 
+        if (queryDistributedFileDirectory().exists(lfn.str(),udesc,true)) 
             exists = true;
     }
     if (!checkPartsInCluster(Partmask,clustername,subBranch,errstr,exists))
@@ -312,7 +312,7 @@ bool CXRefFilesNode::AttachPhysical(const char *Partmask,IUserDescriptor* udesc,
         return false;
     }
 
-    if (queryDistributedFileDirectory().exists(logicalName.toCharArray()))
+    if (queryDistributedFileDirectory().exists(logicalName.toCharArray(),udesc))
     {
         ERRLOG("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());
         errstr.appendf("Logical File %s already Exists. Can not reattach to Dali",logicalName.str());

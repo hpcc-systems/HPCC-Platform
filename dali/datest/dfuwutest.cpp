@@ -566,10 +566,10 @@ void testRoxieCopies()
         PROGLOG("E--------------------------");
         StringBuffer fn("testing::file");
         fn.append(i);
-        queryDistributedFileDirectory().removeEntry(fn.str());
-        file->attach(fn.str());
+        queryDistributedFileDirectory().removeEntry(fn.str(),UNKNOWN_USER);
+        file->attach(fn.str(),UNKNOWN_USER);
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup(fn.str()));
+        file.setown(queryDistributedFileDirectory().lookup(fn.str(),UNKNOWN_USER));
         Owned<IFileDescriptor> fdesc4 = file->getFileDescriptor();
         printDesc(fdesc4);
     }
