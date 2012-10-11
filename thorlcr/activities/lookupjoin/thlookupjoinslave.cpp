@@ -367,7 +367,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     Owned<IException> leftexception;
     Semaphore leftstartsem;
     CThorExpandingRowArray rhs, ht;
-    bool eos;
+    bool eos, needGlobal;
     unsigned flags;
     bool exclude;
     unsigned candidateMatches, abortLimit, atMost;
@@ -484,14 +484,15 @@ public:
         returnMany = false;
         candidateMatches = 0;
         atMost = 0;
+        needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
     }
     ~CLookupJoinActivity()
     {
         ForEachItemIn(a, rhsNodeRows)
         {
-            CThorExpandingRowArray *rhsRows = rhsNodeRows.item(a);
-            if (rhsRows)
-                rhsRows->Release();
+            CThorExpandingRowArray *rows = rhsNodeRows.item(a);
+            if (rows)
+                rows->Release();
         }
     }
     void stopRightInput()
@@ -529,7 +530,6 @@ public:
         rightHash = NULL;
         compareLeftRight = NULL;
         keepLimit = 0;
-        fuzzyMatch = 0 != (JFmatchrequired & flags);
         switch (joinKind)
         {
             case join_all:
@@ -539,6 +539,7 @@ public:
                 flags = allJoinHelper->getJoinFlags();
                 returnMany = true;
                 keepLimit = allJoinHelper->getKeepLimit();
+                fuzzyMatch = 0 != (JFmatchrequired & flags);
                 break;
             }
             case join_lookup:
@@ -556,6 +557,7 @@ public:
                 abortLimit = hashJoinHelper->getMatchAbortLimit();
                 atMost = hashJoinHelper->getJoinLimit();
 
+                fuzzyMatch = 0 != (JFmatchrequired & flags);
                 bool maySkip = 0 != (flags & JFtransformMaySkip);
                 dedup = compareRight && !maySkip && !fuzzyMatch && (!returnMany || 1==keepLimit);
 
@@ -593,7 +595,6 @@ public:
         rhsNodeRows.ensure(slaves);
         while (slaves--)
             rhsNodeRows.append(new CThorExpandingRowArray(*this, NULL, true)); // true, nulls not needed?
-
         StringBuffer str;
         ActPrintLog("%s: Join type is %s", joinStr.get(), getJoinTypeStr(str).str());
     }
@@ -1158,7 +1159,7 @@ public:
         right->getMetaInfo(rightMeta);
         if (rightMeta.totalRowsMin == rightMeta.totalRowsMax)
             rhsTotalCount = rightMeta.totalRowsMax;
-        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
+        if (needGlobal)
         {
             CMessageBuffer msg;
             msg.append(rhsTotalCount);
@@ -1187,7 +1188,7 @@ public:
         Owned<IException> exception;
         try
         {
-            if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
+            if (needGlobal)
             {
                 rowProcessor.start();
                 broadcaster.start(this, mpTag, stopping);
@@ -1196,7 +1197,7 @@ public:
                 rowProcessor.wait();
             }
             else if (!stopping)
-            {   // single node or local
+            {
                 while (!abortSoon)
                 {
                     OwnedConstThorRow row = right->ungroupedNextRow();
@@ -1223,9 +1224,9 @@ public:
     }
     void prepareRHS()
     {
-        rowidx_t maxRows = 0;
-        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
+        if (needGlobal)
         {
+            rowidx_t maxRows = 0;
             ForEachItemIn(a, rhsNodeRows)
             {
                 CThorExpandingRowArray &rows = *rhsNodeRows.item(a);
@@ -1236,25 +1237,47 @@ public:
                 assertex(maxRows == rhsTotalCount);
             }
             rhsRows = maxRows;
+        }
+        else // local
+        {
+            if (RCUNSET != rhsTotalCount)
+                rhsRows = rhsTotalCount;
+            else // all join, or lookup if total count unkown
+                rhsRows = rhs.ordinality();
+        }
+        if (RCUNSET == rhsTotalCount) //NB: if rhsTotalCount known, will have been sized earlier
+        {
             if (isAll())
-                rhs.ensure(maxRows);
+            {
+                if (needGlobal) // otherwise (local), it expanded as rows added
+                    rhs.ensure(rhsRows);
+            }
+            else
+            {
+                rhsTableLen = getHTSize(rhsRows);
+                ht.ensure(rhsTableLen); // Pessimistic if LOOKUP,KEEP(1)
+                ht.clearUnused();
+                if (!needGlobal)
+                {
+                    rowidx_t r=0;
+                    for (; r<rhs.ordinality(); r++)
+                        addRowHt(rhs.getClear(r));
+                    rhs.kill(); // free up ptr table asap
+                }
+                // else built up from rhsNodeRows
+            }
         }
-        else if (isLookup()) // local & lookup
-            maxRows = rhs.ordinality();
-        if (RCUNSET == rhsTotalCount && isLookup())
+        if (needGlobal)
         {
-            rhsTableLen = getHTSize(maxRows);
-            ht.ensure(rhsTableLen); // pesimistic if LOOKUP,KEEP(1)
-            ht.clearUnused();
-        }
-        // JCSMORE - would be nice to make this multi-core, clashes and compares can be expensive
-        ForEachItemIn(a2, rhsNodeRows)
-        {
-            CThorExpandingRowArray &rows = *rhsNodeRows.item(a2);
-            rowidx_t r=0;
-            for (; r<rows.ordinality(); r++)
-                addRow(rows.getClear(r));
-            rows.kill(); // free up ptr table asap
+            // JCSMORE - would be nice to make this multi-core, clashes and compares can be expensive
+            ForEachItemIn(a2, rhsNodeRows)
+            {
+                CThorExpandingRowArray &rows = *rhsNodeRows.item(a2);
+                rowidx_t r=0;
+                for (; r<rows.ordinality(); r++)
+                    addRow(rows.getClear(r));
+                rows.kill(); // free up ptr table asap
+            }
         }
         ActPrintLog("rhs table: %d elements", rhsRows);
         if (isLookup())
