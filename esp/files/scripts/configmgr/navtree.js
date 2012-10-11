@@ -579,7 +579,7 @@ function createNavigationTree(navTreeData) {
     }
 
     navDT.clearTextSelection();
-    if (oArgs.event.button === 2)
+    if (oArgs.event.button === 2 && navDT.getSelectedRows().length == 1)
       navDT.onEventSelectRow(oArgs);
 
     var selectedRows;
