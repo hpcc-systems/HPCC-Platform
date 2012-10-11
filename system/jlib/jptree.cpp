@@ -1716,13 +1716,7 @@ IPropertyTree *PTree::queryPropTree(const char *xpath) const
     {
         element = &iter->query();
         if (iter->next())
-        {
-#ifdef _DEBUG
             AMBIGUOUS_PATH("getProp",xpath);
-#else
-            LOG(MCoperatorWarning, unknownJob, "getProp: ambiguous xpath '%s', in parent node '%s'", xpath, queryName());
-#endif
-        }
     }
     return element;
 }
