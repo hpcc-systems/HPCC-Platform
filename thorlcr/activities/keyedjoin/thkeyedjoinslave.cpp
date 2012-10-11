@@ -1577,6 +1577,8 @@ public:
         onFailTransform = localKey = keyHasTlk = false;
         dataRemote = false;
         fetchHandler = NULL;
+        fPosToNodeMap = NULL;
+        fPosToLocalPartMap = NULL;
 
 #ifdef TRACE_USAGE
         unsigned it=0;
@@ -1589,6 +1591,8 @@ public:
     }
     ~CKeyedJoinSlave()
     {
+        delete fPosToNodeMap;
+        delete fPosToLocalPartMap;
         while (doneGroups.ordinality())
         {
             CJoinGroup *jg = doneGroups.dequeue();
@@ -1977,12 +1981,12 @@ public:
         if (needsDiskRead)
         {
             Owned<IOutputMetaData> meta = createFixedSizeMetaData(KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta.getClear(), queryActivityId()));
+            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
         }
         else
         {
             Owned<IOutputMetaData> meta = createOutputMetaDataWithChildRow(joinFieldsAllocator, KEYLOOKUP_HEADER_SIZE);
-            keyLookupAllocator.setown(queryJob().getRowAllocator(meta.getClear(), queryActivityId()));
+            keyLookupAllocator.setown(queryJob().getRowAllocator(meta, queryActivityId()));
         }
 
         indexInputAllocator.setown(queryJob().getRowAllocator(helper->queryIndexReadInputRecordSize(), queryActivityId()));
