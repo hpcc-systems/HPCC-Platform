@@ -105,7 +105,7 @@ public:
     }
     inline unsigned elapsedMs()
     {
-        return cycle_to_nanosec(elapsedCycles())/1000000;
+        return static_cast<unsigned>(cycle_to_nanosec(elapsedCycles())/1000000);
     }
 };
 
