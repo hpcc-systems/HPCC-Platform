@@ -216,7 +216,7 @@ extern FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory &
 
 
 extern FILEVIEW_API IResultSetFactory * getResultSetFactory(const char * username, const char * password);
-extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager &secmgr, ISecUser &secuser);
+extern FILEVIEW_API IResultSetFactory * getSecResultSetFactory(ISecManager *secmgr, ISecUser *secuser, const char * username, const char * password);
 
 extern FILEVIEW_API IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password);
 extern FILEVIEW_API IResultSetFactory * getSecRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);

@@ -1726,7 +1726,8 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                 flags|=WUINFO_IncludeWorkflows;
             if (!req.getSuppressResultSchemas())
                 flags|=WUINFO_IncludeEclSchemas;
-
+            if (req.getIncludeXmlSchemas())
+                flags|=WUINFO_IncludeXmlSchema;
             try
             {
                 WsWuInfo winfo(context, wuid.str());
@@ -2403,7 +2404,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     return true;
 }
 
-void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin)
+void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd)
 {
     if (!result)
         return;
@@ -2429,11 +2430,11 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
             MemoryBuffer & buffer;
         } adaptor(mb);
 
-        count = getResultXml(adaptor, result, name, (unsigned) start, count, "myschema");
+        count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
     }
 }
 
-void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start, unsigned& count, __int64& total, IStringVal& resname, bool bin, MemoryBuffer& mb)
+void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start, unsigned& count, __int64& total, IStringVal& resname, bool bin, MemoryBuffer& mb, bool xsd=true)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
@@ -2465,12 +2466,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     if (!resname.length())
         result->getResultName(resname);
 
-    Owned<IResultSetFactory> resultSetFactory;
-    if (context.querySecManager())
-        resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-    else
-        resultSetFactory.setown(getResultSetFactory(context.queryUserId(), context.queryPassword()));
-
+    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     SCMStringBuffer logicalName;
     result->getResultLogicalName(logicalName);
     Owned<INewResultSet> rs;
@@ -2481,7 +2477,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
-    appendResultSet(mb, rs, name, start, count, total, bin);
+    appendResultSet(mb, rs, name, start, count, total, bin, xsd);
 }
 
 void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
@@ -2820,16 +2816,11 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
     return true;
 }
 
-void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,IStringVal& resname,bool bin, MemoryBuffer& buf)
+void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,IStringVal& resname,bool bin, MemoryBuffer& buf, bool xsd)
 {
-    Owned<IResultSetFactory> resultSetFactory;
-    if (context.querySecManager())
-        resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-    else
-        resultSetFactory.setown(getResultSetFactory(context.queryUserId(), context.queryPassword()));
-
+    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
-    appendResultSet(buf, result, resname.str(), start, count, total, bin);
+    appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd);
 }
 
 void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer& cluster, bool checkArchiveWUs)
@@ -2871,6 +2862,7 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         __int64 start = req.getStart() > 0 ? req.getStart() : 0;
         unsigned count=req.getCount() ? req.getCount() : 100, requested=count;
         unsigned seq = req.getSequence();
+        bool inclXsd = !req.getSuppressXmlSchema();
 
         VStringBuffer filter("start=%"I64F"d;count=%d", start, count);
         addToQueryString(filter, "clusterName", req.getCluster(), ';');
@@ -2879,10 +2871,13 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
             addToQueryString(filter, "wuid", wuid, ';');
         addToQueryString(filter, "resultName", req.getResultName(), ';');
         filter.appendf(";seq=%d;", seq);
+        if (inclXsd)
+            filter.append("xsd;");
 
         const char* logicalName = req.getLogicalName();
         const char* clusterName = req.getCluster();
         const char* resultName = req.getResultName();
+
         Owned<DataCacheElement> data = dataCache->lookup(context, filter, awusCacheMinutes);
         if (data)
         {
@@ -2917,12 +2912,12 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
                     getWorkunitCluster(context, lwuid.str(), cluster, true);
                 if (cluster.length())
                 {
-                    getFileResults(context, logicalName, cluster.str(), start, count, total, name, false, mb);
+                    getFileResults(context, logicalName, cluster.str(), start, count, total, name, false, mb, inclXsd);
                     resp.setLogicalName(logicalName);
                 }
                 else if (notEmpty(clusterName))
                 {
-                    getFileResults(context, logicalName, clusterName, start, count, total, name, false, mb);
+                    getFileResults(context, logicalName, clusterName, start, count, total, name, false, mb, inclXsd);
                     resp.setLogicalName(logicalName);
                 }
                 else
@@ -2931,13 +2926,13 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
             else if (notEmpty(wuid) && notEmpty(resultName))
             {
                 name.set(resultName);
-                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, mb);
+                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, mb, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
             else
             {
-                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, mb);
+                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, mb, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
