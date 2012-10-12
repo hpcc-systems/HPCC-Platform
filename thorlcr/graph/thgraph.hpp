@@ -960,7 +960,7 @@ public:
     bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
-
+    IRowInterfaces *getRowInterfaces();
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
     virtual void clearConnections() { }

@@ -2754,6 +2754,12 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
     return rowDeserializer;
 }
 
+IRowInterfaces *CActivityBase::getRowInterfaces()
+{
+    // create an independent instance, to avoid circular link dependency problems
+    return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
+}
+
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
 {
     BooleanOnOff onOff(receiving);
