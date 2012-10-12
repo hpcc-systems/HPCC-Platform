@@ -1318,14 +1318,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
                 value.set(val->queryProp(NULL));
             else
             {
-                StringBuffer user, password;
-                context.getUserID(user);
-                context.getPassword(password);
-                Owned<IResultSetFactory> resultSetFactory;
-                if (context.querySecManager())
-                    resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-                else
-                    resultSetFactory.setown(getResultSetFactory(user, password));
+                Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
                 Owned<INewResultSet> result;
                 result.setown(resultSetFactory->createNewResultSet(&r, wuid.str()));
                 Owned<IResultSetCursor> cursor(result->createCursor());
@@ -1391,6 +1384,17 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
         IArrayOf<IEspECLSchemaItem> schemas;
         if (getResultEclSchemas(r, schemas))
             result->setECLSchemas(schemas);
+    }
+    if (flags & WUINFO_IncludeXmlSchema)
+    {
+        Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
+        Owned<INewResultSet> rs = resultSetFactory->createNewResultSet(&r, wuid.str());
+        Owned<IResultSetCursor> cursor(rs->createCursor());
+
+        SCMStringBuffer xsd;
+        const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
+        meta.getXmlXPathSchema(xsd, false);
+        result->setXmlSchema(xsd.str());
     }
 
     if (filename.length())

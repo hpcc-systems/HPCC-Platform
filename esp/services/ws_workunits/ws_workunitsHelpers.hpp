@@ -103,19 +103,20 @@ private:
     int numinf;
 };
 
-#define WUINFO_TruncateEclTo64k         0x001
-#define WUINFO_IncludeExceptions        0x002
-#define WUINFO_IncludeGraphs            0x004
-#define WUINFO_IncludeResults           0x008
-#define WUINFO_IncludeVariables         0x010
-#define WUINFO_IncludeTimers            0x020
-#define WUINFO_IncludeDebugValues       0x040
-#define WUINFO_IncludeApplicationValues 0x080
-#define WUINFO_IncludeWorkflows         0x100
-#define WUINFO_IncludeEclSchemas        0x200
-#define WUINFO_IncludeSourceFiles       0x400
-#define WUINFO_IncludeResultsViewNames  0x800
-#define WUINFO_All                      0xFFF
+#define WUINFO_TruncateEclTo64k         0x0001
+#define WUINFO_IncludeExceptions        0x0002
+#define WUINFO_IncludeGraphs            0x0004
+#define WUINFO_IncludeResults           0x0008
+#define WUINFO_IncludeVariables         0x0010
+#define WUINFO_IncludeTimers            0x0020
+#define WUINFO_IncludeDebugValues       0x0040
+#define WUINFO_IncludeApplicationValues 0x0080
+#define WUINFO_IncludeWorkflows         0x0100
+#define WUINFO_IncludeEclSchemas        0x0200
+#define WUINFO_IncludeSourceFiles       0x0400
+#define WUINFO_IncludeResultsViewNames  0x0800
+#define WUINFO_IncludeXmlSchema         0x1000
+#define WUINFO_All                      0xFFFF
 
 class WsWuInfo
 {

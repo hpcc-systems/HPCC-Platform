@@ -2614,8 +2614,8 @@ CThorStats::CThorStats(const char *_prefix)
     {
         labelMin.set("min");
         labelMax.set("max");
-        labelMinSkew.set("minSkew");
-        labelMaxSkew.set("maxSkew");
+        labelMinSkew.set("minskew");
+        labelMaxSkew.set("maxskew");
         labelMinEndpoint.set("minEndpoint");
         labelMaxEndpoint.set("maxEndpoint");
     }

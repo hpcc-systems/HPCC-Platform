@@ -3273,12 +3273,7 @@ bool CWsDfuEx::onDFUGetDataColumns(IEspContext &context, IEspDFUGetDataColumnsRe
                     throw MakeStringException(ECLWATCH_INVALID_ACTION,"This feature is not designed to work with a superfile which contains multiple subfiles.");
             }
 
-            Owned<IResultSetFactory> resultSetFactory;
-            if (context.querySecManager())
-                resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-            else
-                resultSetFactory.setown(getResultSetFactory(username, passwd));
-
+            Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
             Owned<INewResultSet> result;
             if (m_clusterName.length() > 0)
             {
@@ -4029,12 +4024,7 @@ bool CWsDfuEx::onDFUBrowseData(IEspContext &context, IEspDFUBrowseDataRequest &r
             ;
         }
 
-        Owned<IResultSetFactory> resultSetFactory;
-        if (context.querySecManager())
-            resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-        else
-            resultSetFactory.setown(getResultSetFactory(username, passwd));
-
+        Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), *context.queryUser());
         Owned<INewResultSet> result;
         if (eclqueue && *eclqueue && cluster && *cluster)
         {
@@ -5033,14 +5023,8 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
         DBGLOG("Unknown Exception - view data file: %s", indexName);
     }
 
-    Owned<IResultSetFactory> resultSetFactory;
-    if (context.querySecManager())
-        resultSetFactory.setown(getSecResultSetFactory(*context.querySecManager(), *context.queryUser()));
-    else
-        resultSetFactory.setown(getResultSetFactory(username, passwd));
-
+    Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<IViewFileWeb> web;
-    //Owned<INewResultSet> result;
     if (cluster && *cluster)
     {
         web.setown(createViewFileWeb(*resultSetFactory, cluster));
