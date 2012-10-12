@@ -1041,18 +1041,23 @@ FILESERVICES_API bool FILESERVICES_CALL fsSuperFileExists(ICodeContext *ctx, con
 
 FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, const char *lsuperfn,bool deletesub)
 {
-    // Note because deleting a superfile, not within transaction (currently)
+    IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     Owned<IDistributedSuperFile> file;
     StringBuffer lsfn;
     bool found = lookupSuperFile(ctx, lsuperfn, file, false, lsfn, false);
-    if (found) {
-        CheckNotInTransaction(ctx,"DeleteSuperFile");
-        if (deletesub)
-            file->removeSubFile(NULL,true,true,false);
-        file->detach();
-    }
+    file.clear(); // MORE: this should really be exists(file)
     StringBuffer s("DeleteSuperFile ('");
-    s.append(lsfn).appendf("') %s",found?"done":"not found");
+    s.append(lsfn).appendf("')");
+    if (found) {
+        queryDistributedFileDirectory().removeSuperFile(lsfn.str(), deletesub, udesc, transaction);
+        if (transaction->active())
+            s.append(" action added to transaction");
+        else
+            s.append(" done");
+    } else {
+        s.append(" file not found");
+    }
     WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
     if (found)
         AuditMessage(ctx,"DeleteSuperFile",lsfn.str());
