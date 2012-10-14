@@ -646,21 +646,19 @@
                                 <xsl:value-of select="$logPath"/>
                               </xsl:if>
                             </xsl:attribute>
-                            <xsl:if test="$compType='EclAgentProcess'">
-                              <xsl:attribute name="onclick">
-                                <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
-                                <xsl:value-of select="Netaddress"/>
-                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
-                                <xsl:value-of select="translate($logPath, '\', '/')"/>
-                                <xsl:text disable-output-escaping="yes">', '</xsl:text>
-                                <xsl:value-of select="$url"/>
-                                <xsl:text disable-output-escaping="yes">', "</xsl:text>
-                                <xsl:value-of select="$pageCaption"/>
-                                <xsl:text disable-output-escaping="yes">", </xsl:text>
-                                <xsl:value-of select="OS"/>
-                                <xsl:text disable-output-escaping="yes">);</xsl:text>
-                              </xsl:attribute>
-                            </xsl:if>
+                            <xsl:attribute name="onclick">
+                              <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
+                              <xsl:value-of select="Netaddress"/>
+                              <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                              <xsl:value-of select="translate($logPath, '\', '/')"/>
+                              <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                              <xsl:value-of select="$url"/>
+                              <xsl:text disable-output-escaping="yes">', "</xsl:text>
+                              <xsl:value-of select="$pageCaption"/>
+                              <xsl:text disable-output-escaping="yes">", </xsl:text>
+                              <xsl:value-of select="OS"/>
+                              <xsl:text disable-output-escaping="yes">);</xsl:text>
+                            </xsl:attribute>
                             <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file" width="19" height="16"/>
                           </a>
                         </xsl:if>
