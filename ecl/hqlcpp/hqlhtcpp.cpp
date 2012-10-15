@@ -5297,14 +5297,18 @@ void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, 
 }
 
 
-void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName)
+void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &funcName)
 {
     BuildCtx declarectx(*code, declareAtom);
-    appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
     OwnedHqlExpr attr = createAttribute(lookupAtom, LINK(record));
     HqlExprAssociation * match = declarectx.queryMatchExpr(attr);
-    if (!match)
+    if (match)
+        match->queryExpr()->toString(funcName);
+    else
     {
+        StringBuffer lookupHelperName;
+        appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
+
         BuildCtx classctx(declarectx);
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         HqlExprArray keyedFields;
@@ -5322,8 +5326,16 @@ void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *r
         buildHashOfExprsClass(classctx, "Hash", keyedList, dictRef, false);
         buildCompareMember(classctx, "Compare", keyedList, dictRef);
         endNestedClass();
-        OwnedHqlExpr temp = createVariable(lookupHelperName, makeVoidType());
-        declarectx.associateExpr(attr, temp);
+
+        if (queryOptions().spanMultipleCpp)
+        {
+            createAccessFunctions(funcName, declarectx, BuildCtx::NormalPrio, "IHThorHashLookupInfo", lookupHelperName);
+            funcName.append("()");
+        }
+        else
+            funcName.append(lookupHelperName);
+        OwnedHqlExpr func = createVariable(funcName, makeVoidType());
+        declarectx.associateExpr(attr, func);
     }
 }
 
