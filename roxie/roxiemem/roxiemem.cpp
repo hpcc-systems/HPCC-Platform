@@ -104,6 +104,7 @@ atomic_t dataBufferPages;
 atomic_t dataBuffersActive;
 
 const unsigned UNSIGNED_BITS = sizeof(unsigned) * 8;
+const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
 const unsigned TOPBITMASK = 1<<(UNSIGNED_BITS-1);
 
 template <typename VALUE_TYPE, typename ALIGN_TYPE>
@@ -193,7 +194,7 @@ extern void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk)
             unsigned t = heapBitmap[i];
             if (t)
             {
-                if (t==(unsigned)-1)
+                if (t==UNSIGNED_ALLBITS)
                 {
                     thisBlock += UNSIGNED_BITS;
                     freePages += UNSIGNED_BITS;
@@ -291,7 +292,7 @@ static StringBuffer &memmap(StringBuffer &stats)
         if (i % 2) stats.appendf("  ");
         else stats.appendf("\n%p: ", heapBase + i*UNSIGNED_BITS*HEAP_ALIGNMENT_SIZE);
 
-        if (heapBitmap[i] == (unsigned) -1) {
+        if (heapBitmap[i] == UNSIGNED_ALLBITS) {
             stats.appendf("11111111111111111111111111111111");
             freePages += UNSIGNED_BITS;
             thisBlock += UNSIGNED_BITS;
@@ -335,7 +336,7 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
 {
     //It would be tempting to make this lock free and use cas, but on reflection I suspect it will perform worse.
     //The problem is allocating multiple pages which fit into two unsigneds.  Because they can't be covered by a
-    //single cas you are likely to livelock if two occured at the same time.
+    //single cas you are likely to livelock if two occurred at the same time.
     //It could be mitigated by starting at a "random" position, but that is likely to increase fragmentation,
     //It can be revisited if it proves to be a bottleneck - unlikely until we have several Tb of memory.
     if (statsCyclesInterval)
@@ -535,6 +536,163 @@ static void subfree_aligned(void *ptr, unsigned pages = 1)
         DBGLOG("RoxieMemMgr: subfree_aligned() %u pages ok - addr=%p heapLWM=%u totalPages=%u", _pages, ptr, heapLWM, heapTotalPages);
 }
 
+static void clearBits(unsigned start, unsigned len)
+{
+    // Note - should already have locked before calling this
+    // These functions should really be member functions (and the heapBitmap should be a member variable) of a
+    // HeapAlignedBitmap class.
+    if (len)
+    {
+        unsigned wordOffset = (unsigned) (start / UNSIGNED_BITS);
+        unsigned bitOffset = (unsigned) (start % UNSIGNED_BITS);
+        unsigned mask = 1<<bitOffset;
+        heapAllocated += len;
+        unsigned heapword = heapBitmap[wordOffset];
+        while (len--)
+        {
+            if (heapword & mask)
+                heapword &= ~mask;
+            else
+                HEAPERROR("RoxieMemMgr: Page freed twice");
+            if (mask==TOPBITMASK)
+            {
+                heapBitmap[wordOffset] = heapword;
+                mask = 1;
+                wordOffset++;
+                if (wordOffset==heapBitmapSize)
+                    return;    // Avoid read off end of array
+                heapword = heapBitmap[wordOffset];
+            }
+            else
+                mask <<= 1;
+        }
+        heapBitmap[wordOffset] = heapword;
+    }
+}
+
+static void *subrealloc_aligned(void *ptr, unsigned pages, unsigned newPages)
+{
+    assertex(newPages > 0);
+    unsigned _pages = pages;
+    memsize_t offset = (char *)ptr - heapBase;
+    memsize_t pageOffset = offset / HEAP_ALIGNMENT_SIZE;
+    if (!pages)
+    {
+        DBGLOG("RoxieMemMgr: Invalid parameter (pages=%u) to subrealloc_aligned", pages);
+        HEAPERROR("RoxieMemMgr: Invalid parameter (num pages) to subrealloc_aligned");
+    }
+    if (pageOffset + pages > heapTotalPages)
+    {
+        DBGLOG("RoxieMemMgr: Realloced area not in heap (ptr=%p)", ptr);
+        HEAPERROR("RoxieMemMgr: Realloced area not in heap");
+    }
+    if (pageOffset*HEAP_ALIGNMENT_SIZE != offset)
+    {
+        DBGLOG("RoxieMemMgr: Incorrect alignment of realloced area (ptr=%p)", ptr);
+        HEAPERROR("RoxieMemMgr: Incorrect alignment of realloced area");
+    }
+    if (pages > newPages)
+    {
+        subfree_aligned((char *) ptr + pages*HEAP_ALIGNMENT_SIZE, pages - newPages);
+        return ptr;
+    }
+    else if (pages==newPages)
+    {
+        return ptr;
+    }
+    else
+    {
+        CriticalBlock b(heapBitCrit);
+        unsigned shortfall = newPages - pages;
+        unsigned topOffset = pageOffset + pages;
+        // First see if we can find n free bits above the allocated region
+        unsigned wordOffset = (unsigned) (topOffset / UNSIGNED_BITS);
+        if (wordOffset < heapBitmapSize)
+        {
+            unsigned bitOffset = (unsigned) (topOffset % UNSIGNED_BITS);
+            unsigned mask = 1<<bitOffset;
+            unsigned heapword = heapBitmap[wordOffset];
+            while (shortfall)
+            {
+                if ((heapword & mask) == 0)
+                    break;
+                shortfall--;
+                if (mask==TOPBITMASK)
+                {
+                    mask = 1;
+                    wordOffset++;
+                    if (wordOffset==heapBitmapSize)
+                        break;
+                    heapword = heapBitmap[wordOffset];
+                    while (shortfall >= UNSIGNED_BITS)
+                    {
+                        if (heapword != UNSIGNED_ALLBITS)
+                            break;
+                        wordOffset++;
+                        if (wordOffset==heapBitmapSize)
+                            goto doublebreak;
+                        heapword = heapBitmap[wordOffset];
+                        shortfall -= UNSIGNED_BITS;
+                    }
+                }
+                else
+                    mask <<= 1;
+            }
+            if (!shortfall)
+            {
+                clearBits(topOffset, newPages - pages);
+                return ptr;
+            }
+        }
+    doublebreak:
+        // Then see if we can find remaining free bits below the allocated region
+        wordOffset = (unsigned) (pageOffset / UNSIGNED_BITS);
+        if (wordOffset < heapBitmapSize)
+        {
+            unsigned bitOffset = (unsigned) (pageOffset % UNSIGNED_BITS);
+            unsigned mask = 1<<bitOffset;
+            unsigned foundAbove = (newPages - pages) - shortfall;
+            unsigned needBelow = shortfall;
+            unsigned heapword = heapBitmap[wordOffset];
+            while (shortfall)
+            {
+                if (mask==1)
+                {
+                    while (shortfall >= UNSIGNED_BITS && wordOffset > 0)
+                    {
+                        wordOffset--;
+                        heapword = heapBitmap[wordOffset];
+                        if (heapword != UNSIGNED_ALLBITS)
+                            return NULL;
+                        shortfall -= UNSIGNED_BITS;
+                    }
+                    if (wordOffset==0 || shortfall==0)
+                        break;
+                    mask = TOPBITMASK;
+                    wordOffset--;
+                    heapword = heapBitmap[wordOffset];
+                }
+                else
+                    mask >>= 1;
+                if ((heapword & mask) == 0)
+                    break;
+                shortfall--;
+            }
+            if (!shortfall)
+            {
+                pageOffset -= needBelow;
+                clearBits(pageOffset, needBelow);
+                clearBits(topOffset, foundAbove);
+                // NOTE: it's up to the caller to move the data - they know how much of it they actually care about.
+                return heapBase + pageOffset*HEAP_ALIGNMENT_SIZE;
+            }
+        }
+        else
+            throwUnexpected();  // equivalently, assertex(wordOffset < heapBitmapSize)
+        return NULL; // can't realloc
+    }
+}
+
 static inline unsigned getRealActivityId(unsigned allocatorId, const IRowAllocatorCache *allocatorCache)
 {
     if ((allocatorId & ACTIVITY_FLAG_ISREGISTERED) && allocatorCache)
@@ -549,7 +707,7 @@ class BigHeapletBase : public HeapletBase
 protected:
     BigHeapletBase *next;
     const IRowAllocatorCache *allocatorCache;
-    const memsize_t chunkCapacity;
+    memsize_t chunkCapacity;
     
     inline unsigned getActivityId(unsigned allocatorId) const
     {
@@ -1045,7 +1203,7 @@ protected:
         return PAGES(chunkCapacity + offsetof(HugeHeaplet, data), HEAP_ALIGNMENT_SIZE);
     }
 
-    inline memsize_t calcCapacity(memsize_t requestedSize) const
+    static inline memsize_t calcCapacity(memsize_t requestedSize)
     {
         return align_pow2(requestedSize + dataOffset(), HEAP_ALIGNMENT_SIZE) - dataOffset();
     }
@@ -1054,6 +1212,12 @@ public:
     HugeHeaplet(const IRowAllocatorCache *_allocatorCache, memsize_t _hugeSize, unsigned _allocatorId) : BigHeapletBase(_allocatorCache, calcCapacity(_hugeSize))
     {
         allocatorId = _allocatorId;
+    }
+
+    memsize_t setCapacity(memsize_t newsize)
+    {
+        chunkCapacity = calcCapacity(newsize);
+        return chunkCapacity;
     }
 
     bool _isShared(const void *ptr) const
@@ -1066,7 +1230,7 @@ public:
         return _sizeInPages();
     }
 
-    static unsigned dataOffset()
+    static inline unsigned dataOffset()
     {
         return (offsetof(HugeHeaplet, data));
     }
@@ -1478,6 +1642,7 @@ public:
     }
 
     void * doAllocate(memsize_t _size, unsigned allocatorId);
+    void *expandHeap(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity);
 
 protected:
     HugeHeaplet * allocateHeaplet(memsize_t _size, unsigned allocatorId);
@@ -1695,7 +1860,7 @@ public:
         return (numSuccess != 0);
     }
 
-    //Release buffers will ensure that the rows are attmpted to be cleaned up before returning
+    //Release buffers will ensure that the rows are attempted to be cleaned up before returning
     bool releaseBuffers(const bool critical, const unsigned minSuccess, bool checkSequence, unsigned prevReleaseSeq)
     {
         CriticalBlock block(callbackCrit);
@@ -1713,6 +1878,11 @@ public:
             owner->releaseEmptyPages(critical);
             //incremented again because some rows may now have been freed.  A difference may give a
             //false positive, but better than a false negative.
+            atomic_inc(&releaseSeq);
+            return true;
+        }
+        else if (owner->releaseEmptyPages(critical))
+        {
             atomic_inc(&releaseSeq);
             return true;
         }
@@ -2129,6 +2299,8 @@ public:
             capacity = curCapacity;
             return original;
         }
+        if (curCapacity > FixedSizeHeaplet::maxHeapSize())
+            return hugeHeap.expandHeap(original, oldsize, newsize, activityId, capacity);
 
         void *ret = allocate(newsize, activityId);
         memcpy(ret, original, oldsize);
@@ -2552,6 +2724,79 @@ void * CHugeChunkingHeap::doAllocate(memsize_t _size, unsigned allocatorId)
     active = head;
     return head->allocateHuge(_size);
 }
+
+void *CHugeChunkingHeap::expandHeap(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity)
+{
+    unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+    unsigned oldPages = PAGES(oldsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+    assert(newPages > oldPages);
+    unsigned numPages = newPages - oldPages;
+    void *oldbase =  (void *) ((memsize_t) original & HEAP_ALIGNMENT_MASK);
+    loop
+    {
+        // NOTE: we request permission only for the difference between the old
+        // and new sizes, even though we may temporarily hold both. This not only
+        // simplifies the code considerably, it's probably desirable
+        rowManager->checkLimit(numPages);
+
+        bool release = false;
+        void *realloced = subrealloc_aligned(oldbase, oldPages, newPages);
+        if (!realloced)
+        {
+            realloced = suballoc_aligned(newPages, true);
+            release = true;
+        }
+        if (realloced)
+        {
+            HugeHeaplet *oldhead = (HugeHeaplet *) oldbase;
+            HugeHeaplet *head = (HugeHeaplet *) realloced;
+            if (realloced != oldbase)
+            {
+                // Remove the old block from the chain
+                {
+                    SpinBlock b(crit);
+                    if (active==oldhead)
+                        active = getNext(oldhead);
+                    else
+                    {
+                        BigHeapletBase *finger = active;
+                        // Remove old pointer from the chain
+                        while (finger)
+                        {
+                            BigHeapletBase *next = getNext(finger);
+                            if (next == oldhead)
+                            {
+                                setNext(finger, getNext(oldhead));
+                                break;
+                            }
+                            else
+                                finger = next;
+                        }
+                        assert(finger != NULL); // Should always have found it
+                    }
+                }
+                // MORE - If we were really clever, we could manipulate the page table to avoid moving ANY data here...
+                memmove(realloced, oldbase, oldsize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
+                SpinBlock b(crit);
+                // Add at front of chain
+                setNext(head, active);
+                active = head;
+            }
+            void * ret = (char *) realloced + HugeHeaplet::dataOffset();
+            capacity = head->setCapacity(newsize);
+            if (release)
+                subfree_aligned(oldbase, oldPages);
+            return ret;
+        }
+
+        //If the allocation fails, then try and free some memory by calling the callbacks
+
+        rowManager->restoreLimit(numPages);
+        if (!rowManager->releaseCallbackMemory(true))
+            throwHeapExhausted(numPages);
+    }
+}
+
 
 //An inline function used to common up the allocation code for fixed and non fixed sizes.
 void * CNormalChunkingHeap::inlineDoAllocate(unsigned allocatorId)
@@ -3328,6 +3573,65 @@ protected:
             ASSERT(suballoc_aligned(1, false)==(void *)(memsize_t)(0x80000000 + 0x100000*i));
             ASSERT(suballoc_aligned(3, false)==(void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)));
         }
+        for (i=0; i < 100; i++)
+        {
+            subfree_aligned((void *)(memsize_t)(0x80000000 + 0x100000*i), 1);
+            subfree_aligned((void *)(memsize_t)(0xc0000000 - 0x300000*(i+1)), 3);
+        }
+
+        // Try a realloc that can expand above only.
+        void *t = suballoc_aligned(1, false);
+        ASSERT(t==(void *)(memsize_t)(0x80000000));
+        void *r = subrealloc_aligned(t, 1, 50);
+        ASSERT(r == t)
+        void *t1 = suballoc_aligned(1, false);
+        ASSERT(t1==(void *)(memsize_t)(0x80000000 + 0x100000*50));
+        subfree_aligned(r, 50);
+        subfree_aligned(t1, 1);
+
+        // Try a realloc that can expand below only.
+        t = suballoc_aligned(2, false);
+        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x200000));
+        r = subrealloc_aligned(t, 2, 50);
+        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*50));
+        t1 = suballoc_aligned(2, false);
+        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*52));
+        subfree_aligned(r, 50);
+        subfree_aligned(t1, 2);
+
+        // Try a realloc that has to do both.
+        t = suballoc_aligned(20, false);
+        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x100000*20));
+        t1 = suballoc_aligned(20, false);
+        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*40));
+        subfree_aligned(t, 20);
+        r = subrealloc_aligned(t1, 20, 80);
+        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*80));
+        t1 = suballoc_aligned(2, false);
+        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*82));
+        subfree_aligned(r, 80);
+        subfree_aligned(t1, 2);
+
+        // Try a realloc that can't quite manage it.
+        t = suballoc_aligned(20, false);
+        ASSERT(t==(void *)(memsize_t)(0xc0000000 - 0x100000*20));
+        t1 = suballoc_aligned(20, false);
+        ASSERT(t1==(void *)(memsize_t)(0xc0000000 - 0x100000*40));
+        void * t2 = suballoc_aligned(20, false);
+        ASSERT(t2==(void *)(memsize_t)(0xc0000000 - 0x100000*60));
+        void *t3 = suballoc_aligned(20, false);
+        ASSERT(t3==(void *)(memsize_t)(0xc0000000 - 0x100000*80));
+        subfree_aligned(t, 20);
+        subfree_aligned(t2, 20);
+        r = subrealloc_aligned(t1, 20, 61);
+        ASSERT(r==NULL);
+        // Then one that just can
+        r = subrealloc_aligned(t1, 20, 60);
+        ASSERT(r==(void *)(memsize_t)(0xc0000000 - 0x100000*60));
+        subfree_aligned(r, 60);
+        subfree_aligned(t3, 20);
+
+        // Check some error cases
         try
         {
             subfree_aligned((void*)0, 1);
@@ -4182,6 +4486,9 @@ class RoxieMemStressTests : public CppUnit::TestFixture
     CPPUNIT_TEST_SUITE( RoxieMemStressTests );
     CPPUNIT_TEST(testSetup);
     CPPUNIT_TEST(testFragmenting);
+    CPPUNIT_TEST(testDoubleFragmenting);
+    CPPUNIT_TEST(testResizeDoubleFragmenting);
+    CPPUNIT_TEST(testResizeFragmenting);
     CPPUNIT_TEST(testSequential);
     CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
@@ -4232,7 +4539,7 @@ protected:
 
     void testFragmenting()
     {
-        unsigned requestSize = 32;
+        memsize_t requestSize = 32;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
         unsigned startTime = msTick();
         void * prev = rowManager->allocate(requestSize, 1);
@@ -4240,8 +4547,9 @@ protected:
         {
             loop
             {
-                size32_t nextSize = (size32_t)(requestSize*1.25);
+                memsize_t nextSize = (memsize_t)(requestSize*1.25);
                 void *next = rowManager->allocate(nextSize, 1);
+                memcpy(next, prev, requestSize);
                 requestSize = nextSize;
                 ReleaseRoxieRow(prev);
                 prev = next;
@@ -4249,13 +4557,119 @@ protected:
         }
         catch (IException *E)
         {
+            StringBuffer s;
+            memmap(s);
+            DBGLOG("Unable to allocate more:\n%s", s.str());
             E->Release();
         }
         ReleaseRoxieRow(prev);
         unsigned endTime = msTick();
-        DBGLOG("Time for fragmenting allocate = %d, max allocation=%u, limit = %"I64F"u", endTime - startTime, requestSize, (unsigned __int64) memorySize);
+        DBGLOG("Time for fragmenting allocate = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
         ASSERT(requestSize > memorySize/4);
     }
+
+    void testDoubleFragmenting()
+    {
+        memsize_t requestSize = 32;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        unsigned startTime = msTick();
+        void * prev1 = rowManager->allocate(requestSize, 1);
+        void * prev2 = rowManager->allocate(requestSize, 1);
+        try
+        {
+            loop
+            {
+                memsize_t nextSize = (memsize_t)(requestSize*1.25);
+                void *next1 = rowManager->allocate(nextSize, 1);
+                memcpy(next1, prev1, requestSize);
+                ReleaseRoxieRow(prev1);
+                prev1 = next1;
+                void *next2 = rowManager->allocate(nextSize, 1);
+                memcpy(next2, prev2, requestSize);
+                ReleaseRoxieRow(prev2);
+                prev2 = next2;
+                requestSize = nextSize;
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            memmap(s);
+            DBGLOG("Unable to allocate more:\n%s", s.str());
+            E->Release();
+        }
+        ReleaseRoxieRow(prev1);
+        ReleaseRoxieRow(prev2);
+        unsigned endTime = msTick();
+        DBGLOG("Time for fragmenting double allocate = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        ASSERT(requestSize > memorySize/8);
+    }
+
+    void testResizeFragmenting()
+    {
+        memsize_t requestSize = 32;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        unsigned startTime = msTick();
+        void * prev = rowManager->allocate(requestSize, 1);
+        try
+        {
+            loop
+            {
+                memsize_t nextSize = (memsize_t)(requestSize*1.25);
+                memsize_t capacity;
+                void *next = rowManager->resizeRow(prev, requestSize, nextSize, 1, capacity);
+                requestSize = nextSize;
+                prev = next;
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            memmap(s);
+            DBGLOG("Unable to allocate more:\n%s", s.str());
+            E->Release();
+        }
+        ReleaseRoxieRow(prev);
+        unsigned endTime = msTick();
+        DBGLOG("Time for fragmenting resize = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        ASSERT(requestSize > memorySize/1.3);
+    }
+
+    void testResizeDoubleFragmenting()
+    {
+        memsize_t requestSize = 32;
+        Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
+        unsigned startTime = msTick();
+        void * prev1 = rowManager->allocate(requestSize, 1);
+        void * prev2 = rowManager->allocate(requestSize, 1);
+        try
+        {
+            loop
+            {
+                memsize_t nextSize = (memsize_t)(requestSize*1.25);
+                memsize_t capacity;
+                void *next1 = rowManager->resizeRow(prev1, requestSize, nextSize, 1, capacity);
+                prev1 = next1;
+                void *next2 = rowManager->resizeRow(prev2, requestSize, nextSize, 1, capacity);
+                prev2 = next2;
+                requestSize = nextSize;
+            }
+        }
+        catch (IException *E)
+        {
+            StringBuffer s;
+            memmap(s);
+            DBGLOG("Unable to allocate more:\n%s", s.str());
+            E->Release();
+        }
+        ReleaseRoxieRow(prev1);
+        ReleaseRoxieRow(prev2);
+        unsigned endTime = msTick();
+        DBGLOG("Time for fragmenting double resize = %d, max allocation=%"I64F"u, limit = %"I64F"u", endTime - startTime, (unsigned __int64) requestSize, (unsigned __int64) memorySize);
+        ASSERT(requestSize > memorySize/4);
+    }
+
+
 };
 
 const memsize_t hugeMemorySize = 0x110000000;
@@ -4302,6 +4716,13 @@ protected:
         memsize_t capacity;
         void *huge1 = rowManager->allocate(initialAllocSize, 1);
         void *huge2 = rowManager->resizeRow(huge1, initialAllocSize, hugeAllocSize, 1, capacity);
+        ASSERT(capacity > hugeAllocSize);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
+        ReleaseRoxieRow(huge2);
+        ASSERT(rowManager->numPagesAfterCleanup(true)==0);
+
+        huge1 = rowManager->allocate(hugeAllocSize/2, 1);
+        huge2 = rowManager->resizeRow(huge1, hugeAllocSize/2, hugeAllocSize, 1, capacity);
         ASSERT(capacity > hugeAllocSize);
         ASSERT(rowManager->numPagesAfterCleanup(true)==4097);
         ReleaseRoxieRow(huge2);
