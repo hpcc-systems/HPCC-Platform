@@ -1276,15 +1276,28 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
             continue;
 
         StringBuffer sName;
+        StringBuffer sThorMasterProcess;
+        sThorMasterProcess.appendf("./%s", XML_TAG_THORMASTERPROCESS);
+
         sName.appendf("temp%d", i + 1);
 
         // Add process node
         IPropertyTree* pProcessNode = createPTree(szType);
-        pProcessNode->addProp(XML_ATTR_NAME, sName);
-        pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
-        if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
+
+        if(szType == NULL || strcmp(szType, XML_TAG_THORMASTERPROCESS) != 0  || !pThor->queryPropTree(sThorMasterProcess.str()))
+        {
+          pProcessNode->addProp(XML_ATTR_NAME, sName);
+          pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
+          if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
             addNode(pProcessNode, pThor);
-    }
+        }
+        else
+        {
+          pThor->queryPropTree(sThorMasterProcess.str())->setProp(XML_ATTR_NAME,sName);
+          pThor->queryPropTree(sThorMasterProcess.str())->setProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
+          if (nPort != 0) pThor->queryPropTree(sThorMasterProcess.str())->setPropInt(XML_ATTR_PORT, nPort);
+        }
+   }
 
     RenameThorInstances(pThor);
     UpdateThorAttributes(pThor);
