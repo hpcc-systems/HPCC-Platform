@@ -397,8 +397,13 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
     IPropertyTree *res = NULL;
     if (manifest)
     {
-        VStringBuffer xpath("Resource[@resourcePath='%s']", includename);
-        res = manifest->queryPropTree(xpath.str());
+        if (strieq(includename, "/EmbeddedView"))
+            res = manifest->queryPropTree("Resource[@name='Results'][@type='XSLT']");
+        else
+        {
+            VStringBuffer xpath("Resource[@resourcePath='%s']", includename);
+            res = manifest->queryPropTree(xpath.str());
+        }
     }
     if (res)
     {
@@ -419,7 +424,9 @@ void WuWebView::getResultViewNames(StringArray &names)
 {
     Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Views/Results[@name]");
     ForEach(*iter)
-    names.append(iter->query().queryProp("@name"));
+        names.append(iter->query().queryProp("@name"));
+    if (manifest->hasProp("Views/XSLT/RESULTS[@resource='Results']"))
+        names.append("EmbeddedView");
 }
 
 void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
@@ -468,6 +475,13 @@ StringBuffer &WuWebView::aggregateResources(const char *type, StringBuffer &cont
 
 void WuWebView::getResultXSLT(const char *viewName, StringBuffer &xslt, StringBuffer &abspath)
 {
+    if (!viewName || !*viewName)
+        return;
+    if (strieq("EmbeddedView", viewName))
+    {
+        getResource("Results", xslt, abspath, "XSLT");
+        return;
+    }
     VStringBuffer xpath("Views/Results[@name='%s']/@resource", viewName);
     const char *resource = ensureManifest()->queryProp(xpath.str());
     if (resource)
@@ -479,28 +493,45 @@ void WuWebView::renderExpandedResults(const char *viewName, WuExpandedResultBuff
     IPropertyTree *mf = ensureManifest();
     calculateResourceIncludePaths();
 
-    VStringBuffer xpath("Views/Results[@name='%s']", viewName);
-    IPropertyTree *view = mf->queryPropTree(xpath.str());
-    if (!view)
-        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
+    IPropertyTree *view;
+    const char *type = NULL;
+    const char *respath = NULL;
+    if (strieq("EmbeddedView", viewName))
+    {
+        view = mf->queryPropTree("Views/XSLT/RESULTS[@resource='Results']");
+        if (!view)
+            throw MakeStringException(WUWEBERR_ViewResourceNotFound, "EmbeddedView not found");
+        type="xslt";
+        respath="/EmbeddedView";
+    }
+    else
+    {
+        VStringBuffer xpath("Views/Results[@name='%s']", viewName);
+        view = mf->queryPropTree(xpath.str());
+        if (!view)
+            throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Result view %s not found", viewName);
+        type=view->queryProp("@type");
+        if (!type)
+            throw MakeStringException(WUWEBERR_UnknownViewType, "No type defined for view %s", viewName);
+        if (strieq(type, "xslt"))
+        {
+            const char *resname = view->queryProp("@resource");
+            if (!resname || !*resname)
+                throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource for %s view not defined", viewName);
+            xpath.set("Resource[@name='").append(resname).append("']/@resourcePath");
+            respath = mf->queryProp(xpath.str());
+            if (!respath || !*respath)
+                throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource %s not resolved", resname);
+        }
+        else if (!strieq(type, "xml"))
+            throw MakeStringException(WUWEBERR_UnknownViewType, "View %s has an unknown type of %s", viewName, type);
+    }
+
     expanded.appendXML(view, "view");
     expanded.appendManifestSchemas(*mf, loadDll());
     expanded.finalize();
-    const char *type=view->queryProp("@type");
-    if (!type)
-        throw MakeStringException(WUWEBERR_UnknownViewType, "No type defined for view %s", viewName);
     if (strieq(type, "xml"))
         return out.swapWith(expanded.buffer);
-    if (!strieq(type, "xslt"))
-        throw MakeStringException(WUWEBERR_UnknownViewType, "View %s has an unknown type of %s", viewName, type);
-
-    const char *resname = view->queryProp("@resource");
-    if (!resname || !*resname)
-        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource for %s view not defined", viewName);
-    xpath.clear().appendf("Resource[@name='%s']/@resourcePath", resname);
-    const char *respath = ensureManifest()->queryProp(xpath.str());
-    if (!respath || !*respath)
-        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "resource %s not resolved", resname);
 
     Owned<IXslTransform> t = getXslProcessor()->createXslTransform();
     StringBuffer cacheId(viewName);
