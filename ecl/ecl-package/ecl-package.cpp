@@ -510,6 +510,8 @@ public:
                 }
                 continue;
             }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE_S))
@@ -558,6 +560,8 @@ public:
         request->setTarget(optTarget);
         request->setPackageMap(optFileName);
         request->setProcess(optProcess);
+        request->setDaliIp(optDaliIP);
+        request->setOverWrite(optOverWrite);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         if (resp->getExceptions().ordinality())
@@ -576,6 +580,7 @@ public:
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
+                    "   --daliip=<ip>               ip of the remote dali to use for logical file lookups"
 // NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
                     "   <target>                    name of target to use when adding package map information\n"
                     "   <filename>                  name of file containing package map information\n",
@@ -590,7 +595,7 @@ private:
     bool optActivate;
     bool optOverWrite;
     StringBuffer pkgInfo;
-
+    StringAttr optDaliIP;
 };
 
 
