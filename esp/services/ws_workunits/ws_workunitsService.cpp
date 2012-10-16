@@ -153,8 +153,8 @@ void setWsWuXmlParameters(IWorkUnit *wu, const char *xml, IArrayOf<IConstNamedVa
     setWsWuXmlParameters(wu, xml, setJobname);
 }
 
-void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, const char *paramXml=NULL,
-    IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL)
+void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+    const char *paramXml=NULL, IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL)
 {
     ensureWsWorkunitAccess(context, *cw, SecAccess_Write);
     switch(cw->getState())
@@ -220,6 +220,19 @@ void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* clus
             wu->schedule();
     }
 
+    if (resetVariables)
+    {
+        SCMStringBuffer varname;
+        Owned<IConstWUResultIterator> vars = &wu->getVariables();
+        ForEach (*vars)
+        {
+            vars->query().getResultName(varname);
+            Owned<IWUResult> v = wu->updateVariableByName(varname.str());
+            if (v)
+                v->setResultStatus(ResultStatusUndefined);
+        }
+    }
+
     setWsWuXmlParameters(wu, paramXml, variables, (wu->getAction()==WUActionExecuteExisting));
 
     wu->commit();
@@ -235,14 +248,14 @@ void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* clus
     AuditSystemAccess(context.queryUserId(), true, "Submitted %s", wuid.str());
 }
 
-void submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, const char *paramXml=NULL,
-    IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL)
+void submitWsWorkunit(IEspContext& context, const char *wuid, const char* cluster, const char* snapshot, int maxruntime, bool compile, bool resetWorkflow, bool resetVariables,
+    const char *paramXml=NULL, IArrayOf<IConstNamedValue> *variables=NULL, IArrayOf<IConstNamedValue> *debugs=NULL)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
     if(!cw)
         throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid);
-    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, paramXml, variables, debugs);
+    return submitWsWorkunit(context, cw, cluster, snapshot, maxruntime, compile, resetWorkflow, resetVariables, paramXml, variables, debugs);
 }
 
 
@@ -271,7 +284,7 @@ void runWsWorkunit(IEspContext &context, StringBuffer &wuid, const char *srcWuid
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, paramXml, variables, debugs);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
 }
 
 void runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid, const char *cluster, const char *paramXml=NULL,
@@ -281,7 +294,7 @@ void runWsWorkunit(IEspContext &context, IConstWorkUnit *cw, const char *srcWuid
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, paramXml, variables, debugs);
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml, variables, debugs);
 }
 
 IException *noteException(IWorkUnit *wu, IException *e, WUExceptionSeverity level=ExceptionSeverityError)
@@ -321,7 +334,7 @@ void runWsWuQuery(IEspContext &context, IConstWorkUnit *cw, const char *queryset
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, paramXml);
+    submitWsWorkunit(context, cw, cluster, NULL, 0, false, true, true, paramXml);
 }
 
 void runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset, const char *query, const char *cluster, const char *paramXml=NULL)
@@ -335,7 +348,7 @@ void runWsWuQuery(IEspContext &context, StringBuffer &wuid, const char *queryset
     copyWsWorkunit(context, *wu, srcWuid);
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, paramXml);
+    submitWsWorkunit(context, wuid.str(), cluster, NULL, 0, false, true, true, paramXml);
 }
 
 class ExecuteExistingQueryInfo
@@ -1102,7 +1115,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
-                submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow());
+                submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow(), false);
             }
             catch (IException *E)
             {
@@ -1253,7 +1266,7 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
             runWsWuQuery(context, cw, info.queryset.sget(), info.query.sget(), cluster, NULL);
         }
         else
-            submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), true, false);
+            submitWsWorkunit(context, cw, cluster, req.getSnapshot(), req.getMaxRunTime(), true, false, false);
 
         if (req.getBlockTillFinishTimer() != 0)
             waitForWorkUnitToComplete(wuid.str(), req.getBlockTillFinishTimer());
@@ -1288,7 +1301,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
                 runWsWorkunit(context, wuid, runWuid, cluster, req.getInput(), &req.getVariables(), &req.getDebugValues());
             else
             {
-                submitWsWorkunit(context, runWuid, cluster, NULL, 0, false, true, req.getInput(), &req.getVariables(), &req.getDebugValues());
+                submitWsWorkunit(context, runWuid, cluster, NULL, 0, false, true, true, req.getInput(), &req.getVariables(), &req.getDebugValues());
                 wuid.set(runWuid);
             }
         }
@@ -1415,7 +1428,7 @@ bool CWsWorkunitsEx::onWUSyntaxCheckECL(IEspContext &context, IEspWUSyntaxCheckR
         wu->commit();
         wu.clear();
 
-        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false);
+        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(), req.getTimeToWait());
 
         Owned<IConstWorkUnit> cw(factory->openWorkUnit(wuid.str(), false));
@@ -1465,7 +1478,7 @@ bool CWsWorkunitsEx::onWUCompileECL(IEspContext &context, IEspWUCompileECLReques
         wu->getWuid(wuid);
         wu.clear();
 
-        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false);
+        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
         waitForWorkUnitToComplete(wuid.str(),req.getTimeToWait());
 
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
@@ -1563,7 +1576,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
         wu.clear();
 
         ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
-        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false);
+        submitWsWorkunit(context, wuid.str(), req.getCluster(), req.getSnapshot(), 0, true, false, false);
 
         int state = waitForWorkUnitToComplete(wuid.str(), timeMilliSec);
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
