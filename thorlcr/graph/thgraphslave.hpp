@@ -141,6 +141,7 @@ class graphslave_decl CJobSlave : public CJobBase
     Owned<IPerfMonHook> perfmonhook;
     Owned<IPropertyTree> workUnitInfo;
     CriticalSection graphRunCrit;
+    size32_t oldNodeCacheMem;
 
     void startJob();
     void endJob();

@@ -1007,6 +1007,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     init();
 
+    oldNodeCacheMem = 0;
     mpJobTag = _mpJobTag;
     slavemptag = _slavemptag;
 
@@ -1071,7 +1072,8 @@ void CJobSlave::startJob()
     unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
     if (pinterval)
         startPerformanceMonitor(pinterval);
-    if (pinterval) {
+    if (pinterval)
+    {
         perfmonhook.setown(createThorMemStatsPerfMonHook());
         startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
     }
@@ -1094,7 +1096,7 @@ void CJobSlave::startJob()
     unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
     if (keyNodeCacheMB)
     {
-        setNodeCacheMem(keyNodeCacheMB * 0x100000);
+        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
         PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
     }
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
@@ -1109,6 +1111,8 @@ void CJobSlave::endJob()
     stopPerformanceMonitor();
     LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
+    if (oldNodeCacheMem)
+        setNodeCacheMem(oldNodeCacheMem);
     PrintMemoryStatusLog();
 }
 
