@@ -107,12 +107,13 @@ interface IReplicatedFile;
 
 extern jhtree_decl void clearKeyStoreCache(bool killAll);
 extern jhtree_decl void clearKeyStoreCacheEntry(const char *name);
-extern jhtree_decl void setKeyIndexCacheSize(unsigned limit);
+extern jhtree_decl unsigned setKeyIndexCacheSize(unsigned limit);
 extern jhtree_decl void clearNodeCache();
-extern jhtree_decl void setNodeCachePreload(bool preload);
-extern jhtree_decl void setNodeCacheMem(size32_t cacheSize);
-extern jhtree_decl void setLeafCacheMem(size32_t cacheSize);
-extern jhtree_decl void setBlobCacheMem(size32_t cacheSize);
+// these methods return previous values
+extern jhtree_decl bool setNodeCachePreload(bool preload);
+extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize);
+extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize);
+extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize);
 
 
 extern jhtree_decl IKeyIndex *createKeyIndex(const char *filename, unsigned crc, bool isTLK, bool preloadAllowed);
