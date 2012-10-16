@@ -212,12 +212,12 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
     return totalSize;
 }
 
-bool CDistributedFileSystem::remove(IDistributedFile * file,const char *cluster,IMultiException *mexcept)
+bool CDistributedFileSystem::remove(IDistributedFile * file,const char *cluster,IMultiException *mexcept, unsigned timeoutms)
 {
     // this is now equivalent to removePhysicalPartFiles as linux uses dafilesrv by default
     if (!cluster||((file->findCluster(cluster)==0)&&(file->numClusters()==1))) {
         cluster = NULL; // deleting the last cluster removes the file
-        file->detach(); 
+        file->detach(timeoutms);
     }
     return file->removePhysicalPartFiles(cluster,mexcept); // this is bit cavalier with errors - but better orphans than inconsistant DFS
 }

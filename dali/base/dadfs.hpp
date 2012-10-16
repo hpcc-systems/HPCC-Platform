@@ -220,7 +220,7 @@ interface IDistributedFile: extends IInterface
     virtual const char *queryPartMask() = 0;                                    // default part name mask
 
     virtual void attach(const char *logicalname,IUserDescriptor *user=NULL) = 0;// attach to name in DFS
-    virtual void detach() = 0;                                                  // no longer attached to name in DFS
+    virtual void detach(unsigned timeoutms=INFINITE) = 0;                     // no longer attached to name in DFS
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
@@ -457,7 +457,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual IDFScopeIterator *getScopeIterator(const char *subscope=NULL,bool recursive=true,bool includeempty=false, IUserDescriptor *user=NULL)=0;
 
-    virtual bool removeEntry(const char *name,IUserDescriptor *user=NULL) = 0;  // equivalent to lookup/detach/release
+    virtual bool removeEntry(const char *name,IUserDescriptor *user=NULL, unsigned timeoutms=INFINITE) = 0;  // equivalent to lookup/detach/release
     virtual bool removePhysical(const char *name,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
     virtual bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
