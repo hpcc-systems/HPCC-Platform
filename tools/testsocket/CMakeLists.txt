@@ -39,4 +39,5 @@ install ( TARGETS testsocket RUNTIME DESTINATION ${EXEC_DIR} )
 
 if ( PLATFORM )
     install ( PROGRAMS testsocket.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS testsocket.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif()

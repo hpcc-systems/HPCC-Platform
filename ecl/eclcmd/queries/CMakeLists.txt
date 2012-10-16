@@ -52,5 +52,6 @@ target_link_libraries ( ecl-queries
     )
 
 if (UNIX)
-install ( PROGRAMS ecl-queries.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS ecl-queries.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS ecl-queries.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif (UNIX)
