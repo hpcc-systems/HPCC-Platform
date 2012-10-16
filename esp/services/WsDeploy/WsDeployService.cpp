@@ -4366,34 +4366,49 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
   }
   else if (!strcmp(operation, "Delete"))
   {
+    StringBuffer xpath;
+    StringBuffer xpathSoftware;
+    StringBuffer xpathFull;
+    StringBuffer errMsg;
+
     Owned<IPropertyTreeIterator> iterComp = pComponents->getElements("*");
+
+    xpathSoftware.appendf("./%s", XML_TAG_SOFTWARE);
+
     ForEach(*iterComp)
     {
       IPropertyTree& pComp = iterComp->query();
+
       const char* compName = pComp.queryProp(XML_ATTR_NAME);
-      const char* compType = pComp.queryProp("@compType");
-      StringBuffer xpath;
-      xpath.clear().appendf("./Software/%s[@name=\"%s\"]", compType, compName);
-      IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpath.str());
-      StringBuffer sbMsg;
+      const char* compType = pComp.queryProp(XML_ATTR_COMPTYPE);
 
-      if(pCompTree)
+      xpath.clear().appendf("%s/%s", xpathSoftware.str(), compType);
+
+      Owned<IPropertyTreeIterator> iterComp2 = pEnvRoot->getElements(xpath.str());
+
+      ForEach(*iterComp2)
       {
-        bool ret = checkComponentReferences(pEnvRoot, pCompTree, compName, sbMsg);
+        xpathFull.clear().appendf("%s[%s=\"%s\"]", xpath.str(), XML_ATTR_NAME, compName);
+        unsigned short numElements = pEnvRoot->getCount(xpathFull.str());
 
-        if (ret)
+        if (strcmp(iterComp2->query().queryProp(XML_ATTR_NAME), compName) == 0)
         {
-          pEnvRoot->queryPropTree("./Software")->removeTree(pCompTree);
-          resp.setStatus("true");
-          resp.setCompName(XML_TAG_SOFTWARE);
-        }
-        else
-        {
-          resp.setStatus(sbMsg.str());
-          resp.setCompName(compName);
+          IPropertyTree* pCompTree = pEnvRoot->queryPropTree(xpathSoftware.str());
+          StringBuffer sbMsg;
+
+          // only check for component dependencies if the componenet to be deleted is the last instance with the same name
+          if (pCompTree != NULL && (pEnvRoot->getCount(xpathFull.str()) > 1 ? true : checkComponentReferences(pEnvRoot, pEnvRoot->queryPropTree(xpathFull.str()), compName, sbMsg)))
+            pEnvRoot->queryPropTree(xpathSoftware.str())->removeTree(&(iterComp2->query()));
+
+          if (sbMsg.length() > 0)
+             errMsg.appendf("\n%s", sbMsg.str());
+
+          break;
         }
       }
+      resp.setCompName(compName);
     }
+    resp.setStatus(errMsg.length() > 1 ? errMsg.str() : "true");
   }
   else if (!strcmp(operation, "Duplicate"))
   {
