@@ -177,9 +177,9 @@
                 <primary>TIMELIMIT</primary>
               </indexterm>(<emphasis>period</emphasis>)</entry>
 
-            <entry>Specifies the total amount of time allowed for the SOAPCALL. 
-            The <emphasis>period</emphasis> is a real number where
-            the integer portion specifies seconds. If omitted, the default is 
+            <entry>Specifies the total amount of time allowed for the
+            SOAPCALL. The <emphasis>period</emphasis> is a real number where
+            the integer portion specifies seconds. If omitted, the default is
             zero (0) indicating no limit.</entry>
           </row>
 
@@ -263,6 +263,17 @@
 
             <entry>Specifies the service is not necessarily implemented in
             ESP.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">SOAPACTION<indexterm>
+                <primary>SOAPACTION</primary>
+              </indexterm> </emphasis>(<emphasis>value</emphasis>)</entry>
+
+            <entry>Specifies a <emphasis>value</emphasis> where that
+            <emphasis>value</emphasis> is a string expression typically
+            containing a URN or URL that is required by the web
+            <emphasis>service</emphasis> for proper interoperability.</entry>
           </row>
         </tbody>
       </tgroup>
