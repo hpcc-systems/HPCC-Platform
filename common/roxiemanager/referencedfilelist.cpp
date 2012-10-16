@@ -207,9 +207,9 @@ IPropertyTree *ReferencedFile::getForeignOrRemoteFileTree(IUserDescriptor *user,
     IDistributedFileDirectory &dir = queryDistributedFileDirectory();
     Owned<IPropertyTree> tree;
     if (foreignNode)
-        tree.setown(dir.getFileTree(logicalName.get(), foreignNode, user, WF_LOOKUP_TIMEOUT, false, false));
+        tree.setown(dir.getFileTree(logicalName.get(), user, foreignNode, WF_LOOKUP_TIMEOUT, false, false));
     if (!tree && remote)
-        tree.setown(dir.getFileTree(logicalName.get(), remote, user, WF_LOOKUP_TIMEOUT, false, false));
+        tree.setown(dir.getFileTree(logicalName.get(), user, remote, WF_LOOKUP_TIMEOUT, false, false));
     return tree.getClear();
 }
 
@@ -295,7 +295,7 @@ void ReferencedFile::cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *u
             df.clear();
         }
 
-        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(logicalName.get(), true, false, user);
+        Owned<IDistributedSuperFile> superfile = dir.createSuperFile(logicalName.get(),user, true, false);
         flags |= RefFileCloned;
         Owned<IPropertyTreeIterator> subfiles = tree->getElements("SubFile");
         ForEach(*subfiles)

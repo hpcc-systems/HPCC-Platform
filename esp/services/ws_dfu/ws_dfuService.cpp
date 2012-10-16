@@ -358,7 +358,7 @@ bool CWsDfuEx::onDFUSpace(IEspContext &context, IEspDFUSpaceRequest & req, IEspD
             filter.append("*");
         }
 
-        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, true, false, NULL, userdesc.get());
+        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter, userdesc.get(), true, false, NULL);
         if(!fi)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
 
@@ -1068,9 +1068,9 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     synchronized block(m_superfilemutex);
     if(strieq(action, "add"))
-        dfuhelper->addSuper(superfile, num, (const char**) subfileArray.getArray(), beforeSubFile, userdesc.get());
+        dfuhelper->addSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), beforeSubFile);
     else
-        dfuhelper->removeSuper(superfile, num, (const char**) subfileArray.getArray(), deleteFile, removeSuperfile, userdesc.get());
+        dfuhelper->removeSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), deleteFile, removeSuperfile);
 
     return num;
 }
@@ -2026,7 +2026,7 @@ void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *di
         filter.append(dirname);
         filter.append("::*");
         
-        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), false,true, NULL, udesc);
+        Owned<IDFAttributesIterator> fi = queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), udesc, false,true, NULL);
         if(fi)
         {
             StringBuffer size;
@@ -2126,7 +2126,7 @@ void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *di
         }
     }
 
-    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(dirname,false);
+    Owned<IDFScopeIterator> iter = queryDistributedFileDirectory().getScopeIterator(udesc,dirname,false);
     if(iter)
     {
         ForEach(*iter) 
@@ -2508,11 +2508,11 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         if (bNotInSuperfile)
         {
             fi.setown(createSubFileFilter( 
-                      queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(),true,true, NULL, udesc),udesc,false)); // NB wrapper owns wrapped iterator
+                      queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(),udesc,true,true, NULL),udesc,false)); // NB wrapper owns wrapped iterator
         }
         else
         {
-            fi.setown(queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(),true,true, NULL, udesc));
+            fi.setown(queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), udesc,true,true, NULL));
         }
         if(!fi)
             throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
@@ -3101,7 +3101,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
         resp.setRetcode(0);
         if (superfile && *superfile && action && strieq(action, "remove"))
         {
-            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,NULL);
+            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,UNKNOWN_USER);
             if (!fp)
                 resp.setRetcode(-1); //Superfile has been removed.
         }

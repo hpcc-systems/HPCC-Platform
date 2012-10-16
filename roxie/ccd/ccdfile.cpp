@@ -1538,7 +1538,7 @@ IFileDescriptor *checkCloneFrom(const char *id, IFileDescriptor *fdesc)
         CDfsLogicalFileName lfn;
         lfn.set(id);
         lfn.setForeign(cloneFrom, false);
-        Owned<IDistributedFile> cloneFile = queryDistributedFileDirectory().lookup(lfn);
+        Owned<IDistributedFile> cloneFile = queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
         if (cloneFile)
         {
             Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
@@ -2798,7 +2798,7 @@ private:
 
             Owned<IDistributedFile> publishFile = queryDistributedFileDirectory().createNew(desc); // MORE - we'll create this earlier if we change the locking paradigm
             publishFile->setAccessedTime(modifiedTime);
-            publishFile->attach(dFile->queryLogicalName(), activity ? activity->queryUserDescriptor() : NULL);
+            publishFile->attach(dFile->queryLogicalName(), activity ? activity->queryUserDescriptor() : UNKNOWN_USER);
             // MORE should probably write to the roxielocalstate too in case Dali is down next time I look...
         }
     }

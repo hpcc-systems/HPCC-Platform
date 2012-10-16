@@ -211,7 +211,7 @@ interface IDistributedFile: extends IInterface
 
     virtual IDistributedFilePartIterator *getIterator(IDFPartFilter *filter=NULL) = 0;
 
-    virtual void rename(const char *logicalname,IUserDescriptor *user=NULL) = 0;// simple rename (no file copy)
+    virtual void rename(const char *logicalname,IUserDescriptor *user) = 0;     // simple rename (no file copy)
 
     virtual IFileDescriptor *getFileDescriptor(const char *clustername=NULL) = 0;   // get file descriptor used for file system access
                                                                                 // if clustername specified makes filedesc for only that cluster
@@ -219,8 +219,8 @@ interface IDistributedFile: extends IInterface
     virtual const char *queryDefaultDir() = 0;                                  // default directory (note primary dir)
     virtual const char *queryPartMask() = 0;                                    // default part name mask
 
-    virtual void attach(const char *logicalname,IUserDescriptor *user=NULL) = 0;// attach to name in DFS
-    virtual void detach(unsigned timeoutms=INFINITE) = 0;                     // no longer attached to name in DFS
+    virtual void attach(const char *logicalname,IUserDescriptor *user) = 0;     // attach to name in DFS
+    virtual void detach(unsigned timeoutms=INFINITE) = 0;                       // no longer attached to name in DFS
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
@@ -435,14 +435,14 @@ typedef IIteratorOf<IFileRelationship> IFileRelationshipIterator;
 interface IDistributedFileDirectory: extends IInterface
 {
     virtual IDistributedFile *lookup(   const char *logicalname,
-                                        IUserDescriptor *user=NULL,
+                                        IUserDescriptor *user,
                                         bool writeaccess=false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
     virtual IDistributedFile *lookup(   const CDfsLogicalFileName &logicalname,
-                                        IUserDescriptor *user=NULL,
+                                        IUserDescriptor *user,
                                         bool writeaccess=false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
@@ -450,47 +450,47 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual IDistributedFile *createNew(IFileDescriptor *desc,bool includeports=false) = 0;
 
-    virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user=NULL) = 0;
+    virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
             // wildname is in form scope/name and may contain wild components for either
-    virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
-    virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, bool recursive=true, bool includesuper=false, const char *foreigndali="",IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
-    virtual IDFScopeIterator *getScopeIterator(const char *subscope=NULL,bool recursive=true,bool includeempty=false, IUserDescriptor *user=NULL)=0;
+    virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
 
-    virtual bool removeEntry(const char *name,IUserDescriptor *user=NULL, unsigned timeoutms=INFINITE) = 0;  // equivalent to lookup/detach/release
-    virtual bool removePhysical(const char *name,const char *cluster=NULL,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                           // removes the physical parts as well as entry
-    virtual bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions=NULL,IUserDescriptor *user=NULL) = 0;                         // renames the physical parts as well as entry
+    virtual bool removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms=INFINITE) = 0;  // equivalent to lookup/detach/release
+    virtual bool removePhysical(const char *name,IUserDescriptor *user,const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;                           // removes the physical parts as well as entry
+    virtual bool renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IMultiException *exceptions=NULL) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
 
-    virtual bool exists(const char *logicalname,bool notsuper=false,bool superonly=false,IUserDescriptor *user=NULL) = 0;                           // logical name exists
-    virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user=NULL) = 0;                                                    // physical parts exists
+    virtual bool exists(const char *logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false) = 0;                           // logical name exists
+    virtual bool existsPhysical(const char *logicalname,IUserDescriptor *user) = 0;                                                    // physical parts exists
 
-    virtual IPropertyTree *getFileTree(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true, bool appendForeign=true) =0;
-    virtual IFileDescriptor *getFileDescriptor(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
+    virtual IPropertyTree *getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT, bool expandnodes=true, bool appendForeign=true) =0;
+    virtual IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) =0;
 
-    virtual IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist=false,IUserDescriptor *user=NULL,IDistributedFileTransaction *transaction=NULL) = 0;
-    virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user=NULL,
+    virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
+    virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
                                                     unsigned timeout=INFINITE
 
                                                 ) = 0;  // NB lookup will also return superfiles 
 
-    virtual int getFilePermissions(const char *lname,IUserDescriptor *user=NULL,unsigned auditflags=0)=0; // see dasess for auditflags values
+    virtual int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags=0)=0; // see dasess for auditflags values
     virtual void setDefaultUser(IUserDescriptor *user)=0;
     virtual IUserDescriptor* queryDefaultUser()=0;
-    virtual int getNodePermissions(const IpAddress &ip,IUserDescriptor *user=NULL,unsigned auditflags=0)=0;
-    virtual int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user=NULL,unsigned auditflags=0)=0;
+    virtual int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags=0)=0;
+    virtual int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0)=0;
 
-    virtual DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user=NULL)=0;
-    virtual bool filePhysicalVerify(const char *lfn1,bool includecrc,StringBuffer &errstr,IUserDescriptor *user=NULL)=0;
+    virtual DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user)=0;
+    virtual bool filePhysicalVerify(const char *lfn1,IUserDescriptor *user,bool includecrc,StringBuffer &errstr)=0;
 
     virtual void setDefaultPreferredClusters(const char *clusters)=0;   // comma separated list of clusters
 
 
     virtual GetFileClusterNamesType getFileClusterNames(const char *logicalname,StringArray &out)=0;
 
-    virtual bool isSuperFile( const char *logicalname, INode *foreigndali=NULL, IUserDescriptor *user=NULL, unsigned timeout=INFINITE) = 0;
+    virtual bool isSuperFile( const char *logicalname, IUserDescriptor *user, INode *foreigndali=NULL, unsigned timeout=INFINITE) = 0;
 
     // Local 'lightweight' routines
     virtual void promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user,unsigned timeout, StringArray &outunlinked)=0;
@@ -542,7 +542,7 @@ interface IDistributedFileDirectory: extends IInterface
                                 ) = 0; // if scope returns subfiles and subdirs
 
     virtual bool publishMetaFileXML(const CDfsLogicalFileName &logicalname,
-                                    IUserDescriptor *user=NULL) = 0;
+                                    IUserDescriptor *user) = 0;
 
     virtual bool isProtectedFile( // needs no lock on file
                                       const CDfsLogicalFileName &logicalname,
@@ -664,7 +664,7 @@ extern da_decl bool removeClusterSpares(const char *clusterName, const char *typ
 extern da_decl StringBuffer &getClusterGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, StringBuffer &groupName);
 
-extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user=NULL);
+extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
 
 extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized);
 

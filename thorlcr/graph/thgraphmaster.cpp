@@ -1630,7 +1630,7 @@ bool CJobMaster::go()
                 queryThorFileManager().addScope(*this, tmpName, newName, true, true);
                 verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
 
-                file->attach(newName);
+                file->attach(newName,userDesc);
 
                 Owned<IWorkUnit> wu = &queryWorkUnit().lock();
                 wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
