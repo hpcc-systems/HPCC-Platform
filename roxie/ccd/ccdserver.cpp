@@ -10274,10 +10274,12 @@ class CRoxieServerHashAggregateActivity : public CRoxieServerActivity
 
     bool eof;
     bool gathered;
-
+    bool isGroupedAggregate;
 public:
-    CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper), aggregated(helper, helper)
+    CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, bool _isGroupedAggregate, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper),
+          isGroupedAggregate(_isGroupedAggregate),
+          aggregated(helper, helper)
     {
         eof = false;
         gathered = false;
@@ -10288,7 +10290,6 @@ public:
         eof = false;
         gathered = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        aggregated.start(rowAllocator);
     }
 
     virtual void reset()
@@ -10307,16 +10308,27 @@ public:
 
         if (!gathered)
         {
+            aggregated.start(rowAllocator);
+            bool eog = true;
             loop
             {
                 const void * next = input->nextInGroup();
                 if (!next)
                 {
-                    next = input->nextInGroup();
-                    if (!next)
-                        break;
+                    if (isGroupedAggregate)
+                    {
+                        if (eog)
+                            eof = true;
+                    }
+                    else
+                    {
+                        next = input->nextInGroup();
+                        if (!next)
+                            eof = true;
+                    }
+                    break;
                 }
-
+                eog = false;
                 aggregated.addRow(next);
                 ReleaseRoxieRow(next);
             }
@@ -10329,7 +10341,8 @@ public:
             processed++;
             return next->finalizeRowClear();
         }
-        eof = true;
+        aggregated.reset();
+        gathered = false;
         return NULL;
     }
 };
@@ -10337,20 +10350,23 @@ public:
 class CRoxieServerHashAggregateActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        isGroupedAggregate = _graphNode.getPropBool("att[@name='grouped']/@value");
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerHashAggregateActivity(this, _probeManager);
+        return new CRoxieServerHashAggregateActivity(this, isGroupedAggregate, _probeManager);
     }
+protected:
+    bool isGroupedAggregate;
 };
 
-IRoxieServerActivityFactory *createRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerHashAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerHashAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
