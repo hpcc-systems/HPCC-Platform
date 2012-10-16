@@ -610,7 +610,7 @@ void slaveMain()
     HardwareInfo hdwInfo;
     getHardwareInfo(hdwInfo);
     if (hdwInfo.totalMemory < masterMemMB)
-        WARNLOG("Slave has less memory than master node"); // JCSMORE, error?
+        WARNLOG("Slave has less memory than master node");
     unsigned gmemSize = globals->getPropInt("@globalMemorySize");
     if (gmemSize >= hdwInfo.totalMemory)
     {
