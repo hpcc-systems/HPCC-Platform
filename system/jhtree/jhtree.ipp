@@ -49,7 +49,7 @@ public:
     IKeyIndex *load(const char *fileName, unsigned crc, IReplicatedFile &part, bool isTLK, bool allowPreload);
     void clearCache(bool killAll);
     void clearCacheEntry(const char *name);
-    void setKeyCacheLimit(unsigned limit);
+    unsigned setKeyCacheLimit(unsigned limit);
     StringBuffer &getMetrics(StringBuffer &xml);
     void resetMetrics();
 };

@@ -128,11 +128,13 @@ class CMRUCacheMaxCountOf : public CMRUCacheOf<KEY, ENTRY, MAPPING, TABLE>
     unsigned cacheOverflow; // # to clear if full
 public:
     CMRUCacheMaxCountOf(unsigned _cacheMax) : cacheMax(_cacheMax) { cacheOverflow = 1; }
-    void setCacheLimit(unsigned _cacheMax)
+    unsigned setCacheLimit(unsigned _cacheMax)
     {
         if (SELF::table.count() > _cacheMax)
             this->clear(_cacheMax - SELF::table.count());
+        unsigned oldCacheMax = cacheMax;
         cacheMax = _cacheMax;
+        return oldCacheMax;
     }
     virtual void makeSpace()
     {
