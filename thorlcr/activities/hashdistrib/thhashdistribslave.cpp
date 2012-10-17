@@ -96,6 +96,9 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<IRowWriter> pipewr;
     roxiemem::IRowManager *rowManager;
 
+    /*
+     * CSendBucket - a collection of rows destinate for a particular destination target(slave)
+     */
     class CSendBucket : public CSimpleInterface, implements IRowStream
     {
         CDistributorBase &owner;
@@ -157,15 +160,19 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         unsigned queryDestination() const { return destination; }
         size32_t querySize() const { return total; }
-        void serializeClear(IRowSerializerTarget &target)
+        bool serializeClear(MemoryBuffer &mb, size32_t limit) // returns true if sent all
         {
+            CMemoryRowSerializer memSerializer(mb);
             loop
             {
                 OwnedConstThorRow row = nextRow();
                 if (!row)
                     break;
-                owner.serializer->serialize(target, (const byte *)row.get());
+                owner.serializer->serialize(memSerializer, (const byte *)row.get());
+                if (mb.length()>=limit)
+                    return false;
             }
+            return true;
         }
     // IRowStream impl.
         virtual const void *nextRow()
@@ -175,8 +182,21 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         virtual void stop() { }
     };
     typedef SimpleInterThreadQueueOf<CSendBucket, false> CSendBucketQueue;
+    /*
+     * CSender, main send loop functionality
+     * processes input, constructs CSendBucket's and manages creation CWriteHandler threads
+     */
     class CSender : public CSimpleInterface, implements IThreadFactory, implements IExceptionHandler
     {
+        /*
+         * CWriterHandler, a per thread class and member of the writerPool
+         * a write handler, is given an initial CSendBucket and handles the dedup(if applicable)
+         * compression and transmission to the target.
+         * If the size serialized, is below a threshold, it will see if more has been queued
+         * in the interim and serialize that compress and searilize within the same send/recv cycle
+         * When done, it will see if more queue available.
+         * NB: There will be at most 1 writer per destination target (up to thread pool limit)
+         */
         class CWriteHandler : public CSimpleInterface, implements IPooledThread
         {
             CSender &owner;
@@ -200,21 +220,20 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             {
                 Owned<CSendBucket> sendBucket = _sendBucket.getClear();
                 unsigned dest = sendBucket->queryDestination();
-                size32_t totalSz = 0;
+                size32_t writerTotalSz = 0;
                 size32_t sendSz = 0;
                 MemoryBuffer mb;
-                CMemoryRowSerializer sz(mb);
                 loop
                 {
-                    totalSz += sendBucket->querySize();
+                    writerTotalSz += sendBucket->querySize();
                     owner.dedup(sendBucket); // conditional
 
                     if (owner.selfPush(dest))
                         distributor.addLocal(sendBucket);
-                    else
+                    else // remote
                     {
-                        sendSz += sendBucket->querySize(); // NB: same as freeSz unless dedups
-                        sendBucket->serializeClear(sz);
+                        bool wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
+                        sendSz = mb.length();
                         // NB: buckets will typically be large enough already, if not check pending buckets
                         if (sendSz < distributor.bucketSendSize)
                         {
@@ -227,19 +246,26 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             {
                                 HDSendPrintLog3("CWriteHandler, pending(b=%d) rolled, size=%d", sendBucket->queryDestination(), sendBucket->querySize());
                                 // NB: if was just < bucketSendSize and pending is ~ bucketSendSize, could mean we send is ~2*bucketSendSize, but that's ok.
-                                continue;
+                                continue; // NB: it will flow into else "remote" arm
                             }
                         }
-                        // JCSMORE check if worth compressing
-                        CMessageBuffer msg;
-                        fastLZCompressToBuffer(msg, mb.length(), mb.bufferBase());
-                        mb.clear();
-                        owner.send(dest, msg);
-                        sendSz = 0;
+                        loop
+                        {
+                            // JCSMORE check if worth compressing
+                            CMessageBuffer msg;
+                            fastLZCompressToBuffer(msg, mb.length(), mb.bufferBase());
+                            mb.clear();
+                            owner.send(dest, msg);
+                            sendSz = 0;
+                            if (wholeBucket)
+                                break;
+                            wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
+                        }
                     }
-                    owner.decTotal(totalSz);
-                    totalSz = 0;
+                    owner.decTotal(writerTotalSz);
+                    writerTotalSz = 0;
                     // see if others to process
+                    // NB: this will never start processing a bucket for a destination which already has an active writer.
                     CriticalBlock b(owner.activeWritersLock);
                     owner.setActiveWriter(dest, NULL);
                     sendBucket.setown(owner.getAnotherBucket(nextPending));
@@ -503,10 +529,12 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 {
                     size32_t bucketSz = bucket->querySize();
                     if (bucketSz > maxsz/2)
+                    {
                         if (i==self)
                             doSelf = true;
                         else
                             candidates.append(i);
+                    }
                 }
             }
             if (0 == candidates.ordinality())
@@ -576,9 +604,10 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         size32_t rs;
                         bucket->add(row, rs);
                         totalSent++;
-                        totalSzLock.enter();
-                        totalSz += rs;
-                        totalSzLock.leave();
+                        {
+                            SpinBlock b(totalSzLock);
+                            totalSz += rs;
+                        }
                         if (bucket->querySize() >= owner.bucketSendSize)
                         {
                             HDSendPrintLog3("adding new bucket: %d, size = %d", bucket->queryDestination(), bucket->querySize());
@@ -620,7 +649,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         {
             return new CWriteHandler(*this);
         }
-        // IExceptionHandler impl.
+    // IExceptionHandler impl.
         virtual bool fireException(IException *e)
         {
             if (!exception.get())
@@ -710,10 +739,8 @@ public:
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
         pull = false;
-        fixedEstSize = meta->getFixedSize();
+        fixedEstSize = meta->querySerializedMeta()->getFixedSize();
         rowManager = activity->queryJob().queryRowManager();
-        if (fixedEstSize)
-            fixedEstSize = rowManager->getExpectedCapacity(fixedEstSize, 0);
 
         unsigned defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist", true));
         allowSpill = activity->queryContainer().queryXGMML().getPropBool("hint[@name=\"allow_spill\"]/@value", defaultAllowSpill);
@@ -738,12 +765,13 @@ public:
         }
     }
 
-    size32_t rowMemSize(const void *r)
+    size32_t rowMemSize(const void *row)
     {
         if (fixedEstSize)
             return fixedEstSize;
-        size32_t sz = meta->getRecordSize(r);
-        return rowManager->getExpectedCapacity(sz, 0);
+        CSizingSerializer ssz;
+        serializer->serialize(ssz, (const byte *)row);
+        return ssz.size();
     }
 
     virtual void setBufferSizes(unsigned _inputBufferSize, unsigned _bucketSendSize, unsigned _pullBufferSize)
