@@ -115,7 +115,7 @@ require([
                 var timerData = [];
                 for (var i = 0; i < timers.length; ++i) {
                     if (timers[i].GraphName && (query == "*" || query == timers[i].GraphName)) {
-                        var value = timers[i].Value;
+                        var value = timers[i].Seconds;
                         timerData.push({
                             graphName: timers[i].GraphName,
                             subGraphId: timers[i].SubGraphId,
