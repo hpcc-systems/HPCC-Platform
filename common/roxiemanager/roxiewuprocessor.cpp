@@ -839,7 +839,7 @@ public:
 
                 StringBuffer msg;
                 StringBuffer rel_xpath("MetaFileInfo/Relationships/Relationship");
-                addRoxieFileRelationshipsToDali(xml, processingInfo.queryDfsDaliIp(), rel_xpath, true, msg);
+                addRoxieFileRelationshipsToDali(xml, processingInfo.queryDfsDaliIp(), rel_xpath, true, msg, wu->queryUserDescriptor());
 
                 if (me->ordinality())
                     throw me.getClear();
@@ -1035,7 +1035,7 @@ public:
 
 
 //////////////////////////////////////////////////////////////////////////////////////
-    bool addRoxieFileRelationshipsToDali(IPropertyTree *xml, const char *lookupDaliIp, const char *xpath, bool storeResults, StringBuffer &msg)
+    bool addRoxieFileRelationshipsToDali(IPropertyTree *xml, const char *lookupDaliIp, const char *xpath, bool storeResults, StringBuffer &msg, IUserDescriptor *user)
     {
         if (!xml)
             return false;
@@ -1073,7 +1073,8 @@ public:
                     dfuHelper->cloneFileRelationships(lookupDaliIp,// where src relationships are retrieved from (can be NULL for local)
                                                       srcfiles,     // file names on source
                                                       dstfiles,     // corresponding filenames on dest (must exist otherwise ignored)
-                                                      tree  // MORE - add a tree ptr here and process....
+                                                      tree,  // MORE - add a tree ptr here and process....
+                                                      user
                                                      );
 
                     if (tree)
@@ -1337,7 +1338,7 @@ public:
         lookupRelationships(relationshipTree, src_filename, NULL, remoteRoxieClusterName, lookupDaliIp);
         lookupRelationships(relationshipTree, NULL, src_filename, remoteRoxieClusterName, lookupDaliIp);
 
-        return addRoxieFileRelationshipsToDali(tree, lookupDaliIp, "Relationships/Relationship", false, msg);
+        return addRoxieFileRelationshipsToDali(tree, lookupDaliIp, "Relationships/Relationship", false, msg, userdesc);
     }
     
 
@@ -1705,7 +1706,7 @@ public:
 
         StringBuffer msg;
         StringBuffer rel_xpath("MetaFileInfo/Relationships/Relationship");
-        addRoxieFileRelationshipsToDali(remoteQuery, lookupDaliIp, rel_xpath, true, msg);
+        addRoxieFileRelationshipsToDali(remoteQuery, lookupDaliIp, rel_xpath, true, msg, userdesc);
 
         ForEachItemIn(idx, filesToDelete)
         {

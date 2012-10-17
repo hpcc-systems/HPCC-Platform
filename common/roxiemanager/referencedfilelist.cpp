@@ -510,7 +510,7 @@ void ReferencedFileList::cloneRelationships()
             if (refAssoc && !(refAssoc->getFlags() & RefFileCopyInfoFailed))
             {
                 dir.addFileRelationship(file.getLogicalName(), assoc, r.queryPrimaryFields(), r.querySecondaryFields(),
-                    r.queryKind(), r.queryCardinality(), r.isPayload(), r.queryDescription());
+                    r.queryKind(), r.queryCardinality(), r.isPayload(), user, r.queryDescription());
             }
         }
     }

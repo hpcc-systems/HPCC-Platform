@@ -976,7 +976,8 @@ public:
         const char *foreigndali,     // where src relationships are retrieved from (can be NULL for local)
         StringArray &srcfns,             // file names on source
         StringArray &dstfns,             // corresponding filenames on dest (must exist)
-        IPropertyTree *relationships    // if not NULL, tree will have all relationships filled in
+        IPropertyTree *relationships,    // if not NULL, tree will have all relationships filled in
+        IUserDescriptor *user
     )
     {
         // not a quick routine! (n^2)
@@ -988,7 +989,7 @@ public:
         bool *ex = (bool *)ma.allocate(dstfns.ordinality()*sizeof(bool));
         unsigned i;
         for (i=0;i<n;i++)
-            ex[i] = queryDistributedFileDirectory().exists(dstfns.item(i),UNKNOWN_USER);//MORE:Pass IUserDescriptor
+            ex[i] = queryDistributedFileDirectory().exists(dstfns.item(i),user);
         for (i=0;i<n;i++) {
             if (!ex[i])
                 continue;
@@ -999,7 +1000,7 @@ public:
                 ForEach(*iter) {
                     try {
                         IFileRelationship &r = iter->query();
-                        queryDistributedFileDirectory().addFileRelationship(dstfns.item(i),dstfns.item(j),r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),r.queryDescription());
+                        queryDistributedFileDirectory().addFileRelationship(dstfns.item(i),dstfns.item(j),r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),user,r.queryDescription());
                         if (relationships)
                         {
                             IPropertyTree *tree = iter->query().queryTree(); // relies on this being modifiable

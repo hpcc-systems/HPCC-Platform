@@ -507,6 +507,7 @@ interface IDistributedFileDirectory: extends IInterface
         const char *kind,
         const char *cardinality,
         bool payload,
+        IUserDescriptor *user,
         const char *description=NULL
     )=0;
 

@@ -3101,7 +3101,16 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
         resp.setRetcode(0);
         if (superfile && *superfile && action && strieq(action, "remove"))
         {
-            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,UNKNOWN_USER);
+            Owned<IUserDescriptor> udesc;
+            udesc.setown(createUserDescriptor());
+            {
+                StringBuffer userID;
+                StringBuffer pw;
+                context.getUserID(userID);
+                context.getPassword(pw);
+                udesc->set(userID.str(), pw.str());
+            }
+            Owned<IDistributedSuperFile> fp = queryDistributedFileDirectory().lookupSuperFile(superfile,udesc);
             if (!fp)
                 resp.setRetcode(-1); //Superfile has been removed.
         }
