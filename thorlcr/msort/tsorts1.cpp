@@ -18,6 +18,7 @@
 #include "platform.h"
 #include <limits.h>
 
+#include "jlib.hpp"
 #include "mpbase.hpp"
 #include "mpcomm.hpp"
 #include "thorport.hpp"
