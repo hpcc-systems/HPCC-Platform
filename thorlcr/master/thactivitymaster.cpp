@@ -108,6 +108,7 @@ public:
             case TAKfiltergroup:
             case TAKlocalresultread:
             case TAKchildif:
+            case TAKchildcase:
             case TAKdegroup:
             case TAKsplit:
             case TAKproject:

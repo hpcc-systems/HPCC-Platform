@@ -247,6 +247,7 @@ CActivityBase *createGraphLoopResultReadSlave(CGraphElementBase *container);
 CActivityBase *createGraphLoopResultWriteSlave(CGraphElementBase *container);
 
 CActivityBase *createIfSlave(CGraphElementBase *container);
+CActivityBase *createCaseSlave(CGraphElementBase *container);
 CActivityBase *createCatchSlave(CGraphElementBase *container);
 CActivityBase *createChildNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createChildAggregateSlave(CGraphElementBase *container);
@@ -708,6 +709,9 @@ public:
                 break;
             case TAKchildif:
                 ret = createIfSlave(this);
+                break;
+            case TAKchildcase:
+                ret = createCaseSlave(this);
                 break;
             case TAKcatch:
             case TAKskipcatch:
