@@ -1276,15 +1276,29 @@ bool CConfigEnvHelper::AddNewNodes(IPropertyTree* pThor, const char* szType, int
             continue;
 
         StringBuffer sName;
+        StringBuffer sThorMasterProcess;
+        sThorMasterProcess.appendf("./%s", XML_TAG_THORMASTERPROCESS);
+
         sName.appendf("temp%d", i + 1);
 
-        // Add process node
-        IPropertyTree* pProcessNode = createPTree(szType);
-        pProcessNode->addProp(XML_ATTR_NAME, sName);
-        pProcessNode->addProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
-        if (nPort != 0) pProcessNode->addPropInt(XML_ATTR_PORT, nPort);
-            addNode(pProcessNode, pThor);
-    }
+        IPropertyTree *pTree = (szType == NULL || strcmp(szType, XML_TAG_THORMASTERPROCESS) != 0) ? NULL : pThor->queryPropTree(sThorMasterProcess.str());
+        bool bAdd = false;
+
+        if (pTree == NULL)
+        {
+          bAdd = true;
+          pTree = createPTree(szType);
+        }
+
+        pTree->setProp(XML_ATTR_NAME,sName);
+        pTree->setProp(XML_ATTR_COMPUTER, computers[i]->queryProp(XML_ATTR_NAME));
+
+        if (nPort != 0)
+          pTree->setPropInt(XML_ATTR_PORT, nPort);
+
+        if (bAdd == true)
+          addNode(pTree, pThor);
+   }
 
     RenameThorInstances(pThor);
     UpdateThorAttributes(pThor);
