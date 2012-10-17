@@ -68,11 +68,17 @@ static void LOGXML(const char *trc,const IPropertyTree *pt)
 
 class CDFUengine: public CInterface, implements IDFUengine
 {
+    StringBuffer dfuServerName;
     size32_t defaultTransferBufferSize;
 
     void setDefaultTransferBufferSize(size32_t size)
     {
         defaultTransferBufferSize = size;
+    }
+
+    void setDFUServerName(const char* name)
+    {
+        dfuServerName = name;
     }
 
     void Audit(const char *func,IUserDescriptor *userdesc,const char *lfn1, const char *lfn2)
@@ -985,6 +991,8 @@ public:
             WARNLOG("DFURUN: Workunit %s not found",dfuwuid);
             return DFUstate_unknown;
         }
+        if (dfuServerName.length())
+            wu->setDFUServerName(dfuServerName.str());
         StringBuffer logname;
         if (fileMsgHandler && fileMsgHandler->getLogName(logname))
             wu->setDebugValue("dfulog", logname.str(), true);

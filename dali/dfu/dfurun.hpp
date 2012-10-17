@@ -31,6 +31,7 @@ interface IDFUengine: extends IInterface
     virtual void abortListeners()=0;
     virtual DFUstate runWU(const char *dfuwuid)=0;
     virtual void setDefaultTransferBufferSize(size32_t size) = 0;
+    virtual void setDFUServerName(const char* name) = 0;
 };
 
 IDFUengine *createDFUengine();
