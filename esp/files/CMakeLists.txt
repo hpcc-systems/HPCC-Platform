@@ -211,16 +211,8 @@ set ( MAIN_FILES
     esp_app.html
     useradd.html
     groupadd.html
-    ECLPlayground.htm
-    ECLPlayground.js
-    ECLPlaygroundResults.htm
-    ECLPlaygroundResults.js
-    WUGraph.htm
-    WUGraph.js
-    WUTimings.htm
-    WUTimings.js
-    WUSource.htm
-    WUSource.js
+    stub.htm
+    stub.js
     )
 source_group("Source Files" FILES ${MAIN_FILES})
 

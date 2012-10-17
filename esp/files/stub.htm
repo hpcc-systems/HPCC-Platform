@@ -1,6 +1,6 @@
 ﻿<!DOCTYPE html>
 <!--
-/*##############################################################################
+##############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,12 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-############################################################################## */
+##############################################################################
 -->
 <html>
 <head>
     <meta charset="utf-8">
-    <title>HPCC: WU Query</title>
+    <title>HPCC: Stub</title>
     <link href="CodeMirror2/lib/codemirror.css" rel="stylesheet">
     <script src="CodeMirror2/lib/codemirror.js"></script>
     <script src="CodeMirror2/mode/ecl/ecl.js"></script>
@@ -42,10 +42,10 @@
                 urlBase: base,
                 packages: [{
                     name: "main",
-                    location: base + "/"
+                    location: base
                 }, {
                     name: "hpcc",
-                    location: base + "/scripts/"
+                    location: base + "/scripts"
                 }]
             };
         })();
@@ -53,7 +53,7 @@
     <script src="dojo/dojo.js"></script>
     <script>
         require([
-		"main/WUSource", "hpcc/ECLSourceWidget",
+        "main/stub",
         "dojo/domReady!"], function (app) {
             app.init();
         });
@@ -67,7 +67,5 @@
         </div>
     </div>
     <!-- application -->
-    <div id="appLayout" class="hpccApp" data-dojo-props="design: 'headline', readOnly: true" data-dojo-type="ECLSourceWidget">
-    </div>
 </body>
 </html>

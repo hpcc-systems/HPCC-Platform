@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
 	"dojo/_base/declare",
 	"dojo/_base/xhr",
 	"dojo/dom",
@@ -33,7 +33,7 @@ require([
 	"hpcc/ResultsWidget",
 	"hpcc/ESPWorkunit",
 
-	"dojo/text!./templates/ECLPlaygroundWidget.html"
+    "dojo/text!../templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, dom,
 				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
 				EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
@@ -87,19 +87,21 @@ require([
             this.borderContainer.resize();
         },
 
-        init: function (wuid, target) {
-            this.wuid = wuid;
-            this.targetSelectWidget.setValue(target);
+        init: function (params) {
+            if (params.Wuid) {
+                this.hideTitle();
+            }
+
+            this.wuid = params.Wuid;
+            this.targetSelectWidget.setValue(params.Target);
 
             this.initEditor();
-            //this.initresultsWidget();
 
-            //  ActiveX will flicker if created before initial layout
             var context = this;
             this.initGraph();
-            if (wuid) {
+            if (params.Wuid) {
                 this.wu = new Workunit({
-                    wuid: wuid
+                    wuid: params.Wuid
                 });
                 this.wu.fetchText(function (text) {
                     context.editorControl.setText(text);
@@ -126,7 +128,7 @@ require([
         },
 
         initEditor: function () {
-                this.editorControl = registry.byId(this.id + "Source");
+            this.editorControl = registry.byId(this.id + "Source");
         },
 
         initGraph: function () {
