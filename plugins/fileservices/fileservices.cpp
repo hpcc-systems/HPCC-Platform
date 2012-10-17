@@ -369,7 +369,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsFileExists(ICodeContext *ctx, const ch
     if (physical)
         return queryDistributedFileDirectory().existsPhysical(lfn.str(),ctx->queryUserDescriptor());
 
-    return queryDistributedFileDirectory().exists(lfn.str(),false,false,ctx->queryUserDescriptor());
+    return queryDistributedFileDirectory().exists(lfn.str(),ctx->queryUserDescriptor(),false,false);
 }
 
 FILESERVICES_API bool FILESERVICES_CALL fsFileValidate(ICodeContext *ctx, const char *name)
@@ -1036,7 +1036,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsSuperFileExists(ICodeContext *ctx, con
 {
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
-    return queryDistributedFileDirectory().exists(lsfn,false,true);
+    return queryDistributedFileDirectory().exists(lsfn,ctx->queryUserDescriptor(),false,true);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsDeleteSuperFile(ICodeContext *ctx, const char *lsuperfn,bool deletesub)

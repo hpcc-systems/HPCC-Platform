@@ -306,7 +306,7 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
     for (unsigned i=1; i<=supersToDel; i++) {
         StringBuffer super = buf;
         super.append("::super").append(i);
-        if (dir.exists(super.str(),false,true) && !dir.removeEntry(super.str(), user)) {
+        if (dir.exists(super.str(),user,false,true) && !dir.removeEntry(super.str(), user)) {
             ERROR1("Can't remove %s", super.str());
             return false;
         }
