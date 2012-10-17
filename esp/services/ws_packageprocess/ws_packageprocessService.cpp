@@ -99,12 +99,11 @@ bool isRoxieProcess(const char *process)
     return conn->queryRoot()->hasProp(xpath.str());
 }
 
-bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, const char *target, IUserDescriptor* userdesc)
+bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true);
     if (dst)
     {
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
         SCMStringBuffer processName;
         clusterInfo->getRoxieProcess(processName);
         if (dst->findCluster(processName.str()) != NotFound)
@@ -113,7 +112,16 @@ bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, con
     return false;
 }
 
-bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
+bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, const char *target, IUserDescriptor* userdesc)
+{
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+
+    return isFileKnownOnCluster(logicalname, lookupDaliIp, clusterInfo, userdesc);
+}
+
+bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, bool overWrite, IUserDescriptor* userdesc)
 {
     bool retval = true;
     try
@@ -129,7 +137,6 @@ bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const
 
         Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
         wufiles->addFiles(fileNames);
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
         SCMStringBuffer processName;
         clusterInfo->getRoxieProcess(processName);
         wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
@@ -149,6 +156,15 @@ bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const
     }
 
     return retval;
+}
+
+bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
+{
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+
+    return cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
 }
 
 bool addFileInfoToDali(const char *logicalname, const char *lookupDaliIp, const char *target, bool overwrite, IUserDescriptor* userdesc, StringBuffer &host, short port, StringBuffer &msg)
@@ -251,6 +267,9 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
     mapTree->addProp("@id", packageMapName);
 
     StringArray fileNames;
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
 
     IPropertyTree *baseInfo = createPTree();
     Owned<IPropertyTreeIterator> iter = packageInfo->getElements("Package");
@@ -278,7 +297,7 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
                     {
                         if (subid[0] == '~')
                             subtree.setProp("@value", subid+1);
-                        if (!isFileKnownOnCluster(subid, lookupDaliIp, target, userdesc))
+                        if (!isFileKnownOnCluster(subid, lookupDaliIp, clusterInfo, userdesc))
                             fileNames.append(subid);
                     }
                 }
@@ -292,7 +311,7 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
     }
 
     mergePTree(mapTree, baseInfo);
-    cloneFileInfoToDali(fileNames, lookupDaliIp, target, overWrite, userdesc);
+    cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
 
     globalLock->commit();
 
