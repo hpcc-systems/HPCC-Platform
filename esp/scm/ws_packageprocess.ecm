@@ -27,6 +27,7 @@ ESPrequest AddPackageRequest
     string Target;
     string PackageMap;
     string Process;
+    string DaliIp;
 };
 
 
