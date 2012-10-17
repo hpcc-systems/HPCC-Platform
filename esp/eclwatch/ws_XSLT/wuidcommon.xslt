@@ -597,7 +597,7 @@
         </p>
       </xsl:if>
 
-      <xsl:if test="string-length(Query/Text)">
+      <xsl:if test="string-length(Query/Text) or string-length(Query/QueryMainDefinition)">
         <div>
           <div class="wugroup">
               <div class="WuGroupHdrLeft">
@@ -605,11 +605,18 @@
               </div>
           </div>
           <div id="querysection" class="wusectioncontent">
-            <div>
-              <textarea id="query" readonly="true" wrap="off" rows="10" STYLE="width:600">
-                <xsl:value-of select="Query/Text"/>
-              </textarea>
-            </div>
+              <xsl:if test="string-length(Query/Text)">
+                  <div>
+                      <textarea id="query" readonly="true" wrap="off" rows="10" STYLE="width:600">
+                          <xsl:value-of select="Query/Text"/>
+                      </textarea>
+                  </div>
+              </xsl:if>
+              <xsl:if test="string-length(Query/QueryMainDefinition)">
+                  <div>
+                      <b>QueryMainDefinition: </b><xsl:value-of select="Query/QueryMainDefinition"/>
+                  </div>
+              </xsl:if>
           </div>
         </div>
       </xsl:if>
