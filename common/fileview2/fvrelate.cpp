@@ -373,7 +373,7 @@ void ViewFileWeb::gatherWebFromPattern(const char * filenamePattern, const ViewG
     if (!localOptions.kind)
         localOptions.kind = S_LINK_RELATIONSHIP_KIND;
 
-    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, NULL);
+    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, UNKNOWN_USER);
     if (iter->first())
     {
         do
