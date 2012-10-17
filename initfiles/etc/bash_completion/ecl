@@ -21,30 +21,211 @@
 # File must be copied/linked from /etc/bash_completion.d/ to work seamlessly
 # You must have ". /etc/bash_completion" on your bashrc file (you probably have it)
 
+#set -x
+
+_flag_option()
+{
+    case "$1" in
+        "--help" | "-v" | "--verbose" | "--no-reload" | "--no-files" | "-A" | "--activate" | "-O" | "--overwrite" | "--ecl-only")
+            echo 1
+            ;;
+        *)
+            echo 0
+            ;;
+    esac
+}
+
+_ecl_opts_file()
+{
+    local prev="${COMP_WORDS[COMP_CWORD-1]}"
+    if [ "$prev" = "=" ]
+    then
+       prev="${COMP_WORDS[COMP_CWORD-2]}"
+    fi
+    local isFlagOption=$(_flag_option $prev)
+    if [ "$isFlagOption" = "1" ] || [ "${prev:0:1}" != "-" ] || [ "$prev" = "--manifest" ]
+    then
+       echo "<filelist>"
+    fi
+}
+
+_ecl_nextcommand()
+{
+    local value=0
+    local pos=$(($1))
+    for ((; pos<$COMP_CWORD; pos++))
+    do
+        cur="${COMP_WORDS[pos]}"
+        ch="${cur:0:1}"
+        if [ "$ch" == "=" ]
+        then
+            pos=$(($pos + 1))
+        elif [ "$ch" != "-" ]
+        then
+            value=$(($pos))
+            break
+        else
+            isFlagOption=$(_flag_option $cur )
+            if [ "$isFlagOption" -eq "0" ] && [ "${COMP_WORDS[pos+1]}" != "=" ]
+            then
+               pos=$(($pos + 1))
+            fi
+        fi
+    done
+    echo $value
+}
+
+_ecl_opts_common()
+{
+    echo "--help -v --verbose -s --server=<ip> --port=N -u --username=<name> -pw --password=<pw>"
+}
+
+_ecl_opts_queries()
+{
+    local subcmdpos=$(_ecl_nextcommand $1)
+    local subcmdname="${COMP_WORDS[subcmdpos]}"
+    case "${subcmdname}" in
+        "" | ecl)
+            echo "--help list copy config"
+            ;;
+        copy)
+            echo -n "--no-reload --wait=MS --timeLimit=SEC --warnTimeLimit=SEC --memoryLimit=MEM "
+            _ecl_opts_common
+            ;;
+        config)
+            echo -n "-t --target=<target> --no-files --daliip=<ip> -A --activate --no-reload "
+            echo -n "-O --overwrite --wait=MS --timeLimit=SEC --warnTimeLimit=SEC --memoryLimit=MEM "
+            _ecl_opts_common
+            ;;
+        list)
+            echo -n "-t --target=<target> --show=<ASU> "
+            _ecl_opts_common
+            ;;
+         *)
+         ;;
+    esac
+}
+
+_ecl_opts_roxie()
+{
+    local subcmdpos=$(_ecl_nextcommand $1)
+    local subcmdname="${COMP_WORDS[subcmdpos]}"
+    case "${subcmdname}" in
+        "" | ecl)
+            echo "--help attach detach check reload"
+            ;;
+        attach | detach | check | reload)
+            echo -n "--wait=MS "
+            _ecl_opts_common
+            ;;
+         *)
+            ;;
+    esac
+}
+
+_ecl_opts_packagemap()
+{
+    local subcmdpos=$(_ecl_nextcommand $1)
+    local subcmdname="${COMP_WORDS[subcmdpos]}"
+    case "${subcmdname}" in
+        "" | ecl)
+             echo "--help add copyFiles delete activate deactivate list info"
+            ;;
+        add)
+            if [ "${COMP_WORDS[COMP_CWORD]:0:1}" != "-" ]
+            then
+                _ecl_opts_file
+            else
+                echo -n "-O --overwrite "
+                _ecl_opts_common
+            fi
+            ;;
+        delete | activate | deactivate | list | info)
+            _ecl_opts_common
+            ;;
+        *)
+              ;;
+    esac
+}
+
+_ecl_opts_deploy()
+{
+    echo -n "-t --target=<name> -n --name=<name> --main=<definition> --ecl-only --limit=N "
+    echo -n "--wait=<ms> -I<path> -L<path> -f<option>=value --manifest=<file> "
+}
+
+_ecl_opts_core_file()
+{
+    if [ "${COMP_WORDS[COMP_CWORD]:0:1}" != "-" ]
+    then
+        _ecl_opts_file
+    else
+       case "$1" in
+            deploy)
+                _ecl_opts_deploy
+                _ecl_opts_common
+                ;;
+            publish)
+                echo -n "-A --activate --no-reload --timeLimit=ms --warnTimeLimit=ms --memoryLimit=value "
+                _ecl_opts_deploy
+                _ecl_opts_common
+                ;;
+            run)
+                echo -n "-in --input=<xml|file> -X<name>=<value> "
+                _ecl_opts_deploy
+                _ecl_opts_common
+                ;;
+             *)
+             ;;
+        esac
+    fi
+}
+
+_ecl_opts_core()
+{
+   case "$1" in
+        deploy | publish | run)
+            _ecl_opts_core_file $1
+            ;;
+        unpublish | activate | deactivate)
+            _ecl_opts_common
+            ;;
+         *)
+            ;;
+    esac
+}
+
 _ecl()
 {
-    local cur prev opts
     COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-    # Command options
-    case ${prev} in
-         queries)
-             opts="list copy"
-             ;;
-         package)
-             opts="add copyFiles delete activate deactivate list info"
-             ;;
-         ecl)
-             opts="--version deploy publish unpublish run activate deactivate queries package"
-             ;;
-         *)
-             opts="-t --target=<name> -n --name=<name> -v --verbose -s --server=<host:port> -u --username=<user> -pw --password==<pw> --main=<definition> --ecl-only --limit=N -A --activate --wait=<ms>"
-             ;;
+    local cmdpos=$(_ecl_nextcommand 1)
+    local cmdname="${COMP_WORDS[cmdpos]}"
+    case "${cmdname}" in
+        "" | ecl)
+            opts="--help --version help deploy publish unpublish run activate deactivate queries packagemap roxie"
+            ;;
+        roxie)
+            opts=$(_ecl_opts_roxie $(($cmdpos + 1)))
+            ;;
+        queries)
+            opts=$(_ecl_opts_queries $(($cmdpos + 1)))
+            ;;
+        packagemap)
+            opts=$(_ecl_opts_packagemap $(($cmdpos + 1)))
+            ;;
+        *)
+            opts=$(_ecl_opts_core $cmdname)
+            ;;
     esac
 
-    COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    if [ "$opts" = "<filelist>" ]
+    then
+        COMPREPLY=( $(compgen -f ${cur}) )
+    else
+        COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
     return 0
 }
-complete -F _ecl ecl
+
+complete -o nospace -F _ecl ecl
