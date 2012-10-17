@@ -860,6 +860,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@csvSeparate", separator.str());
     desc->queryProperties().setProp("@csvQuote", csvInfo->queryQuote(0));
     desc->queryProperties().setProp("@csvTerminate", csvInfo->queryTerminator(0));
+    desc->queryProperties().setProp("@csvEscape", csvInfo->queryEscape(0));
     desc->queryProperties().setProp("@format","utf8n");
 }
 
@@ -8489,6 +8490,7 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
     const char * quotes = NULL;
     const char * separators = NULL;
     const char * terminators = NULL;
+    const char * escapes = NULL;
     IDistributedFile * dFile = ldFile?ldFile->queryDistributedFile():NULL;
     if (dFile)  //only makes sense for distributed (non local) files
     {
@@ -8496,8 +8498,9 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
         quotes = options.queryProp("@csvQuote");
         separators = options.queryProp("@csvSeparate");
         terminators = options.queryProp("@csvTerminate");
+        escapes = options.queryProp("@csvEscape");
     }
-    csvSplitter.init(helper.getMaxColumns(), csvInfo, quotes, separators, terminators);
+    csvSplitter.init(helper.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
 }
 
 void CHThorCsvReadActivity::calcFixedDiskRecordSize()
