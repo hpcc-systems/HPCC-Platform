@@ -22,7 +22,7 @@
 #ifndef _LOGSERIALIZER_HPP__
 #define _LOGSERIALIZER_HPP__
 
-#include "jiface.hpp"
+#include "jlib.hpp"
 #include "jstring.hpp"
 #include "jutil.hpp" // for StringArray
 #include "jmutex.hpp"

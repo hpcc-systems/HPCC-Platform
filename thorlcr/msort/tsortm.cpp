@@ -28,13 +28,13 @@
 #endif
 #include <limits.h>
 
+#include "jlib.hpp"
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include "thorport.hpp"
 
 #include "jsocket.hpp"
 #include "jthread.hpp"
-#include "jlib.hpp"
 #include "jsort.hpp"
 
 #include "thexception.hpp"
