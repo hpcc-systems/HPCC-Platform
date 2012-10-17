@@ -1201,7 +1201,7 @@ public:
         CDfsLogicalFileName lfn;
         if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
-                if (queryDistributedFileDirectory().exists(lfn.get(),NULL,true,false)) {
+                if (queryDistributedFileDirectory().exists(lfn.get(),UNKNOWN_USER,true,false)) {
                     warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
                     return;
                 }
