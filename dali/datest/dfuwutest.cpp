@@ -703,7 +703,7 @@ void testSuperRemoteCopy(const char *remoteip,const char *file)
     Owned<IDfuFileCopier> copier = createRemoteFileCopier("dfuserver_queue","thor","Test1",true);
     Owned<IDFUhelper> helper = createIDFUhelper();
     SocketEndpoint ep(remoteip);
-    helper->superForeignCopy(file,ep,file,NULL,NULL,false,copier);
+    helper->superForeignCopy(file,ep,file,UNKNOWN_USER,UNKNOWN_USER,false,copier);
 }
 
 
