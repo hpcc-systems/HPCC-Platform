@@ -1316,7 +1316,7 @@ public:
         return CDFUfileformat::decode(queryProperties()->queryProp("@format"));
     }
 
-    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote) const
+    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote,StringBuffer &escape) const
     {
         IPropertyTree *t = queryProperties();
         const char *sep=t->queryProp("@csvSeparate");
@@ -1325,17 +1325,22 @@ public:
         terminate.append(ter?ter:"\\n,\\r\\n");
         const char *quo=t->queryProp("@csvQuote");
         quote.append(quo?quo:"'");
+        const char *esc=t->queryProp("@csvEscape");
+        if (esc && *esc)
+            escape.set(esc);
     }
 
-    void setCsvOptions(const char *separate,const char *terminate,const char *quote)
+    void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape)
     {
         IPropertyTree *t = queryUpdateProperties();
-        if (separate)
+        if (separate && *separate)
             t->setProp("@csvSeparate",separate);
-        if (terminate)
+        if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);
-        if (quote)
+        if (quote && *quote)
             t->setProp("@csvQuote",quote);
+        if (escape && *escape)
+            t->setProp("@csvEscape",escape);
     }
 
     StringBuffer &getRowTag(StringBuffer &str)const 

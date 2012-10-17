@@ -62,6 +62,7 @@ public:
     StringAttr          separate;
     StringAttr          quote;
     StringAttr          terminate;
+    StringAttr          escape;
     StringAttr          rowTag;
 };
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);

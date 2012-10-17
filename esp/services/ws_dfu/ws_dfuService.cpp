@@ -1710,6 +1710,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
     }
 
+    double version = context.getClientVersion();
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
 
     CDateTime dt;
@@ -1828,6 +1829,10 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
    //@csvTerminate - characters used to terminate a record in a csv.utf file
     FileDetails.setCsvTerminate(df->queryAttributes().queryProp("@csvTerminate"));
 
+   //@csvEscape - character used to define escape for a csv/utf file.
+    if (version > 1.19)
+        FileDetails.setCsvEscape(df->queryAttributes().queryProp("@csvEscape"));
+
   
     //Time and date of the file
     tmpstr.clear();
@@ -1849,7 +1854,6 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         clusterStr.append(cluster);
     }
 
-    double version = context.getClientVersion();
     if (clusterStr.length() > 0)
     {
         FileDetails.setCluster(clusterStr.str());

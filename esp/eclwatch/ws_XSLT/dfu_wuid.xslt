@@ -271,6 +271,7 @@
         <xsl:apply-templates select="SourceNumParts"/>
         <xsl:apply-templates select="SourceDirectory"/>
         <xsl:apply-templates select="SourceCsvSeparate"/>
+        <xsl:apply-templates select="SourceCsvEscape"/>
         <xsl:apply-templates select="SourceCsvTerminate"/>
         <xsl:apply-templates select="SourceCsvQuote"/>
         <xsl:apply-templates select="DestLogicalName"/>
