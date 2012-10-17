@@ -32,7 +32,7 @@ CSVSplitter::CSVSplitter()
     lengths = NULL;
     data = NULL;
     numQuotes = 0;
-    unquotedBuffer = NULL;
+    internalBuffer = NULL;
     maxColumns = 0;
     curUnquoted = NULL;
 }
@@ -41,7 +41,7 @@ CSVSplitter::~CSVSplitter()
 {
     delete [] lengths;
     delete [] data;
-    free(unquotedBuffer);
+    free(internalBuffer);
 }
 
 void CSVSplitter::addQuote(const char * text)
@@ -62,25 +62,29 @@ void CSVSplitter::addTerminator(const char * text)
     matcher.addEntry(text, TERMINATOR);
 }
 
+void CSVSplitter::addEscape(const char * text)
+{
+    matcher.addEntry(text, ESCAPE);
+}
 
 void CSVSplitter::reset()
 {
     matcher.reset();
     delete [] lengths;
     delete [] data;
-    free(unquotedBuffer);
+    free(internalBuffer);
     lengths = NULL;
     data = NULL;
     numQuotes = 0;
-    unquotedBuffer = NULL;
+    internalBuffer = NULL;
     maxCsvSize = 0;
 }
 
-void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators)
+void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes)
 {
     reset();
     maxCsvSize = csvInfo->queryMaxSize();
-    unquotedBuffer = (byte *)malloc(maxCsvSize);
+    internalBuffer = (byte *)malloc(maxCsvSize);
 
     maxColumns = _maxColumns;
     lengths = new unsigned [maxColumns+1];      // NB: One larger to remove some tests in main loop...
@@ -127,6 +131,23 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
         }
     }
 
+    // Old workunits won't have queryEscape. MORE: deprecate on the next major version
+    if (flags & ICsvParameters::supportsEscape)
+    {
+        if (dfsEscapes && (flags & ICsvParameters::defaultEscape))
+            addActionList(matcher, dfsEscapes, ESCAPE);
+        else
+        {
+            for (idx=0;;idx++)
+            {
+                const char * text = csvInfo->queryEscape(idx);
+                if (!text)
+                    break;
+                addEscape(text);
+            }
+        }
+    }
+
     //MORE Should this be configurable??
     if (!(flags & ICsvParameters::preserveWhitespace))
     {
@@ -135,14 +156,17 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     }
 }
 
-
-void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip)
+void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape)
 {
+    // Either quoting or escaping will use the local buffer
+    if ((quoteToStrip || unescape) &&
+        (unsigned)(curUnquoted - internalBuffer) + (unsigned)(end - start) > maxCsvSize)
+        throw MakeStringException(99, "MAXLENGTH for CSV file is not large enough");
+
+    // point to the beginning of the local (possibly changed) buffer, for escaping later
+    byte * curUnescaped = curUnquoted;
     if (quoteToStrip)
     {
-        if ((unsigned)(curUnquoted - unquotedBuffer) + (unsigned)(end - start) > maxCsvSize)
-            throw MakeStringException(99, "MAXLENGTH for CSV file is not large enough");
-
         data[curColumn] = curUnquoted;
         const byte * lastCopied = start;
         const byte *cur;
@@ -187,8 +211,42 @@ done:
     }
     else
     {
-        data[curColumn] = start;
         lengths[curColumn] = (size32_t)(end-start);
+        // Only if ESCAPEs were detected in the input
+        if (unescape)
+        {
+            // Need to copy original to a local string (using allocated buffer)
+            memcpy(curUnescaped, start, lengths[curColumn]);
+            data[curColumn] = curUnescaped;
+            // and update the buffer pointer, to re-use on next iteration
+            curUnquoted = curUnescaped + lengths[curColumn];
+        }
+        else
+        {
+            data[curColumn] = start;
+            return;
+        }
+    }
+    // Un-escape string, if necessary.
+    if (unescape)
+    {
+        byte * cur = curUnescaped; // data[curColumn] is already pointing here one way or another
+        byte * end = cur + lengths[curColumn];
+        for (; cur < end; cur++)
+        {
+            unsigned matchLen;
+            unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+            if ((match & 255) == ESCAPE)
+            {
+                ptrdiff_t restLen = end-cur+matchLen;
+                memmove(cur, cur+matchLen, restLen);
+                end -= matchLen;
+                lengths[curColumn] -= matchLen;
+                // Avoid having cur past end
+                if (cur == end)
+                    break;
+            }
+        }
     }
 }
 
@@ -201,7 +259,8 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
     const byte * end = start + maxLength;
     const byte * firstGood = start;
     const byte * lastGood = start;
-    curUnquoted = unquotedBuffer;
+    bool lastEscape = false;
+    curUnquoted = internalBuffer;
 
     while (cur != end)
     {
@@ -214,7 +273,7 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
             lastGood = cur;
             break;
         case WHITESPACE:
-            //Skip leading whitepace
+            //Skip leading whitespace
             if (quote)
                 lastGood = cur+matchLen;
             else if (cur == firstGood)
@@ -224,9 +283,11 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
             }
             break;
         case SEPARATOR:
+            // Quoted separator
             if ((curColumn < maxColumns) && (quote == 0))
             {
-                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, lastEscape);
+                lastEscape = false;
                 quoteToStrip = 0;
                 curColumn++;
                 firstGood = cur + matchLen;
@@ -236,7 +297,8 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
         case TERMINATOR:
             if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
             {
-                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+                setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, lastEscape);
+                lastEscape = false;
                 while (++curColumn < maxColumns)
                     lengths[curColumn] = 0;
                 return (size32_t)(cur + matchLen - start);
@@ -244,6 +306,7 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
             lastGood = cur+matchLen;
             break;
         case QUOTE:
+            // Quoted quote
             if (quote == 0)
             {
                 if (cur == firstGood)
@@ -279,11 +342,25 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
                     lastGood = cur+matchLen;
             }
             break;
+        case ESCAPE:
+            lastEscape = true;
+            lastGood = cur+matchLen;
+            // If this escape is at the end, proceed to field range
+            if (lastGood == end)
+                break;
+
+            // Skip escape and ignore the next match
+            cur += matchLen;
+            match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+            if ((match & 255) == NONE)
+                matchLen = 1;
+            lastGood += matchLen;
+            break;
         }
         cur += matchLen;
     }
 
-    setFieldRange(firstGood, lastGood, curColumn, quoteToStrip);
+    setFieldRange(firstGood, lastGood, curColumn, quoteToStrip, lastEscape);
     while (++curColumn < maxColumns)
         lengths[curColumn] = 0;
     return (size32_t)(end - start);
@@ -310,6 +387,7 @@ void CSVOutputStream::init(ICsvParameters * args, bool _oldOutputFormat)
     quote.set(args->queryQuote(0));
     separator.set(args->querySeparator(0));
     terminator.set(args->queryTerminator(0));
+    escape.set(args->queryEscape(0));
     oldOutputFormat = _oldOutputFormat||!quote.length();
 }
 

@@ -672,7 +672,7 @@ IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, cons
 {
     CSVSplitter csvSplitter;
 
-    csvSplitter.init(rowTransformer->getMaxColumns(), rowTransformer->queryCsvParameters(), NULL, NULL, NULL);
+    csvSplitter.init(rowTransformer->getMaxColumns(), rowTransformer->queryCsvParameters(), NULL, NULL, NULL, NULL);
 
     unsigned maxRecordSize = rowTransformer->queryRecordSize()->getRecordSize(NULL);
     const byte *finger = (const byte *) text;
