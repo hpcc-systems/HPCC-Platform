@@ -1673,7 +1673,7 @@ bool isLocalActivity(IHqlExpression * expr)
 bool isGroupedAggregateActivity(IHqlExpression * expr, IHqlExpression * grouping)
 {
     if (grouping && !grouping->isAttribute())
-        return false;
+        return expr->hasProperty(groupedAtom);
 
     return isGrouped(expr->queryChild(0));
 }
