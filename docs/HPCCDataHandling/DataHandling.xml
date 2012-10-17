@@ -580,10 +580,13 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
+                        <entry><para>Check this box to create backup copies of
+                        all file parts that exist in the backup directory (by
                         convention on the secondary drive of the node
-                        following in the cluster).</entry>
+                        following in the cluster).</para><para><emphasis
+                        role="bold">This option is only available on systems
+                        where replication has been
+                        enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -758,10 +761,13 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
+                        <entry><para>Check this box to create backup copies of
+                        all file parts that exist in the backup directory (by
                         convention on the secondary drive of the node
-                        following in the cluster).</entry>
+                        following in the cluster).</para><para><emphasis
+                        role="bold">This option is only available on systems
+                        where replication has been
+                        enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -929,10 +935,13 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
-                        convention on the d: drive of the node following in
-                        the cluster).</entry>
+                        <entry><para>Check this box to create backup copies of
+                        all file parts that exist in the backup directory (by
+                        convention on the secondary drive of the node
+                        following in the cluster).</para><para><emphasis
+                        role="bold">This option is only available on systems
+                        where replication has been
+                        enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -1048,10 +1057,12 @@
                       <entry><emphasis
                       role="bold">Replicate</emphasis></entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the second drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts that exist in the backup directory (by
+                      convention on the secondary drive of the node following
+                      in the cluster).</para><para><emphasis role="bold">This
+                      option is only available on systems where replication
+                      has been enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
@@ -1207,10 +1218,12 @@
                       <entry><emphasis
                       role="bold">Replicate</emphasis></entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the d: drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts that exist in the backup directory (by
+                      convention on the secondary drive of the node following
+                      in the cluster).</para><para><emphasis role="bold">This
+                      option is only available on systems where replication
+                      has been enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
