@@ -19,6 +19,7 @@
 #ifndef JUTIL_HPP
 #define JUTIL_HPP
 
+#include "jlib.hpp"
 #include "jexpdef.hpp"
 #include "jstring.hpp"
 #include "jarray.tpp"
