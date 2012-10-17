@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
 	"dojo/_base/declare",
 	"dojo/_base/xhr",
 	"dojo/dom",
@@ -27,7 +27,7 @@ require([
 	"hpcc/ESPBase",
 	"hpcc/ESPWorkunit",
 	"hpcc/ResultsControl",
-	"dojo/text!./templates/ResultsWidget.html"
+	"dojo/text!../templates/ResultsWidget.html"
 ], function (declare, xhr, dom,
 				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, TabContainer, registry,
 				ESPBase, ESPWorkunit, ResultsControl,
@@ -80,16 +80,16 @@ require([
             });
         },
 
-        init: function (wuid, sequence, showSourceFiles) {
-            if (wuid) {
+        init: function (params) {
+            if (params.Wuid) {
                 this.wu = new ESPWorkunit({
-                    wuid: wuid
+                    wuid: params.Wuid
                 });
                 var monitorCount = 4;
                 var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
-                        if (showSourceFiles) {
+                        if (params.SourceFiles) {
                             context.wu.getInfo({
                                 onGetSourceFiles: function (sourceFiles) {
                                     context.refreshSourceFiles(context.wu);

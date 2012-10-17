@@ -22,18 +22,28 @@ define([
     "dojo/io-query",
     "dojo/ready",
 
-    "dijit/registry"
-], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready, registry) {
+    "hpcc/ECLPlaygroundWidget",
+    "hpcc/GraphPageWidget",
+    "hpcc/ResultsWidget",
+    "hpcc/TimingTreeMapWidget",
+    "hpcc/ECLSourceWidget"
+], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready,
+        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingTreeMapWidget, ECLSourceWidget) {
+
     var initUi = function () {
-        var wuid = "";
+        var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
 
-        var urlWuid = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))["Wuid"];
-        if (urlWuid) {
-            wuid = urlWuid;
+        //TODO:  Can we get rid of the required dependency above?
+        var widget = new (eval(params.Widget))({
+            id: "appLayout",
+            class: "hpccApp"
+        });
+
+        if (widget) {
+            widget.placeAt(dojo.body(), "last");
+            widget.startup();
+            widget.init(params);
         }
-
-        var sourceControl = registry.byId("appLayout");
-        sourceControl.setWuid(wuid);
     },
 
     startLoading = function (targetNode) {

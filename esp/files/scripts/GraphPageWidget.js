@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
     "dojo/_base/declare",
     "dojo/_base/sniff",
     "dojo/_base/array",
@@ -38,7 +38,7 @@ require([
     "hpcc/ESPWorkunit",
     "hpcc/TimingTreeMapWidget",
 
-    "dojo/text!./templates/GraphPageWidget.html",
+    "dojo/text!../templates/GraphPageWidget.html",
 
     "dijit/form/Select",
     "dijit/form/TextBox"
@@ -271,10 +271,10 @@ require([
             this._doFind(true);
         },
 
-        setWuid: function (wuid, graphName) {
-            this.graphName = graphName;
+        init: function (params) {
+            this.graphName = params.GraphName;
             this.wu = new ESPWorkunit({
-                wuid: wuid
+                wuid: params.Wuid
             });
 
             var firstLoad = true;

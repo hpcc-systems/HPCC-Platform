@@ -13,7 +13,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
     "dojo/_base/declare",
     "dojo/aspect",
     "dojo/has",
@@ -30,7 +30,7 @@ require([
 
     "hpcc/ESPWorkunit",
 
-    "dojo/text!./templates/ECLSourceWidget.html",
+    "dojo/text!../templates/ECLSourceWidget.html",
 
     "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
 ],
@@ -83,12 +83,11 @@ require([
                 });
             },
 
-            setWuid: function (wuid) {
-                this.wuid = wuid;
+            init: function (params) {
                 var context = this;
-                if (wuid) {
+                if (params.Wuid) {
                     this.wu = new ESPWorkunit({
-                        wuid: wuid
+                        wuid: params.Wuid
                     });
                     this.wu.fetchText(function (text) {
                         context.editor.setValue(text);
