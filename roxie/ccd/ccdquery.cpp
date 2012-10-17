@@ -324,7 +324,7 @@ protected:
         case TAKgroup:
             return createRoxieServerGroupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKhashaggregate:
-            return createRoxieServerHashAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerHashAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKif:
         case TAKchildif:
             return createRoxieServerIfActivityFactory(id, subgraphId, *this, helperFactory, kind, isGraphIndependent(node));

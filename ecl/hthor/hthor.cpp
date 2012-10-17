@@ -3111,8 +3111,10 @@ const void * CHThorAggregateActivity::nextInGroup()
 
 //=====================================================================================================
 
-CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind) 
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), aggregated(_arg, _arg)
+CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, bool _isGroupedAggregate)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg),
+  isGroupedAggregate(_isGroupedAggregate),
+  aggregated(_arg, _arg)
 {
 }
 
@@ -3121,7 +3123,6 @@ void CHThorHashAggregateActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     gathered = false;
-    aggregated.start(rowAllocator);
 }
 
 void CHThorHashAggregateActivity::done()
@@ -3138,16 +3139,27 @@ const void * CHThorHashAggregateActivity::nextInGroup()
 
     if (!gathered)
     {
+        bool eog = true;
+        aggregated.start(rowAllocator);
         loop
         {
             OwnedConstHThorRow next(input->nextInGroup());
             if (!next)
             {
-                next.setown(input->nextInGroup());
-                if (!next)
-                    break;
+                if (isGroupedAggregate)
+                {
+                    if (eog)
+                        eof = true;
+                }
+                else
+                {
+                    next.setown(input->nextInGroup());
+                    if (!next)
+                        eof = true;
+                }
+                break;
             }
-
+            eog = false;
             try
             {
                 aggregated.addRow(next);
@@ -3166,7 +3178,8 @@ const void * CHThorHashAggregateActivity::nextInGroup()
         processed++;
         return next->finalizeRowClear();
     }
-    eof = true;
+    aggregated.reset();
+    gathered = false;
     return NULL;
 }
 
@@ -9701,7 +9714,11 @@ extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, un
     return new CHThorIfActivity(_agent, _activityId, _subgraphId, arg, kind);
 }
 
-MAKEFACTORY(HashAggregate);
+extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &arg, ThorActivityKind kind, bool _isGroupedAggregate)
+{
+    return new CHThorHashAggregateActivity(_agent, _activityId, _subgraphId, arg, kind, _isGroupedAggregate);
+}
+
 MAKEFACTORY(Null);
 MAKEFACTORY(SideEffect);
 MAKEFACTORY(Action);
