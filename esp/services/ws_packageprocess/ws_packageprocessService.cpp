@@ -104,7 +104,10 @@ bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, con
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true);
     if (dst)
     {
-        if (dst->findCluster(target) != NotFound)
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+        SCMStringBuffer processName;
+        clusterInfo->getRoxieProcess(processName);
+        if (dst->findCluster(processName.str()) != NotFound)
             return true; // file already known for this cluster
     }
     return false;
@@ -275,7 +278,6 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
                     {
                         if (subid[0] == '~')
                             subtree.setProp("@value", subid+1);
-                        StringBuffer msg;
                         if (!isFileKnownOnCluster(subid, lookupDaliIp, target, userdesc))
                             fileNames.append(subid);
                     }
@@ -528,7 +530,6 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     StringAttr target(req.getTarget());
     StringAttr pkgMapName(req.getPackageMap());
     StringAttr processName(req.getProcess());
-    StringAttr daliIp(req.getDaliIp());
 
     Owned<IUserDescriptor> userdesc;
     const char *user = context.queryUserId();
@@ -545,7 +546,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
-    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), daliIp.get(), LINK(packageTree), activate, overWrite, userdesc);
+    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), req.getDaliIp(), LINK(packageTree), activate, overWrite, userdesc);
 
     StringBuffer msg;
     msg.append("Successfully loaded ").append(pkgMapName.get());
