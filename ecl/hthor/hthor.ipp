@@ -865,8 +865,9 @@ class CHThorHashAggregateActivity : public CHThorSimpleActivityBase
 
     bool eof;
     bool gathered;
+    bool isGroupedAggregate;
 public:
-    CHThorHashAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind);
+    CHThorHashAggregateActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, bool _isGroupedAggregate);
 
     virtual void ready();
     virtual void done();
