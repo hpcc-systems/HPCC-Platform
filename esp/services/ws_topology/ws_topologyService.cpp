@@ -507,7 +507,7 @@ bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadL
     {
         bytesRead = rIO->read(fileSize - readSize, readSize, dataBuffer.clear().reserve(readSize));
         if (bytesRead != readSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname);
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
         pTr = (char*) dataBuffer.str();
     }
 
