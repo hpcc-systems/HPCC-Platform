@@ -10321,7 +10321,7 @@ public:
                             eof = true;
                         break;
                     }
-                    next.setown(input->nextInGroup());
+                    next = input->nextInGroup();
                     if (!next)
                         break;
                 }
