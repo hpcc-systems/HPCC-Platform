@@ -1127,8 +1127,15 @@ __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const
 
 StringBuffer &CJobSlave::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
-    workUnitInfo->queryPropTree("Debug")->getProp(prop, str);
+    StringBuffer propName(prop);
+    workUnitInfo->queryPropTree("Debug")->getProp(propName.toLowerCase().str(), str);
     return str;
+}
+
+bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
+{
+    StringBuffer propName(prop);
+    return workUnitInfo->queryPropTree("Debug")->getPropBool(propName.toLowerCase().str(), defVal);
 }
 
 IBarrier *CJobSlave::createBarrier(mptag_t tag)

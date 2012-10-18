@@ -591,10 +591,12 @@ ITimeReporter *timer;
 ITimeReporter *createStdTimeReporter() { return new DefaultTimeReporter(); }
 ITimeReporter *createStdTimeReporter(MemoryBuffer &mb) { return new DefaultTimeReporter(mb); }
 
+cycle_t oneSecInCycles;
 MODULE_INIT(INIT_PRIORITY_JDEBUG1)
 {
     // perform v. early in process startup, ideally this would grab process exclusively for the 2 100ths of a sec it performs calc.
     calibrate_timing();
+    oneSecInCycles = nanosec_to_cycle(1000000000);
     return 1;
 }
 

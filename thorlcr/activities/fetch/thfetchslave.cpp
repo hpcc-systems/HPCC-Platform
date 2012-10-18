@@ -199,7 +199,6 @@ public:
             keyOutStream.clear();
         }
         distributor->disconnect(true);  
-        distributor->removetemp();
         distributor->join();
         stopInput();
     }
