@@ -25,6 +25,7 @@
 #include "ws_fs.hpp"
 #include "ws_workunits.hpp"
 #include "packageprocess_errors.h"
+#include "referencedfilelist.hpp"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -98,15 +99,72 @@ bool isRoxieProcess(const char *process)
     return conn->queryRoot()->hasProp(xpath.str());
 }
 
-bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, const char *target, IUserDescriptor* userdesc)
+bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true);
     if (dst)
     {
-        if (dst->findCluster(target) != NotFound)
+        SCMStringBuffer processName;
+        clusterInfo->getRoxieProcess(processName);
+        if (dst->findCluster(processName.str()) != NotFound)
             return true; // file already known for this cluster
     }
     return false;
+}
+
+bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, const char *target, IUserDescriptor* userdesc)
+{
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+
+    return isFileKnownOnCluster(logicalname, lookupDaliIp, clusterInfo, userdesc);
+}
+
+bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, bool overWrite, IUserDescriptor* userdesc)
+{
+    bool retval = true;
+    try
+    {
+        StringBuffer user;
+        StringBuffer password;
+
+        if (userdesc)
+        {
+            userdesc->getUserName(user);
+            userdesc->getPassword(password);
+        }
+
+        Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
+        wufiles->addFiles(fileNames);
+        SCMStringBuffer processName;
+        clusterInfo->getRoxieProcess(processName);
+        wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
+        wufiles->cloneAllInfo(overWrite, true);
+    }
+    catch(IException *e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        DBGLOG("ERROR = %s", msg.str());
+        e->Release();  // report the error later if needed
+        retval = false;
+    }
+    catch(...)
+    {
+        retval = false;
+    }
+
+    return retval;
+}
+
+bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
+{
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+
+    return cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
 }
 
 bool addFileInfoToDali(const char *logicalname, const char *lookupDaliIp, const char *target, bool overwrite, IUserDescriptor* userdesc, StringBuffer &host, short port, StringBuffer &msg)
@@ -182,7 +240,7 @@ void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree,
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const char *packageMapName, const char *packageSetName, IPropertyTree *packageInfo, bool active, bool overWrite)
+void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const char *packageMapName, const char *packageSetName, const char *lookupDaliIp, IPropertyTree *packageInfo, bool active, bool overWrite, IUserDescriptor* userdesc)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
 
@@ -208,6 +266,11 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
     mapTree = root->addPropTree("PackageMap", createPTree());
     mapTree->addProp("@id", packageMapName);
 
+    StringArray fileNames;
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+
     IPropertyTree *baseInfo = createPTree();
     Owned<IPropertyTreeIterator> iter = packageInfo->getElements("Package");
     ForEach(*iter)
@@ -219,9 +282,11 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
             ForEach(*super_iter)
             {
                 IPropertyTree &supertree = super_iter->query();
-                StringAttr id(supertree.queryProp("@id"));
-                if (id.length() && id[0] == '~')
-                    supertree.setProp("@id", id+1);
+                StringBuffer lc(supertree.queryProp("@id"));
+                const char *id = lc.toLowerCase().str();
+                if (*id == '~')
+                    id++;
+                supertree.setProp("@id", id);
 
                 Owned<IPropertyTreeIterator> sub_iter = supertree.getElements("SubFile");
                 ForEach(*sub_iter)
@@ -232,6 +297,8 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
                     {
                         if (subid[0] == '~')
                             subtree.setProp("@value", subid+1);
+                        if (!isFileKnownOnCluster(subid, lookupDaliIp, clusterInfo, userdesc))
+                            fileNames.append(subid);
                     }
                 }
                 mapTree->addPropTree("Package", LINK(&item));
@@ -244,6 +311,8 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
     }
 
     mergePTree(mapTree, baseInfo);
+    cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
+
     globalLock->commit();
 
     IPropertyTree *pkgSetTree = pkgSetRegistry->addPropTree("PackageMap", createPTree("PackageMap"));
@@ -481,13 +550,22 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     StringAttr pkgMapName(req.getPackageMap());
     StringAttr processName(req.getProcess());
 
+    Owned<IUserDescriptor> userdesc;
+    const char *user = context.queryUserId();
+    const char *password = context.queryPassword();
+    if (user && *user && *password && *password)
+    {
+        userdesc.setown(createUserDescriptor());
+        userdesc->set(user, password);
+    }
+
     VStringBuffer pkgSetId("default_%s", processName.get());
     pkgSetId.replace('*', '#');
     pkgSetId.replace('?', '~');
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
-    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), LINK(packageTree), activate, overWrite);
+    addPackageMapInfo(pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), req.getDaliIp(), LINK(packageTree), activate, overWrite, userdesc);
 
     StringBuffer msg;
     msg.append("Successfully loaded ").append(pkgMapName.get());

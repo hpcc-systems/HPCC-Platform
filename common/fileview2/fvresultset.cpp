@@ -3308,9 +3308,11 @@ IResultSetFactory * getResultSetFactory(const char * username, const char * pass
     return new CResultSetFactory(username, password);
 }
 
-IResultSetFactory * getSecResultSetFactory(ISecManager &secmgr, ISecUser &secuser)
+IResultSetFactory * getSecResultSetFactory(ISecManager *secmgr, ISecUser *secuser, const char *username, const char *password)
 {
-    return new CResultSetFactory(secmgr, secuser);
+    if (secmgr)
+        return new CResultSetFactory(*secmgr, *secuser);
+    return getResultSetFactory(username, password);
 }
 
 IResultSetFactory * getRemoteResultSetFactory(const char * remoteServer, const char * username, const char * password)

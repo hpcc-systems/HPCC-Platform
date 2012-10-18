@@ -51,6 +51,7 @@ ESPStruct [nil_remove] ECLResult
     int64  Total;
 
     ESParray<ESPstruct ECLSchemaItem>    ECLSchemas;
+    [min_ver("1.39")] string XmlSchema;
 };
 //  ===========================================================================
 ESPStruct [nil_remove] ECLTimingData
@@ -304,6 +305,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     string FileName;
     binary Object;
     int ResultLimit;
+    string QueryMainDefinition;
     ESParray<ESPstruct NamedValue> DebugValues;
 };
 
@@ -577,6 +579,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.16")] bool IncludeDebugValues(true);
     [min_ver("1.16")] bool IncludeApplicationValues(true);
     [min_ver("1.16")] bool IncludeWorkflows(true);
+    [min_ver("1.39")] bool IncludeXmlSchemas(false);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
 };
@@ -669,6 +672,7 @@ ESPrequest WUResultRequest
     string ResultName;
     string LogicalName;
     string Cluster;
+    bool SuppressXmlSchema(0);
 
     int64 Start(0);
     int Count;
@@ -1076,6 +1080,8 @@ ESPresponse [exceptions_inline] WUPublishWorkunitResponse
     string QueryName;
     string QueryId;
     bool ReloadFailed;
+    [min_ver("1.39")] bool Suspended;
+    [min_ver("1.39")] string ErrorMessage;
     ESParray<ESPStruct WUCopyLogicalClusterFileSections, Cluster> ClusterFiles;
 };
 
@@ -1291,7 +1297,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.38"), default_client_version("1.38"),
+    version("1.39"), default_client_version("1.39"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

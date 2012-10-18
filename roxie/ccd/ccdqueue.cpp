@@ -1716,7 +1716,7 @@ public:
         int udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
         int udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
         int udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
-        bool udpResendEnabled = topology->getPropBool("@udpResendEnabled", true);
+        bool udpResendEnabled = topology->getPropBool("@udpResendEnabled", false);
         openReceiveSocket();
         maxPacketSize = sock->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))

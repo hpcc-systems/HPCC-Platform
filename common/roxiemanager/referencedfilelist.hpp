@@ -21,6 +21,7 @@
 
 #include "jlib.hpp"
 #include "workunit.hpp"
+#include "package.hpp"
 #include "dadfs.hpp"
 #include "dfuutil.hpp"
 
@@ -34,6 +35,7 @@
 #define RefSubFile            0x040
 #define RefFileCopyInfoFailed 0x080
 #define RefFileCloned         0x100
+#define RefFileInPackage      0x200
 
 interface IReferencedFile : extends IInterface
 {
@@ -47,6 +49,7 @@ interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
 interface IReferencedFileList : extends IInterface
 {
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw)=0;
+    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)=0;
     virtual void addFile(const char *ln)=0;
     virtual void addFiles(StringArray &files)=0;
 

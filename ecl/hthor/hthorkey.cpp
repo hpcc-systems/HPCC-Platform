@@ -2455,12 +2455,14 @@ public:
         const char * quotes = NULL;
         const char * separators = NULL;
         const char * terminators = NULL;
+        const char * escapes = NULL;
         if (dFile)
         {
             IPropertyTree & options = dFile->queryAttributes();
             quotes = options.queryProp("@csvQuote");
             separators = options.queryProp("@csvSeparate");
             terminators = options.queryProp("@csvTerminate");
+            escapes = options.queryProp("@csvEscape");
             agent.logFileAccess(dFile, "HThor", "READ");
         }
         else
@@ -2471,7 +2473,7 @@ public:
             agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
         }
             
-        csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators);
+        csvSplitter.init(_arg.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
     }
 
     ~CHThorCsvFetchActivity()

@@ -5433,6 +5433,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
                     if (attr == keyedAtom) ok = true;
                     if (attr == prefetchAtom) ok = true;
                     if (attr == mergeAtom) ok = true;
+                    if (attr == groupedAtom) ok = true;
                     //fall through
                 case no_group:
                     if (attr == allAtom) ok = true;

@@ -229,6 +229,9 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         }
     }
     
+    if ((version > 1.05) && src->getDFUServerName(tmp.clear()).length())
+        dest.setDFUServerName(tmp.str());
+
     if (src->getJobName(tmp.clear()).length()!=0)
         dest.setJobName(tmp.str());
     else
@@ -348,14 +351,16 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
 
         if (version > 1.03 && (file->getFormat() == DFUff_csv))
         {
-            StringBuffer separate, terminate, quote;
-            file->getCsvOptions(separate,terminate,quote);
+            StringBuffer separate, terminate, quote, escape;
+            file->getCsvOptions(separate,terminate,quote, escape);
             if(separate.length() > 0)
                 dest.setSourceCsvSeparate(separate.str());
             if(terminate.length() > 0)
                 dest.setSourceCsvTerminate(terminate.str());
             if(quote.length() > 0)
                 dest.setSourceCsvQuote(quote.str());
+            if((version > 1.04) && (escape.length() > 0))
+                dest.setSourceCsvEscape(escape.str());
         }
     }
 
@@ -2029,7 +2034,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             const char* cq = req.getSourceCsvQuote();
             if(cq== NULL)
                 cq = "'";
-            source->setCsvOptions(cs, ct, cq);
+            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape());
         }
 
         destination->setLogicalName(destname);
@@ -2410,7 +2415,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
             Owned<IUserDescriptor> udesc=createUserDescriptor();
             udesc->set(u.str(),p.str());
-            if (!queryDistributedFileDirectory().isSuperFile(srcname,foreigndali,udesc))
+            if (!queryDistributedFileDirectory().isSuperFile(srcname,udesc,foreigndali))
                 supercopy = false;
         }
 
@@ -2646,7 +2651,7 @@ bool CFileSprayEx::onDFUWUFile(IEspContext &context, IEspDFUWUFileRequest &req, 
                 xmlbuf.append("<?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>");
                 wu->toXML(xmlbuf);
                 resp.setFile(xmlbuf.str());
-                resp.setFile_mimetype(HTTP_TYPE_TEXT_XML);
+                resp.setFile_mimetype(HTTP_TYPE_APPLICATION_XML);
             }
         }
     }

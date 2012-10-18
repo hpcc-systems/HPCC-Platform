@@ -624,19 +624,26 @@ int main( int argc, char *argv[]  )
 #endif
 #endif
             gmemSize = maxMem * 3 / 4; // default to 75% of total
+            unsigned perSlaveSize = gmemSize;
             unsigned slavesPerNode = globals->getPropInt("@slavesPerNode", 1);
             if (slavesPerNode>1)
             {
-                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave. %d MB each", gmemSize, slavesPerNode, gmemSize / slavesPerNode);
-                gmemSize /= slavesPerNode;
+                PROGLOG("Sharing globalMemorySize(%d MB), between %d slave. %d MB each", perSlaveSize, slavesPerNode, perSlaveSize / slavesPerNode);
+                perSlaveSize /= slavesPerNode;
             }
-            globals->setPropInt("@globalMemorySize", gmemSize);
+            globals->setPropInt("@globalMemorySize", perSlaveSize);
         }
         else if (gmemSize >= hdwInfo.totalMemory)
         {
             // should prob. error here
         }
-        roxiemem::setTotalMemoryLimit(((memsize_t)gmemSize) * 0x100000, 0, NULL);
+        unsigned gmemSizeMaster = globals->getPropInt("@masterMemorySize", gmemSize); // in MB
+
+        // if @masterMemorySize and @globalMemorySize unspecified gmemSize will be default based on h/w
+        globals->setPropInt("@masterMemorySize", gmemSizeMaster);
+
+        PROGLOG("Global memory size = %d MB", gmemSizeMaster);
+        roxiemem::setTotalMemoryLimit(((memsize_t)gmemSizeMaster) * 0x100000, 0, NULL);
 
         const char * overrideBaseDirectory = globals->queryProp("@thorDataDirectory");
         const char * overrideReplicateDirectory = globals->queryProp("@thorReplicateDirectory");

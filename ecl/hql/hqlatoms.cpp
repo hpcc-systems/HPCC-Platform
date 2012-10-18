@@ -302,6 +302,7 @@ _ATOM _selectors_Atom;
 _ATOM _selectorSequence_Atom;
 _ATOM selfAtom;
 _ATOM separatorAtom;
+_ATOM escapeAtom;
 _ATOM sequenceAtom;
 _ATOM _sequence_Atom;
 _ATOM sequentialAtom;
@@ -715,6 +716,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(template);
     MAKEATOM(terminate);
     MAKEATOM(terminator);
+    MAKEATOM(escape);
     MAKEATOM(thor);
     MAKEATOM(threshold);
     MAKEATOM(timeout);

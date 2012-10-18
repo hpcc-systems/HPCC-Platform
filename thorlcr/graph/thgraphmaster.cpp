@@ -307,14 +307,14 @@ void CSlaveMessageHandler::main()
                     LOG(MCdebugProgress, unknownJob, "smt_getresult called from slave %d", sender-1);
                     graph_id gid;
                     msg.read(gid);
-                    Owned<CMasterGraph> graph = (CMasterGraph *)job.getGraph(gid);
+                    activity_id ownerId;
+                    msg.read(ownerId);
                     unsigned resultId;
                     msg.read(resultId);
-                    mptag_t replyTag = graph->queryJob().deserializeMPTag(msg);
-                    assertex(graph);
-                    Owned<IThorResult> result = graph->getResult(resultId);
+                    mptag_t replyTag = job.deserializeMPTag(msg);
+                    Owned<IThorResult> result = job.getOwnedResult(gid, ownerId, resultId);
                     Owned<IRowStream> resultStream = result->getRowStream();
-                    sendInChunks(graph->queryJob().queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
+                    sendInChunks(job.queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
                     break;
                 }
             }
@@ -1214,6 +1214,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     user.append(_user.str());
     token.append(_token.str());
     scope.append(_scope.str());
+    globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
     init();
 
     resumed = WUActionResume == workunit->getAction();
@@ -1630,7 +1631,7 @@ bool CJobMaster::go()
                 queryThorFileManager().addScope(*this, tmpName, newName, true, true);
                 verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
 
-                file->attach(newName);
+                file->attach(newName,userDesc);
 
                 Owned<IWorkUnit> wu = &queryWorkUnit().lock();
                 wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
@@ -1706,6 +1707,11 @@ __int64 CJobMaster::getWorkUnitValueInt(const char *prop, __int64 defVal) const
     return queryWorkUnit().getDebugValueInt64(prop, defVal);
 }
 
+bool CJobMaster::getWorkUnitValueBool(const char *prop, bool defVal) const
+{
+    return queryWorkUnit().getDebugValueBool(prop, defVal);
+}
+
 StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
     SCMStringBuffer scmStr;
@@ -1772,6 +1778,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
     PointerArrayOf<CThorExpandingRowArray> results;
     Owned<IThorResult> result;
     unsigned spillPriority;
+    activity_id ownerId;
 
     void ensure()
     {
@@ -1783,6 +1790,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         msg.append(GraphGetResult);
         msg.append(activity.queryJob().queryKey());
         msg.append(graph.queryGraphId());
+        msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
         ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, NULL, NULL, true);
@@ -1853,7 +1861,8 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, unsigned _spillPriority) : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), spillPriority(_spillPriority)
+    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
+        : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
     {
         for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
             results.append(new CThorExpandingRowArray(activity, rowIf));
@@ -2567,16 +2576,23 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
+IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+{
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);
+    results->setResult(id, result);
+    return result;
+}
+
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, spillPriority);
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
     localResults->setResult(id, result);
     return result;
 }
 
 IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, spillPriority);
+    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
     unsigned id = graphLoopResults->addResult(result);
     result->setId(id);
     return result;
@@ -2604,8 +2620,8 @@ CThorStats::CThorStats(const char *_prefix)
     {
         labelMin.set("min");
         labelMax.set("max");
-        labelMinSkew.set("minSkew");
-        labelMaxSkew.set("maxSkew");
+        labelMinSkew.set("minskew");
+        labelMaxSkew.set("maxskew");
         labelMinEndpoint.set("minEndpoint");
         labelMaxEndpoint.set("maxEndpoint");
     }

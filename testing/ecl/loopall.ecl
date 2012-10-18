@@ -16,7 +16,6 @@
 ############################################################################## */
 
 //nothor
-//skip type==thorlcr TBD
 #option ('newChildQueries', true)
 
 namesRecord := 
@@ -75,3 +74,38 @@ output(loop(namesTable2, left.age < 100, exists(rows(left)) and sum(rows(left), 
 
 //case 5: a row filter
 output(loop(namesTable2, left.age < 100, loopBody(rows(left), counter)));
+
+//case 6: loop within a child query, with condition on dataset
+parentRecord := RECORD
+ string parentField;
+ DATASET(namesRecord) children;
+END;
+
+parentDS := DATASET([{'parent1', namesTable2}], parentRecord);
+
+
+addNum(dataset(namesRecord) ds, unsigned num) := FUNCTION
+ dsAdded := project(ds, transform(namesRecord, self.age := left.age+num; self := left));
+ return dsAdded;
+END;
+
+countChildren(dataset(namesRecord) ds, unsigned ageThreshold) := FUNCTION
+ q := ds(age<ageThreshold);
+ return COUNT(q);
+END;
+
+parentRecord childTrans(parentRecord p) := transform
+ self.parentField := p.parentField + 'changed';
+ self.children := loop(p.children, countChildren(rows(left), 50) > 2, addNum(rows(left), 5));
+END;
+
+// loop adding an increment and perform a count condition on the dataset
+output(nofold(project(nofold(parentDS), childTrans(LEFT))));
+
+//case 7: loop within a child query, fixed number of iterations with row filter
+parentRecord childTrans2(parentRecord p) := transform
+ self.parentField := p.parentField + 'changed';
+ self.children := loop(p.children, 10, left.age <= 60, project(rows(left), transform(namesRecord, self.age := left.age*two; self := left)));
+END;
+
+output(nofold(project(nofold(parentDS), childTrans2(LEFT))));

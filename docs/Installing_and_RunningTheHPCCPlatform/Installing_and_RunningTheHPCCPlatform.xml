@@ -158,7 +158,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/s55.jpg" />
+                <imagedata fileref="images/s55.jpg"
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -173,7 +174,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="images/c150-lg.jpg"
-                           vendor="Force10,HardwareSS" />
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -188,7 +189,7 @@
             <mediaobject>
               <imageobject>
                 <imagedata fileref="images/Force10_ExaScaleE6001200.jpg"
-                           vendor="Force10,HardwareSS" />
+                           vendor="hardwareSS,force10SS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -240,7 +241,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/IR-009a.jpg" vendor="F5, Hardware" />
+              <imagedata fileref="images/IR-009a.jpg" vendor="hardwareSS,F5SS" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -443,7 +444,7 @@
             </listitem>
 
             <listitem>
-              <para>64-bit OpenSuSe 11.3 or 11.4</para>
+              <para>64-bit openSUSE 11.3 or 11.4</para>
             </listitem>
 
             <listitem>
@@ -715,9 +716,7 @@
         </orderedlist>
       </sect2>
 
-      <?hard-pagebreak ?>
-
-      <sect2 id="ECL-on-a-single-node-system">
+      <sect2 id="ECL-on-a-single-node-system" role="brk">
         <title>Running an ECL Query on your Single-Node System</title>
 
         <para>The single node system is running, and you can now create and
@@ -2841,6 +2840,10 @@ sudo /sbin/service hpcc-init --component=myeclserver start
 sudo /sbin/service hpcc-init -c esp start
 </programlisting>
     </sect1>
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Running the ECL IDE under WINE</title>

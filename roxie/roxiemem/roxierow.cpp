@@ -48,7 +48,7 @@ public:
     static inline void setCheck(size32_t size, void * _ptr)
     {
         byte * ptr = static_cast<byte *>(_ptr);
-        size32_t capacity = RoxieRowCapacity(ptr);
+        memsize_t capacity = RoxieRowCapacity(ptr);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = crc16(ptr, capacity-extraSize, 0);
@@ -58,7 +58,7 @@ public:
         if (RoxieRowHasDestructor(_ptr))
         {
             const byte * ptr = static_cast<const byte *>(_ptr);
-            size32_t capacity = RoxieRowCapacity(ptr);
+            memsize_t capacity = RoxieRowCapacity(ptr);
             const unsigned short * check = reinterpret_cast<const unsigned short *>(ptr + capacity - extraSize);
             return *check == crc16(ptr, capacity-extraSize, 0);
         }
@@ -77,7 +77,7 @@ public:
     static inline void setCheck(size32_t size, void * _ptr)
     {
         byte * ptr = static_cast<byte *>(_ptr);
-        size32_t capacity = RoxieRowCapacity(ptr);
+        memsize_t capacity = RoxieRowCapacity(ptr);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = chksum16(ptr, capacity-extraSize);
@@ -87,7 +87,7 @@ public:
         if (RoxieRowHasDestructor(_ptr))
         {
             const byte * ptr = static_cast<const byte *>(_ptr);
-            size32_t capacity = RoxieRowCapacity(ptr);
+            memsize_t capacity = RoxieRowCapacity(ptr);
             const unsigned short * check = reinterpret_cast<const unsigned short *>(ptr + capacity - extraSize);
             return chksum16(ptr, capacity-extraSize) == *check;
         }
@@ -200,7 +200,7 @@ protected:
         if (newRowCount * sizeof(void *) <= RoxieRowCapacity(rowset))
             return rowset;
 
-        size32_t capacity;
+        memsize_t capacity;
         return (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
     }
 
@@ -268,27 +268,31 @@ public:
 
     virtual void * createRow()
     {
-        size32_t allocSize = meta.getInitialSize();
-        size32_t capacity;
+        memsize_t allocSize = meta.getInitialSize();
+        memsize_t capacity;
         return heap->allocate(allocSize+CHECKER::extraSize, capacity);
     }
 
     virtual void * createRow(size32_t & allocatedSize)
     {
-        const size32_t allocSize = meta.getInitialSize();
-        void * row = heap->allocate(allocSize+CHECKER::extraSize, allocatedSize);
+        const memsize_t allocSize = meta.getInitialSize();
+        memsize_t newCapacity = allocatedSize;
+        void * row = heap->allocate(allocSize+CHECKER::extraSize, newCapacity);
         //This test should get constant folded to avoid the decrement when not checked.
         if (CHECKER::extraSize)
-            allocatedSize -= CHECKER::extraSize;
+            newCapacity -= CHECKER::extraSize;
+        allocatedSize = newCapacity;
         return row;
     }
 
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
     {
         size32_t oldsize = size;  // don't need to include the extra checking bytes
-        void * newrow = heap->resizeRow(row, oldsize, newSize+CHECKER::extraSize, size);
+        memsize_t newCapacity = size;
+        void * newrow = heap->resizeRow(row, oldsize, newSize+CHECKER::extraSize, newCapacity);
         if (CHECKER::extraSize)
-            size -= CHECKER::extraSize;
+            newCapacity -= CHECKER::extraSize;
+        size = newCapacity;
         return newrow;
     }
 
@@ -332,19 +336,19 @@ namespace roxiemem {
 class RoxieRowAllocatorTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( RoxieRowAllocatorTests );
+        CPPUNIT_TEST(testSetup);
         CPPUNIT_TEST(testChecking);
+        CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
     const IContextLogger &logctx;
 
 public:
     RoxieRowAllocatorTests() : logctx(queryDummyContextLogger())
     {
-        setTotalMemoryLimit(40*HEAP_ALIGNMENT_SIZE, 0, NULL);
     }
 
     ~RoxieRowAllocatorTests()
     {
-        releaseRoxieHeap();
     }
 
 protected:
@@ -438,6 +442,16 @@ protected:
         testAllocator(meta, flags, low, high, 0, true);
         testAllocator(meta, flags, low, high, -1, true);
         testAllocator(meta, flags, low, high, +1, true);
+    }
+
+    void testSetup()
+    {
+        setTotalMemoryLimit(40*HEAP_ALIGNMENT_SIZE, 0, NULL);
+    }
+
+    void testCleanup()
+    {
+        releaseRoxieHeap();
     }
 
     void testChecking()

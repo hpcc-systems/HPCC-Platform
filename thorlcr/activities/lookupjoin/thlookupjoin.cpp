@@ -31,6 +31,32 @@ public:
     {
         dst.append((int)mpTag);
     }
+    void process()
+    {
+        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
+        {
+            CMessageBuffer msg;
+            unsigned nslaves = container.queryJob().querySlaves();
+            unsigned s = 1;
+            rowcount_t totalCount = 0, slaveCount;
+            for (; s<=nslaves; s++)
+            {
+                if (!receiveMsg(msg, s, mpTag))
+                    return;
+                msg.read(slaveCount);
+                if (RCUNSET == slaveCount)
+                {
+                    totalCount = RCUNSET;
+                    break; // unknown
+                }
+                totalCount += slaveCount;
+            }
+            s=1;
+            msg.clear().append(totalCount);
+            for (; s<=nslaves; s++)
+                container.queryJob().queryJobComm().send(msg, s, mpTag);
+        }
+    }
 };
 
 CActivityBase *createLookupJoinActivityMaster(CMasterGraphElement *container)

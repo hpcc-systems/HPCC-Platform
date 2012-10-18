@@ -105,7 +105,7 @@ public:
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);
     void serializeDone(MemoryBuffer &mb);
-    IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, unsigned id);
+    IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb);
@@ -141,6 +141,7 @@ class graphslave_decl CJobSlave : public CJobBase
     Owned<IPerfMonHook> perfmonhook;
     Owned<IPropertyTree> workUnitInfo;
     CriticalSection graphRunCrit;
+    size32_t oldNodeCacheMem;
 
     void startJob();
     void endJob();
@@ -157,6 +158,7 @@ public:
 
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const;
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing);
     virtual CGraphBase *createGraph()
     {

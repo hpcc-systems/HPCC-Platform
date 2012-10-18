@@ -466,6 +466,11 @@ function createNavigationTree(navTreeData) {
 
     if (typeof (selectedRows) !== 'undefined') {
       for (var i = 0; i < selectedRows.length; i++) {
+        if (navDT.getRecord(selectedRows[i]).getData('Name') == "")
+          continue;
+        if (navDT.getRecord(selectedRows[i]).getData('CompType') == 'Directories')
+          continue;
+
         xmlStr += "<Component name=\"" + navDT.getRecord(selectedRows[i]).getData('Name');
         xmlStr += "\" compType=\"" + navDT.getRecord(selectedRows[i]).getData('CompType');
         xmlStr += "\" build=\"" + navDT.getRecord(selectedRows[i]).getData('Build');
@@ -574,7 +579,7 @@ function createNavigationTree(navTreeData) {
     }
 
     navDT.clearTextSelection();
-    if (oArgs.event.button === 2)
+    if (oArgs.event.button === 2 && navDT.getSelectedRows().length == 1)
       navDT.onEventSelectRow(oArgs);
 
     var selectedRows;
@@ -608,7 +613,8 @@ function createNavigationTree(navTreeData) {
         if (compName === "Environment" && document.forms['treeForm'].wizops.value === '3')
           getWaitDlg().show();
           
-        document.getElementById('center1frame').src = '/WsDeploy/DisplaySettings?Cmd=Select&' + getFileName(true) + 'XmlArgs=' + navDT.selectionToXML(record, selectedRows);
+        if (oArgs.event.shiftKey == false && oArgs.event.ctrlKey == false)
+          document.getElementById('center1frame').src = '/WsDeploy/DisplaySettings?Cmd=Select&' + getFileName(true) + 'XmlArgs=' + navDT.selectionToXML(record, selectedRows);
         if (top.document.lastSelectedRow !== 'Hardware' && record.getData('BuildSet') === '')
           top.document.stopWait();
         return;
@@ -769,6 +775,13 @@ function createNavigationTree(navTreeData) {
               getWaitDlg().hide();
               if (status1[0] !== 'true') {
                 alert(status1[0]);
+
+                var temp = o.responseText.split(/<CompName>/g);
+                var temp1 = temp[1].split(/<\/CompName>/g);
+                navDS.flushCache();
+                form.isChanged.value = "true";
+                refreshNavTree(navDS, navDT, temp1[0])
+
                 return;
               }
               else {
@@ -1353,6 +1366,7 @@ function createNavigationTree(navTreeData) {
       if (record.getData('Name') === 'Software' || record.getData('Name') === 'Directories'){
         this.getItem(2).cfg.setProperty("disabled", true);
         this.getItem(3).cfg.setProperty("disabled", true);
+        this.getItem(4).cfg.setProperty("disabled", true);
       }
 
       if (record.getData('id') === 0) {

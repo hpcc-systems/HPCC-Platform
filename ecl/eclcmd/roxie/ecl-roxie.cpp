@@ -216,7 +216,7 @@ public:
         if (attach)
             fputs("\nUsage:\n"
                 "\n"
-                "The 'roxie attach' command (re)attaches a roxie process cluster to its"
+                "The 'roxie attach' command (re)attaches a roxie process cluster to its\n"
                 "DALI allowing changes to the environment or contents of its assigned\n"
                 "querysets to take effect.\n"
                 "\n"

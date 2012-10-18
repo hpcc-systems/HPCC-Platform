@@ -77,6 +77,7 @@ public:
         props.setProp("@csvSeparate", separator.str());
         props.setProp("@csvQuote", csvParameters->queryQuote(0));
         props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
+        props.setProp("@csvEscape", csvParameters->queryEscape(0));
 
         CWriteMasterBase::done(); // will publish
     }

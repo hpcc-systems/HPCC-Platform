@@ -42,7 +42,7 @@ static const char* MACHINE_URL = "MachineInfoAccess";
 
 static const unsigned THORSTATUSDETAILS_REFRESH_MINS = 1;
 static const long LOGFILESIZELIMIT = 100000; //Limit page size to 100k
-static const long AVERAGELOGROWSIZE = 2000;
+static const long AVERAGELOGROWSIZE = 10000;
 const char* TEMPZIPDIR = "tempzipfiles";
 
 void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -158,232 +158,18 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
         if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to get Log File. Permission denied.");
 
-        MemoryBuffer membuff;
         const char* name = req.getName();
         const char* type = req.getType();
-        if (type && *type && ((strcmp(type,"thormaster_log") == 0) || (strcmp(type,"tpcomp_log") == 0)))
+        if (!name || !*name)
+            throw MakeStringException(ECLWATCH_INVALID_FILE_NAME,"File name not specified.");
+        if (!type || !*type)
+            throw MakeStringException(ECLWATCH_INVALID_FILE_NAME,"File type not specified.");
+
+        if (streq(type,"thormaster_log") || streq(type,"tpcomp_log"))
         {
-            ReadLog readLogReq;
-            readLogReq.pageNumber = req.getPageNumber();
-            readLogReq.startDate = req.getStartDate();
-            readLogReq.endDate = req.getEndDate();
-            readLogReq.firstRows = req.getFirstRows();
-            readLogReq.lastRows = req.getLastRows();
-            readLogReq.filterType = req.getFilterType();
-            readLogReq.reverse = req.getReversely();
-            readLogReq.zip = req.getZip();
-            readLogReq.fileSize = -1;
-            readLogReq.prevPage = -1;
-            readLogReq.nextPage = -1;
-
-            int lastHours = -1;
-            if (readLogReq.filterType == 2) //in the last n hours
-            {
-                if (readLogReq.startDate.length() < 19 || readLogReq.endDate.length() < 19)
-                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Hours' field.");
-
-                char fromHour[3], toHour[3];
-                fromHour[0] = readLogReq.startDate.charAt(11);
-                fromHour[1] = readLogReq.startDate.charAt(12);
-                toHour[0] = readLogReq.endDate.charAt(11);
-                toHour[1] = readLogReq.endDate.charAt(12);
-                lastHours = atoi(toHour)-atoi(fromHour);
-            }
-            else if (readLogReq.filterType == 6) //from date/time to date/time
-            {
-                if (readLogReq.startDate.length() < 19 && readLogReq.endDate.length() < 19)
-                    throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Date' field.");
-            }
-
-            bool hasDate = false;
-            StringBuffer startDate, endDate, logname, returnbuff;
-
-            if (strcmp(type,"thormaster_log"))
-            {
-                logname = name;
-            }
-            else
-            {
-                logname.append(CCluster(name)->queryRoot()->queryProp("LogFile"));
-            }
-
-            Owned<IFile> rFile = createIFile(logname.str());
-            if (!rFile || !rFile->exists())
-                throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",logname.str());
-
-            readLogReq.fileSize = rFile->size();
-            readLogReq.TotalPages = (int) ceil(((double)readLogReq.fileSize)/LOGFILESIZELIMIT);
-            if (readLogReq.filterType == 4) //by page number: 0 to n-1
-            {
-                if (readLogReq.pageNumber > readLogReq.TotalPages - 1)
-                    readLogReq.pageNumber = readLogReq.TotalPages - 1;
-            }
-
-            if (!req.getLoadData())
-            {
-                hasDate = true;
-                if (readLogReq.startDate.length() > 0)
-                    resp.setStartDate(readLogReq.startDate.str());
-                if (readLogReq.endDate.length() > 0)
-                    resp.setEndDate(readLogReq.endDate.str());
-
-                if (readLogReq.filterType == 0 || readLogReq.filterType == 4)
-                {
-                    offset_t readFrom = LOGFILESIZELIMIT * readLogReq.pageNumber;
-                    if (readFrom > readLogReq.fileSize) 
-                        readFrom = 0;
-
-                    offset_t fileSize = readLogReq.fileSize - readFrom;
-                    if (fileSize > LOGFILESIZELIMIT)
-                    {
-                        readLogReq.nextPage = readLogReq.pageNumber + 1;
-                    }
-                    if (readFrom > 0)
-                    {
-                        readLogReq.prevPage = readLogReq.pageNumber - 1;
-                    }
-                }
-                else if (readLogReq.filterType == 3) //Last page
-                {
-                    int pageCount = 1;
-                    offset_t readFrom = 0;
-                    offset_t fileSize = readLogReq.fileSize;
-                    while (fileSize > LOGFILESIZELIMIT)
-                    {
-                        fileSize -= LOGFILESIZELIMIT;
-                        readFrom += LOGFILESIZELIMIT;
-                        pageCount++;
-                    }
-                    if (readFrom > 0)
-                    {
-                        readLogReq.prevPage = pageCount - 2;
-                    }
-
-                    readLogReq.pageNumber = pageCount - 1;
-                }
-                else if (readLogReq.filterType == 6) //from date/time to date/time
-                {
-                    if (readLogReq.startDate.length() > 18)
-                    {
-                        CDateTime startdt;
-                        StringBuffer fromStr = readLogReq.startDate;
-                        fromStr.setCharAt(10, 'T');
-                        startdt.setString(fromStr.str(), NULL, true);
-
-                        StringBuffer startStr;
-                        unsigned year, month, day, hour, minute, second, nano;
-                        startdt.getDate(year, month, day, true);
-                        startdt.getTime(hour, minute, second, nano, true);
-                        startStr.appendf("%02d/%02d/%4d %02d:%02d:%02d", month, day, year, hour, minute, second);
-
-                        startDate.append(startStr.str());
-                    }
-
-                    if (readLogReq.endDate.length() > 18)
-                    {
-                        CDateTime enddt;
-                        StringBuffer toStr = readLogReq.endDate;
-                        toStr.setCharAt(10, 'T');
-                        enddt.setString(toStr.str(), NULL, true);
-
-                        StringBuffer endStr;
-                        unsigned year, month, day, hour, minute, second, nano;
-                        enddt.getDate(year, month, day, true);
-                        enddt.getTime(hour, minute, second, nano, true);
-                        endStr.appendf("%02d/%02d/%4d %02d:%02d:%02d", month, day, year, hour, minute, second);
-
-                        endDate.append(endStr.str());
-                    }
-                }
-            }
-            else if (type && *type && strcmp(type,"thormaster_log"))
-            {
-                readLogFile(logname, readLogReq, startDate, endDate, hasDate, returnbuff);
-            }
-            else
-            {
-                readLogFile(logname, readLogReq, startDate, endDate, hasDate, returnbuff);
-            }
-
-            resp.setHasDate(hasDate);
-            if (lastHours > 0)
-                resp.setLastHours(lastHours);
-            if (startDate.length() > 0)
-                resp.setStartDate(startDate.str());
-            if (endDate.length() > 0)
-                resp.setEndDate(endDate.str());
-            if (readLogReq.lastRows > 0)
-                resp.setLastRows(readLogReq.lastRows);
-            if (readLogReq.firstRows > 0)
-                resp.setFirstRows(readLogReq.firstRows);
-
-            double version = context.getClientVersion();
-            if (version > 1.05)
-            {       
-                resp.setTotalPages( readLogReq.TotalPages );
-            }
-
-            if (returnbuff.length() > 0)
-            {
-                if (returnbuff.length() > LOGFILESIZELIMIT)
-                {
-                    StringBuffer returnbuff0;
-                    returnbuff0.append(returnbuff.str(), 0, LOGFILESIZELIMIT);
-                    returnbuff0.appendf("\r\n****** Warning: cannot display all. The page size is limited to %ld bytes. ******", LOGFILESIZELIMIT);
-                    resp.setLogData(returnbuff0.str());
-                    if (readLogReq.filterType == 1)
-                    {
-                        readLogReq.pageFrom = 0;
-                        readLogReq.pageTo = LOGFILESIZELIMIT;
-                    }
-                    else if ((readLogReq.filterType == 2) || (readLogReq.filterType == 5))
-                    {
-                        readLogReq.pageFrom = readLogReq.fileSize - returnbuff.length();
-                        readLogReq.pageTo = readLogReq.pageFrom + LOGFILESIZELIMIT;
-                    }
-                    else if (readLogReq.filterType == 6)
-                    {
-                        readLogReq.pageTo = readLogReq.pageFrom + LOGFILESIZELIMIT;
-                    }
-                }
-                else
-                {
-                    resp.setLogData(returnbuff.str());
-                    if (readLogReq.filterType == 1)
-                    {
-                        readLogReq.pageFrom = 0;
-                        readLogReq.pageTo = returnbuff.length();
-                    }
-                    else if ((readLogReq.filterType == 2) || (readLogReq.filterType == 5))
-                    {
-                        readLogReq.pageFrom = readLogReq.fileSize - returnbuff.length();
-                        readLogReq.pageTo = readLogReq.fileSize;
-                    }
-                    else if (readLogReq.filterType == 6)
-                    {
-                        readLogReq.pageTo = readLogReq.pageFrom + returnbuff.length();
-                    }
-                }
-            }
-            if (readLogReq.fileSize > 0)
-                resp.setFileSize(readLogReq.fileSize);
-            if (readLogReq.pageNumber > 0)
-                resp.setPageNumber(readLogReq.pageNumber);
-            if (readLogReq.pageFrom > 0)
-                resp.setPageFrom(readLogReq.pageFrom);
-            if (readLogReq.pageTo > 0)
-                resp.setPageTo(readLogReq.pageTo);
-            resp.setPrevPage(readLogReq.prevPage);
-            if (readLogReq.nextPage > 0)
-                resp.setNextPage(readLogReq.nextPage);
-
-            resp.setName(req.getName());
-            resp.setType(type);
-            resp.setFilterType(readLogReq.filterType);
-            resp.setReversely(readLogReq.reverse);
-            resp.setZip(readLogReq.zip);
+            readTpLogFile(context, name, type, req, resp);
         }
-        else if (type && *type && (strcmp(type,"xml") == 0))
+        else if (streq(type,"xml"))
         {
             StringBuffer redirect;
             redirect.append("/WsTopology/TpXMLFile");
@@ -563,7 +349,7 @@ bool CWsTopologyEx::onTpXMLFile(IEspContext &context,IEspTpXMLFileRequest  &req,
         MemoryBuffer membuff;
         membuff.setBuffer(strBuff.length(), (void*)strBuff.toCharArray());
 
-        resp.setThefile_mimetype(HTTP_TYPE_TEXT_XML);
+        resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
         resp.setThefile(membuff);
     }
     catch(IException* e)
@@ -627,380 +413,46 @@ int CWsTopologyEx::loadFile(const char* fname, int& len, unsigned char* &buf, bo
     return 0;
 }
 
-void CWsTopologyEx::readLogFile(StringBuffer logname, ReadLog& readLogReq, StringBuffer& startDate, StringBuffer& endDate,  
-                                         bool& hasDate, StringBuffer& returnbuff)
+unsigned CWsTopologyEx::findLineTerminator(const char* dataPtr, const size32_t dataSize)
 {
-    Owned<IFile> rFile = createIFile(logname.str());
-    if (!rFile)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",logname.str());
-
-    OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
-    if (!rIO)
-        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname.str());
-
-    if (readLogReq.filterType == 1 && readLogReq.firstRows < 1) //last n rows
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "'First' field should be defined.");
-
-    if (readLogReq.filterType == 5 && readLogReq.lastRows < 1) //last n rows
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "'Last' field should be defined.");
-
-    readLogReq.fileSize = rFile->size();
-
-    if (readLogReq.filterType == 0 || readLogReq.filterType == 4) //by page number: 0 to n-1
+    char* pTr = (char*) dataPtr;
+    size32_t bytesToCheck = dataSize;
+    while(bytesToCheck > 0)
     {
-        offset_t readFrom = LOGFILESIZELIMIT * readLogReq.pageNumber;
-        if (readFrom > readLogReq.fileSize) 
-            readFrom = 0;
+        if ((bytesToCheck > 1) && (pTr[0] == '\r') && (pTr[1] == '\n'))
+            return 2;
 
-        offset_t fileSize = readLogReq.fileSize - readFrom;
-        if (fileSize > LOGFILESIZELIMIT)
-        {
-            fileSize = LOGFILESIZELIMIT;
-            readLogReq.nextPage = readLogReq.pageNumber + 1;
-        }
-        if (readFrom > 0)
-        {
-            readLogReq.prevPage = readLogReq.pageNumber - 1;
-        }
+        if (pTr[0] == '\r' || pTr[0] == '\n')
+            return 1;
 
-        returnbuff.ensureCapacity((unsigned)fileSize);
-        returnbuff.setLength((unsigned)fileSize);
-
-        size32_t nRead = rIO->read(readFrom, (size32_t) fileSize, (char*)returnbuff.str());
-        if (nRead != fileSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
-
-        readLogReq.pageFrom = (long) readFrom;
-        readLogReq.pageTo = (long) (readFrom + nRead);
-
-        if (readFrom < 1)
-        {
-            if (nRead > 28)
-            {
-                char* pTr = (char*) returnbuff.str();
-                CDateTime dt;
-                hasDate = readLogTime(pTr, 9, 19, dt);
-            }
-        }
-        else
-        {
-            offset_t fileSize0 = 29;
-            StringBuffer returnbuff0;
-            returnbuff0.ensureCapacity((unsigned)fileSize0);
-            returnbuff0.setLength((unsigned)fileSize0);
-
-            size32_t nRead0 = rIO->read(0, (size32_t)fileSize0, (char*)returnbuff0.str());
-            if (nRead0 > 28)
-            {
-                char* pTr = (char*) returnbuff0.str();
-                CDateTime dt;
-                hasDate = readLogTime(pTr, 9, 19, dt);
-            }
-        }
+        pTr++;
+        bytesToCheck--;
     }
-    else if (readLogReq.filterType == 3) //Last page
-    {
-        int pageCount = 1;
-        offset_t readFrom = 0;
-        offset_t fileSize = readLogReq.fileSize;
-        while (fileSize > LOGFILESIZELIMIT)
-        {
-            fileSize -= LOGFILESIZELIMIT;
-            readFrom += LOGFILESIZELIMIT;
-            pageCount++;
-        }
-        if (readFrom > 0)
-        {
-            readLogReq.prevPage = pageCount - 2;
-        }
 
-        returnbuff.ensureCapacity((unsigned)fileSize);
-        returnbuff.setLength((unsigned)fileSize);
-
-        size32_t nRead = rIO->read(readFrom, (size32_t)fileSize, (char*)returnbuff.str());
-        if (nRead != fileSize)
-            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
-
-        readLogReq.pageFrom = readFrom;
-        readLogReq.pageTo = readFrom + nRead;
-
-        offset_t fileSize0 = 29;
-        StringBuffer returnbuff0;
-        returnbuff0.ensureCapacity((unsigned)fileSize0);
-        returnbuff0.setLength((unsigned)fileSize0);
-
-        size32_t nRead0 = rIO->read(0, (size32_t)fileSize0, (char*)returnbuff0.str());
-        if (nRead0 > 28)
-        {
-            char* pTr = (char*) returnbuff0.str();
-            CDateTime dt;
-            hasDate = readLogTime(pTr, 9, 19, dt);
-        }
-    }
-    else
-    {
-        if (!readLogReq.zip)
-        {
-            StringArray rowList;
-            readLogFile(logname, rIO, readLogReq, hasDate, rowList);
-            if (rowList.length() > 0)
-            {
-                for (unsigned i = 0; i < rowList.length(); i++)
-                {
-                    StringBuffer item = rowList.item(i);
-                    if (readLogReq.filterType != 5)
-                    {
-                        if (!readLogReq.reverse)
-                        {
-                            returnbuff.append(item);
-                        }
-                        else
-                        {
-                            returnbuff.insert(0, item);
-                        }
-                    }
-                    else
-                    {
-                        if (readLogReq.reverse)
-                        {
-                            returnbuff.append(item);
-                        }
-                        else
-                        {
-                            returnbuff.insert(0, item);
-                        }
-                    }
-                }
-            }
-        }
-    }
+    return 0;
 }
 
-void CWsTopologyEx::readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, bool& hasDate, StringArray& returnbuff)
+bool CWsTopologyEx::isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength)
 {
-    bool returnNow = false;
-
-    int ltBytes = 1; //how many bytes used for Line Terminator
-    bool firstChuck = true;
-    bool lastChuck = false;
-    bool hasLineID = false;
-
-    offset_t readFrom = 0;
-    offset_t readFrom0 = 0;
-    unsigned locationFlag = 0; //Not in the area to be retrieved
-    StringBuffer dataLeft;
-
-    offset_t fileSize = readLogReq.fileSize;
-    while (fileSize > 0)
+    if (ltLength > 1)
     {
-        StringBuffer dataBuffer;
-        lastChuck = readToABuffer(logname, rIO, fileSize, readFrom, dataLeft, dataBuffer);
-
-        offset_t readPtr = 0;
-        offset_t totalBytes = dataBuffer.length();
-        char* pTr = (char*) dataBuffer.str();
-
-        long firstOrLastRowID = -1;
-        if (firstChuck) //first time
-        {
-            firstChuck = false;
-
-            ltBytes = checkLineTerminator(pTr);
-
-            //if rowID < 0, no row id found 
-            long rowID = readLogLineID(pTr);
-            if ((totalBytes > 8) && (rowID > -1))
-                hasLineID = true;
-
-            if (totalBytes > 28)
-            {
-                CDateTime dt;
-                hasDate = readLogTime(pTr, 9, 19, dt);
-            }
-
-            if (hasLineID && (readLogReq.filterType == 1)) //first n rows
-            {
-                firstOrLastRowID = rowID;
-            }
-            else if (readLogReq.filterType == 5) //last n rows
-            {
-                offset_t estimateSize = AVERAGELOGROWSIZE*readLogReq.lastRows;
-                if (readLogReq.fileSize > 5 * estimateSize) //try a short cut since the file is too big
-                {
-                    int n = 1;
-
-                    dataLeft.clear();
-                    dataBuffer.clear();
-
-                    fileSize = readLogReq.fileSize;
-                    readFrom = fileSize-estimateSize;
-                    fileSize = estimateSize;
-                    readToABuffer(logname, rIO, fileSize, readFrom, dataLeft, dataBuffer);
-
-                    readPtr = 0;
-                    totalBytes = dataBuffer.length();
-                    pTr = (char*) dataBuffer.str();
-
-                    //Find out a start point to check the data rows
-                    bool bLT = false;
-                    while (!bLT && (readPtr < totalBytes))
-                    {
-                        bLT = readLineTerminator(pTr, ltBytes);
-                        pTr++;
-                        readPtr++;
-                    }
-
-                    //Find out the row number of the last data row
-                    StringBuffer dataRow;
-                    char* pTr1 = pTr;
-                    offset_t readPtr1 = readPtr;
-                    
-                    bLT = false;
-                    while (readPtr1 < totalBytes)
-                    {
-                        dataRow.append(pTr1[0]);
-
-                        //Check if this is the end of the row
-                        bLT = readLineTerminator(pTr1, ltBytes);
-                        if (!bLT)
-                        {
-                            pTr1++;
-                            readPtr1++;
-                            continue;
-                        }
-
-                        if (dataRow.length() > 8)
-                        {
-                            long id = readLogLineID((char*) dataRow.str());
-                            if (id > -1)
-                                firstOrLastRowID = id;
-                        }
-
-                        dataRow.clear();
-                        pTr1++;
-                        readPtr1++;
-                    }
-
-                    if (dataRow.length() > 8)
-                    {
-                        long id = readLogLineID((char*) dataRow.str());
-                        if (id > -1)
-                            firstOrLastRowID = id;
-                    }
-                }
-            }
-        }
-
-        char* pTr0 = pTr;
-        StringBuffer dataRow;
-        while (totalBytes - readPtr > 27)
-        {
-            //Try to read a line
-            bool bLT = false;
-            while (readPtr < totalBytes)
-            {
-                dataRow.append(pTr[0]);
-
-                //Check if this is the end of the row
-                bLT = readLineTerminator(pTr, ltBytes);
-                if (!bLT)
-                {
-                    pTr++;
-                    readPtr++;
-                    continue;
-                }
-
-                if (dataRow.length() > 0)
-                {
-                    addALogLine(readFrom0, locationFlag, firstOrLastRowID, dataRow, readLogReq, returnbuff);
-                    dataRow.clear();
-                }
-
-                readPtr++;
-                pTr++;
-                if (readPtr < totalBytes)
-                    pTr0 = pTr;
-                else
-                    pTr0 = NULL;
-                break;
-            }
-
-            if (locationFlag > 1)
-                break;
-        }
-        
-        if (locationFlag > 1)
-            break;
-
-        dataLeft.clear();
-        if (pTr0)
-            dataLeft.append(pTr0);
-
-        if (lastChuck)
-        {
-            addALogLine(readFrom0, locationFlag, firstOrLastRowID, dataLeft, readLogReq, returnbuff);
-            break;
-        }
+        if ((dataSize > 1) && (dataPtr[0] == '\r') && (dataPtr[1] == '\n'))
+            return true;
     }
+    else if (dataPtr[0] == '\r' || dataPtr[0] == '\n')
+        return true;
 
-    return;
+    return false;
 }
 
-bool CWsTopologyEx::readToABuffer(StringBuffer logname, OwnedIFileIO rIO, offset_t& fileSize, offset_t& readFrom, 
-                                             StringBuffer dataLeft, StringBuffer& dataBuffer)
+bool CWsTopologyEx::readLogLineID(char* linePtr, unsigned long& lineID)
 {
-    bool lastPage = true;
-    offset_t readSize = fileSize;
-    if (readSize > LOGFILESIZELIMIT)
-    {
-        readSize = LOGFILESIZELIMIT;
-        lastPage = false;
-    }
+    char *epTr;
+    lineID = strtoul(linePtr, &epTr, 16);
+    if (epTr - linePtr < 8)  //LineID is the first 8 bytes of a log line
+        return false;
 
-    StringBuffer buf;
-    buf.ensureCapacity((unsigned)readSize);
-    buf.setLength((unsigned)readSize);
-
-    size32_t nRead = rIO->read(readFrom, (size32_t)readSize, (char*)buf.str());
-    if (nRead != readSize)
-        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
-
-    dataBuffer.clear();
-    if (dataLeft.length() > 0)
-        dataBuffer.append(dataLeft);
-
-    dataBuffer.append(buf);
-
-    readFrom += nRead;
-    fileSize -= nRead;
-
-    return lastPage;
-}
-
-long CWsTopologyEx::readLogLineID(char* pTr)
-{
-    long id = -1;
-    StringBuffer lineID;
-
-    int i = 0;
-    while (i < 8)
-    {
-        if ((pTr[i] < 48) || ((pTr[i] > 57) && (pTr[i] < 65)) || (pTr[i] > 70))
-        {
-            lineID.clear();
-            break;
-        }
-
-        lineID.append(pTr[i]);
-        i++;
-    }
-
-    if (lineID.length() > 0)
-    {
-        id = strtol(lineID, NULL, 16);
-    }
-
-    return id;
+    return true;
 }
 
 bool CWsTopologyEx::readLogTime(char* pTr, int start, int length, CDateTime& dt)
@@ -1008,139 +460,461 @@ bool CWsTopologyEx::readLogTime(char* pTr, int start, int length, CDateTime& dt)
     bool bRet = false;
     try
     {
-        char str[20];
-        memset(str, 0, 20);
-        strncpy(str, pTr+start, length);
-
-        StringBuffer strBuf = str;
+        StringBuffer strBuf;
+        strBuf.append(pTr, start, length);
         strBuf.setCharAt(10, 'T');
-        dt.setString(strBuf.str(), NULL, true);
+        dt.setString(strBuf.str(), NULL, false);
         bRet = true;
     }
     catch(IException* e)
-    {   
+    {
         e->Release();
     }
 
     return bRet;
 }
 
-int CWsTopologyEx::checkLineTerminator(char* pTr)
+bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadLog& readLogReq, CDateTime& latestLogTime)
 {
-    char* ppTr = pTr;
-    while(ppTr)
+    OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
+    if (!rIO)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname.str());
+
+    size32_t fileSize = (size32_t) rFile->size();
+    size32_t readSize = 64000;
+    if (readSize > fileSize)
+        readSize = fileSize;
+
+    //Read the first chuck of file to find out a timestamp and line terminator
+    StringBuffer dataBuffer;
+    size32_t bytesRead = rIO->read(0, readSize, dataBuffer.reserve(readSize));
+    if (bytesRead != readSize)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+
+    char* pTr = (char*) dataBuffer.str();
+    readLogReq.ltBytes = findLineTerminator(pTr, bytesRead);
+
+    if (rFile->size() < 28) //lineID + timestamp
+        return false;//no timestamp in this log
+    if (!readLogTime(pTr, 9, 19, latestLogTime))
+        return false;//no timestamp in this log
+
+    if ((readLogReq.filterType != GLOLastNHours) && (readLogReq.filterType != GLOTimeRange))
+        return true;//Not interested in the last timestamp this time
+
+    //Search the last chuck to find out the latest timestamp
+    if (readSize < fileSize)
     {
-        if (ppTr[0] == '\r' && ppTr[1] == '\n')
-        {
-            return 2;
-        }
-
-        if (ppTr[0] == '\r' || ppTr[0] == '\n')
-        {
-            return 1;
-        }
-
-        ppTr++;
+        bytesRead = rIO->read(fileSize - readSize, readSize, dataBuffer.clear().reserve(readSize));
+        if (bytesRead != readSize)
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+        pTr = (char*) dataBuffer.str();
     }
 
-    return 0;
+    //skip the first line which may not contain the entire log line
+    StringBuffer logLine;
+    size32_t bytesRemaining = bytesRead;
+    bool hasAnotherLine = false;
+    pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine, hasAnotherLine);
+    if (!hasAnotherLine || (bytesRemaining < 28))
+        return true;
+
+    //Find out the last timestamp
+    while (hasAnotherLine && bytesRemaining > 27)
+    {
+        CDateTime dt;
+        pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine, hasAnotherLine);
+        if ((logLine.length() > 27) && readLogTime((char*) logLine.str(), 9, 19, dt))
+            latestLogTime = dt;
+    }
+
+    return true;
 }
 
-bool CWsTopologyEx::readLineTerminator(char* pTr, int& byteCount)
+char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsigned ltLength, StringBuffer& logLine, bool& hasLineTernimator)
 {
-    bool bFoundLineEnd = false;
-    if (byteCount > 1)
+    bool inQuote = false;
+    char* pTr = dataPtr;
+
+    hasLineTernimator = false;
+    while(bytesRemaining > 0)
     {
-        if (pTr[0] == '\n') 
-        {
-            bFoundLineEnd = true;
-        }
-    }
-    else if (pTr[0] == '\r' || pTr[0] == '\n')
-    {
-        bFoundLineEnd = true;
+        if (pTr[0] == '\"')
+            inQuote = !inQuote;
+
+        hasLineTernimator = isLineTerminator(pTr, bytesRemaining, ltLength);
+        if (hasLineTernimator && !inQuote) //a log line may be broken into multiple lines
+            break;
+
+        pTr++;
+        bytesRemaining--;
     }
 
-    return bFoundLineEnd;
+    if (hasLineTernimator)
+    {
+        pTr += ltLength;
+        bytesRemaining -= ltLength;
+    }
+
+    logLine.clear();
+    if (pTr > dataPtr)
+        logLine.append(dataPtr, 0, pTr - dataPtr);
+
+    return pTr;
 }
 
-void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, long firstOrLastRowID, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff)
+void CWsTopologyEx::addALogLine(offset_t& readFrom, unsigned& locationFlag, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff)
 {
-    long rowID = readLogLineID((char*)dataRow.str());
-    if (readLogReq.filterType == 1) //first n rows
+    if (readLogReq.filterType == GLOFirstNRows)
     {
-        if (firstOrLastRowID > -1)
-        {//there is row id to be used
-            locationFlag = 1; //enter the area to be retrieved
-            if ((rowID < 0) || (rowID - firstOrLastRowID < (long) readLogReq.firstRows)) //no row ID or the row ID is less than readLogReq.firstRows
-            {
-                returnbuff.append(dataRow);
-            }
-            else
-            {
-                locationFlag = 2; //out of the area to be retrieved
-            }
-        }
-        else
-        {
-            locationFlag = 1; //enter the area to be retrieved
-            returnbuff.append(dataRow); 
-            if (returnbuff.length() == readLogReq.firstRows)
-                locationFlag = 2; //stop now since we have enough rows
-        }
+        locationFlag = 1; //enter the area to be retrieved
+        returnbuff.append(dataRow);
+        if (returnbuff.length() == readLogReq.firstRows)
+            locationFlag = 2; //stop now since we have enough rows
     }
-    else if (readLogReq.filterType == 5) //last n rows
+    else if (readLogReq.filterType == GLOLastNRows)
     {
-        if (firstOrLastRowID > -1)
-        {//there is row id to be used
-            if ((locationFlag < 1) && (rowID > -1) && (firstOrLastRowID - rowID < (long) readLogReq.lastRows))
-                locationFlag = 1;
+        if (returnbuff.length() == readLogReq.lastRows)
+            returnbuff.remove(readLogReq.lastRows - 1);
 
-            if (locationFlag > 0) //Add the rest of rows
-                returnbuff.add(dataRow, 0); 
-        }
-        else
-        {
-            if (returnbuff.length() == readLogReq.lastRows)
-                returnbuff.remove(readLogReq.lastRows - 1);
-
-            returnbuff.add(dataRow, 0); 
-            locationFlag = 1; //always in the area to be retrieved, but may be pushed out later
-        }
+        returnbuff.add(dataRow, 0);
+        locationFlag = 1; //always in the area to be retrieved, but extra lines may be pushed out later
     }
     else
     {
-        if (rowID < 0) //row id not found
+        unsigned long rowID;
+        if (!readLogLineID((char*)dataRow.str(), rowID)) //row id (and timestamp) not found in this log line
         {
             if (locationFlag > 0)
-            {
                 returnbuff.append(dataRow);
-            }
             readFrom += dataRow.length();
             return;
         }
 
-        char str[20];
-        memset(str, 0, 20);
-        dataRow.getChars(9, 28, str);
-
-        if (readLogReq.endDate.length() > 0 && strcmp(str, readLogReq.endDate.str()) > 0)
+        StringBuffer str;
+        str.append(dataRow.str(), 20, 8); //Read time
+        if (readLogReq.endDate.length() > 0 && strcmp(str.str(), readLogReq.endDate.str()) > 0)
             locationFlag = 2; //out of the area to be retrieved
-        else if (readLogReq.startDate.length() < 1 || strcmp(str, readLogReq.startDate.str()) >= 0)
+        else if (readLogReq.startDate.length() > 1 && strcmp(str.str(), readLogReq.startDate.str()) < 0)
+            readFrom += dataRow.length(); //skip this line
+        else
         {
             returnbuff.append(dataRow);
-            if ((locationFlag < 1) && (readLogReq.filterType == 6))
-            {
+            if ((locationFlag < 1) && (readLogReq.filterType == GLOTimeRange))
                 readLogReq.pageFrom = readFrom;
-            }
+
             readFrom += dataRow.length();
             locationFlag = 1; //enter the area to be retrieved
         }
+    }
+    return;
+}
+
+void CWsTopologyEx::readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuf)
+{
+    bool firstChuck = true;
+    bool lastChuck = false;
+
+    offset_t readFrom = 0;
+    offset_t logLineFrom = 0;
+    unsigned locationFlag = 0; //0: before the interested log lines are reached, 1: found the log lines, 2: out
+    StringBuffer logLine;
+
+    offset_t bytesLeft = readLogReq.fileSize;
+    while (bytesLeft > 0)
+    {
+        size32_t readSize;
+        StringBuffer dataBuffer;
+
+        //Find out where to read and how many bytes to read
+        if (!firstChuck || (readLogReq.filterType != GLOLastNRows))
+        {
+            if (bytesLeft > LOGFILESIZELIMIT)
+                readSize = LOGFILESIZELIMIT;
+            else
+            {
+                readSize = (size32_t) bytesLeft;
+                lastChuck = true;
+            }
+            bytesLeft -= readSize;
+        }
         else
         {
-            readFrom += dataRow.length();
+            //read the last chuck since the file is too big
+            size32_t estimateSize = AVERAGELOGROWSIZE*readLogReq.lastRows;
+            if (readLogReq.fileSize < estimateSize)
+                readSize = (size32_t) readLogReq.fileSize;
+            else
+                readSize = estimateSize;
+            readFrom = (size32_t) readLogReq.fileSize-readSize;
+            bytesLeft = 0;
+            lastChuck = true;
+        }
+
+        //read a chuck of log to a buffer
+        if (logLine.length() > 0) //check any left from a previous chunk
+            dataBuffer.append(logLine.str());
+        size32_t nRead = rIO->read(readFrom, readSize, dataBuffer.reserve(readSize));
+        if (nRead != readSize)
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+
+        logLineFrom = readFrom;
+        readFrom += nRead;
+
+        //get the log lines from the buffer
+        size32_t bytesRemaining = dataBuffer.length();
+        char* pTr = (char*) dataBuffer.str();
+        bool hasAnotherLine = true;
+        while (hasAnotherLine && (bytesRemaining > 0) && (locationFlag < 2))
+        {
+            pTr = readALogLine(pTr, bytesRemaining, readLogReq.ltBytes, logLine.clear(), hasAnotherLine);
+            if (logLine.length() < 1)
+                continue;
+            if (lastChuck || hasAnotherLine)
+                addALogLine(logLineFrom, locationFlag, logLine, readLogReq, returnbuf);
+        }
+
+        if (locationFlag > 1) //interested log lines have been finished
+            break;
+
+        firstChuck = false;
+    }
+
+    return;
+}
+
+void CWsTopologyEx::readLogFile(StringBuffer logname, IFile* rFile, ReadLog& readLogReq, StringBuffer& returnbuff)
+{
+    OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
+    if (!rIO)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot read file %s.",logname.str());
+
+    if ((readLogReq.filterType == GLOFirstPage) || (readLogReq.filterType == GLOLastPage) || (readLogReq.filterType == GLOGoToPage)) //by page number
+    {
+        size32_t fileSize = (size32_t) (readLogReq.pageTo - readLogReq.pageFrom);
+        size32_t nRead = rIO->read(readLogReq.pageFrom, fileSize, returnbuff.reserve(fileSize));
+        if (nRead != fileSize)
+            throw MakeStringException(ECLWATCH_CANNOT_READ_FILE, "Failed to read file %s.", logname.str());
+    }
+    else
+    {
+        StringArray logLines;
+        readLogFileToArray(logname, rIO, readLogReq, logLines);
+        ForEachItemIn(i, logLines)
+        {
+            StringBuffer logLine = logLines.item(i);
+            if ((!readLogReq.reverse && (readLogReq.filterType != 5)) ||
+                (readLogReq.reverse && (readLogReq.filterType == 5)))
+                returnbuff.append(logLine.str());
+            else
+                returnbuff.insert(0, logLine);
+        }
+
+        //Update page information based on log content
+        if (returnbuff.length() > LOGFILESIZELIMIT)
+        {
+            if (readLogReq.filterType == GLOFirstNRows)
+                readLogReq.pageTo = LOGFILESIZELIMIT;
+            else if (readLogReq.filterType == GLOTimeRange)
+                readLogReq.pageTo = readLogReq.pageFrom + LOGFILESIZELIMIT;
+            else if ((readLogReq.filterType == GLOLastNHours) || (readLogReq.filterType == GLOLastNRows))
+            {
+                readLogReq.pageFrom = readLogReq.fileSize - returnbuff.length();
+                readLogReq.pageTo = readLogReq.pageFrom + LOGFILESIZELIMIT;
+            }
+        }
+        else
+        {
+            if (readLogReq.filterType == GLOFirstNRows)
+                readLogReq.pageTo = returnbuff.length();
+            else if (readLogReq.filterType == GLOTimeRange)
+                readLogReq.pageTo = readLogReq.pageFrom + returnbuff.length();
+            else if ((readLogReq.filterType == GLOLastNHours) || (readLogReq.filterType == GLOLastNRows))
+            {
+                readLogReq.pageFrom = readLogReq.fileSize - returnbuff.length();
+                readLogReq.pageTo = readLogReq.fileSize;
+            }
         }
     }
+}
+
+void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq)
+{
+    readLogReq.filterType = (GetLogOptions) req.getFilterType();
+    readLogReq.pageNumber = req.getPageNumber();
+    readLogReq.startDate = req.getStartDate();
+    readLogReq.endDate = req.getEndDate();
+    readLogReq.firstRows = req.getFirstRows();
+    readLogReq.lastRows = req.getLastRows();
+    readLogReq.reverse = req.getReversely();
+    readLogReq.loadContent = req.getLoadData();
+
+    readLogReq.fileSize = rFile->size();
+    readLogReq.TotalPages = (int) ceil(((double)readLogReq.fileSize)/LOGFILESIZELIMIT);
+    readLogReq.prevPage = -1;
+    readLogReq.nextPage = -1;
+    readLogReq.lastHours = 0;
+
+    CDateTime latestLogTime;
+    readLogReq.hasTimestamp = findTimestampAndLT(fileName, rFile, readLogReq, latestLogTime);
+
+    switch (readLogReq.filterType)
+    {
+    case GLOFirstPage:
+    case GLOGoToPage:
+    {
+        if (readLogReq.pageNumber > readLogReq.TotalPages - 1)
+            readLogReq.pageNumber = readLogReq.TotalPages - 1;
+
+        readLogReq.pageFrom = LOGFILESIZELIMIT * readLogReq.pageNumber;
+        if (readLogReq.pageFrom > 0)
+            readLogReq.prevPage = readLogReq.pageNumber - 1;
+        if (readLogReq.pageNumber < readLogReq.TotalPages - 1)
+        {
+            readLogReq.nextPage = readLogReq.pageNumber + 1;
+            readLogReq.pageTo = (long) (readLogReq.pageFrom + LOGFILESIZELIMIT);
+        }
+        else
+            readLogReq.pageTo = (long) readLogReq.fileSize;
+        break;
+    }
+    case GLOLastPage:
+    {
+        int pageCount = 1;
+        readLogReq.pageFrom = 0;
+        offset_t fileSize = readLogReq.fileSize;
+        while (fileSize > LOGFILESIZELIMIT)
+        {
+            fileSize -= LOGFILESIZELIMIT;
+            readLogReq.pageFrom += LOGFILESIZELIMIT;
+            pageCount++;
+        }
+
+        readLogReq.pageTo = readLogReq.pageFrom + fileSize;
+        readLogReq.pageNumber = pageCount - 1;
+        if (readLogReq.pageFrom > 0)
+            readLogReq.prevPage = pageCount - 2;
+        break;
+    }
+    case GLOFirstNRows:
+    {
+        if (readLogReq.firstRows < 1)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "'First rows' field should be defined.");
+        readLogReq.pageFrom = 0;
+        break;
+    }
+    case GLOLastNRows:
+    {
+        if (readLogReq.lastRows < 1)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "'Last rows' field should be defined.");
+        break;
+    }
+    case GLOLastNHours:
+    {
+        if (!readLogReq.hasTimestamp)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "This log file has no timestamp.");
+
+        if  (req.getLastHours_isNull())
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Hours' field.");
+
+        readLogReq.lastHours = req.getLastHours();
+        unsigned hour, hour2, minute, second, nano;
+        latestLogTime.getTime(hour, minute, second, nano, false);
+        hour2 = hour - readLogReq.lastHours;
+        if (hour2 < 0)
+            readLogReq.startDate.set("00:00:00");
+        else
+            readLogReq.startDate.clear().appendf("%02d:%02d:%02d", hour2, minute, second);
+        readLogReq.endDate.clear();
+        break;
+    }
+    case GLOTimeRange:
+    {
+        if (!readLogReq.hasTimestamp)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "This log file has no timestamp.");
+
+        if ((readLogReq.startDate.length() < 8) && (readLogReq.endDate.length() < 8))
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Time' field.");
+        break;
+    }
+    }
+
+    return;
+}
+
+void CWsTopologyEx::setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
+                                         const char* fileType, StringBuffer& returnbuf, IEspTpLogFileResponse &resp)
+{
+    if (readLogReq.loadContent)
+    {
+        if (returnbuf.length() <= LOGFILESIZELIMIT)
+            resp.setLogData(returnbuf.str());
+        else
+        {
+            StringBuffer returnbuf0;
+            returnbuf0.append(returnbuf.str(), 0, LOGFILESIZELIMIT);
+            returnbuf0.appendf("\r\n****** Warning: cannot display all. The page size is limited to %ld bytes. ******", LOGFILESIZELIMIT);
+            resp.setLogData(returnbuf0.str());
+        }
+    }
+
+    resp.setHasDate(readLogReq.hasTimestamp);
+    if (readLogReq.lastHours > 0)
+        resp.setLastHours(readLogReq.lastHours);
+    if (readLogReq.startDate.length() > 0)
+        resp.setStartDate(readLogReq.startDate.str());
+    if (readLogReq.endDate.length() > 0)
+        resp.setEndDate(readLogReq.endDate.str());
+    if (readLogReq.lastRows > 0)
+        resp.setLastRows(readLogReq.lastRows);
+    if (readLogReq.firstRows > 0)
+        resp.setFirstRows(readLogReq.firstRows);
+
+    double version = context.getClientVersion();
+    if (version > 1.05)
+        resp.setTotalPages( readLogReq.TotalPages );
+
+    if (readLogReq.fileSize > 0)
+        resp.setFileSize(readLogReq.fileSize);
+    if (readLogReq.pageNumber > 0)
+        resp.setPageNumber(readLogReq.pageNumber);
+    if (readLogReq.pageFrom > 0)
+        resp.setPageFrom(readLogReq.pageFrom);
+    if (readLogReq.pageTo > 0)
+        resp.setPageTo(readLogReq.pageTo);
+    resp.setPrevPage(readLogReq.prevPage);
+    if (readLogReq.nextPage > 0)
+        resp.setNextPage(readLogReq.nextPage);
+
+    resp.setName(fileName);
+    resp.setType(fileType);
+    resp.setFilterType(readLogReq.filterType);
+    resp.setReversely(readLogReq.reverse);
+
+    return;
+}
+
+void CWsTopologyEx::readTpLogFile(IEspContext &context,const char* fileName, const char* fileType, IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp)
+{
+    StringBuffer logname;
+    if (strcmp(fileType,"thormaster_log"))
+        logname = fileName;
+    else
+        logname.append(CCluster(fileName)->queryRoot()->queryProp("LogFile"));
+
+    Owned<IFile> rFile = createIFile(logname.str());
+    if (!rFile || !rFile->exists())
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE,"Cannot open file %s.",logname.str());
+
+    ReadLog readLogReq;
+    readTpLogFileRequest(context, fileName, rFile, req, readLogReq);
+
+    StringBuffer returnbuf;
+    if (readLogReq.loadContent)
+        readLogFile(logname, rFile, readLogReq, returnbuf);
+
+    setTpLogFileResponse(context, readLogReq, fileName, fileType, returnbuf, resp);
+
     return;
 }
 
@@ -1525,33 +1299,14 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
         }
         else
         {
-            if (!stricmp(compType, eqDali))
-                fileName = "DaServer.log";
-            else if (!stricmp(compType, eqDfu))
-                fileName = "dfuserver.log";
-            else if (!stricmp(compType, eqEclServer))
-                fileName = "eclserver.log";
-            else if (!stricmp(compType, eqEclCCServer))
-                fileName = "eclccserver.log";
-            else if (!stricmp(compType, eqEclScheduler))
-                fileName = "eclscheduler.log";
-            else if (!stricmp(compType, eqEsp))
-                fileName = "esp.log";
-            else if (!stricmp(compType, eqSashaServer))
-                fileName = "saserver.log";
-            else if (!stricmp(compType, eqEclAgent))
-                fileName = "";
-            else 
-            {
-                const unsigned int len = strlen(compType);
-                if (len>4)
-                    if (!strnicmp(compType, "Roxie", 5))
-                        compType = "RoxieCluster", fileName = "", bCluster = true;
-                    else if (!strnicmp(compType, "Thor", 4))
-                        compType = "ThorCluster", fileName = "", bCluster = true;
-                    else if (!strnicmp(compType, "Hole", 4))
-                        compType = "HoleCluster", fileName = "", bCluster = true;
-            }
+            fileName = "";
+            if (strlen(compType)>4)
+                if (!strnicmp(compType, "Roxie", 5))
+                    compType = "RoxieCluster", bCluster = true;
+                else if (!strnicmp(compType, "Thor", 4))
+                    compType = "ThorCluster", bCluster = true;
+                else if (!strnicmp(compType, "Hole", 4))
+                    compType = "HoleCluster", bCluster = true;
         }
 
         if (!fileName)
@@ -1748,7 +1503,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
                         }
                     }
                     resp.setFileContents(buf);
-                    resp.setFileContents_mimetype(HTTP_TYPE_TEXT_XML);
+                    resp.setFileContents_mimetype(HTTP_TYPE_APPLICATION_XML);
                 }
             }
         }

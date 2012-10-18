@@ -213,15 +213,16 @@ class CThorBoundLoopGraph : public CInterface, implements IThorBoundLoopGraph
     CGraphBase *graph;
     activity_id activityId;
     Linked<IOutputMetaData> resultMeta;
-    Owned<IOutputMetaData> counterMeta;
-    Owned<IRowInterfaces> resultRowIf, countRowIf;
+    Owned<IOutputMetaData> counterMeta, loopAgainMeta;
+    Owned<IRowInterfaces> resultRowIf, countRowIf, loopAgainRowIf;
 
 public:
     IMPLEMENT_IINTERFACE;
 
     CThorBoundLoopGraph(CGraphBase *_graph, IOutputMetaData * _resultMeta, unsigned _activityId) : graph(_graph), resultMeta(_resultMeta), activityId(_activityId)
     {
-        counterMeta.setown(new CThorEclCounterMeta);
+        counterMeta.setown(createFixedSizeMetaData(sizeof(thor_loop_counter_t)));
+        loopAgainMeta.setown(createFixedSizeMetaData(sizeof(bool)));
     }
     virtual void prepareCounterResult(CActivityBase &activity, IThorGraphResults *results, unsigned loopCounter, unsigned pos)
     {
@@ -235,6 +236,12 @@ public:
         Owned<IRowWriter> counterResultWriter = counterResult->getWriter();
         counterResultWriter->putRow(counterRowFinal.getClear());
     }
+    virtual void prepareLoopAgainResult(CActivityBase &activity, IThorGraphResults *results, unsigned pos)
+    {
+        if (!loopAgainRowIf)
+            loopAgainRowIf.setown(createRowInterfaces(loopAgainMeta, activityId, activity.queryCodeContext()));
+        activity.queryGraph().createResult(activity, pos, results, loopAgainRowIf, !activity.queryGraph().isLocalChild(), SPILL_PRIORITY_DISABLE);
+    }
     virtual void prepareLoopResults(CActivityBase &activity, IThorGraphResults *results)
     {
         if (!resultRowIf)
@@ -242,23 +249,14 @@ public:
         IThorResult *loopResult = results->createResult(activity, 0, resultRowIf, !activity.queryGraph().isLocalChild()); // loop output
         IThorResult *inputResult = results->createResult(activity, 1, resultRowIf, !activity.queryGraph().isLocalChild());
     }
-    virtual IRowStream *execute(CActivityBase &activity, unsigned counter, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
+    virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *results, IRowWriterMultiReader *inputStream, rowcount_t rowStreamCount, size32_t parentExtractSz, const byte *parentExtract)
     {
-        Owned<IThorGraphResults> results = graph->createThorGraphResults(3);
-        prepareLoopResults(activity, results);
         if (counter)
-        {
-            prepareCounterResult(activity, results, counter, 2);
             graph->setLoopCounter(counter);
-        }
         Owned<IThorResult> inputResult = results->getResult(1);
         if (inputStream)
             inputResult->setResultStream(inputStream, rowStreamCount);
         graph->executeChild(parentExtractSz, parentExtract, results, NULL);
-        if (0 == graph->queryJob().queryMyRank())
-            return NULL; // unset and unused on master
-        Owned<IThorResult> result0 = results->getResult(0);
-        return result0->getRowStream();
     }
     virtual void execute(CActivityBase &activity, unsigned counter, IThorGraphResults *graphLoopResults, size32_t parentExtractSz, const byte *parentExtract)
     {
@@ -639,6 +637,9 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 }
                 return true;
             }
+            case TAKchildcase:
+                owner->ifs.append(*this);
+                // fall through
             case TAKcase:
             {
                 if (_shortCircuit) return true;
@@ -730,6 +731,7 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
         switch (getKind())
         {
             case TAKchildif:
+            case TAKchildcase:
             {
                 if (inputs.queryItem(whichBranch))
                 {
@@ -780,7 +782,6 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                         switch (input->getKind())
                         {
                             case TAKif:
-//                          case TAKchildif:
                             case TAKcase:
                             {
                                 if (input->whichBranch >= input->getInputs()) // if, will have TAKnull activity, made at create time.
@@ -921,6 +922,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKpipethrough:
         case TAKif:
         case TAKchildif:
+        case TAKchildcase:
         case TAKcase:
         case TAKparse:
         case TAKpiperead:
@@ -1486,6 +1488,7 @@ public:
             {
                 case TAKif:
                 case TAKchildif:
+                case TAKchildcase:
                 case TAKcase:
                     setNext(cur->inputs, cur->whichBranch);
                     break;
@@ -1833,6 +1836,11 @@ IThorResult *CGraphBase::getResult(unsigned id, bool distributed)
 IThorResult *CGraphBase::getGraphLoopResult(unsigned id, bool distributed)
 {
     return graphLoopResults->getResult(id, distributed);
+}
+
+IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
+{
+    return results->createResult(activity, id, rowIf, distributed, spillPriority);
 }
 
 IThorResult *CGraphBase::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
@@ -2317,6 +2325,7 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     jobComm.setown(createCommunicator(jobGroup));
     slaveGroup.setown(jobGroup->remove(0));
     myrank = jobGroup->rank(queryMyNode());
+    globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
 }
 
 void CJobBase::init()
@@ -2340,7 +2349,6 @@ void CJobBase::init()
     pausing = false;
     resumed = false;
 
-    unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
 #ifdef _DEBUG
     bool defaultCrcChecking = true;
 #else
@@ -2348,13 +2356,14 @@ void CJobBase::init()
 #endif
     bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", defaultCrcChecking));
     bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
-    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000, crcChecking, usePackedAllocator));
+    unsigned memorySpillAt = getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
+    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, crcChecking, usePackedAllocator));
 
-    unsigned defaultMemMB = gmemSize*3/4;
+    unsigned defaultMemMB = globalMemorySize*3/4;
     unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
-    if (gmemSize && largeMemSize >= gmemSize)
-        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
-    PROGLOG("Global memory size = %d MB, large mem size = %d MB", gmemSize, largeMemSize);
+    if (globalMemorySize && largeMemSize >= globalMemorySize)
+        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, globalMemorySize);
+    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", globalMemorySize, memorySpillAt, largeMemSize);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
@@ -2616,6 +2625,30 @@ roxiemem::IRowManager *CJobBase::queryRowManager() const
     return thorAllocator->queryRowManager();
 }
 
+IThorResult *CJobBase::getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId)
+{
+    Owned<CGraphBase> graph = getGraph(gid);
+    if (!graph)
+    {
+        Owned<IThorException> e = MakeThorException(0, "getOwnedResult: graph not found");
+        e->setGraphId(gid);
+        throw e.getClear();
+    }
+    Owned<IThorResult> result;
+    if (ownerId)
+    {
+        CGraphElementBase *container = graph->queryElement(ownerId);
+        assertex(container);
+        CActivityBase *activity = container->queryActivity();
+        result.setown(activity->queryResults()->getResult(resultId));
+    }
+    else
+        result.setown(graph->getResult(resultId));
+    if (!result)
+        throw MakeGraphException(graph, 0, "GraphGetResult: result not found: %d", resultId);
+    return result.getClear();
+}
+
 static IThorResource *iThorResource = NULL;
 void setIThorResource(IThorResource &r)
 {
@@ -2652,6 +2685,11 @@ void CActivityBase::abort()
 {
     if (!abortSoon) ActPrintLog("Abort condition set");
     abortSoon = true;
+}
+
+void CActivityBase::kill()
+{
+    ownedResults.clear();
 }
 
 void CActivityBase::ActPrintLog(const char *format, ...)
@@ -2719,6 +2757,12 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
         CABdeserializerlock.unlock();
     }
     return rowDeserializer;
+}
+
+IRowInterfaces *CActivityBase::getRowInterfaces()
+{
+    // create an independent instance, to avoid circular link dependency problems
+    return createRowInterfaces(queryRowMetaData(), container.queryId(), queryCodeContext());
 }
 
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)

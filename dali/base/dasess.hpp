@@ -79,6 +79,8 @@ interface IUserDescriptor: extends serializable
 
 extern da_decl IUserDescriptor *createUserDescriptor();
 
+const static IUserDescriptor * unknownUser = NULL;//use of this should be avoided
+#define UNKNOWN_USER (IUserDescriptor*)unknownUser
 
 interface ISessionNotify: extends IInterface
 {

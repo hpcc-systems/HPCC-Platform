@@ -32,6 +32,9 @@ interface IEclCommand : extends IInterface
 
 typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
+#define ECLOPT_HELP "--help"
+#define ECLARG_HELP "help"
+
 #define ECLOPT_SERVER "--server"
 #define ECLOPT_SERVER_S "-s"
 #define ECLOPT_SERVER_INI "eclWatchIP"
@@ -182,6 +185,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
+            "   --help                 display usage information for the given command\n"
             "   -v, --verbose          output additional tracing information\n"
             "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
             "   --port=<port>          ecl services port\n"
@@ -221,6 +225,7 @@ public:
         );
     }
 public:
+    StringAttr optTargetCluster;
     EclObjectParameter optObj;
     StringBuffer optLibPath;
     StringBuffer optImpPath;

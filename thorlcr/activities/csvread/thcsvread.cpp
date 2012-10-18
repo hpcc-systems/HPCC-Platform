@@ -46,6 +46,8 @@ public:
             else dst.append(false);
             if (fileDesc->queryProperties().hasProp("@csvTerminate")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvTerminate"));
             else dst.append(false);
+            if (fileDesc->queryProperties().hasProp("@csvEscape")) dst.append(true).append(fileDesc->queryProperties().queryProp("@csvEscape"));
+            else dst.append(false);
         }
         if (headerLines)
         {

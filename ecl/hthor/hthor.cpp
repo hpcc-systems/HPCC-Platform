@@ -860,6 +860,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@csvSeparate", separator.str());
     desc->queryProperties().setProp("@csvQuote", csvInfo->queryQuote(0));
     desc->queryProperties().setProp("@csvTerminate", csvInfo->queryTerminator(0));
+    desc->queryProperties().setProp("@csvEscape", csvInfo->queryEscape(0));
     desc->queryProperties().setProp("@format","utf8n");
 }
 
@@ -3110,8 +3111,10 @@ const void * CHThorAggregateActivity::nextInGroup()
 
 //=====================================================================================================
 
-CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind) 
-: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), aggregated(_arg, _arg)
+CHThorHashAggregateActivity::CHThorHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &_arg, ThorActivityKind _kind, bool _isGroupedAggregate)
+: CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg),
+  isGroupedAggregate(_isGroupedAggregate),
+  aggregated(_arg, _arg)
 {
 }
 
@@ -3120,7 +3123,6 @@ void CHThorHashAggregateActivity::ready()
     CHThorSimpleActivityBase::ready();
     eof = false;
     gathered = false;
-    aggregated.start(rowAllocator);
 }
 
 void CHThorHashAggregateActivity::done()
@@ -3137,16 +3139,24 @@ const void * CHThorHashAggregateActivity::nextInGroup()
 
     if (!gathered)
     {
+        bool eog = true;
+        aggregated.start(rowAllocator);
         loop
         {
             OwnedConstHThorRow next(input->nextInGroup());
             if (!next)
             {
+                if (isGroupedAggregate)
+                {
+                    if (eog)
+                        eof = true;
+                    break;
+                }
                 next.setown(input->nextInGroup());
                 if (!next)
                     break;
             }
-
+            eog = false;
             try
             {
                 aggregated.addRow(next);
@@ -3165,7 +3175,12 @@ const void * CHThorHashAggregateActivity::nextInGroup()
         processed++;
         return next->finalizeRowClear();
     }
-    eof = true;
+
+    if (!isGroupedAggregate)
+        eof = true;
+
+    aggregated.reset();
+    gathered = false;
     return NULL;
 }
 
@@ -8489,6 +8504,7 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
     const char * quotes = NULL;
     const char * separators = NULL;
     const char * terminators = NULL;
+    const char * escapes = NULL;
     IDistributedFile * dFile = ldFile?ldFile->queryDistributedFile():NULL;
     if (dFile)  //only makes sense for distributed (non local) files
     {
@@ -8496,8 +8512,9 @@ void CHThorCsvReadActivity::gatherInfo(IFileDescriptor * fd)
         quotes = options.queryProp("@csvQuote");
         separators = options.queryProp("@csvSeparate");
         terminators = options.queryProp("@csvTerminate");
+        escapes = options.queryProp("@csvEscape");
     }
-    csvSplitter.init(helper.getMaxColumns(), csvInfo, quotes, separators, terminators);
+    csvSplitter.init(helper.getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
 }
 
 void CHThorCsvReadActivity::calcFixedDiskRecordSize()
@@ -9698,7 +9715,11 @@ extern HTHOR_API IHThorActivity *createChildIfActivity(IAgentContext &_agent, un
     return new CHThorIfActivity(_agent, _activityId, _subgraphId, arg, kind);
 }
 
-MAKEFACTORY(HashAggregate);
+extern HTHOR_API IHThorActivity *createHashAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorHashAggregateArg &arg, ThorActivityKind kind, bool _isGroupedAggregate)
+{
+    return new CHThorHashAggregateActivity(_agent, _activityId, _subgraphId, arg, kind, _isGroupedAggregate);
+}
+
 MAKEFACTORY(Null);
 MAKEFACTORY(SideEffect);
 MAKEFACTORY(Action);

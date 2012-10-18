@@ -566,10 +566,10 @@ void testRoxieCopies()
         PROGLOG("E--------------------------");
         StringBuffer fn("testing::file");
         fn.append(i);
-        queryDistributedFileDirectory().removeEntry(fn.str());
-        file->attach(fn.str());
+        queryDistributedFileDirectory().removeEntry(fn.str(),UNKNOWN_USER);
+        file->attach(fn.str(),UNKNOWN_USER);
         file.clear();
-        file.setown(queryDistributedFileDirectory().lookup(fn.str()));
+        file.setown(queryDistributedFileDirectory().lookup(fn.str(),UNKNOWN_USER));
         Owned<IFileDescriptor> fdesc4 = file->getFileDescriptor();
         printDesc(fdesc4);
     }
@@ -703,7 +703,7 @@ void testSuperRemoteCopy(const char *remoteip,const char *file)
     Owned<IDfuFileCopier> copier = createRemoteFileCopier("dfuserver_queue","thor","Test1",true);
     Owned<IDFUhelper> helper = createIDFUhelper();
     SocketEndpoint ep(remoteip);
-    helper->superForeignCopy(file,ep,file,NULL,NULL,false,copier);
+    helper->superForeignCopy(file,ep,file,UNKNOWN_USER,UNKNOWN_USER,false,copier);
 }
 
 

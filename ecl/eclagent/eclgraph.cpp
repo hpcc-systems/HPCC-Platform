@@ -67,7 +67,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKcountaggregate:
         return createAggregateActivity(agent, activityId, subgraphId, (IHThorAggregateArg &)arg, kind);
     case TAKhashaggregate:
-        return createHashAggregateActivity(agent, activityId, subgraphId, (IHThorHashAggregateArg &)arg, kind);
+        return createHashAggregateActivity(agent, activityId, subgraphId, (IHThorHashAggregateArg &)arg, kind, isGrouped);
     case TAKfirstn:
         return createFirstNActivity(agent, activityId, subgraphId, (IHThorFirstNArg &)arg, kind);
     case TAKsample:

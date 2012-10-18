@@ -35,4 +35,5 @@ ENDFOREACH ( oFILES )
 
 if ( PLATFORM )
     install ( PROGRAMS hpcc-init.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS hpcc-init.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif()

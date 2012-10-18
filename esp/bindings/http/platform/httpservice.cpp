@@ -558,7 +558,7 @@ int CEspHttpServer::onGetTitleBar(CHttpRequest* request, CHttpResponse* response
     bool rawXml = request->queryParameters()->hasProp("rawxml_");
     StringBuffer m_headerHtml(m_apport->getTitleBarHtml(*request->queryContext(), rawXml));
     response->setContent(m_headerHtml.length(), m_headerHtml.str());
-    response->setContentType(rawXml ? "text/xml; charset=UTF-8" : "text/html; charset=UTF-8");
+    response->setContentType(rawXml ? HTTP_TYPE_APPLICATION_XML_UTF8 : "text/html; charset=UTF-8");
     response->setStatus(HTTP_STATUS_OK);
     response->send();
     return 0;
@@ -966,7 +966,7 @@ int CEspHttpServer::onGet()
 
         m_response->setVersion(HTTP_VERSION);
         m_response->setContent(content.length(), content.toByteArray());
-        m_response->setContentType("text/xml; charset=UTF-8");
+        m_response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
         m_response->setStatus(HTTP_STATUS_OK);
         m_response->send();
     }

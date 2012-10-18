@@ -5297,14 +5297,18 @@ void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, 
 }
 
 
-void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName)
+void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &funcName)
 {
     BuildCtx declarectx(*code, declareAtom);
-    appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
     OwnedHqlExpr attr = createAttribute(lookupAtom, LINK(record));
     HqlExprAssociation * match = declarectx.queryMatchExpr(attr);
-    if (!match)
+    if (match)
+        match->queryExpr()->toString(funcName);
+    else
     {
+        StringBuffer lookupHelperName;
+        appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
+
         BuildCtx classctx(declarectx);
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         HqlExprArray keyedFields;
@@ -5322,8 +5326,16 @@ void HqlCppTranslator::buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *r
         buildHashOfExprsClass(classctx, "Hash", keyedList, dictRef, false);
         buildCompareMember(classctx, "Compare", keyedList, dictRef);
         endNestedClass();
-        OwnedHqlExpr temp = createVariable(lookupHelperName, makeVoidType());
-        declarectx.associateExpr(attr, temp);
+
+        if (queryOptions().spanMultipleCpp)
+        {
+            createAccessFunctions(funcName, declarectx, BuildCtx::NormalPrio, "IHThorHashLookupInfo", lookupHelperName);
+            funcName.append("()");
+        }
+        else
+            funcName.append(lookupHelperName);
+        OwnedHqlExpr func = createVariable(funcName, makeVoidType());
+        declarectx.associateExpr(attr, func);
     }
 }
 
@@ -9129,6 +9141,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     IHqlExpression * headerAttr = queryProperty(headerAtom, attrs);
     IHqlExpression * terminator = queryProperty(terminatorAtom, attrs);
     IHqlExpression * separator = queryProperty(separatorAtom, attrs);
+    IHqlExpression * escape = queryProperty(escapeAtom, attrs);
     if (headerAttr)
     {
         IHqlExpression * header = queryRealChild(headerAttr, 0);
@@ -9187,11 +9200,16 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     buildCsvListFunc(classctx, "queryQuote", queryProperty(quoteAtom, attrs), isReading ? "'" : NULL);
     buildCsvListFunc(classctx, "querySeparator", separator, ",");
     buildCsvListFunc(classctx, "queryTerminator", terminator, isReading ? "\r\n|\n" : "\n");
+    buildCsvListFunc(classctx, "queryEscape", escape, NULL);
 
     StringBuffer flags;
+    // Backward compatible option hasEscape should be deprecated in next major version
+    flags.append("|supportsEscape");
+    // Proper flags
     if (!queryProperty(quoteAtom, attrs))       flags.append("|defaultQuote");
     if (!queryProperty(separatorAtom, attrs))   flags.append("|defaultSeparate");
     if (!queryProperty(terminatorAtom, attrs))  flags.append("|defaultTerminate");
+    if (!queryProperty(escapeAtom, attrs))      flags.append("|defaultEscape");
     if (singleHeader)                           flags.append("|singleHeaderFooter");
     if (manyHeader)                             flags.append("|manyHeaderFooter");
     if (queryProperty(noTrimAtom, attrs))       flags.append("|preserveWhitespace");
@@ -11337,8 +11355,28 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             {
                 HqlExprArray args;
                 args.append(*LINK(rhs));
-                unwindChildren(args, rowlimit);
-                rhs.setown(createDataset(no_limit, args));
+
+                //A LIMIT on a join means no limit, whilst a LIMIT(ds, 0) limits to no records.
+                //So avoid adding a zero limit (if constant), or ensure 0 is mapped to a maximal value.
+                LinkedHqlExpr count = rowlimit->queryChild(0);
+                if (count->queryValue())
+                {
+                    if (isZero(count))
+                        count.clear();
+                }
+                else
+                {
+                    OwnedHqlExpr zero = createConstant(count->queryType()->castFrom(false, I64C(0)));
+                    OwnedHqlExpr all = createConstant(count->queryType()->castFrom(false, I64C(-1)));
+                    OwnedHqlExpr ne = createBoolExpr(no_ne, LINK(count), zero.getClear());
+                    count.setown(createValue(no_if, count->getType(), LINK(ne), LINK(count), LINK(all)));
+                }
+                if (count)
+                {
+                    args.append(*LINK(count));
+                    unwindChildren(args, rowlimit, 1);
+                    rhs.setown(createDataset(no_limit, args));
+                }
             }
             isAllJoin = true;
             WARNING(HQLWRN_JoinConditionFoldedNowAll);

@@ -57,19 +57,10 @@ extern graph_decl ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, c
                                                       ); 
 
 
-interface ISRBRowInterface: extends IInterface  
-{
-    virtual size32_t rowMemSize(const void *r)=0;
-    virtual void releaseRow(const void *row)=0;
-};
-
-
-
 extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity,
                                                       IRowInterfaces *rowIf,
-                                                      size32_t buffsize, 
-                                                      ISRBRowInterface *srbrowif=NULL // only needed if not thor rows
-                                                      ); 
+                                                      size32_t buffsize);
+
 interface ISharedSmartBuffer : extends IRowWriter
 {
     virtual IRowStream *queryOutput(unsigned output) = 0;

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1 id="ExcludeLastWord">
-  <title>ExcludeLastWord</title>
+<sect1 id="ExcludeFirstWord">
+  <title>ExcludeFirstWord</title>
 
-  <para><emphasis role="bold">STD.Str.ExcludeLastWord<indexterm>
-      <primary>STD.Str.ExcludeLastWord</primary>
+  <para><emphasis role="bold">STD.Str.ExcludeFirstWord<indexterm>
+      <primary>STD.Str.ExcludeFirstWord</primary>
     </indexterm><indexterm>
-      <primary>Str.ExcludeLastWord</primary>
+      <primary>Str.ExcludeFirstWord</primary>
     </indexterm><indexterm>
-      <primary>ExcludeLastWord</primary>
+      <primary>ExcludeFirstWord</primary>
     </indexterm>(</emphasis> <emphasis>text</emphasis> <emphasis
   role="bold">)</emphasis></para>
 
@@ -23,26 +23,26 @@
         <row>
           <entry><emphasis>text</emphasis></entry>
 
-          <entry>A string containing words separated by whitespace. </entry>
+          <entry>A string containing words separated by whitespace.</entry>
         </row>
 
         <row>
-          <entry>Return:<emphasis> </emphasis></entry>
+          <entry>Return:</entry>
 
-          <entry>ExcludeLastWord returns a STRING value.</entry>
+          <entry>ExcludeFirstWord returns a STRING value.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ExcludeLastWord </emphasis>function returns
-  the <emphasis>text</emphasis> string with the last word removed. Words are
-  separated by one or more whitespace characters. Whitespace before and after
-  the first word is also removed.</para>
+  <para>The <emphasis role="bold">ExcludeFirstWord </emphasis>function returns
+  the <emphasis>text</emphasis> string with the first word removed. Words are
+  separated by one or more whitespace characters. Whitespace before the first
+  word is also removed.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.ExcludeLastWord('The quick brown fox');
- //A contains 'The quick brown'
+  <programlisting format="linespecific">A := STD.Str.ExcludeFirstWord('The quick brown fox');
+ //A contains 'quick brown fox'
 </programlisting>
 </sect1>

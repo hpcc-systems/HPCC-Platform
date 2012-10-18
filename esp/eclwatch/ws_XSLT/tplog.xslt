@@ -137,6 +137,17 @@
                 +':'+format2(dt.getMinutes())+':'+format2(dt.getSeconds()));
             }
 
+            function formatTime(time)
+            {
+                if (time.match(/^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/) == null)
+                    return null;
+
+                if (time.length > 7)
+                    return time;
+                else
+                    return '0' + time;
+            }
+
             function onGetLog(id)
             {
               var firstRows='', lastRows='';
@@ -223,14 +234,7 @@
                   return false;
                 }
 
-                var df=new Date();
-                var dt=new Date();
-                df.setHours(df.getHours()-d);
-
-                startDate=formatDT(df);
-                endDate=formatDT(dt);
-
-                document.location.href = ref + '&StartDate='+startDate + '&EndDate='+endDate;
+                document.location.href = ref + '&LastHours='+d;
               }
               else if (rbid == 5)
               {
@@ -262,26 +266,24 @@
 
                 if (df)
                 {
-                  var d=Date.parse(df);
-                  if(isNaN(d))
+                  startDate = formatTime(df);
+                  if (startDate == null)
                   {
-                      alert("Invalid data in a 'Date' field");
-                      return false;
+                    alert("Invalid data in a 'Time' field");
+                    return false;
                   }
-
-                  startDate=formatDT(df);
                 }
+
                 if (dt)
                 {
-                  var d=Date.parse(dt);
-                  if(isNaN(d))
+                  endDate = formatTime(dt);
+                  if (endDate == null)
                   {
-                      alert("Invalid data in a 'Date' field");
-                      return false;
+                    alert("Invalid data in a 'Time' field");
+                    return false;
                   }
-
-                  endDate=formatDT(dt);
                 }
+
                 document.location.href = ref + '&StartDate='+startDate + '&EndDate='+endDate;
               }
               else
@@ -331,43 +333,34 @@
                   return false;
                 }
 
-                var df=new Date();
-                var dt=new Date();
-                df.setHours(df.getHours()-d);
-
-                startDate=formatDT(df);
-                endDate=formatDT(dt);
-
-                ref = ref + '&StartDate='+startDate + '&EndDate='+endDate+'&Reversely='+reversely0;
+                ref = ref + '&LastHours='+ d +'&Reversely='+reversely0;
               }
               else if (rbid == 6)
               {
                 if(startDate == '' && endDate == '')
                 {
-                  alert("Either 'Date from' or 'to' field should be defined.");
+                  alert("Either 'Time from' or 'to' field should be defined.");
                   return false;
                 }
 
-                if(startDate != '')
+                if (startDate != '')
                 {
-                  var d=Date.parse(startDate);
-                  if(isNaN(d))
+                  startDate = formatTime(startDate);
+                  if (startDate == null)
                   {
+                    alert("Invalid data in a 'Time' field");
                     return false;
                   }
-
-                  startDate=formatDT(startDate);
                 }
 
-                if(endDate != '')
+                if (endDate != '')
                 {
-                  var d=Date.parse(endDate);
-                  if(isNaN(d))
+                  endDate = formatTime(endDate);
+                  if (endDate == null)
                   {
+                    alert("Invalid data in a 'Time' field");
                     return false;
                   }
-
-                  endDate=formatDT(endDate);
                 }
 
                 ref = ref + '&StartDate='+startDate + '&EndDate='+endDate+'&Reversely='+reversely0;
@@ -516,13 +509,13 @@
                     <xsl:choose>
                       <xsl:when test="HasDate=1">
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)"/>
-                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)"/></td>
-                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)"/> (mm/dd/yyyy hh:mm:ss)</td>
+                        or time from:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)"/></td>
+                        <td colspan="4">to: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)"/> (hh:mm:ss)</td>
                       </xsl:when>
                       <xsl:otherwise>
                         <td><input type="radio" name="FilterRB" value="6"  onclick="onRBChanged(6)" disabled="true"/>
-                        or date from:<input id="From" size="15" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/></td>
-                        <td colspan="4">to: <input id="To" size="15" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/> (mm/dd/yyyy hh:mm:ss)</td>
+                            or time from:<input id="From" size="8" type="text" value="{StartDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/></td>
+                        <td colspan="4">to: <input id="To" size="8" type="text" value="{EndDate}" onKeyUp = "onEditKeyUp(event)" disabled="true"/> (hh:mm:ss)</td>
                       </xsl:otherwise>
                     </xsl:choose>
                   </tr>

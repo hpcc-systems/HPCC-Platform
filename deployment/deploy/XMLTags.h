@@ -87,6 +87,7 @@
 #define XML_TAG_LOCALENVCONFFILE       "LocalEnvConfFile"
 
 #define XML_ATTR_AGENTPORT             "@agentPort"
+#define XML_ATTR_ATTRIB                "@attrib"
 #define XML_ATTR_ATTRSERVER            "@attrServer"
 #define XML_ATTR_BACKUPCOMPUTER        "@backupComputer"
 #define XML_ATTR_BLOBDIRECTORY         "@blobDirectory"
@@ -174,6 +175,7 @@
 #define XML_ATTR_OPSYS                 "@opSys"
 #define XML_ATTR_OPTIMIZESQL           "@optimizeSQL"
 #define XML_ATTR_ORPHANSASERROR        "@orphansAsError"
+#define XML_ATTR_PARAMS                "@params"
 #define XML_ATTR_PASSWORD              "@password"
 #define XML_ATTR_PATH                  "@path"
 #define XML_ATTR_PERFDATALEVEL         "@perfDataLevel"
@@ -275,6 +277,7 @@
 #define TAG_DALISERVER                  "daliServer"
 #define TAG_LDAPSERVER                  "ldapServer"
 #define TAG_SERVICE                     "service"
+#define TAG_FILESBASEDN                 "filesBasedn"
 
 //---------------------------------------------------------------------------
 #endif // !defined(AFX_XMLTAGS_H__57887617_2BDE_4E3E_92CB_43FCDEDD05B8__INCLUDED_)

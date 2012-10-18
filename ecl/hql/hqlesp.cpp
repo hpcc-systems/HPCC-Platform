@@ -404,12 +404,8 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, const char * queryText, HqlLoo
     return true;
 }
 
-
-IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext & ctx)
+IPropertyTree * retrieveWebServicesInfo(WebServicesExtractor &extractor, HqlLookupContext & ctx)
 {
-    WebServicesExtractor extractor(ctx);
-    extractor.addRootText(queryText);
-
     if (!extractor.extractWebServiceInfo())
         return NULL;
 
@@ -425,4 +421,18 @@ IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext
 
     result->setPropInt("@crc", extractor.getVersion());
     return result.getClear();
+}
+
+IPropertyTree * retrieveWebServicesInfo(const char * queryText, HqlLookupContext & ctx)
+{
+    WebServicesExtractor extractor(ctx);
+    extractor.addRootText(queryText);
+    return retrieveWebServicesInfo(extractor, ctx);
+}
+
+IPropertyTree * retrieveMainWebServicesInfo(const char * mainDefinition, HqlLookupContext & ctx)
+{
+    WebServicesExtractor extractor(ctx);
+    extractor.addRootReference(mainDefinition);
+    return retrieveWebServicesInfo(extractor, ctx);
 }

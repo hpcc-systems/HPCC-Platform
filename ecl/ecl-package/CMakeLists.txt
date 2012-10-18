@@ -54,16 +54,17 @@ include_directories (
 
 ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_EXECUTABLE ( ecl-package ${SRCS} )
-add_dependencies ( ecl-package espscm ws_packageprocess )
-install ( TARGETS ecl-package RUNTIME DESTINATION ${EXEC_DIR} )
-target_link_libraries ( ecl-package
+HPCC_ADD_EXECUTABLE ( ecl-packagemap ${SRCS} )
+add_dependencies ( ecl-packagemap espscm ws_packageprocess )
+install ( TARGETS ecl-packagemap RUNTIME DESTINATION ${EXEC_DIR} )
+target_link_libraries ( ecl-packagemap
         jlib
         esphttp
         workunit
     )
 
 if ( UNIX )
-install ( PROGRAMS ecl-package.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS ecl-package.install DESTINATION etc/init.d/install COMPONENT Runtime )
+    install ( PROGRAMS ecl-package.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif ( UNIX )
 

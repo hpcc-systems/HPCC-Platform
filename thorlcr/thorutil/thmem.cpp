@@ -1127,7 +1127,12 @@ protected:
 
         totalRows += numRows;
         if (iCompare)
+        {
+            ActPrintLog(&activity, "Sorting %"RIPF"d rows", spillableRows.numCommitted());
+            CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
+            ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
+        }
 
         StringBuffer tempname;
         GetTempName(tempname,"srtspill",true);
@@ -1674,9 +1679,10 @@ protected:
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(memsize_t memSize, roxiemem::RoxieHeapFlags _flags) : flags(_flags)
+    CThorAllocator(memsize_t memSize, unsigned memorySpillAt, roxiemem::RoxieHeapFlags _flags) : flags(_flags)
     {
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
+        rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
         rtlSetReleaseRowHook(this);
     }
     ~CThorAllocator()
@@ -1791,7 +1797,7 @@ public:
 class CThorCrcCheckingAllocator : public CThorAllocator
 {
 public:
-    CThorCrcCheckingAllocator(memsize_t memSize, roxiemem::RoxieHeapFlags flags) : CThorAllocator(memSize, flags)
+    CThorCrcCheckingAllocator(memsize_t memSize, unsigned memorySpillAt, roxiemem::RoxieHeapFlags flags) : CThorAllocator(memSize, memorySpillAt, flags)
     {
     }
 // IThorAllocator
@@ -1808,7 +1814,7 @@ public:
 };
 
 
-IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool usePacked)
+IThorAllocator *createThorAllocator(memsize_t memSize, unsigned memorySpillAt, bool crcChecking, bool usePacked)
 {
     PROGLOG("CRC allocator %s", crcChecking?"ON":"OFF");
     PROGLOG("Packed allocator %s", usePacked?"ON":"OFF");
@@ -1818,9 +1824,9 @@ IThorAllocator *createThorAllocator(memsize_t memSize, bool crcChecking, bool us
     else
         flags = roxiemem::RHFnone;
     if (crcChecking)
-        return new CThorCrcCheckingAllocator(memSize, flags);
+        return new CThorCrcCheckingAllocator(memSize, memorySpillAt, flags);
     else
-        return new CThorAllocator(memSize, flags);
+        return new CThorAllocator(memSize, memorySpillAt, flags);
 }
 
 

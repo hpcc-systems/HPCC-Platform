@@ -145,7 +145,8 @@ int main(int argc, const char *argv[])
         fileMsgHandler = lf->beginLogging();
     }
     StringBuffer ftslogdir;
-    if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","ftslave",globals->queryProp("@name"),ftslogdir)) // NB instance deliberately dfuserver's
+    const char* name = globals->queryProp("@name");
+    if (getConfigurationDirectory(globals->queryPropTree("Directories"),"log","ftslave",name,ftslogdir)) // NB instance deliberately dfuserver's
         setFtSlaveLogDir(ftslogdir.str());
     setRemoteSpawnSSH(
         globals->queryProp("SSH/@SSHidentityfile"),
@@ -174,6 +175,7 @@ int main(int argc, const char *argv[])
             connectLogMsgManagerToDali();
 
             engine.setown(createDFUengine());
+            engine->setDFUServerName(name);
             addAbortHandler(exitDFUserver);
         }
         const char *q = queue.str();

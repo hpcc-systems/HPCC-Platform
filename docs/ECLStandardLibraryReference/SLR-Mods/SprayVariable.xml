@@ -96,7 +96,7 @@
           <entry><emphasis>srcCSVterminator</emphasis></entry>
 
           <entry>Optional. A null-terminated string containing the CSV record
-          separator. If omitted, the default is '\\n,\\r,\\n'</entry>
+          separator. If omitted, the default is '\\n,\\r\\n'</entry>
         </row>
 
         <row>

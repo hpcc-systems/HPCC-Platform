@@ -61,7 +61,7 @@
                     initSelection('resultsTable');
                     var table = document.getElementById('resultsTable');
                     if (table)
-                        sortableTable = new SortableTable(table, table, ["None", "String", "String", "None"]);
+                        sortableTable = new SortableTable(table, table, ["None", "String", "String", "String", "None"]);
                 }
 
                 function onSubmit(o, theaction)

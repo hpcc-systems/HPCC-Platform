@@ -68,11 +68,17 @@ static void LOGXML(const char *trc,const IPropertyTree *pt)
 
 class CDFUengine: public CInterface, implements IDFUengine
 {
+    StringBuffer dfuServerName;
     size32_t defaultTransferBufferSize;
 
     void setDefaultTransferBufferSize(size32_t size)
     {
         defaultTransferBufferSize = size;
+    }
+
+    void setDFUServerName(const char* name)
+    {
+        dfuServerName = name;
     }
 
     void Audit(const char *func,IUserDescriptor *userdesc,const char *lfn1, const char *lfn2)
@@ -531,7 +537,16 @@ public:
                 }
                 else 
                     monitor->setHandlerEp(me->endpoint());
-                if (performMonitor(wu,monitor,wu->querySource(),false,&eventstriggered,&eventsfile)) {
+
+                Owned<IUserDescriptor> userdesc = createUserDescriptor();
+                {
+                    StringBuffer username;
+                    StringBuffer password;
+                    wu->getUser(username);
+                    wu->getPassword(password);
+                    userdesc->set(username.str(),password.str());
+                }
+                if (performMonitor(wu,monitor,wu->querySource(),false,&eventstriggered,&eventsfile,userdesc)) {
                     wu->queryUpdateProgress()->setState(DFUstate_finished);
                 }
                 wu->commit();
@@ -560,7 +575,7 @@ public:
         }
     }
 
-    bool performMonitor(IDFUWorkUnit *wu,IDFUmonitor *monitor,IConstDFUfileSpec *source, bool raiseexception, StringAttrArray *eventstriggered, StringAttrArray *eventsfile)
+    bool performMonitor(IDFUWorkUnit *wu,IDFUmonitor *monitor,IConstDFUfileSpec *source, bool raiseexception, StringAttrArray *eventstriggered, StringAttrArray *eventsfile, IUserDescriptor *user)
     {
         
         
@@ -572,7 +587,7 @@ public:
         monitor->getTriggeredList(prev);
         monitor->setCycleCount(monitor->getCycleCount()+1);
         if (lfn.length()) {                                                 // no wild cards so only 0 or 1 prev
-            if (queryDistributedFileDirectory().exists(lfn.str())) {
+            if (queryDistributedFileDirectory().exists(lfn.str(),user)) {
                 done.append(*new StringAttrItem(lfn.str()));
                 bool isdone = ((prev.ordinality()!=0)&&
                                 (stricmp(prev.item(0).text.get(),lfn.str())==0));
@@ -831,7 +846,7 @@ public:
             slfn.clearForeign();
             srcdali.setown(createINode(ep));
         }
-        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcdali,ctx.srcuser, FOREIGN_DALI_TIMEOUT, false);
+        Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,ctx.srcuser,srcdali, FOREIGN_DALI_TIMEOUT, false);
         if (!ftree.get()) {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",slfn.get(),srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
@@ -897,7 +912,7 @@ public:
                     ctx.feedback->displayProgress(numtodo?(numdone*100/numtodo):0,0,"unknown",0,0,"",0,0,0);
             }
             // now construct the superfile          
-            Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),true,false,ctx.user);
+            Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(dlfn.get(),ctx.user,true,false);
             if (!sfile)
                 throw MakeStringException(-1,"SuperFile %s could not be created",dlfn.get());
             ForEachItemIn(i,subfiles) {
@@ -985,6 +1000,8 @@ public:
             WARNLOG("DFURUN: Workunit %s not found",dfuwuid);
             return DFUstate_unknown;
         }
+        if (dfuServerName.length())
+            wu->setDFUServerName(dfuServerName.str());
         StringBuffer logname;
         if (fileMsgHandler && fileMsgHandler->getLogName(logname))
             wu->setDebugValue("dfulog", logname.str(), true);
@@ -1116,7 +1133,7 @@ public:
                     }
                     const char * kind;
                     if (foreigncopy) {
-                        foreignfdesc.setown(queryDistributedFileDirectory().getFileDescriptor(tmp.str(),foreigndalinode,foreignuserdesc));
+                        foreignfdesc.setown(queryDistributedFileDirectory().getFileDescriptor(tmp.str(),foreignuserdesc,foreigndalinode));
                         if (!foreignfdesc) {
                             StringBuffer s;
                             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",tmp.str(),foreigndalinode->endpoint().getUrlStr(s).str());
@@ -1227,7 +1244,7 @@ public:
                                     oldfile.clear();
                                     if (!options->getOverwrite())
                                         throw MakeStringException(-1,"Destination file %s already exists and overwrite not specified",tmp.str());
-                                    fdir.removePhysical(tmp.str(),NULL,NULL,userdesc);
+                                    fdir.removePhysical(tmp.str(),userdesc,NULL,NULL);
                                 }
                             }
                             StringBuffer jobname;
@@ -1272,12 +1289,12 @@ public:
                                 newf.set(foreignfdesc);
                             else 
                                 newf.setown(srcFile->getFileDescriptor());
-                            oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,foreigncopy?foreigndalinode:NULL,foreigncopy?foreignuserdesc:userdesc));
+                            oldf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameSrc,foreigncopy?foreignuserdesc:userdesc,foreigncopy?foreigndalinode:NULL));
                             if (!oldf.get()) {
                                 StringBuffer s;
                                 throw MakeStringException(-1,"Old key file %s could not be found in source",diffNameSrc.get());
                             }
-                            olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,NULL,userdesc));
+                            olddstf.setown(queryDistributedFileDirectory().getFileDescriptor(diffNameDst,userdesc,NULL));
                             if (!olddstf.get()) {
                                 StringBuffer s;
                                 throw MakeStringException(-1,"Old key file %s could not be found in destination",diffNameDst.get());
@@ -1388,7 +1405,7 @@ public:
                         if (options->getNoDelete())
                             fdir.removeEntry(tmp.str(),userdesc);
                         else
-                            fdir.removePhysical(tmp.str(),NULL,NULL,userdesc);
+                            fdir.removePhysical(tmp.str(),userdesc,NULL,NULL);
                         Audit("REMOVE",userdesc,tmp.clear(),NULL);
                         runningconn.clear();
                     }
@@ -1426,7 +1443,7 @@ public:
                         newfile.clear();
                         StringBuffer fromname(srcName);
                         srcFile.clear();
-                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),NULL,userdesc))
+                        if (!queryDistributedFileDirectory().renamePhysical(fromname.str(),toname.str(),userdesc,NULL))
                             throw MakeStringException(-1,"rename failed"); // could do with better error here
                         StringBuffer timetaken;
                         timetaken.appendf("%dms",msTick()-start);
@@ -1545,7 +1562,7 @@ public:
                     monitor->setHandlerEp(me->endpoint());
                     StringAttrArray eventstriggered;
                     StringAttrArray eventsfile;
-                    if (performMonitor(wu,monitor,source,true,&eventstriggered,&eventsfile)) 
+                    if (performMonitor(wu,monitor,source,true,&eventstriggered,&eventsfile,userdesc))
                         finalstate = DFUstate_finished;
                     else
                         finalstate = DFUstate_monitoring;

@@ -1201,7 +1201,7 @@ public:
         CDfsLogicalFileName lfn;
         if (lfn.setFromMask(mask.str(),rootdir)) { // orphans are only orphans if there doesn't exist a valid file
             try {
-                if (queryDistributedFileDirectory().exists(lfn.get(),true,false,NULL)) {
+                if (queryDistributedFileDirectory().exists(lfn.get(),UNKNOWN_USER,true,false)) {
                     warn(mask.str(),"Orphans ignored as %s exists",lfn.get());
                     return;
                 }
@@ -1488,7 +1488,7 @@ public:
             lfn.set(lostfiles.item(i0));
             Owned<IDistributedFile> file;
             try {
-                file.setown(queryDistributedFileDirectory().lookup(lfn));
+                file.setown(queryDistributedFileDirectory().lookup(lfn,UNKNOWN_USER));
             }
             catch (IException *e) {
                 EXCLOG(e,"CNewXRefManager::listLost");
@@ -2312,7 +2312,7 @@ public:
             return;
         PROGLOG(LOGPFX2 "Started");
         StringArray expirylist;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",true,false);
+        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
         ForEach(*iter) {
             IPropertyTree &attr=iter->query();
             const char * expires = attr.queryProp("@expires");
@@ -2344,7 +2344,7 @@ public:
             const char *lfn = expirylist.item(i);
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try {
-                queryDistributedFileDirectory().removePhysical(lfn);
+                queryDistributedFileDirectory().removePhysical(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
             }
             catch (IException *e) { // may want to just detach if fails
                 StringBuffer s;
