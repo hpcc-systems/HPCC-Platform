@@ -10319,14 +10319,11 @@ public:
                     {
                         if (eog)
                             eof = true;
+                        break;
                     }
-                    else
-                    {
-                        next = input->nextInGroup();
-                        if (!next)
-                            eof = true;
-                    }
-                    break;
+                    next.setown(input->nextInGroup());
+                    if (!next)
+                        break;
                 }
                 eog = false;
                 aggregated.addRow(next);
@@ -10341,6 +10338,10 @@ public:
             processed++;
             return next->finalizeRowClear();
         }
+
+        if (!isGroupedAggregate)
+            eof = true;
+
         aggregated.reset();
         gathered = false;
         return NULL;
