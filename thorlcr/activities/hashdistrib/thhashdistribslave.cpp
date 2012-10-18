@@ -654,7 +654,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         {
             if (!exception.get())
                 exception.set(e);
-            owner.fireException(e);
+            return owner.fireException(e);
         }
         friend class CWriteHandler;
     };
@@ -998,6 +998,7 @@ public:
             sendException.setown(e);
         else
             e->Release();
+        return true;
     }
 };
 
