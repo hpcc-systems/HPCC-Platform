@@ -879,10 +879,12 @@
                       <entry><emphasis
                       role="bold">Replicate</emphasis></entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the secondary drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
@@ -1049,10 +1051,12 @@
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry>Check this box to create backup copies of all file
-                    parts exist in the backup directory (by convention on the
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
                     secondary drive of the node following in the
-                    cluster).</entry>
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
                   </row>
 
                   <row>
@@ -1207,9 +1211,12 @@
                   <row>
                     <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                    <entry>Check this box to create backup copies of all file
-                    parts exist in the backup directory (by convention on the
-                    d: drive of the node following in the cluster).</entry>
+                    <entry><para>Check this box to create backup copies of all
+                    file parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para><para><emphasis role="bold">This option is
+                    only available on systems where replication has been
+                    enabled.</emphasis></para></entry>
                   </row>
 
                   <row>
@@ -1350,9 +1357,12 @@
                 <row>
                   <entry><emphasis role="bold">Replicate</emphasis></entry>
 
-                  <entry>Check this box to create backup copies of all file
-                  parts exist in the backup directory (by convention on the d:
-                  drive of the node following in the cluster).</entry>
+                  <entry><para>Check this box to create backup copies of all
+                  file parts in the backup directory (by convention on the
+                  secondary drive of the node following in the
+                  cluster).</para><para><emphasis role="bold">This option is
+                  only available on systems where replication has been
+                  enabled.</emphasis></para></entry>
                 </row>
 
                 <row>
@@ -1947,18 +1957,14 @@
 
                   <entry><para>Full</para></entry>
                 </row>
+
                 <row>
-                  <entry>
-                    <para>RoxieControlAccess</para>
-                  </entry>
+                  <entry><para>RoxieControlAccess</para></entry>
 
-                  <entry>
-                    <para>Access to Roxie Process Cluster Control</para>
-                  </entry>
+                  <entry><para>Access to Roxie Process Cluster
+                  Control</para></entry>
 
-                  <entry>
-                    <para>Full</para>
-                  </entry>
+                  <entry><para>Full</para></entry>
                 </row>
               </tbody>
             </tgroup>

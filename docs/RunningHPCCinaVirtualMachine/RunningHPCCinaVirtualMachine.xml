@@ -1032,6 +1032,10 @@ OUTPUT(L);</programlisting></para>
                     </imageobject>
                   </mediaobject>
                 </figure></para>
+
+              <para><emphasis role="bold">Note:</emphasis> The <emphasis
+              role="bold">Replicate</emphasis> option is only available on
+              systems where replication has been enabled.</para>
             </listitem>
 
             <listitem>
