@@ -1246,25 +1246,25 @@
       </xsl:if>
       <xsl:if test="starts-with(Type, 'ThorLog')">
         <td>
-          <a href="/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Process={Description}&amp;Type={Type}"
+          <a href="/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Name={Name}&amp;Type={Type}"
                         >
             thormaster.log: <xsl:value-of select="Name"/>
           </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('thormaster.log', '/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Process={Description}&amp;Type={Type}', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('thormaster.log', '/WsWorkunits/WUFile/ThorLog?Wuid={$wuid}&amp;Name={Name}&amp;Type={Type}', false); return false;">
             download
           </a>
         </td>
       </xsl:if>
       <xsl:if test="Type = 'EclAgentLog'">
         <td>
-          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Process={Description}&amp;Type=EclAgentLog">
+          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Type=EclAgentLog">
               eclagent.log: <xsl:value-of select="Name"/>
           </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Process={Description}&amp;Type=EclAgentLog', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Type=EclAgentLog', false); return false;">
             download
           </a>
         </td>

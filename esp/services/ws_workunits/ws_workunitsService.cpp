@@ -2633,7 +2633,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strncmp(req.getType(), File_ThorLog, 7) == 0)
             {
-                winfo.getWorkunitThorLog(req.getProcess(), mb);
+                winfo.getWorkunitThorLog(req.getName(), mb);
                 openSaveFile(context, opt, "thormaster.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_ThorSlaveLog,req.getType()))
@@ -2646,7 +2646,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(req.getProcess(), mb);
+                winfo.getWorkunitEclAgentLog(req.getName(), mb);
                 openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()))
