@@ -149,8 +149,6 @@
       storage location defined in your system's environment. There can be one
       or more of these locations defined. A daemon (DaFileSrv) must be running
       on that server to enable file sprays and desprays.</para>
-
-      <beginpage />
     </sect1>
 
     <sect1 id="Working_with_a_data_file">
@@ -580,10 +578,12 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
-                        convention on the secondary drive of the node
-                        following in the cluster).</entry>
+                        <entry><para>Check this box to create backup copies of
+                        all file parts in the backup directory (by convention
+                        on the secondary drive of the node following in the
+                        cluster).</para><para><emphasis role="bold">This
+                        option is only available on systems where replication
+                        has been enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -758,10 +758,12 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
-                        convention on the secondary drive of the node
-                        following in the cluster).</entry>
+                        <entry><para>Check this box to create backup copies of
+                        all file parts in the backup directory (by convention
+                        on the secondary drive of the node following in the
+                        cluster).</para><para><emphasis role="bold">This
+                        option is only available on systems where replication
+                        has been enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -929,10 +931,12 @@
                         <entry><emphasis
                         role="bold">Replicate</emphasis></entry>
 
-                        <entry>Check this box to create backup copies of all
-                        file parts exist in the backup directory (by
-                        convention on the d: drive of the node following in
-                        the cluster).</entry>
+                        <entry><para>Check this box to create backup copies of
+                        all file parts in the backup directory (by convention
+                        on the secondary drive of the node following in the
+                        cluster).</para><para><emphasis role="bold">This
+                        option is only available on systems where replication
+                        has been enabled.</emphasis></para></entry>
                       </row>
 
                       <row>
@@ -1048,10 +1052,12 @@
                       <entry><emphasis
                       role="bold">Replicate</emphasis></entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the second drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
@@ -1207,10 +1213,12 @@
                       <entry><emphasis
                       role="bold">Replicate</emphasis></entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the d: drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
