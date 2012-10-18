@@ -72,7 +72,8 @@ interface IDFUhelper: extends IInterface
         const char *foreigndali,        // where src relationships are retrieved from (can be NULL for local)
         StringArray &srcfns,            // file names on source
         StringArray &dstfns,            // corresponding filenames on dest (must exist otherwise ignored)
-        IPropertyTree *relationships    // if not NULL, tree will have all relationships filled in
+        IPropertyTree *relationships,   // if not NULL, tree will have all relationships filled in
+        IUserDescriptor *user
     ) = 0;
 
 };

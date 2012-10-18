@@ -2175,11 +2175,11 @@ IClusterFileScanIterator *getClusterFileScanIterator(
 
 typedef MapStringTo<bool> IsSuperFileMap;
 
-void getLogicalFileSuperSubList(MemoryBuffer &mb)
+void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 {
     // for fileservices
     IsSuperFileMap supermap;
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,true);//MORE:Pass IUserDescriptor
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",user,true,true);
     if (iter) {
         ForEach(*iter) {
             IPropertyTree &attr=iter->query();
