@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-require([
+define([
     "dojo/_base/declare",
     "dojo/aspect",
     "dojo/has",
@@ -36,7 +36,7 @@ require([
 
     "hpcc/ESPWorkunit",
 
-    "dojo/text!./templates/TimingTreeMapWidget.html"
+    "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
     function (declare, aspect, has, dom, domConstruct, domClass, Memory, Color,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane,
@@ -97,12 +97,11 @@ require([
             initTreeMap: function () {
             },
 
-            setWuid: function (wuid) {
-                this.wuid = wuid;
+            init: function (params) {
                 var context = this;
-                if (wuid) {
+                if (params.Wuid) {
                     this.wu = new ESPWorkunit({
-                        wuid: wuid
+                        wuid: params.Wuid
                     });
                     this.wu.fetchTimers(function (timers) {
                         context.loadTimers(timers, "*");
