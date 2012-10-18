@@ -451,8 +451,9 @@ ESPrequest [nil_remove] TpLogFileRequest
 {
     string Name;
     string Type;
-   [min_ver("1.05")] string StartDate;
-   [min_ver("1.05")] string EndDate;
+    int LastHours;
+    [min_ver("1.05")] string StartDate;
+    [min_ver("1.05")] string EndDate;
     [min_ver("1.05")] int FirstRows;
     [min_ver("1.05")] int LastRows;
     [min_ver("1.05")] int FilterType(0);
