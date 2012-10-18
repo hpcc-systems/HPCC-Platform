@@ -74,7 +74,16 @@ public:
     virtual char *getClusterName();
     virtual unsigned getPriority() const { return 0; }
     virtual char *getPlatform() { return strdup("thor"); };
-    virtual char *getEnv(const char *name, const char *defaultValue) const { return strdup(defaultValue); }
+    virtual char *getEnv(const char *name, const char *defaultValue) const
+    {
+        const char *val = getenv(name);
+        if (val)
+            return strdup(val);
+        else if (defaultValue)
+            return strdup(defaultValue);
+        else
+            return strdup("");
+    }
     virtual char *getOS()
     {
 #ifdef _WIN32
