@@ -444,7 +444,7 @@
             </listitem>
 
             <listitem>
-              <para>64-bit OpenSuSe 11.3 or 11.4</para>
+              <para>64-bit openSUSE 11.3 or 11.4</para>
             </listitem>
 
             <listitem>
@@ -2840,10 +2840,12 @@ sudo /sbin/service hpcc-init --component=myeclserver start
 sudo /sbin/service hpcc-init -c esp start
 </programlisting>
     </sect1>
-<xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
+
+    <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UnityLauncher.xml"
                 xpointer="element(/1)"
-                xmlns:xi="http://www.w3.org/2001/XInclude"/>
-<sect1 id="Running-HPCC-Tools-Under-WINE">
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <sect1 id="Running-HPCC-Tools-Under-WINE">
       <title>Running the ECL IDE under WINE</title>
 
       <para>To run the ECL IDE under WINE in Linux, follow these steps.</para>

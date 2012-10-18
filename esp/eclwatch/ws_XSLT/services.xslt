@@ -143,7 +143,7 @@
                 browseUrl = url;
                 browsePath = path;
                 browseCaption = caption;
-                mywindow = window.open ("/FileSpray/FileList?Mask=ECLAGENT*.log&Netaddr="+ip+"&OS="+os+"&Path="+path, 
+                mywindow = window.open ("/FileSpray/FileList?Mask=*.log&Netaddr="+ip+"&OS="+os+"&Path="+path,
                     "mywindow", "location=0,status=1,scrollbars=1,resizable=1,width=500,height=600");
                 if (mywindow.opener == null)
                     mywindow.opener = window;
@@ -488,21 +488,19 @@
                                                             <xsl:value-of select="$logPath"/>
                                                         </xsl:if>
                                                     </xsl:attribute>
-                                                    <xsl:if test="$compType='EclAgentProcess'">
-                                                        <xsl:attribute name="onclick">
-                                                            <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
-                                                            <xsl:value-of select="Netaddress"/>
-                                                            <xsl:text disable-output-escaping="yes">', '</xsl:text>
-                                                            <xsl:value-of select="translate($logPath, '\', '/')"/>
-                                                            <xsl:text disable-output-escaping="yes">', '</xsl:text>
-                                                            <xsl:value-of select="$url"/>
-                                                            <xsl:text disable-output-escaping="yes">', "</xsl:text>
-                                                            <xsl:value-of select="$pageCaption"/>
-                                                            <xsl:text disable-output-escaping="yes">", </xsl:text>
-                                                            <xsl:value-of select="OS"/>
-                                                            <xsl:text>);</xsl:text>
-                                                        </xsl:attribute>
-                                                    </xsl:if>
+                                                    <xsl:attribute name="onclick">
+                                                        <xsl:text disable-output-escaping="yes">return popup('</xsl:text>
+                                                        <xsl:value-of select="Netaddress"/>
+                                                        <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                                                        <xsl:value-of select="translate($logPath, '\', '/')"/>
+                                                        <xsl:text disable-output-escaping="yes">', '</xsl:text>
+                                                        <xsl:value-of select="$url"/>
+                                                        <xsl:text disable-output-escaping="yes">', "</xsl:text>
+                                                        <xsl:value-of select="$pageCaption"/>
+                                                        <xsl:text disable-output-escaping="yes">", </xsl:text>
+                                                        <xsl:value-of select="OS"/>
+                                                        <xsl:text>);</xsl:text>
+                                                    </xsl:attribute>
                                                     <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file" width="19" height="16"/>
                                                 </a>
                                             </xsl:if>

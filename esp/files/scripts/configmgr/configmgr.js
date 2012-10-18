@@ -2545,6 +2545,14 @@ function onMenuItemClickThorTopologyDelete(p_sType, p_aArgs, p_oValue) {
   },
       top.document.navDT.getFileName(true) + 'Operation=Delete&XmlArgs=' + xmlStr);
 }
+
+function onMenuItemClickThorTopologySwapMaster(p_sType, p_aArgs, p_oValue)
+{
+  var slavesPerNode = getAttrValFromArr(rows.Attributes, 'slavesPerNode');
+
+  top.document.navDT.promptThorTopology(top.document.navDT, "Master", true, slavesPerNode);
+}
+
 function onMenuItemClickThorTopology(p_sType, p_aArgs, p_oValue) {
   if (top.document.forms['treeForm'].isLocked.value === 'false')
     return;
@@ -2649,7 +2657,8 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
                             ],
       "ThorClusterMaster": [
                                { text: "Add Slaves...", onclick: { fn: onMenuItemClickThorTopology} },
-                               { text: "Add Spares...", onclick: { fn: onMenuItemClickThorTopology} }
+                               { text: "Add Spares...", onclick: { fn: onMenuItemClickThorTopology} },
+                               { text: "Swap Master",   onclick:  { fn: onMenuItemClickThorTopologySwapMaster} },
                             ],
       "ThorClusterSlave": [
                                { text: "Add Spares...", onclick: { fn: onMenuItemClickThorTopology} }

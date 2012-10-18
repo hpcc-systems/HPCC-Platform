@@ -55,7 +55,7 @@ class TTestDFS : public CPPUNIT_NS::TestFixture
     {
         StringArray superfiles;
         StringArray files;
-        Owned<IDistributedFileIterator> iter = dfsdir->getIterator(DFSUTSCOPE "::*", true);
+        Owned<IDistributedFileIterator> iter = dfsdir->getIterator(DFSUTSCOPE "::*", true, UNKNOWN_USER);
         ForEach(*iter) {
             IDistributedFile &file = iter->query();
             if (file.querySuperFile())
@@ -65,10 +65,10 @@ class TTestDFS : public CPPUNIT_NS::TestFixture
         }
         iter.clear();
         ForEachItemIn(i,superfiles) {
-            dfsdir->removeEntry(superfiles.item(i));
+            dfsdir->removeEntry(superfiles.item(i), UNKNOWN_USER);
         }
         ForEachItemIn(j,files) {
-            dfsdir->removeEntry(files.item(j));
+            dfsdir->removeEntry(files.item(j), UNKNOWN_USER);
         }
     }
 
@@ -172,9 +172,9 @@ protected:
         fdesc->setNumParts(1);
         fdesc->addCluster(grp,mapping);
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fdesc);
-        file->attach(DFSUTSCOPE "::testfile1");
+        file->attach(DFSUTSCOPE "::testfile1", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile1"));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile1", UNKNOWN_USER));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==1);
         CPPUNIT_ASSERT(file->numCopies(0)==2);
@@ -210,9 +210,9 @@ protected:
         fdesc->setNumParts(8);
         fdesc->addCluster(grp,mapping);
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
-        file->attach(DFSUTSCOPE "::testfile2");
+        file->attach(DFSUTSCOPE "::testfile2", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile2"));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile2", UNKNOWN_USER));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         unsigned pi;
@@ -254,9 +254,9 @@ protected:
         mapping.setRepeatedCopies(7,false);
         fdesc->addCluster(grp,mapping);
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
-        file->attach(DFSUTSCOPE "::testfile3");
+        file->attach(DFSUTSCOPE "::testfile3", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile3"));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile3", UNKNOWN_USER));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         for (pi=0;pi<8;pi++) {
@@ -311,9 +311,9 @@ protected:
         mapping2.setRepeatedCopies(7,true);
         fdesc->addCluster(grp,mapping2);
         file.setown(queryDistributedFileDirectory().createNew(fdesc));
-        file->attach(DFSUTSCOPE "::testfile4");
+        file->attach(DFSUTSCOPE "::testfile4", UNKNOWN_USER);
         file.clear();
-        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile4"));
+        file.setown(dfsdir->lookup(DFSUTSCOPE "::testfile4", UNKNOWN_USER));
         CPPUNIT_ASSERT(file.get()!=NULL);
         CPPUNIT_ASSERT(file->numParts()==8);
         for (pi=0;pi<8;pi++) {

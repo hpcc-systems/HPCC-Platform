@@ -54,3 +54,10 @@ if [ -d ${INSTALL_DIR}/etc/bash_completion.d ] && [ -d /etc/bash_completion.d ];
         removeSymlink /etc/bash_completion.d/$subInstall
     done
 fi
+
+# locate sub uninstall files.
+if [ -d ${INSTALL_DIR}/etc/init.d/uninstall ]; then
+    for subUnInstall in $(ls ${INSTALL_DIR}/etc/init.d/uninstall); do
+        source ${INSTALL_DIR}/etc/init.d/uninstall/${subUnInstall}
+    done
+fi

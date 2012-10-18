@@ -10274,10 +10274,12 @@ class CRoxieServerHashAggregateActivity : public CRoxieServerActivity
 
     bool eof;
     bool gathered;
-
+    bool isGroupedAggregate;
 public:
-    CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper), aggregated(helper, helper)
+    CRoxieServerHashAggregateActivity(const IRoxieServerActivityFactory *_factory, bool _isGroupedAggregate, IProbeManager *_probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorHashAggregateArg &)basehelper),
+          isGroupedAggregate(_isGroupedAggregate),
+          aggregated(helper, helper)
     {
         eof = false;
         gathered = false;
@@ -10288,7 +10290,6 @@ public:
         eof = false;
         gathered = false;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        aggregated.start(rowAllocator);
     }
 
     virtual void reset()
@@ -10307,16 +10308,27 @@ public:
 
         if (!gathered)
         {
+            aggregated.start(rowAllocator);
+            bool eog = true;
             loop
             {
                 const void * next = input->nextInGroup();
                 if (!next)
                 {
-                    next = input->nextInGroup();
-                    if (!next)
-                        break;
+                    if (isGroupedAggregate)
+                    {
+                        if (eog)
+                            eof = true;
+                    }
+                    else
+                    {
+                        next = input->nextInGroup();
+                        if (!next)
+                            eof = true;
+                    }
+                    break;
                 }
-
+                eog = false;
                 aggregated.addRow(next);
                 ReleaseRoxieRow(next);
             }
@@ -10329,7 +10341,8 @@ public:
             processed++;
             return next->finalizeRowClear();
         }
-        eof = true;
+        aggregated.reset();
+        gathered = false;
         return NULL;
     }
 };
@@ -10337,20 +10350,23 @@ public:
 class CRoxieServerHashAggregateActivityFactory : public CRoxieServerActivityFactory
 {
 public:
-    CRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
+        isGroupedAggregate = _graphNode.getPropBool("att[@name='grouped']/@value");
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerHashAggregateActivity(this, _probeManager);
+        return new CRoxieServerHashAggregateActivity(this, isGroupedAggregate, _probeManager);
     }
+protected:
+    bool isGroupedAggregate;
 };
 
-IRoxieServerActivityFactory *createRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerHashAggregateActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerHashAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerHashAggregateActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=================================================================================
@@ -10921,6 +10937,7 @@ public:
         props.setProp("@csvSeparate", separator.str());
         props.setProp("@csvQuote", csvParameters->queryQuote(0));
         props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
+        props.setProp("@csvEscape", csvParameters->queryEscape(0));
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -20036,12 +20053,13 @@ class CRoxieServerCsvReadActivity : public CRoxieServerDiskReadBaseActivity
     const char *quotes;
     const char *separators;
     const char *terminators;
+    const char *escapes;
 public:
     CRoxieServerCsvReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId,
                                 unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager,
-                                const char *_quotes, const char *_separators, const char *_terminators)
+                                const char *_quotes, const char *_separators, const char *_terminators, const char *_escapes)
         : CRoxieServerDiskReadBaseActivity(_factory, _probeManager, _remoteId, _numParts, _isLocal, _sorted, _maySkip, _manager),
-          quotes(_quotes), separators(_separators), terminators(_terminators)
+          quotes(_quotes), separators(_separators), terminators(_terminators), escapes(_escapes)
     {
         compoundHelper = NULL;
         readHelper = (IHThorCsvReadArg *)&helper;
@@ -20073,9 +20091,10 @@ public:
                         quotes = options->queryProp("@csvQuote");
                         separators = options->queryProp("@csvSeparate");
                         terminators = options->queryProp("@csvTerminate");
+                        escapes = options->queryProp("@csvEscape");
                     }
                 }
-                csvSplitter.init(readHelper->getMaxColumns(), csvInfo, quotes, separators, terminators);
+                csvSplitter.init(readHelper->getMaxColumns(), csvInfo, quotes, separators, terminators, escapes);
             }
         }
     }
@@ -20593,6 +20612,7 @@ public:
     const char *quotes;
     const char *separators;
     const char *terminators;
+    const char *escapes;
 
     CRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode)
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), remoteId(_remoteId)
@@ -20602,7 +20622,7 @@ public:
         sorted = (helper->getFlags() & TDRunsorted) == 0;
         variableFileName = (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0;
         maySkip = (helper->getFlags() & (TDRkeyedlimitskips|TDRkeyedlimitcreates|TDRlimitskips|TDRlimitcreates)) != 0;
-        quotes = separators = terminators = NULL;
+        quotes = separators = terminators = escapes = NULL;
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
@@ -20624,6 +20644,7 @@ public:
                         quotes = options->queryProp("@csvQuote");
                         separators = options->queryProp("@csvSeparate");
                         terminators = options->queryProp("@csvTerminate");
+                        escapes = options->queryProp("@csvEscape");
                     }
                 }
                 else
@@ -20639,7 +20660,7 @@ public:
         {
         case TAKcsvread:
             return new CRoxieServerCsvReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager,
-                                                   quotes, separators, terminators);
+                                                   quotes, separators, terminators, escapes);
         case TAKxmlread:
             return new CRoxieServerXmlReadActivity(this, _probeManager, remoteId, numParts, isLocal, sorted, maySkip, manager);
         case TAKdiskread:

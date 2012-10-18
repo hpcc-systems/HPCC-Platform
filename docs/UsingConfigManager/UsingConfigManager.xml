@@ -1049,7 +1049,8 @@ sudo configmgr</programlisting>
                     <row>
                       <entry><emphasis>monitorinterval</emphasis></entry>
 
-                      <entry>the interval that the process checks ...</entry>
+                      <entry>Specifies the polling interval for DFU monitoring
+                      (in seconds). Default is 900 (15 minutes)</entry>
                     </row>
 
                     <row>

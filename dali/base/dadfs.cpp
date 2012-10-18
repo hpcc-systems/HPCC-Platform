@@ -881,55 +881,55 @@ public:
         return createNew(fdesc,NULL,includeports);
     }
     IDistributedFile *createNew(IPropertyTree *tree,bool ignoregroup);
-    IDistributedSuperFile *createSuperFile(const char *logicalname,bool interleaved,bool ifdoesnotexist,IUserDescriptor *user,IDistributedFileTransaction *transaction=NULL);
+    IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
-    IDFAttributesIterator *getDFAttributesIterator(const char *wildname, bool recursive, bool includesuper,INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout);
-    IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, bool recursive=true, bool includesuper=false, const char *foreigndali="",IUserDescriptor *user=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
+    IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
+    IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
     {
         Owned<INode> foreign;
         if (foreigndali&&*foreigndali) {
             SocketEndpoint ep(foreigndali);
             foreign.setown(createINode(ep));
         }
-        return getDFAttributesIterator(wildname, recursive, includesuper,foreign,user,foreigndalitimeout);
+        return getDFAttributesIterator(wildname, user, recursive, includesuper,foreign,foreigndalitimeout);
     }
 
-    IDFScopeIterator *getScopeIterator(const char *subscope,bool recursive,bool includeempty,IUserDescriptor *user);
+    IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope,bool recursive,bool includeempty);
     bool loadScopeContents(const char *scopelfn,StringArray *scopes,    StringArray *supers,StringArray *files, bool includeemptyscopes);
 
-    IPropertyTree *getFileTree(const char *lname,const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout,bool expandnodes=false, bool appendForeign=true);
-    void setFileAccessed(CDfsLogicalFileName &dlfn, const CDateTime &dt,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
-    IFileDescriptor *getFileDescriptor(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
-    IDistributedFile *getFile(const char *lname,const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
+    IPropertyTree *getFileTree(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout,bool expandnodes=false, bool appendForeign=true);
+    void setFileAccessed(CDfsLogicalFileName &dlfn, IUserDescriptor *user,const CDateTime &dt,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
+    IFileDescriptor *getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
+    IDistributedFile *getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
-    bool exists(const char *_logicalname,bool notsuper=false,bool superonly=false,IUserDescriptor *user=NULL);
+    bool exists(const char *_logicalname,IUserDescriptor *user,bool notsuper=false,bool superonly=false);
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *_logicalname,IUserDescriptor *user);
-    bool removePhysical(const char *_logicalname,const char *cluster,IMultiException *mexcept,IUserDescriptor *user);
-    bool renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user);
+    bool removeEntry(const char *_logicalname,IUserDescriptor *user, unsigned timeoutms=INFINITE);
+    bool removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,IMultiException *mexcept);
+    bool renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IMultiException *exceptions);
     void removeEmptyScope(const char *name);
 
     IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction,unsigned timeout=INFINITE);
 
     int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags);
     int getNodePermissions(const IpAddress &ip,IUserDescriptor *user,unsigned auditflags);
-    int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user=NULL,unsigned auditflags=0);
+    int getFDescPermissions(IFileDescriptor *,IUserDescriptor *user,unsigned auditflags=0);
     void setDefaultUser(IUserDescriptor *user);
     IUserDescriptor* queryDefaultUser();
 
     bool doRemovePhysical(CDfsLogicalFileName &dlfn,const char *cluster,IMultiException *mexcept,IUserDescriptor *user,bool ignoresub);
-    bool doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub);
+    bool doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub, unsigned timeoutms=INFINITE);
     DistributedFileCompareResult fileCompare(const char *lfn1,const char *lfn2,DistributedFileCompareMode mode,StringBuffer &errstr,IUserDescriptor *user);
-    bool filePhysicalVerify(const char *lfn1,bool includecrc,StringBuffer &errstr,IUserDescriptor *user);
+    bool filePhysicalVerify(const char *lfn1,IUserDescriptor *user,bool includecrc,StringBuffer &errstr);
     void setDefaultPreferredClusters(const char *clusters);
     void fixDates(IDistributedFile *fil);
 
     GetFileClusterNamesType getFileClusterNames(const char *logicalname,StringArray &out); // returns 0 for normal file, 1 for
 
-    bool isSuperFile( const char *logicalname, INode *foreigndali, IUserDescriptor *user, unsigned timeout);
+    bool isSuperFile( const char *logicalname, IUserDescriptor *user, INode *foreigndali, unsigned timeout);
 
     void promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user, unsigned timeout, StringArray &outunlinked);
     ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *title,unsigned timeout);
@@ -942,14 +942,14 @@ public:
         );
     void doRemoveFileRelationship( IRemoteConnection *conn, const char *primary,const char *secondary,const char *primflds,const char *secflds, const char *kind);
     void removeFileRelationships(const char *primary,const char *secondary, const char *primflds, const char *secflds, const char *kind);
-    void addFileRelationship(const char *kind,const char *primary,const char *secondary,const char *primflds, const char *secflds,const char *cardinality,bool payload,const char *description);
+    void addFileRelationship(const char *kind,const char *primary,const char *secondary,const char *primflds, const char *secflds,const char *cardinality,bool payload,IUserDescriptor *user,const char *description);
     IFileRelationshipIterator *lookupFileRelationships(const char *primary,const char *secondary,const char *primflds,const char *secflds,
                                                        const char *kind,const char *cardinality,const bool *payload,
                                                        const char *foreigndali,unsigned foreigndalitimeout);
     void removeAllFileRelationships(const char *filename);
     IFileRelationshipIterator *lookupAllFileRelationships(const char *filenames);
 
-    void renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter);
+    void renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter, IUserDescriptor *user);
 
     bool publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
     IFileDescriptor *createDescriptorFromMetaFile(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
@@ -960,7 +960,7 @@ public:
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
     static bool cannotRemove(CDfsLogicalFileName &name,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
-    void setFileProtect(CDfsLogicalFileName &dlfn, const char *owner, bool set, const INode *foreigndali=NULL,IUserDescriptor *user=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
+    void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
     {
@@ -1172,7 +1172,7 @@ public:
     {
         try {
             if (remphys) 
-                queryDistributedFileDirectory().removePhysical(lfn.get(),NULL,NULL,user.get());
+                queryDistributedFileDirectory().removePhysical(lfn.get(),user.get(),NULL,NULL);
             else 
                 queryDistributedFileDirectory().removeEntry(lfn.get(),user);
         }
@@ -2019,7 +2019,7 @@ public:
             wildname = "*";
         parent = _dir;
         bool recursive = (stricmp(wildname,"*")==0);
-        Owned<IDFAttributesIterator> attriter = parent->getDFAttributesIterator(wildname,recursive,includesuper,NULL,user);
+        Owned<IDFAttributesIterator> attriter = parent->getDFAttributesIterator(wildname,user,recursive,includesuper,NULL);
         ForEach(*attriter) {
             IPropertyTree &pt = attriter->query();
             list.append(strdup(pt.queryProp("@name")));
@@ -2405,7 +2405,7 @@ public:
     void setProtect(const char *owner, bool protect, unsigned timems)
     {
         if (logicalName.isForeign()) {
-            parent->setFileProtect(logicalName,owner,protect);
+            parent->setFileProtect(logicalName,udesc,owner,protect);
         }
         else {
             bool ret=false;
@@ -3166,7 +3166,7 @@ public:
         }
         if (reliter.get()) {
             // add back any relationships with new name
-            parent->renameFileRelationships(prevname.str(),_logicalname,reliter);
+            parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
         }
     }
 
@@ -3220,7 +3220,7 @@ public:
 #endif
     }
 
-    void detach()
+    void detach(unsigned timeoutms=INFINITE)
     {
         assert(proplockcount == 0 && "CDistributedFile detach: Some properties are still locked");
         CriticalBlock block (sect);
@@ -3238,7 +3238,7 @@ public:
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile::detach root.2",root);
 #endif
-        parent->removeEntry(lname.get(),udesc);
+        parent->removeEntry(lname.get(),udesc, timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *cluster,IMultiException *mexcept)
@@ -3870,7 +3870,7 @@ public:
     virtual void setAccessedTime(const CDateTime &dt)       
     {
         if (logicalName.isForeign()) {
-            parent->setFileAccessed(logicalName,dt);
+            parent->setFileAccessed(logicalName,udesc,dt);
         }
         else {
             DistributedFilePropertyLock lock(this);
@@ -4595,7 +4595,7 @@ public:
         attach(_logicalname,user);
         if (reliter.get()) {
             // add back any relationships with new name
-            parent->renameFileRelationships(prevname.str(),_logicalname,reliter);
+            parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
         }
     }
 
@@ -4658,7 +4658,7 @@ public:
         root.setown(conn->getRoot());
     }
 
-    void detach()
+    void detach(unsigned timeoutms=INFINITE)
     {   
         // will need more thought but this gives limited support for anon
         if (isAnon())
@@ -4674,7 +4674,7 @@ public:
         root.setown(createPTree(mb));
         StringAttr lname(logicalName.get());
         logicalName.clear();
-        parent->removeEntry(lname.get(),udesc);
+        parent->removeEntry(lname.get(),udesc, timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *clustername,IMultiException *mexcept)
@@ -6401,7 +6401,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
         if (logicalname->isExternal()) 
             return createExternal(*logicalname);    // external always works?
         if (logicalname->isForeign()) {
-            IDistributedFile * ret = getFile(logicalname->get(),NULL,user);
+            IDistributedFile * ret = getFile(logicalname->get(),user,NULL);
             if (ret)
                 return ret;
         }
@@ -6482,16 +6482,16 @@ IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_l
 }
 
 bool CDistributedFileDirectory::isSuperFile(    const char *logicalname,
-                                                INode *foreigndali,
                                                 IUserDescriptor *user,
+                                                INode *foreigndali,
                                                 unsigned timeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(logicalname, foreigndali,user,timeout, false);
+    Owned<IPropertyTree> tree = getFileTree(logicalname, user, foreigndali,timeout, false);
     return tree.get()&&(strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0);
 }
 
 
-bool CDistributedFileDirectory::exists(const char *_logicalname,bool notsuper,bool superonly,IUserDescriptor *user)
+bool CDistributedFileDirectory::exists(const char *_logicalname,IUserDescriptor *user,bool notsuper,bool superonly)
 {
     // (currently) no check on scope permissions for exists
 
@@ -6616,7 +6616,7 @@ public:
     }
 };
 
-IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_logicalname, bool _interleaved,bool ifdoesnotexist,IUserDescriptor *user,IDistributedFileTransaction *transaction)
+IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_logicalname,IUserDescriptor *user, bool _interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(_logicalname);
@@ -6660,7 +6660,7 @@ bool CDistributedFileDirectory::cannotRemove(CDfsLogicalFileName &dlfn,IUserDesc
     return false;
 }
 
-bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub)
+bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool ignoresub, unsigned timeoutms)
 {
     const char *logicalname = dlfn.get();
 #ifdef EXTRA_LOGGING
@@ -6669,7 +6669,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     if (!checkLogicalName(dlfn,user,true,true,true,"remove"))
         return false;
     StringBuffer reason;
-    if (cannotRemove(dlfn,user,reason,ignoresub,defaultTimeout)) {
+    if (cannotRemove(dlfn,user,reason,ignoresub,timeoutms)) {
 #ifdef EXTRA_LOGGING
         PROGLOG("CDistributedFileDirectory::doRemoveEntry(cannotRemove) %s",reason.str());
 #endif
@@ -6683,7 +6683,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     CFileConnectLock fconnlock;
     {
         IPropertyTree *froot=NULL;
-        if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",dlfn,bkind,true,false,defaultTimeout)) 
+        if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",dlfn,bkind,true,false,timeoutms))
             froot = fconnlock.queryRoot();
         if (!froot) {
 #ifdef EXTRA_LOGGING
@@ -6721,7 +6721,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
                     subfn.set(name);
                     CFileConnectLock fconnlock;
                     DfsXmlBranchKind subbkind;
-                    if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",subfn,subbkind,false,false,defaultTimeout)) { 
+                    if (fconnlock.initany("CDistributedFileDirectory::doRemoveEntry",subfn,subbkind,false,false,timeoutms)) {
                         IPropertyTree *subfroot = fconnlock.queryRoot();
                         if (subfroot) {
                             if (!subfroot->removeProp(oquery.str()))
@@ -6735,7 +6735,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
     fconnlock.remove();
     fconnlock.kill();
     try {
-        removeFileEmptyScope(dlfn,defaultTimeout);
+        removeFileEmptyScope(dlfn,timeoutms);
         removeAllFileRelationships(logicalname);
     }
     catch (IException *e) {
@@ -6746,11 +6746,11 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
 }
 
 
-bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user)
+bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms)
 {
     CDfsLogicalFileName dlfn;   
     dlfn.set(name);
-    return doRemoveEntry(dlfn,user,false);
+    return doRemoveEntry(dlfn,user,false, timeoutms);
 }
 
 void CDistributedFileDirectory::removeEmptyScope(const char *scope)
@@ -6807,7 +6807,7 @@ bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,const
     return true;
 }
 
-bool CDistributedFileDirectory::removePhysical(const char *_logicalname,const char *cluster,IMultiException *exceptions,IUserDescriptor *user)
+bool CDistributedFileDirectory::removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,IMultiException *exceptions)
 {
     CDfsLogicalFileName dlfn;
     dlfn.set(_logicalname);
@@ -6815,11 +6815,18 @@ bool CDistributedFileDirectory::removePhysical(const char *_logicalname,const ch
 }
 
     
-bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IMultiException *exceptions,IUserDescriptor *user)
+bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IMultiException *exceptions)
 {
     CriticalBlock block(removesect);
     if (!user)
+    {
+#ifdef _DALIUSER_STACKTRACE
+        DBGLOG("UNEXPECTED USER (NULL) in dadfs.cpp CDistributedFileDirectory::renamePhysical %d",__LINE__);
+        //following debug code to be removed
+        PrintStackReport();
+#endif
         user = defaultudesc.get();
+    }
     CDfsLogicalFileName oldlogicalname; 
     oldlogicalname.set(oldname);
     checkLogicalName(oldlogicalname,user,true,true,false,"rename");
@@ -6891,7 +6898,7 @@ bool CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
     }
     if (splitfrom) {
         oldfile->removeCluster(oldcluster.str());
-        file->attach(newlogicalname.get());
+        file->attach(newlogicalname.get(),user);
     }
     else if (mergeinto) {
         ClusterPartDiskMapSpec mspec = file->queryPartDiskMapping(0);
@@ -8049,7 +8056,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,NULL,(unsigned)-1);
+        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,udesc,(unsigned)-1);
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
@@ -8363,7 +8370,7 @@ public:
 } *daliDFSServer = NULL;
 
 
-IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const char *wildname, bool recursive, bool includesuper,INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout)
+IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout)
 {
     if (!wildname||!*wildname||(strcmp(wildname,"*")==0)) {
         recursive = true;
@@ -8380,7 +8387,7 @@ IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
     return new CDFAttributeIterator(mb);
 }
 
-IDFScopeIterator *CDistributedFileDirectory::getScopeIterator(const char *basescope, bool recursive,bool includeempty,IUserDescriptor *user)
+IDFScopeIterator *CDistributedFileDirectory::getScopeIterator(IUserDescriptor *user, const char *basescope, bool recursive,bool includeempty)
 {
     return new CDFScopeIterator(this,basescope,recursive,includeempty,defaultTimeout);
 }
@@ -8471,7 +8478,7 @@ bool CDistributedFileDirectory::loadScopeContents(const char *scopelfn,
     return true;
 }
 
-void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn, const CDateTime &dt, const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout)
+void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const CDateTime &dt, const INode *foreigndali,unsigned foreigndalitimeout)
 {
     // this accepts either a foreign dali node or a foreign lfn
     Owned<INode> fnode;
@@ -8502,7 +8509,7 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn, const
     checkDfsReplyException(mb);
 }
 
-void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn, const char *owner, bool set, const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout)
+void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali,unsigned foreigndalitimeout)
 {
     // this accepts either a foreign dali node or a foreign lfn
     Owned<INode> fnode;
@@ -8534,7 +8541,7 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn, const 
     checkDfsReplyException(mb);
 }
 
-IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout, bool expandnodes, bool appendForeign)
+IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDescriptor *user, const INode *foreigndali,unsigned foreigndalitimeout, bool expandnodes, bool appendForeign)
 {
     // this accepts either a foreign dali node or a foreign lfn
     Owned<INode> fnode;
@@ -8603,9 +8610,9 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, const I
     return ret.getClear();
 }
 
-IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout)
+IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname,foreigndali,user,foreigndalitimeout,false);
+    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,false);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -8624,9 +8631,9 @@ IFileDescriptor *CDistributedFileDirectory::getFileDescriptor(const char *lname,
     return fdesc;
 }
 
-IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,const INode *foreigndali,IUserDescriptor *user,unsigned foreigndalitimeout)
+IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDescriptor *user,const INode *foreigndali,unsigned foreigndalitimeout)
 {
-    Owned<IPropertyTree> tree = getFileTree(lname,foreigndali,user,foreigndalitimeout,false);
+    Owned<IPropertyTree> tree = getFileTree(lname,user,foreigndali,foreigndalitimeout,false);
     if (!tree)
         return NULL;
     if (strcmp(tree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
@@ -9046,7 +9053,7 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
     return ret;
 }
 
-bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,bool includecrc,StringBuffer &errstr,IUserDescriptor *user=NULL)
+bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,IUserDescriptor *user,bool includecrc,StringBuffer &errstr)
 {
     bool differs = false;
     Owned<IDistributedFile> file = lookup(lfn,user,false,NULL,defaultTimeout);  
@@ -9194,7 +9201,7 @@ public:
         includesub = _includesub;
         CDfsLogicalFileName lfn;
         StringBuffer query;
-        Owned<IDFScopeIterator> siter = queryDistributedFileDirectory().getScopeIterator(NULL,true,false,user);
+        Owned<IDFScopeIterator> siter = queryDistributedFileDirectory().getScopeIterator(user,NULL,true,false);
         ForEach(*siter) {
             lfn.set(siter->query(),"X");
             lfn.makeScopeQuery(query.clear());
@@ -9493,7 +9500,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
                 files = i;
                 break;
             }
-            Owned<IDistributedSuperFile> sfile = createSuperFile(sfnames[i],false,false,user,transaction);
+            Owned<IDistributedSuperFile> sfile = createSuperFile(sfnames[i],user,false,false,transaction);
             created = true;
         }
     }
@@ -9542,7 +9549,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     // MORE - once deletion of logic files are also in transaction we can move this up (and allow promote within transactions)
     if (delsub) {
         ForEachItemIn(j,outunlinked) 
-            removePhysical(outunlinked.item(j),NULL,NULL,user);
+            removePhysical(outunlinked.item(j),user,NULL,NULL);
     }
 }
 
@@ -9847,6 +9854,7 @@ void CDistributedFileDirectory::addFileRelationship(
   const char *kind,
   const char *cardinality,
   bool payload,
+  IUserDescriptor *user,
   const char *description=NULL
   )
 {
@@ -9861,7 +9869,7 @@ void CDistributedFileDirectory::addFileRelationship(
     if (pfn.isExternal()||pfn.isForeign()||pfn.isQuery())
         throw MakeStringException(-1,"addFileRelationship primary %s not allowed",pfn.get());
     primary = pfn.get();
-    if (!exists(primary))
+    if (!exists(primary,user))
         throw MakeStringException(-1,"addFileRelationship primary %s does not exist",primary);
     CDfsLogicalFileName sfn;
     if (!sfn.setValidate(secondary))  
@@ -9869,7 +9877,7 @@ void CDistributedFileDirectory::addFileRelationship(
     if (sfn.isExternal()||sfn.isForeign()||sfn.isQuery())
         throw MakeStringException(-1,"addFileRelationship secondary %s not allowed",sfn.get());
     secondary = sfn.get();
-    if (!exists(secondary))
+    if (!exists(secondary,user))
         throw MakeStringException(-1,"addFileRelationship secondary %s does not exist",secondary);
     if (cardinality&&*cardinality&&!strchr(cardinality,':'))
         throw MakeStringException(-1,"addFileRelationship cardinality %s invalid",cardinality);
@@ -9970,7 +9978,7 @@ IFileRelationshipIterator *CDistributedFileDirectory::lookupAllFileRelationships
     return ret.getClear();
 }
 
-void CDistributedFileDirectory::renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter)
+void CDistributedFileDirectory::renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter,IUserDescriptor*user)
 {
     CDfsLogicalFileName oldlfn;
     normLFN(oldname,oldlfn,"renameFileRelationships(old name)");
@@ -9995,7 +10003,7 @@ void CDistributedFileDirectory::renameFileRelationships(const char *oldname,cons
                 sf = newlfn.get();
             }
             if (adj)
-                addFileRelationship(pf,sf,r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),r.queryDescription());
+                addFileRelationship(pf,sf,r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),user,r.queryDescription());
         }
         catch (IException *e)
         {
@@ -10007,11 +10015,11 @@ void CDistributedFileDirectory::renameFileRelationships(const char *oldname,cons
 
 
 // JCSMORE what was this for, not called by anything afaics
-bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user=NULL)
+bool CDistributedFileDirectory::publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user)
 {
     if (logicalname.isExternal()||logicalname.isForeign()||logicalname.isQuery()) 
         return false;
-    Owned<IPropertyTree> file = getFileTree(logicalname.get(),NULL,user,FOREIGN_DALI_TIMEOUT,true);
+    Owned<IPropertyTree> file = getFileTree(logicalname.get(),user,NULL,FOREIGN_DALI_TIMEOUT,true);
     if (!file.get())
         return false;
     if (strcmp(file->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0)

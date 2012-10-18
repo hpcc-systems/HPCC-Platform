@@ -3403,7 +3403,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                 useHashAggregate = true;
         }
 
-        if (!expr->hasProperty(aggregateAtom) && !useHashAggregate)
+        if (!expr->hasProperty(aggregateAtom) && !useHashAggregate && !expr->hasProperty(groupedAtom))
             return convertAggregateGroupingToGroupedAggregate(expr, group);
     }
     return NULL;

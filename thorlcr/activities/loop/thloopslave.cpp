@@ -729,16 +729,14 @@ activityslaves_decl CActivityBase *createGraphLoopSlave(CGraphElementBase *conta
 
 /////////////
 
-class CIfActivity : public CSlaveActivity, public CThorDataLink
+class CConditionalActivity : public CSlaveActivity, public CThorDataLink
 {
-    IHThorIfArg *helper;
     IThorDataLink *selectedInput;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CIfActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    CConditionalActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
-        helper = (IHThorIfArg *)queryHelper();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -751,7 +749,7 @@ public:
         selectedInput = container.whichBranch>=inputs.ordinality() ? NULL : inputs.item(container.whichBranch);
         if (selectedInput)
             startInput(selectedInput);
-        dataLinkStart("CHILDIF", container.queryId());
+        dataLinkStart(container.getKind(), container.queryId());
     }
     virtual void stop()
     {
@@ -782,7 +780,12 @@ public:
 
 activityslaves_decl CActivityBase *createIfSlave(CGraphElementBase *container)
 {
-    return new CIfActivity(container);
+    return new CConditionalActivity(container);
+}
+
+activityslaves_decl CActivityBase *createCaseSlave(CGraphElementBase *container)
+{
+    return new CConditionalActivity(container);
 }
 
 

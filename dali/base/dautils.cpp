@@ -167,7 +167,7 @@ public:
                     else
                         tmp.append(mlfn).append(suffix);
                     tmp.clip().toLowerCase();
-                    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),false,true,NULL,_udesc);
+                    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,NULL);
                     mlfn.setLength(start-s);
                     ForEach(*iter) {
                         IPropertyTree &attr = iter->query();
@@ -2025,7 +2025,8 @@ IClusterFileScanIterator *getClusterFileScanIterator(
                       IGroup *group,        // only scans file with nodes in specified group
                       bool exactmatch,          // only files that match group exactly
                       bool anymatch,            // any nodes match
-                      bool loadbranch)
+                      bool loadbranch,
+                      IUserDescriptor *user)
 {
     class cFileScanIterator: public CInterface, implements IClusterFileScanIterator
     {
@@ -2134,7 +2135,7 @@ IClusterFileScanIterator *getClusterFileScanIterator(
             }
         }
     }
-    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator("*");
+    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator("*",user);
     StringBuffer chkname;
     StringBuffer gname;
     ForEach(*iter) {
@@ -2174,11 +2175,11 @@ IClusterFileScanIterator *getClusterFileScanIterator(
 
 typedef MapStringTo<bool> IsSuperFileMap;
 
-void getLogicalFileSuperSubList(MemoryBuffer &mb)
+void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
 {
     // for fileservices
     IsSuperFileMap supermap;
-    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",true,true);
+    IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator("*",user,true,true);
     if (iter) {
         ForEach(*iter) {
             IPropertyTree &attr=iter->query();

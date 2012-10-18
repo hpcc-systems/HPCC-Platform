@@ -243,22 +243,24 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
     }
     else
     {
-        if (TAKchildif == container.getKind())
+        switch (container.getKind())
         {
-            if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
-            {
-                IThorDataLink *input = inputs.item(container.whichBranch);
-                if (input)
+            case TAKchildif:
+            case TAKchildcase:
+                if (inputs.ordinality() && (((unsigned)-1) != container.whichBranch))
+                {
+                    IThorDataLink *input = inputs.item(container.whichBranch);
+                    if (input)
+                        inputCycles += input->queryTotalCycles();
+                }
+                break;
+            default:
+                ForEachItemIn(i, inputs)
+                {
+                    IThorDataLink *input = inputs.item(i);
                     inputCycles += input->queryTotalCycles();
-            }
-        }
-        else
-        {
-            ForEachItemIn(i, inputs)
-            {
-                IThorDataLink *input = inputs.item(i);
-                inputCycles += input->queryTotalCycles();
-            }
+                }
+                break;
         }
     }
     if (totalCycles < inputCycles) // not sure how/if possible, but guard against
@@ -1008,6 +1010,7 @@ CJobSlave::CJobSlave(ISlaveWatchdog *_watchdog, IPropertyTree *_workUnitInfo, co
 
     init();
 
+    oldNodeCacheMem = 0;
     mpJobTag = _mpJobTag;
     slavemptag = _slavemptag;
 
@@ -1072,7 +1075,8 @@ void CJobSlave::startJob()
     unsigned pinterval = globals->getPropInt("@system_monitor_interval",1000*60);
     if (pinterval)
         startPerformanceMonitor(pinterval);
-    if (pinterval) {
+    if (pinterval)
+    {
         perfmonhook.setown(createThorMemStatsPerfMonHook());
         startPerformanceMonitor(pinterval,PerfMonStandard,perfmonhook);
     }
@@ -1095,7 +1099,7 @@ void CJobSlave::startJob()
     unsigned keyNodeCacheMB = (unsigned)getWorkUnitValueInt("keyNodeCacheMB", 0);
     if (keyNodeCacheMB)
     {
-        setNodeCacheMem(keyNodeCacheMB * 0x100000);
+        oldNodeCacheMem = setNodeCacheMem(keyNodeCacheMB * 0x100000);
         PROGLOG("Key node cache size set to: %d MB", keyNodeCacheMB);
     }
     unsigned keyFileCacheLimit = (unsigned)getWorkUnitValueInt("keyFileCacheLimit", 0);
@@ -1110,6 +1114,8 @@ void CJobSlave::endJob()
     stopPerformanceMonitor();
     LOG(MCdebugProgress, thorJob, "Job ended : %s", graphName.get());
     clearKeyStoreCache(true);
+    if (oldNodeCacheMem)
+        setNodeCacheMem(oldNodeCacheMem);
     PrintMemoryStatusLog();
 }
 
@@ -1121,8 +1127,15 @@ __int64 CJobSlave::getWorkUnitValueInt(const char *prop, __int64 defVal) const
 
 StringBuffer &CJobSlave::getWorkUnitValue(const char *prop, StringBuffer &str) const
 {
-    workUnitInfo->queryPropTree("Debug")->getProp(prop, str);
+    StringBuffer propName(prop);
+    workUnitInfo->queryPropTree("Debug")->getProp(propName.toLowerCase().str(), str);
     return str;
+}
+
+bool CJobSlave::getWorkUnitValueBool(const char *prop, bool defVal) const
+{
+    StringBuffer propName(prop);
+    return workUnitInfo->queryPropTree("Debug")->getPropBool(propName.toLowerCase().str(), defVal);
 }
 
 IBarrier *CJobSlave::createBarrier(mptag_t tag)

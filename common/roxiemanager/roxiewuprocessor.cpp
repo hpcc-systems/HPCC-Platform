@@ -423,7 +423,7 @@ private:
                     else
                         fullBaseIndexName.appendf("~%s", baseIndexName.str());
 
-                    Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(baseIndexName, daliNode, processingInfo.queryUserDescriptor(), DALI_FILE_LOOKUP_TIMEOUT);
+                    Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(baseIndexName, processingInfo.queryUserDescriptor(), daliNode, DALI_FILE_LOOKUP_TIMEOUT);
                     if (df)
                         addSubFile(xml, fullBaseIndexName.str(), foreignIP, df, preload, processingInfo, false, true, NULL, useSourceClusterName, daliNode, updateDali);
 
@@ -435,7 +435,7 @@ private:
                     else
                         fullPatchName.appendf("~%s", patchName.str());
 
-                    Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(patchName, daliNode, processingInfo.queryUserDescriptor(), DALI_FILE_LOOKUP_TIMEOUT);
+                    Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(patchName, processingInfo.queryUserDescriptor(), daliNode, DALI_FILE_LOOKUP_TIMEOUT);
                     if (df)
                         addSubFile(xml, fullPatchName.str(), foreignIP, df, preload, processingInfo, true, false, NULL, useSourceClusterName, daliNode, updateDali);
 
@@ -518,7 +518,7 @@ private:
             Owned<IPropertyTree> df;
             try
             {
-                df.setown(queryDistributedFileDirectory().getFileTree(lookupNameInDali.str()+1, daliNode, processingInfo.queryUserDescriptor(), DALI_FILE_LOOKUP_TIMEOUT)); // don't want to pass the ~
+                df.setown(queryDistributedFileDirectory().getFileTree(lookupNameInDali.str()+1, processingInfo.queryUserDescriptor(), daliNode, DALI_FILE_LOOKUP_TIMEOUT)); // don't want to pass the ~
             }
             catch(IException *e)
             {
@@ -625,7 +625,7 @@ private:
                         StringBuffer foreignIP;
                         StringBuffer fullSubName(sub->queryProp("@name"));
                         removeScope(fullSubName, subName, foreignIP, useSourceClusterName, altRoxieClusterName);
-                        Owned<IPropertyTree> subtree = queryDistributedFileDirectory().getFileTree(fullSubName,daliNode, processingInfo.queryUserDescriptor(), DALI_FILE_LOOKUP_TIMEOUT);
+                        Owned<IPropertyTree> subtree = queryDistributedFileDirectory().getFileTree(fullSubName, processingInfo.queryUserDescriptor(),daliNode, DALI_FILE_LOOKUP_TIMEOUT);
 
                         if (subtree)
                         {
@@ -839,7 +839,7 @@ public:
 
                 StringBuffer msg;
                 StringBuffer rel_xpath("MetaFileInfo/Relationships/Relationship");
-                addRoxieFileRelationshipsToDali(xml, processingInfo.queryDfsDaliIp(), rel_xpath, true, msg);
+                addRoxieFileRelationshipsToDali(xml, processingInfo.queryDfsDaliIp(), rel_xpath, true, msg, wu->queryUserDescriptor());
 
                 if (me->ordinality())
                     throw me.getClear();
@@ -1035,7 +1035,7 @@ public:
 
 
 //////////////////////////////////////////////////////////////////////////////////////
-    bool addRoxieFileRelationshipsToDali(IPropertyTree *xml, const char *lookupDaliIp, const char *xpath, bool storeResults, StringBuffer &msg)
+    bool addRoxieFileRelationshipsToDali(IPropertyTree *xml, const char *lookupDaliIp, const char *xpath, bool storeResults, StringBuffer &msg, IUserDescriptor *user)
     {
         if (!xml)
             return false;
@@ -1073,7 +1073,8 @@ public:
                     dfuHelper->cloneFileRelationships(lookupDaliIp,// where src relationships are retrieved from (can be NULL for local)
                                                       srcfiles,     // file names on source
                                                       dstfiles,     // corresponding filenames on dest (must exist otherwise ignored)
-                                                      tree  // MORE - add a tree ptr here and process....
+                                                      tree,  // MORE - add a tree ptr here and process....
+                                                      user
                                                      );
 
                     if (tree)
@@ -1337,7 +1338,7 @@ public:
         lookupRelationships(relationshipTree, src_filename, NULL, remoteRoxieClusterName, lookupDaliIp);
         lookupRelationships(relationshipTree, NULL, src_filename, remoteRoxieClusterName, lookupDaliIp);
 
-        return addRoxieFileRelationshipsToDali(tree, lookupDaliIp, "Relationships/Relationship", false, msg);
+        return addRoxieFileRelationshipsToDali(tree, lookupDaliIp, "Relationships/Relationship", false, msg, userdesc);
     }
     
 
@@ -1396,7 +1397,7 @@ public:
             daliNode.setown(createINode(ep));
         }
 
-        Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(src_filename, daliNode, userdesc, DALI_FILE_LOOKUP_TIMEOUT);
+        Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(src_filename, userdesc, daliNode, DALI_FILE_LOOKUP_TIMEOUT);
         if (df)
         {
             StringBuffer mapping(df->queryProp("Attr/@columnMapping"));
@@ -1412,7 +1413,7 @@ public:
     bool validateDataFileInfo(IPropertyTree *xml, unsigned numParts, offset_t file_crc, offset_t recordCount, offset_t totalSize, offset_t formatCrc, StringBuffer &dest_filename, StringBuffer &remoteRoxieClusterName, const char *lookupDaliIp, IUserDescriptor *userdesc)
     {
         bool retval = true;
-        Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(dest_filename.str(), NULL, userdesc, DALI_FILE_LOOKUP_TIMEOUT);
+        Owned<IPropertyTree> df = queryDistributedFileDirectory().getFileTree(dest_filename.str(), userdesc, NULL, DALI_FILE_LOOKUP_TIMEOUT);
 
         if (df)
         {
@@ -1705,7 +1706,7 @@ public:
 
         StringBuffer msg;
         StringBuffer rel_xpath("MetaFileInfo/Relationships/Relationship");
-        addRoxieFileRelationshipsToDali(remoteQuery, lookupDaliIp, rel_xpath, true, msg);
+        addRoxieFileRelationshipsToDali(remoteQuery, lookupDaliIp, rel_xpath, true, msg, userdesc);
 
         ForEachItemIn(idx, filesToDelete)
         {

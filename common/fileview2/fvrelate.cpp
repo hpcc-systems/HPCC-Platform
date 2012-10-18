@@ -23,6 +23,7 @@
 #include "fvrelate.ipp"
 #include "deftype.hpp"
 #include "fvresultset.ipp"
+#include "dasess.hpp"
 
 //---------------------------------------------------------------------------
 
@@ -372,7 +373,7 @@ void ViewFileWeb::gatherWebFromPattern(const char * filenamePattern, const ViewG
     if (!localOptions.kind)
         localOptions.kind = S_LINK_RELATIONSHIP_KIND;
 
-    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, NULL);
+    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, UNKNOWN_USER);
     if (iter->first())
     {
         do
@@ -425,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename);
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,UNKNOWN_USER);//MORE:Pass IUserDescriptor
     if (!resolved)
         return NULL;
 

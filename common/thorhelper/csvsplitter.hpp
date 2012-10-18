@@ -32,6 +32,35 @@
 #include "eclhelper.hpp"
 #include "unicode/utf.h"
 
+/**
+ * CSVSplitter - splits CSV files into fields and rows.
+ *
+ * CSV files are text based records that can have user defined syntax for quoting,
+ * escaping, separating fields and rows. According to RFC-4180, there isn't a
+ * standard way of building CSV files, however, there is a set of general rules
+ * that most implementations seem to follow. This makes it hard to implement a CSV
+ * parser, since even if you follow the RFC, you might not read some files as the
+ * producer intended.
+ *
+ * The general rules are:
+ *  * rows are separated by EOL
+ *  * fields are separated by comma
+ *  * special text must be enclosed by quotes
+ *  * there must be a form of escaping quotes
+ *
+ * However, this implementation allows for user-specified quotes, (field) separators,
+ * terminators (row separators), whitespace and (multi-char) escaping sequences, so
+ * it should be possible to accommodate most files that deviate from the norm, while
+ * still reading the files correctly by default.
+ *
+ * One important rule is that any special behaviour should be enclosed by quotes, so
+ * you don't need to account for escaping separators or terminators when they're not
+ * themselves quoted. This, and non-matching quotes should be considered syntax error
+ * and the producer should, then, fix their output.
+ *
+ * Also, many CSV producers (including commercial databases) use slash (\) as escaping
+ * char, while the RFC mentions re-using quotes (""). We implement both.
+ */
 class THORHELPER_API CSVSplitter
 {
 public:
@@ -41,8 +70,9 @@ public:
     void addQuote(const char * text);
     void addSeparator(const char * text);
     void addTerminator(const char * text);
+    void addEscape(const char * text);
 
-    void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators);
+    void init(unsigned maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes);
     void reset();
     size32_t splitLine(size32_t maxLen, const byte * start);
 
@@ -50,16 +80,16 @@ public:
     inline const byte * * queryData() { return data; }
 
 protected:
-    void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip);
+    void setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape);
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned            maxColumns;
     StringMatcher       matcher;
     unsigned            numQuotes;
     unsigned *          lengths;
     const byte * *      data;
-    byte *              unquotedBuffer;
+    byte *              internalBuffer;
     byte *              curUnquoted;
     unsigned            maxCsvSize;
 };
@@ -83,6 +113,7 @@ protected:
     StringAttr separator;
     StringAttr terminator;
     StringAttr quote;
+    StringAttr escape;
     const char * prefix;
     bool oldOutputFormat;
 };

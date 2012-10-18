@@ -1214,6 +1214,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     user.append(_user.str());
     token.append(_token.str());
     scope.append(_scope.str());
+    globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
     init();
 
     resumed = WUActionResume == workunit->getAction();
@@ -1630,7 +1631,7 @@ bool CJobMaster::go()
                 queryThorFileManager().addScope(*this, tmpName, newName, true, true);
                 verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
 
-                file->attach(newName);
+                file->attach(newName,userDesc);
 
                 Owned<IWorkUnit> wu = &queryWorkUnit().lock();
                 wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
@@ -1704,6 +1705,11 @@ void CJobMaster::addCreatedFile(const char *file)
 __int64 CJobMaster::getWorkUnitValueInt(const char *prop, __int64 defVal) const
 {
     return queryWorkUnit().getDebugValueInt64(prop, defVal);
+}
+
+bool CJobMaster::getWorkUnitValueBool(const char *prop, bool defVal) const
+{
+    return queryWorkUnit().getDebugValueBool(prop, defVal);
 }
 
 StringBuffer &CJobMaster::getWorkUnitValue(const char *prop, StringBuffer &str) const

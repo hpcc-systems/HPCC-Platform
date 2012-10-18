@@ -346,10 +346,17 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="masterMemorySize" type="xs:nonNegativeInteger" use="optional">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Memory (in MB) to use for Link Counted Rows on thor master. It will default to globalMemorySize if unset</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
       <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
         <xs:annotation>
           <xs:appinfo>
-            <tooltip>Memory (in MB) to use for Link Counted Rows</tooltip>
+            <tooltip>Memory (in MB) to use for Link Counted Rows. It will default to physical available memory if unset</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>

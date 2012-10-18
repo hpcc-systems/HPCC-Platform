@@ -794,7 +794,7 @@ protected:
     Owned<IPropertyTree> xgmml;
     Owned<IGraphTempHandler> tmpHandler;
     bool timeActivities;
-    unsigned maxActivityCores;
+    unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -879,6 +879,7 @@ public:
     virtual void markWuDirty() { };
     virtual __int64 getWorkUnitValueInt(const char *prop, __int64 defVal) const = 0;
     virtual StringBuffer &getWorkUnitValue(const char *prop, StringBuffer &str) const = 0;
+    virtual bool getWorkUnitValueBool(const char *prop, bool defVal) const = 0;
     const char *queryWuid() const { return wuid.str(); }
     const char *queryUser() const { return user.str(); }
     const char *queryScope() const { return scope.str(); }
@@ -959,7 +960,7 @@ public:
     bool firstNode() { return 1 == container.queryJob().queryMyRank(); }
     bool lastNode() { return container.queryJob().querySlaves() == container.queryJob().queryMyRank(); }
     unsigned queryMaxCores() const { return maxCores; }
-
+    IRowInterfaces *getRowInterfaces();
 
     virtual void setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx) { }
     virtual void clearConnections() { }

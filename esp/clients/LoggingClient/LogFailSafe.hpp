@@ -34,7 +34,7 @@
 #endif
 
 
-#include "jiface.hpp"
+#include "jlib.hpp"
 #include "jstring.hpp"
 #include "jutil.hpp" // for StringArray
 #include "LogSerializer.hpp"

@@ -986,11 +986,13 @@ public:
         sizeInMem = 0;
         setMemLimit(_memLimit);
     }
-    void setMemLimit(size32_t _memLimit)
+    size32_t setMemLimit(size32_t _memLimit)
     {
+        size32_t oldMemLimit = memLimit;
         memLimit = _memLimit;
         if (full())
             makeSpace();
+        return oldMemLimit;
     }
     virtual void makeSpace()
     {
@@ -1050,28 +1052,33 @@ public:
         return preloadNodes;
     }
 
-    inline void setNodeCachePreload(bool _preload) 
+    inline bool setNodeCachePreload(bool _preload)
     {
+        bool oldPreloadNodes = preloadNodes;
         preloadNodes = _preload;
+        return oldPreloadNodes;
     }
 
-    inline void setNodeCacheMem(size32_t newSize) 
+    inline size32_t setNodeCacheMem(size32_t newSize)
     {
         SpinBlock block(lock);
-        nodeCache.setMemLimit(newSize);
-        cacheNodes = (newSize != 0); 
+        unsigned oldV = nodeCache.setMemLimit(newSize);
+        cacheNodes = (newSize != 0);
+        return oldV;
     }
-    inline void setLeafCacheMem(size32_t newSize) 
+    inline size32_t setLeafCacheMem(size32_t newSize)
     {
         SpinBlock block(lock);
-        leafCache.setMemLimit(newSize);
+        unsigned oldV = leafCache.setMemLimit(newSize);
         cacheLeaves = (newSize != 0); 
+        return oldV;
     }
-    inline void setBlobCacheMem(size32_t newSize) 
+    inline size32_t setBlobCacheMem(size32_t newSize)
     {
         SpinBlock block(lock);
-        blobCache.setMemLimit(newSize);
+        unsigned oldV = blobCache.setMemLimit(newSize);
         cacheBlobs = (newSize != 0); 
+        return oldV;
     }
     void clear()
     {
@@ -1104,11 +1111,10 @@ inline CKeyStore *queryKeyStore()
     return keyStore;
 }
 
-void setKeyIndexCacheSize(unsigned limit)
+unsigned setKeyIndexCacheSize(unsigned limit)
 {
-    queryKeyStore()->setKeyCacheLimit(limit);
+    return queryKeyStore()->setKeyCacheLimit(limit);
 }
-
 
 CKeyStore::CKeyStore() : keyIndexCache(defaultKeyIndexLimit)
 {
@@ -1131,9 +1137,9 @@ CKeyStore::~CKeyStore()
 {
 }
 
-void CKeyStore::setKeyCacheLimit(unsigned limit)
+unsigned CKeyStore::setKeyCacheLimit(unsigned limit)
 {
-    keyIndexCache.setCacheLimit(limit);
+    return keyIndexCache.setCacheLimit(limit);
 }
 
 IKeyIndex *CKeyStore::doload(const char *fileName, unsigned crc, IReplicatedFile *part, IFileIO *iFileIO, IMemoryMappedFile *iMappedFile, bool isTLK, bool allowPreload)
@@ -2061,24 +2067,24 @@ extern jhtree_decl bool isKeyFile(const char *filename)
     return false;
 }
 
-extern jhtree_decl void setNodeCachePreload(bool preload)
+extern jhtree_decl bool setNodeCachePreload(bool preload)
 {
-    queryNodeCache()->setNodeCachePreload(preload);
+    return queryNodeCache()->setNodeCachePreload(preload);
 }
 
-extern jhtree_decl void setNodeCacheMem(size32_t cacheSize)
+extern jhtree_decl size32_t setNodeCacheMem(size32_t cacheSize)
 {
-    queryNodeCache()->setNodeCacheMem(cacheSize);
+    return queryNodeCache()->setNodeCacheMem(cacheSize);
 }
 
-extern jhtree_decl void setLeafCacheMem(size32_t cacheSize)
+extern jhtree_decl size32_t setLeafCacheMem(size32_t cacheSize)
 {
-    queryNodeCache()->setLeafCacheMem(cacheSize);
+    return queryNodeCache()->setLeafCacheMem(cacheSize);
 }
 
-extern jhtree_decl void setBlobCacheMem(size32_t cacheSize)
+extern jhtree_decl size32_t setBlobCacheMem(size32_t cacheSize)
 {
-    queryNodeCache()->setBlobCacheMem(cacheSize);
+    return queryNodeCache()->setBlobCacheMem(cacheSize);
 }
 
 

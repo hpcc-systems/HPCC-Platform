@@ -775,6 +775,13 @@ function createNavigationTree(navTreeData) {
               getWaitDlg().hide();
               if (status1[0] !== 'true') {
                 alert(status1[0]);
+
+                var temp = o.responseText.split(/<CompName>/g);
+                var temp1 = temp[1].split(/<\/CompName>/g);
+                navDS.flushCache();
+                form.isChanged.value = "true";
+                refreshNavTree(navDS, navDT, temp1[0])
+
                 return;
               }
               else {

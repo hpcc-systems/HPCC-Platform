@@ -86,6 +86,11 @@
             </listitem>
 
             <listitem>
+              <para>The Graph Control (available from <ulink
+              url="http://hpccsystems.com/download/free-community-edition/graph-control">http://hpccsystems.com/download/free-community-edition/graph-control</ulink>)</para>
+            </listitem>
+
+            <listitem>
               <para>Visual Studio 2008 or Visual Studio 2008 Express
               (<emphasis role="bold">this is only needed if you want to create
               local .exe files from ECL. It is not needed if you are planning
@@ -93,7 +98,7 @@
             </listitem>
 
             <listitem>
-              <para>Eclipse Indigo</para>
+              <para>Eclipse Indigo or later</para>
             </listitem>
 
             <listitem>
@@ -142,11 +147,16 @@
             </listitem>
 
             <listitem>
+              <para>The Graph Control (available from <ulink
+              url="http://hpccsystems.com/download/free-community-edition/graph-control">http://hpccsystems.com/download/free-community-edition/graph-control</ulink>)</para>
+            </listitem>
+
+            <listitem>
               <para>64-bit desktop edition of Linux*</para>
             </listitem>
 
             <listitem>
-              <para>Eclipse Indigo</para>
+              <para>Eclipse Indigo or later</para>
             </listitem>
 
             <listitem>
@@ -165,11 +175,16 @@
           </listitem>
 
           <listitem>
+            <para>The Graph Control (available from <ulink
+            url="http://hpccsystems.com/download/free-community-edition/graph-control">http://hpccsystems.com/download/free-community-edition/graph-control</ulink>)</para>
+          </listitem>
+
+          <listitem>
             <para>Mac OS X (10.6.x or later)</para>
           </listitem>
 
           <listitem>
-            <para>Eclipse Indigo for Mac</para>
+            <para>Eclipse Indigo or later</para>
           </listitem>
 
           <listitem>

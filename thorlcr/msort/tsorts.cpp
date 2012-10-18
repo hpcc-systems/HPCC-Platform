@@ -17,13 +17,13 @@
 
 #include "platform.h"
 #include <limits.h>
+#include "jlib.hpp"
 #include <mpbase.hpp>
 #include <mpcomm.hpp>
 #include "thorport.hpp"
 #include "jsocket.hpp"
 #include "jthread.hpp"
 #include "thormisc.hpp"
-#include "jlib.hpp"
 #include "jisem.hpp"
 #include "jsort.hpp"
 #include "tsorts.hpp"

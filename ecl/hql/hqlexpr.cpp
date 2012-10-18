@@ -11446,16 +11446,30 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                 grouping = NULL;
 
             type.set(datasetType);
-            //grouping causes the sort order (and distribution) to be lost - because it might be done by a hash aggregate.
             if (grouping)
             {
-                type.setown(getTypeRemoveAllSortOrders(type));
-                if (!queryProperty(localAtom, parms))
-                    type.setown(getTypeUnknownDistribution(type));      // will be distributed by some function of the grouping fields
+                if (hasProperty(groupedAtom, parms))
+                {
+                    //A grouped hash aggregate - the sort order within the groups will be lost.
+                    type.setown(getTypeRemoveActiveSort(type));
+                }
+                else
+                {
+                    //grouping causes the sort order (and distribution) to be lost - because it might be done by a hash aggregate.
+                    type.setown(getTypeRemoveAllSortOrders(type));
+                    if (!queryProperty(localAtom, parms))
+                        type.setown(getTypeUnknownDistribution(type));      // will be distributed by some function of the grouping fields
+
+                    //Aggregation removes grouping, unless explicitly marked as a grouped operation
+                    type.setown(getTypeUngroup(type));
+                }
             }
-            //Aggregation removes grouping)
-            if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || grouping || hasProperty(aggregateAtom, parms))
-                type.setown(getTypeUngroup(type));
+            else
+            {
+                //Aggregation removes grouping
+                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || hasProperty(aggregateAtom, parms))
+                    type.setown(getTypeUngroup(type));
+            }
             //Now map any fields that we can.
             type.setown(getTypeProject(type, record, mapper));
             break;

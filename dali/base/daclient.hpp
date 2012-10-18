@@ -22,6 +22,7 @@
 #define da_decl __declspec(dllimport)
 #endif
 
+#include "jlib.hpp"
 #include "mpcomm.hpp"
 #include "dasds.hpp"
 

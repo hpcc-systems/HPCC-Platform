@@ -236,6 +236,7 @@
         <xsl:apply-templates select="ID"/>
         <xsl:apply-templates select="ClusterName"/>
         <xsl:apply-templates select="JobName"/>
+        <xsl:apply-templates select="DFUServerName"/>
         <xsl:apply-templates select="Queue"/>
         <xsl:apply-templates select="User"/>
         <xsl:apply-templates select="isProtected"/>
@@ -271,6 +272,7 @@
         <xsl:apply-templates select="SourceNumParts"/>
         <xsl:apply-templates select="SourceDirectory"/>
         <xsl:apply-templates select="SourceCsvSeparate"/>
+        <xsl:apply-templates select="SourceCsvEscape"/>
         <xsl:apply-templates select="SourceCsvTerminate"/>
         <xsl:apply-templates select="SourceCsvQuote"/>
         <xsl:apply-templates select="DestLogicalName"/>

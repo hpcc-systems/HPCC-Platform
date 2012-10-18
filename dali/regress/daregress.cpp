@@ -263,7 +263,7 @@ static RunOptions read_cmdline(int argc, char **argv)
     opt.dali = argv[1];
     opt.full = false;
     opt.match = 0;
-    for (unsigned i=2;i<argc;i++) {
+    for (int i=2;i<argc;i++) {
         if (stricmp(argv[i],"full")==0)
             opt.full = 1;
         else
@@ -306,7 +306,7 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
     for (unsigned i=1; i<=supersToDel; i++) {
         StringBuffer super = buf;
         super.append("::super").append(i);
-        if (dir.exists(super.str(),false,true) && !dir.removeEntry(super.str(), user)) {
+        if (dir.exists(super.str(),user,false,true) && !dir.removeEntry(super.str(), user)) {
             ERROR1("Can't remove %s", super.str());
             return false;
         }
@@ -320,7 +320,7 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
         sub.append("::").append(name);
 
         // Remove first
-        if (dir.exists(sub.str(),true,false) && !dir.removeEntry(sub.str(), user)) {
+        if (dir.exists(sub.str(),user,true,false) && !dir.removeEntry(sub.str(), user)) {
             ERROR1("Can't remove %s", sub.str());
             return false;
         }
@@ -328,12 +328,12 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
         // Create the sub file with an arbitrary format
         Owned<IFileDescriptor> subd = createFileDescriptor(scope, name, 3, 17);
         Owned<IDistributedFile> dsub = dir.createNew(subd);
-        dsub->attach(sub.str());
+        dsub->attach(sub.str(),user);
         subd.clear();
         dsub.clear();
 
         // Make sure it got created
-        if (!dir.exists(sub.str(),true,false)) {
+        if (!dir.exists(sub.str(),user,true,false)) {
             ERROR1("Can't add %s", sub.str());
             return false;
         }
@@ -436,14 +436,14 @@ static void testDFS()
         if (stricmp(dfile->getClusterName(0,cname),"daregress_group")!=0)
             ERROR1("Cluster name wrong %d",i);
         s.clear().append("daregress::test").append(i);
-        dfile->attach(s.str());
+        dfile->attach(s.str(),user);
     }
     printf("DFile create done      - 100 files\n");
     unsigned samples = 5;
     t = 33;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
-        if (!dir.exists(s.str()))
+        if (!dir.exists(s.str(),user))
             ERROR1("Could not find %s",s.str());
         Owned<IDistributedFile> dfile = dir.lookup(s.str(), user);
         if (!dfile) {
@@ -510,7 +510,7 @@ static void testDFS()
     fiter.clear();
     printf("DFile iterate done     - %d parts, %d rows, CRC sum %"I64F"d\n",np,totrows,crctot);
     Owned<IDistributedSuperFile> sfile;
-    sfile.setown(dir.createSuperFile("daregress::superfile1",true,false,user));
+    sfile.setown(dir.createSuperFile("daregress::superfile1",user,true,false));
     for (i = 0;i<100;i++) {
         s.clear().append("daregress::test").append(i);
         sfile->addSubFile(s.str());
@@ -549,14 +549,14 @@ static void testDFS()
         ERROR1("Superfile size does not match part sum %d",tr);
     sfile->detach();
     sfile.clear();
-    sfile.setown(dir.lookupSuperFile("daregress::superfile1"));
+    sfile.setown(dir.lookupSuperFile("daregress::superfile1",user));
     if (sfile)
         ERROR("Superfile deletion failed");
     t = 37;
     for (i=0;i<100;i++) {
         s.clear().append("daregress::test").append(t);
         if (i%1) {
-            Owned<IDistributedFile> dfile = dir.lookup(s.str());
+            Owned<IDistributedFile> dfile = dir.lookup(s.str(),user);
             if (!dfile)
                 ERROR1("Could not find %s",s.str());
             dfile->detach();
@@ -568,7 +568,7 @@ static void testDFS()
     printf("DFile removal complete\n");
     t = 39;
     for (i=0;i<100;i++) {
-        if (dir.exists(s.str()))
+        if (dir.exists(s.str(),user))
             ERROR1("Found %s after deletion",s.str());
         Owned<IDistributedFile> dfile = dir.lookup(s.str(), user);
         if (dfile)
@@ -590,7 +590,7 @@ static void testDFSTrans()
 
     // Auto-commit
     printf("Auto-commit test (inactive transaction)\n");
-    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::trans::super1", false, false, user, transaction);
+    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::trans::super1",user , false, false, transaction);
     sfile1->addSubFile("regress::trans::sub1", false, NULL, false, transaction);
     sfile1->addSubFile("regress::trans::sub2", false, NULL, false, transaction);
     sfile1.clear();
@@ -610,7 +610,7 @@ static void testDFSTrans()
     // Rollback
     printf("Rollback test (active transaction)\n");
     transaction->start();
-    Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::trans::super2", false, false, user, transaction);
+    Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::trans::super2", user, false, false, transaction);
     sfile2->addSubFile("regress::trans::sub3", false, NULL, false, transaction);
     sfile2->addSubFile("regress::trans::sub4", false, NULL, false, transaction);
     transaction->rollback();
@@ -624,7 +624,7 @@ static void testDFSTrans()
     // Commit
     printf("Commit test (active transaction)\n");
     transaction->start();
-    Owned<IDistributedSuperFile> sfile3 = dir.createSuperFile("regress::trans::super3", false, false, user, transaction);
+    Owned<IDistributedSuperFile> sfile3 = dir.createSuperFile("regress::trans::super3", user, false, false, transaction);
     sfile3->addSubFile("regress::trans::sub3", false, NULL, false, transaction);
     sfile3->addSubFile("regress::trans::sub4", false, NULL, false, transaction);
     transaction->commit();
@@ -876,7 +876,7 @@ static void testDFSDel()
         return;
 
     printf("Creating 'regress::del::super1 and attaching sub\n");
-    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", false, false, user, transaction);
+    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", user, false, false, transaction);
     sfile1->addSubFile("regress::del::sub1", false, NULL, false, transaction);
     sfile1.clear();
 

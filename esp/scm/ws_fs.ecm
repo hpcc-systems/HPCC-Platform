@@ -19,6 +19,7 @@
 ESPStruct [nil_remove] DFUWorkunit
 {
     string ID;
+    [min_ver("1.06")] string DFUServerName;
     string ClusterName;
     string JobName;
     string Queue;
@@ -62,6 +63,7 @@ ESPStruct [nil_remove] DFUWorkunit
     [min_ver("1.04")] string SourceCsvSeparate;
     [min_ver("1.04")] string SourceCsvQuote;
     [min_ver("1.04")] string SourceCsvTerminate;
+    [min_ver("1.05")] string SourceCsvEscape;
 
     string TimeStarted;
     string TimeStopped;
@@ -317,6 +319,7 @@ ESPrequest [nil_remove] SprayVariable
     string sourceCsvSeparate;
     string sourceCsvTerminate;
     string sourceCsvQuote;
+    string sourceCsvEscape;
     string sourceRowTag;
 
     string destGroup;
@@ -584,7 +587,7 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
 };
 
 ESPservice [
-    version("1.04"), default_client_version("1.04"),
+    version("1.06"), default_client_version("1.06"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

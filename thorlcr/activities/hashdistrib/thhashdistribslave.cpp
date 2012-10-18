@@ -55,294 +55,613 @@
 #define DEFAULTCONNECTTIMEOUT 10000
 #define DEFAULT_OUT_BUFFER_SIZE 0x100000        // 1MB
 #define DEFAULT_IN_BUFFER_SIZE  0x100000*32  // 32MB input buffer
-
+#define DEFAULT_WRITEPOOLSIZE 16
 #define DISK_BUFFER_SIZE 0x10000 // 64K
 #define DEFAULT_TIMEOUT (1000*60*60)
-
-static bool isMaster(unsigned src,unsigned dst)
-{
-    // simple way of connecting up directed graph in balanced fashion
-    if (src>dst)
-        return !isMaster(dst,src);
-    return (src&1)==(dst&1);
-}
 
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning( disable : 4355 ) // 'this' : used in base member initializer list
 #endif
 
-class PtrElemAllocator;
+#ifdef _DEBUG
+#define HDSendPrintLog(M) PROGLOG(M)
+#define HDSendPrintLog2(M,P1) PROGLOG(M,P1)
+#define HDSendPrintLog3(M,P1,P2) PROGLOG(M,P1,P2)
+#define HDSendPrintLog4(M,P1,P2,P3) PROGLOG(M,P1,P2,P3)
+#else
+#define HDSendPrintLog(M)
+#define HDSendPrintLog2(M,P1)
+#define HDSendPrintLog3(M,P1,P2)
+#define HDSendPrintLog4(M,P1,P2,P3)
+#endif
 
-#define PTRBUFSIZE 10000    // meta is assumed not *too* big (and fixed)
-class PtrElem
+class CDistributorBase : public CSimpleInterface, implements IHashDistributor, implements IExceptionHandler
 {
-    PtrElem *next;
-    const void *row;
-    //byte meta[1]; // and following
-public:
-    static inline size32_t size(size32_t metasize) { return sizeof(PtrElem*)+sizeof(const void *)+metasize; }
-    inline void deserialize(IEngineRowAllocator *allocator,IOutputRowDeserializer *deserializer,IRowDeserializerSource &dsz, size32_t metasize)
-    {
-        RtlDynamicRowBuilder rowBuilder(allocator);
-        size32_t sz = deserializer->deserialize(rowBuilder,dsz);
-        row = rowBuilder.finalizeRowClear(sz);
-        dsz.read(metasize,getMetaPtr());
-    }
-    inline void serialize(IOutputRowSerializer *serializer,IRowSerializerTarget &sz, size32_t metasize)
-    {
-        serializer->serialize(sz,(const byte *)row);
-        sz.put(metasize,getMetaPtr());
-    }
-
-    inline void clear()
-    {
-        if (row) {
-            ReleaseThorRow(row);
-            row = NULL;
-        }
-        // NB don't clear next
-    }
-
-    inline const void *queryRow() const
-    {
-        return row;
-    }
-    inline PtrElem *queryNext() const
-    {
-        return next;
-    }
-    inline void setNext(PtrElem * _next)
-    {
-        next = _next;
-    }
-
-    inline void setRow( const void *_row)
-    {
-        row = _row;
-    }
-
-    inline void *getMetaPtr() const
-    {
-        return ((byte *)&row)+sizeof(row);
-    }
-
-};
-
-class PtrElemAllocator: public CSimpleInterface, implements ISRBRowInterface
-{
-    size32_t metasize;
-    IOutputRowSerializer *serializer;
-    IOutputRowDeserializer *deserializer;
-    SpinLock lock;
-    CFixedSizeAllocator fsallocator;
-
-public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-    PtrElem *addRowMeta(IRowStreamWithMetaData &in)
-    {
-        //SpinBlock block(lock);
-        PtrElem *ret = (PtrElem *)fsallocator.alloc();
-        ret->setNext(NULL);
-        const void *row = NULL;
-        if (!in.nextRow(row,ret->getMetaPtr())) {
-            fsallocator.dealloc(ret);
-            return NULL;
-        }
-        ret->setRow(row);
-        return ret;
-    }
-
-    PtrElem *addRow(IRowStream &in)
-    {
-        PtrElem *ret = (PtrElem *)fsallocator.alloc();
-        ret->setNext(NULL);
-        const void *row = in.nextRow();
-        if (!row)
-        {
-            row = in.nextRow();
-            if (!row)
-            {
-                fsallocator.dealloc(ret);
-                return NULL;
-            }
-        }
-        ret->setRow(row);
-        return ret;
-    }
-
-    PtrElem *deserializeRow(IEngineRowAllocator *allocator, CThorStreamDeserializerSource &dsz)
-    {
-        PtrElem *ret = (PtrElem *)fsallocator.alloc();
-        ret->setNext(NULL);
-        ret->deserialize(allocator,deserializer,dsz,metasize); // NB deserializer is thor row deserializer
-        return ret;
-    }
-
-    const void *rowGetClear(PtrElem *e)
-    {
-        const void *ret = e->queryRow();
-        fsallocator.dealloc(e);
-        return ret;
-    }
-
-    const void *rowGetClear(PtrElem *e,void *meta, size32_t _metasize)
-    {
-        assertex(metasize==_metasize);
-        memcpy(meta,e->getMetaPtr(),metasize);
-        const void *ret = e->queryRow();
-        fsallocator.dealloc(e);
-        return ret;
-    }
-
-
-    void releaseRow(const void *r)
-    {
-        PtrElem *e = (PtrElem *)r;
-        ReleaseThorRow(e->queryRow());
-        fsallocator.dealloc(e);
-    }
-
-
-    void linkRow(const void *r)
-    {
-        assertex(!"PtrElemAllocator::linkRow");
-    }
-
-    size32_t rowMemSize(const void *r)
-    {
-//      SpinBlock block(lock);                      // OK
-        const PtrElem *e = (const PtrElem *)r;
-        size32_t ret = e->size(metasize);
-        if (e->queryRow()) 
-            ret += thorRowMemoryFootprint(serializer, e->queryRow());
-        return ret;
-    }
-
-    void init(size32_t _metasize,IOutputRowSerializer *_serializer,IOutputRowDeserializer *_deserializer)
-    {
-        metasize = _metasize;
-        serializer = _serializer;
-        deserializer = _deserializer;
-        fsallocator.init(PtrElem::size(metasize));
-    }
-
-    inline const void *getMetaPtr(const PtrElem *e,size32_t _metasize)
-    {
-        assertex(metasize==_metasize);
-        return e->getMetaPtr();
-    }
-
-    inline size32_t queryMetaSize() { return metasize; }
-
-
-};
-
-
-
-class CDistributorBase : public CSimpleInterface, implements IHashDistributor
-{
+    Linked<IRowInterfaces> rowIf;
     Linked<IEngineRowAllocator> allocator;
     Linked<IOutputRowSerializer> serializer;
-    Linked<IOutputRowDeserializer> deserializer;
+    Linked<IOutputMetaData> meta;
     const bool &abort;
     IHash *ihash;
-    Owned<IRowStreamWithMetaData> inm;
-    Owned<IRowStream> innm;
+    Owned<IRowStream> input;
 
-    size32_t metasize;
-    Semaphore distribdone;
-    ICompare *icompare;
-    CMessageBuffer outputbuf;
-    size32_t outputBufferSize;
-    bool dedup;
-    StringBuffer tempname;
-    int outfh;
-    Owned<IException> sendexc;
-    Owned<IException> recvexc;
-    Semaphore localfinished;
-    bool connected;
+    Semaphore distribDoneSem, localFinishedSem;
+    ICompare *iCompare;
+    size32_t bucketSendSize;
+    bool doDedup, allowSpill, connected, selfstopped;
+    Owned<IException> sendException, recvException;
     IStopInput *istop;
-    unsigned nodedupcount;
-    unsigned nodedupsample;
-    bool *sendfinished;
-    unsigned numsendfinished;
-    bool selfstopped;
-    Owned<IRowWriter> pipewr;               // NB not Thor rows!
-protected:
-    PtrElemAllocator ptrallocator;
+    size32_t fixedEstSize;
+    Owned<IRowWriter> pipewr;
+    roxiemem::IRowManager *rowManager;
 
-
-    class cPipeOutWrapper: public CSimpleInterface, implements IRowStreamWithMetaData, implements IRowLinkCounter, implements IOutputRowSerializer
+    /*
+     * CSendBucket - a collection of rows destinate for a particular destination target(slave)
+     */
+    class CSendBucket : public CSimpleInterface, implements IRowStream
     {
-        // this is a weird one as it is asymetric
+        CDistributorBase &owner;
+        size32_t total;
+        ThorRowQueue rows;
+        unsigned destination;
+        CThorExpandingRowArray dedupList;
     public:
-        ISmartRowBuffer *piperd;
-        size32_t metasize;
-        PtrElemAllocator *ptrallocator;
-        IOutputRowSerializer *rowserializer;
-
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        void init(ISmartRowBuffer *_piperd,IOutputRowSerializer *_serializer, PtrElemAllocator *_ptrallocator)
+        CSendBucket(CDistributorBase &_owner, unsigned _destination) : owner(_owner), destination(_destination),
+                dedupList(*owner.activity, owner.rowIf)
         {
-            metasize = _ptrallocator->queryMetaSize();
-            piperd = _piperd;
-            rowserializer = _serializer;
-            ptrallocator = _ptrallocator;
+            total = 0;
         }
-
-
-        bool nextRow(const void *&row, void * meta)
+        ~CSendBucket()
         {
-            PtrElem * e = (PtrElem *)piperd->nextRow();
-            if (!e)
+            loop
+            {
+                const void *row = rows.dequeue();
+                if (!row)
+                    break;
+                ReleaseThorRow(row);
+            }
+        }
+        unsigned count() const { return rows.ordinality(); }
+        bool dedup(ICompare *iCompare) // returns true if reduces by >= 10%
+        {
+            unsigned c = rows.ordinality();
+            if (c<2)
                 return false;
-            row = (meta&&metasize)?ptrallocator->rowGetClear(e,meta,metasize):ptrallocator->rowGetClear(e);
+            for (unsigned i=0; i<c; i++)
+                dedupList.append(rows.item(i));
+            rows.clear(); // NB: dedupList took ownership
+            dedupList.sort(*iCompare, owner.activity->queryMaxCores());
+            OwnedConstThorRow prev;
+            for (unsigned i = c; i>0;)
+            {
+                OwnedConstThorRow row = dedupList.getClear(--i);
+                if ((NULL != prev.get()) && (0 == iCompare->docompare(prev, row)))
+                {
+                    size32_t rsz = owner.rowMemSize(row);
+                    total -= rsz;
+                }
+                else
+                {
+                    prev.set(row);
+                    rows.enqueue(row.getClear());
+                }
+            }
+            dedupList.clearRows();
+            return true; // attempted
+        }
+        void add(const void *row, size32_t &rs)
+        {
+            rs = owner.rowMemSize(row);
+            total += rs;
+            rows.enqueue(row);
+        }
+        unsigned queryDestination() const { return destination; }
+        size32_t querySize() const { return total; }
+        bool serializeClear(MemoryBuffer &mb, size32_t limit) // returns true if sent all
+        {
+            CMemoryRowSerializer memSerializer(mb);
+            loop
+            {
+                OwnedConstThorRow row = nextRow();
+                if (!row)
+                    break;
+                owner.serializer->serialize(memSerializer, (const byte *)row.get());
+                if (mb.length()>=limit)
+                    return false;
+            }
             return true;
         }
-
-        const void *nextRow()
+    // IRowStream impl.
+        virtual const void *nextRow()
         {
-            const void *row;
-            if (nextRow(row,NULL))
-                return row;
-            return NULL;
+            return rows.dequeue();
+        }
+        virtual void stop() { }
+    };
+    typedef SimpleInterThreadQueueOf<CSendBucket, false> CSendBucketQueue;
+    /*
+     * CSender, main send loop functionality
+     * processes input, constructs CSendBucket's and manages creation CWriteHandler threads
+     */
+    class CSender : public CSimpleInterface, implements IThreadFactory, implements IExceptionHandler
+    {
+        /*
+         * CWriterHandler, a per thread class and member of the writerPool
+         * a write handler, is given an initial CSendBucket and handles the dedup(if applicable)
+         * compression and transmission to the target.
+         * If the size serialized, is below a threshold, it will see if more has been queued
+         * in the interim and serialize that compress and searilize within the same send/recv cycle
+         * When done, it will see if more queue available.
+         * NB: There will be at most 1 writer per destination target (up to thread pool limit)
+         */
+        class CWriteHandler : public CSimpleInterface, implements IPooledThread
+        {
+            CSender &owner;
+            CDistributorBase &distributor;
+            Owned<CSendBucket> _sendBucket;
+            unsigned nextPending;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CWriteHandler(CSender &_owner) : owner(_owner), distributor(_owner.owner)
+            {
+            }
+            void init(void *startInfo)
+            {
+                nextPending = getRandom()%distributor.numnodes;
+                _sendBucket.setown((CSendBucket *)startInfo);
+                owner.setActiveWriter(_sendBucket->queryDestination(), this);
+            }
+            void main()
+            {
+                Owned<CSendBucket> sendBucket = _sendBucket.getClear();
+                unsigned dest = sendBucket->queryDestination();
+                size32_t writerTotalSz = 0;
+                size32_t sendSz = 0;
+                MemoryBuffer mb;
+                loop
+                {
+                    writerTotalSz += sendBucket->querySize();
+                    owner.dedup(sendBucket); // conditional
+
+                    if (owner.selfPush(dest))
+                        distributor.addLocal(sendBucket);
+                    else // remote
+                    {
+                        bool wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
+                        sendSz = mb.length();
+                        // NB: buckets will typically be large enough already, if not check pending buckets
+                        if (sendSz < distributor.bucketSendSize)
+                        {
+                            // more added to dest I'm processing?
+                            {
+                                CriticalBlock b(owner.activeWritersLock);
+                                sendBucket.setown(owner.pendingBuckets.item(dest)->dequeueNow());
+                            }
+                            if (sendBucket)
+                            {
+                                HDSendPrintLog3("CWriteHandler, pending(b=%d) rolled, size=%d", sendBucket->queryDestination(), sendBucket->querySize());
+                                // NB: if was just < bucketSendSize and pending is ~ bucketSendSize, could mean we send is ~2*bucketSendSize, but that's ok.
+                                continue; // NB: it will flow into else "remote" arm
+                            }
+                        }
+                        loop
+                        {
+                            // JCSMORE check if worth compressing
+                            CMessageBuffer msg;
+                            fastLZCompressToBuffer(msg, mb.length(), mb.bufferBase());
+                            mb.clear();
+                            owner.send(dest, msg);
+                            sendSz = 0;
+                            if (wholeBucket)
+                                break;
+                            wholeBucket = sendBucket->serializeClear(mb, distributor.bucketSendSize);
+                        }
+                    }
+                    owner.decTotal(writerTotalSz);
+                    writerTotalSz = 0;
+                    // see if others to process
+                    // NB: this will never start processing a bucket for a destination which already has an active writer.
+                    CriticalBlock b(owner.activeWritersLock);
+                    owner.setActiveWriter(dest, NULL);
+                    sendBucket.setown(owner.getAnotherBucket(nextPending));
+                    if (!sendBucket)
+                        break;
+                    dest = sendBucket->queryDestination();
+                    owner.setActiveWriter(dest, this);
+                    HDSendPrintLog3("CWriteHandler, now dealing with (b=%d), size=%d", sendBucket->queryDestination(), sendBucket->querySize());
+                }
+            }
+            bool canReuse() { return true; }
+            bool stop() { return true; }
+        } **activeWriters;
+
+        CDistributorBase &owner;
+        CriticalSection activeWritersLock;
+        mutable SpinLock totalSzLock;
+        SpinLock doDedupLock;
+        PointerIArrayOf<CSendBucket> buckets;
+        UnsignedArray candidates;
+        size32_t totalSz;
+        bool senderFull, doDedup;
+        Semaphore senderFullSem;
+        Linked<IException> exception;
+        OwnedMalloc<bool> senderFinished;
+        unsigned numFinished, dedupSamples, dedupSuccesses, self;
+        Owned<IThreadPool> writerPool;
+        PointerArrayOf<CSendBucketQueue> pendingBuckets;
+        unsigned numActiveWriters;
+
+        void init()
+        {
+            unsigned n;
+            for (unsigned n=0; n<owner.numnodes; n++)
+                buckets.append(NULL);
+            totalSz = 0;
+            senderFull = false;
+            activeWriters = new CWriteHandler *[owner.numnodes];
+            memset(activeWriters, 0, owner.numnodes * sizeof(CWriteHandler *));
+            senderFinished.allocateN(owner.numnodes, true);
+            numFinished = 0;
+            dedupSamples = dedupSuccesses = 0;
+            doDedup = owner.doDedup;
+            writerPool.setown(createThreadPool("HashDist writer pool", this, &owner, owner.writerPoolSize, 5*60*1000));
+            self = owner.activity->queryJob().queryMyRank()-1;
+            for (n=0; n<owner.numnodes; n++)
+                pendingBuckets.append(new CSendBucketQueue);
+            numActiveWriters = 0;
         }
 
-
-        void stop()
+        void dedup(CSendBucket *sendBucket)
         {
-            piperd->stop();
+            {
+                SpinBlock b(doDedupLock);
+                if (!doDedup)
+                    return;
+            }
+            unsigned preCount = sendBucket->count();
+            CCycleTimer dedupTimer;
+            if (sendBucket->dedup(owner.iCompare))
+            {
+                unsigned tookMs = dedupTimer.elapsedMs();
+                unsigned postCount = sendBucket->count();
+                SpinBlock b(doDedupLock);
+                if (dedupSamples<10)
+                {
+                    if (postCount<preCount*9/10);
+                        dedupSuccesses++;
+                    dedupSamples++;
+                    ActPrintLog(owner.activity, "pre-dedup sample %d : %d unique out of %d, took: %d ms", dedupSamples, postCount, preCount, tookMs);
+                    if ((10 == dedupSamples) && (0 == dedupSuccesses))
+                    {
+                        ActPrintLog(owner.activity, "disabling distribute pre-dedup");
+                        doDedup = false;
+                    }
+                }
+            }
         }
-
-        void linkRow(const void *r)
+        CSendBucket *queryBucket(unsigned n)
         {
-            assertex(!"cPipeOutWrapper::linkRow");
+            return buckets.item(n);
         }
-
-        void releaseRow(const void *r)
+        CSendBucket *queryBucketCreate(unsigned n)
         {
-            ptrallocator->releaseRow(r);
+            CSendBucket *bucket = buckets.item(n);
+            if (!bucket)
+            {
+                bucket = new CSendBucket(owner, n);
+                buckets.replace(bucket, n);
+            }
+            return bucket;
         }
-
-        void serialize(IRowSerializerTarget & out, const byte * r)
+        CSendBucket *getBucketClear(unsigned n)
         {
-            if (!r)
-                return;
-            const PtrElem * e = (const PtrElem *)r;
-            if (metasize)
-                out.put(metasize,ptrallocator->getMetaPtr(e,metasize));
-            rowserializer->serialize(out,(const byte *)e->queryRow());
+            Linked<CSendBucket> bucket = buckets.item(n);
+            if (!bucket)
+                return NULL;
+            buckets.replace(NULL, n);
+            return bucket.getClear();
         }
+        void send(unsigned dest, CMessageBuffer &mb)
+        {
+            if (!senderFinished[dest])
+            {
+                if (selfPush(dest))
+                    assertex(dest != self);
+                if (!owner.sendBlock(dest, mb))
+                {
+                    ActPrintLog(owner.activity, "CDistributorBase::sendBlock stopped slave %d", dest+1);
+                    senderFinished[dest] = true;
+                    numFinished++;
+                }
+            }
+        }
+        void decTotal(size32_t sz)
+        {
+            SpinBlock b(totalSzLock);
+            HDSendPrintLog2("decTotal - %d", sz);
+            totalSz -= sz;
+            if (sz && senderFull)
+            {
+                senderFull = false;
+                senderFullSem.signal();
+            }
+        }
+        size32_t queryTotalSz() const
+        {
+            SpinBlock b(totalSzLock);
+            return totalSz;
+        }
+        inline bool selfPush(unsigned i)
+        {
+            return (i==self)&&!owner.pull;
+        }
+        void closeWrite()
+        {
+            unsigned i;
+            CMessageBuffer nullMsg;
+            for (i=0; i<owner.numnodes; i++)
+            {
+                if (!selfPush(i))
+                {
+                    try
+                    {
+                        nullMsg.clear();
+                        owner.sendBlock(i, nullMsg);
+                    }
+                    catch (IException *e)
+                    {
+                        ActPrintLog(owner.activity, e, "HDIST: closeWrite");
+                        owner.fireException(e);
+                    }
+                }
+            }
+        }
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
+        CSender(CDistributorBase &_owner) : owner(_owner)
+        {
+            init();
+        }
+        ~CSender()
+        {
+            delete [] activeWriters;
+            for (unsigned n=0; n<owner.numnodes; n++)
+            {
+                CSendBucketQueue *queue = pendingBuckets.item(n);
+                loop
+                {
+                    CSendBucket *bucket = queue->dequeueNow();
+                    if (!bucket)
+                        break;
+                    ::Release(bucket);
+                }
+                delete queue;
+            }
+        }
+        CSendBucket *getAnotherBucket(unsigned &next)
+        {
+            // NB: called inside activeWritersLock
+            unsigned start = next;
+            loop
+            {
+                unsigned current=next;
+                unsigned c = pendingBuckets.item(current)->ordinality();
+                ++next;
+                if (next>=owner.numnodes)
+                    next = 0;
+                if (c)
+                {
+                    if (NULL == activeWriters[current])
+                        return pendingBuckets.item(current)->dequeueNow();
+                }
+                if (next == start)
+                    return NULL;
+            }
+        }
+        void add(CSendBucket *bucket)
+        {
+            if (owner.selfstopped && !senderFinished[self])
+            {
+                senderFinished[self] = true;
+                ++numFinished;
+            }
+            unsigned dest = bucket->queryDestination();
+            if (senderFinished[dest])
+            {
+                HDSendPrintLog2("CSender::add disposing of bucket [finished(%d)]", dest);
+                bucket->Release();
+            }
+            else
+            {
+                CriticalBlock b(activeWritersLock);
+                CWriteHandler *writer = activeWriters[dest];
+                if (!writer && (numActiveWriters < owner.writerPoolSize))
+                {
+                    HDSendPrintLog2("CSender::add (new thread), dest=%d", dest);
+                    writerPool->start(bucket);
+                }
+                else // an existing writer will pick up
+                    pendingBuckets.item(dest)->enqueue(bucket);
+            }
+        }
+        void setActiveWriter(unsigned n, CWriteHandler *writer)
+        {
+            if (writer)
+            {
+                assertex(!activeWriters[n]);
+                ++numActiveWriters;
+            }
+            else
+            {
+                assertex(activeWriters[n]);
+                --numActiveWriters;
+            }
+            activeWriters[n] = writer;
+        }
+        unsigned getSendCandidate(bool &doSelf)
+        {
+            unsigned i;
+            unsigned maxsz=0;
+            for (i=0;i<owner.numnodes;i++)
+            {
+                CSendBucket *bucket = queryBucket(i);
+                if (bucket)
+                {
+                    size32_t bucketSz = bucket->querySize();
+                    if (bucketSz > maxsz)
+                        maxsz = bucketSz;
+                }
+            }
+            doSelf = false;
+            if (0 == maxsz)
+                return NotFound;
+            candidates.kill();
+            for (i=0; i<owner.numnodes; i++)
+            {
+                CSendBucket *bucket = queryBucket(i);
+                if (bucket)
+                {
+                    size32_t bucketSz = bucket->querySize();
+                    if (bucketSz > maxsz/2)
+                    {
+                        if (i==self)
+                            doSelf = true;
+                        else
+                            candidates.append(i);
+                    }
+                }
+            }
+            if (0 == candidates.ordinality())
+                return NotFound;
+            unsigned h;
+            if (candidates.ordinality()==1)
+                h = candidates.item(0);
+            else
+                h = candidates.item(getRandom()%candidates.ordinality());
+            return h;
+        }
+        void process(IRowStream *input)
+        {
+            ActPrintLog(owner.activity, "Distribute send start");
+
+            CCycleTimer timer;
+            rowcount_t totalSent = 0;
+            try
+            {
+                do
+                {
+                    while (queryTotalSz() >= owner.inputBufferSize)
+                    {
+                        HDSendPrintLog("process exceeded inputBufferSize");
+                        bool doSelf;
+                        unsigned which = getSendCandidate(doSelf);
+                        if (NotFound != which)
+                        {
+                            HDSendPrintLog3("process exceeded: send to %d, size=%d", which, queryBucket(which)->querySize());
+                            add(getBucketClear(which));
+                        }
+                        if (doSelf)
+                        {
+                            HDSendPrintLog2("process exceeded: doSelf, size=%d", queryBucket(self)->querySize());
+                            add(getBucketClear(self));
+                        }
+                        else if (NotFound == which) // i.e. none
+                        {
+                            HDSendPrintLog("process exceeded inputBufferSize, none to send");
+                            {
+                                SpinBlock b(totalSzLock);
+                                // some may have been freed after lock
+                                if (totalSz < owner.inputBufferSize)
+                                    break;
+                                senderFull = true;
+                            }
+                            loop
+                            {
+                                if (timer.elapsedCycles() >= queryOneSecCycles()*10)
+                                    ActPrintLog(owner.activity, "HD sender, waiting for space");
+                                timer.reset();
+
+                                if (senderFullSem.wait(10000))
+                                    break;
+                            }
+                        }
+                    }
+                    const void *row = input->nextRow();
+                    if (!row)
+                        break;
+                    unsigned dest = owner.ihash->hash(row)%owner.numnodes;
+                    if (senderFinished[dest]) // does this need to be thread safe?
+                        ReleaseThorRow(row);
+                    else
+                    {
+                        CSendBucket *bucket = queryBucketCreate(dest);
+                        size32_t rs;
+                        bucket->add(row, rs);
+                        totalSent++;
+                        {
+                            SpinBlock b(totalSzLock);
+                            totalSz += rs;
+                        }
+                        if (bucket->querySize() >= owner.bucketSendSize)
+                        {
+                            HDSendPrintLog3("adding new bucket: %d, size = %d", bucket->queryDestination(), bucket->querySize());
+                            add(getBucketClear(dest));
+                        }
+                    }
+                }
+                while (numFinished < owner.numnodes);
+            }
+            catch (IException *e)
+            {
+                ActPrintLog(owner.activity, e, "HDIST: sendloop");
+                owner.fireException(e);
+            }
+
+            ActPrintLog(owner.activity, "Distribute send finishing");
+            // send remainder
+            Owned<IShuffledIterator> iter = createShuffledIterator(owner.numnodes);
+            ForEach(*iter)
+            {
+                unsigned dest=iter->get();
+                Owned<CSendBucket> bucket = getBucketClear(dest);
+                HDSendPrintLog4("Looking at last bucket(%d): %d, size = %d", dest, bucket.get()?bucket->queryDestination():0, bucket.get()?bucket->querySize():-1);
+                if (bucket && bucket->querySize())
+                {
+                    HDSendPrintLog3("Sending last bucket(s): %d, size = %d", bucket->queryDestination(), bucket->querySize());
+                    add(bucket.getClear());
+                }
+            }
+            ActPrintLog(owner.activity, "HDIST: waiting for threads");
+            writerPool->joinAll();
+            ActPrintLog(owner.activity, "HDIST: calling closeWrite()");
+            closeWrite();
+
+            ActPrintLog(owner.activity, "HDIST: Send loop %s %"RCPF"d rows sent", exception.get()?"aborted":"finished", totalSent);
+        }
+    // IThreadFactory impl.
+        virtual IPooledThread *createNew()
+        {
+            return new CWriteHandler(*this);
+        }
+    // IExceptionHandler impl.
+        virtual bool fireException(IException *e)
+        {
+            if (!exception.get())
+                exception.set(e);
+            owner.fireException(e);
+        }
+        friend class CWriteHandler;
     };
 
-
-
-    Owned<cPipeOutWrapper> pipeout;
+protected:
     Owned<ISmartRowBuffer> piperd;
-
+    Linked<IOutputRowDeserializer> deserializer;
 
     class cRecvThread: public Thread
     {
@@ -381,152 +700,132 @@ protected:
         }
     } sendthread;
 
-    inline bool selfPush(unsigned i)
+    void addLocal(CSendBucket *bucket)
     {
-        return (i==self)&&!pull;
-    }
-
-    void checkCount(PtrElem *list,unsigned count)
-    {
-        unsigned i=0;
-        const PtrElem *e = list;
-        while (e) {
-            i++;
-            e = e->queryNext();
+        CriticalBlock block(putsect); // JCSMORE - probably doesn't need for this long
+        HDSendPrintLog3("addLocal (b=%d), size=%d", bucket->queryDestination(), bucket->querySize());
+        loop
+        {
+            const void *row = bucket->nextRow();
+            if (!row)
+                break;
+            pipewr->putRow(row);
         }
-        assertex(count==i);
     }
-
 protected:
     CActivityBase *activity;
     size32_t inputBufferSize, pullBufferSize;
+    unsigned writerPoolSize;
     unsigned self;
     unsigned numnodes;
-    Owned<IRandomNumberGenerator> irandom;
     CriticalSection putsect;
     bool pull;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CDistributorBase(CActivityBase *_activity, IRowInterfaces *_rowif,const bool &_abort,bool _dedup, IStopInput *_istop)
-        : activity(_activity), allocator(_rowif->queryRowAllocator()), serializer(_rowif->queryRowSerializer()), deserializer(_rowif->queryRowDeserializer()), abort(_abort), recvthread(this), sendthread(this)
+    CDistributorBase(CActivityBase *_activity, IRowInterfaces *_rowif,const bool &_abort,bool _doDedup, IStopInput *_istop)
+        : activity(_activity), rowIf(_rowif), allocator(_rowif->queryRowAllocator()), meta(_rowif->queryRowMetaData()), serializer(_rowif->queryRowSerializer()),
+          deserializer(_rowif->queryRowDeserializer()), abort(_abort), recvthread(this), sendthread(this)
     {
         connected = false;
-        dedup = _dedup;
-        numnodes = 0;
-        icompare = NULL;
+        doDedup = _doDedup;
+        self = activity->queryJob().queryMyRank() - 1;
+        numnodes = activity->queryJob().querySlaves();
+        iCompare = NULL;
 
-        outfh = -1;
-        outputBufferSize = globals->getPropInt("@hd_out_buffer_size", DEFAULT_OUT_BUFFER_SIZE);
-        outputbuf.reserveTruncate(outputBufferSize+2);  // 2 for trailing flag
-        nodedupcount = 0;
-        nodedupsample = 0;
+        bucketSendSize = globals->getPropInt("@hd_out_buffer_size", DEFAULT_OUT_BUFFER_SIZE);
         istop = _istop;
         inputBufferSize = globals->getPropInt("@hd_in_buffer_size", DEFAULT_IN_BUFFER_SIZE);
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
-        sendfinished = NULL;
-        numsendfinished = 0;
         pull = false;
+        fixedEstSize = meta->querySerializedMeta()->getFixedSize();
+        rowManager = activity->queryJob().queryRowManager();
+
+        unsigned defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist", true));
+        allowSpill = activity->queryContainer().queryXGMML().getPropBool("hint[@name=\"allow_spill\"]/@value", defaultAllowSpill);
+        if (allowSpill)
+            ActPrintLog(activity, "Using spilling buffer (will spill if overflows)");
+        writerPoolSize = activity->queryJob().getWorkUnitValueInt("hashDistWritePoolSize", globals->getPropInt("@hashDistWritePoolSize", DEFAULT_WRITEPOOLSIZE));
+        if (writerPoolSize>numnodes)
+            writerPoolSize = numnodes; // no point in more
+        ActPrintLog(activity, "Writer thread pool size : %d", writerPoolSize);
     }
 
     ~CDistributorBase()
     {
-        try {
+        try
+        {
             disconnect(true); // in case exception
-            removetemp();
         }
         catch (IException *e)
         {
             ActPrintLog(activity, e, "HDIST: CDistributor");
             e->Release();
         }
-        free(sendfinished);
     }
 
-    virtual void setBufferSizes(unsigned _inputBufferSize, unsigned _outputBufferSize, unsigned _pullBufferSize)
+    size32_t rowMemSize(const void *row)
+    {
+        if (fixedEstSize)
+            return fixedEstSize;
+        CSizingSerializer ssz;
+        serializer->serialize(ssz, (const byte *)row);
+        return ssz.size();
+    }
+
+    virtual void setBufferSizes(unsigned _inputBufferSize, unsigned _bucketSendSize, unsigned _pullBufferSize)
     {
         if (_inputBufferSize) inputBufferSize = _inputBufferSize;
-        if (_outputBufferSize) outputBufferSize = _outputBufferSize;
+        if (_bucketSendSize) bucketSendSize = _bucketSendSize;
         if (_pullBufferSize) pullBufferSize = _pullBufferSize;
     }
 
-    virtual IRowStreamWithMetaData *doconnect(size32_t _metasize, IHash *_ihash, ICompare *_icompare)
+    virtual IRowStream *connect(IRowStream *_input, IHash *_ihash, ICompare *_iCompare)
     {
         ActPrintLog(activity, "HASHDISTRIB: connect");
-        metasize = _metasize;
-        ptrallocator.init(metasize,serializer,deserializer);
+        input.set(_input);
         ihash = _ihash;
-        icompare = _icompare;
-        irandom.setown(createRandomNumberGenerator());
-        irandom->seed(self);
-        pipeout.setown(new cPipeOutWrapper);
-        piperd.setown(createSmartInMemoryBuffer(activity, activity, pullBufferSize, &ptrallocator));
-        pipeout->init(piperd,serializer,&ptrallocator);
-        pipewr.set(pipeout->piperd->queryWriter());
+        iCompare = _iCompare;
+        if (allowSpill)
+        {
+            StringBuffer temp;
+            GetTempName(temp,"hddrecvbuff", true);
+            piperd.setown(createSmartBuffer(activity, temp.toCharArray(), pullBufferSize, rowIf));
+        }
+        else
+            piperd.setown(createSmartInMemoryBuffer(activity, rowIf, pullBufferSize));
+
+        pipewr.set(piperd->queryWriter());
         connected = true;
         selfstopped = false;
 
-        nodedupcount = 0;
-        nodedupsample = 0;
-        outputbuf.clear();
-
-        if (sendfinished)
-            free(sendfinished);
-        sendfinished = (bool *)calloc(sizeof(bool),numnodes);
-        numsendfinished = 0;
-        sendexc.clear();
-        recvexc.clear();
+        sendException.clear();
+        recvException.clear();
         start();
         ActPrintLog(activity, "HASHDISTRIB: connected");
-        return pipeout.getLink();
+        return piperd.getLink();
     }
-
-    virtual IRowStreamWithMetaData *connect(IRowStreamWithMetaData *_in, size32_t _metasize, IHash *_ihash, ICompare *_icompare)
-    {
-        if (_metasize)
-            inm.set(_in);
-        else
-            innm.set(_in);
-        return doconnect(_metasize, _ihash,_icompare);
-    }
-
-    virtual IRowStream *connect(IRowStream *_in, IHash *_ihash, ICompare *_icompare)
-    {
-        innm.set(_in);
-        return doconnect(0, _ihash,_icompare);
-    }
-
 
     virtual void disconnect(bool stop)
     {
-        if (connected) {
+        if (connected)
+        {
             connected = false;
-            if (stop) {
+            if (stop)
+            {
                 recvthread.stop();
                 selfstopped = true;
             }
-            distribdone.wait();
-            if (sendexc.get()) {
+            distribDoneSem.wait();
+            if (sendException.get())
+            {
                 recvthread.join(1000*60);       // hopefully the others will close down
-                throw sendexc.getClear();
+                throw sendException.getClear();
             }
             recvthread.join();
-            if (recvexc.get())
-                throw recvexc.getClear();
-
-        }
-    }
-
-    virtual void removetemp()
-    {
-        if (outfh!=-1) {
-            close(outfh);
-            outfh = -1;
-        }
-        if (tempname.length()) {
-            remove(tempname.toCharArray());
-            tempname.clear();
+            if (recvException.get())
+                throw recvException.getClear();
         }
     }
 
@@ -534,15 +833,16 @@ public:
     {
         CCycleTimer timer;
         MemoryBuffer tempMb;
-        static cycle_t oneSec = nanosec_to_cycle(1000000000);
-        try {
+        try
+        {
             ActPrintLog(activity, "Read loop start");
             CMessageBuffer recvMb;
             Owned<ISerialStream> stream = createMemoryBufferSerialStream(tempMb);
             CThorStreamDeserializerSource rowSource;
             rowSource.setStream(stream);
             unsigned left=numnodes-1;
-            while (left) {
+            while (left)
+            {
 #ifdef _FULL_TRACE
                 ActPrintLog("HDIST: Receiving block");
 #endif
@@ -552,7 +852,8 @@ public:
 #ifdef _FULL_TRACE
                 ActPrintLog(activity, "HDIST: Received block %d from slave %d",recvMb.length(),n+1);
 #endif
-                if (recvMb.length()) {
+                if (recvMb.length())
+                {
                     try { fastLZDecompressToBuffer(tempMb.clear(),recvMb); }
                     catch (IException *e)
                     {
@@ -567,19 +868,22 @@ public:
                         while (!rowSource.eos())
                         {
                             timer.reset();
-                            const void *row = ptrallocator.deserializeRow(allocator,rowSource);
+                            RtlDynamicRowBuilder rowBuilder(allocator);
+                            size32_t sz = deserializer->deserialize(rowBuilder, rowSource);
+                            const void *row = rowBuilder.finalizeRowClear(sz);
                             cycle_t took=timer.elapsedCycles();
-                            if (took>=oneSec)
-                                DBGLOG("RECVLOOP deserializeRow blocked for : %d second(s)", (unsigned)(cycle_to_nanosec(took)/1000000000));
+                            if (took>=queryOneSecCycles())
+                                DBGLOG("RECVLOOP row deserialization blocked for : %d second(s)", (unsigned)(cycle_to_nanosec(took)/1000000000));
                             timer.reset();
                             pipewr->putRow(row);
                             took=timer.elapsedCycles();
-                            if (took>=oneSec)
+                            if (took>=queryOneSecCycles())
                                 DBGLOG("RECVLOOP pipewr->putRow blocked for : %d second(s)", (unsigned)(cycle_to_nanosec(took)/1000000000));
                         }
                     }
                 }
-                else {
+                else
+                {
                     left--;
                     ActPrintLog(activity, "HDIST: finished slave %d, %d left",n+1,left);
                 }
@@ -593,298 +897,51 @@ public:
             setRecvExc(e);
         }
 #ifdef _FULL_TRACE
-        ActPrintLog(activity, "HDIST: waiting localfinished");
+        ActPrintLog(activity, "HDIST: waiting localFinishedSem");
 #endif
 
     }
 
     void recvloopdone()
     {
-        localfinished.wait();
+        localFinishedSem.wait();
         pipewr->flush();
-        if (pipeout)
-            pipeout->stop();
+        if (piperd)
+            piperd->stop();
         pipewr.clear();
         ActPrintLog(activity, "HDIST: Read loop done");
 
     }
 
-    static CriticalSection dedupcrit;
-    static ICompare *dedupcompare;
-    static int comparePtrElem(const void * left, const void * right)
-    {
-        return dedupcompare->docompare(((const PtrElem *)left)->queryRow(),((const PtrElem *)right)->queryRow());
-    }
-
-    void deduplist(PtrElem *&list,PtrElem *&tail,size32_t &bucketsize,size32_t &totalsz)
-    {
-        if ((nodedupsample==10)&&(nodedupcount==0))
-            return; // heuristic (if none of the first 10 blocks have more than 10% dups then don't dedup)
-        assertex(bucketsize);
-        PointerArray ptrs;
-        PtrElem *e1 = list;
-        while (e1) {
-            ptrs.append((void *)e1);
-            e1 = e1->queryNext();
-        }
-        unsigned c = ptrs.ordinality();
-        if (c<2)
-            return;
-        {
-            CriticalBlock block(dedupcrit);
-            dedupcompare = icompare;
-            qsortvec((void **)ptrs.getArray(), c, comparePtrElem);
-        }
-        PtrElem *n = NULL;
-        tail = NULL;
-        unsigned precount = c;
-        for (unsigned i = c; i>0;) {
-            PtrElem *e = (PtrElem *)ptrs.item(--i);
-            if (n&&(icompare->docompare(n->queryRow(),e->queryRow())==0)) {
-                size32_t rsz = ptrallocator.rowMemSize(e);
-                totalsz -= rsz;
-                bucketsize -= rsz;
-                ptrallocator.releaseRow(e);
-                c--;
-            }
-            else {
-                if (!n)
-                    tail = e;
-                e->setNext(n);
-                n = e;
-            }
-        }
-        list = n;
-        if (nodedupsample<10) {
-            if (c<precount*9/10)
-                nodedupcount++;
-            nodedupsample++;
-            ActPrintLog(activity, "pre-dedup sample %d - %d unique out of %d",nodedupsample,c,precount);
-            if ((nodedupsample==10)&&(nodedupcount==0)) {
-                ActPrintLog(activity, "disabling distribute pre-dedup");
-                dedup = false;
-            }
-        }
-    }
-
-    void doSendBlock(unsigned i,CMessageBuffer &mb)
-    {
-        if (!sendfinished[i]) {
-            if (selfPush(i))
-                assertex(i!=self);
-            if (!sendBlock(i,mb)) {
-                ActPrintLog(activity, "CDistributorBase::sendBlock stopped slave %d",i+1);
-                sendfinished[i] = true;
-                numsendfinished++;
-            }
-        }
-        mb.clear();
-    }
-
-
-    void writelist(unsigned h,PtrElem *&list,PtrElem *&tail,size32_t &bucketsize,bool all,size32_t &totalsz)
-        // writes everything and puts list on free list
-    {
-
-        if (!list) {
-            assertex(bucketsize==0);
-            return;
-        }
-        if (dedup) 
-            deduplist(list,tail,bucketsize,totalsz);
-        assertex(bucketsize!=0);    // can't dedup all!
-        PtrElem *e=list;
-        if (selfPush(h)||sendfinished[h]) {
-
-            if (selfstopped&&!sendfinished[self]) {
-                sendfinished[self] = true;
-                numsendfinished++;
-            }
-            {
-                CriticalBlock block(putsect);
-                do {    
-                    PtrElem *n = e->queryNext();
-                    totalsz -= ptrallocator.rowMemSize(e);
-                    if (sendfinished[h]) 
-                        ptrallocator.releaseRow(e);
-                    else
-                        pipewr->putRow(e);
-                    e = n;
-                } while (e);
-            }
-            list = NULL;
-            tail = NULL;
-            bucketsize = 0;
-        }
-        else {
-            outputbuf.clear();
-            CMemoryRowSerializer sz(outputbuf);
-            MemoryBuffer rowbuf;
-            MemoryAttr prevrowma;
-            size32_t bufrd = 0;
-            do {
-                PtrElem *n = e->queryNext();
-                bufrd += ptrallocator.rowMemSize(e);
-                e->serialize(serializer,sz,metasize);
-                ptrallocator.releaseRow(e);
-                if (outputbuf.length()>outputBufferSize) {
-                    MemoryBuffer tempMb;
-                    fastLZCompressToBuffer(tempMb,outputbuf.length(),outputbuf.bufferBase());
-                    outputbuf.swapWith(tempMb);
-                    tempMb.clear();
-                    assertex(totalsz>=bufrd);
-                    totalsz -= bufrd;
-                    assertex(bucketsize>=bufrd);
-                    bucketsize -= bufrd;
-                    doSendBlock(h,outputbuf);
-                    if (!all) {
-                        list = n;
-                        if (!n)
-                            tail = NULL;
-                        return;
-                    }
-                    bufrd = 0;
-                }
-                e = n;
-            } while(e);
-            list = NULL;
-            tail = NULL;
-            if (outputbuf.length()) {
-                MemoryBuffer tempMb;
-                fastLZCompressToBuffer(tempMb,outputbuf.length(),outputbuf.bufferBase());
-                outputbuf.swapWith(tempMb);
-                tempMb.clear();
-                assertex(totalsz>=bufrd);
-                totalsz -= bufrd;
-                assertex(bucketsize==bufrd);
-                bucketsize = 0;
-                doSendBlock(h,outputbuf);
-            }
-        }
-    }
-
-
     void sendloop()
     {
-        ActPrintLog(activity, "Distribute send start");
-        MemoryAttr ma;
-        size32_t *sizes=(unsigned *)ma.allocate(
-            sizeof(size32_t)*numnodes +
-            numnodes*PtrElem::size(metasize)*2
-        );
-        memset(sizes,0,ma.length());
-        UnsignedArray candidates;
-
-
-        size32_t totalsz=0;
-        PtrElem **heads = (PtrElem **)(sizes+numnodes);
-        PtrElem **tails = heads+numnodes;
-        unsigned tot=0;
-        try {
-            unsigned shuffleinterval=0;
-            do {
-                if (totalsz<inputBufferSize) {
-                    PtrElem *n = metasize?ptrallocator.addRowMeta(*inm):ptrallocator.addRow(*innm);
-                    if (!n)
-                        break;
-                    unsigned h = ihash->hash(n->queryRow()?n->queryRow():ptrallocator.getMetaPtr(n,metasize))%numnodes; //????
-                    if (!sendfinished[h]) {
-                        PtrElem *&tail = tails[h];
-                        if (tail)
-                            tail->setNext(n);
-                        else
-                            heads[h] = n;
-                        tail = n;
-                        n->setNext(NULL);
-                        tot++;
-                        size32_t rs = ptrallocator.rowMemSize(n);
-                        totalsz += rs;
-                        sizes[h] += rs;
-                    }
-                    else
-                        ptrallocator.releaseRow(n);
-                }
-                else {
-                    unsigned i;
-                    unsigned maxsz=0;
-                    for (i=0;i<numnodes;i++)
-                        if (sizes[i]>maxsz)
-                            maxsz = sizes[i];
-                    candidates.kill();
-                    bool seenself = false;
-                    for (i=0;i<numnodes;i++)
-                        if (sizes[i]>maxsz/2)
-                            if (i==self)
-                                seenself = true;
-                            else
-                                candidates.append(i);
-                    assertex(seenself||candidates.ordinality()); // must be at least one!
-                    if (candidates.ordinality()) {
-                        unsigned h;
-                        if (candidates.ordinality()==1)
-                            h = candidates.item(0);
-                        else
-                            h = candidates.item(getRandom()%candidates.ordinality());
-                        writelist(h,heads[h],tails[h],sizes[h],false,totalsz);
-                    }
-                    if (seenself)
-                        writelist(self,heads[self],tails[self],sizes[self],true,totalsz);
-                }
-            } while (numsendfinished<numnodes);
-            ActPrintLog(activity, "Distribute send finishing");
-            Owned<IShuffledIterator> iter = createShuffledIterator(numnodes);
-            ForEach(*iter) {
-                unsigned h=iter->get();
-                if (sizes[h])
-                    writelist(h,heads[h],tails[h],sizes[h],true,totalsz);
-            }
+        // NB: keeps sending until all receivers including self have requested stop
+        CSender sender(*this);
+        try
+        {
+            sender.process(input);
         }
         catch (IException *e)
         {
-            ActPrintLog(activity, e, "HDIST: sendloop");
-            sendexc.setown(e);
+            if (!sendException.get())
+                sendException.setown(e);
         }
-        // Time limit here if exception
-
-        closewrite();
-        ActPrintLog(activity, "HDIST: Send loop %s %d rows sent",sendexc.get()?"aborted":"finished",tot);
-        if (istop) {
-            if (sendexc.get()) { // ignore secondary fault
-                try {
-                    istop->stopInput();
-                }
-                catch (IException *e) {
+        localFinishedSem.signal();
+        if (istop)
+        {
+            try { istop->stopInput(); }
+            catch (IException *e)
+            {
+                if (!sendException.get())
+                    sendException.setown(e);
+                else
+                {
                     ActPrintLog(activity, e, "HDIST: follow on");
                     e->Release();
                 }
             }
-            else
-                istop->stopInput();
         }
-        distribdone.signal();
-    }
-
-    void closewrite()
-    {
-        unsigned i;
-        CMessageBuffer nullmb;
-        for (i=0;i<numnodes;i++) {
-            if (!selfPush(i)) {
-                try {
-                    nullmb.clear();
-                    sendBlock(i,nullmb);
-                }
-                catch (IException *e)
-                {
-                    ActPrintLog(activity, e, "HDIST: closewrite");
-                    if (sendexc.get())
-                        e->Release();
-                    else
-                        sendexc.setown(e);
-                }
-            }
-        }
-        localfinished.signal();
+        distribDoneSem.signal();
     }
 
     virtual void startTX()=0;
@@ -906,19 +963,14 @@ public:
         return numnodes;
     }
 
-    inline ICompare * queryCompare()
+    inline ICompare *queryCompare()
     {
-        return icompare;
+        return iCompare;
     }
 
     inline IEngineRowAllocator *queryAllocator()
     {
         return allocator;
-    }
-
-    inline PtrElemAllocator &queryPtrAllocator()
-    {
-        return ptrallocator;
     }
 
     inline IRowWriter &output()
@@ -929,18 +981,25 @@ public:
     void setRecvExc(IException *e)
     {
         ActPrintLog(activity, e, "HDIST: recvloop");
-        if (recvexc.get())
+        if (recvException.get())
             e->Release();
         else
-            recvexc.setown(e);
+            recvException.setown(e);
     }
     virtual unsigned recvBlock(CMessageBuffer &mb,unsigned i=(unsigned)-1) = 0;
     virtual void stopRecv() = 0;
     virtual bool sendBlock(unsigned i,CMessageBuffer &mb) = 0;
-};
 
-CriticalSection CDistributorBase::dedupcrit;
-ICompare *CDistributorBase::dedupcompare;
+    // IExceptionHandler impl.
+    virtual bool fireException(IException *e)
+    {
+        ActPrintLog(activity, e, "HDIST: sendloop");
+        if (!sendException.get())
+            sendException.setown(e);
+        else
+            e->Release();
+    }
+};
 
 
 
@@ -962,17 +1021,10 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, IRowInterfaces *_rowif, const bool &abort, bool dedup, IStopInput *istop)
-        : CDistributorBase(activity, _rowif, abort, dedup, istop), comm(_comm), tag(_tag)
-    {
-        self = comm.queryGroup().rank()-1;
-        numnodes = comm.queryGroup().ordinality()-1;
-        stopping = false;
-    }
-    virtual IRowStreamWithMetaData *doconnect(size32_t metasize, IHash *ihash, ICompare *icompare)
+    CRowDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, IRowInterfaces *_rowif, const bool &abort, bool doDedup, IStopInput *istop)
+        : CDistributorBase(activity, _rowif, abort, doDedup, istop), comm(_comm), tag(_tag)
     {
         stopping = false;
-        return CDistributorBase::doconnect(metasize, ihash, icompare);
     }
     virtual unsigned recvBlock(CMessageBuffer &msg, unsigned)
         // does not append to msg
@@ -985,7 +1037,8 @@ Restart:
         unsigned waiting = comm.probe(RANK_ALL,tag,NULL);
         ActPrintLog(activity, "HDIST MP recv(%d) waiting %d",(int)tag, waiting);
 #endif
-        if (!comm.recv(msg, RANK_ALL, tag, &sender)) {
+        if (!comm.recv(msg, RANK_ALL, tag, &sender))
+        {
 #ifdef TRACE_MP
             ActPrintLog(activity, "HDIST MP recv failed");
 #endif
@@ -996,11 +1049,13 @@ Restart:
         ActPrintLog(activity, "HDIST MP received %d from %d reply tag %d, waiting %d",msg.length(), (int)sender, (int)msg.getReplyTag(),waiting);
 #endif
         size32_t sz=msg.length();
-        while (sz) {
+        while (sz)
+        {
             sz--;
             byte flag = *((byte *)msg.toByteArray()+sz);
             msg.setLength(sz);
-            if (flag==1) {
+            if (flag==1)
+            {
                 // want an ack, so send
                 flag = stopping?0:1;
                 ack.clear().append(flag);
@@ -1034,7 +1089,8 @@ Restart:
         byte flag=0;
 
         // if 0 length then eof so don't send RTS
-        if (msg.length()>0) {
+        if (msg.length()>0)
+        {
             // send request to send
             CMessageBuffer rts;
             flag = 1;               // want ack
@@ -1053,7 +1109,8 @@ Restart:
             flag = 0;                   // no ack
             msg.append(flag);
         }
-        if (flag==0) {                  // no ack
+        if (flag==0)
+        {                  // no ack
             comm.send(msg, i+1, tag);
             return true;
         }
@@ -1118,21 +1175,21 @@ class CRowPullDistributor: public CDistributorBase
         }
     } *txthread;
 
-    class cSortedDistributeMerger: public CSimpleInterface, implements IRowProvider
+    class cSortedDistributeMerger : public CSimpleInterface, implements IRowProvider
     {
         CDistributorBase &parent;
         Owned<IRowStream> out;
         MemoryBuffer *bufs;
         CThorStreamDeserializerSource *dszs;
         unsigned numnodes;
-        ICompare &cmp;
-        IEngineRowAllocator &allocator;
-        PtrElemAllocator &ptrallocator;
+        ICompare *cmp;
+        IEngineRowAllocator *allocator;
+        IOutputRowDeserializer *deserializer;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-        cSortedDistributeMerger(CDistributorBase &_parent,unsigned &_numnodes,ICompare &_cmp, IEngineRowAllocator &_allocator, PtrElemAllocator &_ptrallocator)
-            : parent(_parent),cmp(_cmp), allocator(_allocator), ptrallocator(_ptrallocator)
+        cSortedDistributeMerger(CDistributorBase &_parent, unsigned &_numnodes, ICompare *_cmp, IEngineRowAllocator *_allocator, IOutputRowDeserializer *_deserializer)
+            : parent(_parent), cmp(_cmp), allocator(_allocator), deserializer(_deserializer)
         {
             numnodes = _numnodes;
             bufs = new MemoryBuffer[numnodes];
@@ -1142,7 +1199,7 @@ class CRowPullDistributor: public CDistributorBase
                 Owned<ISerialStream> stream = createMemoryBufferSerialStream(bufs[node]);
                 dszs[node].setStream(stream);
             }
-            out.setown(createRowStreamMerger(numnodes,*this,&cmp));
+            out.setown(createRowStreamMerger(numnodes, *this, cmp));
         }
 
         ~cSortedDistributeMerger()
@@ -1160,8 +1217,12 @@ class CRowPullDistributor: public CDistributorBase
         const void *nextRow(unsigned idx)
         {
             assertex(idx<numnodes);
-            if (!dszs[idx].eos()) 
-                return ptrallocator.deserializeRow(&allocator,dszs[idx]);
+            if (!dszs[idx].eos())
+            {
+                RtlDynamicRowBuilder rowBuilder(allocator);
+                size32_t sz = deserializer->deserialize(rowBuilder, dszs[idx]);
+                return rowBuilder.finalizeRowClear(sz);
+            }
             CMessageBuffer mb;
             mb.swapWith(bufs[idx]);
             mb.clear();
@@ -1178,7 +1239,6 @@ class CRowPullDistributor: public CDistributorBase
             assertex(idx<numnodes);
             bufs[idx].resetBuffer();
         }
-
     };
     void clean()
     {
@@ -1204,13 +1264,11 @@ class CRowPullDistributor: public CDistributorBase
         }
     }
 public:
-    CRowPullDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, IRowInterfaces *_rowif,const bool &abort, bool dedup, IStopInput *istop)
-        : CDistributorBase(activity, _rowif, abort, dedup, istop), comm(_comm), tag(_tag)
+    CRowPullDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, IRowInterfaces *_rowif,const bool &abort, bool doDedup, IStopInput *istop)
+        : CDistributorBase(activity, _rowif, abort, doDedup, istop), comm(_comm), tag(_tag)
     {
         pull = true;
         tag = _tag;
-        numnodes = comm.queryGroup().ordinality()-1;
-        self = comm.queryGroup().rank()-1;
         diskcached = (cBuf **)calloc(numnodes,sizeof(cBuf *));
         bufs = new CMessageBuffer[numnodes];
         hasbuf = (bool *)calloc(numnodes,sizeof(bool));
@@ -1226,8 +1284,10 @@ public:
     ~CRowPullDistributor()
     {
         stop();
-        for (unsigned i=0;i<numnodes;i++) {
-            while (diskcached[i]) {
+        for (unsigned i=0;i<numnodes;i++)
+        {
+            while (diskcached[i])
+            {
                 cBuf *cb = diskcached[i];
                 diskcached[i] = cb->next;
                 delete cb;
@@ -1245,34 +1305,18 @@ public:
             cachefile->remove();
         }
     }
-    virtual IRowStreamWithMetaData *doconnect(size32_t metasize, IHash *ihash, ICompare *icompare)
-    {
-        clean();
-        return CDistributorBase::doconnect(metasize, ihash, icompare);
-    }
     void recvloop()
     {
-        class cCmp: public ICompare
+        try
         {
-            ICompare *compare;
-        public:
-            cCmp(ICompare *_compare)
-            {
-                compare = _compare;
-            }
-            int docompare(const void * left, const void * right) const
-            {
-                return compare->docompare(((const PtrElem *)left)->queryRow(),((const PtrElem *)right)->queryRow());
-            }
-        } cmp(queryCompare());
-        try {
-            Owned<cSortedDistributeMerger> merger = new cSortedDistributeMerger(*this,numnodes,cmp,*queryAllocator(),queryPtrAllocator());
+            Owned<cSortedDistributeMerger> merger = new cSortedDistributeMerger(*this, numnodes, queryCompare(), queryAllocator(), deserializer);
             ActPrintLog(activity, "Read loop start");
-            loop {
+            loop
+            {
                 const void *row = merger->merged().nextRow();
                 if (!row)
                     break;
-                output().putRow(row);  
+                output().putRow(row);
             }
         }
         catch (IException *e)
@@ -1282,16 +1326,15 @@ public:
         }
     }
 
-
     virtual bool sendBlock(unsigned i, CMessageBuffer &msg)
     {
         CriticalBlock block(sect);
-        if (donesend[i]&&(msg.length()==0)) {
+        if (donesend[i]&&(msg.length()==0))
             return false;
-        }
         assertex(!donesend[i]);
         bool done = msg.length()==0;
-        if (!hasbuf[i]) {
+        if (!hasbuf[i])
+        {
             hasbuf[i] = true;
             bufs[i].swapWith(msg);
             if (i==self)
@@ -1299,13 +1342,17 @@ public:
             else
                 doSend(i);
         }
-        else {
+        else
+        {
             size32_t sz = msg.length();
-            if (sz==0) {
+            if (sz==0)
+            {
                 assertex(bufs[i].length()!=0);
             }
-            else {
-                if (!cachefileio.get()) {
+            else
+            {
+                if (!cachefileio.get())
+                {
                     StringBuffer tempname;
                     GetTempName(tempname,"hashdistspill",true);
                     cachefile.setown(createIFile(tempname.str()));
@@ -1322,7 +1369,8 @@ public:
             cb->size = sz;
             diskpos += sz;
             cBuf *prev = diskcached[i];
-            if (prev) {
+            if (prev)
+            {
                 while (prev->next)
                     prev = prev->next;
                 prev->next = cb;
@@ -1339,29 +1387,35 @@ public:
     virtual unsigned recvBlock(CMessageBuffer &msg,unsigned i)
     {
         assertex(i<numnodes);
-        if (i==self) {
+        if (i==self)
+        {
             msg.clear();
             selfready.wait();
         }
-        else {
+        else
+        {
             msg.clear().append((byte)1); // rts
-            if (!comm.sendRecv(msg, i+1, tag)) {
+            if (!comm.sendRecv(msg, i+1, tag))
+            {
                 return i;
             }
         }
 
         CriticalBlock block(sect);
         assertex(!donerecv[i]);
-        if (self==i) {
+        if (self==i)
+        {
             if (stopping)
             {
                 selfdone.signal();
                 return (unsigned)-1;
             }
-            if (hasbuf[i]) {
+            if (hasbuf[i])
+            {
                 bufs[i].swapWith(msg);
                 cBuf *cb = diskcached[i];
-                if (cb) {
+                if (cb)
+                {
                     diskcached[i] = cb->next;
                     if (cb->size)
                         cachefileio->read(cb->pos,cb->size,bufs[i].reserve(cb->size));
@@ -1372,11 +1426,13 @@ public:
                     hasbuf[i] = false;
             }
         }
-        if (msg.length()==0) {
+        if (msg.length()==0)
+        {
             donerecv[i] = true;
             if (i==self)
                 selfdone.signal();
-            else {
+            else
+            {
                 // confirm done
                 CMessageBuffer confirm;
                 comm.send(confirm, i+1, tag);
@@ -1390,7 +1446,8 @@ public:
     bool doSend(unsigned target)
     {
         // called in crit
-        if (hasbuf[target]&&(waiting[target]!=TAG_NULL)) {
+        if (hasbuf[target]&&(waiting[target]!=TAG_NULL))
+        {
 #ifdef TRACE_MP
             ActPrintLog(activity, "HDIST MP dosend(%d,%d)",i,bufs[target].length());
 #endif
@@ -1401,7 +1458,8 @@ public:
             waiting[target]=TAG_NULL;
             bufs[target].clear();
             cBuf *cb = diskcached[target];
-            if (cb) {
+            if (cb)
+            {
                 diskcached[target] = cb->next;
                 if (cb->size)
                     cachefileio->read(cb->pos,cb->size,bufs[target].reserve(cb->size));
@@ -1409,7 +1467,8 @@ public:
             }
             else
                 hasbuf[target] = false;
-            if (!sz) {
+            if (!sz)
+            {
                 assertex(!hasbuf[target]);
             }
             return true;
@@ -1420,20 +1479,24 @@ public:
     {
         CriticalBlock block(sect);
         unsigned done = 1; // self not sent
-        while (done<numnodes) {
+        while (done<numnodes)
+        {
             rank_t sender;
             CMessageBuffer rts;
             {
                 CriticalUnblock block(sect);
-                if (!comm.recv(rts, RANK_ALL, tag, &sender)) {
+                if (!comm.recv(rts, RANK_ALL, tag, &sender))
+                {
                     return;
                 }
 
             }
-            if (rts.length()==0) {
+            if (rts.length()==0)
+            {
                 done++;
             }
-            else {
+            else
+            {
                 unsigned i = (unsigned)sender-1;
                 assertex(i<numnodes);
                 assertex(waiting[i]==TAG_NULL);
@@ -1462,7 +1525,8 @@ public:
     void stop()
     {
         selfdone.wait();
-        if (txthread) {
+        if (txthread)
+        {
             txthread->join();
             delete txthread;
         }
@@ -1482,14 +1546,14 @@ public:
 //==================================================================================================
 
 
-IHashDistributor *createHashDistributor(CActivityBase *activity, ICommunicator &comm, mptag_t tag, IRowInterfaces *_rowif, const bool &abort,bool dedup,IStopInput *istop)
+IHashDistributor *createHashDistributor(CActivityBase *activity, ICommunicator &comm, mptag_t tag, IRowInterfaces *_rowif, const bool &abort,bool doDedup,IStopInput *istop)
 {
-    return new CRowDistributor(activity, comm, tag, _rowif, abort, dedup, istop);
+    return new CRowDistributor(activity, comm, tag, _rowif, abort, doDedup, istop);
 }
 
-IHashDistributor *createPullHashDistributor(CActivityBase *activity, ICommunicator &comm, mptag_t tag, IRowInterfaces *_rowif, const bool &abort,bool dedup,IStopInput *istop)
+IHashDistributor *createPullHashDistributor(CActivityBase *activity, ICommunicator &comm, mptag_t tag, IRowInterfaces *_rowif, const bool &abort,bool doDedup,IStopInput *istop)
 {
-    return new CRowPullDistributor(activity, comm, tag,  _rowif, abort, dedup, istop);
+    return new CRowPullDistributor(activity, comm, tag,  _rowif, abort, doDedup, istop);
 }
 
 
@@ -1503,6 +1567,8 @@ IHashDistributor *createPullHashDistributor(CActivityBase *activity, ICommunicat
 #pragma warning(push)
 #pragma warning( disable : 4355 ) // 'this' : used input base member initializer list
 #endif
+
+
 class HashDistributeSlaveBase : public CSlaveActivity, public CThorDataLink, implements IStopInput
 {
     IHashDistributor *distributor;
@@ -1536,7 +1602,6 @@ public:
         if (distributor)
         {
             distributor->disconnect(false);
-            distributor->removetemp();
             distributor->join();
             distributor->Release();
         }
@@ -1546,10 +1611,12 @@ public:
         appendOutputLinked(this);
         mptag = container.queryJob().deserializeMPTag(data);
         ActPrintLog("HASHDISTRIB: %sinit tag %d",mergecmp?"merge, ":"",(int)mptag);
+
+        Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
         if (mergecmp)
-            distributor = createPullHashDistributor(this, container.queryJob().queryJobComm(), mptag, this, abortSoon, false, this);
+            distributor = createPullHashDistributor(this, container.queryJob().queryJobComm(), mptag, myRowIf, abortSoon, false, this);
         else
-            distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, this, abortSoon, false, this);
+            distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, myRowIf, abortSoon, false, this);
         inputstopped = true;
     }
     void stopInput()
@@ -1588,13 +1655,14 @@ public:
     void stop()
     {
         ActPrintLog("HASHDISTRIB: stopping");
-        if (out) {
+        if (out)
+        {
             out->stop();
             out.clear();
         }
-        if (distributor) {
+        if (distributor)
+        {
             distributor->disconnect(true);
-            distributor->removetemp();
             distributor->join();
         }
         stopInput();
@@ -2393,7 +2461,7 @@ public:
         hashTables = NULL;
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
-        // JCSMORE - it may not be worth extracing the key,
+        // JCSMORE - it may not be worth extracting the key,
         // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
         IOutputMetaData *km = helper->queryKeySize();
         if (helper->selectInterface(TAIhashdeduparg_2))
@@ -2917,7 +2985,6 @@ public:
         if (distributor)
         {
             distributor->disconnect(false);
-            distributor->removetemp();
             distributor->join();
             distributor->Release();
         }
@@ -2933,7 +3000,8 @@ public:
     {
         HashDedupSlaveActivityBase::init(data, slaveData);
         mptag = container.queryJob().deserializeMPTag(data);
-        distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, this, abortSoon,true, this);
+        Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
+        distributor = createHashDistributor(this, container.queryJob().queryJobComm(), mptag, myRowIf, abortSoon,true, this);
     }
 
     void start()
@@ -2947,12 +3015,12 @@ public:
     void stop()
     {
         ActPrintLog("%s: stopping", actTxt);
-        if (instrm) {
+        if (instrm)
+        {
             instrm->stop();
             instrm.clear();
         }
         distributor->disconnect(true);
-        distributor->removetemp();
         distributor->join();
         stopInput();
         dataLinkStop();
@@ -3041,7 +3109,6 @@ public:
         reader.clear();
         stopInputL();
         distributor->disconnect(false);
-        distributor->removetemp();
         distributor->join();
         distributor.clear();
         leftdone = true;
@@ -3053,7 +3120,6 @@ public:
         reader.clear();
         stopInputR();
         distributor->disconnect(false);
-        distributor->removetemp();
         distributor->join();
         distributor.clear();
         { CriticalBlock b(joinHelperCrit);
@@ -3267,7 +3333,6 @@ CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator 
     strm->stop();
     strm.clear();
     distributor->disconnect(true);
-    distributor->removetemp();
     distributor->join();
     distributor.clear();
 
@@ -3289,6 +3354,25 @@ class CHashAggregateSlave : public CSlaveActivity, public CThorDataLink, impleme
     Owned<CThorRowAggregator> localAggTable;
     bool eos;
 
+    bool doNextGroup()
+    {
+        localAggTable->start(queryRowAllocator());
+        while (!abortSoon)
+        {
+            OwnedConstThorRow row = input->nextRow();
+            if (!row)
+            {
+                if (container.queryGrouped())
+                    break;
+                row.setown(input->nextRow());
+                if (!row)
+                    break;
+            }
+            localAggTable->addRow(row);
+        }
+        return 0 != localAggTable->elementCount();
+    }
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -3304,48 +3388,33 @@ public:
         appendOutputLinked(this);
 
         if (!container.queryLocalOrGrouped())
+        {
             mptag = container.queryJob().deserializeMPTag(data);
-        ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+            ActPrintLog("HASHAGGREGATE: init tags %d",(int)mptag);
+        }
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
-        localAggTable->start(queryRowAllocator());
-
         input = inputs.item(0);
         startInput(input);
-        try
-        {
-            dataLinkStart("HASHAGGREGATE", container.queryId());
-            while (!abortSoon)
-            {
-                OwnedConstThorRow row = input->ungroupedNextRow();
-                if (!row)
-                    break;
-                localAggTable->addRow(row);
-            }
-            StringBuffer str("HASHAGGREGATE: Table before distribution contains ");
-            ActPrintLog("%s", str.append(localAggTable->elementCount()).append(" entries").str());
-        }
-        catch (IException *)
-        {
-            stopInput(input);
-            throw;
-        }
-        stopInput(input);
-        if (abortSoon)
-            return;
-        if (!container.queryLocal() && container.queryJob().querySlaves()>1)
+        localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
+        doNextGroup(); // or local set if !grouped
+        if (!container.queryGrouped())
+            ActPrintLog("Table before distribution contains %d entries", localAggTable->elementCount());
+        if (!container.queryLocalOrGrouped() && container.queryJob().querySlaves()>1)
         {
             bool ordered = 0 != (TAForderedmerge & helper->getAggregateFlags());
             localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mptag, ordered));
+            ActPrintLog("Table after distribution contains %d entries", localAggTable->elementCount());
         }
         eos = false;
+        dataLinkStart("HASHAGGREGATE", container.queryId());
     }
     void stop()
     {
         ActPrintLog("HASHAGGREGATE: stopping");
+        stopInput(input);
         dataLinkStop();
     }
     CATCH_NEXTROW()
@@ -3358,7 +3427,14 @@ public:
             dataLinkIncrement();
             return next->finalizeRowClear();
         }
-        eos = true;
+        if (container.queryGrouped())
+        {
+            localAggTable->reset();
+            if (!doNextGroup())
+                eos = true;
+        }
+        else
+            eos = true;
         return NULL;
     }
     bool isGrouped() { return false; }
