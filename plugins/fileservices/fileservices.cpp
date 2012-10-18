@@ -1767,7 +1767,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
 FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperSubList(ICodeContext *ctx, size32_t & __lenResult,void * & __result)
 {
     MemoryBuffer mb;
-    getLogicalFileSuperSubList(mb);
+    getLogicalFileSuperSubList(mb, ctx->queryUserDescriptor());
     __lenResult = mb.length();
     __result = mb.detach();
 }
@@ -1831,7 +1831,7 @@ FILESERVICES_API void FILESERVICES_CALL fsAddFileRelationship(ICodeContext * ctx
     constructLogicalName(ctx, primary, pfn);
     StringBuffer sfn;
     constructLogicalName(ctx, secondary, sfn);
-    queryDistributedFileDirectory().addFileRelationship(pfn.str(),sfn.str(),primflds,secflds,kind,cardinality,payload,description);
+    queryDistributedFileDirectory().addFileRelationship(pfn.str(),sfn.str(),primflds,secflds,kind,cardinality,payload,ctx->queryUserDescriptor(), description);
     StringBuffer s("AddFileRelationship('");
     s.append(pfn.str()).append("','").append(sfn.str()).append("','").append(primflds?primflds:"").append("','").append(secflds?secflds:"").append("','").append(kind?kind:"").append("') done");
     WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());

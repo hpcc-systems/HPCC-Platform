@@ -354,7 +354,7 @@ public:
     }
 };
 
-extern da_decl void getLogicalFileSuperSubList(MemoryBuffer &mb);
+extern da_decl void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user);
 
 
 interface IDaliMutexNotifyWaiting

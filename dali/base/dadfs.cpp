@@ -942,14 +942,14 @@ public:
         );
     void doRemoveFileRelationship( IRemoteConnection *conn, const char *primary,const char *secondary,const char *primflds,const char *secflds, const char *kind);
     void removeFileRelationships(const char *primary,const char *secondary, const char *primflds, const char *secflds, const char *kind);
-    void addFileRelationship(const char *kind,const char *primary,const char *secondary,const char *primflds, const char *secflds,const char *cardinality,bool payload,const char *description);
+    void addFileRelationship(const char *kind,const char *primary,const char *secondary,const char *primflds, const char *secflds,const char *cardinality,bool payload,IUserDescriptor *user,const char *description);
     IFileRelationshipIterator *lookupFileRelationships(const char *primary,const char *secondary,const char *primflds,const char *secflds,
                                                        const char *kind,const char *cardinality,const bool *payload,
                                                        const char *foreigndali,unsigned foreigndalitimeout);
     void removeAllFileRelationships(const char *filename);
     IFileRelationshipIterator *lookupAllFileRelationships(const char *filenames);
 
-    void renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter);
+    void renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter, IUserDescriptor *user);
 
     bool publishMetaFileXML(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
     IFileDescriptor *createDescriptorFromMetaFile(const CDfsLogicalFileName &logicalname,IUserDescriptor *user);
@@ -3166,7 +3166,7 @@ public:
         }
         if (reliter.get()) {
             // add back any relationships with new name
-            parent->renameFileRelationships(prevname.str(),_logicalname,reliter);
+            parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
         }
     }
 
@@ -4595,7 +4595,7 @@ public:
         attach(_logicalname,user);
         if (reliter.get()) {
             // add back any relationships with new name
-            parent->renameFileRelationships(prevname.str(),_logicalname,reliter);
+            parent->renameFileRelationships(prevname.str(),_logicalname,reliter,user);
         }
     }
 
@@ -8056,7 +8056,7 @@ public:
             PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
         sdsLock.unlock(); // unlock to perform authentification
 
-        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,NULL,(unsigned)-1);
+        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,udesc,(unsigned)-1);
         StringArray authScopes;
         CIArrayOf<CFileMatch> matchingFiles;
         start = msTick();
@@ -9854,6 +9854,7 @@ void CDistributedFileDirectory::addFileRelationship(
   const char *kind,
   const char *cardinality,
   bool payload,
+  IUserDescriptor *user,
   const char *description=NULL
   )
 {
@@ -9868,7 +9869,7 @@ void CDistributedFileDirectory::addFileRelationship(
     if (pfn.isExternal()||pfn.isForeign()||pfn.isQuery())
         throw MakeStringException(-1,"addFileRelationship primary %s not allowed",pfn.get());
     primary = pfn.get();
-    if (!exists(primary,UNKNOWN_USER))//MORE:Pass IUserDescriptor
+    if (!exists(primary,user))
         throw MakeStringException(-1,"addFileRelationship primary %s does not exist",primary);
     CDfsLogicalFileName sfn;
     if (!sfn.setValidate(secondary))  
@@ -9876,7 +9877,7 @@ void CDistributedFileDirectory::addFileRelationship(
     if (sfn.isExternal()||sfn.isForeign()||sfn.isQuery())
         throw MakeStringException(-1,"addFileRelationship secondary %s not allowed",sfn.get());
     secondary = sfn.get();
-    if (!exists(secondary,UNKNOWN_USER))//MORE:Pass IUserDescriptor
+    if (!exists(secondary,user))
         throw MakeStringException(-1,"addFileRelationship secondary %s does not exist",secondary);
     if (cardinality&&*cardinality&&!strchr(cardinality,':'))
         throw MakeStringException(-1,"addFileRelationship cardinality %s invalid",cardinality);
@@ -9977,7 +9978,7 @@ IFileRelationshipIterator *CDistributedFileDirectory::lookupAllFileRelationships
     return ret.getClear();
 }
 
-void CDistributedFileDirectory::renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter)
+void CDistributedFileDirectory::renameFileRelationships(const char *oldname,const char *newname,IFileRelationshipIterator *reliter,IUserDescriptor*user)
 {
     CDfsLogicalFileName oldlfn;
     normLFN(oldname,oldlfn,"renameFileRelationships(old name)");
@@ -10002,7 +10003,7 @@ void CDistributedFileDirectory::renameFileRelationships(const char *oldname,cons
                 sf = newlfn.get();
             }
             if (adj)
-                addFileRelationship(pf,sf,r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),r.queryDescription());
+                addFileRelationship(pf,sf,r.queryPrimaryFields(),r.querySecondaryFields(),r.queryKind(),r.queryCardinality(),r.isPayload(),user,r.queryDescription());
         }
         catch (IException *e)
         {

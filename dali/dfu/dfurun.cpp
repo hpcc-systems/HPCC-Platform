@@ -531,7 +531,16 @@ public:
                 }
                 else 
                     monitor->setHandlerEp(me->endpoint());
-                if (performMonitor(wu,monitor,wu->querySource(),false,&eventstriggered,&eventsfile)) {
+
+                Owned<IUserDescriptor> userdesc = createUserDescriptor();
+                {
+                    StringBuffer username;
+                    StringBuffer password;
+                    wu->getUser(username);
+                    wu->getPassword(password);
+                    userdesc->set(username.str(),password.str());
+                }
+                if (performMonitor(wu,monitor,wu->querySource(),false,&eventstriggered,&eventsfile,userdesc)) {
                     wu->queryUpdateProgress()->setState(DFUstate_finished);
                 }
                 wu->commit();
@@ -560,7 +569,7 @@ public:
         }
     }
 
-    bool performMonitor(IDFUWorkUnit *wu,IDFUmonitor *monitor,IConstDFUfileSpec *source, bool raiseexception, StringAttrArray *eventstriggered, StringAttrArray *eventsfile)
+    bool performMonitor(IDFUWorkUnit *wu,IDFUmonitor *monitor,IConstDFUfileSpec *source, bool raiseexception, StringAttrArray *eventstriggered, StringAttrArray *eventsfile, IUserDescriptor *user)
     {
         
         
@@ -572,7 +581,7 @@ public:
         monitor->getTriggeredList(prev);
         monitor->setCycleCount(monitor->getCycleCount()+1);
         if (lfn.length()) {                                                 // no wild cards so only 0 or 1 prev
-            if (queryDistributedFileDirectory().exists(lfn.str(),UNKNOWN_USER)) {//MORE:Pass IUserDescriptor
+            if (queryDistributedFileDirectory().exists(lfn.str(),user)) {
                 done.append(*new StringAttrItem(lfn.str()));
                 bool isdone = ((prev.ordinality()!=0)&&
                                 (stricmp(prev.item(0).text.get(),lfn.str())==0));
@@ -1545,7 +1554,7 @@ public:
                     monitor->setHandlerEp(me->endpoint());
                     StringAttrArray eventstriggered;
                     StringAttrArray eventsfile;
-                    if (performMonitor(wu,monitor,source,true,&eventstriggered,&eventsfile)) 
+                    if (performMonitor(wu,monitor,source,true,&eventstriggered,&eventsfile,userdesc))
                         finalstate = DFUstate_finished;
                     else
                         finalstate = DFUstate_monitoring;
