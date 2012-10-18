@@ -1485,7 +1485,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>maxEclccProcesses</emphasis></entry>
 
-                      <entry>The maximum number of eclcc processes that will be launched in parallel</entry>
+                      <entry>The maximum number of eclcc processes that will
+                      be launched in parallel</entry>
                     </row>
 
                     <row>
@@ -1809,7 +1810,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
-                  <colspec align="left" colwidth="155.50pt" />
+                  <colspec align="left" colwidth="165pt" />
 
                   <colspec />
 
@@ -2641,6 +2642,64 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <?hard-pagebreak ?>
 
           <sect4>
+            <title>Changing Thor topology</title>
+
+            <para>If you want to designate a different node as the Thor master
+            when setting up a multi-node system, follow these steps.</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Select <emphasis role="bold">Thor Cluster -
+                mythor</emphasis> in the Navigator panel on the left
+                side.</para>
+              </listitem>
+
+              <listitem>
+                <para>Select the <emphasis role="bold">Topology</emphasis>
+                tab.</para>
+              </listitem>
+
+              <listitem>
+                <para>RT-CLICK on the Master node</para>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Select the <emphasis role="bold">Swap Master</emphasis>
+                option.</para>
+
+                <para><graphic fileref="images/CM-111-2.jpg"
+                vendor="configmgrSS" /></para>
+
+                <para><informaltable colsep="1" frame="all" rowsep="1">
+                    <?dbfo keep-together="always"?>
+
+                    <tgroup cols="2">
+                      <colspec colwidth="49.50pt" />
+
+                      <colspec />
+
+                      <tbody>
+                        <row>
+                          <entry><inlinegraphic
+                          fileref="images/caution.png" /></entry>
+
+                          <entry>You should only use this feature when
+                          initially setting up your system. If there is data
+                          on the nodes when attempting to Swap Master, you run
+                          the risk of losing or corrupting some data.</entry>
+                        </row>
+                      </tbody>
+                    </tgroup>
+                  </informaltable></para>
+              </listitem>
+            </itemizedlist>
+          </sect4>
+
+          <?hard-pagebreak ?>
+
+          <sect4>
             <title>ThorCluster Attributes</title>
 
             <para>This section describes the Thor Cluster Attributes
@@ -3058,6 +3117,16 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>This tab allows you to add any notes pertinent to the
             component's configuration. This can be useful to keep a record of
             changes and to communicate this information to peers.</para>
+          </sect4>
+
+          <sect4>
+            <title>Swap Master</title>
+
+            <para>The swap master option now allows you to easily swap out the
+            Thor Master.***</para>
+
+            <para><graphic fileref="images/CM-186.jpg"
+            vendor="configmgrSS" /></para>
           </sect4>
         </sect3>
 
