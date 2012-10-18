@@ -229,6 +229,9 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         }
     }
     
+    if ((version > 1.05) && src->getDFUServerName(tmp.clear()).length())
+        dest.setDFUServerName(tmp.str());
+
     if (src->getJobName(tmp.clear()).length()!=0)
         dest.setJobName(tmp.str());
     else

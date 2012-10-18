@@ -236,6 +236,7 @@
         <xsl:apply-templates select="ID"/>
         <xsl:apply-templates select="ClusterName"/>
         <xsl:apply-templates select="JobName"/>
+        <xsl:apply-templates select="DFUServerName"/>
         <xsl:apply-templates select="Queue"/>
         <xsl:apply-templates select="User"/>
         <xsl:apply-templates select="isProtected"/>
