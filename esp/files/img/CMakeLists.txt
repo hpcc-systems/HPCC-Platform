@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-FOREACH( iFILES
+set ( IMG_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/collapse.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/expand.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/save.gif
@@ -89,7 +89,10 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/bullet_yellow.png
     ${CMAKE_CURRENT_SOURCE_DIR}/loadingAnimation.gif
 )
-    Install ( FILES ${iFILES} DESTINATION componentfiles/files/img COMPONENT Runtime)
-ENDFOREACH( iFILES )
+set ( IMG_FILES ${IMG_FILES} PARENT_SCOPE)
+
+FOREACH( iFile ${IMG_FILES} )
+    Install( FILES ${iFile} DESTINATION componentfiles/files/img COMPONENT Runtime )
+ENDFOREACH ( iFile )
 
 Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/favlogo.png DESTINATION componentfiles/files COMPONENT Runtime )
