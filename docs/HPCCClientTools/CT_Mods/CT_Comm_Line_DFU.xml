@@ -120,14 +120,17 @@
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to overwrite any existing file of the same name. If omitted,
-                  the default is 0.</entry>
+                  the default is 0. </entry>
                 </row>
 
                 <row>
                   <entry><emphasis>replicate</emphasis></entry>
 
-                  <entry>Optional. A boolean flag (1 | 0) indicating whether
-                  to replicate the file. If omitted, the default is 1.</entry>
+                  <entry><para>Optional. A boolean flag (1 | 0) indicating
+                  whether to replicate the file. If omitted, the default is
+                  1.</para><para><emphasis role="bold">This option is only
+                  available on systems where replication has been
+                  enabled.</emphasis></para></entry>
                 </row>
 
                 <row>
