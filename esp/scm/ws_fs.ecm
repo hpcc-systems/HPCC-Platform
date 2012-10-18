@@ -19,6 +19,7 @@
 ESPStruct [nil_remove] DFUWorkunit
 {
     string ID;
+    [min_ver("1.06")] string DFUServerName;
     string ClusterName;
     string JobName;
     string Queue;
@@ -586,7 +587,7 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
 };
 
 ESPservice [
-    version("1.05"), default_client_version("1.05"),
+    version("1.06"), default_client_version("1.06"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

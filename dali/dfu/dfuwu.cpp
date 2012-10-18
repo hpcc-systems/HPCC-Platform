@@ -2199,6 +2199,12 @@ public:
         updatelock.unlock();
     }
 
+    StringBuffer &getDFUServerName(StringBuffer &str) const
+    {
+        root->getProp("@dfuserver",str);
+        return str;
+    }
+
 
     StringBuffer &getClusterName(StringBuffer &str) const
     {
@@ -2475,6 +2481,11 @@ public:
     void protect(bool protectMode)
     {
         root->setPropInt("@protected", protectMode?1:0);
+    }
+
+    void setDFUServerName(const char * val)
+    {
+        root->setProp("@dfuserver",val);
     }
 
     void setClusterName(const char * val)

@@ -355,6 +355,7 @@ interface IConstDFUWorkUnit : extends IInterface
 {
     virtual const char *queryId() const = 0;
     virtual StringBuffer &getClusterName(StringBuffer &str) const = 0;
+    virtual StringBuffer &getDFUServerName(StringBuffer &str) const = 0;
     virtual StringBuffer &getJobName(StringBuffer &str) const = 0;
     virtual StringBuffer &getQueue(StringBuffer &str) const = 0;
     virtual StringBuffer &getUser(StringBuffer &str) const = 0;
@@ -387,6 +388,7 @@ interface IDFUWorkUnit : extends IConstDFUWorkUnit
     virtual void  rollback() = 0;                           // cancel changes
     virtual void protect(bool protectMode) = 0;
     virtual void setClusterName(const char * value) = 0;
+    virtual void setDFUServerName(const char * value) = 0;
     virtual void setJobName(const char * value) = 0;
     virtual void setQueue(const char * value) = 0;
     virtual void setUser(const char * value) = 0;
