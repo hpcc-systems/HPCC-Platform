@@ -3042,7 +3042,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_newxmlparse:
             case no_rollupgroup:
                 {
-                    if (!isPureActivity(child) || !isPureActivity(transformed) || transformed->queryProperty(_countProject_Atom))
+                    if (!isPureActivity(child) || !isPureActivity(transformed) || transformedCountProject)
                         break;
 
                     IHqlExpression * transformedSeq = querySelSeq(transformed);
@@ -3064,12 +3064,17 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distribute:
+                //Cannot move a count project over anything that changes the order of the records.
+                if (transformedCountProject)
+                    break;
                 if (increasesRowSize(transformed))
                     break;
                 return moveProjectionOverSimple(transformed, true, false);
             case no_distributed:
             case no_sorted:
             case no_grouped:
+                if (transformedCountProject)
+                    break;
                 return moveProjectionOverSimple(transformed, false, false);
             case no_stepped:
                 return moveProjectionOverSimple(transformed, true, false);
