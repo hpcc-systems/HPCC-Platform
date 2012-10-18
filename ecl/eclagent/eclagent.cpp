@@ -1603,6 +1603,8 @@ void EclAgent::getEventExtra(size32_t & outLen, char * & outStr, const char * ta
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 
 {
     const char *val = globals->queryProp(name);
+    if (!val)
+        val = getenv(name);
     if (val)
         return strdup(val);
     else if (defaultValue)

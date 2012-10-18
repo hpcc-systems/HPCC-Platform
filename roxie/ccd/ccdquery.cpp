@@ -1027,6 +1027,8 @@ public:
         }
         else
             result = package.queryEnv(name);
+        if (!result)
+            result = getenv(name);
         return strdup(result ? result : defaultValue);
     }
     virtual unsigned getPriority() const
