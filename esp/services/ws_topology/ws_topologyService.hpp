@@ -24,16 +24,30 @@
 
 #include "TpWrapper.hpp"
 
+enum GetLogOptions
+{
+    GLOFirstPage = 0,
+    GLOFirstNRows = 1,
+    GLOLastNHours = 2,
+    GLOLastPage = 3,
+    GLOGoToPage = 4,
+    GLOLastNRows = 5,
+    GLOTimeRange = 6,
+};
+
 struct ReadLog
 {
     StringBuffer startDate;
     StringBuffer endDate;
+    unsigned lastHours;
+    unsigned ltBytes;
+    bool hasTimestamp;
+    bool loadContent;
     unsigned firstRows;
     unsigned lastRows;
     unsigned pageNumber;
-    int filterType; //0: first page, 1:first n rows, 2: last n hours; 3: last page, 4: page number, 5: last n rows; 6: from date/time to date/time
+    GetLogOptions filterType;
     bool reverse;
-    bool zip;
     offset_t fileSize;
     offset_t pageFrom;
     offset_t pageTo;
@@ -78,16 +92,19 @@ private:
     void getThorLog(const char *cluster,MemoryBuffer& returnbuff);
     //void getThorLog(StringBuffer logname,StringBuffer& returnbuff);
     int loadFile(const char* fname, int& len, unsigned char* &buf, bool binary=true);
-    void readLogFile(StringBuffer logname, ReadLog& readLogReq, StringBuffer& startDate, StringBuffer& endDate, 
-        bool& hasDate, StringBuffer& returnbuff);
-    void readLogFile(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, bool& hasDate, StringArray& returnbuff);
-    bool readToABuffer(StringBuffer logname, OwnedIFileIO rIO, offset_t& fileSize, offset_t& readFrom, StringBuffer dataLeft, 
-                                             StringBuffer& dataBuffer);
-    long readLogLineID(char* pTr);
+    void readLogFile(StringBuffer logname, IFile* pFile, ReadLog& readLogReq, StringBuffer& returnbuff);
+    void readLogFileToArray(StringBuffer logname, OwnedIFileIO rIO, ReadLog& readLogReq, StringArray& returnbuff);
+    bool readLogLineID(char* pTr, unsigned long& lineID);
     bool readLogTime(char* pTr, int start, int length, CDateTime& dt);
-    int checkLineTerminator(char* pTr);
-    bool readLineTerminator(char* pTr, int& byteCount);
-    void addALogLine(offset_t& readFrom, unsigned& locationFlag, long firstOrLastRowID, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff);
+    bool findTimestampAndLT(StringBuffer logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
+    unsigned findLineTerminator(const char* dataPtr, const size32_t dataSize);
+    bool isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength);
+    char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTernimator);
+    void addALogLine(offset_t& readFrom, unsigned& locationFlag, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff);
+    void readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq);
+    void setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
+                                         const char* fileType, StringBuffer& returnbuf, IEspTpLogFileResponse &resp);
+    void readTpLogFile(IEspContext &context,const char* fileName, const char* fileType, IEspTpLogFileRequest  &req, IEspTpLogFileResponse &resp);
 
     void loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
                                     bool& bThresholdIsPercentage);
