@@ -235,7 +235,18 @@ define([
 						args.onGetSourceFiles(context.sourceFiles);
 					}
 					if (args.onGetTimers && workunit.Timers && workunit.Timers.ECLTimer) {
-						context.timers = workunit.Timers.ECLTimer;
+						context.timers = [];
+						for (var i = 0; i < workunit.Timers.ECLTimer.length; ++i) {
+							if (workunit.Timers.ECLTimer[i].GraphName && workunit.Timers.ECLTimer[i].SubGraphId) {
+								var timeParts = workunit.Timers.ECLTimer[i].Value.split(":");
+								var secs = 0;
+								for (var j = 0; j < timeParts.length; ++j) {
+									secs = secs * 60 + timeParts[j] * 1;
+								}
+
+								context.timers.push(lang.mixin(workunit.Timers.ECLTimer[i], { Seconds: Math.round(secs * 1000) / 1000 }));
+							}
+						}
 						args.onGetTimers(context.timers);
 					}
 					if (args.onGetGraphs && workunit.Graphs && workunit.Graphs.ECLGraph) {
@@ -246,7 +257,7 @@ define([
 									context.graphs[i].Time = 0;
 									for (var j = 0; j < context.timers.length; ++j) {
 										if (context.timers[j].GraphName == context.graphs[i].Name) {
-											context.graphs[i].Time += parseFloat(context.timers[j].Value);
+											context.graphs[i].Time += context.timers[j].Seconds;
 										}
 										context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
 									}
