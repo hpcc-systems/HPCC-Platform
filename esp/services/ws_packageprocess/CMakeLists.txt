@@ -22,6 +22,8 @@ set (    SRCS
          ws_packageprocessService.cpp
          ws_packageprocessService.hpp
          packageprocess_errors.h
+         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.cpp
+         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.hpp
     )
 
 include_directories (
@@ -40,6 +42,9 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/common/remote
+         ${HPCC_SOURCE_DIR}/common/roxiemanager
+         ${HPCC_SOURCE_DIR}/common/workunit
+         ${HPCC_SOURCE_DIR}/rtl/include
     )
 
 ADD_DEFINITIONS( -D_USRDLL )
@@ -54,5 +59,6 @@ target_link_libraries ( ws_packageprocess
          securesocket
          dalibase
          ws_fs
+         roxiemanager
     )
 
