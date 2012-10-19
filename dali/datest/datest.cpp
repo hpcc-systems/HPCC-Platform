@@ -1209,6 +1209,7 @@ public:
                 id2 = conn->subscribe(*new CCSub(s.str()));
             }
         }
+        throwUnexpected(); // loop never terminates, but some compilers complain about missing return without this line
     }
 
     SubscriptionId id1, id2;
