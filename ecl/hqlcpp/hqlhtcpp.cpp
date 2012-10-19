@@ -2970,6 +2970,7 @@ static bool anyXmlGeneratedForPass(IHqlExpression * expr, unsigned pass)
     default:
         UNIMPLEMENTED;
     }
+    throwUnexpected(); // unreachable, but some compilers will complain about missing return
 }
 
 

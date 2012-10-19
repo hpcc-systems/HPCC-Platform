@@ -275,18 +275,21 @@ public:
     IMPLEMENT_IINTERFACE;
     CRoxieDaliHelper() : connectWatcher(this), serverStatus(NULL)
     {
+        userdesc.setown(createUserDescriptor());
+        const char *roxieUser;
+        const char *roxiePassword;
         if (topology)
         {
-            const char *roxieUser = topology->queryProp("@ldapUser");
-            const char *roxiePassword = topology->queryProp("@ldapPassword");
-            if (roxieUser && *roxieUser && roxiePassword && *roxiePassword)
-            {
-                StringBuffer password;
-                decrypt(password, roxiePassword);
-                userdesc.setown(createUserDescriptor());
-                userdesc->set(roxieUser, password.str());
-            }
+            roxieUser = topology->queryProp("@ldapUser");
+            roxiePassword = topology->queryProp("@ldapPassword");
         }
+        if (!roxieUser)
+            roxieUser = "roxie";
+        if (!roxiePassword)
+            roxiePassword = "";
+        StringBuffer password;
+        decrypt(password, roxiePassword);
+        userdesc->set(roxieUser, password.str());
         if (fileNameServiceDali.length())
             connectWatcher.start();
         else

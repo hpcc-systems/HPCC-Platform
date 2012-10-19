@@ -444,6 +444,9 @@ Blankline</programlisting></para>
             <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
             </emphasis>boxes are checked.</para>
 
+            <para><emphasis role="bold">Note:</emphasis> This option is only
+            available on systems where replication has been enabled.</para>
+
             <para><figure>
                 <title>Spray the File</title>
 

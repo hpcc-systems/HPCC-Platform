@@ -566,6 +566,7 @@ protected:
             throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Unimplemented activity %s required", getActivityText(kind));
             break;
         }
+        throwUnexpected(); // unreachable, but some compilers will complain about missing return
     }
 
     IActivityFactory *findActivity(unsigned id) const
@@ -1070,6 +1071,8 @@ public:
         }
         else
             result = package.queryEnv(name);
+        if (!result)
+            result = getenv(name);
         return strdup(result ? result : defaultValue);
     }
     virtual unsigned getPriority() const

@@ -255,10 +255,11 @@
       to the local copy once the copy operation is complete. This provides the
       benefit of quick availability because the query can be active before the
       data is copied, while still taking advantage of the performance benefits
-      of local data. </para>
+      of local data.</para>
 
-      <xi:include href="RDDERef/RDDE_Mods/RoxieCopySettings.xml" xpointer="element(/1)"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+      <xi:include href="RDDERef/RDDE_Mods/RoxieCopySettings.xml"
+                  xpointer="element(/1)"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="Roxie-Data-Backup">
@@ -612,10 +613,12 @@
                     <row>
                       <entry>Replicate</entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the d: drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
@@ -763,10 +766,12 @@
                     <row>
                       <entry>Replicate</entry>
 
-                      <entry>Check this box to create backup copies of all
-                      file parts exist in the backup directory (by convention
-                      on the d: drive of the node following in the
-                      cluster).</entry>
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
                     </row>
 
                     <row>
