@@ -754,8 +754,7 @@ public:
 #define ROWCOUNT(x)              (x & ROWCOUNT_MASK)
 
 #define CACHE_LINE_SIZE 64
-#define FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET ((size32_t) ((sizeof(FixedSizeHeapletBase) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
-#define FIXEDSIZE_HEAPLET_DATA_AREA_SIZE ((size32_t)(HEAP_ALIGNMENT_SIZE - FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET))
+#define HEAPLET_DATA_AREA_OFFSET(heapletType) ((size32_t) ((sizeof(heapletType) + CACHE_LINE_SIZE - 1) / CACHE_LINE_SIZE) * CACHE_LINE_SIZE)
 
 class FixedSizeHeapletBase : public BigHeapletBase
 {
@@ -767,10 +766,10 @@ protected:
 
     inline char *data() const
     {
-        return ((char *) this) + FIXEDSIZE_HEAPLET_DATA_AREA_OFFSET;
+        return ((char *) this) + dataOffset();
     }
 
-    //NB: Derived classes should not contain any derived data.  The choice would be to put data[] into the derived
+    //NB: Derived classes should not contain any derived data.  The choice would be to put data() into the derived
     //classes, but that means it is hard to common up some of the code efficiently
 
 public:
@@ -784,7 +783,9 @@ public:
 
     virtual size32_t sizeInPages() { return 1; }
 
-    inline static size32_t dataAreaSize() { return FIXEDSIZE_HEAPLET_DATA_AREA_SIZE; }
+    inline static unsigned dataOffset() { return HEAPLET_DATA_AREA_OFFSET(FixedSizeHeapletBase); }
+
+    inline static size32_t dataAreaSize() { return  (size32_t)(HEAP_ALIGNMENT_SIZE - dataOffset()); }
 
     virtual void _setDestructorFlag(const void *_ptr)
     {
@@ -850,7 +851,7 @@ protected:
             {
                 unsigned curFreeBase = atomic_read(&freeBase);
                 //There is no ABA issue on freeBase because it is never decremented (and no next chain with it)
-                size32_t bytesFree = FIXEDSIZE_HEAPLET_DATA_AREA_SIZE - curFreeBase;
+                size32_t bytesFree = dataAreaSize() - curFreeBase;
                 if (bytesFree >= size)
                 {
                     if (atomic_cas(&freeBase, curFreeBase + size, curFreeBase))
@@ -983,7 +984,7 @@ public:
 
     inline static size32_t maxHeapSize()
     {
-        return FIXEDSIZE_HEAPLET_DATA_AREA_SIZE - chunkHeaderSize;
+        return dataAreaSize() - chunkHeaderSize;
     }
 
     virtual unsigned _rawAllocatorId(const void *ptr) const
@@ -1075,6 +1076,8 @@ private:
 };
 
 //================================================================================
+
+// NOTE - this delivers rows that are NOT 8 byte aligned, so can't safely be used to allocate ptr arrays
 
 class PackedFixedSizeHeaplet : public FixedSizeHeapletBase
 {
@@ -1196,17 +1199,22 @@ class HugeHeaplet : public BigHeapletBase
 {
 protected:
     unsigned allocatorId;
-    char data[1];  // n really
 
     inline unsigned _sizeInPages() 
     {
-        return PAGES(chunkCapacity + offsetof(HugeHeaplet, data), HEAP_ALIGNMENT_SIZE);
+        return PAGES(chunkCapacity + dataOffset(), HEAP_ALIGNMENT_SIZE);
     }
 
     static inline memsize_t calcCapacity(memsize_t requestedSize)
     {
         return align_pow2(requestedSize + dataOffset(), HEAP_ALIGNMENT_SIZE) - dataOffset();
     }
+
+    inline char *data() const
+    {
+        return ((char *) this) + dataOffset();
+    }
+
 
 public:
     HugeHeaplet(const IRowAllocatorCache *_allocatorCache, memsize_t _hugeSize, unsigned _allocatorId) : BigHeapletBase(_allocatorCache, calcCapacity(_hugeSize))
@@ -1232,7 +1240,7 @@ public:
 
     static inline unsigned dataOffset()
     {
-        return (offsetof(HugeHeaplet, data));
+        return HEAPLET_DATA_AREA_OFFSET(HugeHeaplet);
     }
 
     void operator delete(void * p)
@@ -1290,9 +1298,9 @@ public:
         atomic_inc(&count);
         dbgassertex(size <= chunkCapacity);
 #ifdef _CLEAR_ALLOCATED_HUGE_ROW
-        memset(&data, 0xcc, chunkCapacity);
+        memset(data(), 0xcc, chunkCapacity);
 #endif
-        return &data;
+        return data();
     }
 
     virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const 
@@ -3778,8 +3786,17 @@ protected:
 
     void testSizes()
     {
+        ASSERT(FixedSizeHeapletBase::dataOffset() == CACHE_LINE_SIZE);
+        ASSERT(HugeHeaplet::dataOffset() == CACHE_LINE_SIZE);
         ASSERT(FixedSizeHeaplet::chunkHeaderSize == 8);
-        ASSERT(PackedFixedSizeHeaplet::chunkHeaderSize == 4);
+        ASSERT(PackedFixedSizeHeaplet::chunkHeaderSize == 4);  // NOTE - this is NOT 8 byte aligned, so can't safely be used to allocate ptr arrays
+
+        // Check some alignments
+        Owned<IRowManager> rm1 = createRowManager(0, NULL, logctx, NULL);
+        OwnedRoxieRow rs = rm1->allocate(18, 0);
+        OwnedRoxieRow rh = rm1->allocate(1800000, 0);
+        ASSERT((((memsize_t) rs.get()) & 0x7) == 0);
+        ASSERT((((memsize_t) rh.get()) & 0x7) == 0);
     }
 
     void testAll()
