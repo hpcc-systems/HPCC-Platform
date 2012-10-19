@@ -459,24 +459,22 @@ FILESERVICES_API void FILESERVICES_CALL fsRenameLogicalFile(ICodeContext *ctx, c
     constructLogicalName(ctx, oldname, lfn);
     constructLogicalName(ctx, newname, nlfn);
 
+    IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-    Owned<IMultiException> exceptions = MakeMultiException();
-
-    if (queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,exceptions)) {
+    try {
+        queryDistributedFileDirectory().renamePhysical(lfn.str(),nlfn.str(),udesc,transaction);
         StringBuffer s("RenameLogicalFile ('");
         s.append(lfn).append(", '").append(nlfn).append("') done");
         WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
         AuditMessage(ctx,"RenameLogicalFile",lfn.str(),nlfn.str());
     }
-    else { // failed
-        unsigned n = exceptions->ordinality();
-        for (unsigned i=0;i<n;i++) {
-            StringBuffer s;
-            exceptions->item(i).errorMessage(s);
-            WUmessage(ctx,ExceptionSeverityWarning,"RenameLogicalFile",s.str());
-        }
-        throw MakeStringException(0, "Could not rename logical file %s to %s", lfn.str(), nlfn.str());
-    }
+    catch (IException *e)
+    {
+        StringBuffer s;
+        e->errorMessage(s);
+        WUmessage(ctx,ExceptionSeverityWarning,"RenameLogicalFile",s.str());
+        throw e;
+     }
 }
 
 
