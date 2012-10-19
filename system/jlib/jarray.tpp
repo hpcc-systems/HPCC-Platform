@@ -123,7 +123,7 @@ void BaseArrayOf<MEMBER, PARAM>::sort(CompareFunc cf)
  *                            Master CopyArrays                         *
  ************************************************************************/
 
-#ifdef __clang__
+#ifdef ALT_DEFINITION_LOCATION
 template <class MEMBER, class PARAM>
 PARAM CopyArrayOf<MEMBER, PARAM>::item(aindex_t pos) const
 {
@@ -334,7 +334,7 @@ bool OwningArrayOf<MEMBER, PARAM>::zap(PARAM sought, bool nodel)
  *                            Master Ref Array                          *
  ************************************************************************/
 
-#ifdef __clang__
+#ifdef ALT_DEFINITION_LOCATION
 template <class MEMBER, class PARAM>
 PARAM ArrayOf<MEMBER, PARAM>::item(aindex_t pos) const
 {

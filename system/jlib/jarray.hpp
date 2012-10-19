@@ -125,6 +125,10 @@ public:
     void swap(aindex_t pos1, aindex_t pos2);
 };
 
+#if defined (__clang__) || (__GNUC__ >= 4 && __GNUC_MINOR__ >= 7)
+#define ALT_DEFINITION_LOCATION
+#endif
+
 template <class MEMBER, class PARAM>
 class CopyArrayOf : public BaseArrayOf<MEMBER, PARAM>
 {
@@ -135,8 +139,8 @@ public:
     CopyArrayOf() { SELF::_init(); }
     ~CopyArrayOf();
     
-#ifdef __clang__
-    PARAM item(aindex_t pos) const;  // Clang's stricter template checking is not working with inline case. Should revisit for efficiency sometime
+#ifdef ALT_DEFINITION_LOCATION
+    inline PARAM item(aindex_t pos) const;  // Clang's stricter template checking is not working with inline case. Should revisit for efficiency sometime
 #else
     inline PARAM item(aindex_t pos) const             { assertex(SELF::isItem(pos)); return Array__Member2Param(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);}
 #endif
@@ -181,8 +185,8 @@ class ArrayOf : public OwningArrayOf<MEMBER, PARAM>
     typedef ArrayOf<MEMBER,PARAM> SELF;
 
 public:
-#ifdef __clang__
-    PARAM item(aindex_t pos) const;  // Clang's stricter template checking is not working with inline case. Should revisit for efficiency sometime
+#ifdef ALT_DEFINITION_LOCATION
+    inline PARAM item(aindex_t pos) const;  // Clang's stricter template checking is not working with inline case. Should revisit for efficiency sometime
 #else
     inline PARAM item(aindex_t pos) const             { assertex(SELF::isItem(pos)); return Array__Member2Param(((MEMBER *)AllocatorOf<sizeof(MEMBER)>::_head)[pos]);}
 #endif
