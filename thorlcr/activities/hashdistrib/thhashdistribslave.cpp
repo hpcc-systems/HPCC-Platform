@@ -332,7 +332,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 SpinBlock b(doDedupLock);
                 if (dedupSamples<10)
                 {
-                    if (postCount<preCount*9/10);
+                    if (postCount<preCount*9/10)
                         dedupSuccesses++;
                     dedupSamples++;
                     ActPrintLog(owner.activity, "pre-dedup sample %d : %d unique out of %d, took: %d ms", dedupSamples, postCount, preCount, tookMs);
@@ -742,11 +742,11 @@ public:
         fixedEstSize = meta->querySerializedMeta()->getFixedSize();
         rowManager = activity->queryJob().queryRowManager();
 
-        unsigned defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist", true));
+        bool defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist", true));
         allowSpill = activity->queryContainer().queryXGMML().getPropBool("hint[@name=\"allow_spill\"]/@value", defaultAllowSpill);
         if (allowSpill)
             ActPrintLog(activity, "Using spilling buffer (will spill if overflows)");
-        writerPoolSize = activity->queryJob().getWorkUnitValueInt("hashDistWritePoolSize", globals->getPropInt("@hashDistWritePoolSize", DEFAULT_WRITEPOOLSIZE));
+        writerPoolSize = (unsigned)activity->queryJob().getWorkUnitValueInt("hashDistWritePoolSize", globals->getPropInt("@hashDistWritePoolSize", DEFAULT_WRITEPOOLSIZE));
         if (writerPoolSize>numnodes)
             writerPoolSize = numnodes; // no point in more
         ActPrintLog(activity, "Writer thread pool size : %d", writerPoolSize);
