@@ -1617,6 +1617,8 @@ char *EclAgent::getPlatform()
 char *EclAgent::getEnv(const char *name, const char *defaultValue) const 
 {
     const char *val = globals->queryProp(name);
+    if (!val)
+        val = getenv(name);
     if (val)
         return strdup(val);
     else if (defaultValue)
