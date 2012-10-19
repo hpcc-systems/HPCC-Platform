@@ -464,10 +464,9 @@
             </listitem>
 
             <listitem>
-              <para>Start Configuration Manager using these commands:</para>
+              <para>Start Configuration Manager using this command:</para>
 
-              <programlisting>source /opt/HPCCSystems/sbin/hpcc_setenv
-sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
+              <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
             </listitem>
 
             <listitem>
@@ -1784,11 +1783,10 @@ sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
           </listitem>
 
           <listitem>
-            <para>At the command prompt, enter the following commands to start
+            <para>At the command prompt, enter the following command to start
             Configuration Manager.</para>
 
-            <para><emphasis></emphasis><programlisting>source /opt/HPCCSystems/sbin/hpcc_setenv
-sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para>
+            <para><emphasis></emphasis><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting><emphasis></emphasis></para>
           </listitem>
 
           <listitem>

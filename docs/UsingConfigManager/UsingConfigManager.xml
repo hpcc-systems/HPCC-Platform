@@ -415,8 +415,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             the first node is considered the head node and is used for this
             task, but this is up to you).</para>
 
-            <programlisting>source /opt/HPCCSystems/sbin/hpcc_setenv
-sudo configmgr</programlisting>
+            <programlisting>sudo configmgr</programlisting>
 
             <para><graphic
             fileref="images/gs_img_configmgrStart.jpg" /></para>
