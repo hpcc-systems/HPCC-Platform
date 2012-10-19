@@ -156,3 +156,5 @@ else
         fi
     fi
 fi
+
+source /etc/profile

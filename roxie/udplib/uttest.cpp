@@ -134,6 +134,7 @@ public:
                 lastReport = now;
             }
         }
+        throwUnexpected(); // loop never terminates, but some compilers complain about missing return without this line
     }
 };
 

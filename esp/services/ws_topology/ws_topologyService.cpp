@@ -818,9 +818,9 @@ void CWsTopologyEx::readTpLogFileRequest(IEspContext &context, const char* fileN
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invlid 'Hours' field.");
 
         readLogReq.lastHours = req.getLastHours();
-        unsigned hour, hour2, minute, second, nano;
+        unsigned hour, minute, second, nano;
         latestLogTime.getTime(hour, minute, second, nano, false);
-        hour2 = hour - readLogReq.lastHours;
+        int hour2 = hour - readLogReq.lastHours;
         if (hour2 < 0)
             readLogReq.startDate.set("00:00:00");
         else
