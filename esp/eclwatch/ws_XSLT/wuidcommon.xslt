@@ -1067,7 +1067,7 @@
         <xsl:if test="number(IsSupplied)"> supplied</xsl:if>
       </td>
      <xsl:choose>
-       <xsl:when test="number(ShowFileContent) and string-length(Link)">
+       <xsl:when test="((string-length(FileName) &lt; 1) or number(ShowFileContent)) and string-length(Link)">
           <td>
             <a href="javascript:void(0);" onclick="getLink(document.getElementById('ECL_Result_{position()}'), '/WsWorkunits/WUResult?Wuid={$wuid}&amp;Sequence={Link}');return false;">
               <xsl:value-of select="Value"/>
