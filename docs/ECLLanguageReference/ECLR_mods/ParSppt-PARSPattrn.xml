@@ -153,7 +153,7 @@
 
     <informaltable colsep="0" frame="none" rowsep="0">
       <tgroup cols="2">
-        <colspec align="left" colwidth="122.40pt" />
+        <colspec align="left" colwidth="125.50pt" />
 
         <colspec />
 
@@ -397,27 +397,29 @@
             <entry><emphasis role="bold">PATTERN</emphasis>('<emphasis>regular
             expression</emphasis>')</entry>
 
-            <entry><programlisting role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from the following 
-supported syntax elements: 
- (x)                        Grouping (not used for matching) 
- x|y                        Alteratives x or y 
- xy                         Concatenation of x and y. 
- x* x*?                     Zero or more. Greedy and minimal versions. 
- x+ x+?                     One or more. Greedy and minimal versions. 
- x? x??                     Zero or one. Greedy and minimal versions. 
- x{m} x{m,} x{m,n}          Bounded repeats, also minimal versions 
- [0-9abcdef]                A set of characters (may use ^ for exclusion list) 
- (?=…) (?!...)             Look ahead assertion 
- (?&lt;=…) (?&lt;!...)           Look behind assertion</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
+            <entry><programlisting role="tab">Define a pattern using a <emphasis>regular expression </emphasis>built from
+the following supported syntax elements:
+ (x)                Grouping (not used for matching)
+ x|y                Alteratives x or y
+ xy                 Concatenation of x and y.
+ x* x*?           Zero or more. Greedy and minimal versions.
+ x+ x+?           One or more. Greedy and minimal versions.
+ x? x??            Zero or one. Greedy and minimal versions.
+ x{m} x{m,} x{m,n}   Bounded repeats, also minimal versions
+ [0-9abcdef]    A set of characters
+                        (may use ^ for exclusion list)
+ (?=…) (?!...)     Look ahead assertion
+ (?&lt;=…) (?&lt;!...)   Look behind assertion</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
           </row>
 
           <row>
             <entry></entry>
 
-            <entry><programlisting role="tab">The following character class expressions are supported (inside sets): 
-[:alnum:]     [:cntrl:]     [:lower:]     [:upper:]     [:space:] 
-[:alpha:]     [:digit:]     [:print:]     [:blank:]     [:graph:] 
-[:punct:]     [:xdigit:]</programlisting></entry>
+            <entry><programlisting role="tab">The following character class expressions are supported
+(inside sets):
+[:alnum:]  [:cntrl:]  [:lower:]  [:upper:]  [:space:]
+[:alpha:]  [:digit:]  [:print:]  [:blank:]  [:graph:]
+[:punct:]  [:xdigit:]</programlisting></entry>
           </row>
 
           <row>
@@ -429,7 +431,7 @@ supported syntax elements:
     Collating symbols      [.ch.] 
     Equivalence<indexterm>
                   <primary>Equivalence</primary>
-                </indexterm> class      [=e=]</programlisting></entry>
+                </indexterm> class       [=e=]</programlisting></entry>
           </row>
 
           <row>
