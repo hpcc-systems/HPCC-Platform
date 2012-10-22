@@ -599,114 +599,6 @@ private:
 };
 
 
-
-class EclCmdPackageCopyFiles : public EclCmdCommon
-{
-public:
-    EclCmdPackageCopyFiles() :optOverWrite (false)
-    {
-    }
-    virtual bool parseCommandLineOptions(ArgvIterator &iter)
-    {
-        if (iter.done())
-        {
-            usage();
-            return false;
-        }
-
-        for (; !iter.done(); iter.next())
-        {
-            const char *arg = iter.query();
-            if (*arg!='-')
-            {
-                if (optFileName.isEmpty())
-                    optFileName.set(arg);
-                else
-                {
-                    fprintf(stderr, "\nargument is already defined %s\n", arg);
-                    return false;
-                }
-                continue;
-            }
-            if (iter.matchOption(optDaliIp, ECLOPT_DALIIP))
-                continue;
-            if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE))
-                continue;
-            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
-                return false;
-        }
-        return true;
-    }
-    virtual bool finalizeOptions(IProperties *globals)
-    {
-        if (!EclCmdCommon::finalizeOptions(globals))
-        {
-            usage();
-            return false;
-        }
-        StringBuffer err;
-        if (optFileName.isEmpty())
-            err.append("\n ... Missing package file name\n\n");
-        else if (optTarget.isEmpty())
-            err.append("\n ... Specify a process name\n\n");
-
-        if (err.length())
-        {
-            fprintf(stdout, "%s", err.str());
-            usage();
-            return false;
-        }
-        return true;
-    }
-    virtual int processCMD()
-    {
-        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
-        StringBuffer pkgInfo;
-        pkgInfo.loadFile(optFileName);
-
-        fprintf(stdout, "\n ... looking up files in packagemap to see what needs copying\n\n");
-
-        Owned<IClientCopyFilesRequest> request = packageProcessClient->createCopyFilesRequest();
-        request->setInfo(pkgInfo);
-        request->setTarget(optTarget);
-        request->setPackageName(optFileName);
-        request->setOverWrite(optOverWrite);
-        if (!optDaliIp.isEmpty())
-            request->setDaliIp(optDaliIp.get());
-
-        Owned<IClientCopyFilesResponse> resp = packageProcessClient->CopyFiles(request);
-        if (resp->getExceptions().ordinality())
-            outputMultiExceptions(resp->getExceptions());
-
-        return 0;
-    }
-
-    virtual void usage()
-    {
-        fputs("\nUsage:\n"
-                    "\n"
-                    "The 'copyFiles' command will copy any file listed in the packages contained \n"
-                    "in the packagemap file that are not currently known to the cluster.\n"
-                    "This will NOT load the package information \n"
-                    "\n"
-                    "ecl packagemap copyFiles [options] <target> <filename>\n"
-                    " Options:\n"
-                    "   -O, --overwrite             overwrite existing information\n"
-                    "  --daliip=<daliip>            ip of the source dali to use for file lookups\n"
-                    "   <target>                    name of target to use when adding package information\n"
-                    "   <filename>                  name of file containing package information\n",
-                    stdout);
-
-        EclCmdCommon::usage();
-    }
-private:
-    StringAttr optFileName;
-    StringAttr optTarget;
-    StringAttr optDaliIp;
-    StringBuffer pkgInfo;
-    bool optOverWrite;
-};
-
 IEclCommand *createPackageSubCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -723,8 +615,6 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return new EclCmdPackageInfo();
     if (strieq(cmdname, "list"))
         return new EclCmdPackageList();
-    if (strieq(cmdname, "copyFiles"))
-        return new EclCmdPackageCopyFiles();
     return NULL;
 }
 
