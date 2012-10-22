@@ -103,21 +103,6 @@ ESPresponse [exceptions_inline] ListPackageResponse
     ESParray<ESPstruct PackageListMapData> PkgListMapData;
 };
 
-ESPrequest CopyFilesRequest
-{
-    string Target;
-    string PackageName;
-    string DaliIp;
-    string Info;
-    bool OverWrite;
-};
-
-
-ESPresponse [exceptions_inline] CopyFilesResponse
-{
-    ESPstruct BasePackageStatus status;
-};
-
 ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
@@ -127,7 +112,6 @@ ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("
     ESPmethod DeActivatePackage(DeActivatePackageRequest, DeActivatePackageResponse);
     ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
     ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
-    ESPmethod CopyFiles(CopyFilesRequest, CopyFilesResponse);
 };
 
 SCMexportdef(WsPackageProcess);
