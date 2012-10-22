@@ -7161,6 +7161,9 @@ void CFileContents::ensureLoaded()
         throw MakeStringException(1, "File %s could not be opened", file->queryFilename());
 
     offset_t size = io->size();
+    if (size == (offset_t)-1)
+        throw MakeStringException(1, "File %s could not be read", file->queryFilename());
+
     size32_t sizeToRead = (size32_t)size;
     if (sizeToRead != size)
         throw MakeStringException(1, "File %s is larger than 4Gb", file->queryFilename());
