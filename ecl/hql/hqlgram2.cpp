@@ -2222,8 +2222,10 @@ void HqlGram::addToActiveRecord(IHqlExpression * newField)
     //it means fields from ifblocks are inserted twice into the symbol table - and we still need to expose this internal function
     OwnedHqlExpr self = getSelfScope();
     assertex(self);
-    CHqlRecord *currentRecord = QUERYINTERFACE(self.get(), CHqlRecord);
-    if (currentRecord != &topRecord)
+
+    CHqlRecord *currentRecord = QUERYINTERFACE(self->queryRecord(), CHqlRecord);
+    //Protect against adding fields to closed records (can only occur after errors).
+    if ((currentRecord != &topRecord) && !currentRecord->isExprClosed())
         currentRecord->insertSymbols(newField);
 }
 
