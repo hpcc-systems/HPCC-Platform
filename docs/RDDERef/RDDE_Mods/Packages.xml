@@ -2,119 +2,132 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
 "http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
 <chapter>
-  <title><emphasis role="bold">Packages</emphasis></title>
+  <title><emphasis role="bold">Packages and Packagemaps</emphasis></title>
 
-  <para>Packages are used as a means to separate data from queries. Newer
-  Packages can be sent to a Roxie cluster without recompiling queries. This
-  allows you to refresh data and while ensuring that you are using identical
-  code in your query.</para>
+  <para>A Roxie query has one or more data files associated with it. At times,
+  you may want to update data without changing the query.</para>
+
+  <para>Packages are a way to separate the data definition from the
+  query.</para>
+
+  <para>A package defines a superkey that a query will use. A newer package
+  that redefines the contents of that superkey can later be sent to a Roxie
+  cluster without recompiling any queries. This allows you to refresh data and
+  while ensuring that you are using identical code in your query. It also
+  eliminates the need to recompile it and republish it.</para>
 
   <para>This simplifies change control and allows query developers to continue
   development without the risk of a query being deployed to production before
   it is ready while still allowing data to be updated.</para>
 
-  <para>Packages provide a reference to data files used in queries that
-  overrides the information originally provided in the query. This affords
-  greater flexibility and control over the data used by a query or a
-  collection of queries.</para>
+  <para>A packagemap provides a reference to the contents of a superkey used
+  in queries that overrides the original definition . This affords greater
+  flexibility and control over the data used by a query or a collection of
+  queries.</para>
+
+  <para>Roxie resolves data files at runtime. First, it will look for a
+  package defining the superkey contents. If there is no package, it will look
+  in the Dali Server's DFU (Distributed File Utility).</para>
 
   <para>The end result is quicker, more flexible process, without the need of
   recompiling complex queries. This allows you to update data without the
   chance of deploying new code that has not been approved for migration to
   production.</para>
 
-  <para>A package file can contain one or more packages. The file is used to
-  transfer the information to the Dali server. Once it is sent, the file is no
-  longer used. It is a good idea to keep a copy as a backup, but it serves no
-  other purpose.</para>
+  <para>Without packages, you would do one of the following:</para>
 
-  <para>The definition of a superkey inside of a package file overrides the
-  definition in Dali, but does NOT change the superkey definition in
-  Dali.</para>
+  <para>- Add new subfile(s) to the superkey via ECL code, ECLWatch, or
+  DFUPlus, then reload the cluster.</para>
 
-  <para><emphasis role="bold">Example1:</emphasis></para>
+  <para>- Revise the query to use a different key file, compile it, and
+  republish it.</para>
 
-  <programlisting>&lt;RoxiePackages&gt;
+  <para>A packagemap file can contain one or more packages. The file is used
+  to transfer the information to the Dali server. Once it is sent, the file is
+  no longer used. It is a good idea to keep a copy as a backup, but it serves
+  no other purpose.</para>
+
+  <para>The definition of a superfile or superkey inside of a package file
+  overrides the definition in Dali, but does NOT change the superfile or
+  superkey definition in Dali Server's DFU.</para>
+
+  <para>Package information is used as soon as it is added to Dali and the
+  package is activated. This can be done using using <emphasis role="bold">ecl
+  package add --activate</emphasis> (or <emphasis role="bold">ecl package
+  add</emphasis> &amp; <emphasis role="bold">ecl package
+  activate</emphasis>).</para>
+
+  <!--You should always validate or run the reporting step on the packages (NYI)-->
+
+  <sect1>
+    <title>Example</title>
+
+    <para>In this example, we have a query named MyQuery which uses a superkey
+    named MyDataKey that includes two subfiles:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para>If we wanted to add a third subfile, we can use a packagemap to
+    redefine the MyDataKey superkey definition so it contains three
+    files:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile1</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile2</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para><emphasis role="bold">~thor::Mysubfile3</emphasis></para>
+      </listitem>
+    </itemizedlist>
+
+    <para><emphasis role="redbold"></emphasis></para>
+
+    <para><emphasis role="bold">Example 1:</emphasis></para>
+
+    <programlisting>&lt;RoxiePackages&gt;
  &lt;Package id="MyQuery"&gt;
   &lt;Base id="thor::MyData_Key"/&gt;
  &lt;/Package&gt;
  &lt;Package id="thor::MyData_Key"&gt;
   &lt;SuperFile id="~thor::MyData_Key"&gt;
-   &lt;SubFile value="~thor::MysubfileMonday"/&gt;
-   &lt;SubFile value="~thor::MysubfileTuesday"/&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
   &lt;/SuperFile&gt;
  &lt;/Package&gt;
 &lt;/RoxiePackages&gt;
 
 </programlisting>
 
-  <para><emphasis role="bold">Example2:</emphasis></para>
+    <para><emphasis role="bold">Example 2:</emphasis></para>
 
-  <para><programlisting>&lt;RoxiePackages&gt;
+    <para><programlisting>&lt;RoxiePackages&gt;
  &lt;Package id="MyQuery"&gt;
   &lt;Base id="thor::MyData_Key"/&gt;
  &lt;/Package&gt;
  &lt;Package id="thor::MyData_Key"&gt;
   &lt;SuperFile id="~thor::MyData_Key"&gt;
-   &lt;SubFile value="~thor::MysubfileMonday"/&gt;
-   &lt;SubFile value="~thor::MysubfileTuesday"/&gt;
-   &lt;SubFile value="~thor::MysubfileWednesday"/&gt;
+   &lt;SubFile value="~thor::Mysubfile1"/&gt;
+   &lt;SubFile value="~thor::Mysubfile2"/&gt;
+   &lt;SubFile value="~thor::Mysubfile3"/&gt;
   &lt;/SuperFile&gt;
  &lt;/Package&gt;
 &lt;/RoxiePackages&gt;
 
 </programlisting></para>
-
-  <para>In the examples above, using the package in Example 1, a query named
-  MyQuery would use a superkey including two subfiles :</para>
-
-  <itemizedlist mark="bullet">
-    <listitem>
-      <para><emphasis role="bold">~thor::MysubfileMonday</emphasis></para>
-    </listitem>
-
-    <listitem>
-      <para><emphasis role="bold">~thor::MysubfileTuesday</emphasis>.</para>
-    </listitem>
-  </itemizedlist>
-
-  <para>If we were to replace the package with the one in Example2, the query
-  named MyQuery would use the superkey definition that contains three
-  files:</para>
-
-  <itemizedlist mark="bullet">
-    <listitem>
-      <para><emphasis role="bold">~thor::MysubfileMonday</emphasis></para>
-    </listitem>
-
-    <listitem>
-      <para><emphasis role="bold">~thor::MysubfileTuesday</emphasis></para>
-    </listitem>
-  </itemizedlist>
-
-  <para>and</para>
-
-  <itemizedlist mark="bullet">
-    <listitem>
-      <para><emphasis role="bold">~thor::MysubfileWednesday</emphasis>.</para>
-    </listitem>
-  </itemizedlist>
-
-  <para>Package information is active as soon as it is added to Dali and the
-  package is activated (using <emphasis role="bold">ecl package add</emphasis>
-  and <emphasis role="bold">ecl package activate</emphasis>).</para>
-
-  <para></para>
-
-  <para><emphasis role="bold">You should always validate packages before
-  adding to a cluster.</emphasis></para>
-
-  <para><emphasis role="redbold">(Note: This capability is not yet fully
-  implemented)</emphasis></para>
-
-  <para></para>
-
-  <para></para>
+  </sect1>
 
   <sect1>
     <title><emphasis role="bold">Updating Data</emphasis></title>
@@ -124,41 +137,39 @@
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Prepare the data</para>
+        <para>Prepare the data (in this workflow, the data is defined as a
+        superkey)</para>
       </listitem>
 
       <listitem>
-        <para>Write the query and test.</para>
+        <para>Write the query and test</para>
       </listitem>
 
-      <listitem>
-        <para>Deploy the data in one of the following manners:</para>
-      </listitem>
-
-      <listitem>
-        <para>Spray to Roxie using DFU</para>
-      </listitem>
-
-      <listitem>
-        <para>Use the command</para>
-      </listitem>
-    </itemizedlist>
-
-    <para><programlisting role="bold">ecl package copyFiles</programlisting></para>
-
-    <itemizedlist mark="bullet">
       <listitem>
         <para>Publish a query using the data</para>
       </listitem>
+    </itemizedlist>
 
+    <para>Later when you want to update the data:</para>
+
+    <para>Deploy the data in one of the following manners:</para>
+
+    <itemizedlist mark="bullet">
       <listitem>
-        <para>Validate package(s). <emphasis role="redbold">(Not yet fully
-        implemented)</emphasis></para>
+        <para>Create a packagemap containing a package redefining the contents
+        of the superkey</para>
       </listitem>
 
       <listitem>
-        <para>Add the Package(s) by associating the package information with a
-        QuerySet.</para>
+        <para>Add the packagemap(s) by associating the package information
+        with a QuerySet.</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
+      </listitem>
+
+      <listitem>
+        <para>Add the packagemap(s) by associating the package information
+        with a QuerySet.</para>
       </listitem>
 
       <listitem>
@@ -166,15 +177,16 @@
       </listitem>
     </itemizedlist>
 
-    <para><programlisting role="bold">ecl package add</programlisting></para>
+    <para><programlisting role="bold">ecl package add --activate</programlisting></para>
 
     <para></para>
 
-    <para>Later when new data arrives, follow these steps to update:</para>
+    <para>Later when new data arrives, follow these steps to update the data
+    using packages:</para>
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Prepare the data and create a new sub file.</para>
+        <para>Prepare the data and create a new subfile</para>
       </listitem>
     </itemizedlist>
 
@@ -183,55 +195,31 @@
         <term>Note:</term>
 
         <listitem>
-          <para>We do not recommend reusing a file name. It is generally
-          better to create new files. Roxie shares file handles so changing an
-          existing file while it is loaded could cause issues.</para>
+          <para>We strongly recommend against reusing a file name. It is
+          generally better to create new files. Roxie shares file handles so
+          trying to change an existing file while it is loaded could cause
+          issues.</para>
         </listitem>
       </varlistentry>
     </variablelist>
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Create a package with the new superfile/key definition including
-        the new subfile.</para>
-      </listitem>
-
-      <listitem>
-        <para>Deploy the new subfile in one of the following manners:</para>
-      </listitem>
-
-      <listitem>
-        <para>Spray to Roxie using DFU</para>
-      </listitem>
-
-      <listitem>
-        <para>Use the command</para>
+        <para>Create a package with a superkey definition that includes the
+        new subfile</para>
       </listitem>
     </itemizedlist>
-
-    <para><programlisting role="bold">ecl package copyFiles</programlisting></para>
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Validate package(s). <emphasis role="redbold">(Not yet fully
-        implemented)</emphasis></para>
+        <para>Add the packagemap redefining the contents of the superkey. Use
+        the command:</para>
+
+        <!--You should always validate or run the reporting step on the packages (NYI)-->
       </listitem>
     </itemizedlist>
 
-    <para></para>
-
-    <itemizedlist mark="bullet">
-      <listitem>
-        <para>Add the Package(s) by associating the package information with a
-        QuerySet.</para>
-      </listitem>
-
-      <listitem>
-        <para>Use the command</para>
-      </listitem>
-    </itemizedlist>
-
-    <para><programlisting role="bold">ecl package add</programlisting></para>
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
 
     <para></para>
   </sect1>
@@ -240,126 +228,59 @@
     <title><emphasis role="bold">Package File Syntax</emphasis></title>
 
     <para>Package files are formatted in XML using the conventions detailed in
-    this section. A Package file must begin with <emphasis
+    this section.</para>
+
+    <para>A Package file must begin with <emphasis
     role="bold">&lt;RoxiePackages&gt;</emphasis> and end with <emphasis
-    role="bold">&lt;/RoxiePackages&gt;</emphasis>. Package tags have an
-    <emphasis role="bold">id</emphasis> attribute that specifies what the
-    package is referring to. Inside the <emphasis
-    role="bold">&lt;Package&gt;</emphasis> structure, references are made
-    either to superfiles or other named packages. This indirect naming
-    convention allows you to group file definitions together and reference the
-    package containing the group. <emphasis role="bold">The lines are numbered
-    only for reference purposes.</emphasis></para>
+    role="bold">&lt;/RoxiePackages&gt;</emphasis>.</para>
+
+    <para>Package tags have an <emphasis role="bold">id</emphasis> attribute
+    that specifies what the package is referring to.</para>
+
+    <para>Inside the <emphasis role="bold">&lt;Package&gt;</emphasis>
+    structure, references are made either to superfiles or other named
+    packages. This indirect naming convention allows you to group file
+    definitions together and reference the package containing the
+    group.</para>
+
+    <para>The example shows query references first and file references
+    following; however, this order is not required.</para>
+
+    <para><emphasis role="bold">The lines are numbered only for reference
+    purposes. The comments are included for clarity, but are not required.
+    </emphasis></para>
 
     <para><emphasis role="bold">Example</emphasis>:</para>
 
-    <orderedlist numeration="arabic">
-      <listitem>
-        <para>&lt;RoxiePackages&gt;</para>
-      </listitem>
+    <para></para>
 
-      <listitem>
-        <para>&lt;!-- Begin Queries --&gt;</para>
-      </listitem>
+    <programlisting> 1.  &lt;RoxiePackages&gt;
+ 2.   &lt;!-- Begin Queries --&gt;
+ 3.     &lt;Package id="MyQuery"&gt;
+ 4.     &lt;Base id="thor::MyData_Key"/&gt;
+ 5.    &lt;/Package&gt;
+ 6.    &lt;!-- End Queries --&gt;
+ 7.    &lt;!-- Begin File references --&gt;
+ 8.    &lt;Package id="thor::MyData_Key"&gt;
+ 9.      &lt;SuperFile id="~thor::MyData_Key"&gt;
+10.       &lt;SubFile value="~thor::Mysubfile1"/&gt;
+11.       &lt;SubFile value="~thor::Mysubfile2"/&gt;
+12.        &lt;SubFile value="~thor::Mysubfile3"/&gt;
+13.      &lt;/SuperFile&gt;
+14.    &lt;/Package&gt;
+15.    &lt;!--End File references --&gt;
+16.  &lt;/RoxiePackages&gt;
+</programlisting>
 
-      <listitem>
-        <para>&lt;Package id="emily.FetchFromSuperfileService.1"&gt;</para>
-      </listitem>
+    <para>In this example, we have a query: <emphasis
+    role="bold">MyQuery</emphasis>. The query uses a superkey defined in a
+    package named <emphasis role="bold">thor::MyData_Key</emphasis>. This is
+    later defined on line 8. The <emphasis role="bold"><emphasis
+    role="bold">thor::MyData_Key</emphasis></emphasis> package contains one
+    superkey definition.</para>
 
-      <listitem>
-        <para>&lt;Base id="emily::superfile::base"/&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/Package&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;Package id="emily.JoinFromSuperfileService.1"&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;Base id="emily::superfile::base"/&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;Base id="emily::anothersuperfile::basefile"/&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/Package&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;!-- End Queries --&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;!—Begin File references --&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;Package id="emily::superfile::base"&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;SuperFile id="~emily::superfile::base"&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;SubFile value="~emily::superfile::subfileA"/&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/SuperFile&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;Package id="emily::anothersuperfile::basefile"&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;SuperFile id="~emily::superfile::anotherbasefile"&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;SubFile value="~emily::superfile::subfileB"/&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/SuperFile&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/Package&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;!-- End File references --&gt;</para>
-      </listitem>
-
-      <listitem>
-        <para>&lt;/RoxiePackages&gt;</para>
-      </listitem>
-    </orderedlist>
-
-    <para>In this example, we have two queries: <emphasis
-    role="bold">emily.FetchFromSuperfileService.1</emphasis> and <emphasis
-    role="bold">emily.JoinFromSuperfileService.1</emphasis>.</para>
-
-    <para>The first query uses a collection of file references defined in
-    another package named <emphasis
-    role="bold">emily::superfile::base</emphasis>. This collection is later
-    defined on line 12. The <emphasis
-    role="bold">emily::superfile::base</emphasis> package contains one
-    superfile definition.</para>
-
-    <para>The second query uses two collections of file references (packages)
-    defined on line 12 and one line 16. Notice that one of these is the same
-    one used by the first query.</para>
-
-    <para>The example above shows queries references first and file references
-    after; however, this order is not required. </para>
+    <para>The example shows query references first and file references
+    following; however, this order is not required.</para>
   </sect1>
 
   <sect1>
@@ -414,8 +335,8 @@
 
         <listitem>
           <para>Use unique filenames instead of overwriting existing files.
-          This prevents accidental overwrites and provides an easy method to
-          roll back.</para>
+          This prevents accidental overwrites and provides an easy way to roll
+          back.</para>
         </listitem>
 
         <listitem>
@@ -426,8 +347,10 @@
         </listitem>
 
         <listitem>
-          <para>Before you delete a package, make sure you have a backup
+          <para>Before you delete a packagemap, make sure you have a backup
           copy.</para>
+
+          <!--You should always validate or run the reporting step on the packages (NYI)-->
         </listitem>
       </itemizedlist>
     </sect2>
