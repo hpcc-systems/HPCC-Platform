@@ -15,7 +15,7 @@
 ################################################################################
 add_subdirectory (configmgr)
 
-FOREACH( iFILES
+set ( SCRIPTS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/espdefault.js
     ${CMAKE_CURRENT_SOURCE_DIR}/CMultiSelect.js
     ${CMAKE_CURRENT_SOURCE_DIR}/bpsreport.js
@@ -40,14 +40,24 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/tree.js
     ${CMAKE_CURRENT_SOURCE_DIR}/tree_template.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ui_engine.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/EclEditorControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPBase.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPWorkunit.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPResult.js
     ${CMAKE_CURRENT_SOURCE_DIR}/WsWorkunits.js
-    ${CMAKE_CURRENT_SOURCE_DIR}/GraphControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsControl.js
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectControl.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlaygroundWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/GraphPageWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/GraphWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ResultsWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/TargetSelectWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/TimingTreeMapWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ECLSourceWidget.js
 )
-    Install ( FILES ${iFILES} DESTINATION componentfiles/files/scripts COMPONENT Runtime )
-ENDFOREACH ( iFILES )
+set ( SCRIPTS_FILES ${SCRIPTS_FILES} PARENT_SCOPE)
+
+FOREACH( iFile ${SCRIPTS_FILES} )
+    Install( FILES ${iFile} DESTINATION componentfiles/files/scripts COMPONENT Runtime )
+ENDFOREACH ( iFile )
+

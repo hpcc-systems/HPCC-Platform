@@ -14,7 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-FOREACH( iFILES
+set ( CSS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/espdefault.css
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch.css
     ${CMAKE_CURRENT_SOURCE_DIR}/graph.css
@@ -24,7 +24,11 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/rightSideBar.css
     ${CMAKE_CURRENT_SOURCE_DIR}/sortabletable.css
     ${CMAKE_CURRENT_SOURCE_DIR}/tabs.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc.css
     ${CMAKE_CURRENT_SOURCE_DIR}/ecl.css
 )
-    Install( FILES ${iFILES} DESTINATION componentfiles/files/css COMPONENT Runtime )
-ENDFOREACH ( iFILES )
+set ( CSS_FILES ${CSS_FILES} PARENT_SCOPE)
+
+FOREACH( iFile ${CSS_FILES} )
+    Install( FILES ${iFile} DESTINATION componentfiles/files/css COMPONENT Runtime )
+ENDFOREACH ( iFile )
