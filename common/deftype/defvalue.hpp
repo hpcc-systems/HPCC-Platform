@@ -30,6 +30,9 @@
 #define DEFTYPE_API
 #endif
 
+#define DEFVALUE_FAILED_MALLOC 701  //Unable to allocate requested memory
+
+
 interface IValue : public serializable
 {
 public:
