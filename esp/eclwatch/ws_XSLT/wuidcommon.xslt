@@ -46,7 +46,7 @@
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
                   &nbsp;
-                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/ECLPlayground.htm%3fWuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
+                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>
               </xsl:choose>
             </td>
@@ -399,7 +399,7 @@
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dResultsWidget%26Wuid%3d{$wuid}" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">
@@ -446,7 +446,7 @@
                   Files: (<xsl:value-of select="SourceFileCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/ECLPlaygroundResults.htm%3fWuid%3d{$wuid}%26SourceFiles%3dtrue" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dResultsWidget%26Wuid%3d{$wuid}%26SourceFiles%3dtrue" >Show</a>
               </div>
             </div>
 
@@ -527,7 +527,7 @@
                   Graphs: (<xsl:value-of select="GraphCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Graphs - {$wuid}&amp;inner=/esp/files/WUGraph.htm%3fWuid%3d{$wuid}" >Show</a>
+                <a href="/esp/iframe?esp_iframe_title=Graphs - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dGraphPageWidget%26Wuid%3d{$wuid}" >Show</a>
               </div>
             </div>
           </div>
@@ -573,7 +573,7 @@
                   Timings: (<xsl:value-of select="TimerCount"/>)
                 </A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Timers - {$wuid}&amp;inner=/esp/files/WUTimings.htm%3fWuid%3d{$wuid}" >Show</a>							
+                <a href="/esp/iframe?esp_iframe_title=Timers - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dTimingPageWidget%26Wuid%3d{$wuid}" >Show</a>							
               </div>
             </div>
             <div id="Timers" class="wusectioncontent">
@@ -609,7 +609,7 @@
               <div class="WuGroupHdrLeft">
                 <A href="javascript:void(0)" onclick="toggleElement('querysection');" id="explinkquerysection" class="wusectionexpand">Query: (1)</A>
                 &nbsp;-&nbsp;
-                <a href="/esp/iframe?esp_iframe_title=Query - {$wuid}&amp;inner=/esp/files/WUSource.htm%3fWuid%3d{$wuid}" >Show</a>							
+                <a href="/esp/iframe?esp_iframe_title=Query - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLSourceWidget%26Wuid%3d{$wuid}" >Show</a>							
               </div>
           </div>
           <div id="querysection" class="wusectioncontent">
