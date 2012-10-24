@@ -292,8 +292,8 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -513,8 +513,8 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -638,8 +638,8 @@ ecl unpublish roxie "FindpersonService*"
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -785,8 +785,8 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -922,8 +922,8 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1005,8 +1005,8 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1137,8 +1137,8 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1189,9 +1189,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>Copies a query from one queryset to another. A query
                   can be copied from one HPCC environment to another by using
-                  a path which begins with '//' followed by the IP and Port of
-                  the source EclWatch and then followed by the source queryset
-                  and query.</entry>
+                  a path which begins with '//' followed by the IP or hostname
+                  and Port of the source EclWatch and then followed by the
+                  source queryset and query.</entry>
                 </row>
 
                 <row>
@@ -1294,8 +1294,8 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1417,8 +1417,8 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1509,7 +1509,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
                 </row>
 
                 <row>
-                  <entry> -A, --activate</entry>
+                  <entry>-A, --activate</entry>
 
                   <entry>Activates packagemap</entry>
                 </row>
@@ -1523,8 +1523,8 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1613,8 +1613,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>--daliip</entry>
 
-                  <entry>IP Address of of the source Dali to use for file
-                  lookups</entry>
+                  <entry>IP Address or hostname of of the source Dali to use
+                  for file lookups</entry>
                 </row>
 
                 <row>
@@ -1626,8 +1626,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1701,8 +1701,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1784,8 +1784,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1866,8 +1866,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -1951,8 +1951,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -2037,8 +2037,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -2102,8 +2102,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -2167,8 +2167,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -2232,8 +2232,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
@@ -2297,8 +2297,8 @@ ecl packagemap copyFiles myroxie  mypackagemap.pkg --daliip=192.168.1.3
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address of ESP server running eclwatch
-                  services</entry>
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
                 </row>
 
                 <row>
