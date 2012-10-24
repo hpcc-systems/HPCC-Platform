@@ -12,11 +12,13 @@
       <primary>FAIL</primary>
     </indexterm> ] [ </emphasis>, <emphasis role="bold">CONST<indexterm>
       <primary>CONST</primary>
-    </indexterm> ])</emphasis><emphasis role="bold">ASSERT(
-  </emphasis><emphasis>recset, condition </emphasis><emphasis role="bold">[
-  </emphasis><emphasis>, message </emphasis><emphasis role="bold">] [
-  </emphasis>, <emphasis role="bold">FAIL ] [ </emphasis>, <emphasis
-  role="bold">CONST ])</emphasis><emphasis role="bold"><indexterm>
+    </indexterm> ])</emphasis></para>
+
+  <para><emphasis role="bold">ASSERT( </emphasis><emphasis>recset, condition
+  </emphasis><emphasis role="bold">[ </emphasis><emphasis>, message
+  </emphasis><emphasis role="bold">] [ </emphasis>, <emphasis role="bold">FAIL
+  ] [ </emphasis>, <emphasis role="bold">CONST ])</emphasis><emphasis
+  role="bold"><indexterm>
       <primary>ASSERT function</primary>
     </indexterm></emphasis></para>
 
@@ -130,5 +132,6 @@ END;
 OUTPUT(PROJECT(ds, t(LEFT)));
 </programlisting>
 
-  <para>See Also: <link linkend="FAIL">FAIL</link>, <link linkend="ERROR">ERROR</link></para>
+  <para>See Also: <link linkend="FAIL">FAIL</link>, <link
+  linkend="ERROR">ERROR</link></para>
 </sect1>
