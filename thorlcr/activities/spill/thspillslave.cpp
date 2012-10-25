@@ -82,29 +82,12 @@ public:
         cd->createDirectory();
 
         IHThorSpillArg *helper = (IHThorSpillArg *)queryHelper();
-        Owned<IRecordSize> rSz;
-        if (!grouped)
-            rSz.set(helper->queryDiskRecordSize());
-        else
-        {
-            class GroupedRecordSize : public CSimpleInterface, implements IRecordSize
-            {
-                IRecordSize *rSz;
-            public:
-                IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-                GroupedRecordSize(IRecordSize *_rSz) { rSz = LINK(_rSz); }
-                ~GroupedRecordSize() { ::Release(rSz); }
-                virtual size32_t getRecordSize(const void *rec) { return rSz->getRecordSize(rec) + 1; }
-                virtual size32_t getFixedSize() const { return rSz->getFixedSize()?(rSz->getFixedSize()+1):0; }
-            };
-            rSz.setown(new GroupedRecordSize(helper->queryDiskRecordSize()));
-        }
-
         void *ekey;
         size32_t ekeylen;
         helper->getEncryptKey(ekeylen,ekey);
         Owned<ICompressor> ecomp;
-        if (ekeylen!=0) {
+        if (ekeylen!=0)
+        {
             ecomp.setown(createAESCompressor256(ekeylen,ekey));
             memset(ekey,0,ekeylen);
             free(ekey);
@@ -114,23 +97,25 @@ public:
         Owned<IFileIO> iFileIO;
         bool fixedRecordSize = queryRowMetaData()->isFixedSize();
         size32_t minrecsize = queryRowMetaData()->getMinRecordSize();
-        if (compress)
-            iFileIO.setown(createCompressedFileWriter(file, fixedRecordSize?(minrecsize+(grouped?sizeof(byte):0)):0, false, true, ecomp));
-        else
-            iFileIO.setown(file->open(IFOcreate));
-        if (!iFileIO)
-            throw MakeActivityException(this, 0, "Failed to create temporary file: %s", fileName.str());
+
         if (fixedRecordSize)
             ActPrintLog("SPILL: created fixed output %s recsize=%u", (0!=ekeylen)?"[encrypted]":compress?"[compressed]":"",minrecsize);
         else
             ActPrintLog("SPILL: created variable output %s, minrecsize=%u", (0!=ekeylen)?"[encrypted]":compress?"[compressed]":"",minrecsize);
-        Owned<IFileIOStream> filestrm = createBufferedIOStream(iFileIO);
-        out.setown(createRowWriter(filestrm,queryRowSerializer(),queryRowAllocator(),grouped,!compress,false)); 
+        unsigned rwFlags = (DEFAULT_RWFLAGS & ~rw_autoflush); // flushed by close()
+        if (compress)
+            rwFlags |= rw_compress;
+        else
+            rwFlags |= rw_crc; // only if !compress
+        if (grouped)
+            rwFlags |= rw_grouped;
+        out.setown(createRowWriter(file, this, rwFlags));
     }
 
     void close()
     {
-        if (out) {
+        if (out)
+        {
             if (compress)
                 out->flush();
             else
