@@ -474,6 +474,12 @@ public:
             EXCLOG(e, "~CJobQueue calling dounsubscribe");
             e->Release();
         }
+        while (qdata)
+        {
+            sQueueData * next = qdata->next;
+            delete qdata;
+            qdata = next;
+        }
     }
 
 
