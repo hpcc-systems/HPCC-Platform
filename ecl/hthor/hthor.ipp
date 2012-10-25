@@ -290,7 +290,7 @@ protected:
     unsigned __int64 numRecords;
     Owned<ClusterWriteHandler> clusterHandler;
     offset_t sizeLimit;
-    Owned<IOutputRowSerializer> rowSerializer;
+    Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
     OwnedConstHThorRow nextrow; // needed for grouped spill
 

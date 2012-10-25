@@ -200,9 +200,15 @@ void CDiskRecordPartHandler::open()
 {
     CDiskPartHandlerBase::open();
     in.clear();
+    unsigned rwFlags = DEFAULT_RWFLAGS;
+    if (checkFileCrc) // NB: if compressed, this will be turned off by base class
+        rwFlags |= rw_crc;
+    if (activity.grouped)
+        rwFlags |= rw_grouped;
     if (compressed)
     {
-        in.setown(createCompressedRowStream(iFile, activity.queryDiskRowInterfaces(), 0, (offset_t)-1, RCUNBOUND, checkFileCrc, activity.grouped, activity.eexp));
+        rwFlags |= rw_compress;
+        in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags, activity.eexp));
         if (!in.get())
         {
             if (!blockCompressed)
@@ -211,8 +217,8 @@ void CDiskRecordPartHandler::open()
                 throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
         }
     }
-    else 
-        in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), 0, (offset_t)-1, RCUNBOUND, checkFileCrc, activity.grouped));
+    else
+        in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
     if (!in)
         throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
     ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
