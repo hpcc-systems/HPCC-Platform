@@ -39,7 +39,6 @@ BoolValue *BoolValue::falseconst;
 static _ATOM asciiAtom;
 static _ATOM ebcdicAtom;
 
-
 MODULE_INIT(INIT_PRIORITY_DEFVALUE)
 {
     asciiAtom = createLowerCaseAtom("ascii");
@@ -236,7 +235,7 @@ VarStringValue::VarStringValue(unsigned len, const char *v, ITypeInfo *_type) : 
         val.set(v, typeLen);
     else
     {
-        char * temp = (char *)malloc(typeLen+1);
+        char * temp = (char *)checked_malloc(typeLen+1, DEFVALUE_MALLOC_FAILED);
         memcpy(temp, v, len);
         temp[len] = 0;
         val.set(temp, typeLen);
@@ -439,7 +438,7 @@ void MemoryValue::deserialize(MemoryBuffer &src)
 {
     size32_t size;
     src.read(size);
-    void *mem = malloc(size);
+    void *mem = checked_malloc(size, DEFVALUE_MALLOC_FAILED);
     assertex(mem);
     src.read(size, mem);
     val.set(size, mem);
@@ -583,7 +582,7 @@ IValue *createStringValue(const char *val, ITypeInfo *type, int srcLength, IChar
     }
     else if (tgtLength > srcLength)
     {
-        char * extended = (char *)malloc(tgtLength);
+        char * extended = (char *)checked_malloc(tgtLength, DEFVALUE_MALLOC_FAILED);
         memcpy(extended, val, srcLength);
         memset(extended+srcLength, type->queryCharset()->queryFillChar(), tgtLength-srcLength);
         IValue * ret = new StringValue(extended, type);
@@ -750,7 +749,7 @@ IValue *createUnicodeValue(char const * value, ITypeInfo * type, unsigned srclen
         type->Release();
         return createUnicodeValue(value, srclen, type->queryLocale()->str(), false);
     }
-    UChar * buff = (UChar *)malloc(type->getSize());
+    UChar * buff = (UChar *)checked_malloc(type->getSize(), DEFVALUE_MALLOC_FAILED);
     rtlCodepageToUnicode(type->getStringLen(), buff, srclen, value, "US-ASCII");
     IValue * ret = new UnicodeValue(buff, type);
     free(buff);
@@ -790,7 +789,7 @@ IValue * createUnicodeValue(size32_t len, const void * text, ITypeInfo * type)
 void UnicodeAttr::set(UChar const * _text, unsigned _len)
 {
     free(text);
-    text = (UChar *) malloc((_len+1)*2);
+    text = (UChar *) checked_malloc((_len+1)*2, DEFVALUE_MALLOC_FAILED);
     memcpy(text, _text, _len*2);
     text[_len] = 0x0000;
 }
@@ -803,7 +802,7 @@ VarUnicodeValue::VarUnicodeValue(unsigned len, const UChar * v, ITypeInfo * _typ
         val.set(v, typeLen);
     else
     {
-        UChar * temp = (UChar *)malloc((typeLen+1)*2);
+        UChar * temp = (UChar *)checked_malloc((typeLen+1)*2, DEFVALUE_MALLOC_FAILED);
         memcpy(temp, v, len*2);
         temp[len] = 0;
         val.set(temp, typeLen);
@@ -948,7 +947,7 @@ void VarUnicodeValue::deserialize(MemoryBuffer & src)
 {
     size32_t len;
     src.read(len);
-    UChar * buff = (UChar *) malloc(len*2);
+    UChar * buff = (UChar *) checked_malloc(len*2, DEFVALUE_MALLOC_FAILED);
     src.read(len*2, buff);
     val.set(buff, len);
 }
@@ -1206,7 +1205,7 @@ IValue *DataValue::castTo(ITypeInfo *t)
             return new DataValue(val.get(), LINK(t));
         else
         {
-            char *newstr = (char *) malloc(nsize);
+            char *newstr = (char *) checked_malloc(nsize, DEFVALUE_MALLOC_FAILED);
             memcpy(newstr, val.get(), osize);
             memset(newstr+osize, 0, nsize-osize);
             IValue * ret = new DataValue(newstr, LINK(t));
@@ -1226,7 +1225,7 @@ IValue *DataValue::castTo(ITypeInfo *t)
             return new StringValue((char *)val.get(), t);
         else
         {
-            char *newstr = (char *) malloc(nsize);
+            char *newstr = (char *) checked_malloc(nsize, DEFVALUE_MALLOC_FAILED);
             memcpy(newstr, val.get(), osize);
             memset(newstr+osize, t->queryCharset()->queryFillChar(), nsize-osize);
             IValue * ret = new StringValue(newstr, t);
@@ -1304,7 +1303,7 @@ QStringValue::QStringValue(const char *v, ITypeInfo *_type) : MemoryValue(_type)
 const char *QStringValue::generateECL(StringBuffer &out)
 {
     unsigned strLen = type->getStringLen();
-    char * strData = (char *)malloc(strLen);
+    char * strData = (char *)checked_malloc(strLen, DEFVALUE_MALLOC_FAILED);
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     out.append('Q');
     appendStringAsQuotedECL(out, strLen, strData);
@@ -1341,7 +1340,7 @@ IValue *QStringValue::castTo(ITypeInfo *t)
     }
 
     unsigned strLen = type->getStringLen();
-    char * strData = (char *)malloc(strLen);
+    char * strData = (char *)checked_malloc(strLen, DEFVALUE_MALLOC_FAILED);
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     IValue * ret = t->castFrom(strLen, strData);
     free(strData);
@@ -1370,7 +1369,7 @@ bool QStringValue::getBoolValue()
 __int64 QStringValue::getIntValue()
 {
     unsigned strLen = type->getStringLen();
-    char * strData = (char *)malloc(strLen);
+    char * strData = (char *)checked_malloc(strLen, DEFVALUE_MALLOC_FAILED);
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     __int64 ret = rtlStrToInt8(strLen, strData);
     free(strData);
@@ -1380,7 +1379,7 @@ __int64 QStringValue::getIntValue()
 const char *QStringValue::getStringValue(StringBuffer &out)
 {
     unsigned strLen = type->getStringLen();
-    char * strData = (char *)malloc(strLen);
+    char * strData = (char *)checked_malloc(strLen, DEFVALUE_MALLOC_FAILED);
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     out.append(strLen, strData);
     free(strData);
@@ -1390,7 +1389,7 @@ const char *QStringValue::getStringValue(StringBuffer &out)
 void QStringValue::pushDecimalValue()
 {
     unsigned strLen = type->getStringLen();
-    char * strData = (char *)malloc(strLen);
+    char * strData = (char *)checked_malloc(strLen, DEFVALUE_MALLOC_FAILED);
     rtlQStrToStr(strLen, strData, strLen, (const char *)val.get());
     DecPushString(strLen, strData);
     free(strData);
@@ -1571,7 +1570,7 @@ IValue *IntValue::castTo(ITypeInfo *t)
         if (nLen == UNKNOWN_LENGTH)
             return castViaString(t);
 
-        char *newstr = (char *) malloc(nLen);
+        char *newstr = (char *) checked_malloc(nLen, DEFVALUE_MALLOC_FAILED);
         if (type->isSigned())
             rtlInt8ToStr(nLen, newstr, val);
         else
@@ -2036,7 +2035,7 @@ IValue *createRealValue(double val, ITypeInfo * type)
 DecimalValue::DecimalValue(const void * v, ITypeInfo * _type) : CValue(_type)
 {
     unsigned len = _type->getSize();
-    val = (char *)malloc(len);
+    val = (char *)checked_malloc(len, DEFVALUE_MALLOC_FAILED);
     memcpy(val, v, len);
 }
 
@@ -2179,7 +2178,7 @@ void DecimalValue::deserialize(MemoryBuffer &src)
 {
     size32_t size;
     src.read(size);
-    val = malloc(size);
+    val = checked_malloc(size, DEFVALUE_MALLOC_FAILED);
     assertex(val);
 }
 
@@ -2404,7 +2403,7 @@ void appendValueToBuffer(MemoryBuffer & mem, IValue * value)
 {
     ITypeInfo * type = value->queryType();
     unsigned len = type->getSize();
-    void * temp = malloc(len);
+    void * temp = checked_malloc(len, DEFVALUE_MALLOC_FAILED);
     value->toMem(temp);
 
     if (type->isSwappedEndian() != mem.needSwapEndian())
@@ -3044,15 +3043,6 @@ void getStringFromIValue(unsigned & len, char* & str, IValue* val)
     str = s.detach();
 }
 //---------------------------------------------------------------------
-
-unsigned extractUnicode(IValue * in, rtlDataAttr & out)
-{
-    ITypeInfo * type = in->queryType();
-    unsigned bufflen = type->getStringLen()+1;
-    out.setown(rtlMalloc(2*bufflen));
-    in->getUCharStringValue(bufflen, out.getdata());
-    return rtlUnicodeStrlen(out.getustr());
-}
 
 IValue * concatValues(IValue * left, IValue * right)
 {
