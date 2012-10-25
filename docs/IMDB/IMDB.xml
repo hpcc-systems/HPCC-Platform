@@ -604,7 +604,7 @@ END;
           </listitem>
         </itemizedlist>
 
-        <sect3>
+        <sect3 role="brk">
           <title>Examine the Data</title>
 
           <para>In this section, we will look at the data and determine if
