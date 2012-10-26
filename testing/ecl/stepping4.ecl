@@ -22,6 +22,9 @@
 //varskip trans
 //nothor
 
+//Stepped global joins unsupported, see issue HPCC-8148
+//skip type==thorlcr TBD
+
 boy := STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word = 'boy')), doc);
 
 sheep := STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word = 'sheep')), doc);
