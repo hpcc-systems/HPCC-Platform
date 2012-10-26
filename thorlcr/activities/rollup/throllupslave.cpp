@@ -279,22 +279,18 @@ public:
     }
 };
 
-class CDedupSlaveActivity : public CDedupRollupBaseActivity, public CThorDataLink
+class CDedupBaseSlaveActivity : public CDedupRollupBaseActivity, public CThorDataLink
 {
-    IHThorDedupArg * ddhelper;
+protected:
+    IHThorDedupArg *ddhelper;
     bool keepLeft;
     unsigned numToKeep;
-    bool compareAll;
-    Owned<CDedupAllHelper> dedupHelper;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CDedupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp) 
+    CDedupBaseSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
         : CDedupRollupBaseActivity(_container, false, global, groupOp), CThorDataLink(this)
-    {
-    }
-    ~CDedupSlaveActivity()
     {
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
@@ -304,10 +300,36 @@ public:
         ddhelper = static_cast <IHThorDedupArg *>(queryHelper());
         keepLeft = ddhelper->keepLeft();
         numToKeep = ddhelper->numToKeep();
-        compareAll = ddhelper->compareAll();
-        if (compareAll)
-            assertex(1 == numToKeep);
         assertex(keepLeft || numToKeep == 1);
+    }
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDedupRollupBaseActivity::start();
+        dataLinkStart(id, container.queryId());
+    }
+    virtual void stop()
+    {
+        CDedupRollupBaseActivity::stop();
+        dataLinkStop();
+    }
+    virtual bool isGrouped() { return groupOp; }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    {
+        initMetaInfo(info);
+        CDedupRollupBaseActivity::getMetaInfo(info);
+        calcMetaInfoSize(info,inputs.item(0));
+    }
+};
+
+class CDedupSlaveActivity : public CDedupBaseSlaveActivity
+{
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CDedupSlaveActivity(CGraphElementBase *_container, bool global, bool groupOp)
+        : CDedupBaseSlaveActivity(_container, global, groupOp)
+    {
     }
     inline bool eog()
     {
@@ -323,63 +345,28 @@ public:
         }
         return false;
     }
-    virtual void start()
-    {
-        ActivityTimer s(totalCycles, timeActivities, NULL);
-        CDedupRollupBaseActivity::start();
-        if (compareAll)
-        {           
-            assertex(!global);      // dedup(),local,all only supported
-            dedupHelper.setown(new CDedupAllHelper(this));
-            dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
-            dedupHelper->calcNextDedupAll(groupOp);
-        }
-        dataLinkStart(id, container.queryId());
-    }
-    virtual void stop()
-    {
-        CDedupRollupBaseActivity::stop();
-        dataLinkStop();
-    }
-    
     CATCH_NEXTROW()
     {
         ActivityTimer t(totalCycles, timeActivities, NULL);
-        if (eos) return NULL;
-        if (!compareAll)
-            checkFirstRow();
+        if (eos)
+            return NULL;
+        checkFirstRow();
 
         if (eog())
             return NULL;
 
-        if (compareAll)
-        {
-            loop
-            {
-                OwnedConstThorRow row = dedupHelper->nextRow();
-                if (row)
-                {
-                    dataLinkIncrement();
-                    return row.getClear();
-                }
-                else if (!groupOp || !dedupHelper->calcNextDedupAll(true))
-                {
-                    eos = true;
-                    return NULL;
-                }
-            }
-        }
-
         if (!kept && !groupOp)
             return NULL;
         OwnedConstThorRow next;
-        loop {
+        loop
+        {
             next.setown(input->nextRow());
             if (!next)
             {
                 if (!groupOp)
                     next.setown(input->nextRow());
-                if (!next) {
+                if (!next)
+                {
                     if (global&&putNextKept()) // send kept to next node
                         return NULL;
                 }
@@ -413,12 +400,58 @@ public:
         }
         return NULL;
     }
-    virtual bool isGrouped() { return groupOp; }
-    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+};
+
+class CDedupAllSlaveActivity : public CDedupBaseSlaveActivity
+{
+    Owned<CDedupAllHelper> dedupHelper;
+    bool lastEog;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CDedupAllSlaveActivity(CGraphElementBase *_container, bool groupOp)
+        : CDedupBaseSlaveActivity(_container, false, groupOp)
     {
-        initMetaInfo(info);
-        CDedupRollupBaseActivity::getMetaInfo(info);
-        calcMetaInfoSize(info,inputs.item(0));
+        lastEog = false;
+    }
+    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    {
+        CDedupBaseSlaveActivity::init(data, slaveData);
+        assertex(1 == numToKeep);
+    }
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
+        CDedupBaseSlaveActivity::start();
+
+        lastEog = false;
+        assertex(!global);      // dedup(),local,all only supported
+        dedupHelper.setown(new CDedupAllHelper(this));
+        dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
+        dedupHelper->calcNextDedupAll(groupOp);
+    }
+    CATCH_NEXTROW()
+    {
+        ActivityTimer t(totalCycles, timeActivities, NULL);
+        if (eos)
+            return NULL;
+
+        loop
+        {
+            OwnedConstThorRow row = dedupHelper->nextRow();
+            if (row)
+            {
+                lastEog = false;
+                dataLinkIncrement();
+                return row.getClear();
+            }
+            else
+            {
+                if (!groupOp || !dedupHelper->calcNextDedupAll(true))
+                    eos = true;
+                return NULL;
+            }
+        }
     }
 };
 
@@ -590,12 +623,20 @@ CActivityBase *createDedupSlave(CGraphElementBase *container)
 
 CActivityBase *createLocalDedupSlave(CGraphElementBase *container)
 {
-    return new CDedupSlaveActivity(container, false, false);
+    IHThorDedupArg *ddhelper = static_cast <IHThorDedupArg *>(container->queryHelper());
+    if (ddhelper->compareAll())
+        return new CDedupAllSlaveActivity(container, false);
+    else
+        return new CDedupSlaveActivity(container, false, false);
 }
 
 CActivityBase *createGroupDedupSlave(CGraphElementBase *container)
 {
-    return new CDedupSlaveActivity(container, false, true);
+    IHThorDedupArg *ddhelper = static_cast <IHThorDedupArg *>(container->queryHelper());
+    if (ddhelper->compareAll())
+        return new CDedupAllSlaveActivity(container, true);
+    else
+        return new CDedupSlaveActivity(container, false, true);
 }
 
 CActivityBase *createRollupSlave(CGraphElementBase *container)
