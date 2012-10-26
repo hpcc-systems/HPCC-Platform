@@ -426,6 +426,7 @@ bool CppCompiler::compile()
         cclog = queryCcLogName();
     Owned <IFile> dstfile = createIFile(cclog);
     dstfile->remove();
+
     Owned<IFileIO> dstIO = dstfile->open(IFOwrite);
     ForEachItemIn(i2, logFiles)
     {
@@ -436,6 +437,12 @@ bool CppCompiler::compile()
             srcfile->remove();
         }
     }
+
+    //Don't leave lots of blank log files around if the compile was successful
+    bool logIsEmpty = (dstIO->size() == 0);
+    dstIO.clear();
+    if (ret && logIsEmpty)
+        dstfile->remove();
 
     pool->joinAll(true, 1000);
     return ret;
