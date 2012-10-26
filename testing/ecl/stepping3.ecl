@@ -22,5 +22,8 @@
 //varskip trans
 //nothor
 
+//Stepped global joins unsupported, see issue HPCC-8148
+//skip type==thorlcr TBD
+
 // should be equivalent to OUTPUT(SORT(DG_IndexFile(DG_firstname = 'DAVID'), DG_Prange));
 OUTPUT(STEPPED(DG_IndexFile(KEYED(DG_firstname = 'DAVID')), DG_Prange));

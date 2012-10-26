@@ -18,6 +18,8 @@
 //UseStandardFiles
 //nothor
 
+//Stepped global joins unsupported, see issue HPCC-8148
+//skip type==thorlcr TBD
 
 OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['boy', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
 OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['b%%%', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
