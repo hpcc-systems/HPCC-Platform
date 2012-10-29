@@ -3256,6 +3256,9 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"mirror","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))
                 setBaseDirectory(baseDir.str(), true);
 
+            if (agentTopology->getPropBool("@useNASTranslation", true))
+                envInstallNASHooks();
+
             if (standAloneWorkUnit)
             {
                 //Stand alone program, but dali is specified => create a workunit in dali, and store the results there....
