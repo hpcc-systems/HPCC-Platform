@@ -300,10 +300,6 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
-                xpointer="eclpackagecopyfiles"
-                xmlns:xi="http://www.w3.org/2001/XInclude" />
-
-    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
                 xpointer="eclpackagedelete"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
