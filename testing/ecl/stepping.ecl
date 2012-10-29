@@ -18,6 +18,9 @@
 //UseStandardFiles
 //nothor
 
+//Stepped global joins unsupported, see issue HPCC-8148
+//skip type==thorlcr TBD
+
 import lib_stringLib;
 
 MaxTerms            := TS_MaxTerms;

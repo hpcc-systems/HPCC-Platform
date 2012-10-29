@@ -15,12 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//nothor
+import std.system.thorlib;
 
-//Stepped global joins unsupported, see issue HPCC-8148
-//skip type==thorlcr TBD
+output(thorlib.platform());
 
-OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['boy', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
-OUTPUT(SORTED(STEPPED(TS_WordIndex(keyed(kind = TS_kindType.TextEntry and word in ['b%%%', 'sheep'])), doc, segment, wpos), doc, segment, wpos, assert)) : independent;
+pl := thorlib.platform() : independent;
+
+ds := NOFOLD(dataset([1,2,3,4,5],{ unsigned id; }));
+p := table(ds, { string x := thorlib.platform() + (string)id });
+output(p);
 

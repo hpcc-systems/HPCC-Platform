@@ -2711,7 +2711,7 @@ OUTPUT(ValidWords)
 
 sudo /sbin/service dafilesrv start</programlisting><property><!--*** not for publication
 cd /var/lib/HPCCSystems/mythor
-source /opt/HPCCSystems/sbin/hpcc_setenv 
+...
 init_stop_thor
 init_start_thor--></property></para>
         </listitem>

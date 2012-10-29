@@ -18,6 +18,7 @@ varstring daliServer() : once, ctxmethod, entrypoint='getDaliServers';
 varstring cluster() : once, ctxmethod, entrypoint='getClusterName';
 varstring getExpandLogicalName(const varstring name) : pure, ctxmethod, entrypoint='getExpandLogicalName';
 varstring group() : once, ctxmethod, entrypoint='getGroupName';
+varstring platform() : pure ,ctxmethod, entrypoint='getPlatform';
     END;
 
 RETURN MODULE
@@ -66,6 +67,12 @@ export getExpandLogicalName(const varstring name) := externals.getExpandLogicalN
  */
 
 export cluster() := externals.cluster();
+
+/*
+ * Returns the platform the query is currently executing on.
+ */
+
+export platform() := externals.platform();
 
 /*
  * The following are either unused, or should be replaced with a different syntax.

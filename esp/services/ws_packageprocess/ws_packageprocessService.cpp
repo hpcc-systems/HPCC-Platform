@@ -167,65 +167,6 @@ bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const
     return cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
 }
 
-bool addFileInfoToDali(const char *logicalname, const char *lookupDaliIp, const char *target, bool overwrite, IUserDescriptor* userdesc, StringBuffer &host, short port, StringBuffer &msg)
-{
-    bool retval = true;
-    try
-    {
-        if (!overwrite)
-        {
-            if (isFileKnownOnCluster(logicalname, lookupDaliIp, target, userdesc))
-                return true;
-        }
-
-        StringBuffer user;
-        StringBuffer password;
-
-        if (userdesc)
-        {
-            userdesc->getUserName(user);
-            userdesc->getPassword(password);
-        }
-
-        Owned<IClientFileSpray> fs;
-        fs.setown(createFileSprayClient());
-        fs->setUsernameToken(user.str(), password.str(), NULL);
-
-        VStringBuffer url("http://%s:%d/FileSpray", host.str(), port);
-        fs->addServiceUrl(url.str());
-
-        bool isRoxie = isRoxieProcess(target);
-
-        Owned<IClientCopy> req = fs->createCopyRequest();
-        req->setSourceLogicalName(logicalname);
-        req->setDestLogicalName(logicalname);
-        req->setDestGroup(target);
-        req->setSuperCopy(false);
-        if (isRoxie)
-            req->setDestGroupRoxie("Yes");
-
-        req->setSourceDali(lookupDaliIp);
-
-        req->setSrcusername(user);
-        req->setSrcpassword(password);
-        req->setOverwrite(overwrite);
-
-        Owned<IClientCopyResponse> resp = fs->Copy(req);
-    }
-    catch(IException *e)
-    {
-        e->errorMessage(msg);
-        DBGLOG("ERROR = %s", msg.str());
-        e->Release();  // report the error later if needed
-        retval = false;
-    }
-    catch(...)
-    {
-        retval = false;
-    }
-
-    return retval;
-}
 
 void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree, const char *setName)
 {
@@ -322,40 +263,6 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
         makePackageActive(pkgSetRegistry, pkgSetTree, target);
     else
         pkgSetTree->setPropBool("@active", false);
-}
-
-void copyPackageSubFiles(IPropertyTree *packageInfo, const char *target, const char *defaultLookupDaliIp, bool overwrite, IUserDescriptor* userdesc, StringBuffer &host, short port)
-{
-    Owned<IPropertyTreeIterator> iter = packageInfo->getElements("Package");
-    ForEach(*iter)
-    {
-        IPropertyTree &item = iter->query();
-        StringBuffer lookupDaliIp;
-        lookupDaliIp.append(item.queryProp("@daliip"));
-        if (lookupDaliIp.length() == 0)
-            lookupDaliIp.append(defaultLookupDaliIp);
-        if (lookupDaliIp.length() == 0)
-        {
-            StringAttr superfile(item.queryProp("@id"));
-            throw MakeStringException(PKG_MISSING_DALI_LOOKUP_IP, "Could not lookup SubFiles in package %s because no remote dali ip was specified", superfile.get());
-        }
-        Owned<IPropertyTreeIterator> super_iter = item.getElements("SuperFile");
-        ForEach(*super_iter)
-        {
-            IPropertyTree &supertree = super_iter->query();
-            Owned<IPropertyTreeIterator> sub_iter = supertree.getElements("SubFile");
-            ForEach(*sub_iter)
-            {
-                IPropertyTree &subtree = sub_iter->query();
-                StringAttr subid = subtree.queryProp("@value");
-                if (subid.length())
-                {
-                    StringBuffer msg;
-                    addFileInfoToDali(subid.get(), lookupDaliIp, target, overwrite, userdesc, host, port, msg);
-                }
-            }
-        }
-    }
 }
 
 void getPackageListInfo(IPropertyTree *mapTree, IEspPackageListMapData *pkgList)
@@ -622,38 +529,5 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
     StringBuffer info;
     getPkgInfo(target.length() ? target.get() : "*", info);
     resp.setInfo(info);
-    return true;
-}
-
-bool CWsPackageProcessEx::onCopyFiles(IEspContext &context, IEspCopyFilesRequest &req, IEspCopyFilesResponse &resp)
-{
-    resp.updateStatus().setCode(0);
-    StringBuffer info(req.getInfo());
-    StringAttr target(req.getTarget());
-    StringAttr pkgName(req.getPackageName());
-    StringAttr lookupDaliIp(req.getDaliIp());
-
-    if (target.length() == 0)
-        throw MakeStringException(PKG_MISSING_PARAM, "CWsPackageProcessEx::onCopyFiles process parameter not set.");
-
-    Owned<IUserDescriptor> userdesc;
-    const char *user = context.queryUserId();
-    const char *password = context.queryPassword();
-    if (user && *user && *password && *password)
-    {
-        userdesc.setown(createUserDescriptor());
-        userdesc->set(user, password);
-    }
-
-    StringBuffer host;
-    short port;
-    context.getServAddress(host, port);
-
-    Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
-    copyPackageSubFiles(LINK(packageTree), target, lookupDaliIp.get(), req.getOverWrite(), userdesc, host, port);
-
-    StringBuffer msg;
-    msg.append("Successfully loaded ").append(pkgName.get());
-    resp.updateStatus().setDescription(msg.str());
     return true;
 }

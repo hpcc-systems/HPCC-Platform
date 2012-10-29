@@ -852,7 +852,8 @@ paramType
                         }
     | _LINKCOUNTED_ ROW {
                             IHqlExpression* record = queryNullRecord();
-                            $$.setType(setLinkCountedAttr(makeRowType(record->getType()), true));
+                            Owned<ITypeInfo> rowType = makeRowType(record->getType());
+                            $$.setType(setLinkCountedAttr(rowType, true));
                             $$.setPosition($1);
                         }
     | abstractModule
