@@ -149,6 +149,8 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
     IHThorLoopArg *helper;
     IThorBoundLoopGraph *boundGraph;
     unsigned flags;
+    Owned<IBarrier> barrier;
+
     void checkEmpty()
     {
         // similar to sync, but continiously listens for messages from slaves
@@ -184,7 +186,7 @@ public:
     CLoopActivityMaster(CMasterGraphElement *info) : CLoopActivityMasterBase(info)
     {
         if (!container.queryLocalOrGrouped())
-            mpTag = container.queryJob().allocateMPTag();
+            barrier.setown(container.queryJob().createBarrier(mpTag));
     }
     void init()
     {
@@ -237,10 +239,18 @@ public:
                     initLoopResults(loopCounter);
                 boundGraph->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
+                if (!barrier->wait(false))
+                    break;
             }
         }
         else
             checkEmpty();
+    }
+    virtual void abort()
+    {
+        CLoopActivityMasterBase::abort();
+        if (barrier)
+            barrier->cancel();
     }
 };
 
