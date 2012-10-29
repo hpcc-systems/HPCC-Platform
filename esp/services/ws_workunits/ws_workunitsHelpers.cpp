@@ -436,6 +436,30 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+struct mapEnums { int val; const char *str; };
+
+mapEnums queryFileTypes[] = {
+   { FileTypeCpp, "cpp" },
+   { FileTypeDll, "dll" },
+   { FileTypeResText, "res" },
+   { FileTypeHintXml, "hint" },
+   { FileTypeXml, "xml" },
+   { FileTypeSize,  NULL },
+};
+
+const char *getEnumText(int value, mapEnums *map)
+{
+    const char *defval = map->str;
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    assertex(!"Unexpected value in setEnum");
+    return defval;
+}
+
 void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 {
     try
@@ -478,9 +502,8 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
         }
 
         IArrayOf<IEspECLHelpFile> helpers;
-        getHelpFiles(query, FileTypeCpp, helpers);
-        getHelpFiles(query, FileTypeDll, helpers);
-        getHelpFiles(query, FileTypeResText, helpers);
+        for (unsigned i = 0; i < FileTypeSize; i++)
+            getHelpFiles(query, (WUFileType) i, helpers);
 
         getWorkunitThorLogInfo(helpers, info);
 
@@ -1455,19 +1478,7 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
         cur.getName(name);
         Owned<IEspECLHelpFile> h= createECLHelpFile("","");
         h->setName(name.str());
-
-        switch (type)
-        {
-            case FileTypeCpp:
-                h->setType("cpp");
-                break;
-            case FileTypeDll:
-                h->setType("dll");
-                break;
-            default:
-                h->setType("res");
-                break;
-        }
+        h->setType(getEnumText(type, queryFileTypes));
 
         if (version > 1.31)
         {
@@ -1887,6 +1898,41 @@ void WsWuInfo::getWorkunitCpp(const char *cppname, const char* description, cons
     OwnedIFileIOStream ios = createBufferedIOStream(rIO);
     if (!ios)
         throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
+    appendIOStreamContent(buf, ios.get(), forDownload);
+}
+
+void WsWuInfo::getWorkunitAssociatedXml(const char* name, const char* ipAddress, const char* plainText,
+                                        const char* description, bool forDownload, MemoryBuffer& buf)
+{
+    if (isEmpty(description)) //'File Name' as shown in WU Details page
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "File not specified.");
+    if (isEmpty(ipAddress))
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "File location not specified.");
+    if (isEmpty(name)) //file name with full path
+        throw MakeStringException(ECLWATCH_INVALID_FILE_NAME, "File path not specified.");
+
+    RemoteFilename rfn;
+    rfn.setRemotePath(name);
+    SocketEndpoint ep(ipAddress);
+    rfn.setIp(ep);
+
+    Owned<IFile> rFile = createIFile(rfn);
+    if (!rFile)
+        throw MakeStringException(ECLWATCH_CANNOT_OPEN_FILE, "Cannot open %s.", description);
+    OwnedIFileIO rIO = rFile->openShared(IFOread,IFSHfull);
+    if (!rIO)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
+    OwnedIFileIOStream ios = createBufferedIOStream(rIO);
+    if (!ios)
+        throw MakeStringException(ECLWATCH_CANNOT_READ_FILE,"Cannot read %s.", description);
+
+    const char* header;
+    if (plainText && (!stricmp(plainText, "yes")))
+        header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
+    else
+        header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
+
+    buf.append(strlen(header), header);
     appendIOStreamContent(buf, ios.get(), forDownload);
 }
 
