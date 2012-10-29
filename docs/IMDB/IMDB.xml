@@ -579,7 +579,7 @@ Blankline</programlisting></para>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/IMDB_06.jpg" />
+                  <imagedata fileref="images/IMDB_06_new.jpg" />
                 </imageobject>
               </mediaobject>
             </figure>
@@ -604,13 +604,41 @@ END;
           </listitem>
         </itemizedlist>
 
-        <sect3>
+        <sect3 role="brk">
           <title>Examine the Data</title>
 
           <para>In this section, we will look at the data and determine if
           there is any pre-processing we want to perform. This is the step in
           the development process where we convert the raw data into a form we
           can actually use.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>The IMDB.FileActors.ecl file specifies the size of the
+                header in the files (actors.list and actresses.list.) The
+                HEADING() value in the example code was accurate at the time
+                we downloaded the IMDB data, but could change at any time. We
+                suggest opening in a text editor and checking the line number
+                where the header ends and actual data begins (as shown
+                below).</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+
+          <figure>
+            <title>actors.list in text editor</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/IMDB_fileheading.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para></para>
 
           <itemizedlist mark="bullet">
             <listitem>
