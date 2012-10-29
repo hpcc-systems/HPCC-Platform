@@ -46,6 +46,11 @@ HPCC_CONFIG=${HPCC_CONFIG:-${CONFIG_DIR}/${ENV_CONF_FILE}}
 #SECTION=${1:-DEFAULT}
 SECTION="DEFAULT"
 
+OIFS="${IFS}"
+unset IFS
+source /etc/profile
+IFS="${OIFS}"
+
 PATH_PREFIX=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^path *= *" | sed -e 's/^path *= *//'`
 
 export PID=`cat ${HPCC_CONFIG} | sed -n "/\[${SECTION}\]/,/\[/p" | grep "^pid *= *" | sed -e 's/^pid *= *//'`
@@ -156,5 +161,3 @@ else
         fi
     fi
 fi
-
-source /etc/profile
