@@ -882,7 +882,6 @@ public:
     }
     IDistributedFile *createNew(IPropertyTree *tree,bool ignoregroup);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
-    void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
     IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
@@ -1026,12 +1025,6 @@ public:
         state = TAS_RETRY;
         unlock();
     }
-    // MORE: In the rare event of a commit failure, not all actions can be rolled back.
-    // Since all actions today occur during "run", and since commit phases does very little,
-    // this chance is minimal and will probably be caused by corrupted file descriptors.
-    // The problem is that the state of the sub removals and the order in which they occur might not
-    // be trivial on such a low level error, and there's no way to atomically do operations in SDS
-    // at present time. We need more thought about this.
     virtual void commit()
     {
         state = TAS_SUCCESS;
@@ -6562,7 +6555,7 @@ IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc,co
 /**
  * Creates a super-file within a transaction.
  */
-class CCreateSuperFileAction: public CDFAction
+class cCreateSuperFileAction: public CDFAction
 {
     CDfsLogicalFileName logicalname;
     CDistributedFileDirectory *parent;
@@ -6571,7 +6564,7 @@ class CCreateSuperFileAction: public CDFAction
     IPropertyTree *root;
     bool created;
 public:
-    CCreateSuperFileAction(IDistributedFileTransaction *_transaction,
+    cCreateSuperFileAction(IDistributedFileTransaction *_transaction,
                            CDistributedFileDirectory *_parent,
                            IUserDescriptor *_user,
                            const char *_flname,
@@ -6580,8 +6573,10 @@ public:
     {
         logicalname.set(_flname);
         // We *have* to make sure the file doesn't exist here
-        super.setown(transaction->lookupSuperFile(logicalname.get(), SDS_SUB_LOCK_TIMEOUT));
-        if (!super) {
+        IDistributedSuperFile *sfile = parent->lookupSuperFile(logicalname.get(), user, transaction, SDS_SUB_LOCK_TIMEOUT);
+        if (sfile) {
+            super.setown(sfile);
+        } else {
             // Create file and link to transaction, so subsequent lookups won't fail
             root = createPTree();
             root->setPropInt("@interleaved",interleaved?2:0); // this is ill placed
@@ -6590,7 +6585,7 @@ public:
         }
         addFileLock(super);
     }
-    virtual ~CCreateSuperFileAction() {}
+    virtual ~cCreateSuperFileAction() {}
     bool prepare()
     {
         // Attach the file to DFS, if wasn't there already
@@ -6621,52 +6616,6 @@ public:
     }
 };
 
-/**
- * Removes a super-file within a transaction.
- */
-class CRemoveSuperFileAction: public CDFAction
-{
-    CDfsLogicalFileName logicalname;
-    Linked<IDistributedSuperFile> super;
-    IUserDescriptor *user;
-    bool delSub;
-public:
-    CRemoveSuperFileAction(IDistributedFileTransaction *_transaction,
-                           IUserDescriptor *_user,
-                           const char *_flname,
-                           bool _delSub)
-        : CDFAction(_transaction), user(_user), delSub(_delSub)
-    {
-        logicalname.set(_flname);
-        // We *have* to make sure the file exists here
-        super.setown(transaction->lookupSuperFile(logicalname.get(), SDS_SUB_LOCK_TIMEOUT));
-        if (!super)
-            ThrowStringException(-1, "Super File %s doesn't exist in the file system", logicalname.get());
-        addFileLock(super);
-        // Adds actions to transactions before this one and gets executed only on commit
-        if (delSub)
-            super->removeSubFile(NULL, true, true, false, transaction);
-    }
-    virtual ~CRemoveSuperFileAction() {}
-    bool prepare()
-    {
-        if (lock())
-            return true;
-        unlock();
-        return false;
-    }
-    void run()
-    {
-        // Removing here would make it hard to re-attach the sub files on rollback (FIXME?)
-    }
-    void commit()
-    {
-        super->detach();
-        CDFAction::commit();
-    }
-};
-
-// MORE: This should be implemented in DFSAccess later on
 IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_logicalname,IUserDescriptor *user, bool _interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction)
 {
     CDfsLogicalFileName logicalname;
@@ -6694,33 +6643,11 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
     }
 
     // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-    CCreateSuperFileAction *action = new CCreateSuperFileAction(localtrans,this,user,_logicalname,_interleaved);
+    cCreateSuperFileAction *action = new cCreateSuperFileAction(localtrans,this,user,_logicalname,_interleaved);
 
     localtrans->autoCommit();
 
     return localtrans->lookupSuperFile(_logicalname);
-}
-
-// MORE: This should be implemented in DFSAccess later on
-void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction)
-{
-    CDfsLogicalFileName logicalname;
-    logicalname.set(_logicalname);
-    checkLogicalName(logicalname,user,true,true,false,"have a superfile with");
-
-    // Create a local transaction that will be destroyed (but never touch the external transaction)
-    Linked<IDistributedFileTransaction> localtrans;
-    if (transaction) {
-        localtrans.set(transaction);
-    } else {
-        // TODO: Make it explicit in the API that a transaction is required
-        localtrans.setown(new CDistributedFileTransaction(user));
-    }
-
-    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-    CRemoveSuperFileAction *action = new CRemoveSuperFileAction(localtrans, user, _logicalname, delSubs);
-
-    localtrans->autoCommit();
 }
 
 // MORE - this should go when remove file gets into transactions

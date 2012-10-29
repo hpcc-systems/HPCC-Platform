@@ -472,8 +472,9 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist=false,IDistributedFileTransaction *transaction=NULL) = 0;
     virtual IDistributedSuperFile *lookupSuperFile(const char *logicalname,IUserDescriptor *user,
                                                     IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up sub files
-                                                    unsigned timeout=INFINITE) = 0;  // NB lookup will also return superfiles
-    virtual void removeSuperFile(const char *_logicalname, bool delSubs=false, IUserDescriptor *user=NULL, IDistributedFileTransaction *transaction=NULL)=0;
+                                                    unsigned timeout=INFINITE
+
+                                                ) = 0;  // NB lookup will also return superfiles 
 
     virtual int getFilePermissions(const char *lname,IUserDescriptor *user,unsigned auditflags=0)=0; // see dasess for auditflags values
     virtual void setDefaultUser(IUserDescriptor *user)=0;
