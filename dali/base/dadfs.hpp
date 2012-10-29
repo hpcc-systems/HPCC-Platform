@@ -459,7 +459,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual bool removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms=INFINITE) = 0;  // equivalent to lookup/detach/release
     virtual bool removePhysical(const char *name,IUserDescriptor *user,const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;                           // removes the physical parts as well as entry
-    virtual bool renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IMultiException *exceptions=NULL) = 0;                         // renames the physical parts as well as entry
+    virtual void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
 
