@@ -25,9 +25,9 @@
   flexibility and control over the data used by a query or a collection of
   queries.</para>
 
-  <para>Roxie resolves data files at runtime. First, it will look for a
-  package defining the superkey contents. If there is no package, it will look
-  in the Dali Server's DFU (Distributed File Utility).</para>
+  <para>Roxie resolves data files at query load time. First, it will look for
+  a package defining the superkey contents. If there is no package, it will
+  look in the Dali Server's DFU (Distributed File Utility).</para>
 
   <para>The end result is quicker, more flexible process, without the need of
   recompiling complex queries. This allows you to update data without the
