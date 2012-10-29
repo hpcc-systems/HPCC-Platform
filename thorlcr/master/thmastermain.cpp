@@ -606,6 +606,13 @@ int main( int argc, char *argv[]  )
             FLLOG(MCoperatorError, thorJob, "ERROR: Validate failure(s) detected, exiting Thor");
             return globals->getPropBool("@validateDAFSretCode"); // default is no recycle!
         }
+
+        if (globals->getPropBool("@useNASTranslation", true))
+        {
+            Owned<IPropertyTree> filteredNasConfig = envGetInstallNASHooks();
+            if (filteredNasConfig)
+                globals->setPropTree("NAS", filteredNasConfig.getClear()); // for use by slaves
+        }
         
         HardwareInfo hdwInfo;
         getHardwareInfo(hdwInfo);
