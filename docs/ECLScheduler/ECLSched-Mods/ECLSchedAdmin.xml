@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>ECL Scheduler</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2012</pubdate>
+  </bookinfo>
+
+  <chapter id="ECLSched-Admin">
+    <title>ECL Scheduler Admin</title>
+
+    <sect1 role="nobrk">
+      <title>Command Line Interface: scheduleadmin</title>
+
+      <para>The <emphasis role="bold">scheduleadmin</emphasis> is the command
+      line interface to the ECL Scheduler. The scheduleadmin is located by
+      default in <emphasis role="bold">/opt/HPCCSystems/bin/ </emphasis>on
+      your HPCC system.</para>
+
+      <para><emphasis role="bold">scheduleadmin
+      </emphasis><emphasis>daliserver</emphasis>
+      <emphasis>operation</emphasis> <emphasis
+      role="bold">[</emphasis><emphasis>options</emphasis> <emphasis
+      role="bold">]</emphasis></para>
+
+      <para><informaltable colsep="0" frame="none" rowsep="0">
+          <tgroup cols="2">
+            <colspec colwidth="122.40pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><emphasis>daliserver</emphasis></entry>
+
+                <entry>The URL (http:// or https://) and/or IP address of the
+                Dali server. The port may also be included.</entry>
+              </row>
+
+              <row>
+                <entry><emphasis>operation</emphasis></entry>
+
+                <entry>One of the following actions: <programlisting
+                role="tab">     servers
+     add
+     remove
+     removeall
+     list
+     monitor
+     cleanup
+     push
+</programlisting></entry>
+              </row>
+
+              <row>
+                <entry><emphasis>options</emphasis></entry>
+
+                <entry>Optional. A space-delimited list of optional items
+                (listed below) appropriate to the
+                <emphasis>operation</emphasis> being executed.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>The <emphasis role="bold">scheduleadmin</emphasis> application
+      accepts command line parameters to maintain the list of workunits the
+      ECL Scheduler monitors.</para>
+
+      <sect2>
+        <title>Support Operations</title>
+
+        <para>The following operations are supported.</para>
+
+        <sect3>
+          <title>Servers</title>
+
+          <para>The server operation returns a list of the ECL Server queues
+          attached to the specifed daliserver that have events being
+          monitored.</para>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11:7070 servers
+
+       //returns data that looks like this:
+       eclserver_training
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Add wuid</title>
+
+          <para>The add operation allows you to re-add the specified wuid
+          after having removed it from the monitor list.</para>
+
+          <para>These options are used by the add operation:</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis>wuid</emphasis></entry>
+
+                    <entry>A workunit identifier that contains an action with
+                    a WHEN workflow service.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11 add W20120303-100635
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Remove wuid</title>
+
+          <para>The remove operation allows you to remove the specified wuid
+          from the monitor list.</para>
+
+          <para>These options are used by the remove operation:</para>
+
+          <para></para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis>wuid</emphasis></entry>
+
+                    <entry>A workunit identifier that contains an action with
+                    a WHEN workflow service.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>Example:</para>
+
+          <para><programlisting>      scheduleadmin 10.150.50.11 remove W20120303-100635
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Removeall</title>
+
+          <para>The removeall operation allows you to remove all workunits
+          that contain actions with WHEN workflow services from the monitor
+          list.</para>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11 removeall
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>List [<emphasis>eclserver </emphasis>|
+          <emphasis>event</emphasis>]</title>
+
+          <para>The list operation displays the list of monitored workunits
+          and the events that they are waiting to occur.</para>
+
+          <para>These options are used by the List operation.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="59.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>eclserver</emphasis></entry>
+
+                  <entry>The name of an ECL Server queue attached to the
+                  daliserver.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>event</emphasis></entry>
+
+                  <entry>Optional. The name of an event. If omitted, all
+                  events are displayed.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11 list eclserver_training
+
+        //returns data that looks like this:
+        2012-03-16T19:18:40
+
+        CRON
+           10 19 * * *
+              W20120316-130812
+
+        MyEvent
+           *
+             W20120316-133145
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Monitor[<emphasis>eclserver</emphasis>|
+          <emphasis>event</emphasis>]</title>
+
+          <para>The monitor operation blocks and updates the display of the
+          list of monitored workunits as changes occur. Press the ENTER key to
+          return to the command prompt.</para>
+
+          <para>These options are used by the monitor operation.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="59.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>eclserver</emphasis></entry>
+
+                  <entry>The name of an ECL Server queue attached to the
+                  daliserver.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>event</emphasis></entry>
+
+                  <entry>Optional. The name of an event. If omitted, all
+                  events are displayed.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11 monitor eclserver_training
+
+        //returns data that looks like this:
+        2012-03-16T19:07:22
+
+        CRON
+           40 18 * * *
+              W20120316-124216
+           10 19 * * *
+           W20120316-130812
+        monitoring...
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Cleanup</title>
+
+          <para>The cleanup operation trims unused branches from the tree list
+          of monitored workunits.</para>
+
+          <para>Example:</para>
+
+          <para><programlisting>       scheduleadmin 10.150.50.11 cleanup
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Push [<emphasis>eclserver</emphasis>|
+          <emphasis>event</emphasis>]</title>
+
+          <para>The push operation posts the specified event as having
+          occurred. This allows you to "fake" an event occurrence for testing
+          purposes.</para>
+
+          <para>These options are used by the push operation.</para>
+
+          <informaltable colsep="0" frame="none" rowsep="0">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="59.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><emphasis>event</emphasis></entry>
+
+                  <entry>The name of a user-defined event (this must NOT be
+                  "CRON").</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis>subtype</emphasis></entry>
+
+                  <entry>The string value to match the second parameter to the
+                  EVENT function.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+
+          <para>Example:</para>
+
+          <para><programlisting>      scheduleadmin 10.150.50.11 push MyFileEvent MyFile.d00
+</programlisting></para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
