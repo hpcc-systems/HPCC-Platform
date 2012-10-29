@@ -1385,7 +1385,9 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
     }
     virtual size32_t rowSize(const void *row)
     {
-        if (meta == serializeMeta)
+        if (!row)
+            return 1; // eog;
+        else if (meta == serializeMeta)
             return meta->getRecordSize(row)+1; // space on disk, +1 = eog marker
         CSizingSerializer ssz;
         serializer->serialize(ssz,(const byte *)row);
