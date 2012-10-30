@@ -2057,7 +2057,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         if (results.length() > (aindex_t)pagesize)
             results.pop();
 
-        if(begin + pagesize < numWUs)
+        if(unsigned (begin + pagesize) < numWUs)
         {
             resp.setNextPage(begin + pagesize);
             resp.setPageEndAt(begin + pagesize);
@@ -2648,6 +2648,18 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             {
                 winfo.getWorkunitEclAgentLog(req.getName(), mb);
                 openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
+            }
+            else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
+            {
+                const char* name  = req.getName();
+                const char* ptr = strrchr(name, '/');
+                if (ptr)
+                    ptr++;
+                else
+                    ptr = name;
+
+                winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, mb);
+                openSaveFile(context, opt, ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
             else if (strieq(File_XML,req.getType()))
             {
