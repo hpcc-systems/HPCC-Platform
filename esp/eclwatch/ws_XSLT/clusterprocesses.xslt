@@ -98,6 +98,9 @@
 
                   function onLoad()
                   {
+                    if (countTCs > 0)
+                      setReloadFunction('reloadPage');
+
                     document.getElementsByName('TargetClusters.itemcount')[0].value = countTCs;
                     initSelection('resultsTable');
                     initPreflightControls();
@@ -121,6 +124,11 @@
                       }
                     }
                     document.forms[0].submitBtn.disabled = clusterChecked == 0;
+                    if (countTCs > 1)
+                    {
+                      document.getElementById( 'TargetClusters.All' ).checked = clusterChecked==countTCs;
+                      document.getElementById( 'TargetClusters.All2' ).checked = clusterChecked==countTCs;
+                    }
 
                     var table = document.getElementById('resultsTable');
                     if (table)
@@ -226,23 +234,38 @@
 
                   function clickTCCheckbox(type, name, o) 
                   {
-                    if (o.checked)
-                      clusterChecked++;
-                    else
-                      clusterChecked--;
+                    if (countTCs < 1)
+                      return;
 
-                    selectObj = document.getElementById( 'methodObj' );
-                    if (selectObj.selectedIndex == 0)
+                    if ((o.id == 'TargetClusters.All') || (o.id == 'TargetClusters.All2'))
                     {
-                      if (clusterChecked > 0)
-                      {
-                        document.forms[0].submitBtn.disabled = false;
-                      }
+                      for (i=0; i<countTCs; i++)
+                        document.getElementById( 'TargetClusters.' + i ).checked = o.checked;
+                      clusterChecked = o.checked? countTCs:0;
+
+                      if (o.id == 'TargetClusters.All')
+                        document.getElementById( 'TargetClusters.All2' ).checked = o.checked;
                       else
+                        document.getElementById( 'TargetClusters.All' ).checked = o.checked;
+                    }
+                    else
+                    {
+                      if (o.checked)
+                        clusterChecked++;
+                      else
+                        clusterChecked--;
+
+                      if (countTCs > 1)
                       {
-                        document.forms[0].submitBtn.disabled = true;
+                        document.getElementById( 'TargetClusters.All' ).checked = (clusterChecked == countTCs)? true: false;
+                        document.getElementById( 'TargetClusters.All2' ).checked = (clusterChecked == countTCs)? true: false;
                       }
                     }
+
+                    if (clusterChecked > 0)
+                      document.forms[0].submitBtn.disabled = false;
+                    else
+                      document.forms[0].submitBtn.disabled = true;
                   }
                 ]]></xsl:text>
               </script>
@@ -251,9 +274,6 @@
             </xsl:if>
           </head>
           <body class="yui-skin-sam"  onload="nof5();onLoad();">
-          <xsl:if test="TargetClusterInfoList">
-            <xsl:attribute name="onload">setReloadFunction('reloadPage');onLoad()</xsl:attribute>
-          </xsl:if>
           <form id="listitems" action="/ws_machine/GetTargetClusterInfo" method="post">
             <input type="hidden" name="Path" value="{$reqInfo/Path}"/>
             <input type="hidden" name="Cluster" value="{$clusterName}"/>
@@ -292,12 +312,34 @@
                            </tr>
                            <tr>
                               <td>
+                                <xsl:if test="TargetClusterInfoList/TargetClusterInfo[2]">
+                                    <table cellpadding="0" width="100%">
+                                        <tr>
+                                            <th id="selectAll" width="1%" style="padding-left:4px">
+                                                <input type="checkbox" id="TargetClusters.All" name="TargetClusters.ALL"
+                                                       title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                            </th>
+                                            <th colspan="5" align="left">Select All / None</th>
+                                        </tr>
+                                    </table>
+                                </xsl:if>
                                 <xsl:for-each select="TargetClusterInfoList/TargetClusterInfo">
                                   <xsl:call-template name="show-cluster">
                                     <xsl:with-param name="type" select="Type"/>
                                     <xsl:with-param name="name" select="Name"/>
                                   </xsl:call-template>
                                 </xsl:for-each>
+                                <xsl:if test="TargetClusterInfoList/TargetClusterInfo[2]">
+                                      <table cellpadding="0" width="100%">
+                                          <tr>
+                                              <th id="selectAll2" width="1%" style="padding-left:4px">
+                                                  <input type="checkbox" id="TargetClusters.All2" name="TargetClusters.ALL2"
+                                                         title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                              </th>
+                                              <th colspan="5" align="left">Select All / None</th>
+                                          </tr>
+                                      </table>
+                                </xsl:if>
                                 <b>Fetched: </b>
                                 <xsl:value-of select="TimeStamp"/>
                                 <br/>
@@ -333,7 +375,7 @@
     <table id="resultsTable" class="sort-table" width="100%">
       <tr class="grey">
         <td valign="top" width="20">
-          <input type="checkbox" name="TargetClusters.{count(preceding::TargetClusterInfo)}" checked="1"
+          <input type="checkbox" id="TargetClusters.{count(preceding::TargetClusterInfo)}" name="TargetClusters.{count(preceding::TargetClusterInfo)}" checked="1"
                                 value="{$type}:{$name}" title="Select this target cluster" onclick="return clickTCCheckbox('{$type}', '{$name}', this);"></input>
         </td>
         <td align="left" width="20">
