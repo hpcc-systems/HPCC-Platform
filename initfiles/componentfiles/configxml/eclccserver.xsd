@@ -192,10 +192,10 @@
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
-            <xs:attribute name="maxCompileThreads" type="xs:nonNegativeInteger" use="optional" default="4">
+            <xs:attribute name="maxEclccProcesses" type="xs:nonNegativeInteger" use="optional" default="4">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>Number of compile threads.</tooltip>
+                        <tooltip>Maximum number of instances of eclcc that will be launched in parallel.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
