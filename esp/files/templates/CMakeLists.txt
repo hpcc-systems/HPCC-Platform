@@ -18,10 +18,15 @@ set ( TEMPLATES_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLSourceWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphPageWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/InfoGridWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/LogsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/TargetSelectWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/TimingGridWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/TimingPageWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/TimingTreeMapWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/WUDetailsWidget.html
 )
 set ( TEMPLATES_FILES ${TEMPLATES_FILES} PARENT_SCOPE)
 

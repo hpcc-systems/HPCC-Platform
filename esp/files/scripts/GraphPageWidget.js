@@ -36,6 +36,7 @@ define([
 
     "hpcc/GraphWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/TimingGridWidget",
     "hpcc/TimingTreeMapWidget",
 
     "dojo/text!../templates/GraphPageWidget.html",
@@ -44,7 +45,7 @@ define([
     "dijit/form/TextBox"
 ], function (declare, sniff, array, dom, domConstruct, on, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
-            DataGrid, GraphWidget, ESPWorkunit, TimingTreeMapWidget,
+            DataGrid, GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
             template) {
     return declare("GraphPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -153,10 +154,8 @@ define([
             this.graphSelect.onChange = function () {
                 context.graphName = this.getValue();
                 context.loadGraph(context.wu, context.graphName);
-                context.timingGrid.setQuery({
-                    GraphName: context.graphName
-                });
-                context.timingTreeMap.loadTimers(context.wu.timers, context.graphName);
+                context.timingGrid.setQuery(context.graphName);
+                context.timingTreeMap.setQuery(context.graphName);
             }
         },
 
@@ -164,19 +163,15 @@ define([
             this.timingGrid = registry.byId(this.id + "TimingsGrid");
 
             var context = this;
-            this.timingGrid.on("RowClick", function (evt) {
+            this.timingGrid.onClick = function(items) {
                 context.syncSelectionFrom(context.timingGrid);
-            }, true);
+            };
 
-            this.timingGrid.on("RowDblClick", function (evt) {
-                var idx = evt.rowIndex;
-                var item = this.getItem(idx);
-                if (this.store.getValue(item, "SubGraphId")) {
-                    var subgraphID = this.store.getValue(item, "SubGraphId");
-                    var mainItem = context.main.getItem(subgraphID);
-                    context.main.centerOnItem(mainItem, true);
-                }
-            }, true);
+            this.timingGrid.onDblClick = function(item) {
+                var subgraphID = item.SubGraphId;
+                var mainItem = context.main.getItem(subgraphID);
+                context.main.centerOnItem(mainItem, true);
+            };
 
             this.timingTreeMap = registry.byId(this.id + "TimingsTreeMap");
             this.timingTreeMap.onClick = function (value) {
@@ -290,12 +285,14 @@ define([
                         } else {
                             context.refreshGraph(context.wu, context.graphName);
                         }
-                    },
-                    onGetTimers: function (timers) {
-                        context.loadTimings(timers);
                     }
                 });
             });
+
+            this.timingGrid.init(params);
+            this.timingGrid.setQuery(this.graphName);
+
+            this.timingTreeMap.init(params);
         },
 
         loadGraphSelect: function (graphs) {
@@ -339,15 +336,6 @@ define([
                 context.main.mergeXGMML(xgmml);
                 context.loadVertices();
                 context.loadEdges();
-            });
-        },
-
-        loadTimings: function (timers) {
-            var store = new Memory({ data: timers });
-            var dataStore = new ObjectStore({ objectStore: store });
-            this.timingGrid.setStore(dataStore);
-            this.timingGrid.setQuery({
-                GraphName: this.graphName
             });
         },
 
@@ -413,15 +401,15 @@ define([
 
         syncSelectionFrom: function (sourceControl) {
             var selItems = [];
-            if (sourceControl == this.timingGrid) {
-                var items = sourceControl.selection.getSelected();
+
+            //  Get Selected Items  ---
+            if (sourceControl == this.timingGrid || sourceControl == this.timingTreeMap) {
+                var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
                         selItems.push(items[i].SubGraphId);
                     }
                 }
-            } else if (sourceControl == this.timingTreeMap) {
-                selItems.push(sourceControl.lastSelection.subGraphId);
             } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid) {
                 var items = sourceControl.selection.getSelected();
                 for (var i = 0; i < items.length; ++i) {
@@ -433,14 +421,12 @@ define([
                 selItems = sourceControl.getSelectionAsGlobalID();
             }
 
-            if (sourceControl != this.timingGrid && this.timingGrid.store) {
-                for (var i = 0; i < this.timingGrid.rowCount; ++i) {
-                    var row = this.timingGrid.getItem(i);
-                    this.timingGrid.selection.setSelected(i, (row.SubGraphId && array.indexOf(selItems, row.SubGraphId) != -1));
-                }
+            //  Set Selected Items  ---
+            if (sourceControl != this.timingGrid) {
+                this.timingGrid.setSelected(selItems);
             }
             if (sourceControl != this.timingTreeMap) {
-                //TODO - Not sure if this is currently possible.
+                this.timingTreeMap.setSelected(selItems);
             }
             if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
                 for (var i = 0; i < this.verticesGrid.rowCount; ++i) {
