@@ -1484,9 +1484,9 @@ sudo configmgr</programlisting>
                     </row>
 
                     <row>
-                      <entry><emphasis>maxCompileThreads</emphasis></entry>
+                      <entry><emphasis>maxEclccProcesses</emphasis></entry>
 
-                      <entry>The maximum number of compile threads</entry>
+                      <entry>The maximum number of eclcc processes that will be launched in parallel</entry>
                     </row>
 
                     <row>
