@@ -239,8 +239,11 @@ public:
                     initLoopResults(loopCounter);
                 boundGraph->execute(*this, (flags & IHThorLoopArg::LFcounter)?loopCounter:0, ownedResults, (IRowWriterMultiReader *)NULL, 0, extractBuilder.size(), extractBuilder.getbytes());
                 ++loopCounter;
-                if (!barrier->wait(false))
-                    break;
+                if (flags & IHThorLoopArg::LFnewloopagain)
+                {
+                    if (!barrier->wait(false))
+                        break;
+                }
             }
         }
         else
