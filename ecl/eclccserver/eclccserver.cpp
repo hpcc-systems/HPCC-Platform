@@ -574,7 +574,10 @@ int main(int argc, const char *argv[])
         getEclCCServerQueueNames(queueNames, globals->queryProp("@name"));
         if (!queueNames.length())
             throw MakeStringException(0, "No clusters found to listen on");
-        EclccServer server(queueNames.str(), globals->getPropInt("@maxCompileThreads", 1));
+        // The option has been renamed to avoid confusion with the similarly-named eclcc option, but
+        // still accept the old name if the new one is not present.
+        unsigned maxThreads = globals->getPropInt("@maxEclccProcesses", globals->getPropInt("@maxCompileThreads", 4));
+        EclccServer server(queueNames.str(), maxThreads);
         // if we got here, eclserver is successfully started and all options are good, so create the "sentinel file" for re-runs from the script
         // put in its own "scope" to force the flush
         writeSentinelFile(sentinelFile);

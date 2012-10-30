@@ -387,7 +387,7 @@
                     daliServers="mydali"
                     description="EclCCServer process"
                     enableSysLog="true"
-                    maxCompileThreads="4"
+                    maxEclccProcesses="4"
                     name="myeclccserver"
                     traceLevel="1">
    <Instance computer="localhost"
