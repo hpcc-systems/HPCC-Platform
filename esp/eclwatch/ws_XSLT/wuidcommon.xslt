@@ -1244,6 +1244,19 @@
           </a>
         </td>
       </xsl:if>
+      <xsl:if test="(Type = 'xml') or (Type = 'hint')">
+        <td>
+          <a href="/esp/iframe?esp_iframe_title=ECL Workunit - {$wuid} - {Description}&amp;inner=
+                   /WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Name%3d{Name}%26IPAddress%3d{IPAddress}%26Description%3d{Description}%26Type%3dXML" >
+            <xsl:value-of select="Description"/>
+          </a>
+        </td>
+        <td>
+          <a href="javascript:void(0)" onclick="getOptions('{Description}', '/WsWorkunits/WUFile/{Name}?Wuid={$wuid}&amp;Name={Name}&amp;IPAddress={IPAddress}&amp;Description={Description}&amp;Type=xml', false); return false;">
+            download
+          </a>
+        </td>
+      </xsl:if>
       <xsl:if test="Type = 'res'">
         <td>
           <a href="/WsWorkunits/WUFile/res.txt?Wuid={$wuid}&amp;Type=res">res.txt</a>
