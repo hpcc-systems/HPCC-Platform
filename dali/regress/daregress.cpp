@@ -33,6 +33,7 @@
 #include "dafdesc.hpp"
 #include "dasds.hpp"
 #include "danqs.hpp"
+#include "dautils.hpp"
 
 static int errorcount;
 
@@ -283,8 +284,12 @@ static IFileDescriptor *createFileDescriptor(const char* dir, const char* name, 
     Owned<IFileDescriptor>fdesc = createFileDescriptor();
     fdesc->setDefaultDir(dir);
     StringBuffer s;
+    SocketEndpoint ep;
+    ep.setLocalHost(0);
+    StringBuffer ip;
+    ep.getIpText(ip);
     for (unsigned k=0;k<parts;k++) {
-        s.clear().append("192.168.1.10");
+        s.clear().append(ip);
         Owned<INode> node = createINode(s.str());
         pp->setPropInt64("@size",recSize);
         s.clear().append(name);
@@ -294,17 +299,20 @@ static IFileDescriptor *createFileDescriptor(const char* dir, const char* name, 
         fdesc->setPart(k,node,s.str(),pp);
     }
     fdesc->queryProperties().setPropInt("@recordSize",recSize);
+    fdesc->setDefaultDir(dir);
     return fdesc.getClear();
 }
 
 static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToCreate=4)
 {
-    StringBuffer buf;
-    buf.append("regress::").append(scope);
+    StringBuffer bufScope;
+    bufScope.append("regress::").append(scope);
+    StringBuffer bufDir;
+    bufDir.append("regress/").append(scope);
 
-    printf("Cleaning up '%s' scope\n", buf.str());
+    printf("Cleaning up '%s' scope\n", bufScope.str());
     for (unsigned i=1; i<=supersToDel; i++) {
-        StringBuffer super = buf;
+        StringBuffer super = bufScope;
         super.append("::super").append(i);
         if (dir.exists(super.str(),user,false,true) && !dir.removeEntry(super.str(), user)) {
             ERROR1("Can't remove %s", super.str());
@@ -316,21 +324,35 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
     for (unsigned i=1; i<=subsToCreate; i++) {
         StringBuffer name;
         name.append("sub").append(i);
-        StringBuffer sub = buf;
+        StringBuffer sub = bufScope;
         sub.append("::").append(name);
 
         // Remove first
-        if (dir.exists(sub.str(),user,true,false) && !dir.removeEntry(sub.str(), user)) {
+        if (dir.exists(sub.str(),user,true,false) && !dir.removePhysical(sub.str(), user, NULL, NULL)) {
             ERROR1("Can't remove %s", sub.str());
             return false;
         }
 
-        // Create the sub file with an arbitrary format
-        Owned<IFileDescriptor> subd = createFileDescriptor(scope, name, 3, 17);
-        Owned<IDistributedFile> dsub = dir.createNew(subd);
-        dsub->attach(sub.str(),user);
-        subd.clear();
-        dsub.clear();
+        {
+            // Create the sub file with an arbitrary format
+            Owned<IFileDescriptor> subd = createFileDescriptor(bufDir.str(), name.str(), 1, 17);
+            Owned<IPartDescriptor> partd = subd->queryPart(0);
+            RemoteFilename rfn;
+            partd->getFilename(0, rfn);
+            StringBuffer fname;
+            rfn.getPath(fname);
+            if (!recursiveCreateDirectoryForFile(fname.str())) {
+                ERROR1("Can't create parent dir for %s", fname.str());
+                return false;
+            }
+            OwnedIFile ifile = createIFile(fname.str());
+            Owned<IFileIO> io;
+            io.setown(ifile->open(IFOcreate));
+            io->write(0, 17, "12345678901234567");
+            io->close();
+            Owned<IDistributedFile> dsub = dir.createNew(subd, sub.str());
+            dsub->attach(sub.str(),user);
+        }
 
         // Make sure it got created
         if (!dir.exists(sub.str(),user,true,false)) {
@@ -886,8 +908,9 @@ static void testDFSDel()
             ERROR("Could remove sub, this will make the DFS inconsistent!");
             return;
         }
-    } catch (IException *) {
+    } catch (IException *e) {
         // expecting an exception
+        e->Release();
     }
 
     printf("Deleting 'regress::del::super1, should work\n");
@@ -900,6 +923,72 @@ static void testDFSDel()
         ERROR("Can't remove sub1");
         return;
     }
+}
+
+static void testDFSRename()
+{
+    Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+
+    if (dir.exists("regress::rename::other1",user,false,false) && !dir.removePhysical("regress::rename::other1", user, NULL, NULL)) {
+        ERROR("Can't remove 'regress::rename::other1'");
+        return;
+    }
+    if (dir.exists("regress::rename::other2",user,false,false) && !dir.removePhysical("regress::rename::other2", user, NULL, NULL)) {
+        ERROR("Can't remove 'regress::rename::other2'");
+        return;
+    }
+
+    if (!setupDFS("rename"))
+        return;
+
+    try {
+        printf("Renaming 'regress::rename::sub1 to 'sub2' with auto-commit, should fail\n");
+        dir.renamePhysical("regress::rename::sub1", "regress::rename::sub2", user, transaction);
+        ERROR("Renamed to existing file should have failed!");
+        return;
+    } catch (IException *e) {
+        // Expecting exception
+        e->Release();
+    }
+
+    printf("Renaming 'regress::rename::sub1 to 'other1' with auto-commit\n");
+    dir.renamePhysical("regress::rename::sub1", "regress::rename::other1", user, transaction);
+    if (!dir.exists("regress::rename::other1", user, true, false))
+    {
+        ERROR("Renamed to other failed");
+        return;
+    }
+
+    printf("Renaming 'regress::rename::sub2 to 'other2' and rollback\n");
+    transaction->start();
+    dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
+    transaction->rollback();
+    if (dir.exists("regress::rename::other2", user, true, false))
+    {
+        ERROR("Renamed to other2 when it shouldn't");
+        return;
+    }
+
+    printf("Renaming 'regress::rename::sub2 to 'other2' and commit\n");
+    transaction->start();
+    dir.renamePhysical("regress::rename::sub2", "regress::rename::other2", user, transaction);
+    transaction->commit();
+    if (!dir.exists("regress::rename::other2", user, true, false))
+    {
+        ERROR("Renamed to other failed");
+        return;
+    }
+
+    try {
+        printf("Renaming 'regress::rename::sub3 to 'sub3' with auto-commit, should fail\n");
+        dir.renamePhysical("regress::rename::sub3", "regress::rename::sub3", user, transaction);
+        ERROR("Renamed to same file should have failed!");
+        return;
+    } catch (IException *e) {
+        // Expecting exception
+        e->Release();
+    }
+
 }
 
 // ======================================================================= Test Engine
@@ -959,6 +1048,7 @@ void initTests() {
     registerTest("DFS transaction", testDFSTrans);
     registerTest("DFS promote super file", testDFSPromote);
     registerTest("DFS subdel", testDFSDel);
+    registerTest("DFS rename", testDFSRename);
     registerTest("SDS subscriptions", testSDSSubs);
 }
 
