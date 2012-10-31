@@ -353,7 +353,9 @@ protected:
         if (variableFileName) // note - in keyed join with dependent index case, kj itself won't have variableFileName but indexread might
         {
             CDateTime cacheDate(serializedCreate);
-            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(logctx, queryDynamicFileName(), cacheDate, &packet->queryHeader(), isOpt, true));
+            unsigned checksum;
+            serializedCreate.read(checksum);
+            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(logctx, queryDynamicFileName(), cacheDate, checksum, &packet->queryHeader(), isOpt, true));
             setVariableFileInfo();
         }
     }

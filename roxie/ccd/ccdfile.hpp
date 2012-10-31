@@ -41,10 +41,6 @@ interface ILazyFileIO : extends IFileIO
     virtual IFile *queryTarget() = 0;
     virtual void copyComplete() = 0;
     virtual int getLinkCount() const = 0;
-    virtual void setFileIsMemFile(bool val) = 0;
-    virtual bool getFileIsMemFile() = 0;
-    virtual void setCopyInForeground(bool val) = 0;
-    virtual bool getCopyInForeground() = 0;
     virtual bool createHardFileLink() = 0;
 
     virtual void setBaseIndexFileName(const char *val) =0;
@@ -112,6 +108,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;
+    virtual unsigned queryCheckSum() const = 0;
 
     virtual const char *queryFileName() const = 0;
     virtual void setCache(const IRoxiePackage *cache) = 0;

@@ -3421,7 +3421,10 @@ private:
                 activity.serializeCreateStartContext(cachedContext.clear());
                 activity.serializeExtra(cachedContext);
                 if (activity.queryVarFileInfo())
+                {
                     activity.queryVarFileInfo()->queryTimeStamp().serialize(cachedContext);
+                    cachedContext.append(activity.queryVarFileInfo()->queryCheckSum());
+                }
                 contextCached = true;
             }
 
@@ -10633,7 +10636,9 @@ protected:
     CachedOutputMetaData diskmeta;
     Owned<IRoxieWriteHandler> writer;
 
+    bool tallycrc;
     unsigned __int64 uncompressedBytesWritten;
+    CRC32 crc;
 
     void updateWorkUnitResult(unsigned __int64 reccount)
     {
@@ -10715,6 +10720,7 @@ public:
         diskmeta.set(helper.queryDiskRecordSize());
         blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && (diskmeta.getFixedSize() >= MIN_ROWCOMPRESS_RECSIZE))); //always use new compression
         encrypted = false; // set later
+        tallycrc = true;
         uncompressedBytesWritten = 0;
     }
 
@@ -10745,17 +10751,17 @@ public:
             encrypted = true;
             blockcompressed = true;
         }
-        if(blockcompressed)
+        if (blockcompressed)
             io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta.isFixedSize() ? diskmeta.getFixedSize() : 0), extend, true, ecomp));
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
-        if(!io)
+        if (!io)
             throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), writer->queryFile()->queryFilename());
         diskout.setown(createBufferedIOStream(io));
-        if(extend)
+        if (extend)
             diskout->seek(0, IFSend);
         rowSerializer.setown(input->queryOutputMeta()->createRowSerializer(ctx->queryCodeContext(), activityId)); 
-        bool tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck); 
+        tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
         outSeq.setown(createRowWriter(diskout, rowSerializer, rowAllocator, grouped, tallycrc, true )); 
     }
 
@@ -10768,7 +10774,7 @@ public:
         }
         else
         {
-            outSeq->flush();
+            outSeq->flush(&crc);
             updateWorkUnitResult(processed);
             uncompressedBytesWritten = outSeq->getPosition();
             writer->finish(true, this);
@@ -10784,6 +10790,7 @@ public:
         outSeq.clear();
         writer.clear();
         uncompressedBytesWritten = 0;
+        crc.reset();
     }
 
     virtual void onExecute()
@@ -10814,6 +10821,8 @@ public:
             fileProps.setPropInt64("@size", uncompressedBytesWritten);
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
+        else if (tallycrc)
+            partProps.setPropInt64("@fileCrc", crc.get());
 
         if (encrypted)
             fileProps.setPropBool("@encrypted", true);
@@ -23389,7 +23398,10 @@ public:
             MemoryBuffer tmp;
             rootIndex->queryActivity()->serializeCreateStartContext(tmp);
             if (rootIndex->queryActivity()->queryVarFileInfo())
+            {
                 rootIndex->queryActivity()->queryVarFileInfo()->queryTimeStamp().serialize(tmp);
+                tmp.append(rootIndex->queryActivity()->queryVarFileInfo()->queryCheckSum());
+            }
             unsigned ctxlen = tmp.length();
             out.append(ctxlen).append(tmp);
         }
@@ -24173,7 +24185,10 @@ public:
             MemoryBuffer tmp;
             rootIndex->queryActivity()->serializeCreateStartContext(tmp);
             if (rootIndex->queryActivity()->queryVarFileInfo())
+            {
                 rootIndex->queryActivity()->queryVarFileInfo()->queryTimeStamp().serialize(tmp);
+                tmp.append(rootIndex->queryActivity()->queryVarFileInfo()->queryCheckSum());
+            }
             unsigned ctxlen = tmp.length();
             out.append(ctxlen).append(tmp);
         }
@@ -28063,7 +28078,7 @@ public:
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
     {
         CDateTime cacheDate; // Note - this is empty meaning we don't know...
-        return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, header, isOpt, false);
+        return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)

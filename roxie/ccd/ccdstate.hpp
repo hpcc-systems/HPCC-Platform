@@ -83,7 +83,7 @@ extern IRoxiePackage *createPackage(IPropertyTree *p);
 
 interface ISlaveDynamicFileCache : extends IInterface
 {
-    virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, RoxiePacketHeader *header, bool isOpt, bool isLocal) = 0; 
+    virtual IResolvedFile *lookupDynamicFile(const IRoxieContextLogger &logctx, const char *lfn, CDateTime &cacheDate, unsigned checksum, RoxiePacketHeader *header, bool isOpt, bool isLocal) = 0;
 };
 extern ISlaveDynamicFileCache *querySlaveDynamicFileCache();
 extern void releaseSlaveDynamicFileCache();
