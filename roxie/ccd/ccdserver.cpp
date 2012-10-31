@@ -31367,14 +31367,9 @@ public:
         daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        // Ensure that any library lookup is done in the correct QuerySet...
-        // MORE - Not 100% sure if this is right
-        // - there's no package file resolution in play for WUs read from a queue (should there be?),
-        // but as this stands we will resolve libraries using those packages defined as loading for this QuerySet.
         SCMStringBuffer target;
         wu->getClusterName(target);
-        Owned<IRoxieLibraryLookupContext> libraryContext = globalPackageSetManager->getLibraryLookupContext(target.str());
-        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu, libraryContext);
+        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
@@ -32419,7 +32414,7 @@ protected:
         package.setown(createPackage(NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, NULL));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL));
         timer->reset();
     }
 
