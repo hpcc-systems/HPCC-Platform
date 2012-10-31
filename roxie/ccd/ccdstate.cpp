@@ -751,7 +751,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -771,7 +771,7 @@ public:
         return active;
     }
 
-    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext)
+    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash)
     {
         Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
         ForEach (*queryNames)
@@ -799,7 +799,7 @@ public:
                     if (!package) package = &queryRootPackage();
                 }
                 assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query, libraryContext), hash);
+                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query), hash);
             }
             catch (IException *E)
             {
@@ -894,29 +894,6 @@ public:
         }
     }
 
-    virtual IQueryFactory * lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
-    {
-#ifdef _DEBUG
-        DBGLOG("Lookup library %s (hash %d)", libraryName, expectedInterfaceHash);
-#endif
-        Owned<IQueryFactory> query = getQuery(libraryName, logctx);
-        if (query)
-        {
-            if (query->isQueryLibrary())
-            {
-                unsigned foundInterfaceHash = query->getQueryLibraryInterfaceHash();
-                if (!foundInterfaceHash  || (foundInterfaceHash == expectedInterfaceHash))
-                    return query.getClear();
-                else
-                    throw MakeStringException(ROXIE_LIBRARY_ERROR, "The library interface found in %s is not compatible (found %d, expected %d)", libraryName, foundInterfaceHash, expectedInterfaceHash);
-            }
-            else
-                throw MakeStringException(ROXIE_LIBRARY_ERROR, "The query resolved by %s is not a library", libraryName);
-        }
-        else
-            throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
-    }
-
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
     {
         IQueryFactory *ret;
@@ -941,9 +918,9 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
     {
-        return createServerQueryFactory(id, dll, package, stateInfo, libraryContext);
+        return createServerQueryFactory(id, dll, package, stateInfo);
     }
 
 };
@@ -965,9 +942,9 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, libraryContext);
+        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo);
     }
 
 };
@@ -1006,11 +983,11 @@ public:
         return managers[idx];
     }
 
-    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext)
+    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash)
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
-                managers[channel]->load(querySets, packages, hash, libraryContext); // MORE - this means the hash depends on the number of channels. Is that desirable?
+                managers[channel]->load(querySets, packages, hash); // MORE - this means the hash depends on the number of channels. Is that desirable?
     }
 
 private:
@@ -1268,8 +1245,8 @@ public:
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash, newServerManager);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, newServerManager);
+        newServerManager->load(newQuerySet, *packages, newHash);
+        newSlaveManagers->load(newQuerySet, *packages, newHash);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
         clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
@@ -1301,8 +1278,8 @@ public:
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash, newServerManager);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, newServerManager);
+        newServerManager->load(newQuerySet, *packages, newHash);
+        newSlaveManagers->load(newQuerySet, *packages, newHash);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
     }
 };
@@ -1370,16 +1347,31 @@ public:
         controlSem.signal();
     }
 
-    virtual IRoxieLibraryLookupContext *getLibraryLookupContext(const char *querySet) const
+    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
-            if (sm->isActive() && strcmp(sm->queryId(), querySet)==0)
-                return sm.getClear();
+            if (sm->isActive())
+            {
+                Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
+                if (library && (&library->queryPackage() == &package))  // MORE - is this check too restrictive?
+                {
+                    if (library->isQueryLibrary())
+                    {
+                        unsigned foundInterfaceHash = library->getQueryLibraryInterfaceHash();
+                        if (!foundInterfaceHash || (foundInterfaceHash == expectedInterfaceHash))
+                            return library.getClear();
+                        else
+                            throw MakeStringException(ROXIE_LIBRARY_ERROR, "The library interface found in %s is not compatible (found %d, expected %d)", libraryName, foundInterfaceHash, expectedInterfaceHash);
+                    }
+                    else
+                        throw MakeStringException(ROXIE_LIBRARY_ERROR, "The query resolved by %s is not a library", libraryName);
+                }
+            }
         }
-        return NULL;
+        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
     }
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
