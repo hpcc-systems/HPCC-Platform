@@ -852,6 +852,20 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
         column.editor.cancel();
         return false;
       }
+
+      for (count = 0; count < caller.getRecordSet()._records.length; count++)
+      {
+        if (caller.getRecordIndex(caller.getSelectedRows()[0]) == count)
+          continue;
+
+        if (caller.getRecord(count).getData('netAddress') == newValue)
+        {
+          if (confirm('IP address ' + newValue + '  is already in use, proceed?'))
+            break;
+          else
+            return;
+        }
+      }
     }
 
     if (bldSet === "roxie" && attrName === "dataDirectory") {
