@@ -51,4 +51,9 @@ extern ENVIRONMENT_API bool getRemoteRunInfo(const char * keyName, const char * 
 
 extern ENVIRONMENT_API bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout);
 
+extern ENVIRONMENT_API IPropertyTree *envGetNASConfiguration(); // return NAS config
+extern ENVIRONMENT_API void envInstallNASHooks(); // gets NAS config and sets up
+// like envInstallNASHooksalso but also reutrns which filters were installed
+extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks();
+
 #endif

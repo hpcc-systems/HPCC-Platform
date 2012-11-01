@@ -1343,29 +1343,50 @@ class CRowStreamWriter : public CSimpleInterface, private IRowSerializerTarget, 
 
     void flushBuffer(bool final) 
     {
-        if (bufpos) {
-            stream->write(bufpos,buf);
-            if (tallycrc)
-                crc.tally(bufpos,buf);
-            bufpos = 0;
+        try
+        {
+            if (bufpos) {
+                stream->write(bufpos,buf);
+                if (tallycrc)
+                    crc.tally(bufpos,buf);
+                bufpos = 0;
+            }
+            size32_t extpos = extbuf.length();
+            if (!extpos)
+                return;
+            if (!final)
+                extpos = (extpos/ROW_WRITER_BUFFERSIZE)*ROW_WRITER_BUFFERSIZE;
+            if (extpos) {
+                stream->write(extpos,extbuf.toByteArray());
+                if (tallycrc)
+                    crc.tally(extpos,extbuf.toByteArray());
+            }
+            if (extpos<extbuf.length()) {
+                bufpos = extbuf.length()-extpos;
+                memcpy(buf,extbuf.toByteArray()+extpos,bufpos);
+            }
+            extbuf.clear();
         }
-        size32_t extpos = extbuf.length();
-        if (!extpos)
-            return;
-        if (!final) 
-            extpos = (extpos/ROW_WRITER_BUFFERSIZE)*ROW_WRITER_BUFFERSIZE;
-        if (extpos) {
-            stream->write(extpos,extbuf.toByteArray());
-            if (tallycrc)
-                crc.tally(extpos,extbuf.toByteArray());
+        catch (IException *e)
+        {
+            autoflush = false; // avoid follow-on errors
+            EXCLOG(e, "flushBuffer");
+            throw;
         }
-        if (extpos<extbuf.length()) {
-            bufpos = extbuf.length()-extpos;
-            memcpy(buf,extbuf.toByteArray()+extpos,bufpos);
-        }
-        extbuf.clear();
     }
-
+    void streamFlush()
+    {
+        try
+        {
+            stream->flush();
+        }
+        catch (IException *e)
+        {
+            autoflush = false; // avoid follow-on errors
+            EXCLOG(e, "streamFlush");
+            throw;
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -1425,13 +1446,13 @@ public:
     void flush()
     {
         flushBuffer(true);
-        stream->flush();
+        streamFlush();
     }
 
     void flush(CRC32 *crcout)
     {
         flushBuffer(true);
-        stream->flush();
+        streamFlush();
         if (crcout)
             *crcout = crc;
     }
