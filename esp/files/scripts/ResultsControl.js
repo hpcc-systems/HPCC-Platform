@@ -17,14 +17,19 @@ define([
 	"dojo/_base/declare",
 	"dojo/store/Memory",
 	"dojo/data/ObjectStore",
+
+	"dijit/registry",
+	"dijit/layout/ContentPane",
+
 	"dojox/grid/DataGrid",
 	"dojox/grid/EnhancedGrid",
 	"dojox/grid/enhanced/plugins/Pagination",
 	"dojox/grid/enhanced/plugins/Filter",
-	"dojox/grid/enhanced/plugins/NestedSorting",
-	"dijit/registry",
-	"dijit/layout/ContentPane"
-], function (declare, Memory, ObjectStore, DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting, registry, ContentPane) {
+	"dojox/grid/enhanced/plugins/NestedSorting"
+
+], function (declare, Memory, ObjectStore,
+    registry, ContentPane,
+    DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting) {
 	return declare(null, {
 		workunit: null,
 		paneNum: 0,

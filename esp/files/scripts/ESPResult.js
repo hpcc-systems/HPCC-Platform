@@ -14,11 +14,17 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/data/ObjectStore",
-	"hpcc/WsWorkunits",
-	"hpcc/ESPBase"
-], function (declare, ObjectStore, WsWorkunits, ESPBase) {
+    "dojo/_base/declare",
+    "dojo/data/ObjectStore",
+    "dojo/dom-construct",
+
+    "dojox/xml/parser",
+    "dojox/xml/DomParser",
+    "hpcc/WsWorkunits",
+    "hpcc/ESPBase"
+], function (declare, ObjectStore, domConstruct,
+            parser, DomParser,
+            WsWorkunits, ESPBase) {
 	return declare(ESPBase, {
 		store: null,
 		Total: "-1",
@@ -40,22 +46,135 @@ define([
 			return this.Total != "-1";
 		},
 
-		getStructure: function () {
-			var retVal = [];
-			retVal.push({
-				name: "##",
-				field: this.store.idProperty,
-				width: "40px"
-			});
-			for (var i = 0; i < this.ECLSchemas.length; ++i) {
-				retVal.push({
-					name: this.ECLSchemas[i].ColumnName,
-					field: this.ECLSchemas[i].ColumnName,
-					width: this.extractWidth(this.ECLSchemas[i].ColumnType, this.ECLSchemas[i].ColumnName)
-				});
-			}
-			return retVal;
-		},
+        getFirstSchemaNode: function (node, name) {
+            if (node && node.attributes) {
+                if ((node.localName && node.localName == name) || (node.hasAttributes() && node.getAttribute("name") == name)) {
+                    return node;
+                }
+            }
+            for (var i = 0; i < node.childNodes.length; ++i) {
+                var retVal = this.getFirstSchemaNode(node.childNodes[i], name);
+                if (retVal) {
+                    return retVal;
+                }
+            }
+            return null;
+        },
+
+        getFirstSequenceNode: function (schemaNode) {
+            var row = this.getFirstSchemaNode(schemaNode, "Row");
+            if (!row)
+                return null;
+            var complexType = this.getFirstSchemaNode(row, "complexType");
+            if (!complexType)
+                return null;
+            return this.getFirstSchemaNode(complexType, "sequence");
+        },
+
+        rowToTable: function (cell) {
+            var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" });
+            if (cell && cell.Row) {
+                if (!cell.Row.length) {
+                    cell.Row = [cell.Row];
+                }
+
+                for (i = 0; i < cell.Row.length; ++i) {
+                    if (i == 0) {
+                        var tr = domConstruct.create("tr", null, table);
+                        for (key in cell.Row[i]) {
+                            var th = domConstruct.create("th", { innerHTML: key }, tr);
+                        }
+                    }
+                    var tr = domConstruct.create("tr", null, table);
+                    for (key in cell.Row[i]) {
+                        if (cell.Row[i][key].Row) {
+                            var td = domConstruct.create("td", null, tr);
+                            td.appendChild(this.rowToTable(cell.Row[i][key]));
+                        } else {
+                            var td = domConstruct.create("td", { innerHTML: cell.Row[i][key] }, tr);
+                        }
+                    }
+                }
+            }
+            return table;
+        },
+
+        getRowStructure: function (parentNode) {
+            var retVal = [];
+            var sequence = this.getFirstSequenceNode(parentNode, "sequence");
+            if (!sequence)
+                return retVal;
+
+            for (var i = 0; i < sequence.childNodes.length; ++i) {
+                var node = sequence.childNodes[i];
+                if (node.hasAttributes()) {
+                    var name = node.getAttribute("name");
+                    var type = node.getAttribute("type");
+                    if (name && type) {
+                        retVal.push({
+                            name: name,
+                            field: name,
+                            width: this.extractWidth(type, name),
+                        });
+                    }
+                    if (node.hasChildNodes()) {
+                        var context = this;
+                        retVal.push({
+                            name: name,
+                            field: name,
+                            formatter: function (cell, row, grid) {
+                                var div = document.createElement("div");
+                                div.appendChild(context.rowToTable(cell));
+                                return div.innerHTML;
+                            },
+                            width: this.getRowWidth(node),
+                        });
+                    }
+                }
+            }
+            return retVal;
+        },
+
+        getStructure: function () {
+            var structure = [
+                {
+                    cells: [
+                           [
+                            { name: "##", field: this.store.idProperty, width: "40px" }
+                         ]
+                    ]
+                }
+            ];
+
+            var dom = parser.parse(this.XmlSchema);
+            var dataset = this.getFirstSchemaNode(dom, "Dataset");
+            var innerStruct = this.getRowStructure(dataset);
+            for (var i = 0; i < innerStruct.length; ++i) {
+                structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
+            }
+            return structure;
+        },
+
+        getRowWidth: function (parentNode) {
+            var retVal = 0;
+            var sequence = this.getFirstSequenceNode(parentNode, "sequence");
+            if (!sequence)
+                return retVal;
+
+            for (var i = 0; i < sequence.childNodes.length; ++i) {
+                var node = sequence.childNodes[i];
+                if (node.hasAttributes()) {
+                    var name = node.getAttribute("name");
+                    var type = node.getAttribute("type");
+                    if (name && type) {
+                        retVal += this.extractWidth(type, name);
+                    } else if (node.hasChildNodes()) {
+                        retVal += this.getRowWidth(node);
+                    }
+                }
+            }
+            return retVal;
+        },
 
 		extractWidth: function (type, name) {
 			var numStr = "0123456789";
@@ -65,7 +184,7 @@ define([
 				if (numStr.indexOf(type.charAt(--i)) == -1)
 					break;
 			}
-			if (i > 0)
+			if (i > 0 && i + 1 < type.length)
 				retVal = parseInt(type.substring(i + 1, type.length));
 
 			if (retVal < name.length)

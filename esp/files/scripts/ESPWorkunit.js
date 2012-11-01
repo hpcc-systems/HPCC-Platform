@@ -158,6 +158,7 @@ define([
 				IncludeDebugValues: false,
 				IncludeApplicationValues: false,
 				IncludeWorkflows: false,
+				IncludeXmlSchemas: args.onGetResults ? true : false,
 				SuppressResultSchemas: args.onGetResults ? false : true,
 				rawxml_: true
 			};
