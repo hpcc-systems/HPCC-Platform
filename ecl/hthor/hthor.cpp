@@ -48,7 +48,6 @@
 #define EMPTY_LOOP_LIMIT 1000
 
 static unsigned const hthorReadBufferSize = 0x10000;
-static memsize_t const defaultHThorSpillThreshold = 512*1024*1024;  // MORE - should increase on 64-bit platform?
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 static size32_t const spillStreamBufferSize = 0x10000;
 static int const defaultWorkUnitWriteLimit = 10; //10MB as thor
@@ -3614,9 +3613,6 @@ void CHThorGroupSortActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
     eof = false;
-    spillThreshold = (memsize_t)agent.queryWorkUnit()->getDebugValueInt64("hthorSpillThreshold", defaultHThorSpillThreshold);
-    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit();
-    spillThreshold = (memsize_t)std::min(spillThreshold, totalMemoryLimit / 3);
     if(!sorter)
         createSorter();
 }
@@ -3709,39 +3705,11 @@ void CHThorGroupSortActivity::getSorted()
 {
     diskMerger.clear();
     diskReader.clear();
-    memsize_t grpSize = 0;
+    grpSize = 0;
     const void * next;
     while((next = input->nextInGroup()) != NULL)
     {
         size32_t nextSize = input->queryOutputMeta()->getRecordSize(next);
-        if((grpSize+nextSize) > spillThreshold) //Spill ??
-        {
-            if(!diskMerger)
-            {
-                StringBuffer fbase;
-                agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
-                PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
-                class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
-                {
-                public:
-                    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-                    virtual void releaseRow(const void *row)
-                    {
-                        releaseHThorRow(row);
-                    }
-                    virtual void linkRow(const void *row)
-                    {
-                        linkHThorRow(row);
-                    }
-                };
-                Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
-                Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
-                diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
-            }
-            sorter->performSort();
-            sorter->spillSortedToDisk(diskMerger);
-            grpSize = 0;
-        }
         sorter->addRow(next);
         grpSize += nextSize;
     }
@@ -3763,6 +3731,41 @@ void CHThorGroupSortActivity::getSorted()
         eof = true;
     }
     gotSorted = true;
+}
+
+//interface roxiemem::IBufferedRowCallback
+unsigned CHThorGroupSortActivity::getPriority() const
+{
+    return 10;
+}
+bool CHThorGroupSortActivity::freeBufferedRows(bool critical)
+{
+    if(!diskMerger)
+    {
+        StringBuffer fbase;
+        agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+        PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
+        class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+        {
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+            virtual void releaseRow(const void *row)
+            {
+                releaseHThorRow(row);
+            }
+            virtual void linkRow(const void *row)
+            {
+                linkHThorRow(row);
+            }
+        };
+        Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
+        Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
+        diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
+    }
+    sorter->performSort();
+    sorter->spillSortedToDisk(diskMerger);
+    grpSize = 0;
+    return true;
 }
 
 // Base for Quick sort and both Insertion sorts
