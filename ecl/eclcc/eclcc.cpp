@@ -226,7 +226,8 @@ protected:
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
-    ICppCompiler * createCompiler(const char * coreName);
+    ICppCompiler *createCompiler(const char * coreName, const char * sourceDir = NULL, const char * targetDir = NULL);
+    bool generatePrecompiledHeader();
     void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
     bool isWithinPath(const char * sourcePathname, const char * searchPath);
@@ -252,6 +253,7 @@ protected:
     Owned<IEclRepository> includeRepository;
     const char * programName;
 
+    StringBuffer cppIncludePath;
     StringBuffer pluginsPath;
     StringBuffer hooksPath;
     StringBuffer templatePath;
@@ -292,6 +294,7 @@ protected:
     bool optOnlyCompile;
     bool optSaveQueryText;
     bool optLegacy;
+    bool optGenerateHeader;
     int argc;
     const char **argv;
 };
@@ -419,7 +422,7 @@ void EclCC::loadOptions()
 
     globals.setown(createProperties(optIniFilename, true));
 
-    StringBuffer compilerPath, includePath, libraryPath;
+    StringBuffer compilerPath, libraryPath;
 
     if (globals->hasProp("targetGcc"))
         optTargetCompiler = globals->getPropBool("targetGcc") ? GccCppCompiler : Vs6CppCompiler;
@@ -433,7 +436,7 @@ void EclCC::loadOptions()
         extractOption(compilerPath, globals, "CL_PATH", "compilerPath", "/usr", NULL);
 #endif
         extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
-        extractOption(includePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
+        extractOption(cppIncludePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
         extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
         extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
@@ -458,7 +461,7 @@ void EclCC::loadOptions()
         installFileHooks(hooksPath.str());
 
     if (!optNoCompile)
-        setCompilerPath(compilerPath.str(), includePath.str(), libraryPath.str(), NULL, optTargetCompiler, logVerbose);
+        setCompilerPath(compilerPath.str(), cppIncludePath.str(), libraryPath.str(), NULL, optTargetCompiler, logVerbose);
 }
 
 //=========================================================================================
@@ -496,10 +499,8 @@ void EclCC::applyDebugOptions(IWorkUnit * wu)
 
 //=========================================================================================
 
-ICppCompiler * EclCC::createCompiler(const char * coreName)
+ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir)
 {
-    const char * sourceDir = NULL;
-    const char * targetDir = NULL;
     Owned<ICppCompiler> compiler = ::createCompiler(coreName, sourceDir, targetDir, optTargetCompiler, logVerbose);
     compiler->setOnlyCompile(optOnlyCompile);
     compiler->setCCLogPath(cclogFilename);
@@ -1257,6 +1258,55 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     generateOutput(instance);
 }
 
+bool EclCC::generatePrecompiledHeader()
+{
+    if (inputFiles.ordinality() != 0)
+    {
+        ERRLOG("No input files should be specified when generating precompiled header");
+        return false;
+    }
+    StringArray paths;
+    paths.appendList(cppIncludePath, ENVSEPSTR);
+    const char *foundPath = NULL;
+    ForEachItemIn(idx, paths)
+    {
+        StringBuffer fullpath;
+        fullpath.append(paths.item(idx));
+        addPathSepChar(fullpath).append("eclinclude.hpp");
+        if (checkFileExists(fullpath))
+        {
+            foundPath = paths.item(idx);
+            break;
+        }
+    }
+    if (!foundPath)
+    {
+        ERRLOG("Cannot find eclinclude.hpp");
+        return false;
+    }
+    Owned<ICppCompiler> compiler = createCompiler("eclinclude.hpp", foundPath, NULL);
+    compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
+    compiler->setPrecompileHeader(true);
+    if (compiler->compile())
+    {
+        try
+        {
+            Owned<IFile> log = createIFile(cclogFilename);
+            log->remove();
+        }
+        catch (IException * e)
+        {
+            e->Release();
+        }
+        return true;
+    }
+    else
+    {
+        ERRLOG("Compilation failed - see %s for details", cclogFilename.str());
+        return false;
+    }
+}
+
 
 bool EclCC::processFiles()
 {
@@ -1265,7 +1315,11 @@ bool EclCC::processFiles()
     {
         processArgvFilename(inputFiles, inputFileNames.item(idx));
     }
-    if (inputFiles.ordinality() == 0)
+    if (optGenerateHeader)
+    {
+        return generatePrecompiledHeader();
+    }
+    else if (inputFiles.ordinality() == 0)
     {
         if (optBatchMode || !optQueryRepositoryReference)
         {
@@ -1431,6 +1485,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optOutputDirectory, "-P"))
         {
         }
+        else if (iter.matchFlag(optGenerateHeader, "-pch"))
+        {
+        }
         else if (iter.matchFlag(optSaveQueryText, "-q"))
         {
         }
@@ -1531,7 +1588,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
 
     if (inputFileNames.ordinality() == 0)
     {
-        if (!optBatchMode && optQueryRepositoryReference)
+        if (optGenerateHeader || (!optBatchMode && optQueryRepositoryReference))
             return true;
         ERRLOG("No input filenames supplied");
         return false;
@@ -1601,6 +1658,9 @@ const char * const helpText[] = {
     "!   --logdetail=n Set the level of detail in the log file",
 #ifdef _WIN32
     "!   -m            Enable leak checking",
+#endif
+#ifndef _WIN32
+    "!   -pch          Generate precompiled header for eclinclude.hpp",
 #endif
     "!   -P <path>     Specify the path of the output files (only with -b option)",
     "    -specs file   Read eclcc configuration from specified file",

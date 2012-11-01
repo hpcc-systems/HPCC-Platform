@@ -126,6 +126,7 @@ typedef memsize_t rowsize_t;
 #define TEXT_TRANS "t"
 #define LLC(NUM) NUM
 #define ENVSEPCHAR ';'
+#define ENVSEPSTR ";"
 
 #define SEPARATE_LIB_DLL_FILES
 #define SharedObjectPrefix         ""
@@ -282,6 +283,7 @@ typedef int socklen_t;
 #define __TIMESTAMP__ "<__TIMESTAMP__ unsupported>"
 #endif
 #define ENVSEPCHAR ':'
+#define ENVSEPSTR ":"
 #define PATHSEPCHAR '/'
 #define PATHSEPSTR "/"
 #define TEXT_TRANS

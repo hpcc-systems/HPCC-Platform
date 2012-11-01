@@ -46,6 +46,7 @@ public:
     virtual IPooledThread *createNew();
     virtual void setCCLogPath(const char* path);
     virtual void setSaveTemps(bool _save) { saveTemps = _save; }
+    virtual void setPrecompileHeader(bool _pch);
     virtual void setAbortChecker(IAbortRequestCallback * _abortChecker) {abortChecker = _abortChecker;}
 
 protected:
@@ -78,6 +79,7 @@ protected:
     bool            verbose;
     void _addInclude(StringBuffer &s, const char *paths);
     bool            saveTemps;
+    bool            precompileHeader;
     IAbortRequestCallback * abortChecker;
 };
 
