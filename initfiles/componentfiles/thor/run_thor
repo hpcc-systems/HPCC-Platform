@@ -40,12 +40,19 @@ while [ 1 ]; do
     echo 'failed to lookup dali group for $groupName'
         exit 1
     fi
-    ## multislaves for bkwd compat. with old environments
-    if [ ${slavespernode} -gt 1 ] || [ "$localthor" = "true" ] || [ "$multislaves" = "true" ]; then
-        $deploydir/makethorgroup
-    fi
+    $deploydir/makethorgroup
+    sort $instancedir/slaves | uniq > $instancedir/uslaves.start
 
-    $deploydir/start_slaves
+    echo --------------------------
+    echo starting thorslaves ...
+
+    logredirect="$logdir/start_slaves_$logpthtail.log"
+    # Would be simpler, if there was simple way to test if ip is local and get rid of 'localthor' setting
+    if [ "$localthor" = "true" ]; then
+        $deploydir/start_slaves $THORMASTER thorslave${LCR} $THORMASTER $THORMASTERPORT $logdir $instancedir $THORNAME $PATH_PRE $logredirect
+    else
+        $deploydir/frunssh $instancedir/uslaves.start "/bin/sh -c '$deploydir/start_slaves %a thorslave${LCR} $THORMASTER $THORMASTERPORT $logdir $instancedir $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
+    fi
 
     echo thormaster cmd : $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT
     nohup $instancedir/thormaster_$THORNAME MASTER=$THORMASTER:$THORMASTERPORT 2> /dev/null 1>/dev/null &
