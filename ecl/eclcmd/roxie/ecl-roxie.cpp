@@ -384,7 +384,7 @@ public:
     virtual void usage()
     {
         fprintf(stdout,"\nUsage:\n\n"
-            "ecl roixe <command> [command options]\n\n"
+            "ecl roxie <command> [command options]\n\n"
             "   Queries Commands:\n"
             "      attach         (re)attach a roxie cluster from dali\n"
             "      detach         detach a roxie cluster from dali\n"
