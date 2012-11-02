@@ -1298,7 +1298,7 @@ class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackage
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
-        standAloneDll(_standAloneDll)
+        standAloneDll(_standAloneDll), stateHash(0)
     {
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
     }
