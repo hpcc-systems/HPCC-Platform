@@ -1046,6 +1046,10 @@ public:
     {
         return dll->queryDll();
     }
+    virtual IConstWorkUnit *queryWorkUnit() const
+    {
+        return dll->queryWorkUnit();
+    }
     virtual const IRoxiePackage &queryPackage() const
     {
         return package;
