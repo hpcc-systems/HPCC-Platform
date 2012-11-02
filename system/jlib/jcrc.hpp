@@ -37,7 +37,7 @@ class jlib_decl CRC32
 public:
     CRC32(unsigned crc = ~0U) { reset(crc); }
     inline void reset(unsigned _crc = ~0U) { crc = _crc; }
-    inline unsigned get() { return ~crc; }
+    inline unsigned get() const { return ~crc; }
     void skip(offset_t length);
     void tally(unsigned len, const void * buf);
 
