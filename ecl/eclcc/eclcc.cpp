@@ -194,6 +194,7 @@ public:
         argc = _argc;
         argv = _argv;
         logVerbose = false;
+        logTimings = false;
         optArchive = false;
         optGenerateMeta = false;
         optGenerateDepend = false;
@@ -281,6 +282,7 @@ protected:
     unsigned batchSplit;
     unsigned optLogDetail;
     bool logVerbose;
+    bool logTimings;
     bool optArchive;
     bool optGenerateMeta;
     bool optGenerateDepend;
@@ -1305,8 +1307,11 @@ bool EclCC::processFiles()
         ok = (errs->errCount() == 0);
     }
 
-    if (logVerbose)
-        defaultTimer->printTimings();
+    if (logTimings)
+    {
+        StringBuffer s;
+        fprintf(stderr, "%s", defaultTimer->getTimings(s).str());
+    }
     return ok;
 }
 
@@ -1472,6 +1477,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
             if (batchPart >= batchSplit)
                 batchPart = 0;
         }
+        else if (iter.matchFlag(logTimings, "--timings"))
+        {
+        }
         else if (iter.matchOption(tempArg, "-platform") || /*deprecated*/ iter.matchOption(tempArg, "-target"))
         {
             if (!setTargetPlatformOption(tempArg.get(), optTargetClusterType))
@@ -1607,6 +1615,7 @@ const char * const helpText[] = {
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
     "    -v --verbose  Output additional tracing information while compiling",
     "    --version     Output version information",
+    "!   --timings     Output additional timing information",
     "!",
     "!#options",
     "! -factivitiesPerCpp      Number of activities in each c++ file",

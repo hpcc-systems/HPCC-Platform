@@ -519,9 +519,8 @@ public:
         CriticalBlock b(c);
         if (numSections())
         {
-            str.append("Timings:\n");
             for (unsigned i = 0; i < numSections(); i++)
-                getSection(i, str.append("  ")).append(" total=")
+                getSection(i, str.append("Timing: ")).append(" total=")
                                          .append(getTime(i)/1000000)
                                          .append("ms max=")
                                          .append(getMaxTime(i)/1000)
