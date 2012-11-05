@@ -1285,169 +1285,18 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </figure></para>
       </sect2>
     </sect1>
-
-    <sect1>
-      <title>Certify Roxie access to indexed data</title>
-
-      <para>This section certifies the two one-way RDDE components and the
-      4Way RDDE. You will run these steps three times (once for each RDDE).
-      Note that the URLs for 1<superscript>st</superscript> RDDE are in blue,
-      the 2<superscript>nd</superscript> RDDE’s are in green, and the third
-      are in orange</para>
-
-      <para></para>
-
-      <!--***This section here also in QUESTION, as to the site :8050 is not coming up!***-->
-
-      <sect2 id="Deploy_the_query_RDDE">
-        <title>Deploy the query to the Rapid Data Delivery Engine access to
-        indexed data.</title>
-
-        <para></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>In a new browser window, open the RoxieConfig web
-            page:</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis>http://IPaddress:8050*** </emphasis></para>
-
-        <para>Use the same credentials to login</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Expand the roxie<emphasis
-            role="bold">attribute</emphasis>server &gt;&gt; _Certification
-            branch in the left side menu tree.</para>
-          </listitem>
-
-          <listitem>
-            <para>Rt-click on the ReadIndexDoxie link and select
-            Import.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the Check button</para>
-          </listitem>
-
-          <listitem>
-            <para>Scroll to the right and make sure the check reports
-            <emphasis role="bold">OK</emphasis>.</para>
-
-            <para></para>
-
-            <para><figure>
-                <title>***</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/???" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Select Activate from the drop list.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the Deploy button button.</para>
-          </listitem>
-        </orderedlist>
-
-        <para></para>
-      </sect2>
-
-      <sect2 id="EXPECTED_RESULT_Deploy_the_query">
-        <title>EXPECTED RESULT</title>
-
-        <para><emphasis role="bold">EXPECTED RESULT:</emphasis></para>
-
-        <para></para>
-
-        <para>The query now shows in the <emphasis role="bold">Deployed
-        Queries</emphasis> list.</para>
-
-        <para><figure>
-            <title>***</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/???" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-      </sect2>
-    </sect1>
-
-    <sect1 id="RDDE_Run_the_query">
-      <title>Run the query</title>
-
-      <orderedlist>
-        <listitem>
-          <para>In a new browser window, open the RDDE WsECL web page:
-          <emphasis>http://IPaddress:8022</emphasis></para>
-
-          <para>Use the same credentials to login</para>
-        </listitem>
-
-        <listitem>
-          <para>Expand the Folders &gt;&gt; _Certification branch in the left
-          side menu tree.</para>
-        </listitem>
-
-        <listitem>
-          <para>Click on the ReadIndexDoxie link.</para>
-        </listitem>
-
-        <listitem>
-          <para>Enter <emphasis role="bold">BRYANT</emphasis> in the Last Name
-          field (lnamein).</para>
-        </listitem>
-
-        <listitem>
-          <para>Press the <emphasis role="bold">Submit</emphasis>
-          button.</para>
-        </listitem>
-      </orderedlist>
-
-      <para></para>
-
-      <sect2 id="Expected_Result_run_the_query">
-        <title>EXPECTED RESULT</title>
-
-        <para>A list of 100 records should display, looking similar to the
-        following (BRYANT in last name).</para>
-
-        <para></para>
-
-        <para><figure>
-            <title>***</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="images/???" />
-              </imageobject>
-            </mediaobject>
-          </figure></para>
-      </sect2>
-    </sect1>
   </chapter>
 
   <chapter id="Spray">
     <title>Spray and Despray Data</title>
 
-    <para>This Chapter will verify the systems ability to Spray and Despray
-    data. Spraying and Despraying is the means by which the HPCC will
-    distribute data across the system clusters.</para>
+    <para>This section verifies the systems ability to Spray and Despray data.
+    Spraying is the means by which the HPCC distributes data across the system
+    nodes.</para>
 
     <para>Spraying takes a file and distributes pieces of it across the nodes.
     Despray is the opposite, the system combines the data from the multiple
-    clusters into a singular file that would get delivered back to the
-    user.</para>
+    nodes into a single file.</para>
 
     <sect1>
       <title>Certify Data Transfer (Spray)</title>
