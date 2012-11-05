@@ -1901,6 +1901,7 @@ class CResolvedFile : public CInterface, implements IResolvedFileCreator
 protected:
     const IRoxiePackage *cached;
     StringAttr lfn;
+    StringAttr physicalName;
     Owned<IDistributedFile> dFile; // NULL on copies serialized to slaves. Note that this implies we keep a lock on dali file for the lifetime of this object.
     CDateTime fileTimeStamp;
     RoxieFileType fileType;
@@ -1947,7 +1948,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CResolvedFile(const char *_lfn, IDistributedFile *_dFile, RoxieFileType _fileType) : lfn(_lfn), dFile(_dFile), fileType(_fileType)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType)
+    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType)
     {
         cached = NULL;
         fileSize = 0;
@@ -2012,7 +2014,6 @@ public:
         }
         return subNames.length();
     }
-    inline const char *queryLFN() const { return lfn; }
     inline bool isKey() const
     {
         return fileType==ROXIE_KEY;
@@ -2083,38 +2084,41 @@ public:
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
-        IFileDescriptor *fdesc = subFiles.item(0);
-        Owned<IFileDescriptor> remoteFDesc = checkCloneFrom(subNames.item(0), fdesc);
-        if (fdesc)
+        if (subFiles.length())
         {
-            unsigned numParts = fdesc->numParts();
-            for (unsigned i = 1; i <= numParts; i++)
+            IFileDescriptor *fdesc = subFiles.item(0);
+            Owned<IFileDescriptor> remoteFDesc = checkCloneFrom(subNames.item(0), fdesc);
+            if (fdesc)
             {
-                if (!channel || getBondedChannel(i)==channel)
+                unsigned numParts = fdesc->numParts();
+                for (unsigned i = 1; i <= numParts; i++)
                 {
-                    try
+                    if (!channel || getBondedChannel(i)==channel)
                     {
-                        IPartDescriptor *pdesc = fdesc->queryPart(i-1);
-                        assertex(pdesc);
-                        IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
-                        Owned<ILazyFileIO> file = createDynamicFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL);
-                        IPropertyTree &partProps = pdesc->queryProperties();
-                        f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
+                        try
+                        {
+                            IPartDescriptor *pdesc = fdesc->queryPart(i-1);
+                            assertex(pdesc);
+                            IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
+                            Owned<ILazyFileIO> file = createDynamicFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL);
+                            IPropertyTree &partProps = pdesc->queryProperties();
+                            f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
+                        }
+                        catch (IException *E)
+                        {
+                            StringBuffer err;
+                            err.append("Could not load file ");
+                            fdesc->getTraceName(err);
+                            DBGLOG(E, err.str());
+                            if (!isOpt)
+                                throw;
+                            E->Release();
+                            f->addFile(NULL, 0);
+                        }
                     }
-                    catch (IException *E)
-                    {
-                        StringBuffer err;
-                        err.append("Could not load file ");
-                        fdesc->getTraceName(err);
-                        DBGLOG(E, err.str());
-                        if (!isOpt)
-                            throw;
-                        E->Release();
+                    else
                         f->addFile(NULL, 0);
-                    }
                 }
-                else
-                    f->addFile(NULL, 0);
             }
         }
         return f.getClear();
@@ -2276,6 +2280,17 @@ public:
     {
         addFile(lfn, _sub);
     }
+    virtual void addSubFile(const char *localFileName)
+    {
+        Owned<IFile> file = createIFile(localFileName);
+        assertex(file->exists());
+        offset_t size = file->size();
+        Owned<IFileDescriptor> fdesc = createFileDescriptor();
+        Owned<IPropertyTree> pp = createPTree("Part");
+        pp->setPropInt64("@size",size);
+        fdesc->setPart(0, queryMyNode(), localFileName, pp);
+        addSubFile(fdesc.getClear());
+    }
 
     virtual void setCache(const IRoxiePackage *cache)
     {
@@ -2291,6 +2306,10 @@ public:
     virtual const char *queryFileName() const
     {
         return lfn.get();
+    }
+    virtual const char *queryPhysicalName() const
+    {
+        return physicalName.get();
     }
     virtual const IPropertyTree *queryProperties() const
     {
@@ -2308,7 +2327,7 @@ public:
         {
             try
             {
-                Owned<IFile> file = createIFile(lfn.get());
+                Owned<IFile> file = createIFile(physicalName.get());
                 file->remove();
             }
             catch (IException *e)
@@ -2317,6 +2336,15 @@ public:
                 e->Release();
             }
         }
+    }
+    virtual bool exists() const
+    {
+        // MORE - this is a little bizarre. We sometimes create a resolvedFile for a file that we are intending to create.
+        // This will make more sense if/when we start to lock earlier.
+        if (dFile)
+            return true; // MORE - may need some thought
+        else
+            return checkFileExists(lfn.get());
     }
 };
 
@@ -2336,7 +2364,7 @@ public:
 
 public:
     CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal) 
-        : CResolvedFile(_lfn, NULL, ROXIE_FILE), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -2421,15 +2449,15 @@ public:
     }
 };
 
-extern IResolvedFileCreator *createResolvedFile(const char *lfn)
+extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical)
 {
-    return new CResolvedFile(lfn, NULL, ROXIE_FILE);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE);
 }
 
-extern IResolvedFile *createResolvedFile(const char *lfn, IDistributedFile *dFile)
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile)
 {
     const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
-    return new CResolvedFile(lfn, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE);
+    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE);
 }
 
 class CSlaveDynamicFileCache : public CInterface, implements ISlaveDynamicFileCache
@@ -2457,12 +2485,12 @@ public:
             while (files.isItem(idx))
             {
                 CSlaveDynamicFile &f = files.item(idx);
-                if (f.channel==header->channel && f.serverIdx==header->serverIdx && stricmp(f.queryLFN(), lfn)==0)
+                if (f.channel==header->channel && f.serverIdx==header->serverIdx && stricmp(f.queryFileName(), lfn)==0)
                 {
                     if (!cacheDate.equals(f.queryTimeStamp()) || checksum != f.queryCheckSum())
                     {
                         if (f.isKey())
-                            clearKeyStoreCacheEntry(f.queryLFN());
+                            clearKeyStoreCacheEntry(f.queryFileName());
                         files.remove(idx);
                         idx--;
                     }

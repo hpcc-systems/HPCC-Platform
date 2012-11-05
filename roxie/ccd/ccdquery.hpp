@@ -91,6 +91,7 @@ interface IQueryFactory : extends IInterface
     virtual unsigned queryChannel() const = 0;
     virtual ILoadedDllEntry *queryDll() const = 0;
     virtual bool getEnableFieldTranslation() const = 0;
+    virtual IConstWorkUnit *queryWorkUnit() const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual IPropertyTree &queryOnceContext() const = 0;
