@@ -77,7 +77,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
 
               <entry>We suggest reading this document in its entirety before
-              beginning. </entry>
+              beginning.</entry>
             </row>
           </tbody>
         </tgroup>
@@ -170,13 +170,13 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <listitem>
           <para>Assure that your system is clean from remnants of previous
           certifications. Search and remove any old, Workunits, DFU Workunits,
-          and published queries. </para>
+          and published queries.</para>
         </listitem>
 
         <listitem>
           <para>Filenames and other variables are defined in the
           _Certification.Setup file, you can edit this file to change the
-          number of records or filenames produced. </para>
+          number of records or filenames produced.</para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -221,7 +221,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </tgroup>
         </informaltable>
 
-        <para> </para>
+        <para></para>
       </listitem>
     </itemizedlist>
 
@@ -297,7 +297,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         the component state, how long the component has been up and running,
         the amount of disk usage, memory usage and other information is
         available at a glance. If there are any failed components, they are
-        highlighted in orange, indicating they are not ready.*** </para>
+        highlighted in orange, indicating they are not ready.***</para>
       </sect2>
     </sect1>
 
@@ -378,7 +378,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         the component state, how long the component has been up and running,
         the amount of disk usage, memory usage and other information is
         available at a glance. If there are any failed components, they are
-        highlighted in orange, indicating they are not ready.*** </para>
+        highlighted in orange, indicating they are not ready.***</para>
       </sect2>
     </sect1>
 
@@ -754,7 +754,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <para><emphasis role="bold">Note:</emphasis> This file uses the
         previously generated data and tests a series of Thor capabilities. It
         does not write data to disk. It will take a few minutes to complete,
-        depending on the size of your system. </para>
+        depending on the size of your system.</para>
 
         <para></para>
       </sect2>
@@ -1105,9 +1105,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     </sect1>
 
     <sect1>
-      <title>Compile and deploy Indexed data to Roxie</title>
-
-      <para></para>
+      <title>Compile and Publish a Roxie Query</title>
 
       <orderedlist>
         <listitem>
@@ -1119,14 +1117,15 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               <listitem>
                 <para>In the lower right corner of the ECL IDE you will see a
                 section labeled as Repository, containing a couple of folders.
-                This contains the ECL files. Select the "+" sign next to it
-                Samples, open the folder.</para>
+                This contains the ECL files. Select the + sign next to
+                <emphasis role="bold">Samples</emphasis>, open the
+                folder.</para>
               </listitem>
 
               <listitem>
                 <para>Navigate to the <emphasis
-                role="bold">_Certification</emphasis> folder and select the
-                "+" sign next to it to open it and view the contents.</para>
+                role="bold">_Certification</emphasis> folder and select the +
+                sign next to it to open it and view the contents.</para>
 
                 <para><figure>
                     <title>_Certification folder</title>
@@ -1140,8 +1139,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </listitem>
 
               <listitem>
-                <para>Double-click on the <emphasis role="bold">read_index
-                </emphasis>file to open it.</para>
+                <para>Double-click on the <emphasis
+                role="bold">ReadIndexService </emphasis>file to open
+                it.</para>
               </listitem>
             </itemizedlist></para>
         </listitem>
@@ -1168,7 +1168,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           option.</para>
 
           <para>Select <emphasis role="bold">Compile</emphasis> from the drop
-          list under the submit button. </para>
+          list under the submit button.</para>
 
           <para><figure>
               <title>Compile</title>
@@ -1180,16 +1180,15 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </mediaobject>
             </figure></para>
 
-          <para>Look for the Green checkmark indicating successful completion.
-          Once complete, select the Workunit next to the the green
-          checkmark.</para>
+          <para>Look for a green circle indicating successful completion. Once
+          complete, select the Workunit next to the the green circle.</para>
 
           <para><figure>
-              <title>Completed Workunit: Green checkmark</title>
+              <title>Completed Workunit: Green circle</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg11-1.jpg" />
+                  <imagedata fileref="images/CS-1102.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -1213,7 +1212,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <listitem>
           <para>Select the <emphasis role="bold">Publish</emphasis> button
           from the ECL Watch tab that you just opened. (you may have to scroll
-          down the main window)<figure>
+          down in the main window)<figure>
               <title>ECL Watch Publish button</title>
 
               <mediaobject>
@@ -1226,56 +1225,10 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>Using your browser, navigate to the ESP Web page: <emphasis
-          role="bold">http://IPaddress:8050*** <!--***COULD NOT FIND!*** Is this depricated???***--></emphasis></para>
+          role="bold">http://IPaddress:8002 <!--***COULD NOT FIND!*** Is this depricated???***--></emphasis></para>
 
           <para><figure>
               <title>*** NEED IMAGE</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata />
-                </imageobject>
-              </mediaobject>
-            </figure></para>
-        </listitem>
-
-        <listitem>
-          <para>Select the <emphasis role="bold">Deployments</emphasis> tab to
-          display the available Workunits. Look for your Workunit.</para>
-        </listitem>
-
-        <listitem>
-          <para>Select the tab next to your orkunit.</para>
-        </listitem>
-
-        <listitem>
-          <para>Press the <emphasis role="bold">Deploy</emphasis> button at
-          the bottom of that window.</para>
-
-          <para><figure>
-              <title>*** NEED IMAGE</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata />
-                </imageobject>
-              </mediaobject>
-            </figure></para>
-
-          <para></para>
-        </listitem>
-
-        <listitem>
-          <para>Select the <emphasis role="bold">Queries</emphasis> tab.
-          Verify that your request is deployed. ***</para>
-        </listitem>
-
-        <listitem>
-          <para>Using your browser, navigate to the WsECL Web page:
-          <emphasis>http://IPaddress:8002</emphasis></para>
-
-          <para><figure>
-              <title>*** OLD IMAGE</title>
 
               <mediaobject>
                 <imageobject>
@@ -1286,38 +1239,43 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Select the "+" sign next to <emphasis
-          role="bold">myroxie</emphasis>, to expand the folder</para>
+          <para>Select the + sign next to <emphasis
+          role="bold">roxie</emphasis>, to expand the folder</para>
         </listitem>
 
         <listitem>
-          <para>Select your Workunit. Enter BRYANT in the lastname field.
-          ***<!--Alt: Select the output format option from the drop down tab.--></para>
+          <para>Select <emphasis
+          role="bold">readindexservice</emphasis></para>
         </listitem>
 
         <listitem>
-          <para>Press the submit button. ***<figure>
-              <title>***</title>
+          <para>Enter the name BRYANT in the <emphasis
+          role="bold">lname</emphasis> field. <!--(output xml || output tables... )***--></para>
+
+          <para><figure>
+              <title>Enter lnamein</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata />
+                  <imagedata fileref="images/CS-1802.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
         </listitem>
+
+        <listitem>
+          <para>Press the submit button at the bottom of the form. </para>
+        </listitem>
       </orderedlist>
 
-      <para></para>
-
       <sect2 id="The_Expected_Result">
-        <title>EXPECTED RESULT: ***</title>
+        <title>EXPECTED RESULT: </title>
 
         <para>A list of 100 records should display, looking similar to the
         following (BRYANT in last name).</para>
 
         <para><figure>
-            <title>Result***</title>
+            <title>Result</title>
 
             <mediaobject>
               <imageobject>
