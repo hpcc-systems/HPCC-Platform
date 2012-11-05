@@ -116,6 +116,7 @@ define([
                             name: name,
                             field: name,
                             width: this.extractWidth(type, name),
+                            classes: "resultGridCell"
                         });
                     }
                     if (node.hasChildNodes()) {
@@ -130,6 +131,7 @@ define([
                                 return div.innerHTML;
                             },
                             width: this.getRowWidth(node),
+                            classes: "resultGridCell"
                         });
                     }
                 }
@@ -142,7 +144,9 @@ define([
                 {
                     cells: [
                            [
-                            { name: "##", field: this.store.idProperty, width: "40px" }
+                            {
+                                name: "##", field: this.store.idProperty, width: "40px", classes: "resultGridCell"
+                            }
                          ]
                     ]
                 }
@@ -179,20 +183,41 @@ define([
         },
 
 		extractWidth: function (type, name) {
-			var numStr = "0123456789";
 			var retVal = -1;
-			var i = type.length;
-			while (i >= 0) {
-				if (numStr.indexOf(type.charAt(--i)) == -1)
+
+			switch (type) {
+				case "xs:boolean":
+					retVal = 5;
+					break;
+				case "xs:integer":
+					retVal = 8;
+					break;
+				case "xs:nonNegativeInteger":
+					retVal = 8;
+					break;
+				case "xs:double":
+					retVal = 8;
+					break;
+				default:
+					var numStr = "0123456789";
+					var underbarPos = type.lastIndexOf("_");
+					var i = underbarPos > 0 ? underbarPos : type.length;
+					while (i >= 0) {
+						if (numStr.indexOf(type.charAt(--i)) == -1)
+							break;
+					}
+					if (i > 0 && i + 1 < type.length) {
+						retVal = parseInt(type.substring(i + 1, type.length));
+					}
+					if (type.indexOf("data") == 0) {
+						retVal *= 2;
+					}
 					break;
 			}
-			if (i > 0 && i + 1 < type.length)
-				retVal = parseInt(type.substring(i + 1, type.length));
-
 			if (retVal < name.length)
 				retVal = name.length;
 
-			return Math.round(retVal * 2 / 3);
+			return retVal;
 		},
 
 		getObjectStore: function () {
