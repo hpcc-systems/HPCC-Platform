@@ -657,7 +657,7 @@ public:
     virtual void requestAbort();
     virtual void subscribe(WUSubscribeOptions options);
     virtual unsigned calculateHash(unsigned prevHash);
-    virtual void copyWorkUnit(IConstWorkUnit *cached);
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
@@ -1076,8 +1076,8 @@ public:
             { c->requestAbort(); }
     virtual unsigned calculateHash(unsigned prevHash)
             { return c->calculateHash(prevHash); }
-    virtual void copyWorkUnit(IConstWorkUnit *cached)
-            { c->copyWorkUnit(cached); }
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
+            { c->copyWorkUnit(cached, all); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
             { return c->archiveWorkUnit(base,del,deldll,deleteOwned); }
     virtual void packWorkUnit(bool pack)
@@ -4524,7 +4524,7 @@ static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char 
         to->setPropTree(xpath, match);
 }
 
-void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
+void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
     if (!from)
@@ -4575,6 +4575,17 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Workflow");
+    if (all)
+    {
+        // Merge timing info from both branches
+        pt = fromP->getBranch("Timings");
+        if (pt)
+        {
+            IPropertyTree *tgtTimings = ensurePTree(p, "Timings");
+            mergePTree(tgtTimings, pt);
+            pt->Release();
+        }
+    }
 
     updateProp(p, fromP, "@clusterName");
     updateProp(p, fromP, "allowedclusters");
