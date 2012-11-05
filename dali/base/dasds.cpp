@@ -34,8 +34,10 @@
 #define DEBUG_DIR "debug"
 #define DEFAULT_KEEP_LASTN_STORES 1
 #define MAXDELAYS 5
-static const char *deltaHeader = "<CRC>0000000000</CRC>"; // fill in later
+static const char *deltaHeader = "<CRC>0000000000</CRC><SIZE>0000000000000000</SIZE>"; // fill in later
 static unsigned deltaHeaderCrcOff = 5;
+static unsigned deltaHeaderSizeStart = 21;
+static unsigned deltaHeaderSizeOff = 27;
 
 static unsigned readWriteSlowTracing = 10000; // 10s default
 static bool readWriteStackTracing = false;
@@ -870,9 +872,11 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
     Owned<IFileIOStream> stream;
     offset_t lastGood = 0;
     unsigned startCrc = ~0;
-    char strNum[11];
+    MemoryBuffer header;
+    char strNum[17];
     loop
     {
+        header.append(deltaHeader);
         try
         {
             iFileIO.setown(iFile.open(IFOreadwrite));
@@ -897,9 +901,14 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
             stream->write(xml.length(), xml.toCharArray());
             stream->flush();
             stream.clear();
+            offset_t fLen = lastGood + xml.length();
             unsigned crc = crc32(xml.toCharArray(), xml.length(), startCrc);
+            char *headerPtr = (char *)header.bufferBase();
             sprintf(strNum, "%010u", ~crc);
-            iFileIO->write(deltaHeaderCrcOff, 10, strNum);
+            memcpy(headerPtr + deltaHeaderCrcOff, strNum, 10);
+            sprintf(strNum, "%016"I64F"X", fLen);
+            memcpy(headerPtr + deltaHeaderSizeOff, strNum, 16);
+            iFileIO->write(0, strlen(deltaHeader), headerPtr);
         }
         catch (IException *e)
         {
@@ -5137,23 +5146,48 @@ public:
         constructStoreName(DELTADETACHED, deltaInfo.edition, detachName);
         return detachName;
     }
-    virtual bool loadDelta(const char *filename, IFileIO *iFileIO, IPropertyTree *root)
+    virtual bool loadDelta(const char *filename, IFile *iFile, IPropertyTree *root)
     {
-        OwnedIFileIOStream iFileIOStream = createIOStream(iFileIO);
+        Owned<IFileIO> iFileIO = iFile->open(IFOread);
+        if (!iFileIO) // no delta to load
+            return true;
         MemoryBuffer tmp;
         char *ptr = (char *) tmp.reserveTruncate(strlen(deltaHeader));
         unsigned embeddedCrc = 0;
+        offset_t pos = 0;
         bool hasCrcHeader = false; // check really only needed for deltas proceeding CRC header
-        if (strlen(deltaHeader) == iFileIOStream->read(strlen(deltaHeader), ptr))
+        if (strlen(deltaHeader) == iFileIO->read(0, strlen(deltaHeader), ptr))
         {
             if (0 == memicmp(deltaHeader, ptr, 5))
             {
+                pos = deltaHeaderSizeStart;
                 hasCrcHeader = true;
                 embeddedCrc = (unsigned)atoi64_l(ptr+deltaHeaderCrcOff, 10);
+                if (0 == memicmp(deltaHeader+deltaHeaderSizeStart, ptr+deltaHeaderSizeStart, 6)) // has <SIZE> too
+                {
+                    pos = strlen(deltaHeader);
+                    offset_t lastGood;
+                    if (sscanf(ptr+deltaHeaderSizeOff, "%"I64F"X", &lastGood))
+                    {
+                        offset_t fSize = iFileIO->size();
+                        if (fSize > lastGood)
+                        {
+                            size32_t diff = fSize - lastGood;
+                            LOG(MCoperatorError, unknownJob, "Delta file '%s', has %d bytes of trailing data (possible power loss during save?), file size: %"I64F"d, last committed size: %"I64F"d", filename, diff, fSize, lastGood);
+                            LOG(MCoperatorError, unknownJob, "Resetting delta file '%s' to size: %"I64F"d", filename, lastGood);
+                            iFileIO->close();
+                            backup(filename);
+                            iFileIO.setown(iFile->open(IFOreadwrite));
+                            iFileIO->setSize(lastGood);
+                            iFileIO->close();
+                            iFileIO.setown(iFile->open(IFOread));
+                        }
+                    }
+                }
             }
         }
-        if (!hasCrcHeader)
-            iFileIOStream->seek(0, IFSbegin);
+        OwnedIFileIOStream iFileIOStream = createIOStream(iFileIO);
+        iFileIOStream->seek(pos, IFSbegin);
         Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(iFileIOStream); // crc *rest* of stream
         Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
         bool noErrors;
@@ -5184,32 +5218,28 @@ public:
         OwnedIFile deltaIFile = createIFile(deltaFilename.str());
         loop
         {
-            OwnedIFileIO iFileIO;
             StringAttr filename;
             IFile *iFile;
             if (detached)
             {
                 iFile = detachedDeltaIFile;
                 filename.set(iFile->queryFilename());
-                iFileIO.setown(iFile->open(IFOread));
             }
             else
             {
                 iFile = deltaIFile;
                 filename.set(iFile->queryFilename());
-                iFileIO.setown(iFile->open(IFOread));
-                if (!iFileIO) // no delta to load
+                if (!iFile->exists())
                     break;
             }
             PROGLOG("Loading delta: %s", filename.get());
 
             bool noError;
             Owned<IException> deltaE;
-            try { noError = loadDelta(filename, iFileIO, root); }
+            try { noError = loadDelta(filename, iFile, root); }
             catch (IException *e) { deltaE.setown(e); noError = false; }
             if (!noError)
             {
-                iFileIO.clear();
                 backup(filename);
                 if (errors) *errors = true;
                 if (deltaE)
