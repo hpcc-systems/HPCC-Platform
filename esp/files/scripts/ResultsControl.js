@@ -96,16 +96,12 @@ define([
 
 		addResultTab: function (resultIndex) {
 			var result = this.workunit.results[resultIndex];
+			var structure = result.getStructure();
 			var paneID = this.getNextPaneID();
-			var grid = EnhancedGrid({
-				resultIndex: resultIndex,
-				store: result.getObjectStore(),
-				query: { id: "*" },
-				structure: result.getStructure(),
-				canSort: function (col) {
-					return false;
-				},
-				plugins: {
+
+			var plugins = null;
+			if (!result.hasChildDataset) {
+				plugins = {
 					//					nestedSorting: true,
 					pagination: {
 						pageSizes: [25, 50, 100, "All"],
@@ -117,7 +113,17 @@ define([
 						maxPageStep: 4,
 						position: "bottom"
 					}
-				}
+				};
+			}
+			var grid = EnhancedGrid({
+				resultIndex: resultIndex,
+				store: result.getObjectStore(),
+				query: { id: "*" },
+				structure: structure,
+				canSort: function (col) {
+					return false;
+				},
+				plugins: plugins
 			});
 			this.delayLoad[paneID] = grid;
 			this.sequenceResultStoreMap[result.Sequence] = result.store;
