@@ -705,7 +705,7 @@ public:
     void setAgentSession(__int64 sessionId);
     void setAgentPID(unsigned pid);
     void setSecurityToken(const char *value);
-    void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned max);
+    void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
@@ -1165,7 +1165,7 @@ public:
             { c->setAgentSession(sessionId); }
     virtual void setAgentPID(unsigned pid)
             { c->setAgentPID(pid); }
-    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned max)
+    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max)
             { c->setTimerInfo(name, instance, ms, count, max); }
     virtual void setTracingValue(const char * propname, const char * value)
             { c->setTracingValue(propname, value); }
@@ -4955,7 +4955,7 @@ bool parseGraphTimerLabel(const char *label, StringBuffer &graphName, unsigned &
     return true;
 }
 
-void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigned ms, unsigned count, unsigned max)
+void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigned ms, unsigned count, unsigned __int64 max)
 {
     CriticalBlock block(crit);
     IPropertyTree *timings = p->queryPropTree("Timings");
@@ -4975,9 +4975,9 @@ void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigne
     }
     timing->setPropInt("@count", count);
     timing->setPropInt("@duration", ms);
-    if (!max && 1==count) max = ms;
+    if (!max && 1==count) max = ms * 1000000; // max is in nanoseconds
     if (max)
-        timing->setPropInt("@max", max);
+        timing->setPropInt64("@max", max);
 }
 
 void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance, const char *event, bool add)

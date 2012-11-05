@@ -71,7 +71,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
                 {
                     section.insert(0, "eclcc: ");
-                    workunit->setTimerInfo(section.str(), NULL, atoi(total), atoi(count), 0);
+                    unsigned __int64 umax = atoi(max); // in microseconds
+                    workunit->setTimerInfo(section.str(), NULL, atoi(total), atoi(count), umax*1000); // max is stored in nanoseconds
                 }
             }
             else
