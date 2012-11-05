@@ -205,6 +205,7 @@ public:
         optOnlyCompile = false;
         optBatchMode = false;
         optSaveQueryText = false;
+        optGenerateHeader = false;
         optTargetClusterType = HThorCluster;
         optTargetCompiler = DEFAULT_COMPILER;
         optThreads = 0;
