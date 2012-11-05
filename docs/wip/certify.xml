@@ -559,7 +559,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
       <sect2 id="Expected_result_Generate_Data_file">
         <title>EXPECTED RESULT:</title>
 
-        <para>Look for the Green checkmark indicating successful
+        <para>Look for the green checkmark indicating successful
         completion</para>
 
         <para><figure>
@@ -575,10 +575,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <orderedlist>
           <listitem>
             <para><emphasis role="bold">Open ECLWatch </emphasis>and look at
-            the execution graph. This illustrates the steps of the query in
-            real-time.</para>
-
-            <para></para>
+            the Workunit details page. This illustrates the steps of the query
+            in real-time.</para>
 
             <para>This process generates 2,000,000 - 47-byte records in a file
             with the logical name of <emphasis
@@ -587,7 +585,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
             <para><emphasis role="bold"><!--***OK, I DON'T KNOW WHERE THIS IS AT: GUESSING: RESULTS LOOK DIFFERENT EXPECTED LESS ROWS***--></emphasis></para>
 
             <para><figure>
-                <title>Results page</title>
+                <title>Workunit details page</title>
 
                 <mediaobject>
                   <imageobject>
@@ -604,8 +602,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </listitem>
 
           <listitem>
-            <para>View the result by selecting the Result1 tab (should be
-            similar to the following):</para>
+            <para>View the result by selecting the <emphasis
+            role="bold">Result1</emphasis> tab (should be similar to the
+            following):</para>
 
             <para><figure>
                 <title>View the Result</title>
@@ -622,7 +621,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     </sect1>
 
     <sect1 id="Certify_Data_Refinery_functionality">
-      <title>Certify Data Refinery (Thor) Functionality</title>
+      <title>Certify Thor Functionality</title>
 
       <para>This section certifies:</para>
 
@@ -655,11 +654,11 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
       <para></para>
 
       <sect2>
-        <title id="Certify_DR">Certify DR</title>
+        <title id="Certify_DR">Certify Thor</title>
 
         <orderedlist>
           <listitem>
-            <para>Open <emphasis role="bold">the ECL IDE</emphasis></para>
+            <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
 
             <para><emphasis role="bold">Enter the <emphasis role="bold">Login
             ID</emphasis> and <emphasis
@@ -688,20 +687,20 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </listitem>
 
           <listitem>
-            <para>Open <emphasis
+            <para>Open the <emphasis
             role="bold">_Certification.Certify_DR</emphasis> file.</para>
 
             <para><itemizedlist>
                 <listitem>
                   <para>In the lower right corner of the ECL IDE you will see
                   a section labeled as Repository, containing a few folders.
-                  This contains the ECL files. Select the "+" sign next to it
-                  Samples, open the folder.</para>
+                  This contains the ECL files. Select the + sign next to
+                  Samples, to open the folder.</para>
                 </listitem>
 
                 <listitem>
-                  <para>Navigate to the _Certification folder and select the
-                  "+" sign next to it to open it and view the contents.</para>
+                  <para>Navigate to the _Certification folder and select the +
+                  sign next to it to open it and view the contents.</para>
 
                   <para><figure>
                       <title>Sample files</title>
@@ -753,9 +752,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </orderedlist>
 
         <para><emphasis role="bold">Note:</emphasis> This file uses the
-        previously generated data and tests a series of Data Refinery
-        capabilities. It does not write data to disk. It will take a few
-        minutes to complete.</para>
+        previously generated data and tests a series of Thor capabilities. It
+        does not write data to disk. It will take a few minutes to complete,
+        depending on the size of your system. </para>
 
         <para></para>
       </sect2>
@@ -814,126 +813,123 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
           <para>Result 15 String Search Results: 100000</para>
         </blockquote>
-
-        <para></para>
       </sect2>
     </sect1>
 
-    <sect1>
+    <sect1 id="Certify_DDE">
       <title>Certify Key build capabilities</title>
 
-      <para>This section will certify that the Data Delivery Engine can
-      perform its key build capabilities.</para>
+      <para>This section will certify that the system can perform its key
+      build capabilities.</para>
 
-      <sect2 id="Certify_DDE">
-        <title>Certify DDE</title>
+      <orderedlist>
+        <listitem>
+          <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
 
-        <orderedlist>
-          <listitem>
-            <para>Open <emphasis role="bold">the ECL IDE</emphasis></para>
+          <para><emphasis role="bold">Enter the <emphasis role="bold">Login
+          ID</emphasis> and <emphasis
+          role="bold">Password</emphasis>.</emphasis><informaltable colsep="1"
+              rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="80pt" />
 
-            <para><emphasis role="bold">Enter the <emphasis role="bold">Login
-            ID</emphasis> and <emphasis
-            role="bold">Password</emphasis>.</emphasis><informaltable
-                colsep="1" rowsep="1">
-                <tgroup cols="2">
-                  <colspec colwidth="80pt" />
+                <colspec colwidth="100pt" />
 
-                  <colspec colwidth="100pt" />
+                <tbody>
+                  <row>
+                    <entry>Login ID</entry>
 
-                  <tbody>
-                    <row>
-                      <entry>Login ID</entry>
+                    <entry>hpccdemo</entry>
+                  </row>
 
-                      <entry>hpccdemo</entry>
-                    </row>
+                  <row>
+                    <entry>Password</entry>
 
-                    <row>
-                      <entry>Password</entry>
+                    <entry>hpccdemo</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
 
-                      <entry>hpccdemo</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
-          </listitem>
+        <listitem>
+          <para>Open <emphasis
+          role="bold">_Certification.build_index</emphasis> file.</para>
 
-          <listitem>
-            <para>Open <emphasis
-            role="bold">_Certification.build_index</emphasis> file.</para>
+          <para><itemizedlist>
+              <listitem>
+                <para>In the lower right corner of the ECL IDE you will see a
+                section labeled as Repository, containing a couple of folders.
+                This contains the ECL files. Select the + sign next to it
+                Samples, open the folder.</para>
+              </listitem>
 
-            <para><itemizedlist>
-                <listitem>
-                  <para>In the lower right corner of the ECL IDE you will see
-                  a section labeled as Repository, containing a couple of
-                  folders. This contains the ECL files. Select the "+" sign
-                  next to it Samples, open the folder.</para>
-                </listitem>
+              <listitem>
+                <para>Navigate to the <emphasis
+                role="bold">_Certification</emphasis> folder and select the +
+                sign next to it to open it and view the contents.</para>
 
-                <listitem>
-                  <para>Navigate to the <emphasis
-                  role="bold">_Certification</emphasis> folder and select the
-                  "+" sign next to it to open it and view the contents.</para>
+                <para><figure>
+                    <title>Expand the _Certification folder</title>
 
-                  <para><figure>
-                      <title>Expand the _Certification folder</title>
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/CSimg10-1.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
 
-                      <mediaobject>
-                        <imageobject>
-                          <imagedata fileref="images/CSimg10-1.jpg" />
-                        </imageobject>
-                      </mediaobject>
-                    </figure></para>
-                </listitem>
+              <listitem>
+                <para>Double-click on the <emphasis role="bold">build_index
+                </emphasis>file to open it.</para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
 
-                <listitem>
-                  <para>Double-click on the <emphasis role="bold">build_index
-                  </emphasis>file to open it.</para>
-                </listitem>
-              </itemizedlist></para>
-          </listitem>
+        <listitem>
+          <?dbfo keep-together="always"?>
 
-          <listitem>
-            <para>Select <emphasis role="bold">thor</emphasis> as Target from
-            the drop menu on the right side.</para>
+          <para>Select <emphasis role="bold">thor</emphasis> as Target from
+          the drop menu on the right side.</para>
 
-            <para><figure>
-                <title>Target: thor</title>
+          <para><figure>
+              <title>Target: thor</title>
 
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/CSimg10-2.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-2.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
 
-          <listitem>
-            <para>Press the <emphasis role="bold">Submit</emphasis>
-            button.</para>
+        <listitem>
+          <?dbfo keep-together="always"?>
 
-            <para><figure>
-                <title>Submit button</title>
+          <para>Press the <emphasis role="bold">Submit</emphasis>
+          button.</para>
 
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/CSimg10-S.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-        </orderedlist>
+          <para><figure>
+              <title>Submit button</title>
 
-        <para><emphasis role="bold">Note:</emphasis> This file uses the
-        previously generated data and tests a series of Data Refinery
-        capabilities. It does not write data to disk. It will take a few
-        minutes to complete.</para>
-      </sect2>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-S.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> This file uses the
+      previously generated data. It builds an index on one of those data
+      files.</para>
 
       <sect2 id="Expected_Result_Certify_DR">
         <title>EXPECTED RESULT</title>
 
-        <para>Look for the Green checkmark indicating successful
+        <para>Look for the green checkmark indicating successful
         completion.</para>
 
         <para><figure>
@@ -954,15 +950,21 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     </sect1>
 
     <sect1>
-      <title>To Verify the Index Build</title>
+      <title>Verify the Index Build</title>
 
       <orderedlist>
         <listitem>
-          <para>Return to the ECLWatch instance in your browser.
-          (<emphasis>http://yourIPaddress:8010/</emphasis>)</para>
+          <para>Open ECL Watch in your browser using the following URL:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+          Server’s IP Address and pppp is the port. The default port is
+          8010)</emphasis></para>
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Click on the <emphasis>Browse Logical Files</emphasis> link
           under DFU Files.</para>
 
@@ -978,11 +980,13 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" />
           button next to the file listing for <emphasis
           role="bold">thor::full_test_distributed_index</emphasis> , then
           select <emphasis role="bold">Details</emphasis> to open the logical
-          file statistics.</para>
+          file details page.</para>
         </listitem>
       </orderedlist>
 
@@ -995,14 +999,12 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
             </imageobject>
           </mediaobject>
         </figure><!--***dont we need to add more content here as to what exact Details we should see??***--></para>
-
-      <?hard-pagebreak ?>
     </sect1>
 
-    <sect1 id="Certify_Thor_access_to_index_data">
+    <sect1 id="Certify_Thor_access_to_index_data" role="brk">
       <title>Certify Thor Access to Indexed Data</title>
 
-      <para>This section will Certify Thor access to indexed data.</para>
+      <para>This section certifies Thor access to indexed data.</para>
 
       <sect2>
         <title>Certify Thor Access</title>
@@ -1018,14 +1020,14 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                 <listitem>
                   <para>In the lower right corner of the ECL IDE you will see
                   a section labeled as Repository, containing a couple of
-                  folders. This contains the ECL files. Select the "+" sign
-                  next to it Samples, open the folder.</para>
+                  folders. This contains the ECL files. Select the + sign next
+                  to it Samples, open the folder.</para>
                 </listitem>
 
                 <listitem>
                   <para>Navigate to the <emphasis
                   role="bold">_Certification</emphasis> folder and select the
-                  "+" sign next to it to open it and view the contents.</para>
+                  + sign next to it to open it and view the contents.</para>
 
                   <para><figure>
                       <title>Expand the _Certification folder</title>
@@ -1046,6 +1048,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </listitem>
 
           <listitem>
+            <?dbfo keep-together="always"?>
+
             <para>Select <emphasis role="bold">thor</emphasis> as Target from
             the drop menu on the right side.</para>
 
@@ -1061,6 +1065,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           </listitem>
 
           <listitem>
+            <?dbfo keep-together="always"?>
+
             <para>Press the <emphasis role="bold">Submit</emphasis>
             button.</para>
 
@@ -1110,7 +1116,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               <listitem>
                 <para>In the lower right corner of the ECL IDE you will see a
                 section labeled as Repository, containing a couple of folders.
-                This contains the ECL files. Select the "+" sign next to it
+                This contains the ECL files. Select the + sign next to it
                 Samples, open the folder.</para>
               </listitem>
 
@@ -1138,6 +1144,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>Select <emphasis role="bold">thor</emphasis> as Target from
           the drop menu on the right side.</para>
 
@@ -1176,7 +1184,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
           checkmark.</para>
 
           <para><figure>
-              <title>Completed workunit: Green checkmark</title>
+              <title>Completed Workunit: Green checkmark</title>
 
               <mediaobject>
                 <imageobject>
@@ -1187,8 +1195,10 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Select the <emphasis role="bold">ECL Watch</emphasis> button
-          at the lower left corner of the window.</para>
+          <?dbfo keep-together="always"?>
+
+          <para>Select the <emphasis role="bold">ECL Watch</emphasis> tab at
+          the lower left corner of the window.</para>
 
           <para><figure>
               <title>ECL Watch button</title>
@@ -1202,9 +1212,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Select the <emphasis role="bold">Publish</emphasis> button
-          from the ECL Watch tab that you just opened. (you may have to scroll
-          down the main window)<figure>
+          <para>Push the <emphasis role="bold">Publish</emphasis> button on
+          the ECL Watch tab you just opened. (you may have to scroll
+          down)<figure>
               <title>ECL Watch Publish button</title>
 
               <mediaobject>
@@ -1216,8 +1226,12 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Using your browser, navigate to the WsECL Web page:
-          <emphasis>http://IPaddress:8002</emphasis></para>
+          <para>Using your browser, navigate to the WsECL Web page. </para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
+          WsECL Server’s IP Address and pppp is the port. The default port is
+          8002)</emphasis></para>
 
           <para><figure>
               <title>WS ECL Page</title>
@@ -1366,11 +1380,11 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
             </figure></para>
 
           <para>Look for the Green checkmark indicating successful completion.
-          Once complete, select the workunit next to the the green
+          Once complete, select the Workunit next to the the green
           checkmark.</para>
 
           <para><figure>
-              <title>Completed workunit: Green checkmark</title>
+              <title>Completed Workunit: Green checkmark</title>
 
               <mediaobject>
                 <imageobject>
@@ -1426,11 +1440,11 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>Select the <emphasis role="bold">Deployments</emphasis> tab to
-          display the available workunits. Look for your workunit.</para>
+          display the available Workunits. Look for your Workunit.</para>
         </listitem>
 
         <listitem>
-          <para>Select the tab next to your workunit.</para>
+          <para>Select the tab next to your orkunit.</para>
         </listitem>
 
         <listitem>
@@ -1476,7 +1490,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Select your workunit. Enter BRYANT in the lastname field.
+          <para>Select your Workunit. Enter BRYANT in the lastname field.
           ***<!--Alt: Select the output format option from the drop down tab.--></para>
         </listitem>
 
