@@ -27,6 +27,7 @@ define([
             WsWorkunits, ESPBase) {
 	return declare(ESPBase, {
 		store: null,
+		hasChildDataset: false,
 		Total: "-1",
 
 		constructor: function (args) {
@@ -118,6 +119,7 @@ define([
                         });
                     }
                     if (node.hasChildNodes()) {
+                        this.hasChildDataset = true;
                         var context = this;
                         retVal.push({
                             name: name,
