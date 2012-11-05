@@ -3262,7 +3262,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
                 Owned<IWorkUnit> daliWu = factory->createWorkUnit(NULL, "eclagent", "eclagent");
                 IExtendedWUInterface * extendedWu = queryExtendedWU(daliWu);
-                extendedWu->copyWorkUnit(standAloneWorkUnit);
+                extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);
                 globals->setProp("WUID", wuid.str());
                 standAloneWorkUnit.clear();
