@@ -666,6 +666,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed(ICodeContext *ctx, const
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
+    if (maxConnections != -1)
+        req->setMaxConnections(maxConnections);
+
     Owned<IClientSprayFixedResponse> result = server.SprayFixed(req);
 
     StringBuffer wuid(result->getWuid());
@@ -720,6 +723,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayVariable(ICodeContext *ctx, co
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
+    if (maxConnections != -1)
+        req->setMaxConnections(maxConnections);
+
     Owned<IClientSprayResponse> result = server.SprayVariable(req);
 
     StringBuffer wuid(result->getWuid());
@@ -778,6 +784,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayXml(ICodeContext *ctx, const c
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);
     req->setCompress(compress);
+    if (maxConnections != -1)
+        req->setMaxConnections(maxConnections);
+
     Owned<IClientSprayResponse> result = server.SprayVariable(req);
 
     StringBuffer wuid(result->getWuid());
@@ -824,6 +833,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
     req->setDestIP(destinationIP);
     req->setDestPath(destinationPath);
     req->setOverwrite(overwrite);
+    if (maxConnections != -1)
+        req->setMaxConnections(maxConnections);
+
     Owned<IClientDesprayResponse> result = server.Despray(req);
 
     StringBuffer wuid(result->getWuid());
@@ -884,6 +896,9 @@ FILESERVICES_API char * FILESERVICES_CALL fsfCopy(ICodeContext *ctx, const char 
         req->setPush(true);
     if (transferBufferSize>0)
         req->setTransferBufferSize(transferBufferSize);
+    if (maxConnections != -1)
+        req->setMaxConnections(maxConnections);
+
     Owned<IClientCopyResponse> result = server.Copy(req);
 
     StringBuffer wuid(result->getResult());
