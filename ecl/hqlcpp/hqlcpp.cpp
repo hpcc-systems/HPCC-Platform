@@ -8727,9 +8727,11 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             //fallthrough
             if (creator.optimize() && hasOutOfLineRows(elem->queryType()))
             {
+                creator.beginCondition(ctx);
                 BuildCtx iterctx(ctx);
                 BoundRow * row = buildDatasetIterate(iterctx, elem, false);
                 doBuildAssignHashElement(iterctx, creator, elem->queryNormalizedSelector(), elem->queryRecord());
+                creator.endCondition(iterctx);
                 return;
             }
             else
