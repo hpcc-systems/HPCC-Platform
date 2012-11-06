@@ -425,7 +425,7 @@ public:
             {
                 Owned<ILocalWorkUnit> localWU = createLocalWorkUnit();
                 localWU->loadXML(wuXML);
-                queryExtendedWU(w)->copyWorkUnit(localWU);
+                queryExtendedWU(w)->copyWorkUnit(localWU, true);
             }
             else
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to locate dll workunit info");

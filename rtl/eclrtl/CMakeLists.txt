@@ -67,6 +67,7 @@ target_link_libraries ( eclrtl
     )
 
 FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtldistr.hpp

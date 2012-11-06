@@ -61,6 +61,7 @@ public:
     virtual void setMaxCompileThreads(const unsigned max) = 0;
     virtual void setCCLogPath(const char* path) = 0;
     virtual void setSaveTemps(bool _save) = 0;
+    virtual void setPrecompileHeader(bool _pch) = 0;
     virtual void setAbortChecker(IAbortRequestCallback * abortChecker) = 0;
 };
 

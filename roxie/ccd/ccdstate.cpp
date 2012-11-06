@@ -309,7 +309,7 @@ protected:
             IPropertyTree *fileInfo = node->queryPropTree(xpath.appendf("File[@id='%s']", fileName).str());
             if (fileInfo)
             {
-                Owned <IResolvedFileCreator> result = createResolvedFile(fileName);
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
                 result->addSubFile(createFileDescriptorFromRoxieXML(fileInfo));
                 return result.getClear();
             }
@@ -317,15 +317,16 @@ protected:
         return NULL;
     }
     // Use dali to resolve subfile into physical file info
-    IResolvedFile *resolveLFNusingDali(const char *fileName, bool cacheIt, bool writeAccess) const
+    IResolvedFile *resolveLFNusingDali(const char *fileName, bool cacheIt, bool writeAccess, bool alwaysCreate) const
     {
+        // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
         if (daliHelper)
         {
             if (daliHelper->connected())
             {
                 Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheIt, writeAccess);
                 if (dFile)
-                    return createResolvedFile(fileName, dFile.getClear());
+                    return createResolvedFile(fileName, NULL, dFile.getClear());
             }
             else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
             {
@@ -333,7 +334,7 @@ protected:
                 Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
                 if (fd)
                 {
-                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName);
+                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
                     result->addSubFile(fd.getClear());
                     return result.getClear();
                 }
@@ -342,17 +343,32 @@ protected:
         return NULL;
     }
     // Use local package file's localFile info to resolve subfile into physical file info
-    IResolvedFile *resolveLFNusingLocal(const char *fileName) const
+    IResolvedFile *resolveLFNusingLocal(const char *fileName, bool writeAccess, bool alwaysCreate) const
     {
         if (node && node->getPropBool("@localFiles"))
         {
-            Owned <IResolvedFileCreator> result = createResolvedFile(fileName);
-            return result.getClear();
+            StringBuffer useName;
+            if (strstr(fileName,"::"))
+            {
+                bool wasDFS;
+                // MORE - really we don't want the 1 of 1 bit of this...
+                makeSinglePhysicalPartName(fileName, useName, true, wasDFS, baseDataDirectory.str());
+            }
+            else
+                useName.append(fileName);
+            bool exists = checkFileExists(useName);
+            if (exists || alwaysCreate)
+            {
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, useName);
+                if (exists)
+                    result->addSubFile(useName);
+                return result.getClear();
+            }
         }
         return NULL;
     }
     // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
-    IResolvedFile *lookupFile(const char *fileName, bool cache, bool writeAccess) const
+    IResolvedFile *lookupFile(const char *fileName, bool cache, bool writeAccess, bool alwaysCreate) const
     {
         // Order of resolution: 
         // 1. Files named in package
@@ -373,7 +389,7 @@ protected:
                 // Optimize the common case of a single subfile
                 StringBuffer subFileName;
                 subFileInfo->getSubFileName(0, subFileName);
-                return lookupFile(subFileName, cache, writeAccess);
+                return lookupFile(subFileName, cache, writeAccess, alwaysCreate);
             }
             else
             {
@@ -383,11 +399,11 @@ protected:
                 {
                     StringBuffer subFileName;
                     subFileInfo->getSubFileName(idx, subFileName);
-                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess);
+                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess, alwaysCreate);
                     if (subFileInfo)
                     {
                         if (!super) 
-                            super.setown(createResolvedFile(fileName));
+                            super.setown(createResolvedFile(fileName, NULL));
                         super->addSubFile(subFileInfo);
                     }
                 }
@@ -398,9 +414,9 @@ protected:
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)
-            result = resolveLFNusingDali(fileName, cache, writeAccess);
+            result = resolveLFNusingDali(fileName, cache, writeAccess, alwaysCreate);
         if (!result)
-            result = resolveLFNusingLocal(fileName);
+            result = resolveLFNusingLocal(fileName, writeAccess, alwaysCreate);
         if (result)
         {
             if (cache)
@@ -410,7 +426,7 @@ protected:
         ForEachItemIn(idx, bases)
         {
             const CRoxiePackage &basePackage = bases.item(idx);
-            IResolvedFile *result = basePackage.lookupFile(fileName, cache, writeAccess);
+            IResolvedFile *result = basePackage.lookupFile(fileName, cache, writeAccess, alwaysCreate);
             if (result)
                 return result;
         }
@@ -517,12 +533,12 @@ public:
         return lookupElements(xpath.str(), "MemIndex");
     }
 
-    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool cache) const
+    virtual const IResolvedFile *lookupFileName(const char *_fileName, bool opt, bool cache, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
+        expandLogicalFilename(fileName, _fileName, wu, false);
 
-        const IResolvedFile *result = lookupFile(fileName, cache, false);
+        const IResolvedFile *result = lookupFile(fileName, cache, false, false);
         if (!result)
         {
             if (!opt)
@@ -533,33 +549,31 @@ public:
         return result;
     }
 
-    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters) const
+    virtual IRoxieWriteHandler *createFileName(const char *_fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const
     {
         StringBuffer fileName;
-        expandLogicalFilename(fileName, _fileName, NULL, false);   // MORE - if we have a wu, and we have not yet got rid of the concept of scope, we should use it here
-        // Dali filenames used locally
-        bool disconnected = !daliHelper->connected();
-        if (disconnected && strstr(fileName,"::"))
-        {
-            StringBuffer name;
-            bool wasDFS;
-            makeSinglePhysicalPartName(fileName, name, true, wasDFS, baseDataDirectory.str());
-            fileName.clear().append(name);
-        }
-        Owned<IResolvedFile> resolved = lookupFile(fileName, false, true);
+        expandLogicalFilename(fileName, _fileName, wu, false);
+        Owned<IResolvedFile> resolved = lookupFile(fileName, false, true, true);
         if (resolved)
         {
-            if (!overwrite)
-                throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", resolved->queryFileName());
-            if (extend)
-                UNIMPLEMENTED; // How does extend fit in with the clusterwritemanager stuff? They can't specify cluster and extend together...
-            removeCache(resolved);
-            resolved->remove();
+            if (resolved->exists())
+            {
+                if (!overwrite)
+                    throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", resolved->queryFileName());
+                if (extend)
+                    UNIMPLEMENTED; // How does extend fit in with the clusterwritemanager stuff? They can't specify cluster and extend together...
+                removeCache(resolved);
+                resolved->remove();
+            }
+            if (resolved->queryPhysicalName())
+                fileName.clear().append(resolved->queryPhysicalName());
             resolved.clear();
         }
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, false, true); // MORE - is onlyDFS right?
+        bool disconnected = !daliHelper->connected();
+        // MORE - not sure this is really the right test. If there SHOULD be a dali but is's unavailable, we should fail.
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, !disconnected, true);
         if (!ldFile)
-            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s, %s file not found", fileName.str(), (disconnected?"local":"DFS"));
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
@@ -751,7 +765,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -771,7 +785,7 @@ public:
         return active;
     }
 
-    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext)
+    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash)
     {
         Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
         ForEach (*queryNames)
@@ -799,7 +813,7 @@ public:
                     if (!package) package = &queryRootPackage();
                 }
                 assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query, libraryContext), hash);
+                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query), hash);
             }
             catch (IException *E)
             {
@@ -894,29 +908,6 @@ public:
         }
     }
 
-    virtual IQueryFactory * lookupLibrary(const char * libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
-    {
-#ifdef _DEBUG
-        DBGLOG("Lookup library %s (hash %d)", libraryName, expectedInterfaceHash);
-#endif
-        Owned<IQueryFactory> query = getQuery(libraryName, logctx);
-        if (query)
-        {
-            if (query->isQueryLibrary())
-            {
-                unsigned foundInterfaceHash = query->getQueryLibraryInterfaceHash();
-                if (!foundInterfaceHash  || (foundInterfaceHash == expectedInterfaceHash))
-                    return query.getClear();
-                else
-                    throw MakeStringException(ROXIE_LIBRARY_ERROR, "The library interface found in %s is not compatible (found %d, expected %d)", libraryName, foundInterfaceHash, expectedInterfaceHash);
-            }
-            else
-                throw MakeStringException(ROXIE_LIBRARY_ERROR, "The query resolved by %s is not a library", libraryName);
-        }
-        else
-            throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
-    }
-
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
     {
         IQueryFactory *ret;
@@ -941,9 +932,9 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
     {
-        return createServerQueryFactory(id, dll, package, stateInfo, libraryContext);
+        return createServerQueryFactory(id, dll, package, stateInfo);
     }
 
 };
@@ -965,9 +956,9 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, libraryContext);
+        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo);
     }
 
 };
@@ -1006,11 +997,11 @@ public:
         return managers[idx];
     }
 
-    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash, IRoxieLibraryLookupContext *libraryContext)
+    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash)
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
-                managers[channel]->load(querySets, packages, hash, libraryContext); // MORE - this means the hash depends on the number of channels. Is that desirable?
+                managers[channel]->load(querySets, packages, hash); // MORE - this means the hash depends on the number of channels. Is that desirable?
     }
 
 private:
@@ -1268,8 +1259,8 @@ public:
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash, newServerManager);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, newServerManager);
+        newServerManager->load(newQuerySet, *packages, newHash);
+        newSlaveManagers->load(newQuerySet, *packages, newHash);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
         clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
@@ -1301,8 +1292,8 @@ public:
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash, newServerManager);
-        newSlaveManagers->load(newQuerySet, *packages, newHash, newServerManager);
+        newServerManager->load(newQuerySet, *packages, newHash);
+        newSlaveManagers->load(newQuerySet, *packages, newHash);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
     }
 };
@@ -1321,7 +1312,7 @@ class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackage
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
-        standAloneDll(_standAloneDll)
+        standAloneDll(_standAloneDll), stateHash(0)
     {
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
     }
@@ -1370,16 +1361,31 @@ public:
         controlSem.signal();
     }
 
-    virtual IRoxieLibraryLookupContext *getLibraryLookupContext(const char *querySet) const
+    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
-            if (sm->isActive() && strcmp(sm->queryId(), querySet)==0)
-                return sm.getClear();
+            if (sm->isActive())
+            {
+                Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
+                if (library && (&library->queryPackage() == &package))  // MORE - is this check too restrictive?
+                {
+                    if (library->isQueryLibrary())
+                    {
+                        unsigned foundInterfaceHash = library->getQueryLibraryInterfaceHash();
+                        if (!foundInterfaceHash || (foundInterfaceHash == expectedInterfaceHash))
+                            return library.getClear();
+                        else
+                            throw MakeStringException(ROXIE_LIBRARY_ERROR, "The library interface found in %s is not compatible (found %d, expected %d)", libraryName, foundInterfaceHash, expectedInterfaceHash);
+                    }
+                    else
+                        throw MakeStringException(ROXIE_LIBRARY_ERROR, "The query resolved by %s is not a library", libraryName);
+                }
+            }
         }
-        return NULL;
+        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
     }
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const

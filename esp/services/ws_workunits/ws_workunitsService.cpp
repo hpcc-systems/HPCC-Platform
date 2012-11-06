@@ -267,7 +267,7 @@ void copyWsWorkunit(IEspContext &context, IWorkUnit &wu, const char *srcWuid)
     SCMStringBuffer wuid;
     wu.getWuid(wuid);
 
-    queryExtendedWU(&wu)->copyWorkUnit(src);
+    queryExtendedWU(&wu)->copyWorkUnit(src, false);
 
     SCMStringBuffer token;
     wu.setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
@@ -1103,7 +1103,7 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     Owned<IConstWorkUnit> src(factory->openWorkUnit(wuid.str(), false));
                     NewWsWorkunit wu(factory, context);
                     wu->getWuid(wuid);
-                    queryExtendedWU(wu)->copyWorkUnit(src);
+                    queryExtendedWU(wu)->copyWorkUnit(src, false);
 
                     SCMStringBuffer token;
                     wu->setSecurityToken(createToken(wuid.str(), context.queryUserId(), context.queryPassword(), token).str());
@@ -3776,7 +3776,7 @@ void CWsWorkunitsEx::deploySharedObject(IEspContext &context, StringBuffer &wuid
     {
         Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
         embeddedWU->loadXML(dllXML.str());
-        queryExtendedWU(wu)->copyWorkUnit(embeddedWU);
+        queryExtendedWU(wu)->copyWorkUnit(embeddedWU, true);
     }
 
     wu.associateDll(dllpath.str(), dllname.str());

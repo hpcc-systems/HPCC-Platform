@@ -91,6 +91,7 @@ interface IQueryFactory : extends IInterface
     virtual unsigned queryChannel() const = 0;
     virtual ILoadedDllEntry *queryDll() const = 0;
     virtual bool getEnableFieldTranslation() const = 0;
+    virtual IConstWorkUnit *queryWorkUnit() const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual IPropertyTree &queryOnceContext() const = 0;
@@ -226,14 +227,12 @@ extern const IQueryDll *createQueryDll(const char *dllName);
 extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
-interface IRoxieLibraryLookupContext;
-
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, IRoxieLibraryLookupContext *libraryContext);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo);
+extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned _channelNo, const IPropertyTree *stateInfo);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
-extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu, IRoxieLibraryLookupContext *libraryContext);
-extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo, IRoxieLibraryLookupContext *libraryContext);
+extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
+extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);
 
 inline unsigned findParentId(IPropertyTree &node)
 {

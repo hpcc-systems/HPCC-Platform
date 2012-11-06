@@ -902,23 +902,6 @@ public:
         createPending = true;
     }
     
-    CRoxieServerActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, IHThorArg &_helper)
-      : factory(_factory), basehelper(_helper)
-    {
-        input = NULL;
-        ctx = NULL;
-        meta.set(basehelper.queryOutputMeta());
-        processed = 0;
-        totalCycles = 0;
-        if (factory)
-            factory->createChildQueries(childGraphs, this, _probeManager, *this);
-        state=STATEreset;
-        rowAllocator = NULL;
-        debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
-        colocalParent = NULL;
-        createPending = true;
-    }
-
     CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper)
     {
         activityId = 0;
@@ -1430,6 +1413,7 @@ public:
     CRoxieServerLateStartActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager)
     {
+        input = NULL;
         prefiltered = false;
         eof = false;
     }
@@ -3421,7 +3405,10 @@ private:
                 activity.serializeCreateStartContext(cachedContext.clear());
                 activity.serializeExtra(cachedContext);
                 if (activity.queryVarFileInfo())
+                {
                     activity.queryVarFileInfo()->queryTimeStamp().serialize(cachedContext);
+                    cachedContext.append(activity.queryVarFileInfo()->queryCheckSum());
+                }
                 contextCached = true;
             }
 
@@ -4082,7 +4069,7 @@ public:
                             RecordLengthType *rowlen = (RecordLengthType *) len.get();
                             OwnedConstRoxieRow row = callbackData->getNext(*rowlen);
                             char *rowdata = (char *) row.get();
-                            //if (ctxTraceLevel > 5)
+                            if (ctxTraceLevel > 5)
                             {
                                 StringBuffer s;
                                 activity.queryLogCtx().CTXLOG("Callback on query %s for debug", header.toString(s).str());
@@ -4121,7 +4108,7 @@ public:
                             bool isOpt = * (bool *) rowdata;
                             bool isLocal = * (bool *) (rowdata+1);
                             const char *lfn = rowdata+2;
-                            //if (ctxTraceLevel > 5)
+                            if (ctxTraceLevel > 5)
                             {
                                 StringBuffer s;
                                 activity.queryLogCtx().CTXLOG("Callback on query %s file %s", header.toString(s).str(),(const char *) lfn);
@@ -10633,7 +10620,9 @@ protected:
     CachedOutputMetaData diskmeta;
     Owned<IRoxieWriteHandler> writer;
 
+    bool tallycrc;
     unsigned __int64 uncompressedBytesWritten;
+    CRC32 crc;
 
     void updateWorkUnitResult(unsigned __int64 reccount)
     {
@@ -10715,6 +10704,7 @@ public:
         diskmeta.set(helper.queryDiskRecordSize());
         blockcompressed = (((helper.getFlags() & TDWnewcompress) != 0) || (((helper.getFlags() & TDXcompress) != 0) && (diskmeta.getFixedSize() >= MIN_ROWCOMPRESS_RECSIZE))); //always use new compression
         encrypted = false; // set later
+        tallycrc = true;
         uncompressedBytesWritten = 0;
     }
 
@@ -10745,17 +10735,17 @@ public:
             encrypted = true;
             blockcompressed = true;
         }
-        if(blockcompressed)
+        if (blockcompressed)
             io.setown(createCompressedFileWriter(writer->queryFile(), (diskmeta.isFixedSize() ? diskmeta.getFixedSize() : 0), extend, true, ecomp));
         else
             io.setown(writer->queryFile()->open(extend ? IFOwrite : IFOcreate));
-        if(!io)
+        if (!io)
             throw MakeStringException(errno, "Failed to create%s file %s for writing", (encrypted ? " encrypted" : (blockcompressed ? " compressed" : "")), writer->queryFile()->queryFilename());
         diskout.setown(createBufferedIOStream(io));
-        if(extend)
+        if (extend)
             diskout->seek(0, IFSend);
         rowSerializer.setown(input->queryOutputMeta()->createRowSerializer(ctx->queryCodeContext(), activityId)); 
-        bool tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck); 
+        tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
         outSeq.setown(createRowWriter(diskout, rowSerializer, rowAllocator, grouped, tallycrc, true )); 
     }
 
@@ -10768,7 +10758,7 @@ public:
         }
         else
         {
-            outSeq->flush();
+            outSeq->flush(&crc);
             updateWorkUnitResult(processed);
             uncompressedBytesWritten = outSeq->getPosition();
             writer->finish(true, this);
@@ -10784,6 +10774,7 @@ public:
         outSeq.clear();
         writer.clear();
         uncompressedBytesWritten = 0;
+        crc.reset();
     }
 
     virtual void onExecute()
@@ -10814,6 +10805,8 @@ public:
             fileProps.setPropInt64("@size", uncompressedBytesWritten);
             partProps.setPropInt64("@size", uncompressedBytesWritten);
         }
+        else if (tallycrc)
+            partProps.setPropInt64("@fileCrc", crc.get());
 
         if (encrypted)
             fileProps.setPropBool("@encrypted", true);
@@ -19581,26 +19574,33 @@ protected:
     bool isKeyed;
     bool variableFileName;
     bool isOpt;
+    bool sorted;
     bool maySkip;
     bool isLocal;
     CachedOutputMetaData diskSize;
     Owned<const IResolvedFile> varFileInfo;
     Owned<IFileIOArray> varFiles;
 
+    inline bool useRemote()
+    {
+        return remote != NULL && numParts > 1;
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerDiskReadBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool sorted, bool _maySkip, IInMemoryIndexManager *_manager)
+    CRoxieServerDiskReadBaseActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, const RemoteActivityId &_remoteId, unsigned _numParts, bool _isLocal, bool _sorted, bool _maySkip, IInMemoryIndexManager *_manager)
         : CRoxieServerActivity(_factory, _probeManager), 
           helper((IHThorDiskReadBaseArg &)basehelper),
           numParts(_numParts),
           remoteId(_remoteId),
           manager(_manager),
           isLocal(_isLocal),
+          sorted(_sorted),
           maySkip(_maySkip),
           deserializeSource(NULL)
     {
-        if (numParts != 1 && !isLocal)
+        if (numParts != 1 && !isLocal)  // NOTE : when numParts == 0 (variable case) we create, even though we may not use
             remote.setown(new CSkippableRemoteResultAdaptor(remoteId, meta.queryOriginal(), helper, *this, sorted, false, _maySkip));
         compoundHelper = NULL;
         eof = false;
@@ -19634,30 +19634,37 @@ public:
             rowLimit = compoundHelper->getRowLimit();
             stopAfter = compoundHelper->getChooseNLimit();
         }
-        if (remote)
+        if (!helper.canMatchAny())
+            eof = true;
+        else
         {
-            remote->onStart(parentExtractSize, parentExtract);
-            remote->setLimits(rowLimit, (unsigned __int64) -1, stopAfter);
-            if (helper.canMatchAny())
+            if (variableFileName)
             {
-                if (variableFileName)
-                    varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
+                varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
+                Owned<IFilePartMap> map = varFileInfo->getFileMap();
+                if (map)
+                    numParts = map->getNumParts();
+                else
+                {
+                    numParts = 0;
+                    eof = true;
+                    return;
+                }
+            }
+            if (useRemote())
+            {
+                remote->onStart(parentExtractSize, parentExtract);
+                remote->setLimits(rowLimit, (unsigned __int64) -1, stopAfter);
                 unsigned fileNo = 0;        // MORE - superfiles require us to do this per file part... maybe (needs thought)
                 // Translation into a message per channel done elsewhere....
                 remote->getMem(0, fileNo, 0);
+                remote->flush();
+                remote->senddone();
             }
-            remote->flush();
-            remote->senddone();
-        }
-        else
-        {
-            if (!helper.canMatchAny())
-                eof = true;
             else
             {
                 if (variableFileName)
                 {
-                    varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
                     unsigned channel = isLocal ? factory->queryQueryFactory().queryChannel() : 0;
                     varFiles.setown(varFileInfo->getIFileIOArray(isOpt, channel));
                     manager.setown(varFileInfo->getIndexManager(isOpt, channel, varFiles, diskSize, false, 0));
@@ -19707,14 +19714,14 @@ public:
 
     virtual void stop(bool aborting)
     {
-        if (remote)
+        if (useRemote())
             remote->onStop(aborting);
         CRoxieServerActivity::stop(aborting);
     }
 
     virtual void reset()
     {
-        if (remote)
+        if (useRemote())
         {
             processed = remote->processed;
             remote->processed = 0;
@@ -19731,21 +19738,6 @@ public:
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
         throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
-    }
-
-    virtual IRoxieInput *queryOutput(unsigned idx)
-    {
-        if (idx==(unsigned)-1)
-            idx = 0;
-        if (idx == 0)
-        {
-            if (remote)
-                return remote;
-            else
-                return this;
-        }
-        else
-            return NULL;
     }
 
     virtual void onLimitExceeded(bool isKeyed)
@@ -19830,10 +19822,11 @@ public:
 
     virtual const void *nextInGroup()
     {
-        // Note - in remote case this never gets called as input chain is routed to remoteResultAdaptor
         if (eof)
             return NULL;
-        if (maySkip)
+        else if (useRemote())
+            return remote->nextInGroup();
+        else if (maySkip)
         {
             if (!readAheadDone)
             {
@@ -19973,7 +19966,7 @@ public:
         rowLimit = readHelper->getRowLimit();
         stopAfter = readHelper->getChooseNLimit();
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
-        if (!remote)
+        if (!useRemote())
         {
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
@@ -20077,7 +20070,7 @@ public:
         rowLimit = readHelper->getRowLimit();
         stopAfter = readHelper->getChooseNLimit();
         CRoxieServerDiskReadBaseActivity::start(parentExtractSize, parentExtract, paused);
-        if (!remote)
+        if (!useRemote())
         {
             headerLines = csvInfo->queryHeaderLen(); 
             if (headerLines && isLocal && reader->queryFilePart() != 1)
@@ -20357,7 +20350,7 @@ public:
         unsigned __int64 totalCount = 0;
         if (helper.canMatchAny())
         {
-            if (remote)
+            if (useRemote())
             {
                 loop
                 {
@@ -20458,7 +20451,7 @@ public:
     {
         RtlDynamicRowBuilder rowBuilder(rowAllocator, false);
         size32_t finalSize = 0;
-        if (remote)
+        if (useRemote())
         {
             const void * firstRow = remote->nextInGroup();
             if (!firstRow)
@@ -20555,7 +20548,7 @@ public:
 
     void gatherMerged()
     {
-        if (remote)
+        if (useRemote())
         {
             loop
             {
@@ -20628,7 +20621,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             const char *fileName = helper->getFileName();
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
             bool isSimple = (map && map->getNumParts()==1);
@@ -21728,7 +21721,7 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (flags & TIRoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexHelper->getFileName(), isOpt, true));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexHelper->getFileName(), isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -22645,7 +22638,7 @@ public:
             assertex(recsize);
             const char *fileName = helper->getFileName();
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
-            datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true));
+            datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
             offset_t filesize = datafile ? datafile->getFileSize() : 0;
             if (filesize % recsize != 0)
                 throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName, filesize, recsize);
@@ -22859,7 +22852,10 @@ public:
         variableFileName = (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         if (!variableFileName)
         {
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(), (fetchContext->getFetchFlags() & FFdatafileoptional) != 0, true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(),
+                                                                        (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
+                                                                        true,
+                                                                        _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
         }
@@ -22905,13 +22901,13 @@ public:
             bool isOpt = _graphNode.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
             if (queryNodeIndexName(_graphNode))
             {
-                indexfile.setown(queryFactory.queryPackage().lookupFileName(queryNodeIndexName(_graphNode), isOpt, true));
+                indexfile.setown(queryFactory.queryPackage().lookupFileName(queryNodeIndexName(_graphNode), isOpt, true, queryFactory.queryWorkUnit()));
                 if (indexfile)
                     keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
             }
             if (queryNodeFileName(_graphNode))
             {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isOpt, true));
+                datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isOpt, true, queryFactory.queryWorkUnit()));
                 if (datafile)
                 {
                     if (isLocal)
@@ -23389,7 +23385,10 @@ public:
             MemoryBuffer tmp;
             rootIndex->queryActivity()->serializeCreateStartContext(tmp);
             if (rootIndex->queryActivity()->queryVarFileInfo())
+            {
                 rootIndex->queryActivity()->queryVarFileInfo()->queryTimeStamp().serialize(tmp);
+                tmp.append(rootIndex->queryActivity()->queryVarFileInfo()->queryCheckSum());
+            }
             unsigned ctxlen = tmp.length();
             out.append(ctxlen).append(tmp);
         }
@@ -24173,7 +24172,10 @@ public:
             MemoryBuffer tmp;
             rootIndex->queryActivity()->serializeCreateStartContext(tmp);
             if (rootIndex->queryActivity()->queryVarFileInfo())
+            {
                 rootIndex->queryActivity()->queryVarFileInfo()->queryTimeStamp().serialize(tmp);
+                tmp.append(rootIndex->queryActivity()->queryVarFileInfo()->queryCheckSum());
+            }
             unsigned ctxlen = tmp.length();
             out.append(ctxlen).append(tmp);
         }
@@ -24421,7 +24423,7 @@ public:
         if (!variableIndexFileName)
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(helper->getIndexFileName(), isOpt, true));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(helper->getIndexFileName(), isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -24440,7 +24442,7 @@ public:
         if (!isHalfKeyed && !variableFetchFileName)
         {
             bool isFetchOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isFetchOpt, true));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isFetchOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
             {
                 if (isLocal)
@@ -28063,7 +28065,7 @@ public:
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
     {
         CDateTime cacheDate; // Note - this is empty meaning we don't know...
-        return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, header, isOpt, false);
+        return querySlaveDynamicFileCache()->lookupDynamicFile(*this, filename, cacheDate, 0, header, isOpt, false);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
@@ -30002,7 +30004,7 @@ public:
         {
             dynamicPackage.setown(createPackage(NULL));
         }
-        return dynamicPackage->lookupFileName(filename, isOpt, true);
+        return dynamicPackage->lookupFileName(filename, isOpt, true, workUnit);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
@@ -30012,7 +30014,7 @@ public:
         {
             dynamicPackage.setown(createPackage(NULL));
         }
-        return dynamicPackage->createFileName(filename, overwrite, extend, clusters);
+        return dynamicPackage->createFileName(filename, overwrite, extend, clusters, workUnit);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
@@ -31367,14 +31369,9 @@ public:
         daliHelper->noteWorkunitRunning(wuid.get(), true);
         if (!wu)
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
-        // Ensure that any library lookup is done in the correct QuerySet...
-        // MORE - Not 100% sure if this is right
-        // - there's no package file resolution in play for WUs read from a queue (should there be?),
-        // but as this stands we will resolve libraries using those packages defined as loading for this QuerySet.
         SCMStringBuffer target;
         wu->getClusterName(target);
-        Owned<IRoxieLibraryLookupContext> libraryContext = globalPackageSetManager->getLibraryLookupContext(target.str());
-        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu, libraryContext);
+        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
@@ -32419,7 +32416,7 @@ protected:
         package.setown(createPackage(NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, NULL));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL));
         timer->reset();
     }
 

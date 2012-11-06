@@ -52,41 +52,59 @@ class EclccCompileThread : public CInterface, implements IPooledThread
 
     void reportError(const char *errStr, unsigned retcode)
     {
-        // MORE - if copyWorkUnit copied errors this would not be needed... should it?
         // A typical error looks like this: stdin:(385,29): warning C1041: Record doesn't have an explicit maximum record size
         // we will also see (and want to skip) nn error(s), nn warning(s)
-        RegExpr errCount, errParse;
+        RegExpr errCount, errParse, timings;
+        timings.init("Timing: {.+} total={[0-9]+}ms max={[0-9]+}us count={[0-9]+} ave={[0-9]+}us");
         errCount.init("[0-9]+ errors?, [0-9]+ warnings?.*");
         errParse.init("^{.+}\\({[0-9]+},{[0-9]+}\\): {[a-z]+} [A-Za-z]*{[0-9]+}:{.*$}");
         if (!errCount.find(errStr))
         {
-            Owned<IWUException> err = workunit->createException();
-            err->setExceptionSource("eclcc");
-            if (errParse.find(errStr))
+            if (timings.find(errStr))
             {
-                StringBuffer file, line, col, errClass, errCode, errText;
-                errParse.findstr(file, 1);
-                errParse.findstr(line, 2);
-                errParse.findstr(col, 3);
-                errParse.findstr(errClass, 4);
-                errParse.findstr(errCode, 5);
-                errParse.findstr(errText, 6);
-                err->setExceptionFileName(file);
-                err->setExceptionLineNo(atoi(line));
-                err->setExceptionColumn(atoi(col));
-                if (stricmp(errClass, "warning")==0)
-                    err->setSeverity(ExceptionSeverityWarning);
-                else
-                    err->setSeverity(ExceptionSeverityError);
-                err->setExceptionCode(atoi(errCode));
-                err->setExceptionMessage(errText);
-                err->setExceptionFileName(file); // any point if it just says stdin?
+                StringBuffer section, total, max, count, ave;
+                timings.findstr(section, 1);
+                timings.findstr(total, 2);
+                timings.findstr(max, 3);
+                timings.findstr(count, 4);
+                timings.findstr(ave, 5);
+                if (workunit->getDebugValueBool("addTimingToWorkunit", true))
+                {
+                    section.insert(0, "eclcc: ");
+                    unsigned __int64 umax = atoi(max); // in microseconds
+                    workunit->setTimerInfo(section.str(), NULL, atoi(total), atoi(count), umax*1000); // max is stored in nanoseconds
+                }
             }
             else
             {
-                err->setSeverity(retcode ? ExceptionSeverityError : ExceptionSeverityWarning);
-                err->setExceptionMessage(errStr);
-                DBGLOG("%s", errStr);
+                Owned<IWUException> err = workunit->createException();
+                err->setExceptionSource("eclcc");
+                if (errParse.find(errStr))
+                {
+                    StringBuffer file, line, col, errClass, errCode, errText;
+                    errParse.findstr(file, 1);
+                    errParse.findstr(line, 2);
+                    errParse.findstr(col, 3);
+                    errParse.findstr(errClass, 4);
+                    errParse.findstr(errCode, 5);
+                    errParse.findstr(errText, 6);
+                    err->setExceptionFileName(file);
+                    err->setExceptionLineNo(atoi(line));
+                    err->setExceptionColumn(atoi(col));
+                    if (stricmp(errClass, "warning")==0)
+                        err->setSeverity(ExceptionSeverityWarning);
+                    else
+                        err->setSeverity(ExceptionSeverityError);
+                    err->setExceptionCode(atoi(errCode));
+                    err->setExceptionMessage(errText);
+                    err->setExceptionFileName(file); // any point if it just says stdin?
+                }
+                else
+                {
+                    err->setSeverity(retcode ? ExceptionSeverityError : ExceptionSeverityWarning);
+                    err->setExceptionMessage(errStr);
+                    DBGLOG("%s", errStr);
+                }
             }
         }
     }
@@ -110,6 +128,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread
             eclccCmd.append(" -");
         if (mainDefinition.length())
             eclccCmd.append(" -main ").append(mainDefinition);
+        if (workunit->getDebugValueBool("addTimingToWorkunit", true))
+            eclccCmd.append(" --timings");
 
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
         ForEach(*options)
@@ -169,6 +189,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread
         }
         try
         {
+            unsigned time = msTick();
             Owned<IPipeProcess> pipe = createPipeProcess();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             pipe->run("eclcc", eclccCmd, ".", true, false, true, 0);
@@ -198,7 +219,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread
                 {
                     Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
                     embeddedWU->loadXML(wuXML);
-                    queryExtendedWU(workunit)->copyWorkUnit(embeddedWU);
+                    queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
                     SCMStringBuffer jobname;
                     if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
                         workunit->setJobName(jobname.str());
@@ -212,6 +233,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread
                 Owned<IWUQuery> query = workunit->updateQuery();
                 associateLocalFile(query, FileTypeDll, realdllfilename, "Workunit DLL", crc);
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
+                time = msTick()-time;
+                if (workunit->getDebugValueBool("addTimingToWorkunit", true))
+                    workunit->setTimerInfo("eclccserver: create workunit", NULL, time, 1, 0);
 
                 workunit->commit();
                 return true;

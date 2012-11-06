@@ -137,3 +137,6 @@ h1 {
 	max-height: 60px;
 	background-color: rgb(238, 238, 238);
 }
+.resultGridCell {
+	font-family: monospace;
+}

@@ -955,7 +955,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setStateEx(const char * text) = 0;
     virtual void setAgentSession(__int64 sessionId) = 0;
     virtual void setAgentPID(unsigned pid) = 0;
-    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned max) = 0;
+    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;
     virtual void setUser(const char * value) = 0;
@@ -1120,7 +1120,7 @@ interface IWorkflowScheduleConnection : extends IInterface
 interface IExtendedWUInterface
 {
     virtual unsigned calculateHash(unsigned prevHash) = 0;
-    virtual void copyWorkUnit(IConstWorkUnit *cached) = 0;
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all) = 0;
     virtual bool archiveWorkUnit(const char *base,bool del,bool ignoredllerrors,bool deleteOwned) = 0;
     virtual void packWorkUnit(bool pack=true) = 0;
     
