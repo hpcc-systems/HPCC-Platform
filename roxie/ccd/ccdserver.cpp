@@ -31111,6 +31111,7 @@ private:
 
 class RoxieWorkUnitListener : public RoxieListener
 {
+    Owned<IJobQueue> queue;
 public:
     RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
       : RoxieListener(_poolSize, _suspended)
@@ -31132,9 +31133,23 @@ public:
         UNIMPLEMENTED;
     }
 
+    virtual bool stop(unsigned timeout)
+    {
+        if (queue)
+        {
+            DBGLOG("RoxieWorkUnitListener::stop");
+            queue->cancelAcceptConversation();
+        }
+        return RoxieListener::stop(timeout);
+    }
+
     virtual void stopListening()
     {
-        // Nothing to do
+        if (queue)
+        {
+            DBGLOG("RoxieWorkUnitListener::stopListening");
+            queue->cancelAcceptConversation();
+        }
     }
 
     virtual int run()
@@ -31154,12 +31169,12 @@ public:
                         DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.str());
                     try
                     {
-                        Owned<IJobQueue> queue = createJobQueue(queueNames.str());
+                        queue.setown(createJobQueue(queueNames.str()));
                         queue->connect();
                         daliHelper->noteQueuesRunning(queueNames.str());
                         while (running)
                         {
-                            Owned<IJobQueueItem> item = queue->dequeue(5000);
+                            Owned<IJobQueueItem> item = queue->dequeue();
                             if (item.get())
                             {
                                 if (traceLevel)
@@ -31167,6 +31182,7 @@ public:
                                 pool->start((void *) item->queryWUID());
                             }
                         }
+                        queue.clear();
                     }
                     catch (IDaliClient_Exception *E)
                     {
@@ -31174,6 +31190,7 @@ public:
                             EXCLOG(E, "roxie: Dali connection lost");
                         E->Release();
                         daliHelper->disconnect();
+                        queue.clear();
                     }
                 }
             }
