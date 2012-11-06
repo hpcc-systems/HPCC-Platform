@@ -3843,14 +3843,16 @@ ClusterType getClusterType(const char * platform, ClusterType dft)
     return dft;
 }
 
-const char *clusterTypeString(ClusterType clusterType)
+const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive)
 {
     switch (clusterType)
     {
+    case ThorLCRCluster:
+        if (lcrSensitive)
+            return "thorlcr";
+        // fall through
     case ThorCluster:
         return "thor";
-    case ThorLCRCluster:
-        return "thorlcr";
     case RoxieCluster:
         return "roxie";
     case HThorCluster:

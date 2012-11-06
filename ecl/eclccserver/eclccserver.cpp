@@ -268,7 +268,7 @@ public:
         clusterInfo.clear();
         workunit->setState(WUStateCompiling);
         workunit->commit();
-        bool ok = compile(wuid, clusterTypeString(platform), clusterName.str());
+        bool ok = compile(wuid, clusterTypeString(platform, true), clusterName.str());
         if (ok)
         {
             workunit->setState(WUStateCompiled);

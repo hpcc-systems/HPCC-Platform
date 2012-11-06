@@ -535,7 +535,7 @@ interface IConstWUExceptionIterator : extends IScmIterator
 enum ClusterType { NoCluster, ThorCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
 
 extern WORKUNIT_API ClusterType getClusterType(const char * platform, ClusterType dft = NoCluster);
-extern WORKUNIT_API const char *clusterTypeString(ClusterType clusterType);
+extern WORKUNIT_API const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive);
 inline bool isThorCluster(ClusterType type) { return (type == ThorCluster) || (type == ThorLCRCluster); }
 
 //! IClusterInfo
