@@ -657,7 +657,7 @@ public:
     virtual void requestAbort();
     virtual void subscribe(WUSubscribeOptions options);
     virtual unsigned calculateHash(unsigned prevHash);
-    virtual void copyWorkUnit(IConstWorkUnit *cached);
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all);
     virtual unsigned queryFileUsage(const char *filename) const;
     virtual bool getCloneable() const;
     virtual IUserDescriptor * queryUserDescriptor() const;
@@ -705,7 +705,7 @@ public:
     void setAgentSession(__int64 sessionId);
     void setAgentPID(unsigned pid);
     void setSecurityToken(const char *value);
-    void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned max);
+    void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max);
     void setTracingValue(const char * propname, const char * value);
     void setTracingValueInt(const char * propname, int value);
     void setUser(const char * value);
@@ -1076,8 +1076,8 @@ public:
             { c->requestAbort(); }
     virtual unsigned calculateHash(unsigned prevHash)
             { return c->calculateHash(prevHash); }
-    virtual void copyWorkUnit(IConstWorkUnit *cached)
-            { c->copyWorkUnit(cached); }
+    virtual void copyWorkUnit(IConstWorkUnit *cached, bool all)
+            { c->copyWorkUnit(cached, all); }
     virtual bool archiveWorkUnit(const char *base,bool del,bool deldll,bool deleteOwned)
             { return c->archiveWorkUnit(base,del,deldll,deleteOwned); }
     virtual void packWorkUnit(bool pack)
@@ -1165,7 +1165,7 @@ public:
             { c->setAgentSession(sessionId); }
     virtual void setAgentPID(unsigned pid)
             { c->setAgentPID(pid); }
-    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned max)
+    virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max)
             { c->setTimerInfo(name, instance, ms, count, max); }
     virtual void setTracingValue(const char * propname, const char * value)
             { c->setTracingValue(propname, value); }
@@ -3843,14 +3843,16 @@ ClusterType getClusterType(const char * platform, ClusterType dft)
     return dft;
 }
 
-const char *clusterTypeString(ClusterType clusterType)
+const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive)
 {
     switch (clusterType)
     {
+    case ThorLCRCluster:
+        if (lcrSensitive)
+            return "thorlcr";
+        // fall through
     case ThorCluster:
         return "thor";
-    case ThorLCRCluster:
-        return "thorlcr";
     case RoxieCluster:
         return "roxie";
     case HThorCluster:
@@ -4524,7 +4526,7 @@ static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char 
         to->setPropTree(xpath, match);
 }
 
-void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
+void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
 {
     CLocalWorkUnit *from = QUERYINTERFACE(cached, CLocalWorkUnit);
     if (!from)
@@ -4575,6 +4577,17 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached)
     copyTree(p, fromP, "Results");
     copyTree(p, fromP, "Graphs");
     copyTree(p, fromP, "Workflow");
+    if (all)
+    {
+        // Merge timing info from both branches
+        pt = fromP->getBranch("Timings");
+        if (pt)
+        {
+            IPropertyTree *tgtTimings = ensurePTree(p, "Timings");
+            mergePTree(tgtTimings, pt);
+            pt->Release();
+        }
+    }
 
     updateProp(p, fromP, "@clusterName");
     updateProp(p, fromP, "allowedclusters");
@@ -4944,7 +4957,7 @@ bool parseGraphTimerLabel(const char *label, StringBuffer &graphName, unsigned &
     return true;
 }
 
-void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigned ms, unsigned count, unsigned max)
+void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigned ms, unsigned count, unsigned __int64 max)
 {
     CriticalBlock block(crit);
     IPropertyTree *timings = p->queryPropTree("Timings");
@@ -4964,9 +4977,9 @@ void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigne
     }
     timing->setPropInt("@count", count);
     timing->setPropInt("@duration", ms);
-    if (!max && 1==count) max = ms;
+    if (!max && 1==count) max = ms * 1000000; // max is in nanoseconds
     if (max)
-        timing->setPropInt("@max", max);
+        timing->setPropInt64("@max", max);
 }
 
 void CLocalWorkUnit::setTimeStamp(const char *application, const char *instance, const char *event, bool add)

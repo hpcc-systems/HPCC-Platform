@@ -189,6 +189,7 @@ define([
 				IncludeDebugValues: false,
 				IncludeApplicationValues: args.onGetApplicationValues ? true : false,
 				IncludeWorkflows: false,
+				IncludeXmlSchemas: args.onGetResults ? true : false,
 				SuppressResultSchemas: args.onGetResults ? false : true,
 			};
 			request['rawxml_'] = "1";

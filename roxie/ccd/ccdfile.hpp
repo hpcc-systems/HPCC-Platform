@@ -41,10 +41,6 @@ interface ILazyFileIO : extends IFileIO
     virtual IFile *queryTarget() = 0;
     virtual void copyComplete() = 0;
     virtual int getLinkCount() const = 0;
-    virtual void setFileIsMemFile(bool val) = 0;
-    virtual bool getFileIsMemFile() = 0;
-    virtual void setCopyInForeground(bool val) = 0;
-    virtual bool getCopyInForeground() = 0;
     virtual bool createHardFileLink() = 0;
 
     virtual void setBaseIndexFileName(const char *val) =0;
@@ -112,23 +108,27 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
     virtual offset_t getFileSize() const = 0;
 
     virtual const CDateTime &queryTimeStamp() const = 0;
+    virtual unsigned queryCheckSum() const = 0;
 
+    virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;
     virtual void setCache(const IRoxiePackage *cache) = 0;
     virtual bool isAlive() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
 
     virtual void remove() = 0;
+    virtual bool exists() const = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile
 {
+    virtual void addSubFile(const char *localFileName) = 0;
     virtual void addSubFile(const IResolvedFile *sub) = 0;
     virtual void addSubFile(IFileDescriptor *sub) = 0;
 };
 
-extern IResolvedFileCreator *createResolvedFile(const char *lfn);
-extern IResolvedFile *createResolvedFile(const char *lfn, IDistributedFile *dFile);
+extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical);
+extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile);
 
 interface IRoxiePublishCallback
 {

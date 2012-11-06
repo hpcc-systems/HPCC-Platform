@@ -634,12 +634,11 @@ public:
             "ecl packagemap <command> [command options]\n\n"
             "   packagemap Commands:\n"
             "      add          add a package map to the environment\n"
-            "      copyFiles    copy missing data files to the appropriate cluster\n"
-            "      delete       delete a packag emap\n"
+            "      delete       delete a package map\n"
             "      activate     activate a package map\n"
             "      deactivate   deactivate a package map (package map will not get loaded)\n"
             "      list         list loaded package map names\n"
-            "      info         return active package map information for a cluster\n"
+            "      info         return active package map information\n"
         );
     }
 };

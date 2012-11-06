@@ -262,6 +262,7 @@ private:
 
 int main(int argc, char * const * argv)
 {
+    InitModuleObjects();
     if((argc==2) && (stricmp(argv[1], "help")==0))
         usage(0);
     if(argc<3) usage();
