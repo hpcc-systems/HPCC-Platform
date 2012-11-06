@@ -1298,6 +1298,175 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     Despray is the opposite, the system combines the data from the multiple
     nodes into a single file.</para>
 
+    <sect1 id="Move_data_to_Landing_Zone">
+      <title>Certify Data Retrieval (DeSpray)</title>
+
+      <para>The next step to verify that your system is working properly is to
+      test the Despray capabilities. Despray is when the system combines the
+      data from the multiple clusters into a singular file that can be moved
+      to the Landing Zone from the Data Refinery.</para>
+
+      <sect2>
+        <title>DeSpray from ECL Watch</title>
+
+        <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
+Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***-->
+
+        <para>Despray is the opposite of spraying, is a good way to certify
+        that piece is working properly.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>To despray, go to ECL Watch in a browser window.</para>
+
+            <para>Open ECL Watch in your browser using the following
+            URL:</para>
+
+            <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+            </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
+            ESP Server’s IP Address and pppp is the port. The default port is
+            8010)</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Select the <emphasis>Browse Logical Files </emphasis>link
+            under DFU Files.</para>
+
+            <para><figure>
+                <title>***</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/CSimg14.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" />
+            button next to the file listing for <emphasis
+            role="bold">certification::full_test_distributed</emphasis>, then
+            select <emphasis role="bold">Despray.</emphasis></para>
+          </listitem>
+        </orderedlist>
+
+        <para><graphic fileref="images/CSimg15.jpg" /></para>
+
+        <sect3 id="Desprays">
+          <title>Desprays</title>
+
+          <para>After you select Despray, the <emphasis role="bold">Despray
+          File</emphasis> page opens. </para>
+
+          <!--***Do we need an image of the Despray File Page?***-->
+
+          <itemizedlist>
+            <listitem>
+              <para>Check the <emphasis role="bold">Source</emphasis>
+              information that is already filled in, this is the name of the
+              file you selected.</para>
+            </listitem>
+
+            <listitem>
+              <para>Provide <emphasis role="bold">Destination</emphasis>
+              information.</para>
+
+              <para><informaltable colsep="0" frame="none" rowsep="0">
+                  <tgroup cols="2">
+                    <colspec align="left" colwidth="122.40pt" />
+
+                    <colspec colwidth="333.00pt" />
+
+                    <tbody>
+                      <row>
+                        <entry><emphasis role="bold">Destination
+                        Machine/dropzone</emphasis></entry>
+
+                        <entry>Use the drop list to select the machine to
+                        despray to. The items in the list are landing zones
+                        defined in the system’s confguration.</entry>
+                      </row>
+
+                      <row>
+                        <entry><emphasis role="bold">Destination IP
+                        Address</emphasis></entry>
+
+                        <entry>This is prefilled based upon the selected
+                        machine.</entry>
+                      </row>
+
+                      <row>
+                        <entry><emphasis role="bold">Destination Local
+                        Path</emphasis></entry>
+
+                        <entry>Provide the complete file path of the
+                        destination including file name and extention.</entry>
+                      </row>
+
+                      <row>
+                        <entry><emphasis role="bold">Destination<emphasis
+                        role="bold"> Network
+                        Path</emphasis></emphasis></entry>
+
+                        <entry>The complete network path of the destination
+                        including file name and extension. (read only)</entry>
+                      </row>
+
+                      <row>
+                        <entry><emphasis
+                        role="bold">Overwrite</emphasis></entry>
+
+                        <entry>Check this box to overwrite a file with the
+                        same name if it exists.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Submit</emphasis>
+              button.</para>
+
+              <para>The <emphasis role="bold">DFU Workunit</emphasis>
+              displays.<graphic fileref="images/DHMan-4.jpg"
+              vendor="eclwatchSS" /></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Refresh</emphasis> button
+              periodically until the status of your request indicates it is
+              <emphasis role="bold">Finished</emphasis> or click on the
+              <emphasis role="bold">View Progress</emphasis> hyperlink to see
+              a progress indicator.</para>
+
+              <para><graphic fileref="images/DHMan-5.jpg"
+              vendor="eclwatchSS" />The Progress window shows a green progress
+              bar indicating the percentage of completion, as well as other
+              information related to the operation.</para>
+
+              <para>If a job fails, information related to the cause of the
+              failure also displays.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3>
+          <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
+
+          <para>Upon completion of the despray operation you will have a
+          singular file. You can then retrieve the file from the landing zone.
+          This will certify that the despray operation is working
+          correctly.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
     <sect1>
       <title>Certify Data Transfer (Spray)</title>
 
@@ -1311,7 +1480,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 -->
 
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
-        <title>Spray the Data File to your THOR Cluster</title>
+        <title>Spray a Data File to your THOR Cluster</title>
 
         <para>To use the data file in our HPCC cluster, we must first “spray”
         it to a Thor cluster. A <emphasis>spray</emphasis> or
@@ -1320,10 +1489,16 @@ Why retype and maintain in two places when we can just keep the cromulent data i
         nature of the file movement – the file is partitioned across all nodes
         within a cluster.</para>
 
-        <para>In this example, the file is on your Landing Zone and is named
-        <emphasis role="bold">OriginalPerson.</emphasis></para>
+        <para>For this example, we will need a large file to spray. There is a
+        sample file available on the HPCC Systems portal : <ulink
+        url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
+        </para>
 
-        <para>We are going to spray it to our Thor cluster and give it a
+        <para>Get the file named <emphasis
+        role="bold">OriginalPerson</emphasis> and copy it to your landing
+        zone. </para>
+
+        <para>We are going to spray the file to our Thor cluster and give it a
         logical name of <emphasis role="bold">tutorial::</emphasis><emphasis
         role="bold">YN</emphasis><emphasis
         role="bold">::OriginalPerson</emphasis><emphasis role="bold">
@@ -1355,8 +1530,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
             role="bold">Machine/dropzone</emphasis> drop list, select the
             Landing Zone where the file was placed.</para>
 
-            <para>In the VM or Community Edition, there is only one Landing
-            Zone.</para>
+            <para>Your system may have only one Landing Zone.</para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing
@@ -1475,174 +1649,6 @@ Why retype and maintain in two places when we can just keep the cromulent data i
             <para>View the details.</para>
           </listitem>
         </orderedlist>
-      </sect2>
-    </sect1>
-
-    <sect1 id="Move_data_to_Landing_Zone">
-      <title>Certify Data Retrieval (DeSpray)</title>
-
-      <para>The next step to verify that your system is working properly is to
-      test the Despray capabilities. Despray is when the system combines the
-      data from the multiple clusters into a singular file that can be moved
-      to the Landing Zone from the Data Refinery.</para>
-
-      <sect2>
-        <title>DeSpray from ECL Watch</title>
-
-        <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
-Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***-->
-
-        <para>Despray is the opposite of spraying, is a good way to certify
-        that piece is working properly.</para>
-
-        <orderedlist>
-          <listitem>
-            <para>To despray, go to ECL Watch in a browser window:
-            <emphasis>http://IPaddress:8010/</emphasis></para>
-
-            <para>Replace <emphasis>IPaddress</emphasis> with the actual IP
-            address of your system, where ECL Watch is loaded.</para>
-          </listitem>
-
-          <listitem>
-            <para>Select the <emphasis>Browse Logical Files </emphasis>link
-            under DFU Files.</para>
-
-            <para><figure>
-                <title>***</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/CSimg14.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" />
-            button next to the file listing for <emphasis
-            role="bold">thor::full_test_distributed</emphasis>, then select
-            <emphasis role="bold">Despray.</emphasis></para>
-          </listitem>
-        </orderedlist>
-
-        <para><graphic fileref="images/CSimg15.jpg" /></para>
-
-        <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
-Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***-->
-
-        <sect3 id="Desprays">
-          <title>Desprays</title>
-
-          <itemizedlist>
-            <listitem>
-              <para>Locate the file to despray in the list of files, then
-              select the arrow graphic on the left hand side, then select
-              <emphasis role="bold">Despray</emphasis> from the pop-up
-              menu.</para>
-            </listitem>
-
-            <listitem>
-              <para>Check the <emphasis role="bold">Source</emphasis>
-              information that is already filled in.</para>
-            </listitem>
-
-            <listitem>
-              <para>Provide <emphasis role="bold">Destination</emphasis>
-              information.</para>
-
-              <para><informaltable colsep="0" frame="none" rowsep="0">
-                  <tgroup cols="2">
-                    <colspec align="left" colwidth="122.40pt" />
-
-                    <colspec colwidth="333.00pt" />
-
-                    <tbody>
-                      <row>
-                        <entry><emphasis
-                        role="bold">Destination-Machine</emphasis></entry>
-
-                        <entry>Use the drop list to select the machine to
-                        despray to. The items in the list are landing zones
-                        defined in the system’s confguration.</entry>
-                      </row>
-
-                      <row>
-                        <entry><emphasis role="bold">Destination-IP
-                        Address</emphasis></entry>
-
-                        <entry>This is prefilled based upon the selected
-                        machine.</entry>
-                      </row>
-
-                      <row>
-                        <entry><emphasis role="bold">Destination-Local
-                        Path</emphasis></entry>
-
-                        <entry>Provide the complete file path of the
-                        destination including file name and extention.</entry>
-                      </row>
-
-                      <row>
-                        <entry><emphasis role="bold">Destination-<emphasis
-                        role="bold">Network Path</emphasis></emphasis></entry>
-
-                        <entry>The complete network path of the destination
-                        including file name and extension. (read only)</entry>
-                      </row>
-
-                      <row>
-                        <entry><emphasis
-                        role="bold">Overwrite</emphasis></entry>
-
-                        <entry>Check this box to overwrite a file with the
-                        same name if it exists.</entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </informaltable></para>
-            </listitem>
-
-            <listitem>
-              <?dbfo keep-together="always"?>
-
-              <para>Press the <emphasis role="bold">Submit</emphasis>
-              button.</para>
-
-              <para>The <emphasis role="bold">DFU Workunit</emphasis>
-              displays.<graphic fileref="images/DHMan-4.jpg"
-              vendor="eclwatchSS" /></para>
-            </listitem>
-
-            <listitem>
-              <?dbfo keep-together="always"?>
-
-              <para>Press the <emphasis role="bold">Refresh</emphasis> button
-              periodically until the status of your request indicates it is
-              <emphasis role="bold">Finished</emphasis> or click on the
-              <emphasis role="bold">View Progress</emphasis> hyperlink to see
-              a progress indicator.</para>
-
-              <para><graphic fileref="images/DHMan-5.jpg"
-              vendor="eclwatchSS" />The Progress window shows a green progress
-              bar indicating the percentage of completion, as well as other
-              information related to the operation.</para>
-
-              <para>If a job fails, information related to the cause of the
-              failure also displays.</para>
-            </listitem>
-          </itemizedlist>
-        </sect3>
-
-        <sect3>
-          <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
-
-          <para>Upon completion of the despray operation you will have a
-          singular file. You can then retrieve the file from the landing zone.
-          This will certify that the despray operation is working
-          correctly.</para>
-        </sect3>
       </sect2>
     </sect1>
   </chapter>
