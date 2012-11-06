@@ -107,7 +107,7 @@ void usage(const char *exe)
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
-  printf("  unlock <sessid>                 -- unlocks an object\n");
+  printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("\n");
   printf("Common options (can be placed in dfuutil.ini)\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
