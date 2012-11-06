@@ -14,7 +14,6 @@
 #    limitations under the License.
 ################################################################################
 set ( TEMPLATES_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/DFUSearchWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLPlaygroundWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/ECLSourceWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphPageWidget.html
@@ -23,7 +22,6 @@ set ( TEMPLATES_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/TargetSelectWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/TimingTreeMapWidget.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/WorkUnitSummaryWidget.html
 )
 set ( TEMPLATES_FILES ${TEMPLATES_FILES} PARENT_SCOPE)
 
