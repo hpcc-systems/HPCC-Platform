@@ -1432,7 +1432,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
               button.</para>
 
               <para>The <emphasis role="bold">DFU Workunit</emphasis>
-              displays.<graphic fileref="images/DHMan-4.jpg"
+              displays.<graphic fileref="images/CS-1911.jpg"
               vendor="eclwatchSS" /></para>
             </listitem>
 
@@ -1482,26 +1482,20 @@ Why retype and maintain in two places when we can just keep the cromulent data i
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
         <title>Spray a Data File to your THOR Cluster</title>
 
-        <para>To use the data file in our HPCC cluster, we must first “spray”
-        it to a Thor cluster. A <emphasis>spray</emphasis> or
+        <para>To use a data file in our HPCC cluster, we must first “spray” it
+        to a Thor cluster. A <emphasis>spray</emphasis> or
         <emphasis>import</emphasis> is the relocation of a data file from one
         location to a Thor cluster. The term spray was adopted due to the
         nature of the file movement – the file is partitioned across all nodes
         within a cluster.</para>
 
-        <para>For this example, we will need a large file to spray. There is a
-        sample file available on the HPCC Systems portal : <ulink
-        url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
-        </para>
-
-        <para>Get the file named <emphasis
-        role="bold">OriginalPerson</emphasis> and copy it to your landing
-        zone. </para>
+        <para>For this example, we will spray the full_test_distributed file
+        that we just put out on our landing zone. </para>
 
         <para>We are going to spray the file to our Thor cluster and give it a
-        logical name of <emphasis role="bold">tutorial::</emphasis><emphasis
+        logical name of <emphasis role="bold">thor::</emphasis><emphasis
         role="bold">YN</emphasis><emphasis
-        role="bold">::OriginalPerson</emphasis><emphasis role="bold">
+        role="bold">::full_test_distributed</emphasis><emphasis role="bold">
         </emphasis>where <emphasis role="bold">YN</emphasis> are your
         initials. The Distrubuted File Utility maintains a list of logical
         files and their corresponding physical file locations.</para>
@@ -1521,7 +1515,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
             <para>Click on the <emphasis role="bold">Spray Fixed</emphasis>
             hyperlink under the DFU Files menu on the left.</para>
 
-            <para>The <emphasis role="bold">DFU Spray Fixed</emphasis> page
+            <para>The <emphasis role="bold">Spray Fixed</emphasis> page
             displays.</para>
           </listitem>
 
@@ -1542,20 +1536,21 @@ Why retype and maintain in two places when we can just keep the cromulent data i
             include the complete file name or use the <emphasis
             role="bold">Choose File</emphasis> button to select the file from
             a list of files in the folder. (The file to choose is
-            <emphasis>OriginalPerson</emphasis>)</para>
+            <emphasis>full_test_distributed</emphasis>)</para>
           </listitem>
 
           <listitem>
             <para>Fill in the <emphasis role="bold">Record Length</emphasis>
-            (124).</para>
+            (47).</para>
           </listitem>
 
           <listitem>
             <para>Fill in the <emphasis role="bold">Label</emphasis> using the
             naming convention described earlier: <emphasis
-            role="bold">tutorial::</emphasis><emphasis
+            role="bold">thor::</emphasis><emphasis
             role="bold">YN</emphasis><emphasis
-            role="bold">::OriginalPerson</emphasis> (remember, <emphasis
+            role="bold">::</emphasis><emphasis
+            role="bold">full_test_distributed</emphasis> (remember, <emphasis
             role="bold">YN</emphasis> are your initials).</para>
           </listitem>
 
@@ -1575,7 +1570,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/DTimg01.jpg" />
+                    <imagedata fileref="images/CS-1909.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1622,15 +1617,15 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 
         <orderedlist>
           <listitem>
-            <para>To verify the spray, in ECL Watch, select the Logical Files
-            link under DFU Files.</para>
+            <para>To verify the spray, in ECL Watch, select the Browse Logical
+            Files link under DFU Files.</para>
 
             <para><figure>
-                <title>Browse Logical Files***</title>
+                <title>Browse Logical Files</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/CSimg12-2.jpg" />
+                    <imagedata fileref="images/CS-1910.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1639,9 +1634,9 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           <listitem>
             <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" />
             button next to the file listing for <emphasis
-            role="bold">tutorial::yn::originalperson</emphasis>, (where the yn
-            are your initials) then select <emphasis
-            role="bold">Details</emphasis> to open the logical file
+            role="bold">thor::yn::full_test_distributed</emphasis>, (where
+            <emphasis role="bold">YN</emphasis> are your initials) then select
+            <emphasis role="bold">Details</emphasis> to open the logical file
             statistics.</para>
           </listitem>
 
