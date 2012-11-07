@@ -165,7 +165,7 @@ public:
     {
         input = NULL;
         mpTag = TAG_NULL;
-        maxEmptyLoopIterations = (unsigned)container->queryJob().getWorkUnitValueInt("@maxEmptyLoopIterations", 1000);
+        maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {

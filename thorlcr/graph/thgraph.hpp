@@ -898,8 +898,11 @@ public:
     mptag_t allocateMPTag();
     void freeMPTag(mptag_t tag);
     mptag_t deserializeMPTag(MemoryBuffer &mb);
-    unsigned getOptInt(const char *opt, unsigned dft=0);
+    bool getOptBool(const char *opt, bool dft=false);
+    int getOptInt(const char *opt, int dft=0);
+    unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
+    unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -988,6 +991,12 @@ public:
     virtual IOutputMetaData *queryRowMetaData() { return baseHelper->queryOutputMeta(); }
     virtual unsigned queryActivityId() { return (unsigned)container.queryId(); }
     virtual ICodeContext *queryCodeContext() { return container.queryCodeContext(); }
+
+    bool getOptBool(const char *prop, bool defVal=false) const;
+    int getOptInt(const char *prop, int defVal=0) const;
+    unsigned getOptUInt(const char *prop, unsigned defVal=0) const { return (unsigned)getOptInt(prop, defVal); }
+    __int64 getOptInt64(const char *prop, __int64 defVal=0) const;
+    unsigned __int64 getOptUInt64(const char *prop, unsigned __int64 defVal=0) const { return (unsigned __int64)getOptInt64(prop, defVal); }
 };
 
 interface IFileInProgressHandler : extends IInterface

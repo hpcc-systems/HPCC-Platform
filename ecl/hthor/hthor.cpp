@@ -370,7 +370,7 @@ void CHThorDiskWriteActivity::ready()
     uncompressedBytesWritten = 0;
     numRecords = 0;
     sizeLimit = agent.queryWorkUnit()->getDebugValueInt64("hthorDiskWriteSizeLimit", defaultHThorDiskWriteSizeLimit);
-    rowSerializer.setown(input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId));
+    rowIf.setown(createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext()));
     open();
 }
 
@@ -517,8 +517,12 @@ void CHThorDiskWriteActivity::open()
     if(extend)
         diskout->seek(0, IFSend);
 
-    bool tallycrc = !agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck);
-    IExtRowWriter * writer = createRowWriter(diskout, rowSerializer, rowAllocator, grouped, tallycrc, true );
+    unsigned rwFlags = rw_autoflush;
+    if(grouped)
+        rwFlags |= rw_grouped;
+    if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+        rwFlags |= rw_crc;
+    IExtRowWriter * writer = createRowWriter(diskout, rowIf, rwFlags);
     outSeq.setown(writer);
 
 }

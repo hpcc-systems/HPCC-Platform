@@ -310,7 +310,7 @@ public:
         ForEachItemIn(o, container.outputs)
             appendOutput(new CDelayedInput(*this));
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
-        int dV = (int)container.queryJob().getWorkUnitValueInt("splitterSpills", -1);
+        int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
         if (-1 == dV)
         {
             spill = !helper->isBalanced();

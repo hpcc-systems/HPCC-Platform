@@ -455,18 +455,21 @@ public:
         Linked<IRowInterfaces> rowif1 = queryRowInterfaces(input1);
         Linked<IRowInterfaces> rowif2 = queryRowInterfaces(input2);
         // NB two near identical branches here - should be parameterized at some stage
-        if (rightpartition) {
+        if (rightpartition)
+        {
             ActPrintLog("JOIN partition right");
             rowcount_t totalrows;
             collaterev.collate = collate;
             collaterevupper.collate = collateupper;
-            if (nosortPrimary()) {
+            if (nosortPrimary())
+            {
                 OwnedConstThorRow partitionrow  = input2->ungroupedNextRow();
                 strm2.set(new cRowStreamPlus1Adaptor(input2,partitionrow));
                 sorter->Gather(rowif1,input1,compare1,&collaterev,collateupper?&collaterevupper:NULL,keyserializer2,partitionrow,nosortSecondary(),isUnstable(),abortSoon, rowif2); // keyserializer2 *is* correct
                 partitionrow.clear();
                 stopInput1();
-                if (abortSoon) {
+                if (abortSoon)
+                {
                     barrier->cancel();
                     return false;
                 }
@@ -477,11 +480,13 @@ public:
                 strm1.setown(sorter->startMerge(totalrows));
                 return true;
             }
-            else {
+            else
+            {
                 strm2.set(input2);
                 sorter->Gather(rowif2,input2,compare2,NULL,NULL,keyserializer2,NULL,false,isUnstable(),abortSoon, NULL); 
                 stopInput2();
-                if (abortSoon) {
+                if (abortSoon)
+                {
                     barrier->cancel();
                     return false;
                 }
@@ -493,8 +498,12 @@ public:
 
                 GetTempName(tempname.clear(),"joinspill",false); // don't use alt temp dir
                 Owned<IFile> tempf = createIFile(tempname.str());
-                Owned<IRowWriter> tmpstrm = createRowWriter(tempf,rowif2->queryRowSerializer(),rowif2->queryRowAllocator());
-                if (!tmpstrm) {
+                unsigned rwFlags = DEFAULT_RWFLAGS;
+                if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                    rwFlags |= rw_compress;
+                Owned<IRowWriter> tmpstrm = createRowWriter(tempf, rowif2, rwFlags);
+                if (!tmpstrm)
+                {
                     ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Cannot open %s", tempname.toCharArray());
                     throw MakeErrnoException("JoinSlaveActivity::doglobaljoin");
                 }
@@ -502,8 +511,9 @@ public:
                 tmpstrm->flush();
                 tmpstrm.clear();
                 rstrm2.clear();
-                try {
-                    strm2.setown(createSimpleRowStream(tempf,rowif2));
+                try
+                {
+                    strm2.setown(createRowStream(tempf, rowif2, rwFlags));
 
                     ActPrintLog("JOIN waiting barrier.2");
                     if (!barrier->wait(false))
@@ -512,7 +522,8 @@ public:
                     sorter->stopMerge();
                     sorter->Gather(rowif1,input1,compare1,&collaterev,collateupper?&collaterevupper:NULL,keyserializer2,NULL,nosortSecondary(),isUnstable(),abortSoon,rowif2); // keyserializer2 *is* correct
                     stopInput1();
-                    if (abortSoon) {
+                    if (abortSoon)
+                    {
                         barrier->cancel();
                         return false;
                     }
@@ -534,15 +545,18 @@ public:
                 }
             }
         }
-        else  {
+        else
+        {
             rowcount_t totalrows;
-            if (nosortPrimary()) {
+            if (nosortPrimary())
+            {
                 OwnedConstThorRow partitionrow  = input1->ungroupedNextRow();
                 strm1.set(new cRowStreamPlus1Adaptor(input1,partitionrow));
                 sorter->Gather(rowif2,input2,compare2,collate,collateupper,keyserializer1,partitionrow,nosortSecondary(),isUnstable(),abortSoon, rowif1); // keyserializer1 *is* correct
                 partitionrow.clear();
                 stopInput2();
-                if (abortSoon) {
+                if (abortSoon)
+                {
                     barrier->cancel();
                     return false;
                 }
@@ -553,11 +567,13 @@ public:
                 strm2.setown(sorter->startMerge(totalrows));
                 return true;
             }
-            else {
+            else
+            {
                 strm1.set(input1);
                 sorter->Gather(rowif1,input1,compare1,NULL,NULL,keyserializer1,NULL,false,isUnstable(),abortSoon, NULL);
                 stopInput1();
-                if (abortSoon) {
+                if (abortSoon)
+                {
                     barrier->cancel();
                     return false;
                 }
@@ -572,8 +588,12 @@ public:
 
                 GetTempName(tempname.clear(),"joinspill",false); // don't use alt temp dir
                 Owned<IFile> tempf = createIFile(tempname.str());
-                Owned<IRowWriter> tmpstrm = createRowWriter(tempf,rowif1->queryRowSerializer(),rowif1->queryRowAllocator());
-                if (!tmpstrm) {
+                unsigned rwFlags = DEFAULT_RWFLAGS;
+                if (getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                    rwFlags |= rw_compress;
+                Owned<IRowWriter> tmpstrm = createRowWriter(tempf, rowif1, rwFlags);
+                if (!tmpstrm)
+                {
                     ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Cannot open %s", tempname.toCharArray());
                     throw MakeErrnoException("JoinSlaveActivity::doglobaljoin");
                 }
@@ -581,8 +601,9 @@ public:
                 tmpstrm->flush();
                 tmpstrm.clear();
                 rstrm1.clear();
-                try {
-                    strm1.setown(createSimpleRowStream(tempf,rowif1));
+                try
+                {
+                    strm1.setown(createRowStream(tempf, rowif1, rwFlags));
 
                     ActPrintLog("JOIN waiting barrier.2");
                     if (!barrier->wait(false))
@@ -591,7 +612,8 @@ public:
                     sorter->stopMerge();
                     sorter->Gather(rowif2,input2,compare2,collate,collateupper,keyserializer1,NULL,nosortSecondary(),isUnstable(),abortSoon,rowif1); // keyserializer1 *is* correct
                     stopInput2();
-                    if (abortSoon) {
+                    if (abortSoon)
+                    {
                         barrier->cancel();
                         return false;
                     }

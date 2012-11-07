@@ -316,7 +316,7 @@ public:
         StringBuffer tmpname;
         GetTempName(tmpname,"merge",true); // use alt temp dir
         tmpfile.setown(createIFile(tmpname.str()));
-        Owned<IRowWriter> writer =  createRowWriter(tmpfile,queryRowSerializer(),queryRowAllocator()); 
+        Owned<IRowWriter> writer =  createRowWriter(tmpfile, this);
         CThorKeyArray sample(*this, this, helper->querySerialize(), helper->queryCompare(), helper->queryCompareKey(), helper->queryCompareRowKey());
         sample.setSampling(MERGE_TRANSFER_BUFFER_SIZE);
         ActPrintLog("MERGE: start gather");
@@ -360,7 +360,7 @@ public:
         offset_t end = partitionpos[idx];
         if (pos>=end)
             return 0;
-        Owned<IExtRowStream> rs = createRowStream(tmpfile,queryRowInterfaces(this),pos,end,RCUNBOUND,false,false); // this is not good
+        Owned<IExtRowStream> rs = createRowStreamEx(tmpfile, queryRowInterfaces(this), pos, end); // this is not good
         offset_t so = rs->getOffset();
         size32_t len = 0;
         size32_t chunksize = chunkmaxsize;
