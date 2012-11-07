@@ -297,6 +297,7 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     {
         IHqlScope * scope = &scopes.item(i);
         HqlExprArray symbols;
+        scope->ensureSymbolsDefined(ctx);
         scope->getSymbols(symbols);
 
         ForEachItemIn(j, symbols)
