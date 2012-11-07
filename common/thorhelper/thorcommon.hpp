@@ -80,7 +80,7 @@ enum RowReaderWriterFlags
     rw_autoflush      = 0x40,
     rw_buffered       = 0x80
 };
-#define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_fastlz|rw_compressblkcrc)
+#define DEFAULT_RWFLAGS (rw_buffered|rw_autoflush|rw_compressblkcrc)
 inline bool TestRwFlag(unsigned flags, RowReaderWriterFlags flag) { return 0 != (flags & flag); }
 
 interface IExtRowStream: extends IRowStream
