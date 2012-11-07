@@ -46,6 +46,7 @@
 #include "slave.hpp"
 #include "portlist.h"
 #include "dafdesc.hpp"
+#include "rmtfile.hpp"
 
 #include "slavmain.hpp"
 
@@ -335,6 +336,10 @@ int main( int argc, char *argv[]  )
             }
             setPasswordsFromSDS();
 #endif
+            IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
+            if (daFileSrvHook) // probably always installed
+                daFileSrvHook->addSubnetFilters(globals->queryPropTree("NAS"), NULL);
+
             StringBuffer thorPath;
             globals->getProp("@thorPath", thorPath);
             recursiveCreateDirectory(thorPath.str());

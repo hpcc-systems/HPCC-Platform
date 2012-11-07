@@ -5130,7 +5130,7 @@ bool IpSubNet::set(const char *_net,const char *_mask)
     return true;
 }
 
-bool IpSubNet::test(const IpAddress &ip)
+bool IpSubNet::test(const IpAddress &ip) const
 {
     unsigned i;
     if (ip.getNetAddress(sizeof(i),&i)==sizeof(i)) {
@@ -5148,19 +5148,24 @@ bool IpSubNet::test(const IpAddress &ip)
     return false;
 }
 
-StringBuffer IpSubNet::getNetText(StringBuffer &text)
+StringBuffer IpSubNet::getNetText(StringBuffer &text) const
 {
     char tmp[INET6_ADDRSTRLEN];
-    return text.append(_inet_ntop(isIp4(net)?AF_INET:AF_INET6, &net, tmp, sizeof(tmp)));
+    const char *res  = ::isIp4(net) ? _inet_ntop(AF_INET, &net[3], tmp, sizeof(tmp))
+                                    : _inet_ntop(AF_INET6, &net, tmp, sizeof(tmp));
+    return text.append(res);
 }
 
-StringBuffer IpSubNet::getMaskText(StringBuffer &text)
+StringBuffer IpSubNet::getMaskText(StringBuffer &text) const
 {
     char tmp[INET6_ADDRSTRLEN];
-    return text.append(_inet_ntop(isIp4(net)?AF_INET:AF_INET6, &mask, tmp, sizeof(tmp))); // isIp4(net) is correct here
+    // isIp4(net) is correct here
+    const char *res  = ::isIp4(net) ? _inet_ntop(AF_INET, &mask[3], tmp, sizeof(tmp))
+                                    : _inet_ntop(AF_INET6, &mask, tmp, sizeof(tmp));
+    return text.append(res);
 }
 
-bool IpSubNet::isNull()
+bool IpSubNet::isNull() const
 {
     for (unsigned i=0;i<4;i++)
         if (net[i]||mask[i])
