@@ -624,14 +624,12 @@
                <input type="checkbox" name="nosplit" value="1"/>
             </td>
          </tr>
-         <xsl:if test="$method='SprayFixed' or $submethod='csv'">
-            <tr>
-               <td>Compress:</td>
-               <td>
-                  <input type="checkbox" id="compress" name="compress" value="1"/>
-               </td>
-            </tr>
-         </xsl:if>
+         <tr>
+            <td>Compress:</td>
+            <td>
+               <input type="checkbox" id="compress" name="compress" value="1"/>
+            </td>
+         </tr>
          <xsl:if test="$fullHtml='1'">
             <tr>
                <td/>
