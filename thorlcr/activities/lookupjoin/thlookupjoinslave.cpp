@@ -1241,7 +1241,7 @@ public:
         else // local
         {
             if (RCUNSET != rhsTotalCount)
-                rhsRows = rhsTotalCount;
+                rhsRows = (rowidx_t)rhsTotalCount;
             else // all join, or lookup if total count unkown
                 rhsRows = rhs.ordinality();
         }
