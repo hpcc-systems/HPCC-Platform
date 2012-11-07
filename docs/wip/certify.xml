@@ -3,8 +3,6 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
   <bookinfo>
-    <title>HPCC Preflight and Certify</title>
-
     <mediaobject>
       <imageobject>
         <imagedata fileref="images/redswooshWithLogo3.jpg" />
@@ -1250,7 +1248,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>Enter the name BRYANT in the <emphasis
-          role="bold">lname</emphasis> field. <!--(output xml || output tables... )***--></para>
+          role="bold">lname</emphasis> field.<!--(output xml || output tables... )***--></para>
 
           <para><figure>
               <title>Enter lnamein</title>
@@ -1264,12 +1262,12 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Press the submit button at the bottom of the form. </para>
+          <para>Press the submit button at the bottom of the form.</para>
         </listitem>
       </orderedlist>
 
       <sect2 id="The_Expected_Result">
-        <title>EXPECTED RESULT: </title>
+        <title>EXPECTED RESULT:</title>
 
         <para>A list of 100 records should display, looking similar to the
         following (BRYANT in last name).</para>
@@ -1299,7 +1297,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
     nodes into a single file.</para>
 
     <sect1 id="Move_data_to_Landing_Zone">
-      <title>Certify Data Retrieval (DeSpray)</title>
+      <title>Certify Data Retrieval (Despray)</title>
 
       <para>The next step to verify that your system is working properly is to
       test the Despray capabilities. Despray is when the system combines the
@@ -1357,7 +1355,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           <title>Desprays</title>
 
           <para>After you select Despray, the <emphasis role="bold">Despray
-          File</emphasis> page opens. </para>
+          File</emphasis> page opens.</para>
 
           <!--***Do we need an image of the Despray File Page?***-->
 
@@ -1490,7 +1488,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
         within a cluster.</para>
 
         <para>For this example, we will spray the full_test_distributed file
-        that we just put out on our landing zone. </para>
+        that we just put out on our landing zone.</para>
 
         <para>We are going to spray the file to our Thor cluster and give it a
         logical name of <emphasis role="bold">thor::</emphasis><emphasis
