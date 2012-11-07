@@ -1214,6 +1214,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
     user.append(_user.str());
     token.append(_token.str());
     scope.append(_scope.str());
+    globalMemorySize = globals->getPropInt("@masterMemorySize", globals->getPropInt("@globalMemorySize")); // in MB
     init();
 
     resumed = WUActionResume == workunit->getAction();
